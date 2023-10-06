@@ -44,7 +44,12 @@ class LogTargetTest extends TestCase
         Yii::$app->log->getLogger()->flush(true);
         $manifest = $logTarget->loadManifest();
         $lastLogEntry = reset($manifest);
+
+        var_dump($lastLogEntry);
+        die();
+
         $this->assertNotEmpty($lastLogEntry);
+
         $logTarget->loadTagToPanels($lastLogEntry['tag']);
         $panelData = $module->panels['log']->data;
 
