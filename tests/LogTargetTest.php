@@ -46,7 +46,7 @@ class LogTargetTest extends TestCase
         $lastLogEntry = reset($manifest);
 
         var_dump($lastLogEntry);
-        die();
+        die;
 
         $this->assertNotEmpty($lastLogEntry);
 
