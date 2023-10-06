@@ -1,5 +1,5 @@
 {
-    "name": "yii2/debug",
+    "name": "yii2-extensions/debug",
     "type": "yii2-extension",
     "description": "The debugger extension for the Yii framework",
     "keywords": [
