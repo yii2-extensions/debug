@@ -200,8 +200,7 @@ class Panel extends Component
         array $categories = [],
         array $except = [],
         bool $stringify = false
-    ): array
-    {
+    ): array {
         $target = $this->module->logTarget;
         $messages = $target->filterMessages(...);
 

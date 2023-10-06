@@ -62,7 +62,6 @@ class RequestPanel extends Panel
      * {@inheritdoc}
      *
      * @throws InvalidConfigException
-     *
      * @throws Exception
      */
     public function save(): mixed
@@ -152,9 +151,9 @@ class RequestPanel extends Panel
     /**
      * Getting flash messages without deleting them or touching deletion counters
      *
-     * @return array flash messages (key => message).
-     *
      * @throws InvalidConfigException
+     *
+     * @return array flash messages (key => message).
      */
     protected function getFlashes(): array
     {
@@ -179,9 +178,9 @@ class RequestPanel extends Panel
     /**
      * @param array $data
      *
-     * @return array
-     *
      * @throws Exception
+     *
+     * @return array
      */
     protected function censorArray(array $data): array
     {

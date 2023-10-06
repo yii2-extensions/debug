@@ -87,9 +87,9 @@ class User extends Model
      *
      * @param array $params the data array to load model.
      *
-     * @return ActiveDataProvider
-     *
      * @throws InvalidConfigException
+     *
+     * @return ActiveDataProvider
      */
     private function searchActiveDataProvider(array $params): ActiveDataProvider
     {

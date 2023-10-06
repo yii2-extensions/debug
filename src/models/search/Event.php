@@ -77,7 +77,7 @@ class Event extends Base
         $this->addCondition($filter, 'name', true);
         $this->addCondition($filter, 'class', true);
         $this->addCondition($filter, 'senderClass', true);
-        
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

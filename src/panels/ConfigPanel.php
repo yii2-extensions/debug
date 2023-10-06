@@ -78,7 +78,7 @@ class ConfigPanel extends Panel
             [
                 '<table',
                 '</table>',
-                '<div class="center">'
+                '<div class="center">',
             ],
             [
                 '<div class="table-responsive"><table class="table table-condensed table-bordered table-striped table-hover config-php-info-table" ',

@@ -11,7 +11,6 @@ use yii\web\User;
 
 use function call_user_func;
 
-
 /**
  * UserSwitch is a model used to temporary logging in another user
  */
@@ -66,7 +65,7 @@ class UserSwitch extends Model
     /**
      * Get the main user
      *
-     * @return User|string|null
+     * @return string|User|null
      */
     public function getMainUser(): User|string|null
     {
@@ -145,7 +144,7 @@ class UserSwitch extends Model
         if ($user->getIsGuest()) {
             return true;
         }
-        
+
         return $user->getId() === $this->getMainUser()?->getId();
     }
 }

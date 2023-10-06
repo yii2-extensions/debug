@@ -140,9 +140,9 @@ class ActionRoutes extends Model
      *
      * @param Module $module the module instance
      *
-     * @return array the available controller IDs and their class names
-     *
      * @throws ReflectionException
+     *
+     * @return array the available controller IDs and their class names
      */
     protected function getModuleControllers(Module $module): array
     {

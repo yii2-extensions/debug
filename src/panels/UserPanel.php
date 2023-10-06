@@ -31,7 +31,6 @@ use function in_array;
 use function is_string;
 use function is_subclass_of;
 
-
 /**
  * Debugger panel that collects and displays user data.
  */

@@ -431,9 +431,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * @param Action|null $action the action to be executed. Maybe `null` when called from
      * a non-action context
      *
-     * @return bool if access is granted
-     *
      * @throws NotSupportedException
+     *
+     * @return bool if access is granted
      */
     protected function checkAccess(Action $action = null): bool
     {

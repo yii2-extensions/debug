@@ -103,12 +103,11 @@ class DefaultController extends Controller
      * @param string|null $tag debug data tag.
      * @param string|null $panel debug panel ID.
      *
-     * @return string response.
-     *
      * @throws NotFoundHttpException if debug data aren't found.
      *
-     * @see \yii\debug\Panel
+     * @return string response.
      *
+     * @see \yii\debug\Panel
      */
     public function actionView(string $tag = null, string $panel = null): string
     {
@@ -139,9 +138,9 @@ class DefaultController extends Controller
      *
      * @param string $tag
      *
-     * @return string
      *@throws NotFoundHttpException
      *
+     * @return string
      */
     public function actionToolbar(string $tag): string
     {
@@ -160,9 +159,9 @@ class DefaultController extends Controller
      *
      * @param string $file
      *
-     * @return Response|\yii\console\Response
-     *
      * @throws NotFoundHttpException
+     *
+     * @return Response|\yii\console\Response
      */
     public function actionDownloadMail(string $file): Response|\yii\console\Response
     {

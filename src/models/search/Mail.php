@@ -113,7 +113,7 @@ class Mail extends Base
         $this->addCondition($filter, 'subject', true);
         $this->addCondition($filter, 'body', true);
         $this->addCondition($filter, 'charset', true);
-        
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

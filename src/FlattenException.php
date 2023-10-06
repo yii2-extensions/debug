@@ -140,7 +140,7 @@ class FlattenException
      *
      * @return FlattenException the previous `FlattenException` if available or null otherwise.
      */
-    public function getPrevious(): ?FlattenException
+    public function getPrevious(): ?self
     {
         return $this->_previous;
     }
