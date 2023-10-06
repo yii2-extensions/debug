@@ -1,30 +1,38 @@
 {
-    "name": "yii2/template",
-    "type": "library",
-    "description": "_____",
+    "name": "yii2-extensions/debug",
+    "type": "yii2-extension",
+    "description": "The debugger extension for the Yii framework",
     "keywords": [
-        "_____"
+        "yii2",
+        "debug",
+        "debugger"
     ],
     "license": "mit",
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
         "php": ">=8.1",
-        "yiisoft/yii2": "^2.2"
+        "ext-mbstring": "*",
+        "ext-intl": "*",
+        "symfony/mime": "^6.3",
+        "yiisoft/yii2": "^2.2",
+        "yiisoft/yii2-symfonymailer": "^3.0"
     },
     "require-dev": {
         "maglnet/composer-require-checker": "^4.6",
+        "phpstan/phpstan": "^1.10",
         "phpunit/phpunit": "^10.2",
-        "proget-hq/phpstan-yii2": "^0.8.0"
+        "rector/rector": "^0.18",
+        "yii2-extensions/phpstan": "dev-main"
     },
     "autoload": {
         "psr-4": {
-            "yii\\template\\": "src"
+            "yii\\debug\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "yii\\template\\tests\\": "tests"
+            "yiiunit\\debug\\": "tests"
         }
     },
     "extra": {

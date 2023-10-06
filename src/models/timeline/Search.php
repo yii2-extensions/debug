@@ -1,0 +1,81 @@
+<?php
+
+declare(strict_types=1);
+
+namespace yii\debug\models\timeline;
+
+use yii\debug\components\search\Filter;
+use yii\debug\components\search\matchers\GreaterThanOrEqual;
+use yii\debug\models\search\Base;
+use yii\debug\panels\TimelinePanel;
+
+/**
+ * Search model for timeline data.
+ */
+class Search extends Base
+{
+    /**
+     * @var string attribute search
+     */
+    public string $category;
+    /**
+     * @var int attribute search
+     */
+    public int $duration = 0;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rules(): array
+    {
+        return [
+            [['category', 'duration'], 'safe'],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels(): array
+    {
+        return [
+            'duration' => 'Duration ≥',
+        ];
+    }
+
+    /**
+     * Returns data provider with filled models. Filter applied if needed.
+     *
+     * @param array $params $params an array of parameter values indexed by parameter names
+     * @param TimeLinePanel $panel
+     *
+     * @return DataProvider
+     */
+    public function search(array $params, TimelinePanel $panel): DataProvider
+    {
+        $models = $panel->getModels();
+
+        $dataProvider = new DataProvider($panel, [
+            'allModels' => $models,
+            'sort' => [
+                'attributes' => ['category', 'timestamp'],
+            ],
+        ]);
+
+        if (!($this->load($params) && $this->validate())) {
+            return $dataProvider;
+        }
+
+        $filter = new Filter();
+
+        $this->addCondition($filter, 'category', true);
+
+        if ($this->duration > 0) {
+            $filter->addMatcher('duration', new GreaterThanOrEqual(['value' => $this->duration / 1000]));
+        }
+
+        $dataProvider->allModels = $filter->filter($models);
+
+        return $dataProvider;
+    }
+}
