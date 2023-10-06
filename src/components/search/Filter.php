@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -14,6 +17,7 @@ use yii\debug\components\search\matchers\MatcherInterface;
  * Provides array filtering capabilities.
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Filter extends Component
@@ -22,7 +26,6 @@ class Filter extends Component
      * @var array rules for matching filters in the way: [:fieldName => [rule1, rule2,..]]
      */
     protected $rules = [];
-
 
     /**
      * Adds data filtering rule.
@@ -41,6 +44,7 @@ class Filter extends Component
      * Applies filter on a given array and returns filtered data.
      *
      * @param array $data data to filter
+     *
      * @return array filtered data
      */
     public function filter(array $data)
@@ -60,6 +64,7 @@ class Filter extends Component
      * Checks if the given data satisfies filters.
      *
      * @param array $row data
+     *
      * @return bool if data passed filtering
      */
     private function passesFilter(array $row)

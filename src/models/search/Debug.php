@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,6 +18,7 @@ use yii\debug\components\search\Filter;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Debug extends Base
@@ -56,7 +60,6 @@ class Debug extends Base
      */
     public $criticalCodes = [400, 404, 500];
 
-
     /**
      * {@inheritdoc}
      */
@@ -88,8 +91,10 @@ class Debug extends Base
 
     /**
      * Returns data provider with filled models. Filter applied if needed.
+     *
      * @param array $params an array of parameter values indexed by parameter names
      * @param array $models data to return provider for
+     *
      * @return \yii\data\ArrayDataProvider
      */
     public function search($params, $models)
@@ -126,6 +131,7 @@ class Debug extends Base
      * Checks if code is critical.
      *
      * @param int $code
+     *
      * @return bool
      */
     public function isCodeCritical($code)

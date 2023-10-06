@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -16,6 +19,7 @@ use yii\debug\panels\TimelinePanel;
  * Search model for timeline data.
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class Search extends Base
@@ -28,7 +32,6 @@ class Search extends Base
      * @var int attribute search
      */
     public $duration = 0;
-
 
     /**
      * {@inheritdoc}
@@ -46,7 +49,7 @@ class Search extends Base
     public function attributeLabels()
     {
         return [
-            'duration' => 'Duration ≥'
+            'duration' => 'Duration ≥',
         ];
     }
 
@@ -55,6 +58,7 @@ class Search extends Base
      *
      * @param array $params $params an array of parameter values indexed by parameter names
      * @param TimeLinePanel $panel
+     *
      * @return DataProvider
      */
     public function search($params, $panel)
@@ -63,7 +67,7 @@ class Search extends Base
         $dataProvider = new DataProvider($panel, [
             'allModels' => $models,
             'sort' => [
-                'attributes' => ['category', 'timestamp']
+                'attributes' => ['category', 'timestamp'],
             ],
         ]);
 

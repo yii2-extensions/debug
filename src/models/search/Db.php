@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,6 +18,7 @@ use yii\debug\components\search\Filter;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Db extends Base
@@ -27,7 +31,6 @@ class Db extends Base
      * @var int query attribute input search value
      */
     public $query;
-
 
     /**
      * {@inheritdoc}
@@ -54,6 +57,7 @@ class Db extends Base
      * Returns data provider with filled models. Filter applied if needed.
      *
      * @param array $models data to return provider for
+     *
      * @return \yii\data\ArrayDataProvider
      */
     public function search($models)

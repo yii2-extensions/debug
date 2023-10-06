@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace yiiunit\debug\providers;
 
-use yii\gii\generators\model\Generator;
 use yii\web\UrlRule;
 
 class Data
@@ -15,52 +14,52 @@ class Data
             [
                 [],
                 '10.20.30.40',
-                false
+                false,
             ],
             [
                 ['10.20.30.40'],
                 '10.20.30.40',
-                true
+                true,
             ],
             [
                 ['*'],
                 '10.20.30.40',
-                true
+                true,
             ],
             [
                 ['10.20.30.*'],
                 '10.20.30.40',
-                true
+                true,
             ],
             [
                 ['10.20.30.*'],
                 '10.20.40.40',
-                false
+                false,
             ],
             [
                 ['172.16.0.0/12'],
                 '172.15.1.2', // "below" CIDR range
-                false
+                false,
             ],
             [
                 ['172.16.0.0/12'],
                 '172.16.0.0', // in CIDR range
-                true
+                true,
             ],
             [
                 ['172.16.0.0/12'],
                 '172.22.33.44', // in CIDR range
-                true
+                true,
             ],
             [
                 ['172.16.0.0/12'],
                 '172.31.255.255', // in CIDR range
-                true
+                true,
             ],
             [
                 ['172.16.0.0/12'],
                 '172.32.1.2',  // "above" CIDR range
-                false
+                false,
             ],
         ];
     }
@@ -76,8 +75,8 @@ class Data
                     'verb' => null,
                     'suffix' => null,
                     'mode' => null,
-                    'type' => null
-                ]]
+                    'type' => null,
+                ]],
             ],
             'simple verb' => [
                 ['GET rule' => 'route'],
@@ -87,8 +86,8 @@ class Data
                     'verb' => ['GET'],
                     'suffix' => null,
                     'mode' => null,
-                    'type' => null
-                ]]
+                    'type' => null,
+                ]],
             ],
             'simple verb parse' => [
                 ['POST rule' => 'route'],
@@ -98,8 +97,8 @@ class Data
                     'verb' => ['POST'],
                     'suffix' => null,
                     'mode' => null,
-                    'type' => null
-                ]]
+                    'type' => null,
+                ]],
             ],
             'custom' => [
                 [['class' => 'yiiunit\debug\router\CustomRuleStub']],
@@ -109,8 +108,8 @@ class Data
                     'verb' => null,
                     'suffix' => null,
                     'mode' => null,
-                    'type' => null
-                ]]
+                    'type' => null,
+                ]],
             ],
             'creation only' => [
                 [['pattern' => 'pattern', 'route' => 'route', 'mode' => UrlRule::CREATION_ONLY]],
@@ -120,8 +119,8 @@ class Data
                     'verb' => null,
                     'suffix' => null,
                     'mode' => 'creation only',
-                    'type' => null
-                ]]
+                    'type' => null,
+                ]],
             ],
             'unknown mode' => [
                 [['pattern' => 'pattern', 'route' => 'route', 'mode' => 999]],
@@ -131,8 +130,8 @@ class Data
                     'verb' => null,
                     'suffix' => null,
                     'mode' => 'unknown',
-                    'type' => null
-                ]]
+                    'type' => null,
+                ]],
             ],
             'suffix' => [
                 [['pattern' => 'pattern', 'route' => 'route', 'suffix' => '.html']],
@@ -142,8 +141,8 @@ class Data
                     'verb' => null,
                     'suffix' => '.html',
                     'mode' => null,
-                    'type' => null
-                ]]
+                    'type' => null,
+                ]],
             ],
             'group' => [
                 [[
@@ -161,7 +160,7 @@ class Data
                         'verb' => null,
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'GROUP'
+                        'type' => 'GROUP',
                     ],
                     [
                         'name' => 'admin/logout',
@@ -169,9 +168,9 @@ class Data
                         'verb' => null,
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'GROUP'
-                    ]
-                ]
+                        'type' => 'GROUP',
+                    ],
+                ],
             ],
             'rest' => [
                 [['class' => 'yii\rest\UrlRule', 'controller' => 'user']],
@@ -182,7 +181,7 @@ class Data
                         'verb' => ['PUT', 'PATCH'],
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'REST'
+                        'type' => 'REST',
                     ],
                     [
                         'name' => 'users/<id:\d[\d,]*>',
@@ -190,7 +189,7 @@ class Data
                         'verb' => ['DELETE'],
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'REST'
+                        'type' => 'REST',
                     ],
                     [
                         'name' => 'users/<id:\d[\d,]*>',
@@ -198,7 +197,7 @@ class Data
                         'verb' => ['GET', 'HEAD'],
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'REST'
+                        'type' => 'REST',
                     ],
                     [
                         'name' => 'users',
@@ -206,7 +205,7 @@ class Data
                         'verb' => ['POST'],
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'REST'
+                        'type' => 'REST',
                     ],
                     [
                         'name' => 'users',
@@ -214,7 +213,7 @@ class Data
                         'verb' => ['GET', 'HEAD'],
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'REST'
+                        'type' => 'REST',
                     ],
                     [
                         'name' => 'users/<id:\d[\d,]*>',
@@ -222,7 +221,7 @@ class Data
                         'verb' => [],
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'REST'
+                        'type' => 'REST',
                     ],
                     [
                         'name' => 'users',
@@ -230,9 +229,9 @@ class Data
                         'verb' => [],
                         'suffix' => null,
                         'mode' => null,
-                        'type' => 'REST'
+                        'type' => 'REST',
                     ],
-                ]
+                ],
             ],
         ];
     }

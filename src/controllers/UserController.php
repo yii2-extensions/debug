@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -17,12 +20,14 @@ use yii\web\Response;
  * User controller
  *
  * @author Semen Dubina <yii2debug@sam002.net>
+ *
  * @since 2.0.10
  */
 class UserController extends Controller
 {
     /**
      * {@inheritdoc}
+     *
      * @throws BadRequestHttpException
      */
     public function beforeAction($action)
@@ -36,8 +41,10 @@ class UserController extends Controller
 
     /**
      * Set new identity, switch user
-     * @return \yii\web\User
+     *
      * @throws \yii\base\InvalidConfigException
+     *
+     * @return \yii\web\User
      */
     public function actionSetIdentity()
     {
@@ -51,8 +58,10 @@ class UserController extends Controller
 
     /**
      * Reset identity, switch to main user
-     * @return \yii\web\User
+     *
      * @throws \yii\base\InvalidConfigException
+     *
+     * @return \yii\web\User
      */
     public function actionResetIdentity()
     {

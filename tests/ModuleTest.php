@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace yiiunit\debug;
 
 use Yii;
@@ -21,6 +23,7 @@ class ModuleTest extends TestCase
      *
      * @param string $userIp
      * @param bool $expectedResult
+     *
      * @throws \ReflectionException
      */
     public function testCheckAccess(array $allowedIPs, $userIp, $expectedResult): void

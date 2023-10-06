@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,6 +18,7 @@ use yii\debug\components\search\Filter;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Profile extends Base
@@ -27,7 +31,6 @@ class Profile extends Base
      * @var int info attribute input search value
      */
     public $info;
-
 
     /**
      * {@inheritdoc}
@@ -55,6 +58,7 @@ class Profile extends Base
      *
      * @param array $params an array of parameter values indexed by parameter names
      * @param array $models data to return provider for
+     *
      * @return \yii\data\ArrayDataProvider
      */
     public function search($params, $models)

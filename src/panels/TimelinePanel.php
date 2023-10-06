@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -17,11 +20,12 @@ use yii\debug\Panel;
  * Debugger panel that collects and displays timeline data.
  *
  * @property array $colors
- * @property-read float $duration
- * @property-read float $start
+ * @property float $duration
+ * @property float $start
  * @property array $svgOptions
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.7
  */
 class TimelinePanel extends Panel
@@ -35,7 +39,7 @@ class TimelinePanel extends Panel
     private $_colors = [
         20 => '#1e6823',
         10 => '#44a340',
-        1 => '#8cc665'
+        1 => '#8cc665',
     ];
     /**
      * @var array log messages extracted to array as models, to use with data provider.
@@ -61,16 +65,16 @@ class TimelinePanel extends Panel
      * @var array
      */
     private $_svgOptions = [
-        'class' => 'yii\debug\models\timeline\Svg'
+        'class' => 'yii\debug\models\timeline\Svg',
     ];
     /**
      * @var int Used memory in request
      */
     private $_memory;
 
-
     /**
      * {@inheritdoc}
+     *
      * @throws InvalidConfigException
      */
     public function init()
@@ -150,6 +154,7 @@ class TimelinePanel extends Panel
     /**
      * Sets color indicators.
      * key: percentages of time request, value: hex color
+     *
      * @param array $colors
      */
     public function setColors($colors)
@@ -161,6 +166,7 @@ class TimelinePanel extends Panel
     /**
      * Color indicators item profile,
      * key: percentages of time request, value: hex color
+     *
      * @return array
      */
     public function getColors()
@@ -189,6 +195,7 @@ class TimelinePanel extends Panel
 
     /**
      * Start request, timestamp (obtained by microtime(true))
+     *
      * @return float
      */
     public function getStart()
@@ -198,6 +205,7 @@ class TimelinePanel extends Panel
 
     /**
      * Request duration, milliseconds
+     *
      * @return float
      */
     public function getDuration()
@@ -207,7 +215,9 @@ class TimelinePanel extends Panel
 
     /**
      * Memory peak in request, bytes. (obtained by memory_get_peak_usage())
+     *
      * @return int
+     *
      * @since 2.0.8
      */
     public function getMemory()
@@ -216,9 +226,11 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * @return Svg
-     * @since 2.0.8
      * @throws InvalidConfigException
+     *
+     * @return Svg
+     *
+     * @since 2.0.8
      */
     public function getSvg()
     {
@@ -233,6 +245,7 @@ class TimelinePanel extends Panel
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
      * @param bool $refresh if need to build models from log messages and refresh them.
+     *
      * @return array models
      */
     protected function getModels($refresh = false)

@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types = 1);
+declare(strict_types=1);
 
 use Yii;
 use yii\data\ArrayDataProvider;
@@ -27,17 +27,17 @@ echo GridView::widget([
     'options' => ['class' => 'detail-grid-view db-panel-detailed-grid table-responsive'],
     'pager' => [
         'linkContainerOptions' => [
-            'class' => 'page-item'
+            'class' => 'page-item',
         ],
         'linkOptions' => [
-            'class' => 'page-link'
+            'class' => 'page-link',
         ],
         'disabledListItemSubTagOptions' => [
             'tag' => 'a',
             'href' => 'javascript:;',
             'tabindex' => '-1',
-            'class' => 'page-link'
-        ]
+            'class' => 'page-link',
+        ],
     ],
     'columns' => [
         [
@@ -73,8 +73,8 @@ echo GridView::widget([
                 'width' => '5%',
             ],
             'headerOptions' => [
-                'class' => 'sort-numerical'
-            ]
+                'class' => 'sort-numerical',
+            ],
         ],
         [
             'attribute' => 'totalDuration',
@@ -85,8 +85,8 @@ echo GridView::widget([
                 'width' => '10%',
             ],
             'headerOptions' => [
-                'class' => 'sort-numerical'
-            ]
+                'class' => 'sort-numerical',
+            ],
         ],
         [
             'attribute' => 'queries',
@@ -137,7 +137,7 @@ echo GridView::widget([
             'options' => [
                 'width' => '60%',
             ],
-        ]
+        ],
     ],
 ]);
 

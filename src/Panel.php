@@ -1,13 +1,15 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\debug;
 
-use Yii;
 use yii\base\Component;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
@@ -18,12 +20,13 @@ use yii\helpers\StringHelper;
  * Panel is a base class for debugger panel classes. It defines how data should be collected,
  * what should be displayed at debug toolbar and on debugger details view.
  *
- * @property-read string $detail Content that is displayed in debugger detail view.
- * @property-read string $name Name of the panel.
- * @property-read string $summary Content that is displayed at debug toolbar.
- * @property-read string $url URL pointing to panel detail view.
+ * @property string $detail Content that is displayed in debugger detail view.
+ * @property string $name Name of the panel.
+ * @property string $summary Content that is displayed at debug toolbar.
+ * @property string $url URL pointing to panel detail view.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class Panel extends Component
@@ -54,10 +57,10 @@ class Panel extends Component
 
     /**
      * @var FlattenException|null Error while saving the panel
+     *
      * @since 2.0.10
      */
     protected $error;
-
 
     /**
      * @return string name of the panel
@@ -105,7 +108,8 @@ class Panel extends Component
     }
 
     /**
-     * @param null|array $additionalParams Optional additional parameters to add to the route
+     * @param array|null $additionalParams Optional additional parameters to add to the route
+     *
      * @return string URL pointing to panel detail view
      */
     public function getUrl($additionalParams = null)
@@ -125,8 +129,11 @@ class Panel extends Component
 
     /**
      * Returns a trace line
+     *
      * @param array $options The array with trace
+     *
      * @return string the trace line
+     *
      * @since 2.0.7
      */
     public function getTraceLine($options)
@@ -156,6 +163,7 @@ class Panel extends Component
 
     /**
      * @param FlattenException $error
+     *
      * @since 2.0.10
      */
     public function setError(FlattenException $error)
@@ -165,6 +173,7 @@ class Panel extends Component
 
     /**
      * @return FlattenException|null
+     *
      * @since 2.0.10
      */
     public function getError()
@@ -174,6 +183,7 @@ class Panel extends Component
 
     /**
      * @return bool
+     *
      * @since 2.0.10
      */
     public function hasError()
@@ -183,7 +193,9 @@ class Panel extends Component
 
     /**
      * Checks whether this panel is enabled.
+     *
      * @return bool whether this panel is enabled.
+     *
      * @since 2.0.10
      */
     public function isEnabled()
@@ -193,12 +205,15 @@ class Panel extends Component
 
     /**
      * Gets messages from log target and filters according to their categories and levels.
+     *
      * @param int $levels the message levels to filter by. This is a bitmap of
      * level values. Value 0 means allowing all levels.
      * @param array $categories the message categories to filter by. If empty, it means all categories are allowed.
      * @param array $except the message categories to exclude. If empty, it means all categories are allowed.
      * @param bool $stringify Convert non-string (such as closures) to strings
+     *
      * @return array the filtered messages.
+     *
      * @since 2.1.4
      * @see \yii\log\Target::filterMessages()
      */

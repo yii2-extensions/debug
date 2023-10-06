@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -13,6 +16,7 @@ use yii\helpers\Html;
 
 /**
  * Render button for navigation to previous or next request in debug panel
+ *
  * @since 2.0.11
  */
 class NavigationButton extends Widget
@@ -32,7 +36,6 @@ class NavigationButton extends Widget
     private $lastTag;
     /** @var int */
     private $currentTagIndex;
-
 
     /**
      * @inheritDoc
@@ -87,6 +90,7 @@ class NavigationButton extends Widget
 
     /**
      * @param int $inc Direction
+     *
      * @return array
      */
     private function getRoute($inc)

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace yiiunit\debug;
 
 use Yii;
@@ -29,13 +31,13 @@ class LogTargetTest extends TestCase
         $logTarget = $module->logTarget;
 
         // Logs to test
-        Yii::debug("qwe");
-        Yii::warning("asd");
+        Yii::debug('qwe');
+        Yii::warning('asd');
         Yii::info(
             [
                 'test_callback' => static function($cbArg): string {
                     return $cbArg . 'cbResult';
-                }
+                },
             ],
         );
 

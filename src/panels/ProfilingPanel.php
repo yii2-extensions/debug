@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -16,6 +19,7 @@ use yii\log\Logger;
  * Debugger panel that collects and displays performance profiling info.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class ProfilingPanel extends Panel
@@ -24,7 +28,6 @@ class ProfilingPanel extends Panel
      * @var array current request profile timings
      */
     private $_models;
-
 
     /**
      * {@inheritdoc}
@@ -42,7 +45,7 @@ class ProfilingPanel extends Panel
         return Yii::$app->view->render('panels/profile/summary', [
             'memory' => sprintf('%.3f MB', $this->data['memory'] / 1048576),
             'time' => number_format($this->data['time'] * 1000) . ' ms',
-            'panel' => $this
+            'panel' => $this,
         ]);
     }
 
@@ -78,13 +81,14 @@ class ProfilingPanel extends Panel
 
     /**
      * Returns array of profiling models that can be used in a data provider.
+     *
      * @return array models
      */
     protected function getModels()
     {
         if ($this->_models === null) {
             $this->_models = [];
-            $timings = Yii::getLogger()->calculateTimings(isset($this->data['messages']) ? $this->data['messages'] : []);
+            $timings = Yii::getLogger()->calculateTimings($this->data['messages'] ?? []);
 
             foreach ($timings as $seq => $profileTiming) {
                 $this->_models[] = [
