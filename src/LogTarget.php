@@ -94,6 +94,7 @@ class LogTarget extends Target
 
         $content = '';
         $fp = @fopen($indexFile, 'r');
+
         if ($fp !== false) {
             @flock($fp, LOCK_SH);
             $content = fread($fp, filesize($indexFile));
