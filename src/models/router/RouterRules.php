@@ -1,15 +1,11 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\models\router;
 
+use ReflectionClass;
+use ReflectionException;
 use Yii;
 use yii\base\Model;
 use yii\rest\UrlRule as RestUrlRule;
@@ -17,27 +13,25 @@ use yii\web\GroupUrlRule;
 use yii\web\UrlManager;
 use yii\web\UrlRule as WebUrlRule;
 
+use function get_class;
+
 /**
  * RouterRules model
- *
- * @author Paweł Brzozowski <pawel@positive.codes>
- *
- * @since 2.1.14
  */
 class RouterRules extends Model
 {
     /**
-     * @var bool whether pretty URL option has been enabled in UrlManager
+     * @var bool whether a pretty URL option has been enabled in UrlManager
      */
-    public $prettyUrl = false;
+    public bool $prettyUrl = false;
     /**
-     * @var bool whether strict parsing option has been enabled in UrlManager
+     * @var bool whether a strict parsing option has been enabled in UrlManager
      */
-    public $strictParsing = false;
+    public bool $strictParsing = false;
     /**
-     * @var string global suffix set in UrlManager
+     * @var string|null global suffix set in UrlManager
      */
-    public $suffix;
+    public string|null $suffix;
     /**
      * @var array logged rules.
      * ```php
@@ -53,12 +47,14 @@ class RouterRules extends Model
      * ]
      * ```
      */
-    public $rules = [];
+    public array $rules = [];
 
     /**
      * {@inheritdoc}
+     *
+     * @throws ReflectionException
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
 
@@ -81,9 +77,9 @@ class RouterRules extends Model
      * @param $rule
      * @param null $type
      *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
-    protected function scanRule($rule, $type = null)
+    protected function scanRule($rule, $type = null): void
     {
         $route = $verb = $suffix = $mode = null;
 
@@ -93,19 +89,12 @@ class RouterRules extends Model
             $this->scanRestRule($rule);
         } else {
             if ($rule instanceof WebUrlRule) {
-                switch ($rule->mode) {
-                    case WebUrlRule::PARSING_ONLY:
-                        $mode = 'parsing only';
-                        break;
-                    case WebUrlRule::CREATION_ONLY:
-                        $mode = 'creation only';
-                        break;
-                    case null:
-                    $mode = null;
-                    break;
-                    default:
-                        $mode = 'unknown';
-                }
+                $mode = match ($rule->mode) {
+                    WebUrlRule::PARSING_ONLY => 'parsing only',
+                    WebUrlRule::CREATION_ONLY => 'creation only',
+                    null => null,
+                    default => 'unknown',
+                };
 
                 $name = $rule->name;
                 $route = $rule->route;
@@ -131,9 +120,9 @@ class RouterRules extends Model
      *
      * @param GroupUrlRule $groupRule
      *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
-    protected function scanGroupRule($groupRule)
+    protected function scanGroupRule(GroupUrlRule $groupRule): void
     {
         foreach ($groupRule->rules as $rule) {
             $this->scanRule($rule, 'GROUP');
@@ -145,13 +134,12 @@ class RouterRules extends Model
      *
      * @param RestUrlRule $restRule
      *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
-    protected function scanRestRule($restRule)
+    protected function scanRestRule(RestUrlRule $restRule): void
     {
-        $reflectionClass = new \ReflectionClass($restRule);
+        $reflectionClass = new ReflectionClass($restRule);
         $reflectionProperty = $reflectionClass->getProperty('rules');
-        $reflectionProperty->setAccessible(true);
         $rulesGroups = $reflectionProperty->getValue($restRule);
 
         foreach ($rulesGroups as $rules) {

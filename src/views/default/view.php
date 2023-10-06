@@ -2,11 +2,13 @@
 
 declare (strict_types = 1);
 
+use yii\debug\Module;
 use yii\debug\Panel;
 use yii\debug\widgets\NavigationButton;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\web\View;
+use yii\widgets\Menu;
 
 /**
  * @var array $manifest
@@ -23,7 +25,7 @@ $this->title = 'Yii Debugger';
         <div class="yii-debug-toolbar__bar">
             <div class="yii-debug-toolbar__block yii-debug-toolbar__title">
                 <a href="<?= Url::to(['index']) ?>">
-                    <img width="29" height="30" alt="" src="<?= \yii\debug\Module::getYiiLogo() ?>">
+                    <img width="29" height="30" alt="" src="<?= Module::getYiiLogo() ?>">
                 </a>
             </div>
 
@@ -93,8 +95,8 @@ $this->title = 'Yii Debugger';
                         ) ?>
                     </div>
                     <div class="btn-group btn-group-sm" role="group">
-                        <?=Html::a('All', ['index'], ['class' => ['btn', 'btn-light']]);?>
-                        <?=Html::a('Latest', ['view', 'panel' => $activePanel->id], ['class' => ['btn', 'btn-light']]);?>
+                        <?=Html::a('All', ['index'], ['class' => ['btn', 'btn-light']]) ?>
+                        <?=Html::a('Latest', ['view', 'panel' => $activePanel->id], ['class' => ['btn', 'btn-light']]) ?>
                         <div class="btn-group btn-group-sm" role="group">
                             <?=Html::button('Last 10', [
                                 'type' => 'button',
@@ -104,13 +106,13 @@ $this->title = 'Yii Debugger';
                                 ],
                                 'aria-haspopup' => 'true',
                                 'aria-expanded' => 'false'
-                            ]);?>
-                            <?=\yii\widgets\Menu::widget([
+                            ]) ?>
+                            <?= Menu::widget([
                                 'encodeLabels' => false,
                                 'items' => $items,
                                 'options' => ['class' => 'dropdown-menu'],
                                 'itemOptions' => ['class' => 'dropdown-item']
-                            ]);?>
+                            ]) ?>
                         </div>
                     </div>
                     <?php
@@ -119,7 +121,7 @@ $this->title = 'Yii Debugger';
                     echo ' at ' . date('Y-m-d h:i:s a', (int) $summary['time']) . ' by ' . $summary['ip'];
                     ?>
                 </div>
-                <?= $activePanel->getDetail(); ?>
+                <?= $activePanel->getDetail() ?>
             </div>
         </div>
     </div>

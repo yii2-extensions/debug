@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Yii;
 use yii\data\ArrayDataProvider;
 use yii\debug\DbAsset;
 use yii\debug\models\search\Db;
@@ -43,7 +42,7 @@ echo GridView::widget([
         [
             'label' => 'Caller',
             'attribute' => 'trace',
-            'value' => function ($data) use ($panel) {
+            'value' => static function ($data) use ($panel) {
                 return Html::ul($data['trace'], [
                     'class' => 'trace',
                     'item' => function ($trace) use ($panel) {
@@ -59,7 +58,7 @@ echo GridView::widget([
         [
             'label' => 'No. of Calls',
             'attribute' => 'numCalls',
-            'value' => function ($data) use ($panel) {
+            'value' => static function ($data) use ($panel) {
                 $result = $data['numCalls'];
                 if ($panel->isNumberOfCallsExcessive($data['numCalls'])) {
                     $result .= ' ' . Html::tag('span', '&#x26a0;', [
@@ -78,7 +77,7 @@ echo GridView::widget([
         ],
         [
             'attribute' => 'totalDuration',
-            'value' => function ($data) {
+            'value' => static function ($data) {
                 return sprintf('%.1f ms', $data['totalDuration']);
             },
             'options' => [
@@ -90,7 +89,7 @@ echo GridView::widget([
         ],
         [
             'attribute' => 'queries',
-            'value' => function ($data) use ($hasExplain, $panel) {
+            'value' => static function ($data) use ($hasExplain, $panel) {
                 $queries =
                     '<table style="width: 100%;">
                         <thead>

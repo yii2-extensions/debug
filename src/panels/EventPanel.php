@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
@@ -14,27 +8,25 @@ use Yii;
 use yii\base\Event;
 use yii\debug\Panel;
 
+use function count;
+use function get_class;
+use function is_object;
+use function microtime;
+
 /**
  * Debugger panel that collects and displays information about triggered events.
- *
- * > Note: this panel requires Yii framework version >= 2.0.14 to function and will not
- *   appear at lower version.
- *
- * @author Paul Klimov <klimov.paul@gmail.com>
- *
- * @since 2.0.14
  */
 class EventPanel extends Panel
 {
     /**
      * @var array current request events
      */
-    private $_events = [];
+    private array $_events = [];
 
     /**
      * {@inheritdoc}
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
 
@@ -55,7 +47,7 @@ class EventPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Events';
     }
@@ -63,7 +55,7 @@ class EventPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/event/summary', [
             'panel' => $this,
@@ -74,7 +66,7 @@ class EventPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         $searchModel = new \yii\debug\models\search\Event();
         $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->data);
@@ -89,7 +81,7 @@ class EventPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         return $this->_events;
     }
@@ -97,13 +89,8 @@ class EventPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
-        $yiiVersion = Yii::getVersion();
-        if (!version_compare($yiiVersion, '2.0.14', '>=') && strpos($yiiVersion, '-dev') === false) {
-            return false;
-        }
-
         return parent::isEnabled();
     }
 }

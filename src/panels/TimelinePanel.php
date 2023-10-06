@@ -1,32 +1,23 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
+use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\models\timeline\Search;
 use yii\debug\models\timeline\Svg;
 use yii\debug\Panel;
 
+use function array_merge;
+use function krsort;
+use function memory_get_peak_usage;
+use function microtime;
+
 /**
  * Debugger panel that collects and displays timeline data.
- *
- * @property array $colors
- * @property float $duration
- * @property float $start
- * @property array $svgOptions
- *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
- * @since 2.0.7
  */
 class TimelinePanel extends Panel
 {
@@ -36,7 +27,7 @@ class TimelinePanel extends Panel
      * - keys: percentages of time request
      * - values: hex color
      */
-    private $_colors = [
+    private array $_colors = [
         20 => '#1e6823',
         10 => '#44a340',
         1 => '#8cc665',
@@ -44,51 +35,52 @@ class TimelinePanel extends Panel
     /**
      * @var array log messages extracted to array as models, to use with data provider.
      */
-    private $_models;
+    private array $_models;
     /**
      * @var float Start request, timestamp (obtained by microtime(true))
      */
-    private $_start;
+    private float $_start;
     /**
      * @var float End request, timestamp (obtained by microtime(true))
      */
-    private $_end;
+    private float $_end;
     /**
      * @var float Request duration, milliseconds
      */
-    private $_duration;
+    private float $_duration;
     /**
      * @var Svg|null
      */
-    private $_svg;
+    private Svg|null $_svg;
     /**
      * @var array
      */
-    private $_svgOptions = [
-        'class' => 'yii\debug\models\timeline\Svg',
+    private array $_svgOptions = [
+        'class' => Svg::class,
     ];
     /**
      * @var int Used memory in request
      */
-    private $_memory;
+    private int $_memory;
 
     /**
      * {@inheritdoc}
      *
      * @throws InvalidConfigException
      */
-    public function init()
+    public function init(): void
     {
         if (!isset($this->module->panels['profiling'])) {
             throw new InvalidConfigException('Unable to determine the profiling panel');
         }
+
         parent::init();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Timeline';
     }
@@ -96,7 +88,7 @@ class TimelinePanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         $searchModel = new Search();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this);
@@ -111,16 +103,18 @@ class TimelinePanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function load($data)
+    public function load(mixed $data): void
     {
-        if (!isset($data['start']) || empty($data['start'])) {
-            throw new \RuntimeException('Unable to determine request start time');
+        if (empty($data['start'])) {
+            throw new RuntimeException('Unable to determine request start time');
         }
+
         $this->_start = $data['start'] * 1000;
 
-        if (!isset($data['end']) || empty($data['end'])) {
-            throw new \RuntimeException('Unable to determine request end time');
+        if (empty($data['end'])) {
+            throw new RuntimeException('Unable to determine request end time');
         }
+
         $this->_end = $data['end'] * 1000;
 
         if (isset($this->module->panels['profiling']->data['time'])) {
@@ -130,19 +124,20 @@ class TimelinePanel extends Panel
         }
 
         if ($this->_duration <= 0) {
-            throw new \RuntimeException('Duration cannot be zero');
+            throw new RuntimeException('Duration cannot be zero');
         }
 
-        if (!isset($data['memory']) || empty($data['memory'])) {
-            throw new \RuntimeException('Unable to determine used memory in request');
+        if (empty($data['memory'])) {
+            throw new RuntimeException('Unable to determine used memory in request');
         }
+
         $this->_memory = $data['memory'];
     }
 
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         return [
             'start' => YII_BEGIN_TIME,
@@ -157,7 +152,7 @@ class TimelinePanel extends Panel
      *
      * @param array $colors
      */
-    public function setColors($colors)
+    public function setColors(array $colors): void
     {
         krsort($colors);
         $this->_colors = $colors;
@@ -169,15 +164,12 @@ class TimelinePanel extends Panel
      *
      * @return array
      */
-    public function getColors()
+    public function getColors(): array
     {
         return $this->_colors;
     }
 
-    /**
-     * @param array $options
-     */
-    public function setSvgOptions($options)
+    public function setSvgOptions(array $options): void
     {
         if ($this->_svg !== null) {
             $this->_svg = null;
@@ -185,10 +177,7 @@ class TimelinePanel extends Panel
         $this->_svgOptions = array_merge($this->_svgOptions, $options);
     }
 
-    /**
-     * @return array
-     */
-    public function getSvgOptions()
+    public function getSvgOptions(): array
     {
         return $this->_svgOptions;
     }
@@ -198,7 +187,7 @@ class TimelinePanel extends Panel
      *
      * @return float
      */
-    public function getStart()
+    public function getStart(): float
     {
         return $this->_start;
     }
@@ -208,35 +197,28 @@ class TimelinePanel extends Panel
      *
      * @return float
      */
-    public function getDuration()
+    public function getDuration(): float
     {
         return $this->_duration;
     }
 
     /**
-     * Memory peak in request, bytes. (obtained by memory_get_peak_usage())
-     *
-     * @return int
-     *
-     * @since 2.0.8
+     * Memory peak in request, bytes. (Obtained by memory_get_peak_usage())
      */
-    public function getMemory()
+    public function getMemory(): int
     {
         return $this->_memory;
     }
 
     /**
      * @throws InvalidConfigException
-     *
-     * @return Svg
-     *
-     * @since 2.0.8
      */
-    public function getSvg()
+    public function getSvg(): Svg
     {
         if ($this->_svg === null) {
             $this->_svg = Yii::createObject($this->_svgOptions, [$this]);
         }
+
         return $this->_svg;
     }
 
@@ -244,18 +226,20 @@ class TimelinePanel extends Panel
      * Returns an array of models that represents logs of the current request.
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
-     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @param bool $refresh if you need to build models from log messages and refresh them.
      *
      * @return array models
      */
-    protected function getModels($refresh = false)
+    protected function getModels(bool $refresh = false): array
     {
-        if ($this->_models === null || $refresh) {
+        if ($refresh) {
             $this->_models = [];
+
             if (isset($this->module->panels['profiling']->data['messages'])) {
                 $this->_models = Yii::getLogger()->calculateTimings($this->module->panels['profiling']->data['messages']);
             }
         }
+
         return $this->_models;
     }
 }

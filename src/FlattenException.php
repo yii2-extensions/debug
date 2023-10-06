@@ -1,67 +1,75 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug;
 
+use __PHP_Incomplete_Class;
+use ArrayObject;
+use Exception;
+
+use function array_pop;
+use function explode;
+use function get_class;
+use function get_resource_type;
+use function implode;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_object;
+use function is_resource;
+
 /**
  * FlattenException wraps a PHP Exception to be able to serialize it.
- * Implements the Throwable interface
+ * Implements the Throwable interface.
  * Basically, this class removes all objects from the trace.
- * Ported from Symfony components @link https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Debug/Exception/FlattenException.php
+ * Ported from Symfony components
  *
- * @author Dmitry Bashkarev <dmitry@bashkarev.com>
- *
- * @since 2.0.10
+ * @link https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Debug/Exception/FlattenException.php
  */
 class FlattenException
 {
     /**
      * @var string
      */
-    protected $message;
+    protected string $message;
     /**
      * @var int|mixed
      */
-    protected $code;
+    protected mixed $code;
     /**
      * @var string
      */
-    protected $file;
+    protected string $file;
     /**
      * @var int
      */
-    protected $line;
+    protected int $line;
 
     /**
      * @var FlattenException|null
      */
-    private $_previous;
+    private ?FlattenException $_previous;
     /**
      * @var array
      */
-    private $_trace;
+    private array $_trace;
     /**
      * @var string
      */
-    private $_toString;
+    private string $_toString;
     /**
      * @var string
      */
-    private $_class;
+    private string $_class;
 
     /**
      * FlattenException constructor.
      *
-     * @param \Exception $exception
+     * @param Exception $exception
      */
-    public function __construct(\Exception $exception)
+    public function __construct(Exception $exception)
     {
         $this->setMessage($exception->getMessage());
         $this->setCode($exception->getCode());
@@ -72,7 +80,7 @@ class FlattenException
         $this->setClass(get_class($exception));
 
         $previous = $exception->getPrevious();
-        if ($previous instanceof \Exception) {
+        if ($previous instanceof Exception) {
             $this->setPrevious(new self($previous));
         }
     }
@@ -82,7 +90,7 @@ class FlattenException
      *
      * @return string the Exception message as a string.
      */
-    public function getMessage()
+    public function getMessage(): string
     {
         return $this->message;
     }
@@ -92,7 +100,7 @@ class FlattenException
      *
      * @return int|mixed the exception code as integer.
      */
-    public function getCode()
+    public function getCode(): mixed
     {
         return $this->code;
     }
@@ -102,7 +110,7 @@ class FlattenException
      *
      * @return string the filename in which the exception was created.
      */
-    public function getFile()
+    public function getFile(): string
     {
         return $this->file;
     }
@@ -112,7 +120,7 @@ class FlattenException
      *
      * @return int the line number where the exception was created.
      */
-    public function getLine()
+    public function getLine(): int
     {
         return $this->line;
     }
@@ -122,7 +130,7 @@ class FlattenException
      *
      * @return array the Exception stack trace as an array.
      */
-    public function getTrace()
+    public function getTrace(): array
     {
         return $this->_trace;
     }
@@ -132,7 +140,7 @@ class FlattenException
      *
      * @return FlattenException the previous `FlattenException` if available or null otherwise.
      */
-    public function getPrevious()
+    public function getPrevious(): ?FlattenException
     {
         return $this->_previous;
     }
@@ -142,10 +150,11 @@ class FlattenException
      *
      * @return string the Exception stack trace as a string.
      */
-    public function getTraceAsString()
+    public function getTraceAsString(): string
     {
         $remove = "Stack trace:\n";
         $len = strpos($this->_toString, $remove);
+
         if ($len === false) {
             return '';
         }
@@ -165,7 +174,7 @@ class FlattenException
     /**
      * @return string the name of the class in which the exception was created.
      */
-    public function getClass()
+    public function getClass(): string
     {
         return $this->_class;
     }
@@ -173,7 +182,7 @@ class FlattenException
     /**
      * @param string $message the Exception message as a string.
      */
-    protected function setMessage($message)
+    protected function setMessage(string $message): void
     {
         $this->message = $message;
     }
@@ -181,7 +190,7 @@ class FlattenException
     /**
      * @param int|mixed $code the exception code as integer.
      */
-    protected function setCode($code)
+    protected function setCode(mixed $code): void
     {
         $this->code = $code;
     }
@@ -189,7 +198,7 @@ class FlattenException
     /**
      * @param string $file the filename in which the exception was created.
      */
-    protected function setFile($file)
+    protected function setFile(string $file): void
     {
         $this->file = $file;
     }
@@ -197,7 +206,7 @@ class FlattenException
     /**
      * @param int $line the line number where the exception was created.
      */
-    protected function setLine($line)
+    protected function setLine(int $line): void
     {
         $this->line = $line;
     }
@@ -205,9 +214,10 @@ class FlattenException
     /**
      * @param array $trace the Exception stack trace as an array.
      */
-    protected function setTrace($trace)
+    protected function setTrace(array $trace): void
     {
         $this->_trace = [];
+
         foreach ($trace as $entry) {
             $class = '';
             $namespace = '';
@@ -233,7 +243,7 @@ class FlattenException
     /**
      * @param string $string the string representation of the thrown object.
      */
-    protected function setToString($string)
+    protected function setToString(string $string): void
     {
         $this->_toString = $string;
     }
@@ -241,7 +251,7 @@ class FlattenException
     /**
      * @param FlattenException $previous previous Exception.
      */
-    protected function setPrevious(self $previous)
+    protected function setPrevious(self $previous): void
     {
         $this->_previous = $previous;
     }
@@ -249,7 +259,7 @@ class FlattenException
     /**
      * @param string $class the name of the class in which the exception was created.
      */
-    protected function setClass($class)
+    protected function setClass(string $class): void
     {
         $this->_class = $class;
     }
@@ -263,14 +273,15 @@ class FlattenException
      *
      * @return array arguments tracing.
      */
-    private function flattenArgs($args, $level = 0, &$count = 0)
+    private function flattenArgs(array $args, int $level = 0, int &$count = 0): array
     {
         $result = [];
         foreach ($args as $key => $value) {
             if (++$count > 10000) {
                 return ['array', '*SKIPPED over 10000 entries*'];
             }
-            if ($value instanceof \__PHP_Incomplete_Class) {
+
+            if ($value instanceof __PHP_Incomplete_Class) {
                 // is_object() returns false on PHP<=7.1
                 $result[$key] = ['incomplete-object', $this->getClassNameFromIncomplete($value)];
             } elseif (is_object($value)) {
@@ -300,13 +311,13 @@ class FlattenException
     }
 
     /**
-     * @param \__PHP_Incomplete_Class $value
+     * @param __PHP_Incomplete_Class $value
      *
      * @return string the real class name of an incomplete class
      */
-    private function getClassNameFromIncomplete(\__PHP_Incomplete_Class $value)
+    private function getClassNameFromIncomplete(__PHP_Incomplete_Class $value): string
     {
-        $array = new \ArrayObject($value);
+        $array = new ArrayObject($value);
 
         return $array['__PHP_Incomplete_Class_Name'];
     }

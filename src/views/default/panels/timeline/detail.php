@@ -2,7 +2,6 @@
 
 declare (strict_types = 1);
 
-use Yii;
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\models\timeline\Search;
 use yii\debug\panels\TimelinePanel;
@@ -21,7 +20,7 @@ use yii\widgets\Pjax;
  */
 TimelineAsset::register($this);
 ?>
-<h1 class="debug-timeline-panel__title">Timeline - <?= number_format($panel->getDuration()); ?> ms</h1>
+<h1 class="debug-timeline-panel__title">Timeline - <?= number_format($panel->getDuration()) ?> ms</h1>
 
 <?php $form = ActiveForm::begin([
     'method' => 'get',
@@ -42,10 +41,10 @@ TimelineAsset::register($this);
     'min' => 0,
     'size' => '3',
     'class' => 'form-control form-control-sm'
-])->hint('ms', ['tag' => 'span']);?>
+])->hint('ms', ['tag' => 'span']) ?>
 <?=$form->field($searchModel, 'category', [
     'options' => ['class' => ['form-group', 'duration']]
-])->textInput(['class' => 'form-control form-control-sm']);?>
+])->textInput(['class' => 'form-control form-control-sm']) ?>
 
 <div class="form-group">
     <?=Html::submitButton('Filter', ['class' => ['btn', 'btn-success']])?>
@@ -78,7 +77,7 @@ TimelineAsset::register($this);
         <div class="debug-timeline-panel__memory"
              style="height: <?= StringHelper::normalizeNumber($panel->svg->y) ?>px;">
             <div class="scale" style="bottom: 100%;"><?= sprintf('%.2f MB', $panel->memory / 1048576) ?></div>
-            <?= $panel->svg; ?>
+            <?= $panel->svg ?>
         </div>
     <?php endif; ?>
     <div class="debug-timeline-panel__items">
@@ -118,10 +117,10 @@ TimelineAsset::register($this);
                         'class' => $dataProvider->getCssClass($model),
                         'style' => 'background-color: ' . $model['css']['color'] . ';margin-left:' . StringHelper::normalizeNumber($model['css']['left'] . '%;width:' . $model['css']['width']) . '%',
                         'data-memory' => $dataProvider->getMemory($model)
-                    ]); ?>
+                    ]) ?>
                     <?php if ($model['child']): ?>
                         <span class="ruler ruler-end"
-                              style="height: <?= StringHelper::normalizeNumber($model['child'] * 21) ?>px; margin-left: <?= StringHelper::normalizeNumber($model['css']['left'] + $model['css']['width']) . '%'; ?>"></span>
+                              style="height: <?= StringHelper::normalizeNumber($model['child'] * 21) ?>px; margin-left: <?= StringHelper::normalizeNumber($model['css']['left'] + $model['css']['width']) . '%' ?>"></span>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>

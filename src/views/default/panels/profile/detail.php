@@ -50,7 +50,7 @@ echo GridView::widget([
         [
             'attribute' => 'seq',
             'label' => 'Time',
-            'value' => function ($data) {
+            'value' => static function ($data) {
                 $timeInSeconds = $data['timestamp'] / 1000;
                 $millisecondsDiff = (int)(($timeInSeconds - (int)$timeInSeconds) * 1000);
 
@@ -62,7 +62,7 @@ echo GridView::widget([
         ],
         [
             'attribute' => 'duration',
-            'value' => function ($data) {
+            'value' => static function ($data) {
                 return sprintf('%.1f ms', $data['duration']);
             },
             'options' => [
@@ -75,7 +75,7 @@ echo GridView::widget([
         'category',
         [
             'attribute' => 'info',
-            'value' => function ($data) {
+            'value' => static function ($data) {
                 return str_repeat('<span class="indent">→</span>', $data['level']) . Html::encode($data['info']);
             },
             'format' => 'html',

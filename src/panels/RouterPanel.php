@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
@@ -18,32 +12,26 @@ use yii\debug\models\router\RouterRules;
 use yii\debug\Panel;
 use yii\log\Logger;
 
+use function array_merge;
+use function get_class;
+use function is_array;
+
 /**
- * RouterPanel provides a panel which displays information about routing process.
- *
- * @property array $categories Note that the type of this property differs in getter and setter. See
- * [[getCategories()]] and [[setCategories()]] for details.
- *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
- * @since 2.0.8
+ * RouterPanel provides a panel which displays information about a routing process.
  */
 class RouterPanel extends Panel
 {
     /**
      * @var array
      */
-    private $_categories = [
+    private array $_categories = [
         'yii\web\UrlManager::parseRequest',
         'yii\web\UrlRule::parseRequest',
         'yii\web\CompositeUrlRule::parseRequest',
         'yii\rest\UrlRule::parseRequest',
     ];
 
-    /**
-     * @param array|string $values
-     */
-    public function setCategories($values)
+    public function setCategories(array|string $values): void
     {
         if (!is_array($values)) {
             $values = [$values];
@@ -52,11 +40,9 @@ class RouterPanel extends Panel
     }
 
     /**
-     * Listens categories of the messages.
-     *
-     * @return array
+     * Listens to categories of the messages.
      */
-    public function getCategories()
+    public function getCategories(): array
     {
         return $this->_categories;
     }
@@ -64,7 +50,7 @@ class RouterPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Router';
     }
@@ -72,7 +58,7 @@ class RouterPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/router/summary', ['panel' => $this]);
     }
@@ -80,7 +66,7 @@ class RouterPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         return Yii::$app->view->render('panels/router/detail', [
             'currentRoute' => new CurrentRoute($this->data),
@@ -92,7 +78,7 @@ class RouterPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         if (Yii::$app->requestedAction) {
             if (Yii::$app->requestedAction instanceof InlineAction) {

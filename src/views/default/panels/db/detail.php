@@ -2,11 +2,9 @@
 
 declare (strict_types = 1);
 
-use Yii;
 use yii\data\ArrayDataProvider;
 use yii\debug\models\search\Db;
 use yii\debug\panels\DbPanel;
-use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\web\View;
 

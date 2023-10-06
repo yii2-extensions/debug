@@ -44,7 +44,7 @@ echo GridView::widget([
         [
             'attribute' => 'seq',
             'label' => 'Time',
-            'value' => function ($data) {
+            'value' => static function ($data) {
                 $timeInSeconds = $data['timestamp'] / 1000;
                 $millisecondsDiff = (int)(($timeInSeconds - (int)$timeInSeconds) * 1000);
 
@@ -56,7 +56,7 @@ echo GridView::widget([
         ],
         [
             'attribute' => 'duration',
-            'value' => function ($data) {
+            'value' => static function ($data) {
                 return sprintf('%.1f ms', $data['duration']);
             },
             'options' => [
@@ -68,7 +68,7 @@ echo GridView::widget([
         ],
         [
             'attribute' => 'type',
-            'value' => function ($data) {
+            'value' => static function ($data) {
                 return Html::encode($data['type']);
             },
             'filter' => $panel->getTypes(),
@@ -85,7 +85,7 @@ echo GridView::widget([
         ],
         [
             'attribute' => 'query',
-            'value' => function ($data) use ($hasExplain, $panel) {
+            'value' => static function ($data) use ($hasExplain, $panel) {
                 $query = Html::tag('div', Html::encode($data['query']));
 
                 if (!empty($data['trace'])) {

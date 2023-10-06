@@ -1,40 +1,34 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\models\search;
 
+use yii\base\InvalidConfigException;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use yii\db\ActiveRecord;
 
+use function array_keys;
+
 /**
  * Search model for implementation of IdentityInterface
- *
- * @author Semen Dubina <yii2debug@sam002.net>
- *
- * @since 2.0.10
  */
 class User extends Model
 {
     /**
-     * @var Model implementation of IdentityInterface
+     * @var Model|null implementation of IdentityInterface
      */
-    public $identityImplement = null;
+    public Model|null $identityImplement = null;
 
     /**
      * {@inheritdoc}
      */
-    public function init()
+    public function init(): void
     {
         if (\Yii::$app->user && \Yii::$app->user->identityClass) {
             $identityImplementation = new \Yii::$app->user->identityClass();
+
             if ($identityImplementation instanceof Model) {
                 $this->identityImplement = $identityImplementation;
             }
@@ -61,7 +55,7 @@ class User extends Model
     /**
      * {@inheritdoc}
      */
-    public function rules()
+    public function rules(): array
     {
         return [[array_keys($this->identityImplement->getAttributes()), 'safe']];
     }
@@ -69,7 +63,7 @@ class User extends Model
     /**
      * {@inheritdoc}
      */
-    public function attributes()
+    public function attributes(): array
     {
         return $this->identityImplement->attributes();
     }
@@ -77,9 +71,9 @@ class User extends Model
     /**
      * {@inheritdoc}
      *
-     * @throws \yii\base\InvalidConfigException
+     * @throws InvalidConfigException
      */
-    public function search($params)
+    public function search($params): ActiveDataProvider|null
     {
         if ($this->identityImplement instanceof ActiveRecord) {
             return $this->searchActiveDataProvider($params);
@@ -93,11 +87,11 @@ class User extends Model
      *
      * @param array $params the data array to load model.
      *
-     * @throws \yii\base\InvalidConfigException
-     *
      * @return ActiveDataProvider
+     *
+     * @throws InvalidConfigException
      */
-    private function searchActiveDataProvider($params)
+    private function searchActiveDataProvider(array $params): ActiveDataProvider
     {
         /** @var ActiveRecord $model */
         $model = $this->identityImplement;

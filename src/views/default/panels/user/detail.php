@@ -22,7 +22,7 @@ if (isset($panel->data['identity'])) {
     $items = [
         'nav' => [$encodedName],
         'content' => [
-            "<h2>{$encodedName} Info</h2>" . DetailView::widget([
+            "<h2>$encodedName Info</h2>" . DetailView::widget([
                 'model' => $panel->data['identity'],
                 'attributes' => $panel->data['attributes']
             ])
@@ -34,7 +34,7 @@ if (isset($panel->data['identity'])) {
     }
 
     if ($panel->canSwitchUser()) {
-        $items['nav'][] = "Switch {$encodedName}";
+        $items['nav'][] = "Switch $encodedName";
         $items['content'][] = $this->render('switch', ['panel' => $panel]);
     }
 

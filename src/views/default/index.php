@@ -2,10 +2,12 @@
 
 declare (strict_types = 1);
 
-use Yii;
+use yii\grid\SerialColumn;
 use yii\data\ArrayDataProvider;
 use yii\debug\models\search\Debug;
+use yii\debug\Module;
 use yii\debug\Panel;
+use yii\debug\panels\DbPanel;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\Url;
@@ -25,7 +27,7 @@ $this->title = 'Yii Debugger';
         <div class="yii-debug-toolbar__bar">
             <div class="yii-debug-toolbar__block yii-debug-toolbar__title">
                 <a href="#">
-                    <img width="30" height="30" alt="" src="<?= \yii\debug\Module::getYiiLogo() ?>">
+                    <img width="30" height="30" alt="" src="<?= Module::getYiiLogo() ?>">
                 </a>
             </div>
             <?php foreach ($panels as $panel): ?>
@@ -53,7 +55,7 @@ $this->title = 'Yii Debugger';
             echo GridView::widget([
                 'dataProvider' => $dataProvider,
                 'filterModel' => $searchModel,
-                'rowOptions' => function ($model) use ($searchModel) {
+                'rowOptions' => static function ($model) use ($searchModel) {
                     if ($searchModel->isCodeCritical($model['statusCode'])) {
                         return ['class' => 'table-danger'];
                     }
@@ -75,17 +77,17 @@ $this->title = 'Yii Debugger';
                     ]
                 ],
                 'columns' => array_filter([
-                    ['class' => 'yii\grid\SerialColumn'],
+                    ['class' => SerialColumn::class],
                     [
                         'attribute' => 'tag',
-                        'value' => function ($data) {
+                        'value' => static function ($data) {
                             return Html::a($data['tag'], ['view', 'tag' => $data['tag']]);
                         },
                         'format' => 'html',
                     ],
                     [
                         'attribute' => 'time',
-                        'value' => function ($data) {
+                        'value' => static function ($data) {
                             return '<span class="nowrap">' . Yii::$app->formatter->asDatetime($data['time'],
                                     'yyyy-MM-dd HH:mm:ss') . '</span>';
                         },
@@ -93,7 +95,7 @@ $this->title = 'Yii Debugger';
                     ],
                     [
                         'attribute' => 'processingTime',
-                        'value' => function ($data) {
+                        'value' => static function ($data) {
                             return isset($data['processingTime']) ? number_format($data['processingTime'] * 1000) .
                                 ' ms' : '<span class="not-set">(not set)</span>';
                         },
@@ -101,7 +103,7 @@ $this->title = 'Yii Debugger';
                     ],
                     [
                         'attribute' => 'peakMemory',
-                        'value' => function ($data) {
+                        'value' => static function ($data) {
                             return isset($data['peakMemory']) ? sprintf('%.3f MB', $data['peakMemory'] /
                                 1048576) : '<span class="not-set">(not set)</span>';
                         },
@@ -112,7 +114,7 @@ $this->title = 'Yii Debugger';
                         'attribute' => 'sqlCount',
                         'label' => 'Query Count',
                         'value' => function ($data) {
-                            /* @var $dbPanel \yii\debug\panels\DbPanel */
+                            /* @var DbPanel $dbPanel  */
                             $dbPanel = $this->context->module->panels['db'];
 
                             $title = "Executed {$data['sqlCount']} database queries.";
@@ -153,7 +155,7 @@ $this->title = 'Yii Debugger';
                     ],
                     [
                         'attribute' => 'ajax',
-                        'value' => function ($data) {
+                        'value' => static function ($data) {
                             return $data['ajax'] ? 'Yes' : 'No';
                         },
                         'filter' => ['No', 'Yes'],
@@ -164,7 +166,7 @@ $this->title = 'Yii Debugger';
                     ],
                     [
                         'attribute' => 'statusCode',
-                        'value' => function ($data) {
+                        'value' => static function ($data) {
                             $statusCode = $data['statusCode'];
                             $method = $data['method'];
                             if ($statusCode === null) {
@@ -177,7 +179,7 @@ $this->title = 'Yii Debugger';
                             } else {
                                 $class = 'badge-danger';
                             }
-                            return "<span class=\"badge {$class}\">$statusCode</span>";
+                            return "<span class=\"badge $class\">$statusCode</span>";
                         },
                         'format' => 'raw',
                         'filter' => $statusCodes,

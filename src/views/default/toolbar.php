@@ -2,6 +2,7 @@
 
 declare (strict_types = 1);
 
+use yii\debug\Module;
 use yii\debug\Panel;
 use yii\helpers\Html;
 use yii\helpers\Url;
@@ -22,7 +23,7 @@ $url = $firstPanel->getUrl();
     <div class="yii-debug-toolbar__bar">
         <div class="yii-debug-toolbar__block yii-debug-toolbar__title">
             <a href="<?= Url::to(['index']) ?>">
-                <img width="30" height="30" alt="Yii" src="<?= \yii\debug\Module::getYiiLogo() ?>">
+                <img width="30" height="30" alt="Yii" src="<?= Module::getYiiLogo() ?>">
             </a>
         </div>
 
@@ -48,7 +49,7 @@ $url = $firstPanel->getUrl();
             <?php if ($panel->hasError()): ?>
                 <div class="yii-debug-toolbar__block">
                     <a href="<?= $panel->getUrl() ?>"
-                       title="<?= Html::encode($panel->getError()->getMessage()); ?>"><?= Html::encode($panel->getName()) ?>
+                       title="<?= Html::encode($panel->getError()->getMessage()) ?>"><?= Html::encode($panel->getName()) ?>
                         <span class="yii-debug-toolbar__label yii-debug-toolbar__label_error">error</span></a>
                 </div>
             <?php else: ?>
@@ -69,6 +70,6 @@ $url = $firstPanel->getUrl();
     </div>
 
     <div class="yii-debug-toolbar__view">
-        <iframe src="about:blank" frameborder="0" title="Yii2 debug bar"></iframe>
+        <iframe src="about:blank" title="Yii2 debug bar"></iframe>
     </div>
 </div>

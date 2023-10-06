@@ -1,9 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
+use yii\debug\panels\AssetPanel;
 use yii\helpers\Html;
 use yii\helpers\Inflector;
 
-/* @var $panel yii\debug\panels\AssetPanel */
+/**
+ * @var AssetPanel $panel
+ */
 ?>
 <h1>Asset Bundles</h1>
 
@@ -27,7 +32,7 @@ use yii\helpers\Inflector;
             <tbody>
             <tr>
                 <th>sourcePath</th>
-                <td><?= Html::encode($bundle['sourcePath'] !== null ? $bundle['sourcePath'] : $bundle['basePath']) ?></td>
+                <td><?= Html::encode($bundle['sourcePath'] ?? $bundle['basePath']) ?></td>
             </tr>
             <?php if ($bundle['basePath'] !== null): ?>
                 <tr>
@@ -47,7 +52,7 @@ use yii\helpers\Inflector;
                     <td class="ws-normal">
                         <?= Html::ul($bundle['css'], [
                             'class' => 'assets',
-                            'item' => function ($item) {
+                            'item' => static function ($item) {
                                 if (is_array($item)) {
                                     $item = reset($item);
                                 }
@@ -63,7 +68,7 @@ use yii\helpers\Inflector;
                     <td class="ws-normal">
                         <?= Html::ul($bundle['js'], [
                             'class' => 'assets',
-                            'item' => function ($item) {
+                            'item' => static function ($item) {
                                 if (is_array($item)) {
                                     $item = reset($item);
                                 }

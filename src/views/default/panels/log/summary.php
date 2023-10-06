@@ -2,7 +2,6 @@
 
 declare (strict_types = 1);
 
-use Yii;
 use yii\log\Logger;
 use yii\log\Target;
 use yii\debug\panels\LogPanel;

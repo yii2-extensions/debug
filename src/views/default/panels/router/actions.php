@@ -26,8 +26,8 @@ use yii\helpers\Html;
             <tbody>
                 <?php $i = 1; foreach ($actionRoutes->routes as $action => $route): ?>
                     <tr>
-                        <td><?= $i++; ?></td>
-                        <td><?= $action; ?></td>
+                        <td><?= $i++ ?></td>
+                        <td><?= $action ?></td>
                         <td><?= Html::encode($route['route']) ?></td>
                         <td><?= Html::encode($route['rule']) ?></td>
                         <td><?= Html::encode($route['count']) ?></td>

@@ -1,62 +1,50 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\panels;
 
 use Yii;
-use yii\helpers\Html;
-use yii\log\Logger;
 use yii\debug\models\search\Log;
 use yii\debug\Panel;
+use yii\helpers\Html;
 use yii\helpers\VarDumper;
+use yii\log\Logger;
+
+use function call_user_func;
+use function is_callable;
 
 /**
- * Dump panel that collects and displays debug messages (Logger::LEVEL_TRACE).
- *
- * @author Pistej <pistej2@gmail.com>
- * @author Simon Karlen <simi.albi@outlook.com>
- *
- * @since 2.1.0
+ * Dump a panel that collects and displays debug messages (Logger::LEVEL_TRACE).
  */
 class DumpPanel extends Panel
 {
     /**
-     * @var array the message categories to filter by. If empty array, it means
-     * all categories are allowed
+     * @var array the message categories to filter by. If empty array, it means all categories are allowed
      */
-    public $categories = ['application'];
+    public array $categories = ['application'];
     /**
      * @var bool whether the result should be syntax-highlighted
      */
-    public $highlight = true;
+    public bool $highlight = true;
     /**
      * @var int maximum depth that the dumper should go into the variable
      */
-    public $depth = 10;
+    public int $depth = 10;
     /**
-     * @var callable callback that replaces the built-in var dumper. The signature of
-     * this function should be: `function (mixed $data, DumpPanel $panel)`
-     *
-     * @since 2.1.3
+     * @var callable callback that replaces the built-in var dumper. The signature of this function should be:
+     * `function (mixed $data, DumpPanel $panel)`
      */
     public $varDumpCallback;
 
     /**
      * @var array log messages extracted to array as models, to use with data provider.
      */
-    private $_models;
+    private array $_models;
 
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Dump';
     }
@@ -64,7 +52,7 @@ class DumpPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/dump/summary', ['panel' => $this]);
     }
@@ -72,7 +60,7 @@ class DumpPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         $searchModel = new Log();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
@@ -87,7 +75,7 @@ class DumpPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         $except = [];
         if (isset($this->module->panels['router'])) {
@@ -136,9 +124,9 @@ class DumpPanel extends Panel
      *
      * @return array models
      */
-    protected function getModels($refresh = false)
+    protected function getModels(bool $refresh = false): array
     {
-        if ($this->_models === null || $refresh) {
+        if ($refresh) {
             $this->_models = [];
 
             foreach ($this->data as $message) {

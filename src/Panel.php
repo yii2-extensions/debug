@@ -1,15 +1,11 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug;
 
+use Closure;
+use Throwable;
 use yii\base\Component;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
@@ -17,17 +13,9 @@ use yii\helpers\VarDumper;
 use yii\helpers\StringHelper;
 
 /**
- * Panel is a base class for debugger panel classes. It defines how data should be collected,
- * what should be displayed at debug toolbar and on debugger details view.
- *
- * @property string $detail Content that is displayed in debugger detail view.
- * @property string $name Name of the panel.
- * @property string $summary Content that is displayed at debug toolbar.
- * @property string $url URL pointing to panel detail view.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- *
- * @since 2.0
+ * Panel is a base class for debugger panel classes.
+ * It defines how data should be collected, what should be displayed
+ * in the debug toolbar and on the debugger details view.
  */
 class Panel extends Component
 {
@@ -35,45 +23,43 @@ class Panel extends Component
      * @var string panel unique identifier.
      * It is set automatically by the container module.
      */
-    public $id;
+    public string $id;
     /**
      * @var string request data set identifier.
      */
-    public $tag;
+    public string $tag;
     /**
      * @var Module
      */
-    public $module;
+    public Module $module;
     /**
      * @var mixed data associated with panel
      */
-    public $data;
+    public mixed $data;
     /**
      * @var array array of actions to add to the debug modules default controller.
      * This array will be merged with all other panels actions property.
      * See [[\yii\base\Controller::actions()]] for the format.
      */
-    public $actions = [];
+    public array $actions = [];
 
     /**
      * @var FlattenException|null Error while saving the panel
-     *
-     * @since 2.0.10
      */
-    protected $error;
+    protected FlattenException|null $error;
 
     /**
      * @return string name of the panel
      */
-    public function getName()
+    public function getName(): string
     {
         return '';
     }
 
     /**
-     * @return string content that is displayed at debug toolbar
+     * @return string content that is displayed the debug toolbar
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return '';
     }
@@ -81,18 +67,18 @@ class Panel extends Component
     /**
      * @return string content that is displayed in debugger detail view
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         return '';
     }
 
     /**
-     * Saves data to be later used in debugger detail view.
-     * This method is called on every page where debugger is enabled.
+     * Saves data to be later used in the debugger detail view.
+     * This method is called on every page where the debugger is enabled.
      *
      * @return mixed data to be saved
      */
-    public function save()
+    public function save(): mixed
     {
         return null;
     }
@@ -102,7 +88,7 @@ class Panel extends Component
      *
      * @param mixed $data
      */
-    public function load($data)
+    public function load(mixed $data): void
     {
         $this->data = $data;
     }
@@ -112,7 +98,7 @@ class Panel extends Component
      *
      * @return string URL pointing to panel detail view
      */
-    public function getUrl($additionalParams = null)
+    public function getUrl(array $additionalParams = null): string
     {
         $route = [
             '/' . $this->module->getUniqueId() . '/default/view',
@@ -133,10 +119,8 @@ class Panel extends Component
      * @param array $options The array with trace
      *
      * @return string the trace line
-     *
-     * @since 2.0.7
      */
-    public function getTraceLine($options)
+    public function getTraceLine(array $options): string
     {
         if (!isset($options['text'])) {
             $options['text'] = "{$options['file']}:{$options['line']}";
@@ -157,26 +141,22 @@ class Panel extends Component
             }
         }
 
-        $rawLink = $traceLine instanceof \Closure ? $traceLine($options, $this) : $traceLine;
+        $rawLink = $traceLine instanceof Closure ? $traceLine($options, $this) : $traceLine;
         return strtr($rawLink, ['{file}' => $options['file'], '{line}' => $options['line'], '{text}' => $options['text']]);
     }
 
     /**
      * @param FlattenException $error
-     *
-     * @since 2.0.10
      */
-    public function setError(FlattenException $error)
+    public function setError(FlattenException $error): void
     {
         $this->error = $error;
     }
 
     /**
      * @return FlattenException|null
-     *
-     * @since 2.0.10
      */
-    public function getError()
+    public function getError(): ?FlattenException
     {
         return $this->error;
     }
@@ -186,7 +166,7 @@ class Panel extends Component
      *
      * @since 2.0.10
      */
-    public function hasError()
+    public function hasError(): bool
     {
         return $this->error !== null;
     }
@@ -195,10 +175,8 @@ class Panel extends Component
      * Checks whether this panel is enabled.
      *
      * @return bool whether this panel is enabled.
-     *
-     * @since 2.0.10
      */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return true;
     }
@@ -217,10 +195,15 @@ class Panel extends Component
      * @since 2.1.4
      * @see \yii\log\Target::filterMessages()
      */
-    protected function getLogMessages($levels = 0, $categories = [], $except = [], $stringify = false)
+    protected function getLogMessages(
+        int $levels = 0,
+        array $categories = [],
+        array $except = [],
+        bool $stringify = false
+    ): array
     {
         $target = $this->module->logTarget;
-        $messages = $target->filterMessages($target->messages, $levels, $categories, $except);
+        $messages = $target->filterMessages(...);
 
         if (!$stringify) {
             return $messages;
@@ -232,7 +215,7 @@ class Panel extends Component
             }
 
             // exceptions may not be serializable if in the call stack somewhere is a Closure
-            if ($message[0] instanceof \Throwable || $message[0] instanceof \Exception) {
+            if ($message[0] instanceof Throwable) {
                 $message[0] = (string) $message[0];
             } else {
                 $message[0] = VarDumper::export($message[0]);

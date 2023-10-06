@@ -1,44 +1,43 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug;
 
 use Yii;
+use yii\base\Exception;
 use yii\base\InvalidConfigException;
+use yii\console\Request;
+use yii\console\Response;
 use yii\debug\panels\DbPanel;
 use yii\helpers\FileHelper;
 use yii\log\Target;
 
+use function array_diff;
+use function array_keys;
+use function array_map;
+use function array_merge;
+use function array_reverse;
+
 /**
  * The debug LogTarget is used to store logs for later use in the debugger tool
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- *
- * @since 2.0
  */
 class LogTarget extends Target
 {
     /**
      * @var Module
      */
-    public $module;
+    public Module $module;
     /**
      * @var string
      */
-    public $tag;
+    public string $tag;
 
     /**
-     * @param \yii\debug\Module $module
+     * @param Module $module
      * @param array $config
      */
-    public function __construct($module, $config = [])
+    public function __construct($module, array $config = [])
     {
         parent::__construct($config);
         $this->module = $module;
@@ -49,15 +48,15 @@ class LogTarget extends Target
      * Exports log messages to a specific destination.
      * Child classes must implement this method.
      *
-     * @throws \yii\base\Exception
+     * @throws Exception
      */
-    public function export()
+    public function export(): void
     {
         $path = $this->module->dataPath;
         FileHelper::createDirectory($path, $this->module->dirMode);
 
         $summary = $this->collectSummary();
-        $dataFile = "$path/{$this->tag}.data";
+        $dataFile = "$path/$this->tag.data";
         $data = [];
         $exceptions = [];
         foreach ($this->module->panels as $id => $panel) {
@@ -89,7 +88,7 @@ class LogTarget extends Target
      *
      * @return array
      */
-    public function loadManifest()
+    public function loadManifest(): array
     {
         $indexFile = $this->module->dataPath . '/index.data';
 
@@ -114,11 +113,14 @@ class LogTarget extends Target
      *
      * @return array
      */
-    public function loadTagToPanels($tag)
+    public function loadTagToPanels($tag): array
     {
         $dataFile = $this->module->dataPath . "/$tag.data";
+
         $data = unserialize(file_get_contents($dataFile));
+
         $exceptions = $data['exceptions'];
+
         foreach ($this->module->panels as $id => $panel) {
             if (isset($data[$id])) {
                 $panel->tag = $tag;
@@ -140,9 +142,9 @@ class LogTarget extends Target
      * @param string $indexFile path to index file
      * @param array $summary summary log data
      *
-     * @throws \yii\base\InvalidConfigException
+     * @throws InvalidConfigException
      */
-    private function updateIndexFile($indexFile, $summary)
+    private function updateIndexFile(string $indexFile, array $summary): void
     {
         if (!@touch($indexFile) || ($fp = @fopen($indexFile, 'r+')) === false) {
             throw new InvalidConfigException("Unable to open debug data index file: $indexFile");
@@ -177,15 +179,15 @@ class LogTarget extends Target
     /**
      * Processes the given log messages.
      * This method will filter the given messages with [[levels]] and [[categories]].
-     * And if requested, it will also export the filtering result to specific medium (e.g. email).
+     * And if requested, it will also export the filtering result to a specific medium (e.g. email).
      *
      * @param array $messages log messages to be processed. See [[\yii\log\Logger::messages]] for the structure
      * of each message.
      * @param bool $final whether this method is called at the end of the current application
      *
-     * @throws \yii\base\Exception
+     * @throws Exception
      */
-    public function collect($messages, $final)
+    public function collect($messages, $final): void
     {
         $this->messages = array_merge($this->messages, $messages);
         if ($final) {
@@ -198,7 +200,7 @@ class LogTarget extends Target
      *
      * @param array $manifest
      */
-    protected function gc(&$manifest)
+    protected function gc(array &$manifest): void
     {
         if (count($manifest) > $this->module->historySize + 10) {
             $n = count($manifest) - $this->module->historySize;
@@ -220,17 +222,15 @@ class LogTarget extends Target
     }
 
     /**
-     * Remove staled data files i.e. files that are not in the current index file
-     * (may happen because of corrupted or rotated index file)
+     * Remove staled data files i.e., files that are not in the current index file (may happen because of corrupted or
+     * rotated index file)
      *
      * @param array $manifest
-     *
-     * @since 2.0.11
      */
-    protected function removeStaleDataFiles($manifest)
+    protected function removeStaleDataFiles(array $manifest): void
     {
         $storageTags = array_map(
-            function ($file) {
+            static function ($file) {
                 return pathinfo($file, PATHINFO_FILENAME);
             },
             FileHelper::findFiles($this->module->dataPath, ['except' => ['index.data']])
@@ -244,11 +244,11 @@ class LogTarget extends Target
     }
 
     /**
-     * Collects summary data of current request.
+     * Collects summary data of the current request.
      *
      * @return array
      */
-    protected function collectSummary()
+    protected function collectSummary(): array
     {
         if (Yii::$app === null) {
             return [];
@@ -258,12 +258,12 @@ class LogTarget extends Target
         $response = Yii::$app->getResponse();
         $summary = [
             'tag' => $this->tag,
-            'url' => $request instanceof \yii\console\Request ? 'php yii ' . implode(' ', $request->getParams()) : $request->getAbsoluteUrl(),
-            'ajax' => $request instanceof \yii\console\Request ? 0 : (int) $request->getIsAjax(),
-            'method' => $request instanceof \yii\console\Request ? 'COMMAND' : $request->getMethod(),
-            'ip' => $request instanceof \yii\console\Request ? exec('whoami') : $request->getUserIP(),
+            'url' => $request instanceof Request ? 'php yii ' . implode(' ', $request->getParams()) : $request->getAbsoluteUrl(),
+            'ajax' => $request instanceof Request ? 0 : (int) $request->getIsAjax(),
+            'method' => $request instanceof Request ? 'COMMAND' : $request->getMethod(),
+            'ip' => $request instanceof Request ? exec('whoami') : $request->getUserIP(),
             'time' => $_SERVER['REQUEST_TIME_FLOAT'],
-            'statusCode' => $response instanceof \yii\console\Response ? $response->exitStatus : $response->statusCode,
+            'statusCode' => $response instanceof Response ? $response->exitStatus : $response->statusCode,
             'sqlCount' => $this->getSqlTotalCount(),
             'excessiveCallersCount' => $this->getExcessiveDbCallersCount(),
         ];
@@ -281,9 +281,9 @@ class LogTarget extends Target
      * Returns total sql count executed in current request. If database panel is not configured
      * returns 0.
      *
-     * @return int
+     * @return float|int
      */
-    protected function getSqlTotalCount()
+    protected function getSqlTotalCount(): float|int
     {
         if (!isset($this->module->panels['db'])) {
             return 0;
@@ -302,7 +302,7 @@ class LogTarget extends Target
      *
      * @since 2.1.23
      */
-    protected function getExcessiveDbCallersCount()
+    protected function getExcessiveDbCallersCount(): int
     {
         if (!isset($this->module->panels['db'])) {
             return 0;

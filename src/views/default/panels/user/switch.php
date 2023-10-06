@@ -6,6 +6,7 @@ use yii\debug\panels\UserPanel;
 use yii\debug\UserswitchAsset;
 use yii\grid\GridView;
 use yii\helpers\Html;
+use yii\helpers\Url;
 use yii\web\View;
 use yii\widgets\ActiveForm;
 
@@ -19,7 +20,7 @@ UserswitchAsset::register($this);
     <div class="row">
         <div class="col-sm-7">
             <?php $formSet = ActiveForm::begin([
-                'action' => \yii\helpers\Url::to(['user/set-identity']),
+                'action' => Url::to(['user/set-identity']),
                 'options' => [
                     'id' => 'debug-userswitch__set-identity',
                     'style' => $panel->canSearchUsers() ? 'display:none' : ''
@@ -39,7 +40,7 @@ UserswitchAsset::register($this);
             <?php
             if (!$panel->userSwitch->isMainUser()) {
                 $formReset = ActiveForm::begin([
-                    'action' => \yii\helpers\Url::to(['user/reset-identity']),
+                    'action' => Url::to(['user/reset-identity']),
                     'options' => [
                         'id' => 'debug-userswitch__reset-identity',
                     ]

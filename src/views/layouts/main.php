@@ -2,7 +2,6 @@
 
 declare (strict_types = 1);
 
-use Yii;
 use yii\debug\DebugAsset;
 use yii\helpers\Html;
 use yii\web\View;

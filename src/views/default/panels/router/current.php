@@ -2,7 +2,6 @@
 
 declare (strict_types = 1);
 
-use Yii;
 use yii\debug\models\router\CurrentRoute;
 use yii\helpers\Html;
 
@@ -18,7 +17,7 @@ use yii\helpers\Html;
             'hasMatch' => (int) $currentRoute->hasMatch,
         ],
         'en_US'
-    ); ?>
+    ) ?>
 </h3>
 
 <?php if ($currentRoute->message !== null): ?>
@@ -39,7 +38,7 @@ use yii\helpers\Html;
             <tbody>
             <?php foreach ($currentRoute->logs as $i => $log): ?>
                 <tr<?= $log['match'] ? ' class="table-success"' : '' ?>>
-                    <td><?= $i + 1; ?></td>
+                    <td><?= $i + 1 ?></td>
                     <td><?= Html::encode($log['rule']) ?></td>
                     <td><?= Html::encode($log['parent']) ?></td>
                 </tr>

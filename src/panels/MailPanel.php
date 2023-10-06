@@ -1,55 +1,53 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
+use Symfony\Component\Mime\Part\TextPart;
 use Yii;
 use yii\base\Event;
 use yii\debug\models\search\Mail;
 use yii\debug\Panel;
 use yii\helpers\FileHelper;
 use yii\mail\BaseMailer;
+use yii\mail\MailEvent;
 use yii\mail\MessageInterface;
+
+use function array_keys;
+use function count;
+use function file_put_contents;
+use function implode;
+use function is_array;
 
 /**
  * Debugger panel that collects and displays the generated emails.
  *
  * @property array $messagesFileName
- *
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
  */
 class MailPanel extends Panel
 {
     /**
      * @var string path where all emails will be saved. should be an alias.
      */
-    public $mailPath = '@runtime/debug/mail';
+    public string $mailPath = '@runtime/debug/mail';
 
     /**
      * @var array current request sent messages
      */
-    private $_messages = [];
+    private array $_messages = [];
 
     /**
      * {@inheritdoc}
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
 
-        Event::on('yii\mail\BaseMailer', BaseMailer::EVENT_AFTER_SEND, function ($event) {
-            /* @var $event \yii\mail\MailEvent */
+        Event::on(BaseMailer::class, BaseMailer::EVENT_AFTER_SEND, function ($event) {
+            /* @var MailEvent $event */
             $message = $event->message;
-            /* @var $message MessageInterface */
+            /* @var MessageInterface $message */
             $messageData = [
                 'isSuccessful' => $event->isSuccessful,
                 'from' => $this->convertParams($message->getFrom()),
@@ -77,7 +75,7 @@ class MailPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Mail';
     }
@@ -85,7 +83,7 @@ class MailPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/mail/summary', [
             'panel' => $this,
@@ -96,7 +94,7 @@ class MailPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         $searchModel = new Mail();
         $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->data);
@@ -114,7 +112,7 @@ class MailPanel extends Panel
      *
      * @return array messages
      */
-    public function save()
+    public function save(): array
     {
         return $this->_messages;
     }
@@ -124,7 +122,7 @@ class MailPanel extends Panel
      *
      * @return array
      */
-    public function getMessagesFileName()
+    public function getMessagesFileName(): array
     {
         $names = [];
         foreach ($this->_messages as $message) {
@@ -139,7 +137,7 @@ class MailPanel extends Panel
      *
      * @return string
      */
-    private function convertParams($attr)
+    private function convertParams(mixed $attr): string
     {
         if (is_array($attr)) {
             $attr = implode(', ', array_keys($attr));
@@ -152,24 +150,19 @@ class MailPanel extends Panel
      * @param MessageInterface $message
      * @param array $messageData
      */
-    private function addMoreInformation(MessageInterface $message, array &$messageData)
+    private function addMoreInformation(MessageInterface $message, array &$messageData): void
     {
-        // add more information when message is a SwiftMailer message
-        if ($message instanceof \yii\symfonymailer\Message) {
-            $this->addMoreInformationFromSymfonyMailer($message, $messageData);
-        }
+        $this->addMoreInformationFromSymfonyMailer($message, $messageData);
     }
 
-    private function addMoreInformationFromSymfonyMailer(MessageInterface $message, array &$messageData)
+    private function addMoreInformationFromSymfonyMailer(MessageInterface $message, array &$messageData): void
     {
-        /** @var \Symfony\Component\Mime\Email $symfonyMessage */
         $symfonyMessage = $message->getSymfonyEmail();
-
-        /** @var \Symfony\Component\Mime\Part\AbstractPart $part */
         $part = $symfonyMessage->getBody();
+
         $body = null;
 
-        if ($part instanceof \Symfony\Component\Mime\Part\TextPart && 'plain' === $part->getMediaSubtype()) {
+        if ($part instanceof TextPart && 'plain' === $part->getMediaSubtype()) {
             $messageData['charset'] = $part->asDebugString();
             $body = $part->getBody();
         }

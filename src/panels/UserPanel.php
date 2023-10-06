@@ -1,40 +1,39 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
+use Exception;
 use Yii;
 use yii\base\Controller;
 use yii\base\InvalidConfigException;
 use yii\base\Model;
 use yii\data\ArrayDataProvider;
 use yii\data\DataProviderInterface;
+use yii\db\ActiveRecord;
 use yii\debug\controllers\UserController;
 use yii\debug\models\search\UserSearchInterface;
 use yii\debug\models\UserSwitch;
 use yii\debug\Panel;
+use yii\filters\AccessControl;
 use yii\filters\AccessRule;
 use yii\helpers\ArrayHelper;
 use yii\helpers\VarDumper;
+use yii\rbac\ManagerInterface;
 use yii\web\IdentityInterface;
 use yii\web\User;
 
+use function class_exists;
+use function class_implements;
+use function get_object_vars;
+use function in_array;
+use function is_string;
+use function is_subclass_of;
+
+
 /**
  * Debugger panel that collects and displays user data.
- *
- * @property DataProviderInterface $userDataProvider
- * @property Model|UserSearchInterface $usersFilterModel
- *
- * @author Daniel Gomez Pan <pana_1990@hotmail.com>
- *
- * @since 2.0.8
  */
 class UserPanel extends Panel
 {
@@ -42,53 +41,41 @@ class UserPanel extends Panel
      * @var array the rule which defines who allowed to switch user identity.
      * Access Control Filter single rule. Ignore: actions, controllers, verbs.
      * Settable: allow, roles, ips, matchCallback, denyCallback.
-     * By default deny for everyone. Recommendation: can allow for administrator
-     * or developer (if implement) role: ['allow' => true, 'roles' => ['admin']]
-     *
-     * @see http://www.yiiframework.com/doc-2.0/guide-security-authorization.html
-     * @since 2.0.10
+     * By default, deny for everyone. Recommendation: can allow for administrator or developer (if implement)
+     * role: ['allow' => true, 'roles' => ['admin']]
      */
-    public $ruleUserSwitch = [
+    public array $ruleUserSwitch = [
         'allow' => false,
     ];
     /**
      * @var UserSwitch object of switching users
-     *
-     * @since 2.0.10
      */
-    public $userSwitch;
+    public UserSwitch $userSwitch;
     /**
-     * @var Model|UserSearchInterface Implements of User model with search method.
-     *
-     * @since 2.0.10
+     * @var Model|UserSearchInterface Implements of a User model with search method.
      */
-    public $filterModel;
+    public Model|UserSearchInterface $filterModel;
     /**
      * @var array allowed columns for GridView.
      *
      * @see http://www.yiiframework.com/doc-2.0/yii-grid-gridview.html#$columns-detail
-     * @since 2.0.10
      */
-    public $filterColumns = [];
+    public array $filterColumns = [];
     /**
      * @var string|User ID of the user component or a user object
-     *
-     * @since 2.0.13
      */
-    public $userComponent = 'user';
+    public string|User $userComponent = 'user';
     /**
      * @var string Display Name of the debug panel.
-     *
-     * @since 2.1.4
      */
-    public $displayName = 'User';
+    public string $displayName = 'User';
 
     /**
      * {@inheritdoc}
      *
      * @throws InvalidConfigException
      */
-    public function init()
+    public function init(): void
     {
         if (!$this->isEnabled() || $this->getUser()->isGuest) {
             return;
@@ -97,13 +84,14 @@ class UserPanel extends Panel
         $this->userSwitch = new UserSwitch(['userComponent' => $this->userComponent]);
         $this->addAccessRules();
 
-        if (is_string($this->filterModel)
-            && class_exists($this->filterModel)
-            && in_array('yii\debug\models\search\UserSearchInterface', class_implements($this->filterModel), true)
+        if (
+            is_string($this->filterModel) &&
+            class_exists($this->filterModel) &&
+            in_array(UserSearchInterface::class, class_implements($this->filterModel), true)
         ) {
             $this->filterModel = new $this->filterModel();
         } elseif ($this->getUser() && $this->getUser()->identityClass) {
-            if (is_subclass_of($this->getUser()->identityClass, 'yii\db\ActiveRecord')) {
+            if (is_subclass_of($this->getUser()->identityClass, ActiveRecord::class)) {
                 $this->filterModel = new \yii\debug\models\search\User();
             }
         }
@@ -111,31 +99,25 @@ class UserPanel extends Panel
 
     /**
      * @throws InvalidConfigException
-     *
-     * @return User|null
-     *
-     * @since 2.0.13
      */
-    public function getUser()
+    public function getUser(): User|string|null
     {
-        /* @var $user User */
+        /* @var User $user */
         return is_string($this->userComponent) ? Yii::$app->get($this->userComponent, false) : $this->userComponent;
     }
 
     /**
      * Add ACF rule. AccessControl attach to debug module.
      * Access rule for main user.
-     *
-     * @throws InvalidConfigException
      */
-    private function addAccessRules()
+    private function addAccessRules(): void
     {
         $this->ruleUserSwitch['controllers'] = [$this->module->getUniqueId() . '/user'];
 
         $this->module->attachBehavior(
             'access_debug',
             [
-                'class' => 'yii\filters\AccessControl',
+                'class' => AccessControl::class,
                 'only' => [$this->module->getUniqueId() . '/user', $this->module->getUniqueId() . '/default'],
                 'user' => $this->userSwitch->getMainUser(),
                 'rules' => [
@@ -150,7 +132,7 @@ class UserPanel extends Panel
      *
      * @return Model|UserSearchInterface
      */
-    public function getUsersFilterModel()
+    public function getUsersFilterModel(): UserSearchInterface|Model
     {
         return $this->filterModel;
     }
@@ -160,7 +142,7 @@ class UserPanel extends Panel
      *
      * @return DataProviderInterface
      */
-    public function getUserDataProvider()
+    public function getUserDataProvider(): DataProviderInterface
     {
         return $this->getUsersFilterModel()->search(Yii::$app->request->queryParams);
     }
@@ -170,7 +152,7 @@ class UserPanel extends Panel
      *
      * @return bool
      */
-    public function canSearchUsers()
+    public function canSearchUsers(): bool
     {
         return isset($this->filterModel) &&
             $this->filterModel instanceof Model &&
@@ -179,13 +161,13 @@ class UserPanel extends Panel
     }
 
     /**
-     * Check can main user switch identity.
+     * Check can the main user switch identity.
      *
      * @throws InvalidConfigException
      *
      * @return bool
      */
-    public function canSwitchUser()
+    public function canSwitchUser(): bool
     {
         if ($this->getUser()->isGuest) {
             return false;
@@ -198,6 +180,7 @@ class UserPanel extends Panel
         /** @var Controller $userController */
         $userController = null;
         $controller = $this->module->createController('user');
+
         if (isset($controller[0]) && $controller[0] instanceof UserController) {
             $userController = $controller[0];
         }
@@ -217,7 +200,7 @@ class UserPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->displayName;
     }
@@ -225,7 +208,7 @@ class UserPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/user/summary', ['panel' => $this]);
     }
@@ -233,7 +216,7 @@ class UserPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         return Yii::$app->view->render('panels/user/detail', ['panel' => $this]);
     }
@@ -241,7 +224,7 @@ class UserPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         $identity = Yii::$app->{$this->userComponent}->identity;
 
@@ -255,7 +238,7 @@ class UserPanel extends Panel
         try {
             $authManager = Yii::$app->getAuthManager();
 
-            if ($authManager instanceof \yii\rbac\ManagerInterface) {
+            if ($authManager instanceof ManagerInterface) {
                 $roles = ArrayHelper::toArray($authManager->getRolesByUser($this->getUser()->id));
                 foreach ($roles as &$role) {
                     $role['data'] = $this->dataToString($role['data']);
@@ -275,11 +258,12 @@ class UserPanel extends Panel
                     'allModels' => $permissions,
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // ignore auth manager misconfiguration
         }
 
         $identityData = $this->identityData($identity);
+
         foreach ($identityData as $key => $value) {
             $identityData[$key] = VarDumper::dumpAsString($value);
         }
@@ -311,7 +295,7 @@ class UserPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         try {
             $this->getUser();
@@ -328,7 +312,7 @@ class UserPanel extends Panel
      *
      * @return string
      */
-    protected function dataToString($data)
+    protected function dataToString(mixed $data): string
     {
         if (is_string($data)) {
             return $data;
@@ -344,7 +328,7 @@ class UserPanel extends Panel
      *
      * @return array
      */
-    protected function identityData($identity)
+    protected function identityData(IdentityInterface $identity): array
     {
         if ($identity instanceof Model) {
             return $identity->getAttributes();

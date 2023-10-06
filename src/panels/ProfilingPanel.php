@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
@@ -15,24 +9,25 @@ use yii\debug\models\search\Profile;
 use yii\debug\Panel;
 use yii\log\Logger;
 
+use function memory_get_peak_usage;
+use function microtime;
+use function number_format;
+use function sprintf;
+
 /**
  * Debugger panel that collects and displays performance profiling info.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- *
- * @since 2.0
  */
 class ProfilingPanel extends Panel
 {
     /**
      * @var array current request profile timings
      */
-    private $_models;
+    private array $_models;
 
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Profiling';
     }
@@ -40,7 +35,7 @@ class ProfilingPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/profile/summary', [
             'memory' => sprintf('%.3f MB', $this->data['memory'] / 1048576),
@@ -52,7 +47,7 @@ class ProfilingPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         $searchModel = new Profile();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
@@ -69,7 +64,7 @@ class ProfilingPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         $messages = $this->getLogMessages(Logger::LEVEL_PROFILE);
         return [
@@ -84,24 +79,8 @@ class ProfilingPanel extends Panel
      *
      * @return array models
      */
-    protected function getModels()
+    protected function getModels(): array
     {
-        if ($this->_models === null) {
-            $this->_models = [];
-            $timings = Yii::getLogger()->calculateTimings($this->data['messages'] ?? []);
-
-            foreach ($timings as $seq => $profileTiming) {
-                $this->_models[] = [
-                    'duration' => $profileTiming['duration'] * 1000, // in milliseconds
-                    'category' => $profileTiming['category'],
-                    'info' => $profileTiming['info'],
-                    'level' => $profileTiming['level'],
-                    'timestamp' => $profileTiming['timestamp'] * 1000, //in milliseconds
-                    'seq' => $seq,
-                ];
-            }
-        }
-
         return $this->_models;
     }
 }

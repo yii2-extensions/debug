@@ -2,7 +2,6 @@
 
 declare (strict_types = 1);
 
-use Yii;
 use yii\helpers\Html;
 use yii\helpers\VarDumper;
 
@@ -32,8 +31,12 @@ use yii\helpers\VarDumper;
             <?php foreach ($values as $name => $value): ?>
                 <tr>
                     <th><?= Html::encode($name) ?></th>
-                    <td><?= htmlspecialchars(VarDumper::dumpAsString($value), ENT_QUOTES | ENT_SUBSTITUTE,
-                            Yii::$app->charset, true) ?></td>
+                    <td><?= htmlspecialchars(
+                        VarDumper::dumpAsString($value),
+                        ENT_QUOTES | ENT_SUBSTITUTE,
+                        Yii::$app->charset, true
+                        ) ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

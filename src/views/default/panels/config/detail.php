@@ -14,7 +14,7 @@ $extensions = $panel->getExtensions();
 <h1>Configuration</h1>
 
 <?php
-$formatLanguage = function ($locale) {
+$formatLanguage = static function ($locale) {
     if (class_exists('Locale', false)) {
         $region = Locale::getDisplayLanguage($locale, 'en');
         $language = Locale::getDisplayRegion($locale, 'en');

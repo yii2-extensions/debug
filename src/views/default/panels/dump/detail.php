@@ -27,7 +27,7 @@ echo GridView::widget([
         'category',
         [
             'attribute' => 'message',
-            'value' => function ($data) use ($panel) {
+            'value' => static function ($data) use ($panel) {
                 $message = $data['message'];
 
                 if (!empty($data['trace'])) {

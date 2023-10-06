@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\models\timeline;
 
@@ -17,26 +11,22 @@ use yii\debug\panels\TimelinePanel;
 
 /**
  * Search model for timeline data.
- *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
- * @since 2.0.8
  */
 class Search extends Base
 {
     /**
      * @var string attribute search
      */
-    public $category;
+    public string $category;
     /**
      * @var int attribute search
      */
-    public $duration = 0;
+    public int $duration = 0;
 
     /**
      * {@inheritdoc}
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             [['category', 'duration'], 'safe'],
@@ -46,7 +36,7 @@ class Search extends Base
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'duration' => 'Duration ≥',
@@ -61,9 +51,10 @@ class Search extends Base
      *
      * @return DataProvider
      */
-    public function search($params, $panel)
+    public function search(array $params, TimelinePanel $panel): DataProvider
     {
-        $models = $panel->models;
+        $models = $panel->getModels();
+
         $dataProvider = new DataProvider($panel, [
             'allModels' => $models,
             'sort' => [
@@ -76,10 +67,13 @@ class Search extends Base
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'category', true);
+
         if ($this->duration > 0) {
             $filter->addMatcher('duration', new GreaterThanOrEqual(['value' => $this->duration / 1000]));
         }
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\widgets;
 
@@ -14,33 +8,36 @@ use yii\base\Widget;
 use yii\debug\Panel;
 use yii\helpers\Html;
 
+use function array_keys;
+use function array_search;
+use function end;
+use function reset;
+
 /**
- * Render button for navigation to previous or next request in debug panel
- *
- * @since 2.0.11
+ * Render button for navigation to previous or next request in a debug panel
  */
 class NavigationButton extends Widget
 {
     /** @var array */
-    public $manifest;
+    public array $manifest;
     /** @var string */
-    public $tag;
+    public string $tag;
     /** @var string */
-    public $button;
+    public string $button;
     /** @var Panel */
-    public $panel;
+    public Panel $panel;
 
     /** @var string */
-    private $firstTag;
+    private string $firstTag;
     /** @var string */
-    private $lastTag;
+    private string $lastTag;
     /** @var int */
-    private $currentTagIndex;
+    private int $currentTagIndex;
 
     /**
      * @inheritDoc
      */
-    public function beforeRun()
+    public function beforeRun(): bool
     {
         $manifestKeys = array_keys($this->manifest);
         $this->firstTag = reset($manifestKeys);
@@ -63,7 +60,7 @@ class NavigationButton extends Widget
     /**
      * @return string
      */
-    private function renderPrevButton()
+    private function renderPrevButton(): string
     {
         $needLink = $this->tag !== $this->firstTag;
 
@@ -77,7 +74,7 @@ class NavigationButton extends Widget
     /**
      * @return string
      */
-    private function renderNextButton()
+    private function renderNextButton(): string
     {
         $needLink = $this->tag !== $this->lastTag;
 
@@ -93,7 +90,7 @@ class NavigationButton extends Widget
      *
      * @return array
      */
-    private function getRoute($inc)
+    private function getRoute(int $inc): array
     {
         return [
             'view',

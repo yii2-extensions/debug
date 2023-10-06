@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\models\search;
 
@@ -15,27 +9,22 @@ use yii\debug\components\search\Filter;
 
 /**
  * Search model for current request profiling log.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
  */
 class Profile extends Base
 {
     /**
      * @var string method attribute input search value
      */
-    public $category;
+    public string $category;
     /**
      * @var int info attribute input search value
      */
-    public $info;
+    public int $info;
 
     /**
      * {@inheritdoc}
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             [['category', 'info'], 'safe'],
@@ -45,7 +34,7 @@ class Profile extends Base
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'category' => 'Category',
@@ -59,9 +48,9 @@ class Profile extends Base
      * @param array $params an array of parameter values indexed by parameter names
      * @param array $models data to return provider for
      *
-     * @return \yii\data\ArrayDataProvider
+     * @return ArrayDataProvider
      */
-    public function search($params, $models)
+    public function search(array $params, array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
@@ -79,8 +68,10 @@ class Profile extends Base
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'category', true);
         $this->addCondition($filter, 'info', true);
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
@@ -17,22 +11,18 @@ use yii\log\Logger;
 
 /**
  * Debugger panel that collects and displays logs.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- *
- * @since 2.0
  */
 class LogPanel extends Panel
 {
     /**
      * @var array log messages extracted to array as models, to use with data provider.
      */
-    private $_models;
+    private array $_models;
 
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Logs';
     }
@@ -40,7 +30,7 @@ class LogPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/log/summary', ['data' => $this->data, 'panel' => $this]);
     }
@@ -48,7 +38,7 @@ class LogPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         $searchModel = new Log();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
@@ -63,7 +53,7 @@ class LogPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         $except = [];
         if (isset($this->module->panels['router'])) {
@@ -79,13 +69,13 @@ class LogPanel extends Panel
      * Returns an array of models that represents logs of the current request.
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
-     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @param bool $refresh if you need to build models from log messages and refresh them.
      *
      * @return array models
      */
-    protected function getModels($refresh = false)
+    protected function getModels(bool $refresh = false): array
     {
-        if ($this->_models === null || $refresh) {
+        if ($refresh) {
             $this->_models = [];
 
             $previousId = null;

@@ -1,41 +1,28 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\models\timeline;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\panels\TimelinePanel;
 
+use function round;
+use function sprintf;
+
 /**
  * DataProvider implements a data provider based on a data array.
  *
  * @property array $rulers
- *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
- * @since 2.0.8
  */
 class DataProvider extends ArrayDataProvider
 {
     /**
      * @var TimelinePanel
      */
-    protected $panel;
+    protected TimelinePanel $panel;
 
-    /**
-     * DataProvider constructor.
-     *
-     * @param TimelinePanel $panel
-     * @param array $config
-     */
-    public function __construct(TimelinePanel $panel, $config = [])
+    public function __construct(TimelinePanel $panel, array $config = [])
     {
         $this->panel = $panel;
         parent::__construct($config);
@@ -44,12 +31,14 @@ class DataProvider extends ArrayDataProvider
     /**
      * {@inheritdoc}
      */
-    protected function prepareModels()
+    protected function prepareModels(): array
     {
         if (($models = $this->allModels) === null) {
             return [];
         }
+
         $child = [];
+
         foreach ($models as $key => &$model) {
             $model['timestamp'] *= 1000;
             $model['duration'] *= 1000;
@@ -66,6 +55,7 @@ class DataProvider extends ArrayDataProvider
             }
             $child[$key] = $model['timestamp'] + $model['duration'];
         }
+
         return $models;
     }
 
@@ -76,14 +66,16 @@ class DataProvider extends ArrayDataProvider
      *
      * @return string
      */
-    public function getColor($model)
+    public function getColor(array $model): string
     {
         $width = $model['css']['width'] ?? $this->getWidth($model);
+
         foreach ($this->panel->colors as $percent => $color) {
             if ($width >= $percent) {
                 return $color;
             }
         }
+
         return '#d6e685';
     }
 
@@ -92,9 +84,9 @@ class DataProvider extends ArrayDataProvider
      *
      * @param array $model
      *
-     * @return float
+     * @return float|int
      */
-    public function getLeft($model)
+    public function getLeft(array $model): float|int
     {
         return $this->getTime($model) / ($this->panel->duration / 100);
     }
@@ -106,7 +98,7 @@ class DataProvider extends ArrayDataProvider
      *
      * @return float
      */
-    public function getTime($model)
+    public function getTime(array $model): float
     {
         return $model['timestamp'] - $this->panel->start;
     }
@@ -116,9 +108,9 @@ class DataProvider extends ArrayDataProvider
      *
      * @param array $model
      *
-     * @return float
+     * @return float|int
      */
-    public function getWidth($model)
+    public function getWidth(array $model): float|int
     {
         return $model['duration'] / ($this->panel->duration / 100);
     }
@@ -130,10 +122,12 @@ class DataProvider extends ArrayDataProvider
      *
      * @return string
      */
-    public function getCssClass($model)
+    public function getCssClass(array $model): string
     {
         $class = 'time';
-        $class .= (($model['css']['left'] > 15) && ($model['css']['left'] + $model['css']['width'] > 50)) ? ' right' : ' left';
+        $class .= (($model['css']['left'] > 15) && ($model['css']['left'] + $model['css']['width'] > 50))
+            ? ' right' : ' left';
+
         return $class;
     }
 
@@ -144,19 +138,22 @@ class DataProvider extends ArrayDataProvider
      *
      * @return array
      */
-    public function getRulers($line = 10)
+    public function getRulers(int $line = 10): array
     {
-        if ($line == 0) {
+        if ($line === 0) {
             return [];
         }
+
         $data = [0];
         $percent = ($this->panel->duration / 100);
         $row = $this->panel->duration / $line;
         $precision = $row > 100 ? -2 : -1;
+
         for ($i = 1; $i < $line; $i++) {
             $ms = round($i * $row, $precision);
             $data[$ms] = $ms / $percent;
         }
+
         return $data;
     }
 
@@ -171,7 +168,7 @@ class DataProvider extends ArrayDataProvider
      *
      * @return array|null
      */
-    public function getMemory($model)
+    public function getMemory(array $model): array|null
     {
         if (empty($model['memory'])) {
             return null;
@@ -179,7 +176,7 @@ class DataProvider extends ArrayDataProvider
 
         return [
             sprintf('%.2f MB', $model['memory'] / 1048576),
-            $model['memory'] / ($this->panel->memory / 100),
+            $model['memory'] / ($this->panel->getMemory() / 100),
         ];
     }
 }

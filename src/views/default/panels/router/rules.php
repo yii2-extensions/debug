@@ -28,14 +28,14 @@ use yii\helpers\Html;
             <tbody>
                 <?php foreach ($routerRules->rules as $i => $rule): ?>
                     <tr>
-                        <td><?= $i + 1; ?></td>
-                        <td><?= Html::encode($rule['name']); ?></td>
-                        <td><?= Html::encode($rule['route']); ?></td>
-                        <td><?= is_array($rule['verb']) ? implode(', ', array_map(function ($element) {
+                        <td><?= $i + 1 ?></td>
+                        <td><?= Html::encode($rule['name']) ?></td>
+                        <td><?= Html::encode($rule['route']) ?></td>
+                        <td><?= is_array($rule['verb']) ? implode(', ', array_map(static function ($element) {
                                 return Html::encode($element);
                             }, $rule['verb'])) : null ?></td>
-                        <td><?= Html::encode($rule['suffix']); ?></td>
-                        <td><?= Html::encode($rule['mode']); ?></td>
+                        <td><?= Html::encode($rule['suffix']) ?></td>
+                        <td><?= Html::encode($rule['mode']) ?></td>
                         <td><?= $rule['type'] ?></td>
                     </tr>
                 <?php endforeach; ?>

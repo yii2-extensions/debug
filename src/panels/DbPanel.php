@@ -1,72 +1,67 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\data\ArrayDataProvider;
+use yii\db\Connection;
+use yii\debug\actions\db\ExplainAction;
 use yii\debug\models\search\Db;
 use yii\debug\Panel;
 use yii\helpers\ArrayHelper;
-use yii\log\Logger;
+
+use function array_count_values;
+use function array_filter;
+use function array_key_exists;
+use function array_reduce;
+use function count;
+use function ltrim;
+use function mb_strtoupper;
+use function number_format;
+use function preg_match;
 
 /**
  * Debugger panel that collects and displays database queries performed.
- *
- * @property array $excessiveCallers The number of DB calls indexed by the backtrace hash of excessive
- * caller(s).
- * @property array $profileLogs
- * @property string $summaryName Short name of the panel, which will be use in summary.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- *
- * @since 2.0
  */
 class DbPanel extends Panel
 {
     /**
-     * @var int|null the threshold for determining whether the request has involved
-     * critical number of DB queries. If the number of queries exceeds this number,
-     * the execution is considered taking critical number of DB queries.
+     * @var int|null the threshold for determining whether the request has involved a critical number of DB queries.
+     * If the number of queries exceeds this number, the execution is considered taking critical number of DB queries.
      * If it is `null`, this feature is disabled.
      */
-    public $criticalQueryThreshold;
+    public int|null $criticalQueryThreshold;
     /**
-     * @var int|null the number of DB calls the same backtrace can make before considered an "Excessive Caller".
+     * @var int|null the number of DB calls the same backtrace can make before considered an "Excessive Caller."
      * If it is `null`, this feature is disabled.
      * Note: Changes will only be reflected in new requests.
      *
      * @since 2.1.23
      */
-    public $excessiveCallerThreshold = null;
+    public int|null $excessiveCallerThreshold = null;
     /**
-     * @var string[] the files and/or paths defined here will be ignored in the determination of DB "Callers".
-     * The "Caller" is the backtrace lines that aren't included in the `$ignoredPathsInBacktrace`,
+     * @var string[] the files and/or paths defined here will be ignored in the determination of DB "Callers."
+     * The "Caller" is the backtrace lines that aren't included in the `$ignoredPathsInBacktrace`
      * Yii files are ignored by default.
      * Hint: You can use path aliases here.
      *
      * @since 2.1.23
      */
-    public $ignoredPathsInBacktrace = [];
+    public array $ignoredPathsInBacktrace = [];
     /**
      * @var string the name of the database component to use for executing (explain) queries
      */
-    public $db = 'db';
+    public string $db = 'db';
     /**
      * @var array the default ordering of the database queries. In the format of
      * [ property => sort direction ], for example: [ 'duration' => SORT_DESC ]
      *
      * @since 2.0.7
      */
-    public $defaultOrder = [
+    public array $defaultOrder = [
         'seq' => SORT_ASC,
     ];
     /**
@@ -75,35 +70,34 @@ class DbPanel extends Panel
      *
      * @since 2.0.7
      */
-    public $defaultFilter = [];
+    public array $defaultFilter = [];
     /**
      * @var array db queries info extracted to array as models, to use with data provider.
      */
-    private $_models;
+    private array $_models;
     /**
      * @var array current database request timings
      */
-    private $_timings;
+    private array $_timings;
     /**
      * @var array current database profile logs
      */
-    private $_profileLogs;
-
+    private array $_profileLogs;
 
     /**
      * @var array of event names used to get profile logs.
      *
      * @since 2.1.17
      */
-    public $dbEventNames = ['yii\db\Command::query', 'yii\db\Command::execute'];
+    public array $dbEventNames = ['yii\db\Command::query', 'yii\db\Command::execute'];
 
     /**
      * {@inheritdoc}
      */
-    public function init()
+    public function init(): void
     {
         $this->actions['db-explain'] = [
-            'class' => 'yii\\debug\\actions\\db\\ExplainAction',
+            'class' => ExplainAction::class,
             'panel' => $this,
         ];
     }
@@ -111,15 +105,15 @@ class DbPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Database';
     }
 
     /**
-     * @return string short name of the panel, which will be use in summary.
+     * @return string short name of the panel, which will be used in summary.
      */
-    public function getSummaryName()
+    public function getSummaryName(): string
     {
         return 'DB';
     }
@@ -127,7 +121,7 @@ class DbPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         $timings = $this->calculateTimings();
         $queryCount = count($timings);
@@ -148,7 +142,7 @@ class DbPanel extends Panel
      *
      * @throws InvalidConfigException
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         $searchModel = new Db();
 
@@ -177,42 +171,15 @@ class DbPanel extends Panel
      *
      * @return array timings [token, category, timestamp, traces, nesting level, elapsed time]
      */
-    public function calculateTimings()
+    public function calculateTimings(): array
     {
-        if ($this->_timings === null) {
-            $this->_timings = Yii::getLogger()->calculateTimings($this->data['messages'] ?? $this->getProfileLogs());
-
-            // Parse aliases
-            $ignoredPathsInBacktrace = array_map(
-                function($path) {
-                    return Yii::getAlias($path);
-                },
-                $this->ignoredPathsInBacktrace
-            );
-
-            // Generate hash for caller
-            $hashAlgo = in_array('xxh3', hash_algos()) ? 'xxh3' : 'crc32';
-            foreach ($this->_timings as &$timing) {
-                if ($ignoredPathsInBacktrace) {
-                    foreach ($timing['trace'] as $index => $trace) {
-                        foreach ($ignoredPathsInBacktrace as $ignoredPathInBacktrace) {
-                            if (isset($trace['file']) && strpos($trace['file'], $ignoredPathInBacktrace) === 0) {
-                                unset($timing['trace'][$index]);
-                            }
-                        }
-                    }
-                }
-                $timing['traceHash'] = hash($hashAlgo, json_encode($timing['trace']));
-            }
-        }
-
         return $this->_timings;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         return ['messages' => $this->getProfileLogs()];
     }
@@ -222,12 +189,8 @@ class DbPanel extends Panel
      *
      * @return array
      */
-    public function getProfileLogs()
+    public function getProfileLogs(): array
     {
-        if ($this->_profileLogs === null) {
-            $this->_profileLogs = $this->getLogMessages(Logger::LEVEL_PROFILE, $this->dbEventNames);
-        }
-
         return $this->_profileLogs;
     }
 
@@ -238,7 +201,7 @@ class DbPanel extends Panel
      *
      * @return int total time
      */
-    protected function getTotalQueryTime($timings)
+    protected function getTotalQueryTime(array $timings): int
     {
         $queryTime = 0;
 
@@ -250,38 +213,18 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns an  array of models that represents logs of the current request.
+     * Returns an array of models that represents logs of the current request.
      * Can be used with data providers such as \yii\data\ArrayDataProvider.
      *
      * @return array models
      */
-    protected function getModels()
+    protected function getModels(): array
     {
-        if ($this->_models === null) {
-            $this->_models = [];
-            $timings = $this->calculateTimings();
-            $duplicates = $this->countDuplicateQuery($timings);
-
-            foreach ($timings as $seq => $dbTiming) {
-                $this->_models[] = [
-                    'type' => $this->getQueryType($dbTiming['info']),
-                    'query' => $dbTiming['info'],
-                    'duration' => ($dbTiming['duration'] * 1000), // in milliseconds
-                    'trace' => $dbTiming['trace'],
-                    'traceHash' => $dbTiming['traceHash'],
-                    'timestamp' => ($dbTiming['timestamp'] * 1000), // in milliseconds
-                    'seq' => $seq,
-                    'duplicate' => $duplicates[$dbTiming['info']],
-                ];
-            }
-        }
-
         return $this->_models;
     }
 
     /**
-     * Return associative array, where key is query string
-     * and value is number of occurrences the same query in array.
+     * Return associative array, where key is query string and value is number of occurrences the same query in an array.
      *
      * @param $timings
      *
@@ -289,7 +232,7 @@ class DbPanel extends Panel
      *
      * @since 2.0.13
      */
-    public function countDuplicateQuery($timings)
+    public function countDuplicateQuery($timings): array
     {
         $query = ArrayHelper::getColumn($timings, 'info');
 
@@ -305,7 +248,7 @@ class DbPanel extends Panel
      *
      * @since 2.0.13
      */
-    public function sumDuplicateQueries($modelData)
+    public function sumDuplicateQueries($modelData): int
     {
         $numDuplicates = 0;
         foreach ($modelData as $data) {
@@ -324,7 +267,7 @@ class DbPanel extends Panel
      *
      * @since 2.1.23
      */
-    public function countCallerCals()
+    public function countCallerCals(): array
     {
         $query = ArrayHelper::getColumn($this->calculateTimings(), 'traceHash');
 
@@ -338,7 +281,7 @@ class DbPanel extends Panel
      *
      * @since 2.1.23
      */
-    public function getExcessiveCallers()
+    public function getExcessiveCallers(): array
     {
         if ($this->excessiveCallerThreshold === null) {
             return [];
@@ -359,7 +302,7 @@ class DbPanel extends Panel
      *
      * @since 2.1.23
      */
-    public function getExcessiveCallersCount()
+    public function getExcessiveCallersCount(): int
     {
         return count($this->getExcessiveCallers());
     }
@@ -373,7 +316,7 @@ class DbPanel extends Panel
      *
      * @since 2.1.23
      */
-    public function generateQueryCallersDataProvider($modelData)
+    public function generateQueryCallersDataProvider(array $modelData): ArrayDataProvider
     {
         $callers = [];
         foreach ($modelData as $data) {
@@ -385,7 +328,7 @@ class DbPanel extends Panel
                     'queries' => [],
                 ];
             }
-            $callers[$data['traceHash']]['numCalls'] += 1;
+            ++$callers[$data['traceHash']]['numCalls'];
             $callers[$data['traceHash']]['totalDuration'] += $data['duration'];
             $callers[$data['traceHash']]['queries'][] = [
                 'timestamp' => $data['timestamp'],
@@ -413,34 +356,34 @@ class DbPanel extends Panel
      *
      * @return string query type such as select, insert, delete, etc.
      */
-    protected function getQueryType($timing)
+    protected function getQueryType(string $timing): string
     {
         $timing = ltrim($timing);
-        preg_match('/^([a-zA-z]*)/', $timing, $matches);
+        preg_match('/^([A-z]*)/', $timing, $matches);
 
         return count($matches) ? mb_strtoupper($matches[0], 'utf8') : '';
     }
 
     /**
-     * Check if given queries count is critical according to the settings.
+     * Check if given queries count is critical, according to the settings.
      *
      * @param int $count queries count
      *
      * @return bool
      */
-    public function isQueryCountCritical($count)
+    public function isQueryCountCritical(int $count): bool
     {
         return ($this->criticalQueryThreshold !== null) && ($count > $this->criticalQueryThreshold);
     }
 
     /**
-     * Check if the number of calls by "Caller" is excessive according to the settings.
+     * Check if the number of calls by "Caller" is excessive, according to the settings.
      *
      * @param int $numCalls queries count
      *
      * @return bool
      */
-    public function isNumberOfCallsExcessive($numCalls)
+    public function isNumberOfCallsExcessive(int $numCalls): bool
     {
         return ($this->excessiveCallerThreshold !== null) && ($numCalls > $this->excessiveCallerThreshold);
     }
@@ -452,11 +395,11 @@ class DbPanel extends Panel
      *
      * @since 2.0.3
      */
-    public function getTypes()
+    public function getTypes(): array
     {
         return array_reduce(
             $this->_models,
-            function ($result, $item) {
+            static function ($result, $item) {
                 $result[$item['type']] = $item['type'];
                 return $result;
             },
@@ -467,7 +410,7 @@ class DbPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         try {
             $this->getDb();
@@ -485,25 +428,18 @@ class DbPanel extends Panel
      *
      * @since 2.0.5
      */
-    protected function hasExplain()
+    protected function hasExplain(): bool
     {
         $db = $this->getDb();
-        if (!($db instanceof \yii\db\Connection)) {
-            return false;
-        }
-        switch ($db->getDriverName()) {
-            case 'mysql':
-            case 'sqlite':
-            case 'pgsql':
-            case 'cubrid':
-                return true;
-            default:
-                return false;
-        }
+
+        return match ($db->getDriverName()) {
+            'mysql', 'sqlite', 'pgsql' => true,
+            default => false,
+        };
     }
 
     /**
-     * Check if given query type can be explained.
+     * Check if a given query type can be explained.
      *
      * @param string $type query type
      *
@@ -511,7 +447,7 @@ class DbPanel extends Panel
      *
      * @since 2.0.5
      */
-    public static function canBeExplained($type)
+    public static function canBeExplained(string $type): bool
     {
         return $type !== 'SHOW';
     }
@@ -521,11 +457,11 @@ class DbPanel extends Panel
      *
      * @throws InvalidConfigException
      *
-     * @return \yii\db\Connection
+     * @return Connection
      *
      * @since 2.0.5
      */
-    public function getDb()
+    public function getDb(): Connection
     {
         return Yii::$app->get($this->db);
     }

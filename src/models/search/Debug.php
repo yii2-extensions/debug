@@ -1,69 +1,60 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 
+use function in_array;
+
 /**
  * Search model for requests manifest data.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
  */
 class Debug extends Base
 {
     /**
      * @var string tag attribute input search value
      */
-    public $tag;
+    public string $tag;
     /**
      * @var string ip attribute input search value
      */
-    public $ip;
+    public string $ip;
     /**
      * @var string method attribute input search value
      */
-    public $method;
+    public string $method;
     /**
      * @var int ajax attribute input search value
      */
-    public $ajax;
+    public int $ajax;
     /**
      * @var string url attribute input search value
      */
-    public $url;
+    public string $url;
     /**
      * @var string status code attribute input search value
      */
-    public $statusCode;
+    public string $statusCode;
     /**
      * @var int sql count attribute input search value
      */
-    public $sqlCount;
+    public int $sqlCount;
     /**
      * @var int total mail count attribute input search value
      */
-    public $mailCount;
+    public int $mailCount;
     /**
      * @var array critical codes, used to determine grid row options.
      */
-    public $criticalCodes = [400, 404, 500];
+    public array $criticalCodes = [400, 404, 500];
 
     /**
      * {@inheritdoc}
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             [['tag', 'ip', 'method', 'ajax', 'url', 'statusCode', 'sqlCount', 'mailCount'], 'safe'],
@@ -73,7 +64,7 @@ class Debug extends Base
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'tag' => 'Tag',
@@ -95,9 +86,9 @@ class Debug extends Base
      * @param array $params an array of parameter values indexed by parameter names
      * @param array $models data to return provider for
      *
-     * @return \yii\data\ArrayDataProvider
+     * @return ArrayDataProvider
      */
-    public function search($params, $models)
+    public function search(array $params, array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
@@ -114,6 +105,7 @@ class Debug extends Base
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'tag', true);
         $this->addCondition($filter, 'ip', true);
         $this->addCondition($filter, 'method');
@@ -122,6 +114,7 @@ class Debug extends Base
         $this->addCondition($filter, 'statusCode');
         $this->addCondition($filter, 'sqlCount');
         $this->addCondition($filter, 'mailCount');
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;
@@ -134,7 +127,7 @@ class Debug extends Base
      *
      * @return bool
      */
-    public function isCodeCritical($code)
+    public function isCodeCritical(int $code): bool
     {
         return in_array($code, $this->criticalCodes, false);
     }

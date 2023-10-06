@@ -1,34 +1,28 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\panels;
 
 use Yii;
 use yii\debug\Panel;
 
+use function ksort;
+use function ob_get_clean;
+use function ob_start;
+use function phpinfo;
+use function preg_replace;
+use function str_replace;
+
 /**
  * Debugger panel that collects and displays application configuration and environment.
- *
- * @property array $extensions
- * @property array $phpInfo
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- *
- * @since 2.0
  */
 class ConfigPanel extends Panel
 {
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return 'Configuration';
     }
@@ -36,7 +30,7 @@ class ConfigPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/config/summary', ['panel' => $this]);
     }
@@ -44,7 +38,7 @@ class ConfigPanel extends Panel
     /**
      * {@inheritdoc}
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         return Yii::$app->view->render('panels/config/detail', ['panel' => $this]);
     }
@@ -54,12 +48,14 @@ class ConfigPanel extends Panel
      *
      * @return array
      */
-    public function getExtensions()
+    public function getExtensions(): array
     {
         $data = [];
+
         foreach ($this->data['extensions'] as $extension) {
             $data[$extension['name']] = $extension['version'];
         }
+
         ksort($data);
 
         return $data;
@@ -70,26 +66,33 @@ class ConfigPanel extends Panel
      *
      * @return array
      */
-    public function getPhpInfo()
+    public function getPhpInfo(): array
     {
         ob_start();
         phpinfo();
-        $pinfo = ob_get_contents();
-        ob_end_clean();
+
+        $pinfo = ob_get_clean();
         $phpinfo = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo);
-        $phpinfo = str_replace(
-            '<table',
-            '<div class="table-responsive"><table class="table table-condensed table-bordered table-striped table-hover config-php-info-table" ',
-            $phpinfo
+
+        return str_replace(
+            [
+                '<table',
+                '</table>',
+                '<div class="center">'
+            ],
+            [
+                '<div class="table-responsive"><table class="table table-condensed table-bordered table-striped table-hover config-php-info-table" ',
+                '</table></div>',
+                '<div class="phpinfo">',
+            ],
+            $phpinfo,
         );
-        $phpinfo = str_replace('</table>', '</table></div>', $phpinfo);
-        return str_replace('<div class="center">', '<div class="phpinfo">', $phpinfo);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function save()
+    public function save(): mixed
     {
         return [
             'phpVersion' => PHP_VERSION,

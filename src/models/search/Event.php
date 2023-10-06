@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\models\search;
 
@@ -15,25 +9,21 @@ use yii\debug\components\search\Filter;
 
 /**
  * Event
- *
- * @author Paul Klimov <klimov.paul@gmail.com>
- *
- * @since 2.0.14
  */
 class Event extends Base
 {
     /**
      * @var bool whether event is static or not.
      */
-    public $isStatic;
-    public $name;
-    public $class;
-    public $senderClass;
+    public bool $isStatic;
+    public string $name;
+    public string $class;
+    public string $senderClass;
 
     /**
      * {@inheritdoc}
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             [['name', 'class', 'senderClass'], 'string'],
@@ -46,7 +36,7 @@ class Event extends Base
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'name' => 'Name',
@@ -62,9 +52,9 @@ class Event extends Base
      * @param array $params an array of parameter values indexed by parameter names
      * @param array $models data to return provider for
      *
-     * @return \yii\data\ArrayDataProvider
+     * @return ArrayDataProvider
      */
-    public function search($params, $models)
+    public function search(array $params, array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
@@ -82,10 +72,12 @@ class Event extends Base
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'isStatic');
         $this->addCondition($filter, 'name', true);
         $this->addCondition($filter, 'class', true);
         $this->addCondition($filter, 'senderClass', true);
+        
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

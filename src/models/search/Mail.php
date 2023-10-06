@@ -1,12 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
 
 namespace yii\debug\models\search;
 
@@ -15,58 +9,54 @@ use yii\debug\components\search\Filter;
 
 /**
  * Mail represents the model behind the search form about current send emails.
- *
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
  */
 class Mail extends Base
 {
     /**
      * @var string from attribute input search value
      */
-    public $from;
+    public string $from;
     /**
      * @var string to attribute input search value
      */
-    public $to;
+    public string $to;
     /**
      * @var string reply attribute input search value
      */
-    public $reply;
+    public string $reply;
     /**
      * @var string cc attribute input search value
      */
-    public $cc;
+    public string $cc;
     /**
      * @var string bcc attribute input search value
      */
-    public $bcc;
+    public string $bcc;
     /**
      * @var string subject attribute input search value
      */
-    public $subject;
+    public string $subject;
     /**
      * @var string body attribute input search value
      */
-    public $body;
+    public string $body;
     /**
      * @var string charset attribute input search value
      */
-    public $charset;
+    public string $charset;
     /**
      * @var string headers attribute input search value
      */
-    public $headers;
+    public string $headers;
     /**
      * @var string file attribute input search value
      */
-    public $file;
+    public string $file;
 
     /**
      * {@inheritdoc}
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             [['from', 'to', 'reply', 'cc', 'bcc', 'subject', 'body', 'charset'], 'safe'],
@@ -76,7 +66,7 @@ class Mail extends Base
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'from' => 'From',
@@ -95,9 +85,9 @@ class Mail extends Base
      * @param array $params
      * @param array $models
      *
-     * @return \yii\data\ArrayDataProvider
+     * @return ArrayDataProvider
      */
-    public function search($params, $models)
+    public function search(array $params, array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
@@ -114,6 +104,7 @@ class Mail extends Base
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'from', true);
         $this->addCondition($filter, 'to', true);
         $this->addCondition($filter, 'reply', true);
@@ -122,6 +113,7 @@ class Mail extends Base
         $this->addCondition($filter, 'subject', true);
         $this->addCondition($filter, 'body', true);
         $this->addCondition($filter, 'charset', true);
+        
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;
