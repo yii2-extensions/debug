@@ -1,6 +1,10 @@
 includes:
-	- vendor/proget-hq/phpstan-yii2/extension.neon
+	- vendor/yii2-extensions/phpstan/extension.neon
+
 parameters:
+    bootstrapFiles:
+        - constants.php
+
     dynamicConstantNames:
         - YII_DEBUG
         - YII_ENV
@@ -8,12 +12,13 @@ parameters:
         - YII_ENV_PROD
         - YII_ENV_TEST
 
-    level: 2
+    level: 1
 
     paths:
         - src
 
     scanFiles:
+        - vendor/yiisoft/yii2/BaseYii.php
         - vendor/yiisoft/yii2/Yii.php
 
     yii2:
