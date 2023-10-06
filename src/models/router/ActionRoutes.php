@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -20,6 +23,7 @@ use yii\web\UrlRule;
  * ActionRoutes model
  *
  * @author Paweł Brzozowski <pawel@positive.codes>
+ *
  * @since 2.1.14
  */
 class ActionRoutes extends Model
@@ -28,7 +32,6 @@ class ActionRoutes extends Model
      * @var array scanned actions with matching routes
      */
     public $routes = [];
-
 
     /**
      * {@inheritdoc}
@@ -49,17 +52,17 @@ class ActionRoutes extends Model
                 } else {
                     $actionId = substr($actionName, 6);
                     $route = $controller . '/' . mb_strtolower(
-                            trim(preg_replace('/\p{Lu}/u', '-\0', $actionId), '-'),
-                            'UTF-8'
-                        );
-                    list($rule, $count) = $this->getMatchedCreationRule($route);
+                        trim(preg_replace('/\p{Lu}/u', '-\0', $actionId), '-'),
+                        'UTF-8'
+                    );
+                    [$rule, $count] = $this->getMatchedCreationRule($route);
                     $name = $controllerClass . '::' . $actionName . '()';
                 }
 
                 $this->routes[$name] = [
                     'route' => $route,
                     'rule' => $rule,
-                    'count' => $count
+                    'count' => $count,
                 ];
             }
         }
@@ -71,9 +74,12 @@ class ActionRoutes extends Model
 
     /**
      * Validates if the given class is a valid web or REST controller class.
+     *
      * @param string $controllerClass
-     * @return bool
+     *
      * @throws \ReflectionException
+     *
+     * @return bool
      */
     protected function validateControllerClass($controllerClass)
     {
@@ -88,7 +94,9 @@ class ActionRoutes extends Model
 
     /**
      * Returns all available actions of the specified controller.
+     *
      * @param \ReflectionClass $controller reflection of the controller
+     *
      * @return array all available action IDs with optional action class name (for external actions).
      */
     protected function getActions($controller)
@@ -110,9 +118,12 @@ class ActionRoutes extends Model
 
     /**
      * Returns available controllers of a specified module.
+     *
      * @param \yii\base\Module $module the module instance
-     * @return array the available controller IDs and their class names
+     *
      * @throws \ReflectionException
+     *
+     * @return array the available controller IDs and their class names
      */
     protected function getModuleControllers($module)
     {
@@ -175,8 +186,10 @@ class ActionRoutes extends Model
 
     /**
      * Returns all available application routes (non-console) grouped by the controller's name.
-     * @return array
+     *
      * @throws \ReflectionException
+     *
+     * @return array
      */
     protected function getAppRoutes()
     {
@@ -201,7 +214,7 @@ class ActionRoutes extends Model
             }
             $appRoutes[$controllerId] = [
                 'class' => $controllerClass,
-                'actions' => $actions
+                'actions' => $actions,
             ];
         }
 
@@ -210,7 +223,9 @@ class ActionRoutes extends Model
 
     /**
      * Returns the first rule's name that matched given route (for creation) with number of scanned rules.
+     *
      * @param string $route
+     *
      * @return array rule name (or null if not matched) and number of scanned rules
      */
     protected function getMatchedCreationRule($route)

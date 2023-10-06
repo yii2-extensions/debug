@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -19,6 +22,7 @@ use yii\helpers\VarDumper;
  *
  * @author Pistej <pistej2@gmail.com>
  * @author Simon Karlen <simi.albi@outlook.com>
+ *
  * @since 2.1.0
  */
 class DumpPanel extends Panel
@@ -39,6 +43,7 @@ class DumpPanel extends Panel
     /**
      * @var callable callback that replaces the built-in var dumper. The signature of
      * this function should be: `function (mixed $data, DumpPanel $panel)`
+     *
      * @since 2.1.3
      */
     public $varDumpCallback;
@@ -47,7 +52,6 @@ class DumpPanel extends Panel
      * @var array log messages extracted to array as models, to use with data provider.
      */
     private $_models;
-
 
     /**
      * {@inheritdoc}
@@ -74,9 +78,9 @@ class DumpPanel extends Panel
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
 
         return Yii::$app->view->render('panels/dump/detail', [
-                    'dataProvider' => $dataProvider,
-                    'panel' => $this,
-                    'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+            'panel' => $this,
+            'searchModel' => $searchModel,
         ]);
     }
 
@@ -129,6 +133,7 @@ class DumpPanel extends Panel
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
      * @param bool $refresh if need to build models from log messages and refresh them.
+     *
      * @return array models
      */
     protected function getModels($refresh = false)
@@ -142,7 +147,7 @@ class DumpPanel extends Panel
                     'level' => $message[1],
                     'category' => $message[2],
                     'time' => $message[3] * 1000, // time in milliseconds
-                    'trace' => $message[4]
+                    'trace' => $message[4],
                 ];
             }
         }

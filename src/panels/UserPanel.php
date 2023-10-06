@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -26,10 +29,11 @@ use yii\web\User;
 /**
  * Debugger panel that collects and displays user data.
  *
- * @property-read DataProviderInterface $userDataProvider
- * @property-read Model|UserSearchInterface $usersFilterModel
+ * @property DataProviderInterface $userDataProvider
+ * @property Model|UserSearchInterface $usersFilterModel
  *
  * @author Daniel Gomez Pan <pana_1990@hotmail.com>
+ *
  * @since 2.0.8
  */
 class UserPanel extends Panel
@@ -40,6 +44,7 @@ class UserPanel extends Panel
      * Settable: allow, roles, ips, matchCallback, denyCallback.
      * By default deny for everyone. Recommendation: can allow for administrator
      * or developer (if implement) role: ['allow' => true, 'roles' => ['admin']]
+     *
      * @see http://www.yiiframework.com/doc-2.0/guide-security-authorization.html
      * @since 2.0.10
      */
@@ -48,34 +53,39 @@ class UserPanel extends Panel
     ];
     /**
      * @var UserSwitch object of switching users
+     *
      * @since 2.0.10
      */
     public $userSwitch;
     /**
      * @var Model|UserSearchInterface Implements of User model with search method.
+     *
      * @since 2.0.10
      */
     public $filterModel;
     /**
      * @var array allowed columns for GridView.
+     *
      * @see http://www.yiiframework.com/doc-2.0/yii-grid-gridview.html#$columns-detail
      * @since 2.0.10
      */
     public $filterColumns = [];
     /**
      * @var string|User ID of the user component or a user object
+     *
      * @since 2.0.13
      */
     public $userComponent = 'user';
     /**
      * @var string Display Name of the debug panel.
+     *
      * @since 2.1.4
      */
     public $displayName = 'User';
 
-
     /**
      * {@inheritdoc}
+     *
      * @throws InvalidConfigException
      */
     public function init()
@@ -91,7 +101,7 @@ class UserPanel extends Panel
             && class_exists($this->filterModel)
             && in_array('yii\debug\models\search\UserSearchInterface', class_implements($this->filterModel), true)
         ) {
-            $this->filterModel = new $this->filterModel;
+            $this->filterModel = new $this->filterModel();
         } elseif ($this->getUser() && $this->getUser()->identityClass) {
             if (is_subclass_of($this->getUser()->identityClass, 'yii\db\ActiveRecord')) {
                 $this->filterModel = new \yii\debug\models\search\User();
@@ -100,9 +110,11 @@ class UserPanel extends Panel
     }
 
     /**
-     * @return User|null
-     * @since 2.0.13
      * @throws InvalidConfigException
+     *
+     * @return User|null
+     *
+     * @since 2.0.13
      */
     public function getUser()
     {
@@ -113,6 +125,7 @@ class UserPanel extends Panel
     /**
      * Add ACF rule. AccessControl attach to debug module.
      * Access rule for main user.
+     *
      * @throws InvalidConfigException
      */
     private function addAccessRules()
@@ -134,6 +147,7 @@ class UserPanel extends Panel
 
     /**
      * Get model for GridView -> FilterModel
+     *
      * @return Model|UserSearchInterface
      */
     public function getUsersFilterModel()
@@ -143,6 +157,7 @@ class UserPanel extends Panel
 
     /**
      * Get model for GridView -> DataProvider
+     *
      * @return DataProviderInterface
      */
     public function getUserDataProvider()
@@ -152,20 +167,23 @@ class UserPanel extends Panel
 
     /**
      * Check is available search of users
+     *
      * @return bool
      */
     public function canSearchUsers()
     {
-        return (isset($this->filterModel) &&
+        return isset($this->filterModel) &&
             $this->filterModel instanceof Model &&
             $this->filterModel->hasMethod('search')
-        );
+        ;
     }
 
     /**
      * Check can main user switch identity.
-     * @return bool
+     *
      * @throws InvalidConfigException
+     *
+     * @return bool
      */
     public function canSwitchUser()
     {
@@ -307,6 +325,7 @@ class UserPanel extends Panel
      * Converts mixed data to string
      *
      * @param mixed $data
+     *
      * @return string
      */
     protected function dataToString($data)
@@ -322,6 +341,7 @@ class UserPanel extends Panel
      * Returns the array that should be set on [[\yii\widgets\DetailView::model]]
      *
      * @param IdentityInterface $identity
+     *
      * @return array
      */
     protected function identityData($identity)

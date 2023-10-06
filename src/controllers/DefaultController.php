@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -19,6 +22,7 @@ use yii\web\Response;
  * @see \yii\debug\Panel
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class DefaultController extends Controller
@@ -41,7 +45,6 @@ class DefaultController extends Controller
      */
     private $_manifest;
 
-
     /**
      * {@inheritdoc}
      */
@@ -57,6 +60,7 @@ class DefaultController extends Controller
 
     /**
      * {@inheritdoc}
+     *
      * @throws \yii\web\BadRequestHttpException
      */
     public function beforeAction($action)
@@ -68,8 +72,9 @@ class DefaultController extends Controller
     /**
      * Index action
      *
-     * @return string
      * @throws NotFoundHttpException
+     *
+     * @return string
      */
     public function actionIndex()
     {
@@ -80,7 +85,7 @@ class DefaultController extends Controller
         $tags = array_keys($this->getManifest());
 
         if (empty($tags)) {
-            throw new \Exception("No debug data have been collected yet, try browsing the website first.");
+            throw new \Exception('No debug data have been collected yet, try browsing the website first.');
         }
 
         $tag = reset($tags);
@@ -96,10 +101,13 @@ class DefaultController extends Controller
 
     /**
      * @see \yii\debug\Panel
+     *
      * @param string|null $tag debug data tag.
      * @param string|null $panel debug panel ID.
-     * @return mixed response.
+     *
      * @throws NotFoundHttpException if debug data not found.
+     *
+     * @return mixed response.
      */
     public function actionView($tag = null, $panel = null)
     {
@@ -131,8 +139,10 @@ class DefaultController extends Controller
      * Toolbar action
      *
      * @param string $tag
-     * @return string
+     *
      * @throws NotFoundHttpException
+     *
+     * @return string
      */
     public function actionToolbar($tag)
     {
@@ -150,8 +160,10 @@ class DefaultController extends Controller
      * Download mail action
      *
      * @param string $file
-     * @return \yii\console\Response|Response
+     *
      * @throws NotFoundHttpException
+     *
+     * @return Response|\yii\console\Response
      */
     public function actionDownloadMail($file)
     {
@@ -166,6 +178,7 @@ class DefaultController extends Controller
 
     /**
      * @param bool $forceReload
+     *
      * @return array
      */
     protected function getManifest($forceReload = false)
@@ -183,6 +196,7 @@ class DefaultController extends Controller
     /**
      * @param string $tag debug data tag.
      * @param int $maxRetry maximum numbers of tag retrieval attempts.
+     *
      * @throws NotFoundHttpException if specified tag not found.
      */
     public function loadData($tag, $maxRetry = 0)

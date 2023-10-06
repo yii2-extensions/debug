@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -13,6 +16,7 @@ use yii\base\Component;
  * Base class for matchers that are used in a filter.
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 abstract class Base extends Component implements MatcherInterface
@@ -21,7 +25,6 @@ abstract class Base extends Component implements MatcherInterface
      * @var mixed base value to check
      */
     protected $baseValue;
-
 
     /**
      * {@inheritdoc}

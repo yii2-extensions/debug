@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types = 1);
+declare(strict_types=1);
 
 use yii\data\ArrayDataProvider;
 use yii\debug\DbAsset;
@@ -28,17 +28,17 @@ echo GridView::widget([
     'filterUrl' => $panel->getUrl(),
     'pager' => [
         'linkContainerOptions' => [
-            'class' => 'page-item'
+            'class' => 'page-item',
         ],
         'linkOptions' => [
-            'class' => 'page-link'
+            'class' => 'page-link',
         ],
         'disabledListItemSubTagOptions' => [
             'tag' => 'a',
             'href' => 'javascript:;',
             'tabindex' => '-1',
-            'class' => 'page-link'
-        ]
+            'class' => 'page-link',
+        ],
     ],
     'columns' => [
         [
@@ -51,8 +51,8 @@ echo GridView::widget([
                 return date('H:i:s.', (int)$timeInSeconds) . sprintf('%03d', $millisecondsDiff);
             },
             'headerOptions' => [
-                'class' => 'sort-numerical'
-            ]
+                'class' => 'sort-numerical',
+            ],
         ],
         [
             'attribute' => 'duration',
@@ -63,8 +63,8 @@ echo GridView::widget([
                 'width' => '10%',
             ],
             'headerOptions' => [
-                'class' => 'sort-numerical'
-            ]
+                'class' => 'sort-numerical',
+            ],
         ],
         [
             'attribute' => 'type',
@@ -80,8 +80,8 @@ echo GridView::widget([
                 'width' => '5%',
             ],
             'headerOptions' => [
-                'class' => 'sort-numerical'
-            ]
+                'class' => 'sort-numerical',
+            ],
         ],
         [
             'attribute' => 'query',
@@ -116,7 +116,7 @@ echo GridView::widget([
             'options' => [
                 'width' => '60%',
             ],
-        ]
+        ],
     ],
 ]);
 

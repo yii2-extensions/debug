@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -18,6 +21,7 @@ use yii\debug\Panel;
  *   appear at lower version.
  *
  * @author Paul Klimov <klimov.paul@gmail.com>
+ *
  * @since 2.0.14
  */
 class EventPanel extends Panel
@@ -26,7 +30,6 @@ class EventPanel extends Panel
      * @var array current request events
      */
     private $_events = [];
-
 
     /**
      * {@inheritdoc}
@@ -79,7 +82,7 @@ class EventPanel extends Panel
         return Yii::$app->view->render('panels/event/detail', [
             'panel' => $this,
             'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel
+            'searchModel' => $searchModel,
         ]);
     }
 

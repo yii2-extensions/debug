@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace yiiunit\debug;
 
 use yii\debug\FlattenException;
@@ -53,7 +55,7 @@ class FlattenExceptionTest extends TestCase
 
     public function testPrevious(): void
     {
-        $exception2 = new \Exception;
+        $exception2 = new \Exception();
         $exception = new \Exception('test', 0, $exception2);
 
         $flattened = new FlattenException($exception);
@@ -129,8 +131,10 @@ class FlattenExceptionTest extends TestCase
 
         $args = $array[$i++];
         $this->assertSame($args[0], 'object');
-        $this->assertTrue('Closure' === $args[1] || is_subclass_of($args[1], '\Closure'),
-            'Expect object class name to be Closure or a subclass of Closure.');
+        $this->assertTrue(
+            'Closure' === $args[1] || is_subclass_of($args[1], '\Closure'),
+            'Expect object class name to be Closure or a subclass of Closure.'
+        );
 
         $this->assertSame(['array', [['integer', 1], ['integer', 2]]], $array[$i++]);
         $this->assertSame(['array', ['foo' => ['integer', 123]]], $array[$i++]);
@@ -145,7 +149,7 @@ class FlattenExceptionTest extends TestCase
 
         // assertEquals() does not like NAN values.
         $this->assertEquals($array[$i][0], 'float');
-        $this->assertTrue(is_nan($array[$i++][1]));
+        $this->assertNan($array[$i++][1]);
     }
 
     public function testClosureSerialize(): void

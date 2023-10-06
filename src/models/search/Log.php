@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,6 +18,7 @@ use yii\debug\components\search\Filter;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Log extends Base
@@ -31,7 +35,6 @@ class Log extends Base
      * @var int message attribute input search value
      */
     public $message;
-
 
     /**
      * {@inheritdoc}
@@ -61,6 +64,7 @@ class Log extends Base
      *
      * @param array $params an array of parameter values indexed by parameter names
      * @param array $models data to return provider for
+     *
      * @return \yii\data\ArrayDataProvider
      */
     public function search($params, $models)
@@ -76,7 +80,7 @@ class Log extends Base
                     ],
                     'level',
                     'category',
-                    'message'
+                    'message',
                 ],
                 'defaultOrder' => [
                     'time' => SORT_ASC,

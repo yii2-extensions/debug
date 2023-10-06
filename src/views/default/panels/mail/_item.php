@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types = 1);
+declare(strict_types=1);
 
 use yii\helpers\Html;
 use yii\widgets\DetailView;
@@ -27,7 +27,7 @@ echo DetailView::widget([
         [
             'attribute' => 'isSuccessful',
             'label' => 'Successfully sent',
-            'value' => $model['isSuccessful'] ? 'Yes' : 'No'
+            'value' => $model['isSuccessful'] ? 'Yes' : 'No',
         ],
         'reply',
         'bcc',

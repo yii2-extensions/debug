@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -18,12 +21,13 @@ use yii\log\Logger;
 /**
  * Debugger panel that collects and displays database queries performed.
  *
- * @property-read array $excessiveCallers The number of DB calls indexed by the backtrace hash of excessive
+ * @property array $excessiveCallers The number of DB calls indexed by the backtrace hash of excessive
  * caller(s).
- * @property-read array $profileLogs
- * @property-read string $summaryName Short name of the panel, which will be use in summary.
+ * @property array $profileLogs
+ * @property string $summaryName Short name of the panel, which will be use in summary.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class DbPanel extends Panel
@@ -39,6 +43,7 @@ class DbPanel extends Panel
      * @var int|null the number of DB calls the same backtrace can make before considered an "Excessive Caller".
      * If it is `null`, this feature is disabled.
      * Note: Changes will only be reflected in new requests.
+     *
      * @since 2.1.23
      */
     public $excessiveCallerThreshold = null;
@@ -47,6 +52,7 @@ class DbPanel extends Panel
      * The "Caller" is the backtrace lines that aren't included in the `$ignoredPathsInBacktrace`,
      * Yii files are ignored by default.
      * Hint: You can use path aliases here.
+     *
      * @since 2.1.23
      */
     public $ignoredPathsInBacktrace = [];
@@ -57,14 +63,16 @@ class DbPanel extends Panel
     /**
      * @var array the default ordering of the database queries. In the format of
      * [ property => sort direction ], for example: [ 'duration' => SORT_DESC ]
+     *
      * @since 2.0.7
      */
     public $defaultOrder = [
-        'seq' => SORT_ASC
+        'seq' => SORT_ASC,
     ];
     /**
      * @var array the default filter to apply to the database queries. In the format
      * of [ property => value ], for example: [ 'type' => 'SELECT' ]
+     *
      * @since 2.0.7
      */
     public $defaultFilter = [];
@@ -84,6 +92,7 @@ class DbPanel extends Panel
 
     /**
      * @var array of event names used to get profile logs.
+     *
      * @since 2.1.17
      */
     public $dbEventNames = ['yii\db\Command::query', 'yii\db\Command::execute'];
@@ -136,6 +145,7 @@ class DbPanel extends Panel
 
     /**
      * {@inheritdoc}
+     *
      * @throws InvalidConfigException
      */
     public function getDetail()
@@ -170,7 +180,7 @@ class DbPanel extends Panel
     public function calculateTimings()
     {
         if ($this->_timings === null) {
-            $this->_timings = Yii::getLogger()->calculateTimings(isset($this->data['messages']) ? $this->data['messages'] : $this->getProfileLogs());
+            $this->_timings = Yii::getLogger()->calculateTimings($this->data['messages'] ?? $this->getProfileLogs());
 
             // Parse aliases
             $ignoredPathsInBacktrace = array_map(
@@ -209,6 +219,7 @@ class DbPanel extends Panel
 
     /**
      * Returns all profile logs of the current request for this panel. It includes categories specified in $this->dbEventNames property.
+     *
      * @return array
      */
     public function getProfileLogs()
@@ -224,6 +235,7 @@ class DbPanel extends Panel
      * Returns total query time.
      *
      * @param array $timings
+     *
      * @return int total time
      */
     protected function getTotalQueryTime($timings)
@@ -240,6 +252,7 @@ class DbPanel extends Panel
     /**
      * Returns an  array of models that represents logs of the current request.
      * Can be used with data providers such as \yii\data\ArrayDataProvider.
+     *
      * @return array models
      */
     protected function getModels()
@@ -271,7 +284,9 @@ class DbPanel extends Panel
      * and value is number of occurrences the same query in array.
      *
      * @param $timings
+     *
      * @return array
+     *
      * @since 2.0.13
      */
     public function countDuplicateQuery($timings)
@@ -285,7 +300,9 @@ class DbPanel extends Panel
      * Returns sum of all duplicated queries
      *
      * @param $modelData
+     *
      * @return int
+     *
      * @since 2.0.13
      */
     public function sumDuplicateQueries($modelData)
@@ -304,6 +321,7 @@ class DbPanel extends Panel
      * Counts the number of times the same backtrace makes a DB query.
      *
      * @return array the number of DB calls indexed by the backtrace hash of the caller.
+     *
      * @since 2.1.23
      */
     public function countCallerCals()
@@ -317,6 +335,7 @@ class DbPanel extends Panel
      * Get the backtrace hashes that make excessive DB cals.
      *
      * @return array the number of DB calls indexed by the backtrace hash of excessive caller(s).
+     *
      * @since 2.1.23
      */
     public function getExcessiveCallers()
@@ -337,6 +356,7 @@ class DbPanel extends Panel
      * Get the number of excessive caller(s).
      *
      * @return int
+     *
      * @since 2.1.23
      */
     public function getExcessiveCallersCount()
@@ -348,7 +368,9 @@ class DbPanel extends Panel
      * Creates an ArrayDataProvider for the DB query callers.
      *
      * @param array $modelData
+     *
      * @return ArrayDataProvider
+     *
      * @since 2.1.23
      */
     public function generateQueryCallersDataProvider($modelData)
@@ -360,7 +382,7 @@ class DbPanel extends Panel
                     'trace' => $data['trace'],
                     'numCalls' => 0,
                     'totalDuration' => 0,
-                    'queries' => []
+                    'queries' => [],
                 ];
             }
             $callers[$data['traceHash']]['numCalls'] += 1;
@@ -388,6 +410,7 @@ class DbPanel extends Panel
      * Returns database query type.
      *
      * @param string $timing timing procedure string
+     *
      * @return string query type such as select, insert, delete, etc.
      */
     protected function getQueryType($timing)
@@ -402,28 +425,31 @@ class DbPanel extends Panel
      * Check if given queries count is critical according to the settings.
      *
      * @param int $count queries count
+     *
      * @return bool
      */
     public function isQueryCountCritical($count)
     {
-        return (($this->criticalQueryThreshold !== null) && ($count > $this->criticalQueryThreshold));
+        return ($this->criticalQueryThreshold !== null) && ($count > $this->criticalQueryThreshold);
     }
 
     /**
      * Check if the number of calls by "Caller" is excessive according to the settings.
      *
      * @param int $numCalls queries count
+     *
      * @return bool
      */
     public function isNumberOfCallsExcessive($numCalls)
     {
-        return (($this->excessiveCallerThreshold !== null) && ($numCalls > $this->excessiveCallerThreshold));
+        return ($this->excessiveCallerThreshold !== null) && ($numCalls > $this->excessiveCallerThreshold);
     }
 
     /**
      * Returns array query types
      *
      * @return array
+     *
      * @since 2.0.3
      */
     public function getTypes()
@@ -453,9 +479,11 @@ class DbPanel extends Panel
     }
 
     /**
-     * @return bool Whether the DB component has support for EXPLAIN queries
-     * @since 2.0.5
      * @throws InvalidConfigException
+     *
+     * @return bool Whether the DB component has support for EXPLAIN queries
+     *
+     * @since 2.0.5
      */
     protected function hasExplain()
     {
@@ -478,6 +506,7 @@ class DbPanel extends Panel
      * Check if given query type can be explained.
      *
      * @param string $type query type
+     *
      * @return bool
      *
      * @since 2.0.5
@@ -490,9 +519,11 @@ class DbPanel extends Panel
     /**
      * Returns a reference to the DB component associated with the panel
      *
-     * @return \yii\db\Connection
-     * @since 2.0.5
      * @throws InvalidConfigException
+     *
+     * @return \yii\db\Connection
+     *
+     * @since 2.0.5
      */
     public function getDb()
     {

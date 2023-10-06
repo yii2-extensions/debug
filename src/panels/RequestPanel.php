@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -16,6 +19,7 @@ use yii\helpers\ArrayHelper;
  * Debugger panel that collects and displays request data.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class RequestPanel extends Panel
@@ -23,20 +27,22 @@ class RequestPanel extends Panel
     /**
      * @var array list of the PHP predefined variables that are allowed to be displayed in the request panel.
      * Note that a variable must be accessible via `$GLOBALS`. Otherwise it won't be displayed.
+     *
      * @since 2.0.10
      */
     public $displayVars = ['_SERVER', '_GET', '_POST', '_COOKIE', '_FILES', '_SESSION'];
     /**
      * @var array list of variable names which values should be censored in the output
+     *
      * @since 2.1.20
      */
     public $censoredVariableNames = [];
     /**
      * @var string value to display instead of the variable value if the name is on the censor list
+     *
      * @since 2.1.20
      */
     public $censorString = '****';
-
 
     /**
      * {@inheritdoc}
@@ -167,7 +173,9 @@ class RequestPanel extends Panel
 
     /**
      * @param array $data
+     *
      * @return array
+     *
      * @since 2.1.20
      */
     protected function censorArray($data)

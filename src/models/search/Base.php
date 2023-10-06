@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,6 +18,7 @@ use yii\debug\components\search\matchers;
  * Base search model
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Base extends Model
@@ -33,7 +37,6 @@ class Base extends Model
         if (mb_strpos($value, '>') !== false) {
             $value = (int)str_replace('>', '', $value);
             $filter->addMatcher($attribute, new matchers\GreaterThan(['value' => $value]));
-
         } elseif (mb_strpos($value, '<') !== false) {
             $value = (int)str_replace('<', '', $value);
             $filter->addMatcher($attribute, new matchers\LowerThan(['value' => $value]));

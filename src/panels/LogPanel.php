@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -16,6 +19,7 @@ use yii\log\Logger;
  * Debugger panel that collects and displays logs.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class LogPanel extends Panel
@@ -24,7 +28,6 @@ class LogPanel extends Panel
      * @var array log messages extracted to array as models, to use with data provider.
      */
     private $_models;
-
 
     /**
      * {@inheritdoc}
@@ -77,6 +80,7 @@ class LogPanel extends Panel
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
      * @param bool $refresh if need to build models from log messages and refresh them.
+     *
      * @return array models
      */
     protected function getModels($refresh = false)
@@ -88,7 +92,7 @@ class LogPanel extends Panel
             $previousTime = null;
             $id = 1;
             foreach ($this->data['messages'] as $message) {
-                if (is_null($previousTime)) {
+                if (null === $previousTime) {
                     $previousTime = $message[3];
                 } else {
                     $this->_models[$previousId]['id_of_next'] = $id;
@@ -103,7 +107,7 @@ class LogPanel extends Panel
                     'time_since_previous' => $message[3] - $previousTime,
                     'id_of_previous' => $previousId,
                     'id_of_next' => null,
-                    'trace' => isset($message[4]) ? $message[4] : [],
+                    'trace' => $message[4] ?? [],
                 ];
                 $previousId = $id;
                 $previousTime = $message[3];

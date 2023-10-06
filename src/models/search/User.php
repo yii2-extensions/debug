@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,6 +18,7 @@ use yii\db\ActiveRecord;
  * Search model for implementation of IdentityInterface
  *
  * @author Semen Dubina <yii2debug@sam002.net>
+ *
  * @since 2.0.10
  */
 class User extends Model
@@ -23,7 +27,6 @@ class User extends Model
      * @var Model implementation of IdentityInterface
      */
     public $identityImplement = null;
-
 
     /**
      * {@inheritdoc}
@@ -73,6 +76,7 @@ class User extends Model
 
     /**
      * {@inheritdoc}
+     *
      * @throws \yii\base\InvalidConfigException
      */
     public function search($params)
@@ -86,9 +90,12 @@ class User extends Model
 
     /**
      * Search method for ActiveRecord
+     *
      * @param array $params the data array to load model.
-     * @return ActiveDataProvider
+     *
      * @throws \yii\base\InvalidConfigException
+     *
+     * @return ActiveDataProvider
      */
     private function searchActiveDataProvider($params)
     {

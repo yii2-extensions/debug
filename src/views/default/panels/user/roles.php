@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types = 1);
+declare(strict_types=1);
 
 use yii\debug\panels\UserPanel;
 use yii\grid\GridView;
@@ -15,17 +15,17 @@ if ($panel->data['rolesProvider']) {
         'dataProvider' => $panel->data['rolesProvider'],
         'pager' => [
             'linkContainerOptions' => [
-                'class' => 'page-item'
+                'class' => 'page-item',
             ],
             'linkOptions' => [
-                'class' => 'page-link'
+                'class' => 'page-link',
             ],
             'disabledListItemSubTagOptions' => [
                 'tag' => 'a',
                 'href' => 'javascript:;',
                 'tabindex' => '-1',
-                'class' => 'page-link'
-            ]
+                'class' => 'page-link',
+            ],
         ],
         'columns' => [
             'name',
@@ -33,8 +33,8 @@ if ($panel->data['rolesProvider']) {
             'ruleName',
             'data',
             'createdAt:datetime',
-            'updatedAt:datetime'
-        ]
+            'updatedAt:datetime',
+        ],
     ]);
 }
 
@@ -45,17 +45,17 @@ if ($panel->data['permissionsProvider']) {
         'dataProvider' => $panel->data['permissionsProvider'],
         'pager' => [
             'linkContainerOptions' => [
-                'class' => 'page-item'
+                'class' => 'page-item',
             ],
             'linkOptions' => [
-                'class' => 'page-link'
+                'class' => 'page-link',
             ],
             'disabledListItemSubTagOptions' => [
                 'tag' => 'a',
                 'href' => 'javascript:;',
                 'tabindex' => '-1',
-                'class' => 'page-link'
-            ]
+                'class' => 'page-link',
+            ],
         ],
         'columns' => [
             'name',
@@ -63,7 +63,7 @@ if ($panel->data['permissionsProvider']) {
             'ruleName',
             'data',
             'createdAt:datetime',
-            'updatedAt:datetime'
-        ]
+            'updatedAt:datetime',
+        ],
     ]);
 }

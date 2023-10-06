@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace yiiunit\debug\router;
 
 use yii\debug\models\router\ActionRoutes;
@@ -26,13 +28,13 @@ class ActionRoutesTest extends TestCase
                                 'rules' => [
                                     'inside' => 'module-web/inside',
                                 ],
-                            ]
-                        ]
+                            ],
+                        ],
                     ],
                 ],
                 'modules' => [
-                    'admin' => 'yiiunit\debug\router\module\Module'
-                ]
+                    'admin' => 'yiiunit\debug\router\module\Module',
+                ],
             ]
         );
 

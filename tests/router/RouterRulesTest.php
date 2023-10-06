@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace yiiunit\debug\router;
 
 use yii\debug\models\router\RouterRules;
-use yii\web\UrlRule;
 use yiiunit\debug\TestCase;
 
 class RouterRulesTest extends TestCase
@@ -115,7 +116,9 @@ class RouterRulesTest extends TestCase
 
     /**
      * @test
+     *
      * @dataProvider \yiiunit\debug\providers\Data::forWebRules
+     *
      * @param array $rules
      * @param array $expected
      */
@@ -126,7 +129,7 @@ class RouterRulesTest extends TestCase
                 'components' => [
                     'urlManager' => [
                         'enablePrettyUrl' => true,
-                        'rules' => $rules
+                        'rules' => $rules,
                     ],
                 ],
             ]

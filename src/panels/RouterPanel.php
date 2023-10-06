@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -22,6 +25,7 @@ use yii\log\Logger;
  * [[getCategories()]] and [[setCategories()]] for details.
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class RouterPanel extends Panel
@@ -33,12 +37,11 @@ class RouterPanel extends Panel
         'yii\web\UrlManager::parseRequest',
         'yii\web\UrlRule::parseRequest',
         'yii\web\CompositeUrlRule::parseRequest',
-        'yii\rest\UrlRule::parseRequest'
+        'yii\rest\UrlRule::parseRequest',
     ];
 
-
     /**
-     * @param string|array $values
+     * @param array|string $values
      */
     public function setCategories($values)
     {
@@ -50,6 +53,7 @@ class RouterPanel extends Panel
 
     /**
      * Listens categories of the messages.
+     *
      * @return array
      */
     public function getCategories()

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace yiiunit\debug\router;
 
 use PHPUnit\Framework\TestCase;
@@ -49,9 +51,9 @@ class CurrentRouteTest extends TestCase
                 'messages' => [
                     [
                         ['rule' => 'test rule', 'match' => true],
-                        999
-                    ]
-                ]
+                        999,
+                    ],
+                ],
             ]
         );
 
@@ -73,9 +75,9 @@ class CurrentRouteTest extends TestCase
                 'messages' => [
                     [
                         ['rule' => 'test rule', 'match' => false],
-                        999
-                    ]
-                ]
+                        999,
+                    ],
+                ],
             ]
         );
 
@@ -97,13 +99,13 @@ class CurrentRouteTest extends TestCase
                 'messages' => [
                     [
                         ['rule' => 'test rule', 'match' => false, 'parent' => 'test parent'],
-                        999
+                        999,
                     ],
                     [
                         ['rule' => 'test parent', 'match' => false],
-                        999
-                    ]
-                ]
+                        999,
+                    ],
+                ],
             ]
         );
 
@@ -125,13 +127,13 @@ class CurrentRouteTest extends TestCase
                 'messages' => [
                     [
                         ['rule' => 'test rule 1', 'match' => false],
-                        999
+                        999,
                     ],
                     [
                         ['rule' => 'test rule 2', 'match' => false],
-                        999
-                    ]
-                ]
+                        999,
+                    ],
+                ],
             ]
         );
 
@@ -141,7 +143,7 @@ class CurrentRouteTest extends TestCase
         $this->assertSame(
             [
                 ['rule' => 'test rule 1', 'match' => false],
-                ['rule' => 'test rule 2', 'match' => false]
+                ['rule' => 'test rule 2', 'match' => false],
             ],
             $router->logs
         );

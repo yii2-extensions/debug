@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -13,9 +16,10 @@ use yii\debug\panels\TimelinePanel;
 /**
  * DataProvider implements a data provider based on a data array.
  *
- * @property-read array $rulers
+ * @property array $rulers
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class DataProvider extends ArrayDataProvider
@@ -25,9 +29,9 @@ class DataProvider extends ArrayDataProvider
      */
     protected $panel;
 
-
     /**
      * DataProvider constructor.
+     *
      * @param TimelinePanel $panel
      * @param array $config
      */
@@ -67,12 +71,14 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Getting HEX color based on model duration
+     *
      * @param array $model
+     *
      * @return string
      */
     public function getColor($model)
     {
-        $width = isset($model['css']['width']) ? $model['css']['width'] : $this->getWidth($model);
+        $width = $model['css']['width'] ?? $this->getWidth($model);
         foreach ($this->panel->colors as $percent => $color) {
             if ($width >= $percent) {
                 return $color;
@@ -83,7 +89,9 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Returns the offset left item, percentage of the total width
+     *
      * @param array $model
+     *
      * @return float
      */
     public function getLeft($model)
@@ -93,7 +101,9 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Returns item duration, milliseconds
+     *
      * @param array $model
+     *
      * @return float
      */
     public function getTime($model)
@@ -103,7 +113,9 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Returns item width percent of the total width
+     *
      * @param array $model
+     *
      * @return float
      */
     public function getWidth($model)
@@ -113,7 +125,9 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Returns item, css class
+     *
      * @param array $model
+     *
      * @return string
      */
     public function getCssClass($model)
@@ -125,7 +139,9 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * ruler items, key milliseconds, value offset left
+     *
      * @param int $line number of columns
+     *
      * @return array
      */
     public function getRulers($line = 10)
@@ -150,7 +166,9 @@ class DataProvider extends ArrayDataProvider
      *   0 => string, memory usage (MB)
      *   1 => float, Y position (percent)
      * ]
+     *
      * @param array $model
+     *
      * @return array|null
      */
     public function getMemory($model)
@@ -161,7 +179,7 @@ class DataProvider extends ArrayDataProvider
 
         return [
             sprintf('%.2f MB', $model['memory'] / 1048576),
-            $model['memory'] / ($this->panel->memory / 100)
+            $model['memory'] / ($this->panel->memory / 100),
         ];
     }
 }

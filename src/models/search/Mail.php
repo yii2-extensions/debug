@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -14,6 +17,7 @@ use yii\debug\components\search\Filter;
  * Mail represents the model behind the search form about current send emails.
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Mail extends Base
@@ -59,7 +63,6 @@ class Mail extends Base
      */
     public $file;
 
-
     /**
      * {@inheritdoc}
      */
@@ -82,14 +85,16 @@ class Mail extends Base
             'cc' => 'Copy receiver',
             'bcc' => 'Hidden copy receiver',
             'subject' => 'Subject',
-            'charset' => 'Charset'
+            'charset' => 'Charset',
         ];
     }
 
     /**
      * Returns data provider with filled models. Filter applied if needed.
+     *
      * @param array $params
      * @param array $models
+     *
      * @return \yii\data\ArrayDataProvider
      */
     public function search($params, $models)

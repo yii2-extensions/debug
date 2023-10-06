@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,6 +18,7 @@ use yii\helpers\StringHelper;
  * Svg is used to draw a graph using SVG
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class Svg extends BaseObject
@@ -42,7 +46,7 @@ class Svg extends BaseObject
         10 => '#d6e685',
         60 => '#8cc665',
         90 => '#44a340',
-        100 => '#1e6823'
+        100 => '#1e6823',
     ];
     /**
      * @var string Svg template
@@ -55,6 +59,7 @@ class Svg extends BaseObject
      *  [x, y]
      * ]
      * ```
+     *
      * @var array Each point is define by a X and a Y coordinate.
      */
     protected $points = [];
@@ -62,7 +67,6 @@ class Svg extends BaseObject
      * @var TimelinePanel
      */
     protected $panel;
-
 
     /**
      * {@inheritdoc}
@@ -89,11 +93,11 @@ class Svg extends BaseObject
 
         return strtr($this->template, [
             '{x}' => StringHelper::normalizeNumber($this->x),
-            '{y}' =>  StringHelper::normalizeNumber($this->y),
+            '{y}' => StringHelper::normalizeNumber($this->y),
             '{stroke}' => $this->stroke,
             '{polygon}' => $this->polygon(),
             '{polyline}' => $this->polyline(),
-            '{linearGradient}' => $this->linearGradient()
+            '{linearGradient}' => $this->linearGradient(),
         ]);
     }
 
@@ -102,11 +106,12 @@ class Svg extends BaseObject
      */
     public function hasPoints()
     {
-        return ($this->points !== []);
+        return $this->points !== [];
     }
 
     /**
      * @param array $messages log messages. See [[Logger::messages]] for the structure
+     *
      * @return int added points
      */
     protected function addPoints($messages)
@@ -145,7 +150,7 @@ class Svg extends BaseObject
         $str = "0 $this->y ";
         $y = 0;
         foreach ($this->points as $point) {
-            list($x, $y) = $point;
+            [$x, $y] = $point;
             $str .= "{$x} {$y} ";
         }
         $str .= $this->x - 0.001 . " {$y} {$this->x} {$this->y}";
@@ -160,7 +165,7 @@ class Svg extends BaseObject
         $str = "0 $this->y ";
         $y = 0;
         foreach ($this->points as $point) {
-            list($x, $y) = $point;
+            [$x, $y] = $point;
             $str .= "{$x} {$y} ";
         }
         $str .= "$this->x {$y}";

@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -18,9 +21,10 @@ use yii\mail\MessageInterface;
 /**
  * Debugger panel that collects and displays the generated emails.
  *
- * @property-read array $messagesFileName
+ * @property array $messagesFileName
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class MailPanel extends Panel
@@ -34,7 +38,6 @@ class MailPanel extends Panel
      * @var array current request sent messages
      */
     private $_messages = [];
-
 
     /**
      * {@inheritdoc}
@@ -86,7 +89,7 @@ class MailPanel extends Panel
     {
         return Yii::$app->view->render('panels/mail/summary', [
             'panel' => $this,
-            'mailCount' => is_array($this->data) ? count($this->data) : '⚠'
+            'mailCount' => is_array($this->data) ? count($this->data) : '⚠',
         ]);
     }
 
@@ -101,13 +104,14 @@ class MailPanel extends Panel
         return Yii::$app->view->render('panels/mail/detail', [
             'panel' => $this,
             'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel
+            'searchModel' => $searchModel,
         ]);
     }
 
     /**
      * Save info about messages of current request. Each element is array holding
      * message info, such as: time, reply, bc, cc, from, to and other.
+     *
      * @return array messages
      */
     public function save()
@@ -117,6 +121,7 @@ class MailPanel extends Panel
 
     /**
      * Return array of created email files
+     *
      * @return array
      */
     public function getMessagesFileName()
@@ -131,6 +136,7 @@ class MailPanel extends Panel
 
     /**
      * @param mixed $attr
+     *
      * @return string
      */
     private function convertParams($attr)

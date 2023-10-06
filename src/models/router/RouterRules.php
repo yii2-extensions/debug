@@ -1,6 +1,9 @@
 <?php
+
+declare(strict_types=1);
 /**
  * @link https://www.yiiframework.com/
+ *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -18,6 +21,7 @@ use yii\web\UrlRule as WebUrlRule;
  * RouterRules model
  *
  * @author Paweł Brzozowski <pawel@positive.codes>
+ *
  * @since 2.1.14
  */
 class RouterRules extends Model
@@ -51,7 +55,6 @@ class RouterRules extends Model
      */
     public $rules = [];
 
-
     /**
      * {@inheritdoc}
      */
@@ -74,8 +77,10 @@ class RouterRules extends Model
 
     /**
      * Scans rule for basic data.
+     *
      * @param $rule
      * @param null $type
+     *
      * @throws \ReflectionException
      */
     protected function scanRule($rule, $type = null)
@@ -95,9 +100,9 @@ class RouterRules extends Model
                     case WebUrlRule::CREATION_ONLY:
                         $mode = 'creation only';
                         break;
-                    case null;
-                        $mode = null;
-                        break;
+                    case null:
+                    $mode = null;
+                    break;
                     default:
                         $mode = 'unknown';
                 }
@@ -116,14 +121,16 @@ class RouterRules extends Model
                 'verb' => $verb,
                 'suffix' => $suffix,
                 'mode' => $mode,
-                'type' => $type
+                'type' => $type,
             ];
         }
     }
 
     /**
      * Scans group rule's rules for basic data.
+     *
      * @param GroupUrlRule $groupRule
+     *
      * @throws \ReflectionException
      */
     protected function scanGroupRule($groupRule)
@@ -135,7 +142,9 @@ class RouterRules extends Model
 
     /**
      * Scans REST rule's rules for basic data.
+     *
      * @param RestUrlRule $restRule
+     *
      * @throws \ReflectionException
      */
     protected function scanRestRule($restRule)
