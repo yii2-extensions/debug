@@ -44,9 +44,7 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * Returns data about extensions
-     *
-     * @return array
+     * Returns data about extensions.
      */
     public function getExtensions(): array
     {
@@ -62,11 +60,9 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * Returns the BODY contents of the phpinfo() output
-     *
-     * @return array
+     * Returns the BODY contents of the phpinfo() output.
      */
-    public function getPhpInfo(): array
+    public function getPhpInfo(): string
     {
         ob_start();
         phpinfo();

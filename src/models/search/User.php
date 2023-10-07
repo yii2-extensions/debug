@@ -12,12 +12,12 @@ use yii\db\ActiveRecord;
 use function array_keys;
 
 /**
- * Search model for implementation of IdentityInterface
+ * Search model for implementation of IdentityInterface.
  */
 class User extends Model
 {
     /**
-     * @var Model|null implementation of IdentityInterface
+     * @var Model|null implementation of IdentityInterface.
      */
     public Model|null $identityImplement = null;
 
@@ -87,9 +87,7 @@ class User extends Model
      *
      * @param array $params the data array to load model.
      *
-     * @throws InvalidConfigException
-     *
-     * @return ActiveDataProvider
+     * @throws InvalidConfigException if model is not instance of ActiveRecord.
      */
     private function searchActiveDataProvider(array $params): ActiveDataProvider
     {

@@ -45,9 +45,9 @@ class MailPanel extends Panel
         parent::init();
 
         Event::on(BaseMailer::class, BaseMailer::EVENT_AFTER_SEND, function ($event) {
-            /* @var MailEvent $event */
+            /** @var MailEvent $event */
             $message = $event->message;
-            /* @var MessageInterface $message */
+            /** @var MessageInterface $message */
             $messageData = [
                 'isSuccessful' => $event->isSuccessful,
                 'from' => $this->convertParams($message->getFrom()),
@@ -107,20 +107,15 @@ class MailPanel extends Panel
     }
 
     /**
-     * Save info about messages of current request. Each element is array holding
-     * message info, such as: time, reply, bc, cc, from, to and other.
-     *
-     * @return array messages
-     */
+     * Save info about messages of current request. Each element is array holding message info, such as: time, reply,
+     * bc, cc, from, to and other.     */
     public function save(): array
     {
         return $this->_messages;
     }
 
     /**
-     * Return array of created email files
-     *
-     * @return array
+     * Return array of created email files.
      */
     public function getMessagesFileName(): array
     {
@@ -132,11 +127,6 @@ class MailPanel extends Panel
         return $names;
     }
 
-    /**
-     * @param mixed $attr
-     *
-     * @return string
-     */
     private function convertParams(mixed $attr): string
     {
         if (is_array($attr)) {
@@ -146,10 +136,6 @@ class MailPanel extends Panel
         return $attr;
     }
 
-    /**
-     * @param MessageInterface $message
-     * @param array $messageData
-     */
     private function addMoreInformation(MessageInterface $message, array &$messageData): void
     {
         $this->addMoreInformationFromSymfonyMailer($message, $messageData);

@@ -20,7 +20,7 @@ class UserController extends Controller
     /**
      * {@inheritdoc}
      *
-     * @throws BadRequestHttpException
+     * @throws BadRequestHttpException if session is not active.
      */
     public function beforeAction($action): bool
     {
@@ -34,11 +34,9 @@ class UserController extends Controller
     }
 
     /**
-     * Set new identity, switch user
+     * Set new identity, switch user.
      *
-     * @throws InvalidConfigException
-     *
-     * @return User
+     * @throws InvalidConfigException if user component is not found.
      */
     public function actionSetIdentity(): User
     {
@@ -52,9 +50,7 @@ class UserController extends Controller
     }
 
     /**
-     * Reset identity, switch to the main user
-     *
-     * @return User
+     * Reset identity, switch to the main user.
      */
     public function actionResetIdentity(): User
     {

@@ -13,13 +13,13 @@ use yii\debug\components\search\Filter;
 class Profile extends Base
 {
     /**
-     * @var string method attribute input search value
+     * @var string method attribute input search value.
      */
-    public string $category;
+    public string $category = '';
     /**
-     * @var int info attribute input search value
+     * @var int info attribute input search value.
      */
-    public int $info;
+    public int $info = 0;
 
     /**
      * {@inheritdoc}
@@ -44,11 +44,6 @@ class Profile extends Base
 
     /**
      * Returns data provider with filled models. Filter applied if needed.
-     *
-     * @param array $params an array of parameter values indexed by parameter names
-     * @param array $models data to return provider for
-     *
-     * @return ArrayDataProvider
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

@@ -25,7 +25,7 @@ class NavigationButton extends Widget
     /** @var string */
     public string $button = '';
     /** @var Panel|null */
-    public Panel $panel = null;
+    public Panel $panel;
 
     /** @var string */
     private string $firstTag = '';

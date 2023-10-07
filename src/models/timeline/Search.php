@@ -15,11 +15,11 @@ use yii\debug\panels\TimelinePanel;
 class Search extends Base
 {
     /**
-     * @var string attribute search
+     * @var string attribute search.
      */
-    public string $category;
+    public string $category = '';
     /**
-     * @var int attribute search
+     * @var int attribute search.
      */
     public int $duration = 0;
 
@@ -45,15 +45,10 @@ class Search extends Base
 
     /**
      * Returns data provider with filled models. Filter applied if needed.
-     *
-     * @param array $params $params an array of parameter values indexed by parameter names
-     * @param TimeLinePanel $panel
-     *
-     * @return DataProvider
      */
     public function search(array $params, TimelinePanel $panel): DataProvider
     {
-        $models = $panel->getModels();
+        $models = $panel->models;
 
         $dataProvider = new DataProvider($panel, [
             'allModels' => $models,

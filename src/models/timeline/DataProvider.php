@@ -12,8 +12,6 @@ use function sprintf;
 
 /**
  * DataProvider implements a data provider based on a data array.
- *
- * @property array $rulers
  */
 class DataProvider extends ArrayDataProvider
 {
@@ -24,8 +22,9 @@ class DataProvider extends ArrayDataProvider
 
     public function __construct(TimelinePanel $panel, array $config = [])
     {
-        $this->panel = $panel;
         parent::__construct($config);
+
+        $this->panel = $panel;
     }
 
     /**
@@ -60,11 +59,7 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Getting HEX color based on model duration
-     *
-     * @param array $model
-     *
-     * @return string
+     * Getting HEX color based on model duration.
      */
     public function getColor(array $model): string
     {
@@ -80,11 +75,7 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns the offset left item, percentage of the total width
-     *
-     * @param array $model
-     *
-     * @return float|int
+     * Returns the offset left item, percentage of the total width.
      */
     public function getLeft(array $model): float|int
     {
@@ -92,11 +83,7 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns item duration, milliseconds
-     *
-     * @param array $model
-     *
-     * @return float
+     * Returns item duration, milliseconds.
      */
     public function getTime(array $model): float
     {
@@ -104,11 +91,7 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns item width percent of the total width
-     *
-     * @param array $model
-     *
-     * @return float|int
+     * Returns item width percent of the total width.
      */
     public function getWidth(array $model): float|int
     {
@@ -116,11 +99,7 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns item, css class
-     *
-     * @param array $model
-     *
-     * @return string
+     * Returns item, css class.
      */
     public function getCssClass(array $model): string
     {
@@ -132,11 +111,7 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * ruler items, key milliseconds, value offset left
-     *
-     * @param int $line number of columns
-     *
-     * @return array
+     * ruler items, key milliseconds, value offset left.
      */
     public function getRulers(int $line = 10): array
     {
@@ -163,10 +138,6 @@ class DataProvider extends ArrayDataProvider
      *   0 => string, memory usage (MB)
      *   1 => float, Y position (percent)
      * ]
-     *
-     * @param array $model
-     *
-     * @return array|null
      */
     public function getMemory(array $model): array|null
     {

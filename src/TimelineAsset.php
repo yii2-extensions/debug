@@ -7,7 +7,7 @@ namespace yii\debug;
 use yii\web\AssetBundle;
 
 /**
- * Timeline asset bundle
+ * Timeline asset bundle.
  */
 class TimelineAsset extends AssetBundle
 {

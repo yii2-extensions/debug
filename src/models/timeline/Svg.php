@@ -12,24 +12,24 @@ use function usort;
 use function strtr;
 
 /**
- * Svg is used to draw a graph using SVG
+ * Svg is used to draw a graph using SVG.
  */
 class Svg extends BaseObject
 {
     /**
-     * @var int Max X coordinate
+     * @var int Max X coordinate.
      */
     public int $x = 1920;
     /**
-     * @var int Max Y coordinate
+     * @var int Max Y coordinate.
      */
     public int $y = 40;
     /**
-     * @var string Stroke color
+     * @var string Stroke color.
      */
     public string $stroke = '#1e6823';
     /**
-     * @var array Listen messages panels
+     * @var array Listen messages panels.
      */
     public array $listenMessages = ['log', 'profiling'];
     /**
@@ -42,7 +42,7 @@ class Svg extends BaseObject
         100 => '#1e6823',
     ];
     /**
-     * @var string Svg template
+     * @var string Svg template.
      */
     public string $template = '<svg xmlns="http://www.w3.org/2000/svg" width="{x}" height="{y}" viewBox="0 0 {x} {y}" preserveAspectRatio="none"><defs>{linearGradient}</defs><g><polygon points="{polygon}" fill="url(#gradient)"/><polyline points="{polyline}" fill="none" stroke="{stroke}" stroke-width="1"/></g></svg>';
 
@@ -56,9 +56,6 @@ class Svg extends BaseObject
      * @var array Each point is defined by an X and a Y coordinate.
      */
     protected array $points = [];
-    /**
-     * @var array|TimelinePanel
-     */
     protected array|TimelinePanel $panel;
 
     /**
@@ -77,9 +74,6 @@ class Svg extends BaseObject
         }
     }
 
-    /**
-     * @return string
-     */
     public function __toString()
     {
         if ($this->points === []) {
@@ -96,18 +90,17 @@ class Svg extends BaseObject
         ]);
     }
 
-    /**
-     * @return bool Has points
-     */
     public function hasPoints(): bool
     {
         return $this->points !== [];
     }
 
     /**
-     * @param array $messages log messages. See [[Logger::messages]] for the structure
+     * Add points to the graph.
      *
-     * @return int added points
+     * @param array $messages log messages. See [[Logger::messages]] for the structure.
+     *
+     * @return int added points.
      */
     protected function addPoints(array $messages): int
     {
@@ -143,7 +136,7 @@ class Svg extends BaseObject
     }
 
     /**
-     * @return string Points attribute for a polygon path
+     * @return string Points attribute for a polygon path.
      */
     protected function polygon(): string
     {
@@ -161,7 +154,7 @@ class Svg extends BaseObject
     }
 
     /**
-     * @return string Points attribute for a polyline path
+     * @return string Points attribute for a polyline path.
      */
     protected function polyline(): string
     {
@@ -178,9 +171,6 @@ class Svg extends BaseObject
         return StringHelper::normalizeNumber($str);
     }
 
-    /**
-     * @return string
-     */
     protected function linearGradient(): string
     {
         $gradient = '<linearGradient id="gradient" x1="0" x2="0" y1="1" y2="0">';

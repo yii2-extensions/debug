@@ -20,15 +20,15 @@ use function is_callable;
 class DumpPanel extends Panel
 {
     /**
-     * @var array the message categories to filter by. If empty array, it means all categories are allowed
+     * @var array the message categories to filter by. If empty array, it means all categories are allowed.
      */
     public array $categories = ['application'];
     /**
-     * @var bool whether the result should be syntax-highlighted
+     * @var bool whether the result should be syntax-highlighted.
      */
     public bool $highlight = true;
     /**
-     * @var int maximum depth that the dumper should go into the variable
+     * @var int maximum depth that the dumper should go into the variable.
      */
     public int $depth = 10;
     /**
@@ -98,8 +98,6 @@ class DumpPanel extends Panel
 
     /**
      * Called by `save()` to format the dumped variable.
-     *
-     * @since 2.1.3
      */
     public function varDump($var)
     {
@@ -122,8 +120,6 @@ class DumpPanel extends Panel
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
      * @param bool $refresh if need to build models from log messages and refresh them.
-     *
-     * @return array models
      */
     protected function getModels(bool $refresh = false): array
     {

@@ -47,9 +47,6 @@ class CurrentRoute extends Model
      * @var int count, before match.
      */
     public int $count = 0;
-    /**
-     * @var bool
-     */
     public bool $hasMatch = false;
 
     /**

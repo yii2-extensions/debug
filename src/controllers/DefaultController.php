@@ -68,11 +68,9 @@ class DefaultController extends Controller
     }
 
     /**
-     * Index action
+     * Index action.
      *
      * @throws Exception|NotFoundHttpException
-     *
-     * @return string
      */
     public function actionIndex(): string
     {
@@ -98,12 +96,12 @@ class DefaultController extends Controller
     }
 
     /**
+     * View action.
+     *
      * @param string|null $tag debug data tag.
      * @param string|null $panel debug panel ID.
      *
      * @throws NotFoundHttpException if debug data aren't found.
-     *
-     * @return string response.
      *
      * @see \yii\debug\Panel
      */
@@ -132,13 +130,9 @@ class DefaultController extends Controller
     }
 
     /**
-     * Toolbar action
+     * Toolbar action.
      *
-     * @param string $tag
-     *
-     *@throws NotFoundHttpException
-     *
-     * @return string
+     * @throws NotFoundHttpException if debug data aren't found.
      */
     public function actionToolbar(string $tag): string
     {
@@ -153,13 +147,9 @@ class DefaultController extends Controller
     }
 
     /**
-     * Download mail action
+     * Download mail action.
      *
-     * @param string $file
-     *
-     * @throws NotFoundHttpException
-     *
-     * @return Response|\yii\console\Response
+     * @throws NotFoundHttpException if mail file isn't found.
      */
     public function actionDownloadMail(string $file): Response|\yii\console\Response
     {
@@ -173,24 +163,8 @@ class DefaultController extends Controller
     }
 
     /**
-     * @param bool $forceReload
+     * Loads debug data.
      *
-     * @return array
-     */
-    protected function getManifest(bool $forceReload = false): array
-    {
-        if ($this->_manifest === [] || $forceReload) {
-            if ($forceReload) {
-                clearstatcache();
-            }
-
-            $this->_manifest = $this->module->logTarget->loadManifest();
-        }
-
-        return $this->_manifest;
-    }
-
-    /**
      * @param string $tag debug data tag.
      * @param int $maxRetry maximum numbers of tag retrieval attempts.
      *
@@ -213,5 +187,18 @@ class DefaultController extends Controller
         }
 
         throw new NotFoundHttpException("Unable to find debug data tagged with '$tag'.");
+    }
+
+    protected function getManifest(bool $forceReload = false): array
+    {
+        if ($this->_manifest === [] || $forceReload) {
+            if ($forceReload) {
+                clearstatcache();
+            }
+
+            $this->_manifest = $this->module->logTarget->loadManifest();
+        }
+
+        return $this->_manifest;
     }
 }

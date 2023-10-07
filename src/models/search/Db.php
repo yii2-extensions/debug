@@ -13,13 +13,13 @@ use yii\debug\components\search\Filter;
 class Db extends Base
 {
     /**
-     * @var string type of the input search value
+     * @var string type of the input search value.
      */
-    public string $type;
+    public string $type = '';
     /**
-     * @var int query attribute input search value
+     * @var int query attribute input search value.
      */
-    public int $query;
+    public int $query = 0;
 
     /**
      * {@inheritdoc}
@@ -44,10 +44,6 @@ class Db extends Base
 
     /**
      * Returns data provider with filled models. Filter applied if needed.
-     *
-     * @param array $models data to return provider for
-     *
-     * @return ArrayDataProvider
      */
     public function search(array $models): ArrayDataProvider
     {

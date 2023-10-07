@@ -47,13 +47,13 @@ class UserPanel extends Panel
         'allow' => false,
     ];
     /**
-     * @var UserSwitch object of switching users
+     * @var UserSwitch object of switching users.
      */
     public UserSwitch $userSwitch;
     /**
-     * @var Model|UserSearchInterface Implements of a User model with search method.
+     * @var Model|UserSearchInterface|null Implements of a User model with search method.
      */
-    public Model|UserSearchInterface $filterModel;
+    public $filterModel;
     /**
      * @var array allowed columns for GridView.
      *
@@ -61,7 +61,7 @@ class UserPanel extends Panel
      */
     public array $filterColumns = [];
     /**
-     * @var string|User ID of the user component or a user object
+     * @var string|User ID of the user component or a user object.
      */
     public string|User $userComponent = 'user';
     /**
@@ -128,8 +128,6 @@ class UserPanel extends Panel
 
     /**
      * Get model for GridView -> FilterModel
-     *
-     * @return Model|UserSearchInterface
      */
     public function getUsersFilterModel(): UserSearchInterface|Model
     {
@@ -137,9 +135,7 @@ class UserPanel extends Panel
     }
 
     /**
-     * Get model for GridView -> DataProvider
-     *
-     * @return DataProviderInterface
+     * Get model for GridView -> DataProvider.
      */
     public function getUserDataProvider(): DataProviderInterface
     {
@@ -147,9 +143,7 @@ class UserPanel extends Panel
     }
 
     /**
-     * Check is available search of users
-     *
-     * @return bool
+     * Check is available search of users.
      */
     public function canSearchUsers(): bool
     {
@@ -163,8 +157,6 @@ class UserPanel extends Panel
      * Check can the main user switch identity.
      *
      * @throws InvalidConfigException
-     *
-     * @return bool
      */
     public function canSwitchUser(): bool
     {
@@ -305,11 +297,7 @@ class UserPanel extends Panel
     }
 
     /**
-     * Converts mixed data to string
-     *
-     * @param mixed $data
-     *
-     * @return string
+     * Converts mixed data to string.
      */
     protected function dataToString(mixed $data): string
     {
@@ -321,11 +309,7 @@ class UserPanel extends Panel
     }
 
     /**
-     * Returns the array that should be set on [[\yii\widgets\DetailView::model]]
-     *
-     * @param IdentityInterface $identity
-     *
-     * @return array
+     * Returns the array that should be set on [[\yii\widgets\DetailView::model]].
      */
     protected function identityData(IdentityInterface $identity): array
     {
