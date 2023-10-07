@@ -73,9 +73,7 @@ class LogPanel extends Panel
      */
     protected function getModels(bool $refresh = false): array
     {
-        if ($refresh) {
-            $this->_models = [];
-
+        if ($this->_models === [] || $refresh) {
             $previousId = null;
             $previousTime = null;
             $id = 1;
