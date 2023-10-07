@@ -37,9 +37,10 @@ use yii\grid\GridView;
     'columns' => [
         [
             'attribute' => 'time',
-            'value' => static function ($data) {
-                $timeInSeconds = floor($data['time']);
-                $millisecondsDiff = (($data['time'] - (int)$timeInSeconds) * 1000);
+            'value' => static function ($data): string {
+                $timeInSeconds = (int) floor($data['time']);
+                $millisecondsDiff = (($data['time'] - $timeInSeconds) * 1000);
+
                 return date('H:i:s.', $timeInSeconds) . sprintf('%03d', $millisecondsDiff);
             },
             'headerOptions' => [
@@ -48,9 +49,9 @@ use yii\grid\GridView;
         ],
         [
             'attribute' => 'name',
-            /*'headerOptions' => [
+            'headerOptions' => [
                 'class' => 'sort-numerical'
-            ],*/
+            ],
         ],
         [
             'attribute' => 'class',
@@ -58,7 +59,7 @@ use yii\grid\GridView;
         [
             'header' => 'Sender',
             'attribute' => 'senderClass',
-            'value' => static function ($data) {
+            'value' => static function ($data): string {
                 return $data['senderClass'];
             },
         ],

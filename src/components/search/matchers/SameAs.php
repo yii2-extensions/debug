@@ -27,13 +27,14 @@ class SameAs extends Base
         if (!is_scalar($value)) {
             $value = VarDumper::export($value);
         }
+
         if ($this->partial) {
             return mb_stripos($value, $this->baseValue, 0, Yii::$app->charset) !== false;
         }
 
         return strcmp(
-            mb_strtoupper($this->baseValue, Yii::$app->charset),
-            mb_strtoupper($value, Yii::$app->charset)
+            mb_strtoupper((string) $this->baseValue, Yii::$app->charset),
+            mb_strtoupper((string) $value, Yii::$app->charset)
         ) === 0;
     }
 }

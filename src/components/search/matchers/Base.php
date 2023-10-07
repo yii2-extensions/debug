@@ -14,7 +14,7 @@ abstract class Base extends Component implements MatcherInterface
     /**
      * @var mixed base value to check
      */
-    protected mixed $baseValue;
+    protected mixed $baseValue = null;
 
     /**
      * {@inheritdoc}

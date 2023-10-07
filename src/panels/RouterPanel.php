@@ -21,9 +21,6 @@ use function is_array;
  */
 class RouterPanel extends Panel
 {
-    /**
-     * @var array
-     */
     private array $_categories = [
         'yii\web\UrlManager::parseRequest',
         'yii\web\UrlRule::parseRequest',

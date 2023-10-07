@@ -33,36 +33,27 @@ class FlattenException
     /**
      * @var string
      */
-    protected string $message;
+    protected string $message = '';
     /**
      * @var int|mixed
      */
-    protected mixed $code;
+    protected mixed $code = null;
     /**
      * @var string
      */
-    protected string $file;
+    protected string $file = '';
     /**
      * @var int
      */
-    protected int $line;
+    protected int $line = 0;
 
     /**
      * @var FlattenException|null
      */
-    private ?FlattenException $_previous;
-    /**
-     * @var array
-     */
-    private array $_trace;
-    /**
-     * @var string
-     */
-    private string $_toString;
-    /**
-     * @var string
-     */
-    private string $_class;
+    private FlattenException|null $_previous = null;
+    private array $_trace = [];
+    private string $_toString = '';
+    private string $_class = '';
 
     /**
      * FlattenException constructor.
@@ -138,9 +129,9 @@ class FlattenException
     /**
      * Returns previous Exception
      *
-     * @return FlattenException the previous `FlattenException` if available or null otherwise.
+     * @return FlattenException|null the previous `FlattenException` if available or null otherwise.
      */
-    public function getPrevious(): ?self
+    public function getPrevious(): self|null
     {
         return $this->_previous;
     }

@@ -45,7 +45,7 @@ class LogTargetTest extends TestCase
         $manifest = $logTarget->loadManifest();
         $lastLogEntry = reset($manifest);
 
-        //$this->assertNotEmpty($lastLogEntry);
+        $this->assertNotEmpty($lastLogEntry);
 
         $logTarget->loadTagToPanels($lastLogEntry['tag']);
         $panelData = $module->panels['log']->data;
