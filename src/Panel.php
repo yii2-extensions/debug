@@ -226,4 +226,3 @@ class Panel extends Component
         return $messages;
     }
 }
-
