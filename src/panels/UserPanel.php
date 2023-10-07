@@ -51,9 +51,9 @@ class UserPanel extends Panel
      */
     public UserSwitch $userSwitch;
     /**
-     * @var Model|UserSearchInterface Implements of a User model with search method.
+     * @var Model|UserSearchInterface|null Implements of a User model with search method.
      */
-    public Model|UserSearchInterface $filterModel;
+    public $filterModel;
     /**
      * @var array allowed columns for GridView.
      *

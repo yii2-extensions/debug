@@ -15,11 +15,11 @@ class Db extends Base
     /**
      * @var string type of the input search value.
      */
-    public string $type;
+    public string $type = '';
     /**
      * @var int query attribute input search value.
      */
-    public int $query;
+    public int $query = 0;
 
     /**
      * {@inheritdoc}

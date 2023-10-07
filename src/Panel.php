@@ -189,7 +189,7 @@ class Panel extends Component
      * @param array $except the message categories to exclude. If empty, it means all categories are allowed.
      * @param bool $stringify Convert non-string (such as closures) to strings.
      *
-     * @return array the filtered messages.
+     * @return array!closure the filtered messages.
      *
      * @see \yii\log\Target::filterMessages()
      */
@@ -198,7 +198,7 @@ class Panel extends Component
         array $categories = [],
         array $except = [],
         bool $stringify = false
-    ): array {
+    ): array|closure {
         if ($this->module === null) {
             return [];
         }
@@ -226,3 +226,4 @@ class Panel extends Component
         return $messages;
     }
 }
+

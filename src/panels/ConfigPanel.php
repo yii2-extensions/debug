@@ -62,7 +62,7 @@ class ConfigPanel extends Panel
     /**
      * Returns the BODY contents of the phpinfo() output.
      */
-    public function getPhpInfo(): array
+    public function getPhpInfo(): string
     {
         ob_start();
         phpinfo();

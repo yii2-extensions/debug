@@ -17,7 +17,7 @@ class Search extends Base
     /**
      * @var string attribute search.
      */
-    public string $category;
+    public string $category = '';
     /**
      * @var int attribute search.
      */
@@ -48,7 +48,7 @@ class Search extends Base
      */
     public function search(array $params, TimelinePanel $panel): DataProvider
     {
-        $models = $panel->getModels();
+        $models = $panel->models;
 
         $dataProvider = new DataProvider($panel, [
             'allModels' => $models,
