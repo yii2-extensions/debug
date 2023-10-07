@@ -23,9 +23,6 @@ class Search extends Base
      */
     public int $duration = 0;
 
-    /**
-     * {@inheritdoc}
-     */
     public function rules(): array
     {
         return [
@@ -33,9 +30,6 @@ class Search extends Base
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function attributeLabels(): array
     {
         return [

@@ -32,33 +32,22 @@ class RequestPanel extends Panel
      */
     public string $censorString = '****';
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'Request';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/request/summary', ['panel' => $this]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/request/detail', ['panel' => $this]);
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @throws InvalidConfigException
      * @throws Exception
      */
@@ -173,6 +162,9 @@ class RequestPanel extends Panel
         return $flashes;
     }
 
+    /**
+     * @throws Exception
+     */
     protected function censorArray(array $data): array
     {
         if (empty($this->censoredVariableNames) || empty($data)) {

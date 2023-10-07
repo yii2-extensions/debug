@@ -14,7 +14,6 @@ use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
 use function array_keys;
-use function array_merge;
 use function reset;
 use function sleep;
 use function str_contains;
@@ -26,9 +25,6 @@ use function str_contains;
  */
 class DefaultController extends Controller
 {
-    /**
-     * {@inheritdoc}
-     */
     public $layout = 'main';
     /**
      * @var Module owner module.
@@ -41,23 +37,18 @@ class DefaultController extends Controller
 
     private array $_manifest = [];
 
-    /**
-     * {@inheritdoc}
-     */
     public function actions(): array
     {
         $actions = [];
 
         foreach ($this->module->panels as $panel) {
-            $actions = array_merge($actions, $panel->actions);
+            $actions = [...$actions, ...$panel->actions];
         }
 
         return $actions;
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @throws BadRequestHttpException
      */
     public function beforeAction($action): bool

@@ -20,8 +20,6 @@ interface MatcherInterface
 
     /**
      * Sets base value to match against.
-     *
-     * @param mixed $value
      */
     public function setValue(mixed $value);
 

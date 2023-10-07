@@ -53,7 +53,7 @@ class UserPanel extends Panel
     /**
      * @var Model|UserSearchInterface|null Implements of a User model with search method.
      */
-    public $filterModel;
+    public Model|null|UserSearchInterface $filterModel = null;
     /**
      * @var array allowed columns for GridView.
      *
@@ -70,8 +70,6 @@ class UserPanel extends Panel
     public string $displayName = 'User';
 
     /**
-     * {@inheritdoc}
-     *
      * @throws InvalidConfigException
      */
     public function init(): void
@@ -103,27 +101,6 @@ class UserPanel extends Panel
     {
         /* @var User $user */
         return is_string($this->userComponent) ? Yii::$app->get($this->userComponent, false) : $this->userComponent;
-    }
-
-    /**
-     * Add ACF rule. AccessControl attach to debug module.
-     * Access rule for main user.
-     */
-    private function addAccessRules(): void
-    {
-        $this->ruleUserSwitch['controllers'] = [$this->module->getUniqueId() . '/user'];
-
-        $this->module->attachBehavior(
-            'access_debug',
-            [
-                'class' => AccessControl::class,
-                'only' => [$this->module->getUniqueId() . '/user', $this->module->getUniqueId() . '/default'],
-                'user' => $this->userSwitch->getMainUser(),
-                'rules' => [
-                    $this->ruleUserSwitch,
-                ],
-            ]
-        );
     }
 
     /**
@@ -188,33 +165,21 @@ class UserPanel extends Panel
         return $allowSwitchUser;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return $this->displayName;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/user/summary', ['panel' => $this]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/user/detail', ['panel' => $this]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function save(): mixed
     {
         $identity = Yii::$app->{$this->userComponent}->identity;
@@ -283,9 +248,6 @@ class UserPanel extends Panel
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function isEnabled(): bool
     {
         try {
@@ -318,5 +280,28 @@ class UserPanel extends Panel
         }
 
         return get_object_vars($identity);
+    }
+
+    /**
+     * Add ACF rule. AccessControl attach to debug module.
+     * Access rule for main user.
+     *
+     * @throws InvalidConfigException
+     */
+    private function addAccessRules(): void
+    {
+        $this->ruleUserSwitch['controllers'] = [$this->module->getUniqueId() . '/user'];
+
+        $this->module->attachBehavior(
+            'access_debug',
+            [
+                'class' => AccessControl::class,
+                'only' => [$this->module->getUniqueId() . '/user', $this->module->getUniqueId() . '/default'],
+                'user' => $this->userSwitch->getMainUser(),
+                'rules' => [
+                    $this->ruleUserSwitch,
+                ],
+            ]
+        );
     }
 }

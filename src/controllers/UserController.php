@@ -18,8 +18,6 @@ use yii\web\User;
 class UserController extends Controller
 {
     /**
-     * {@inheritdoc}
-     *
      * @throws BadRequestHttpException if session is not active.
      */
     public function beforeAction($action): bool
@@ -36,14 +34,19 @@ class UserController extends Controller
     /**
      * Set new identity, switch user.
      *
-     * @throws InvalidConfigException if user component is not found.
+     * @throws InvalidConfigException if a user component is not found.
+     * @throws BadRequestHttpException if user is not found.
      */
     public function actionSetIdentity(): User
     {
         $user_id = Yii::$app->request->post('user_id');
+        $newIdentity = Yii::$app->user->identity->findIdentity($user_id);
+
+        if ($newIdentity === null) {
+            throw new BadRequestHttpException('User not found');
+        }
 
         $userSwitch = new UserSwitch();
-        $newIdentity = Yii::$app->user->identity->findIdentity($user_id);
         $userSwitch->setUserByIdentity($newIdentity);
 
         return Yii::$app->user;

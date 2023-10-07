@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+use Yii;
 use yii\base\InvalidConfigException;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
@@ -21,13 +22,20 @@ class User extends Model
      */
     public Model|null $identityImplement = null;
 
-    /**
-     * {@inheritdoc}
-     */
+    public function __get($name)
+    {
+        return $this->identityImplement->__get($name);
+    }
+
+    public function __set($name, $value)
+    {
+        $this->identityImplement->__set($name, $value);
+    }
+
     public function init(): void
     {
-        if (\Yii::$app->user && \Yii::$app->user->identityClass) {
-            $identityImplementation = new \Yii::$app->user->identityClass();
+        if (Yii::$app->user && Yii::$app->user->identityClass) {
+            $identityImplementation = new Yii::$app->user->identityClass();
 
             if ($identityImplementation instanceof Model) {
                 $this->identityImplement = $identityImplementation;
@@ -36,41 +44,17 @@ class User extends Model
         parent::init();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function __get($name)
-    {
-        return $this->identityImplement->__get($name);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __set($name, $value)
-    {
-        return $this->identityImplement->__set($name, $value);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function rules(): array
     {
         return [[array_keys($this->identityImplement->getAttributes()), 'safe']];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function attributes(): array
     {
         return $this->identityImplement->attributes();
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @throws InvalidConfigException
      */
     public function search($params): ActiveDataProvider|null
@@ -87,7 +71,7 @@ class User extends Model
      *
      * @param array $params the data array to load model.
      *
-     * @throws InvalidConfigException if model is not instance of ActiveRecord.
+     * @throws InvalidConfigException if model is not an instance of ActiveRecord.
      */
     private function searchActiveDataProvider(array $params): ActiveDataProvider
     {

@@ -9,9 +9,6 @@ namespace yii\debug\components\search\matchers;
  */
 class GreaterThanOrEqual extends Base
 {
-    /**
-     * {@inheritdoc}
-     */
     public function match(mixed $value): bool
     {
         return $value >= $this->baseValue;

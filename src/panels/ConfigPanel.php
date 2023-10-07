@@ -19,25 +19,6 @@ use function str_replace;
  */
 class ConfigPanel extends Panel
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function getName(): string
-    {
-        return 'Configuration';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render('panels/config/summary', ['panel' => $this]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/config/detail', ['panel' => $this]);
@@ -57,6 +38,11 @@ class ConfigPanel extends Panel
         ksort($data);
 
         return $data;
+    }
+
+    public function getName(): string
+    {
+        return 'Configuration';
     }
 
     /**
@@ -85,9 +71,11 @@ class ConfigPanel extends Panel
         );
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    public function getSummary(): string
+    {
+        return Yii::$app->view->render('panels/config/summary', ['panel' => $this]);
+    }
+
     public function save(): mixed
     {
         return [

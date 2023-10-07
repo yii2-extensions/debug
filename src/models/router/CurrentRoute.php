@@ -49,9 +49,6 @@ class CurrentRoute extends Model
     public int $count = 0;
     public bool $hasMatch = false;
 
-    /**
-     * {@inheritdoc}
-     */
     public function init(): void
     {
         parent::init();

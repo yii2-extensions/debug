@@ -44,25 +44,16 @@ class RouterPanel extends Panel
         return $this->_categories;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'Router';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/router/summary', ['panel' => $this]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/router/detail', [
@@ -72,9 +63,6 @@ class RouterPanel extends Panel
         ]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function save(): mixed
     {
         if (Yii::$app->requestedAction) {

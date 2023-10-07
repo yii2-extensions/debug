@@ -9,6 +9,12 @@ use yii\debug\Panel;
 
 class PanelTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->mockWebApplication();
+    }
+
     public function testGetTraceLine_DefaultLink(): void
     {
         $traceConfig = [
@@ -66,7 +72,7 @@ class PanelTest extends TestCase
         ];
         $panel = $this->getPanel();
         $expected = 'http://my.custom.link';
-        $panel->module->traceLine = fn() => $expected;
+        $panel->module->traceLine = fn () => $expected;
         $this->assertEquals($expected, $panel->getTraceLine($traceConfig));
     }
 
@@ -78,7 +84,7 @@ class PanelTest extends TestCase
             'text' => 'custom text',
         ];
         $panel = $this->getPanel();
-        $panel->module->traceLine = fn() => '<a href="ide://open?url={file}&line={line}">{text}</a>';
+        $panel->module->traceLine = fn () => '<a href="ide://open?url={file}&line={line}">{text}</a>';
         $this->assertEquals(
             '<a href="ide://open?url=file.php&line=10">custom text</a>',
             $panel->getTraceLine($traceConfig)
@@ -116,12 +122,6 @@ class PanelTest extends TestCase
             '<a href="ide://open?url=file:///app/localdata/file.php&line=10">/app/data/file.php:10</a>',
             $panel->getTraceLine($traceConfig)
         );
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->mockWebApplication();
     }
 
     private function getPanel()

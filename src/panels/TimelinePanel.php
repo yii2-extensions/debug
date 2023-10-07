@@ -58,8 +58,6 @@ class TimelinePanel extends Panel
     private int $_memory = 0;
 
     /**
-     * {@inheritdoc}
-     *
      * @throws InvalidConfigException
      */
     public function init(): void
@@ -72,16 +70,14 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * {@inheritdoc}
+     * Color indicators item profile,
+     * key: percentages of time request, value: hex color.
      */
-    public function getName(): string
+    public function getColors(): array
     {
-        return 'Timeline';
+        return $this->_colors;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getDetail(): string
     {
         $searchModel = new Search();
@@ -95,8 +91,68 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * {@inheritdoc}
+     * Request duration, milliseconds.
      */
+    public function getDuration(): float
+    {
+        return $this->_duration;
+    }
+
+    /**
+     * Memory peak in request, bytes. (Obtained by memory_get_peak_usage()).
+     */
+    public function getMemory(): int
+    {
+        return $this->_memory;
+    }
+
+    /**
+     * Returns an array of models that represents logs of the current request.
+     * Can be used with data providers, such as \yii\data\ArrayDataProvider.
+     *
+     * @param bool $refresh if you need to build models from log messages and refresh them.
+     */
+    public function getModels(bool $refresh = false): array
+    {
+        if ($this->_models === [] || $refresh) {
+            if (isset($this->module->panels['profiling']->data['messages'])) {
+                $this->_models = Yii::getLogger()->calculateTimings($this->module->panels['profiling']->data['messages']);
+            }
+        }
+
+        return $this->_models;
+    }
+
+    public function getName(): string
+    {
+        return 'Timeline';
+    }
+
+    /**
+     * Start request, timestamp (obtained by microtime(true)).
+     */
+    public function getStart(): float
+    {
+        return $this->_start;
+    }
+
+    /**
+     * @throws InvalidConfigException
+     */
+    public function getSvg(): Svg
+    {
+        if ($this->_svg === null) {
+            $this->_svg = Yii::createObject($this->_svgOptions, [$this]);
+        }
+
+        return $this->_svg;
+    }
+
+    public function getSvgOptions(): array
+    {
+        return $this->_svgOptions;
+    }
+
     public function load(mixed $data): void
     {
         if (empty($data['start'])) {
@@ -128,9 +184,6 @@ class TimelinePanel extends Panel
         $this->_memory = $data['memory'];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function save(): mixed
     {
         return [
@@ -150,15 +203,6 @@ class TimelinePanel extends Panel
         $this->_colors = $colors;
     }
 
-    /**
-     * Color indicators item profile,
-     * key: percentages of time request, value: hex color.
-     */
-    public function getColors(): array
-    {
-        return $this->_colors;
-    }
-
     public function setSvgOptions(array $options): void
     {
         if ($this->_svg !== null) {
@@ -166,65 +210,5 @@ class TimelinePanel extends Panel
         }
 
         $this->_svgOptions = array_merge($this->_svgOptions, $options);
-    }
-
-    public function getSvgOptions(): array
-    {
-        return $this->_svgOptions;
-    }
-
-    /**
-     * Start request, timestamp (obtained by microtime(true)).
-     */
-    public function getStart(): float
-    {
-        return $this->_start;
-    }
-
-    /**
-     * Request duration, milliseconds.
-     */
-    public function getDuration(): float
-    {
-        return $this->_duration;
-    }
-
-    /**
-     * Memory peak in request, bytes. (Obtained by memory_get_peak_usage()).
-     */
-    public function getMemory(): int
-    {
-        return $this->_memory;
-    }
-
-    /**
-     * @throws InvalidConfigException
-     */
-    public function getSvg(): Svg
-    {
-        if ($this->_svg === null) {
-            $this->_svg = Yii::createObject($this->_svgOptions, [$this]);
-        }
-
-        return $this->_svg;
-    }
-
-    /**
-     * Returns an array of models that represents logs of the current request.
-     * Can be used with data providers, such as \yii\data\ArrayDataProvider.
-     *
-     * @param bool $refresh if you need to build models from log messages and refresh them.
-     */
-    protected function getModels(bool $refresh = false): array
-    {
-        if ($refresh) {
-            $this->_models = [];
-
-            if (isset($this->module->panels['profiling']->data['messages'])) {
-                $this->_models = Yii::getLogger()->calculateTimings($this->module->panels['profiling']->data['messages']);
-            }
-        }
-
-        return $this->_models;
     }
 }

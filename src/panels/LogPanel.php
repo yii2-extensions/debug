@@ -19,25 +19,16 @@ class LogPanel extends Panel
      */
     private array $_models = [];
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'Logs';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/log/summary', ['data' => $this->data, 'panel' => $this]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getDetail(): string
     {
         $searchModel = new Log();
@@ -50,9 +41,6 @@ class LogPanel extends Panel
         ]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function save(): mixed
     {
         $except = [];

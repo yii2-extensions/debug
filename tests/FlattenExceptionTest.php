@@ -154,7 +154,7 @@ class FlattenExceptionTest extends TestCase
 
     public function testClosureSerialize(): void
     {
-        $exception = $this->createException(fn() => 1 + 1);
+        $exception = $this->createException(fn () => 1 + 1);
 
         $flattened = new FlattenException($exception);
         $this->assertStringContainsString('Closure', serialize($flattened));

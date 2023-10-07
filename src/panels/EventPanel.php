@@ -23,9 +23,6 @@ class EventPanel extends Panel
      */
     private array $_events = [];
 
-    /**
-     * {@inheritdoc}
-     */
     public function init(): void
     {
         parent::init();
@@ -44,17 +41,11 @@ class EventPanel extends Panel
         });
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'Events';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/event/summary', [
@@ -63,9 +54,6 @@ class EventPanel extends Panel
         ]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getDetail(): string
     {
         $searchModel = new \yii\debug\models\search\Event();
@@ -78,17 +66,11 @@ class EventPanel extends Panel
         ]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function save(): mixed
     {
         return $this->_events;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function isEnabled(): bool
     {
         return parent::isEnabled();

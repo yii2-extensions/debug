@@ -25,9 +25,6 @@ class Log extends Base
      */
     public int $message = 0;
 
-    /**
-     * {@inheritdoc}
-     */
     public function rules(): array
     {
         return [
@@ -35,9 +32,6 @@ class Log extends Base
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function attributeLabels(): array
     {
         return [

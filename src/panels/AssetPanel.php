@@ -17,33 +17,26 @@ use function array_walk;
  */
 class AssetPanel extends Panel
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function getName(): string
-    {
-        return 'Asset Bundles';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render('panels/assets/summary', ['panel' => $this]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/assets/detail', ['panel' => $this]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    public function getName(): string
+    {
+        return 'Asset Bundles';
+    }
+
+    public function getSummary(): string
+    {
+        return Yii::$app->view->render('panels/assets/summary', ['panel' => $this]);
+    }
+
+    public function isEnabled(): bool
+    {
+        return isset(Yii::$app->view->assetManager) && Yii::$app->view->assetManager;
+    }
+
     public function save(): mixed
     {
         $bundles = Yii::$app->view->assetManager->bundles;
@@ -78,14 +71,6 @@ class AssetPanel extends Panel
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function isEnabled(): bool
-    {
-        return isset(Yii::$app->view->assetManager) && Yii::$app->view->assetManager;
-    }
-
-    /**
      * Additional formatting for view.
      *
      * @param AssetBundle[] $bundles Array of bundles to formatting.
@@ -117,10 +102,6 @@ class AssetPanel extends Panel
 
     /**
      * Format associative array of params to simple value.
-     *
-     * @param array $params
-     *
-     * @return array
      */
     protected function formatOptions(array &$params): array
     {

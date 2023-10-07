@@ -8,9 +8,9 @@ use Closure;
 use Throwable;
 use yii\base\Component;
 use yii\helpers\ArrayHelper;
+use yii\helpers\StringHelper;
 use yii\helpers\Url;
 use yii\helpers\VarDumper;
-use yii\helpers\StringHelper;
 
 /**
  * Panel is a base class for debugger panel classes.
@@ -52,9 +52,6 @@ class Panel extends Component
         return '';
     }
 
-    /**
-     * @return FlattenException|null
-     */
     public function getError(): ?FlattenException
     {
         return $this->error;
@@ -169,9 +166,6 @@ class Panel extends Component
         return null;
     }
 
-    /**
-     * @param FlattenException $error
-     */
     public function setError(FlattenException $error): void
     {
         $this->error = $error;

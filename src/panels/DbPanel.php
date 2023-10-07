@@ -63,6 +63,11 @@ class DbPanel extends Panel
      * of [ property => value ], for example: [ 'type' => 'SELECT' ]
      */
     public array $defaultFilter = [];
+
+    /**
+     * @var array of event names used to get profile logs.
+     */
+    public array $dbEventNames = ['yii\db\Command::query', 'yii\db\Command::execute'];
     /**
      * @var array db queries info extracted to array as models, to use with data provider.
      */
@@ -76,14 +81,6 @@ class DbPanel extends Panel
      */
     private array $_profileLogs = [];
 
-    /**
-     * @var array of event names used to get profile logs.
-     */
-    public array $dbEventNames = ['yii\db\Command::query', 'yii\db\Command::execute'];
-
-    /**
-     * {@inheritdoc}
-     */
     public function init(): void
     {
         $this->actions['db-explain'] = [
@@ -92,9 +89,6 @@ class DbPanel extends Panel
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'Database';
@@ -108,9 +102,6 @@ class DbPanel extends Panel
         return 'DB';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getSummary(): string
     {
         $timings = $this->calculateTimings();
@@ -128,8 +119,6 @@ class DbPanel extends Panel
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @throws InvalidConfigException
      */
     public function getDetail(): string
@@ -140,7 +129,7 @@ class DbPanel extends Panel
             $searchModel->load($this->defaultFilter, '');
         }
 
-        $models = $this->getModels();
+        $models = $this->_models;
         $queryDataProvider = $searchModel->search($models);
         $queryDataProvider->getSort()->defaultOrder = $this->defaultOrder;
         $sumDuplicates = $this->sumDuplicateQueries($models);
@@ -166,9 +155,6 @@ class DbPanel extends Panel
         return $this->_timings;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function save(): mixed
     {
         return ['messages' => $this->getProfileLogs()];
@@ -176,41 +162,10 @@ class DbPanel extends Panel
 
     /**
      * Returns all profile logs of the current request for this panel. It includes categories specified in $this->dbEventNames property.
-     *
-     * @return array
      */
     public function getProfileLogs(): array
     {
         return $this->_profileLogs;
-    }
-
-    /**
-     * Returns total query time.
-     *
-     * @param array $timings
-     *
-     * @return int total time
-     */
-    protected function getTotalQueryTime(array $timings): int
-    {
-        $queryTime = 0;
-
-        foreach ($timings as $timing) {
-            $queryTime += $timing['duration'];
-        }
-
-        return $queryTime;
-    }
-
-    /**
-     * Returns an array of models that represents logs of the current request.
-     * Can be used with data providers such as \yii\data\ArrayDataProvider.
-     *
-     * @return array models
-     */
-    protected function getModels(): array
-    {
-        return $this->_models;
     }
 
     /**
@@ -314,26 +269,9 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns database query type.
-     *
-     * @param string $timing timing procedure string
-     *
-     * @return string query type such as select, insert, delete, etc.
-     */
-    protected function getQueryType(string $timing): string
-    {
-        $timing = ltrim($timing);
-        preg_match('/^([A-z]*)/', $timing, $matches);
-
-        return count($matches) ? mb_strtoupper($matches[0], 'utf8') : '';
-    }
-
-    /**
      * Check if given queries count is critical, according to the settings.
      *
      * @param int $count queries count
-     *
-     * @return bool
      */
     public function isQueryCountCritical(int $count): bool
     {
@@ -344,8 +282,6 @@ class DbPanel extends Panel
      * Check if the number of calls by "Caller" is excessive, according to the settings.
      *
      * @param int $numCalls queries count
-     *
-     * @return bool
      */
     public function isNumberOfCallsExcessive(int $numCalls): bool
     {
@@ -367,9 +303,6 @@ class DbPanel extends Panel
         );
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function isEnabled(): bool
     {
         try {
@@ -379,21 +312,6 @@ class DbPanel extends Panel
         }
 
         return parent::isEnabled();
-    }
-
-    /**
-     * @throws InvalidConfigException
-     *
-     * @return bool Whether the DB component has support for EXPLAIN queries
-     */
-    protected function hasExplain(): bool
-    {
-        $db = $this->getDb();
-
-        return match ($db->getDriverName()) {
-            'mysql', 'sqlite', 'pgsql' => true,
-            default => false,
-        };
     }
 
     /**
@@ -414,5 +332,62 @@ class DbPanel extends Panel
     public function getDb(): Connection
     {
         return Yii::$app->get($this->db);
+    }
+
+    /**
+     * Returns total query time.
+     *
+     * @return int total time
+     */
+    protected function getTotalQueryTime(array $timings): int
+    {
+        $queryTime = 0;
+
+        foreach ($timings as $timing) {
+            $queryTime += $timing['duration'];
+        }
+
+        return $queryTime;
+    }
+
+    /**
+     * Returns an array of models that represents logs of the current request.
+     * Can be used with data providers such as \yii\data\ArrayDataProvider.
+     *
+     * @return array models
+     */
+    protected function getModels(): array
+    {
+        return $this->_models;
+    }
+
+    /**
+     * Returns database query type.
+     *
+     * @param string $timing timing procedure string
+     *
+     * @return string query type such as select, insert, delete, etc.
+     */
+    protected function getQueryType(string $timing): string
+    {
+        $timing = ltrim($timing);
+        preg_match('/^([A-z]*)/', $timing, $matches);
+
+        return count($matches) ? mb_strtoupper($matches[0], 'utf8') : '';
+    }
+
+    /**
+     * @throws InvalidConfigException
+     *
+     * @return bool Whether the DB component has support for EXPLAIN queries
+     */
+    protected function hasExplain(): bool
+    {
+        $db = $this->getDb();
+
+        return match ($db->getDriverName()) {
+            'mysql', 'sqlite', 'pgsql' => true,
+            default => false,
+        };
     }
 }

@@ -18,25 +18,23 @@ use function reset;
  */
 class NavigationButton extends Widget
 {
-    /** @var array */
     public array $manifest = [];
-    /** @var string */
+
     public string $tag = '';
-    /** @var string */
+
     public string $button = '';
-    /** @var Panel|null */
+    /**
+     * @var Panel|null
+     */
     public Panel $panel;
 
-    /** @var string */
+
     private string $firstTag = '';
-    /** @var string */
+
     private string $lastTag = '';
-    /** @var int */
+
     private int $currentTagIndex = 0;
 
-    /**
-     * @inheritDoc
-     */
     public function beforeRun(): bool
     {
         $manifestKeys = array_keys($this->manifest);
@@ -47,9 +45,6 @@ class NavigationButton extends Widget
         return parent::beforeRun();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function run()
     {
         $method = "render{$this->button}Button";
@@ -57,9 +52,6 @@ class NavigationButton extends Widget
         return $this->$method();
     }
 
-    /**
-     * @return string
-     */
     private function renderPrevButton(): string
     {
         $needLink = $this->tag !== $this->firstTag;
@@ -71,9 +63,6 @@ class NavigationButton extends Widget
         );
     }
 
-    /**
-     * @return string
-     */
     private function renderNextButton(): string
     {
         $needLink = $this->tag !== $this->lastTag;
@@ -87,8 +76,6 @@ class NavigationButton extends Widget
 
     /**
      * @param int $inc Direction
-     *
-     * @return array
      */
     private function getRoute(int $inc): array
     {
