@@ -17,35 +17,35 @@ class Debug extends Base
     /**
      * @var string tag attribute input search value.
      */
-    public string $tag;
+    public string $tag = '';
     /**
      * @var string ip attribute input search value.
      */
-    public string $ip;
+    public string $ip = '';
     /**
      * @var string method attribute input search value.
      */
-    public string $method;
+    public string $method = '';
     /**
      * @var int ajax attribute input search value.
      */
-    public int $ajax;
+    public int $ajax = -1;
     /**
      * @var string url attribute input search value.
      */
-    public string $url;
+    public string $url = '';
     /**
      * @var string status code attribute input search value.
      */
-    public string $statusCode;
+    public string $statusCode = '';
     /**
      * @var int sql count attribute input search value.
      */
-    public int $sqlCount;
+    public int $sqlCount = 0;
     /**
      * @var int total mail counts attribute input search value.
      */
-    public int $mailCount;
+    public int $mailCount = 0;
     /**
      * @var array critical codes, used to determine grid row options.
      */

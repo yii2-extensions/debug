@@ -50,6 +50,7 @@ class LogTarget extends Target
         $dataFile = "$path/$this->tag.data";
         $data = [];
         $exceptions = [];
+
         foreach ($this->module->panels as $id => $panel) {
             try {
                 $panelData = $panel->save();
@@ -62,10 +63,12 @@ class LogTarget extends Target
                 $exceptions[$id] = new FlattenException($exception);
             }
         }
+
         $data['summary'] = $summary;
         $data['exceptions'] = $exceptions;
 
         file_put_contents($dataFile, serialize($data));
+        
         if ($this->module->fileMode !== null) {
             @chmod($dataFile, $this->module->fileMode);
         }
@@ -152,13 +155,17 @@ class LogTarget extends Target
             $n = count($manifest) - $this->module->historySize;
             foreach (array_keys($manifest) as $tag) {
                 $file = $this->module->dataPath . "/$tag.data";
+
                 @unlink($file);
+
                 if (isset($manifest[$tag]['mailFiles'])) {
                     foreach ($manifest[$tag]['mailFiles'] as $mailFile) {
                         @unlink(Yii::getAlias($this->module->panels['mail']->mailPath) . "/$mailFile");
                     }
                 }
+
                 unset($manifest[$tag]);
+
                 if (--$n <= 0) {
                     break;
                 }
@@ -228,6 +235,7 @@ class LogTarget extends Target
         if (!isset($this->module->panels['db'])) {
             return 0;
         }
+
         $profileLogs = $this->module->panels['db']->getProfileLogs();
 
         // / 2 because messages are in couple (begin/end)
