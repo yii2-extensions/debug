@@ -19,20 +19,20 @@ use function reset;
 class NavigationButton extends Widget
 {
     /** @var array */
-    public array $manifest;
+    public array $manifest = [];
     /** @var string */
-    public string $tag;
+    public string $tag = '';
     /** @var string */
-    public string $button;
-    /** @var Panel */
-    public Panel $panel;
+    public string $button = '';
+    /** @var Panel|null */
+    public Panel $panel = null;
 
     /** @var string */
-    private string $firstTag;
+    private string $firstTag = '';
     /** @var string */
-    private string $lastTag;
+    private string $lastTag = '';
     /** @var int */
-    private int $currentTagIndex;
+    private int $currentTagIndex = 0;
 
     /**
      * @inheritDoc
@@ -94,7 +94,7 @@ class NavigationButton extends Widget
     {
         return [
             'view',
-            'panel' => $this->panel->id,
+            'panel' => $this->panel?->id,
             'tag' => array_keys($this->manifest)[$this->currentTagIndex + $inc],
         ];
     }

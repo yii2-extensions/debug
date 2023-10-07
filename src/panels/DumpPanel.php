@@ -40,7 +40,7 @@ class DumpPanel extends Panel
     /**
      * @var array log messages extracted to array as models, to use with data provider.
      */
-    private array $_models;
+    private array $_models = [];
 
     /**
      * {@inheritdoc}

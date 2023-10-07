@@ -33,7 +33,7 @@ class DbPanel extends Panel
      * If the number of queries exceeds this number, the execution is considered taking critical number of DB queries.
      * If it is `null`, this feature is disabled.
      */
-    public int|null $criticalQueryThreshold;
+    public int|null $criticalQueryThreshold = null;
     /**
      * @var int|null the number of DB calls the same backtrace can make before considered an "Excessive Caller."
      * If it is `null`, this feature is disabled.
@@ -67,27 +67,23 @@ class DbPanel extends Panel
     /**
      * @var array the default filter to apply to the database queries. In the format
      * of [ property => value ], for example: [ 'type' => 'SELECT' ]
-     *
-     * @since 2.0.7
      */
     public array $defaultFilter = [];
     /**
      * @var array db queries info extracted to array as models, to use with data provider.
      */
-    private array $_models;
+    private array $_models = [];
     /**
      * @var array current database request timings
      */
-    private array $_timings;
+    private array $_timings = [];
     /**
      * @var array current database profile logs
      */
-    private array $_profileLogs;
+    private array $_profileLogs = [];
 
     /**
      * @var array of event names used to get profile logs.
-     *
-     * @since 2.1.17
      */
     public array $dbEventNames = ['yii\db\Command::query', 'yii\db\Command::execute'];
 

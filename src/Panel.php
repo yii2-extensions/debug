@@ -23,15 +23,12 @@ class Panel extends Component
      * @var string panel unique identifier.
      * It is set automatically by the container module.
      */
-    public string $id;
+    public string $id = '';
     /**
      * @var string request data set identifier.
      */
-    public string $tag;
-    /**
-     * @var Module
-     */
-    public Module $module;
+    public string $tag = '';
+    public Module|null $module = null;
     /**
      * @var mixed data associated with panel
      */
@@ -46,7 +43,7 @@ class Panel extends Component
     /**
      * @var FlattenException|null Error while saving the panel
      */
-    protected FlattenException|null $error;
+    protected FlattenException|null $error = null;
 
     /**
      * @return string name of the panel
@@ -101,7 +98,7 @@ class Panel extends Component
     public function getUrl(array $additionalParams = null): string
     {
         $route = [
-            '/' . $this->module->getUniqueId() . '/default/view',
+            '/' . $this->module?->getUniqueId() . '/default/view',
             'panel' => $this->id,
             'tag' => $this->tag,
         ];
@@ -122,10 +119,16 @@ class Panel extends Component
      */
     public function getTraceLine(array $options): string
     {
+        if ($this->module === null) {
+            return '';
+        }
+
         if (!isset($options['text'])) {
             $options['text'] = "{$options['file']}:{$options['line']}";
         }
+
         $traceLine = $this->module->traceLine;
+
         if ($traceLine === false) {
             return $options['text'];
         }
@@ -142,6 +145,7 @@ class Panel extends Component
         }
 
         $rawLink = $traceLine instanceof Closure ? $traceLine($options, $this) : $traceLine;
+
         return strtr($rawLink, ['{file}' => $options['file'], '{line}' => $options['line'], '{text}' => $options['text']]);
     }
 
@@ -192,7 +196,6 @@ class Panel extends Component
      *
      * @return array the filtered messages.
      *
-     * @since 2.1.4
      * @see \yii\log\Target::filterMessages()
      */
     protected function getLogMessages(
@@ -201,6 +204,10 @@ class Panel extends Component
         array $except = [],
         bool $stringify = false
     ): array {
+        if ($this->module === null) {
+            return [];
+        }
+
         $target = $this->module->logTarget;
         $messages = $target->filterMessages(...);
 

@@ -37,12 +37,9 @@ class DefaultController extends Controller
     /**
      * @var array the summary data (e.g. URL, time)
      */
-    public array $summary;
+    public array $summary = [];
 
-    /**
-     * @var array
-     */
-    private array $_manifest;
+    private array $_manifest = [];
 
     /**
      * {@inheritdoc}
@@ -50,6 +47,7 @@ class DefaultController extends Controller
     public function actions(): array
     {
         $actions = [];
+
         foreach ($this->module->panels as $panel) {
             $actions = array_merge($actions, $panel->actions);
         }
@@ -181,8 +179,11 @@ class DefaultController extends Controller
      */
     protected function getManifest(bool $forceReload = false): array
     {
-        if ($forceReload) {
-            clearstatcache();
+        if ($this->_manifest === [] || $forceReload) {
+            if ($forceReload) {
+                clearstatcache();
+            }
+
             $this->_manifest = $this->module->logTarget->loadManifest();
         }
 

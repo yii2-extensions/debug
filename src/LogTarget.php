@@ -31,15 +31,16 @@ class LogTarget extends Target
     /**
      * @var string
      */
-    public string $tag;
+    public string $tag = '';
 
     /**
      * @param Module $module
      * @param array $config
      */
-    public function __construct($module, array $config = [])
+    public function __construct(Module $module, array $config = [])
     {
         parent::__construct($config);
+
         $this->module = $module;
         $this->tag = uniqid();
     }

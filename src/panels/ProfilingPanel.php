@@ -22,7 +22,7 @@ class ProfilingPanel extends Panel
     /**
      * @var array current request profile timings
      */
-    private array $_models;
+    private array $_models = [];
 
     /**
      * {@inheritdoc}

@@ -106,7 +106,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * This value will be used by PHP [[chmod()]] function. No umask will be applied.
      * If not set, the permission will be determined by the current environment.
      */
-    public int $fileMode;
+    public int $fileMode = 0666;
     /**
      * @var int the permission to be set for newly created directories.
      * This value will be used by PHP [[chmod()]] function. No umask will be applied.

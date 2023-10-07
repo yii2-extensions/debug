@@ -35,23 +35,23 @@ class TimelinePanel extends Panel
     /**
      * @var array log messages extracted to array as models, to use with data provider.
      */
-    private array $_models;
+    private array $_models = [];
     /**
      * @var float Start request, timestamp (obtained by microtime(true))
      */
-    private float $_start;
+    private float $_start = 0;
     /**
      * @var float End request, timestamp (obtained by microtime(true))
      */
-    private float $_end;
+    private float $_end = 0;
     /**
      * @var float Request duration, milliseconds
      */
-    private float $_duration;
+    private float $_duration = 0;
     /**
      * @var Svg|null
      */
-    private Svg|null $_svg;
+    private Svg|null $_svg = null;
     /**
      * @var array
      */
@@ -61,7 +61,7 @@ class TimelinePanel extends Panel
     /**
      * @var int Used memory in request
      */
-    private int $_memory;
+    private int $_memory = 0;
 
     /**
      * {@inheritdoc}
@@ -174,6 +174,7 @@ class TimelinePanel extends Panel
         if ($this->_svg !== null) {
             $this->_svg = null;
         }
+
         $this->_svgOptions = array_merge($this->_svgOptions, $options);
     }
 
