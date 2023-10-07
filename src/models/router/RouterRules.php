@@ -50,8 +50,6 @@ class RouterRules extends Model
     public array $rules = [];
 
     /**
-     * {@inheritdoc}
-     *
      * @throws ReflectionException
      */
     public function init(): void

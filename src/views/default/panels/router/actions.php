@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types = 1);
+declare (strict_types=1);
 
 use yii\debug\models\router\ActionRoutes;
 use yii\helpers\Html;

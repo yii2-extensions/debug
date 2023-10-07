@@ -48,8 +48,6 @@ class ActionRoutes extends Model
     public array $routes = [];
 
     /**
-     * {@inheritdoc}
-     *
      * @throws ReflectionException
      */
     public function init(): void
@@ -91,10 +89,6 @@ class ActionRoutes extends Model
 
     /**
      * Validates if the given class is a valid web or REST controller class.
-     *
-     * @param string $controllerClass
-     *
-     * @return bool
      */
     protected function validateControllerClass(string $controllerClass): bool
     {
@@ -215,8 +209,6 @@ class ActionRoutes extends Model
      * Returns all available application routes (non-console) grouped by the controller's name.
      *
      * @throws ReflectionException
-     *
-     * @return array
      */
     protected function getAppRoutes(): array
     {
@@ -257,8 +249,6 @@ class ActionRoutes extends Model
 
     /**
      * Returns the first rule's name that matched given route (for creation) with number of scanned rules.
-     *
-     * @param string $route
      *
      * @return array rule name (or null if not matched) and number of scanned rules
      */

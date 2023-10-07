@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types = 1);
+declare (strict_types=1);
 
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\models\timeline\Search;

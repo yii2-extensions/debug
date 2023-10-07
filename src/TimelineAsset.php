@@ -11,25 +11,16 @@ use yii\web\AssetBundle;
  */
 class TimelineAsset extends AssetBundle
 {
-    /**
-     * {@inheritdoc}
-     */
     public $sourcePath = '@yii/debug/assets';
-    /**
-     * {@inheritdoc}
-     */
+    
     public $css = [
         'css/timeline.css',
     ];
-    /**
-     * {@inheritdoc}
-     */
+    
     public $js = [
         'js/timeline.js',
     ];
-    /**
-     * {@inheritdoc}
-     */
+    
     public $depends = [
         DebugAsset::class,
     ];

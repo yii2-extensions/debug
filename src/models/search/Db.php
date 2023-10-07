@@ -21,9 +21,7 @@ class Db extends Base
      */
     public int $query = 0;
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function rules(): array
     {
         return [
@@ -31,9 +29,7 @@ class Db extends Base
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function attributeLabels(): array
     {
         return [

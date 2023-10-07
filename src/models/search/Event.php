@@ -20,9 +20,7 @@ class Event extends Base
     public string $class = '';
     public string $senderClass = '';
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function rules(): array
     {
         return [
@@ -33,9 +31,7 @@ class Event extends Base
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function attributeLabels(): array
     {
         return [

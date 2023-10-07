@@ -25,6 +25,12 @@ use yii\web\User;
 class UserSwitch extends Model
 {
     /**
+     * @var string|User ID of the user component or a user object
+     *
+     * @since 2.0.13
+     */
+    public $userComponent = 'user';
+    /**
      * @var User user which we are currently switched to
      */
     private $_user;
@@ -33,17 +39,7 @@ class UserSwitch extends Model
      */
     private $_mainUser;
 
-
-    /**
-     * @var string|User ID of the user component or a user object
-     *
-     * @since 2.0.13
-     */
-    public $userComponent = 'user';
-
-    /**
-     * {@inheritdoc}
-     */
+    
     public function rules()
     {
         return [
@@ -51,9 +47,7 @@ class UserSwitch extends Model
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function attributeLabels()
     {
         return [
@@ -112,8 +106,6 @@ class UserSwitch extends Model
     /**
      * Switch user
      *
-     * @param User $user
-     *
      * @throws \yii\base\InvalidConfigException
      */
     public function setUser(User $user)
@@ -131,8 +123,6 @@ class UserSwitch extends Model
 
     /**
      * Switch to user by identity
-     *
-     * @param IdentityInterface $identity
      *
      * @throws \yii\base\InvalidConfigException
      */

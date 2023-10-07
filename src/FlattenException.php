@@ -30,26 +30,14 @@ use function is_resource;
  */
 class FlattenException
 {
-    /**
-     * @var string
-     */
     protected string $message = '';
-    /**
-     * @var int|mixed
-     */
     protected mixed $code = null;
-    /**
-     * @var string
-     */
+
     protected string $file = '';
-    /**
-     * @var int
-     */
+
     protected int $line = 0;
 
-    /**
-     * @var FlattenException|null
-     */
+
     private FlattenException|null $_previous = null;
     private array $_trace = [];
     private string $_toString = '';
@@ -57,8 +45,6 @@ class FlattenException
 
     /**
      * FlattenException constructor.
-     *
-     * @param Exception $exception
      */
     public function __construct(Exception $exception)
     {
@@ -74,6 +60,16 @@ class FlattenException
         if ($previous instanceof Exception) {
             $this->setPrevious(new self($previous));
         }
+    }
+
+    /**
+     * String representation of the exception
+     *
+     * @return string the string representation of the exception.
+     */
+    public function __toString()
+    {
+        return $this->_toString;
     }
 
     /**
@@ -150,16 +146,6 @@ class FlattenException
             return '';
         }
         return substr($this->_toString, $len + strlen($remove));
-    }
-
-    /**
-     * String representation of the exception
-     *
-     * @return string the string representation of the exception.
-     */
-    public function __toString()
-    {
-        return $this->_toString;
     }
 
     /**
@@ -258,7 +244,6 @@ class FlattenException
     /**
      * Allows you to sterilize the Exception trace arguments.
      *
-     * @param array $args
      * @param int $level recursion level.
      * @param int $count number of records counter.
      *

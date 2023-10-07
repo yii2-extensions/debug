@@ -16,17 +16,13 @@ abstract class Base extends Component implements MatcherInterface
      */
     protected mixed $baseValue = null;
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function setValue(mixed $value): void
     {
         $this->baseValue = $value;
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function hasValue(): bool
     {
         return !empty($this->baseValue) || ($this->baseValue === '0');

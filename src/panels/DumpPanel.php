@@ -42,25 +42,19 @@ class DumpPanel extends Panel
      */
     private array $_models = [];
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function getName(): string
     {
         return 'Dump';
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/dump/summary', ['panel' => $this]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function getDetail(): string
     {
         $searchModel = new Log();
@@ -73,9 +67,7 @@ class DumpPanel extends Panel
         ]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function save(): mixed
     {
         $except = [];
@@ -119,7 +111,7 @@ class DumpPanel extends Panel
      * Returns an array of models that represents logs of the current request.
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
-     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @param bool $refresh if you need to build models from log messages and refresh them.
      */
     protected function getModels(bool $refresh = false): array
     {

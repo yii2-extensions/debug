@@ -11,13 +11,8 @@ use yii\web\AssetBundle;
  */
 class DbAsset extends AssetBundle
 {
-    /**
-     * {@inheritdoc}
-     */
     public $sourcePath = '@yii/debug/assets';
-    /**
-     * {@inheritdoc}
-     */
+    
     public $js = [
         'js/db.js',
     ];

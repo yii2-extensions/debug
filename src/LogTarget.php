@@ -27,10 +27,7 @@ class LogTarget extends Target
     public Module $module;
     public string $tag = '';
 
-    /**
-     * @param Module $module
-     * @param array $config
-     */
+    
     public function __construct(Module $module, array $config = [])
     {
         parent::__construct($config);
@@ -104,8 +101,6 @@ class LogTarget extends Target
 
     /**
      * @see DefaultController
-     *
-     * @return array
      */
     public function loadTagToPanels($tag): array
     {
@@ -131,46 +126,6 @@ class LogTarget extends Target
     }
 
     /**
-     * Updates index file with summary log data.
-     *
-     * @param string $indexFile path to index file.
-     * @param array $summary summary log data.
-     *
-     * @throws InvalidConfigException
-     */
-    private function updateIndexFile(string $indexFile, array $summary): void
-    {
-        if (!@touch($indexFile) || ($fp = @fopen($indexFile, 'r+')) === false) {
-            throw new InvalidConfigException("Unable to open debug data index file: $indexFile");
-        }
-        @flock($fp, LOCK_EX);
-        $manifest = '';
-        while (($buffer = fgets($fp)) !== false) {
-            $manifest .= $buffer;
-        }
-        if (!feof($fp) || empty($manifest)) {
-            // error while reading index data, ignore and create new
-            $manifest = [];
-        } else {
-            $manifest = unserialize($manifest);
-        }
-
-        $manifest[$this->tag] = $summary;
-        $this->gc($manifest);
-
-        ftruncate($fp, 0);
-        rewind($fp);
-        fwrite($fp, serialize($manifest));
-
-        @flock($fp, LOCK_UN);
-        @fclose($fp);
-
-        if ($this->module->fileMode !== null) {
-            @chmod($indexFile, $this->module->fileMode);
-        }
-    }
-
-    /**
      * Processes the given log messages.
      * This method will filter the given messages with [[levels]] and [[categories]].
      * And if requested, it will also export the filtering result to a specific medium (e.g. email).
@@ -191,8 +146,6 @@ class LogTarget extends Target
 
     /**
      * Removes obsolete data files
-     *
-     * @param array $manifest
      */
     protected function gc(array &$manifest): void
     {
@@ -285,8 +238,6 @@ class LogTarget extends Target
 
     /**
      * Get the number of excessive Database caller(s).
-     *
-     * @return int
      */
     protected function getExcessiveDbCallersCount(): int
     {
@@ -297,5 +248,49 @@ class LogTarget extends Target
         $dbPanel = $this->module->panels['db'];
 
         return $dbPanel->getExcessiveCallersCount();
+    }
+
+    /**
+     * Updates index file with summary log data.
+     *
+     * @param string $indexFile path to index file.
+     * @param array $summary summary log data.
+     *
+     * @throws InvalidConfigException
+     */
+    private function updateIndexFile(string $indexFile, array $summary): void
+    {
+        if (!@touch($indexFile) || ($fp = @fopen($indexFile, 'r+')) === false) {
+            throw new InvalidConfigException("Unable to open debug data index file: $indexFile");
+        }
+
+        @flock($fp, LOCK_EX);
+
+        $manifest = '';
+
+        while (($buffer = fgets($fp)) !== false) {
+            $manifest .= $buffer;
+        }
+
+        if (!feof($fp) || empty($manifest)) {
+            // error while reading index data, ignore and create new
+            $manifest = [];
+        } else {
+            $manifest = unserialize($manifest);
+        }
+
+        $manifest[$this->tag] = $summary;
+        $this->gc($manifest);
+
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, serialize($manifest));
+
+        @flock($fp, LOCK_UN);
+        @fclose($fp);
+
+        if ($this->module->fileMode !== null) {
+            @chmod($indexFile, $this->module->fileMode);
+        }
     }
 }

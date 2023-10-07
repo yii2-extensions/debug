@@ -8,8 +8,8 @@ use yii\base\BaseObject;
 use yii\debug\panels\TimelinePanel;
 use yii\helpers\StringHelper;
 
-use function usort;
 use function strtr;
+use function usort;
 
 /**
  * Svg is used to draw a graph using SVG.
@@ -58,9 +58,7 @@ class Svg extends BaseObject
     protected array $points = [];
     protected array|TimelinePanel $panel;
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function __construct(TimelinePanel $panel, $config = [])
     {
         parent::__construct($config);

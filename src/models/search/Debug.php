@@ -43,7 +43,7 @@ class Debug extends Base
      */
     public int $sqlCount;
     /**
-     * @var int total mail count attribute input search value.
+     * @var int total mail counts attribute input search value.
      */
     public int $mailCount;
     /**
@@ -51,9 +51,7 @@ class Debug extends Base
      */
     public array $criticalCodes = [400, 404, 500];
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function rules(): array
     {
         return [
@@ -61,9 +59,7 @@ class Debug extends Base
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    
     public function attributeLabels(): array
     {
         return [
@@ -123,6 +119,6 @@ class Debug extends Base
      */
     public function isCodeCritical(int $code): bool
     {
-        return in_array($code, $this->criticalCodes, false);
+        return in_array($code, $this->criticalCodes);
     }
 }
