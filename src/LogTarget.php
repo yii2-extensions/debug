@@ -68,7 +68,7 @@ class LogTarget extends Target
         $data['exceptions'] = $exceptions;
 
         file_put_contents($dataFile, serialize($data));
-        
+
         if ($this->module->fileMode !== null) {
             @chmod($dataFile, $this->module->fileMode);
         }
