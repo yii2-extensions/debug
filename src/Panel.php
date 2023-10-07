@@ -39,11 +39,26 @@ class Panel extends Component
      * See [[\yii\base\Controller::actions()]] for the format.
      */
     public array $actions = [];
-
     /**
      * @var FlattenException|null Error while saving the panel.
      */
     protected FlattenException|null $error = null;
+
+    /**
+     * @return string content that is displayed in debugger detail view.
+     */
+    public function getDetail(): string
+    {
+        return '';
+    }
+
+    /**
+     * @return FlattenException|null
+     */
+    public function getError(): ?FlattenException
+    {
+        return $this->error;
+    }
 
     /**
      * @return string name of the panel.
@@ -59,55 +74,6 @@ class Panel extends Component
     public function getSummary(): string
     {
         return '';
-    }
-
-    /**
-     * @return string content that is displayed in debugger detail view.
-     */
-    public function getDetail(): string
-    {
-        return '';
-    }
-
-    /**
-     * Saves data to be later used in the debugger detail view.
-     * This method is called on every page where the debugger is enabled.
-     *
-     * @return mixed data to be saved
-     */
-    public function save(): mixed
-    {
-        return null;
-    }
-
-    /**
-     * Loads data into the panel
-     *
-     * @param mixed $data
-     */
-    public function load(mixed $data): void
-    {
-        $this->data = $data;
-    }
-
-    /**
-     * @param array|null $additionalParams Optional additional parameters to add to the route.
-     *
-     * @return string URL pointing to panel detail view.
-     */
-    public function getUrl(array $additionalParams = null): string
-    {
-        $route = [
-            '/' . $this->module?->getUniqueId() . '/default/view',
-            'panel' => $this->id,
-            'tag' => $this->tag,
-        ];
-
-        if (is_array($additionalParams)) {
-            $route = ArrayHelper::merge($route, $additionalParams);
-        }
-
-        return Url::toRoute($route);
     }
 
     /**
@@ -150,19 +116,23 @@ class Panel extends Component
     }
 
     /**
-     * @param FlattenException $error
+     * @param array|null $additionalParams Optional additional parameters to add to the route.
+     *
+     * @return string URL pointing to panel detail view.
      */
-    public function setError(FlattenException $error): void
+    public function getUrl(array $additionalParams = null): string
     {
-        $this->error = $error;
-    }
+        $route = [
+            '/' . $this->module?->getUniqueId() . '/default/view',
+            'panel' => $this->id,
+            'tag' => $this->tag,
+        ];
 
-    /**
-     * @return FlattenException|null
-     */
-    public function getError(): ?FlattenException
-    {
-        return $this->error;
+        if (is_array($additionalParams)) {
+            $route = ArrayHelper::merge($route, $additionalParams);
+        }
+
+        return Url::toRoute($route);
     }
 
     public function hasError(): bool
@@ -181,6 +151,33 @@ class Panel extends Component
     }
 
     /**
+     * Loads data into the panel.
+     */
+    public function load(mixed $data): void
+    {
+        $this->data = $data;
+    }
+
+    /**
+     * Saves data to be later used in the debugger detail view.
+     * This method is called on every page where the debugger is enabled.
+     *
+     * @return mixed data to be saved.
+     */
+    public function save(): mixed
+    {
+        return null;
+    }
+
+    /**
+     * @param FlattenException $error
+     */
+    public function setError(FlattenException $error): void
+    {
+        $this->error = $error;
+    }
+
+    /**
      * Gets messages from log target and filters according to their categories and levels.
      *
      * @param int $levels the message levels to filter by. This is a bitmap of level values. Value 0 means allowing
@@ -189,7 +186,7 @@ class Panel extends Component
      * @param array $except the message categories to exclude. If empty, it means all categories are allowed.
      * @param bool $stringify Convert non-string (such as closures) to strings.
      *
-     * @return array!closure the filtered messages.
+     * @return array|Closure the filtered messages.
      *
      * @see \yii\log\Target::filterMessages()
      */
@@ -198,13 +195,9 @@ class Panel extends Component
         array $categories = [],
         array $except = [],
         bool $stringify = false
-    ): array|closure {
-        if ($this->module === null) {
-            return [];
-        }
-
+    ): array|Closure {
         $target = $this->module->logTarget;
-        $messages = $target->filterMessages(...);
+        $messages = $target->filterMessages($target->messages, $levels, $categories, $except);
 
         if (!$stringify) {
             return $messages;
