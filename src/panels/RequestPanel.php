@@ -24,11 +24,11 @@ class RequestPanel extends Panel
      */
     public array $displayVars = ['_SERVER', '_GET', '_POST', '_COOKIE', '_FILES', '_SESSION'];
     /**
-     * @var array list of variable names which values should be censored in the output
+     * @var array list of variable names which values should be censored in the output.
      */
     public array $censoredVariableNames = [];
     /**
-     * @var string value to display instead of the variable value if the name is on the censor list
+     * @var string value to display instead of the variable value if the name is on the censor list.
      */
     public string $censorString = '****';
 
@@ -147,7 +147,7 @@ class RequestPanel extends Panel
     }
 
     /**
-     * Getting flash messages without deleting them or touching deletion counters
+     * Getting flash messages without deleting them or touching deletion counters.
      *
      * @throws InvalidConfigException
      *
@@ -173,13 +173,6 @@ class RequestPanel extends Panel
         return $flashes;
     }
 
-    /**
-     * @param array $data
-     *
-     * @throws Exception
-     *
-     * @return array
-     */
     protected function censorArray(array $data): array
     {
         if (empty($this->censoredVariableNames) || empty($data)) {

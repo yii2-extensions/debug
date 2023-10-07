@@ -20,17 +20,11 @@ use function array_merge;
 use function array_reverse;
 
 /**
- * The debug LogTarget is used to store logs for later use in the debugger tool
+ * The debug LogTarget is used to store logs for later use in the debugger tool.
  */
 class LogTarget extends Target
 {
-    /**
-     * @var Module
-     */
     public Module $module;
-    /**
-     * @var string
-     */
     public string $tag = '';
 
     /**
@@ -86,8 +80,6 @@ class LogTarget extends Target
 
     /**
      * @see DefaultController
-     *
-     * @return array
      */
     public function loadManifest(): array
     {
@@ -139,10 +131,10 @@ class LogTarget extends Target
     }
 
     /**
-     * Updates index file with summary log data
+     * Updates index file with summary log data.
      *
-     * @param string $indexFile path to index file
-     * @param array $summary summary log data
+     * @param string $indexFile path to index file.
+     * @param array $summary summary log data.
      *
      * @throws InvalidConfigException
      */
@@ -185,7 +177,7 @@ class LogTarget extends Target
      *
      * @param array $messages log messages to be processed. See [[\yii\log\Logger::messages]] for the structure
      * of each message.
-     * @param bool $final whether this method is called at the end of the current application
+     * @param bool $final whether this method is called at the end of the current application.
      *
      * @throws Exception
      */
@@ -225,9 +217,7 @@ class LogTarget extends Target
 
     /**
      * Remove staled data files i.e., files that are not in the current index file (may happen because of corrupted or
-     * rotated index file)
-     *
-     * @param array $manifest
+     * rotated index file).
      */
     protected function removeStaleDataFiles(array $manifest): void
     {
@@ -247,8 +237,6 @@ class LogTarget extends Target
 
     /**
      * Collects summary data of the current request.
-     *
-     * @return array
      */
     protected function collectSummary(): array
     {
@@ -282,8 +270,6 @@ class LogTarget extends Target
     /**
      * Returns total sql count executed in current request. If database panel is not configured
      * returns 0.
-     *
-     * @return float|int
      */
     protected function getSqlTotalCount(): float|int
     {
@@ -301,8 +287,6 @@ class LogTarget extends Target
      * Get the number of excessive Database caller(s).
      *
      * @return int
-     *
-     * @since 2.1.23
      */
     protected function getExcessiveDbCallersCount(): int
     {

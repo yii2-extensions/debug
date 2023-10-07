@@ -15,10 +15,10 @@ class Event extends Base
     /**
      * @var bool whether event is static or not.
      */
-    public bool $isStatic;
-    public string $name;
-    public string $class;
-    public string $senderClass;
+    public bool $isStatic = false;
+    public string $name = '';
+    public string $class = '';
+    public string $senderClass = '';
 
     /**
      * {@inheritdoc}
@@ -51,8 +51,6 @@ class Event extends Base
      *
      * @param array $params an array of parameter values indexed by parameter names
      * @param array $models data to return provider for
-     *
-     * @return ArrayDataProvider
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

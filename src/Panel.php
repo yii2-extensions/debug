@@ -30,7 +30,7 @@ class Panel extends Component
     public string $tag = '';
     public Module|null $module = null;
     /**
-     * @var mixed data associated with panel
+     * @var mixed data associated with panel.
      */
     public mixed $data;
     /**
@@ -41,12 +41,12 @@ class Panel extends Component
     public array $actions = [];
 
     /**
-     * @var FlattenException|null Error while saving the panel
+     * @var FlattenException|null Error while saving the panel.
      */
     protected FlattenException|null $error = null;
 
     /**
-     * @return string name of the panel
+     * @return string name of the panel.
      */
     public function getName(): string
     {
@@ -54,7 +54,7 @@ class Panel extends Component
     }
 
     /**
-     * @return string content that is displayed the debug toolbar
+     * @return string content that is displayed the debug toolbar.
      */
     public function getSummary(): string
     {
@@ -62,7 +62,7 @@ class Panel extends Component
     }
 
     /**
-     * @return string content that is displayed in debugger detail view
+     * @return string content that is displayed in debugger detail view.
      */
     public function getDetail(): string
     {
@@ -91,9 +91,9 @@ class Panel extends Component
     }
 
     /**
-     * @param array|null $additionalParams Optional additional parameters to add to the route
+     * @param array|null $additionalParams Optional additional parameters to add to the route.
      *
-     * @return string URL pointing to panel detail view
+     * @return string URL pointing to panel detail view.
      */
     public function getUrl(array $additionalParams = null): string
     {
@@ -111,11 +111,11 @@ class Panel extends Component
     }
 
     /**
-     * Returns a trace line
+     * Returns a trace line.
      *
-     * @param array $options The array with trace
+     * @param array $options The array with trace.
      *
-     * @return string the trace line
+     * @return string the trace line.
      */
     public function getTraceLine(array $options): string
     {
@@ -165,11 +165,6 @@ class Panel extends Component
         return $this->error;
     }
 
-    /**
-     * @return bool
-     *
-     * @since 2.0.10
-     */
     public function hasError(): bool
     {
         return $this->error !== null;
@@ -188,11 +183,11 @@ class Panel extends Component
     /**
      * Gets messages from log target and filters according to their categories and levels.
      *
-     * @param int $levels the message levels to filter by. This is a bitmap of
-     * level values. Value 0 means allowing all levels.
+     * @param int $levels the message levels to filter by. This is a bitmap of level values. Value 0 means allowing
+     * all levels.
      * @param array $categories the message categories to filter by. If empty, it means all categories are allowed.
      * @param array $except the message categories to exclude. If empty, it means all categories are allowed.
-     * @param bool $stringify Convert non-string (such as closures) to strings
+     * @param bool $stringify Convert non-string (such as closures) to strings.
      *
      * @return array the filtered messages.
      *
@@ -220,7 +215,7 @@ class Panel extends Component
                 continue;
             }
 
-            // exceptions may not be serializable if in the call stack somewhere is a Closure
+            // exceptions may not be serializable if in the call stack somewhere is a Closure.
             if ($message[0] instanceof Throwable) {
                 $message[0] = (string) $message[0];
             } else {

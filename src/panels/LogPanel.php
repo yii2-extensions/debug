@@ -70,8 +70,6 @@ class LogPanel extends Panel
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
      * @param bool $refresh if you need to build models from log messages and refresh them.
-     *
-     * @return array models
      */
     protected function getModels(bool $refresh = false): array
     {

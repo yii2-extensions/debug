@@ -12,7 +12,7 @@ use yii\base\Component;
 abstract class Base extends Component implements MatcherInterface
 {
     /**
-     * @var mixed base value to check
+     * @var mixed base value to check.
      */
     protected mixed $baseValue = null;
 

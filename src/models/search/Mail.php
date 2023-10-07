@@ -13,43 +13,43 @@ use yii\debug\components\search\Filter;
 class Mail extends Base
 {
     /**
-     * @var string from attribute input search value
+     * @var string from attribute input search value.
      */
-    public string $from;
+    public string $from = '';
     /**
-     * @var string to attribute input search value
+     * @var string to attribute input search value.
      */
-    public string $to;
+    public string $to = '';
     /**
-     * @var string reply attribute input search value
+     * @var string reply attribute input search value.
      */
-    public string $reply;
+    public string $reply = '';
     /**
-     * @var string cc attribute input search value
+     * @var string cc attribute input search value.
      */
-    public string $cc;
+    public string $cc = '';
     /**
-     * @var string bcc attribute input search value
+     * @var string bcc attribute input search value.
      */
-    public string $bcc;
+    public string $bcc = '';
     /**
-     * @var string subject attribute input search value
+     * @var string subject attribute input search value.
      */
-    public string $subject;
+    public string $subject = '';
     /**
-     * @var string body attribute input search value
+     * @var string body attribute input search value.
      */
-    public string $body;
+    public string $body = '';
     /**
-     * @var string charset attribute input search value
+     * @var string charset attribute input search value.
      */
-    public string $charset;
+    public string $charset = '';
     /**
-     * @var string headers attribute input search value
+     * @var string headers attribute input search value.
      */
-    public string $headers;
+    public string $headers = '';
     /**
-     * @var string file attribute input search value
+     * @var string file attribute input search value.
      */
     public string $file;
 
@@ -81,11 +81,6 @@ class Mail extends Base
 
     /**
      * Returns data provider with filled models. Filter applied if needed.
-     *
-     * @param array $params
-     * @param array $models
-     *
-     * @return ArrayDataProvider
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

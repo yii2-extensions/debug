@@ -38,8 +38,6 @@ class DbPanel extends Panel
      * @var int|null the number of DB calls the same backtrace can make before considered an "Excessive Caller."
      * If it is `null`, this feature is disabled.
      * Note: Changes will only be reflected in new requests.
-     *
-     * @since 2.1.23
      */
     public int|null $excessiveCallerThreshold = null;
     /**
@@ -47,8 +45,6 @@ class DbPanel extends Panel
      * The "Caller" is the backtrace lines that aren't included in the `$ignoredPathsInBacktrace`
      * Yii files are ignored by default.
      * Hint: You can use path aliases here.
-     *
-     * @since 2.1.23
      */
     public array $ignoredPathsInBacktrace = [];
     /**
@@ -58,8 +54,6 @@ class DbPanel extends Panel
     /**
      * @var array the default ordering of the database queries. In the format of
      * [ property => sort direction ], for example: [ 'duration' => SORT_DESC ]
-     *
-     * @since 2.0.7
      */
     public array $defaultOrder = [
         'seq' => SORT_ASC,
@@ -221,12 +215,6 @@ class DbPanel extends Panel
 
     /**
      * Return associative array, where key is query string and value is number of occurrences the same query in an array.
-     *
-     * @param $timings
-     *
-     * @return array
-     *
-     * @since 2.0.13
      */
     public function countDuplicateQuery($timings): array
     {
@@ -236,13 +224,7 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns sum of all duplicated queries
-     *
-     * @param $modelData
-     *
-     * @return int
-     *
-     * @since 2.0.13
+     * Returns sum of all duplicated queries.
      */
     public function sumDuplicateQueries($modelData): int
     {
@@ -260,8 +242,6 @@ class DbPanel extends Panel
      * Counts the number of times the same backtrace makes a DB query.
      *
      * @return array the number of DB calls indexed by the backtrace hash of the caller.
-     *
-     * @since 2.1.23
      */
     public function countCallerCals(): array
     {
@@ -274,8 +254,6 @@ class DbPanel extends Panel
      * Get the backtrace hashes that make excessive DB cals.
      *
      * @return array the number of DB calls indexed by the backtrace hash of excessive caller(s).
-     *
-     * @since 2.1.23
      */
     public function getExcessiveCallers(): array
     {
@@ -293,10 +271,6 @@ class DbPanel extends Panel
 
     /**
      * Get the number of excessive caller(s).
-     *
-     * @return int
-     *
-     * @since 2.1.23
      */
     public function getExcessiveCallersCount(): int
     {
@@ -305,12 +279,6 @@ class DbPanel extends Panel
 
     /**
      * Creates an ArrayDataProvider for the DB query callers.
-     *
-     * @param array $modelData
-     *
-     * @return ArrayDataProvider
-     *
-     * @since 2.1.23
      */
     public function generateQueryCallersDataProvider(array $modelData): ArrayDataProvider
     {
@@ -385,11 +353,7 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns array query types
-     *
-     * @return array
-     *
-     * @since 2.0.3
+     * Returns array query types.
      */
     public function getTypes(): array
     {
@@ -421,8 +385,6 @@ class DbPanel extends Panel
      * @throws InvalidConfigException
      *
      * @return bool Whether the DB component has support for EXPLAIN queries
-     *
-     * @since 2.0.5
      */
     protected function hasExplain(): bool
     {
@@ -437,11 +399,7 @@ class DbPanel extends Panel
     /**
      * Check if a given query type can be explained.
      *
-     * @param string $type query type
-     *
-     * @return bool
-     *
-     * @since 2.0.5
+     * @param string $type query type.
      */
     public static function canBeExplained(string $type): bool
     {
@@ -452,10 +410,6 @@ class DbPanel extends Panel
      * Returns a reference to the DB component associated with the panel
      *
      * @throws InvalidConfigException
-     *
-     * @return Connection
-     *
-     * @since 2.0.5
      */
     public function getDb(): Connection
     {

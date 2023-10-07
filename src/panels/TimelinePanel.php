@@ -24,8 +24,8 @@ class TimelinePanel extends Panel
     /**
      * @var array Color indicators item profile.
      *
-     * - keys: percentages of time request
-     * - values: hex color
+     * - keys: percentages of time request.
+     * - values: hex color.
      */
     private array $_colors = [
         20 => '#1e6823',
@@ -37,29 +37,23 @@ class TimelinePanel extends Panel
      */
     private array $_models = [];
     /**
-     * @var float Start request, timestamp (obtained by microtime(true))
+     * @var float Start request, timestamp (obtained by microtime(true)).
      */
     private float $_start = 0;
     /**
-     * @var float End request, timestamp (obtained by microtime(true))
+     * @var float End request, timestamp (obtained by microtime(true)).
      */
     private float $_end = 0;
     /**
-     * @var float Request duration, milliseconds
+     * @var float Request duration, milliseconds.
      */
     private float $_duration = 0;
-    /**
-     * @var Svg|null
-     */
     private Svg|null $_svg = null;
-    /**
-     * @var array
-     */
     private array $_svgOptions = [
         'class' => Svg::class,
     ];
     /**
-     * @var int Used memory in request
+     * @var int Used memory in request.
      */
     private int $_memory = 0;
 
@@ -148,9 +142,7 @@ class TimelinePanel extends Panel
 
     /**
      * Sets color indicators.
-     * key: percentages of time request, value: hex color
-     *
-     * @param array $colors
+     * key: percentages of time request, value: hex color.
      */
     public function setColors(array $colors): void
     {
@@ -160,9 +152,7 @@ class TimelinePanel extends Panel
 
     /**
      * Color indicators item profile,
-     * key: percentages of time request, value: hex color
-     *
-     * @return array
+     * key: percentages of time request, value: hex color.
      */
     public function getColors(): array
     {
@@ -184,9 +174,7 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Start request, timestamp (obtained by microtime(true))
-     *
-     * @return float
+     * Start request, timestamp (obtained by microtime(true)).
      */
     public function getStart(): float
     {
@@ -194,9 +182,7 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Request duration, milliseconds
-     *
-     * @return float
+     * Request duration, milliseconds.
      */
     public function getDuration(): float
     {
@@ -204,7 +190,7 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Memory peak in request, bytes. (Obtained by memory_get_peak_usage())
+     * Memory peak in request, bytes. (Obtained by memory_get_peak_usage()).
      */
     public function getMemory(): int
     {
@@ -228,8 +214,6 @@ class TimelinePanel extends Panel
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
      * @param bool $refresh if you need to build models from log messages and refresh them.
-     *
-     * @return array models
      */
     protected function getModels(bool $refresh = false): array
     {

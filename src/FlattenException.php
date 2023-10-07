@@ -77,7 +77,7 @@ class FlattenException
     }
 
     /**
-     * Gets the Exception message
+     * Gets the Exception message.
      *
      * @return string the Exception message as a string.
      */
@@ -107,7 +107,7 @@ class FlattenException
     }
 
     /**
-     * Gets the line in which the exception occurred
+     * Gets the line in which the exception occurred.
      *
      * @return int the line number where the exception was created.
      */
@@ -256,11 +256,11 @@ class FlattenException
     }
 
     /**
-     * Allows you to sterilize the Exception trace arguments
+     * Allows you to sterilize the Exception trace arguments.
      *
      * @param array $args
-     * @param int $level recursion level
-     * @param int $count number of records counter
+     * @param int $level recursion level.
+     * @param int $count number of records counter.
      *
      * @return array arguments tracing.
      */
@@ -302,9 +302,7 @@ class FlattenException
     }
 
     /**
-     * @param __PHP_Incomplete_Class $value
-     *
-     * @return string the real class name of an incomplete class
+     * @return string the real class name of an incomplete class.
      */
     private function getClassNameFromIncomplete(__PHP_Incomplete_Class $value): string
     {

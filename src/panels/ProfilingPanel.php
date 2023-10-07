@@ -20,7 +20,7 @@ use function sprintf;
 class ProfilingPanel extends Panel
 {
     /**
-     * @var array current request profile timings
+     * @var array current request profile timings.
      */
     private array $_models = [];
 
@@ -76,8 +76,6 @@ class ProfilingPanel extends Panel
 
     /**
      * Returns array of profiling models that can be used in a data provider.
-     *
-     * @return array models
      */
     protected function getModels(): array
     {

@@ -21,15 +21,15 @@ use function get_class;
 class RouterRules extends Model
 {
     /**
-     * @var bool whether a pretty URL option has been enabled in UrlManager
+     * @var bool whether a pretty URL option has been enabled in UrlManager.
      */
     public bool $prettyUrl = false;
     /**
-     * @var bool whether a strict parsing option has been enabled in UrlManager
+     * @var bool whether a strict parsing option has been enabled in UrlManager.
      */
     public bool $strictParsing = false;
     /**
-     * @var string|null global suffix set in UrlManager
+     * @var string|null global suffix set in UrlManager.
      */
     public string|null $suffix;
     /**
@@ -74,10 +74,7 @@ class RouterRules extends Model
     /**
      * Scans rule for basic data.
      *
-     * @param $rule
-     * @param null $type
-     *
-     * @throws ReflectionException
+     * @throws ReflectionException if the class does not exist.
      */
     protected function scanRule($rule, $type = null): void
     {
@@ -118,8 +115,6 @@ class RouterRules extends Model
     /**
      * Scans group rule's rules for basic data.
      *
-     * @param GroupUrlRule $groupRule
-     *
      * @throws ReflectionException
      */
     protected function scanGroupRule(GroupUrlRule $groupRule): void
@@ -131,8 +126,6 @@ class RouterRules extends Model
 
     /**
      * Scans REST rule's rules for basic data.
-     *
-     * @param RestUrlRule $restRule
      *
      * @throws ReflectionException
      */

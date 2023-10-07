@@ -12,24 +12,22 @@ use yii\web\User;
 use function call_user_func;
 
 /**
- * UserSwitch is a model used to temporary logging in another user
+ * UserSwitch is a model used to temporary logging in another user.
  */
 class UserSwitch extends Model
 {
     /**
-     * @var User user which we are currently switched to
+     * @var User user which we are currently switched to.
      */
-    private User $_user;
+    private User|string|null $_user = null;
     /**
-     * @var User the main user who was originally logged in before switching.
+     * @var User|null the main user who was originally logged in before switching.
      */
-    private User $_mainUser;
+    private User|null $_mainUser = null;
 
 
     /**
-     * @var string|User ID of the user component or a user object
-     *
-     * @since 2.0.13
+     * @var string|User ID of the user component or a user object.
      */
     public string|User $userComponent = 'user';
 
@@ -55,7 +53,7 @@ class UserSwitch extends Model
     }
 
     /**
-     * Get current user
+     * Get current user.
      */
     public function getUser(): User|string|null
     {
@@ -63,9 +61,7 @@ class UserSwitch extends Model
     }
 
     /**
-     * Get the main user
-     *
-     * @return string|User|null
+     * Get the main user.
      */
     public function getMainUser(): User|string|null
     {
@@ -92,9 +88,7 @@ class UserSwitch extends Model
     }
 
     /**
-     * Switch user
-     *
-     * @param User $user
+     * Switch user.
      */
     public function setUser(User $user): void
     {
@@ -112,9 +106,7 @@ class UserSwitch extends Model
     }
 
     /**
-     * Switch to user by identity
-     *
-     * @param IdentityInterface $identity
+     * Switch to user by identity.
      */
     public function setUserByIdentity(IdentityInterface $identity): void
     {
@@ -125,7 +117,7 @@ class UserSwitch extends Model
     }
 
     /**
-     * Reset to the main user
+     * Reset to the main user.
      */
     public function reset(): void
     {
@@ -134,8 +126,6 @@ class UserSwitch extends Model
 
     /**
      * Checks if current user is main or not.
-     *
-     * @return bool
      */
     public function isMainUser(): bool
     {

@@ -15,35 +15,35 @@ use function in_array;
 class Debug extends Base
 {
     /**
-     * @var string tag attribute input search value
+     * @var string tag attribute input search value.
      */
     public string $tag;
     /**
-     * @var string ip attribute input search value
+     * @var string ip attribute input search value.
      */
     public string $ip;
     /**
-     * @var string method attribute input search value
+     * @var string method attribute input search value.
      */
     public string $method;
     /**
-     * @var int ajax attribute input search value
+     * @var int ajax attribute input search value.
      */
     public int $ajax;
     /**
-     * @var string url attribute input search value
+     * @var string url attribute input search value.
      */
     public string $url;
     /**
-     * @var string status code attribute input search value
+     * @var string status code attribute input search value.
      */
     public string $statusCode;
     /**
-     * @var int sql count attribute input search value
+     * @var int sql count attribute input search value.
      */
     public int $sqlCount;
     /**
-     * @var int total mail count attribute input search value
+     * @var int total mail count attribute input search value.
      */
     public int $mailCount;
     /**
@@ -83,10 +83,8 @@ class Debug extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array $params an array of parameter values indexed by parameter names
-     * @param array $models data to return provider for
-     *
-     * @return ArrayDataProvider
+     * @param array $params an array of parameter values indexed by parameter names.
+     * @param array $models data to return provider for.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
@@ -122,10 +120,6 @@ class Debug extends Base
 
     /**
      * Checks if code is critical.
-     *
-     * @param int $code
-     *
-     * @return bool
      */
     public function isCodeCritical(int $code): bool
     {

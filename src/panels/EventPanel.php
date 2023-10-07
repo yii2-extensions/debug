@@ -19,7 +19,7 @@ use function microtime;
 class EventPanel extends Panel
 {
     /**
-     * @var array current request events
+     * @var array current request events.
      */
     private array $_events = [];
 

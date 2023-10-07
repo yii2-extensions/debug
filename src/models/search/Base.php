@@ -17,11 +17,11 @@ use function str_replace;
 class Base extends Model
 {
     /**
-     * Adds filtering condition for a given attribute
+     * Adds filtering condition for a given attribute.
      *
-     * @param Filter $filter filter instance
-     * @param string $attribute attribute to filter
-     * @param bool $partial if partial match should be used
+     * @param Filter $filter filter instance.
+     * @param string $attribute attribute to filter.
+     * @param bool $partial if partial match should be used.
      */
     public function addCondition(Filter $filter, string $attribute, bool $partial = false): void
     {

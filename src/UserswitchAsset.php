@@ -7,7 +7,7 @@ namespace yii\debug;
 use yii\web\AssetBundle;
 
 /**
- * User switch asset bundle
+ * User switch asset bundle.
  */
 class UserswitchAsset extends AssetBundle
 {

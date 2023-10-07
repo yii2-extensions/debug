@@ -13,17 +13,17 @@ use yii\debug\components\search\Filter;
 class Log extends Base
 {
     /**
-     * @var string ip attribute input search value
+     * @var string ip attribute input search value.
      */
-    public string $level;
+    public string $level = '';
     /**
-     * @var string method attribute input search value
+     * @var string method attribute input search value.
      */
-    public string $category;
+    public string $category = '';
     /**
-     * @var int message attribute input search value
+     * @var int message attribute input search value.
      */
-    public int $message;
+    public int $message = 0;
 
     /**
      * {@inheritdoc}
@@ -51,10 +51,8 @@ class Log extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array $params an array of parameter values indexed by parameter names
-     * @param array $models data to return provider for
-     *
-     * @return ArrayDataProvider
+     * @param array $params an array of parameter values indexed by parameter names.
+     * @param array $models data to return provider for.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
