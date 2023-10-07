@@ -39,7 +39,6 @@ class UserSwitch extends Model
      */
     private $_mainUser;
 
-    
     public function rules()
     {
         return [
@@ -47,7 +46,6 @@ class UserSwitch extends Model
         ];
     }
 
-    
     public function attributeLabels()
     {
         return [

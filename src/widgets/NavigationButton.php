@@ -19,23 +19,22 @@ use function reset;
 class NavigationButton extends Widget
 {
     public array $manifest = [];
-    
+
     public string $tag = '';
-    
+
     public string $button = '';
     /**
      * @var Panel|null
      */
     public Panel $panel;
 
-    
+
     private string $firstTag = '';
-    
+
     private string $lastTag = '';
-    
+
     private int $currentTagIndex = 0;
 
-    
     public function beforeRun(): bool
     {
         $manifestKeys = array_keys($this->manifest);
@@ -46,7 +45,6 @@ class NavigationButton extends Widget
         return parent::beforeRun();
     }
 
-    
     public function run()
     {
         $method = "render{$this->button}Button";
@@ -54,7 +52,6 @@ class NavigationButton extends Widget
         return $this->$method();
     }
 
-    
     private function renderPrevButton(): string
     {
         $needLink = $this->tag !== $this->firstTag;
@@ -66,7 +63,6 @@ class NavigationButton extends Widget
         );
     }
 
-    
     private function renderNextButton(): string
     {
         $needLink = $this->tag !== $this->lastTag;

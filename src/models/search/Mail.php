@@ -53,7 +53,6 @@ class Mail extends Base
      */
     public string $file;
 
-    
     public function rules(): array
     {
         return [
@@ -61,7 +60,6 @@ class Mail extends Base
         ];
     }
 
-    
     public function attributeLabels(): array
     {
         return [

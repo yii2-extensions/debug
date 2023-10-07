@@ -32,19 +32,16 @@ class RequestPanel extends Panel
      */
     public string $censorString = '****';
 
-    
     public function getName(): string
     {
         return 'Request';
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/request/summary', ['panel' => $this]);
     }
 
-    
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/request/detail', ['panel' => $this]);

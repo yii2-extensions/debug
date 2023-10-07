@@ -22,19 +22,16 @@ class User extends Model
      */
     public Model|null $identityImplement = null;
 
-    
     public function __get($name)
     {
         return $this->identityImplement->__get($name);
     }
 
-    
     public function __set($name, $value)
     {
         $this->identityImplement->__set($name, $value);
     }
 
-    
     public function init(): void
     {
         if (Yii::$app->user && Yii::$app->user->identityClass) {
@@ -47,13 +44,11 @@ class User extends Model
         parent::init();
     }
 
-    
     public function rules(): array
     {
         return [[array_keys($this->identityImplement->getAttributes()), 'safe']];
     }
 
-    
     public function attributes(): array
     {
         return $this->identityImplement->attributes();

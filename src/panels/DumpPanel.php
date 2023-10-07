@@ -42,19 +42,16 @@ class DumpPanel extends Panel
      */
     private array $_models = [];
 
-    
     public function getName(): string
     {
         return 'Dump';
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/dump/summary', ['panel' => $this]);
     }
 
-    
     public function getDetail(): string
     {
         $searchModel = new Log();
@@ -67,7 +64,6 @@ class DumpPanel extends Panel
         ]);
     }
 
-    
     public function save(): mixed
     {
         $except = [];

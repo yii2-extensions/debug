@@ -51,7 +51,6 @@ class Debug extends Base
      */
     public array $criticalCodes = [400, 404, 500];
 
-    
     public function rules(): array
     {
         return [
@@ -59,7 +58,6 @@ class Debug extends Base
         ];
     }
 
-    
     public function attributeLabels(): array
     {
         return [

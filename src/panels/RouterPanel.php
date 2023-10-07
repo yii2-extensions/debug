@@ -44,19 +44,16 @@ class RouterPanel extends Panel
         return $this->_categories;
     }
 
-    
     public function getName(): string
     {
         return 'Router';
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/router/summary', ['panel' => $this]);
     }
 
-    
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/router/detail', [
@@ -66,7 +63,6 @@ class RouterPanel extends Panel
         ]);
     }
 
-    
     public function save(): mixed
     {
         if (Yii::$app->requestedAction) {

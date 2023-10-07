@@ -37,7 +37,6 @@ class MailPanel extends Panel
      */
     private array $_messages = [];
 
-    
     public function init(): void
     {
         parent::init();
@@ -70,13 +69,11 @@ class MailPanel extends Panel
         });
     }
 
-    
     public function getName(): string
     {
         return 'Mail';
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/mail/summary', [
@@ -85,7 +82,6 @@ class MailPanel extends Panel
         ]);
     }
 
-    
     public function getDetail(): string
     {
         $searchModel = new Mail();

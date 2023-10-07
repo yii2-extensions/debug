@@ -58,7 +58,6 @@ class Svg extends BaseObject
     protected array $points = [];
     protected array|TimelinePanel $panel;
 
-    
     public function __construct(TimelinePanel $panel, $config = [])
     {
         parent::__construct($config);

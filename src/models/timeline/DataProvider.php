@@ -117,7 +117,6 @@ class DataProvider extends ArrayDataProvider
         ];
     }
 
-    
     protected function prepareModels(): array
     {
         if (($models = $this->allModels) === null) {

@@ -22,25 +22,21 @@ class AssetPanel extends Panel
         return Yii::$app->view->render('panels/assets/detail', ['panel' => $this]);
     }
 
-    
     public function getName(): string
     {
         return 'Asset Bundles';
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/assets/summary', ['panel' => $this]);
     }
 
-    
     public function isEnabled(): bool
     {
         return isset(Yii::$app->view->assetManager) && Yii::$app->view->assetManager;
     }
 
-    
     public function save(): mixed
     {
         $bundles = Yii::$app->view->assetManager->bundles;

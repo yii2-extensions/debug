@@ -24,13 +24,11 @@ class ProfilingPanel extends Panel
      */
     private array $_models = [];
 
-    
     public function getName(): string
     {
         return 'Profiling';
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/profile/summary', [
@@ -40,7 +38,6 @@ class ProfilingPanel extends Panel
         ]);
     }
 
-    
     public function getDetail(): string
     {
         $searchModel = new Profile();
@@ -55,7 +52,6 @@ class ProfilingPanel extends Panel
         ]);
     }
 
-    
     public function save(): mixed
     {
         $messages = $this->getLogMessages(Logger::LEVEL_PROFILE);

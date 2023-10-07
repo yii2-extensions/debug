@@ -16,7 +16,7 @@ class LogTargetTest extends TestCase
         parent::setUp();
         $this->mockWebApplication();
     }
-    
+
     public function testGetRequestTime(): void
     {
         Yii::$app->getRequest()->setUrl('dummy');

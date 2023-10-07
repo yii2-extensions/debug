@@ -78,7 +78,6 @@ class TimelinePanel extends Panel
         return $this->_colors;
     }
 
-    
     public function getDetail(): string
     {
         $searchModel = new Search();
@@ -124,7 +123,6 @@ class TimelinePanel extends Panel
         return $this->_models;
     }
 
-    
     public function getName(): string
     {
         return 'Timeline';
@@ -155,7 +153,6 @@ class TimelinePanel extends Panel
         return $this->_svgOptions;
     }
 
-    
     public function load(mixed $data): void
     {
         if (empty($data['start'])) {
@@ -187,7 +184,6 @@ class TimelinePanel extends Panel
         $this->_memory = $data['memory'];
     }
 
-    
     public function save(): mixed
     {
         return [

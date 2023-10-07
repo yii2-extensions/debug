@@ -79,7 +79,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * The action can be null when called from a non-action context (like set debug header).
      */
     public $checkAccessCallback;
-    
+
     public $controllerNamespace = 'yii\debug\controllers';
     /**
      * @var array|LogTarget|string the logTarget object, or the configuration for creating the logTarget object.
@@ -517,7 +517,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
         return $corePanels;
     }
 
-    
     protected function defaultVersion()
     {
         $packageInfo = Json::decode(file_get_contents(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'composer.json'));

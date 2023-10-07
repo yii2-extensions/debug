@@ -81,7 +81,6 @@ class DbPanel extends Panel
      */
     private array $_profileLogs = [];
 
-    
     public function init(): void
     {
         $this->actions['db-explain'] = [
@@ -90,7 +89,6 @@ class DbPanel extends Panel
         ];
     }
 
-    
     public function getName(): string
     {
         return 'Database';
@@ -104,7 +102,6 @@ class DbPanel extends Panel
         return 'DB';
     }
 
-    
     public function getSummary(): string
     {
         $timings = $this->calculateTimings();
@@ -158,7 +155,6 @@ class DbPanel extends Panel
         return $this->_timings;
     }
 
-    
     public function save(): mixed
     {
         return ['messages' => $this->getProfileLogs()];
@@ -307,7 +303,6 @@ class DbPanel extends Panel
         );
     }
 
-    
     public function isEnabled(): bool
     {
         try {

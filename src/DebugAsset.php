@@ -12,12 +12,12 @@ use yii\web\AssetBundle;
 class DebugAsset extends AssetBundle
 {
     public $sourcePath = '@yii/debug/assets';
-    
+
     public $css = [
         'css/main.css',
         'css/toolbar.css',
     ];
-    
+
     public $js = [
         'js/polyfill.min.js',
         'js/bs4-native.min.js',

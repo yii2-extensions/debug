@@ -52,7 +52,6 @@ class Panel extends Component
         return '';
     }
 
-    
     public function getError(): ?FlattenException
     {
         return $this->error;
@@ -167,7 +166,6 @@ class Panel extends Component
         return null;
     }
 
-    
     public function setError(FlattenException $error): void
     {
         $this->error = $error;

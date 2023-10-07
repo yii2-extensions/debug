@@ -40,7 +40,6 @@ class ConfigPanel extends Panel
         return $data;
     }
 
-    
     public function getName(): string
     {
         return 'Configuration';
@@ -72,13 +71,11 @@ class ConfigPanel extends Panel
         );
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/config/summary', ['panel' => $this]);
     }
 
-    
     public function save(): mixed
     {
         return [

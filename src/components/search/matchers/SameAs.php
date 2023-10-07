@@ -19,7 +19,6 @@ class SameAs extends Base
      */
     public bool $partial = false;
 
-    
     public function match(mixed $value): bool
     {
         if (!is_scalar($value)) {

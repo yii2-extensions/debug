@@ -37,7 +37,6 @@ class DefaultController extends Controller
 
     private array $_manifest = [];
 
-    
     public function actions(): array
     {
         $actions = [];

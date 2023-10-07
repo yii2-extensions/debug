@@ -165,25 +165,21 @@ class UserPanel extends Panel
         return $allowSwitchUser;
     }
 
-    
     public function getName(): string
     {
         return $this->displayName;
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/user/summary', ['panel' => $this]);
     }
 
-    
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/user/detail', ['panel' => $this]);
     }
 
-    
     public function save(): mixed
     {
         $identity = Yii::$app->{$this->userComponent}->identity;
@@ -252,7 +248,6 @@ class UserPanel extends Panel
         ];
     }
 
-    
     public function isEnabled(): bool
     {
         try {

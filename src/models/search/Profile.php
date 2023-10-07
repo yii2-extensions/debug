@@ -21,7 +21,6 @@ class Profile extends Base
      */
     public int $info = 0;
 
-    
     public function rules(): array
     {
         return [
@@ -29,7 +28,6 @@ class Profile extends Base
         ];
     }
 
-    
     public function attributeLabels(): array
     {
         return [

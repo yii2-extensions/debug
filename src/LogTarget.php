@@ -27,7 +27,6 @@ class LogTarget extends Target
     public Module $module;
     public string $tag = '';
 
-    
     public function __construct(Module $module, array $config = [])
     {
         parent::__construct($config);

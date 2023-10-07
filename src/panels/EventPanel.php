@@ -23,7 +23,6 @@ class EventPanel extends Panel
      */
     private array $_events = [];
 
-    
     public function init(): void
     {
         parent::init();
@@ -42,13 +41,11 @@ class EventPanel extends Panel
         });
     }
 
-    
     public function getName(): string
     {
         return 'Events';
     }
 
-    
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/event/summary', [
@@ -57,7 +54,6 @@ class EventPanel extends Panel
         ]);
     }
 
-    
     public function getDetail(): string
     {
         $searchModel = new \yii\debug\models\search\Event();
@@ -70,13 +66,11 @@ class EventPanel extends Panel
         ]);
     }
 
-    
     public function save(): mixed
     {
         return $this->_events;
     }
 
-    
     public function isEnabled(): bool
     {
         return parent::isEnabled();
