@@ -121,6 +121,10 @@ class MailPanel extends Panel
             $attr = implode(', ', array_keys($attr));
         }
 
+        if (is_string($attr) === false) {
+            $attr = (string) $attr;
+        }
+
         return $attr;
     }
 
@@ -131,6 +135,10 @@ class MailPanel extends Panel
 
     private function addMoreInformationFromSymfonyMailer(MessageInterface $message, array &$messageData): void
     {
+        if (!$message instanceof \yii\symfonymailer\Message) {
+            return;
+        }
+
         $symfonyMessage = $message->getSymfonyEmail();
         $part = $symfonyMessage->getBody();
 
