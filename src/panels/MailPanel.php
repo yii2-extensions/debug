@@ -135,6 +135,10 @@ class MailPanel extends Panel
 
     private function addMoreInformationFromSymfonyMailer(MessageInterface $message, array &$messageData): void
     {
+        if (!$message instanceof \yii\symfonymailer\Message) {
+            return;
+        }
+
         $symfonyMessage = $message->getSymfonyEmail();
         $part = $symfonyMessage->getBody();
 
