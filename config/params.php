@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
-    // enable/disable debug mode
-    'yii.debug' => false,
+    // debug
+    'yii.debug' => false, // enable debug mode
+    'yii.debug.allowedIPs' => ['127.0.0.1', '::1'], // allow debug on localhost only
 ];
