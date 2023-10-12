@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * @var array $params
  */
- $debug = [];
+$debug = [];
 
 if (isset($params['yii.debug']) && $params['yii.debug'] === true) {
     $debug = [
