@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
-return YII_ENV_DEV ?
-    [
+/**
+ * @var array $params
+ */
+if (isset($params['yii.debug']) && $params['yii.debug'] === true) {
+    $debug = [
         // configuration adjustments for 'dev' environment
         'bootstrap' => ['debug'],
         'modules' => [
@@ -13,5 +16,5 @@ return YII_ENV_DEV ?
                 // 'allowedIPs' => ['127.0.0.1', '::1'],
             ],
         ],
-    ]
-    : [];
+    ];
+}
