@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use yii\debug\Module;
+
 /**
  * @var array $params
  */
@@ -12,7 +14,7 @@ if (isset($params['yii.debug']) && $params['yii.debug'] === true) {
         // configuration adjustments for 'dev' environment
         'modules' => [
             'debug' => [
-                'class' => \yii\debug\Module::class,
+                'class' => Module::class,
                 'allowedIPs' => $params['yii.debug.allowedIPs'] ?? [],
             ],
         ],
