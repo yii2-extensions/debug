@@ -6,12 +6,29 @@
     <br>
 </p>
 
-[![php-version](https://img.shields.io/badge/PHP-%3E%3D8.1-787CB5)](https://www.php.net/releases/8.1/en.php)
-[![yii2-version](https://img.shields.io/badge/yii2%20version-2.2-blue)](https://github.com/yiisoft/yii2/tree/2.2)
-[![build](https://github.com/yii2-extensions/debug/actions/workflows/build.yml/badge.svg)](https://github.com/yii2-extensions/debug/actions/workflows/build.yml)
-[![codecov](https://codecov.io/gh/yii2-extensions/debug/branch/main/graph/badge.svg?token=MF0XUGVLYC)](https://codecov.io/gh/yii2-extensions/debug)
-[![static analysis](https://github.com/yii2-extensions/debug/actions/workflows/static.yml/badge.svg)](https://github.com/yii2-extensions/debug/actions/workflows/static.yml)
-[![StyleCI](https://github.styleci.io/repos/699842423/shield?branch=main)](https://github.styleci.io/repos/699842423?branch=main)
+<p align="center">
+    <a href="https://www.php.net/releases/8.1/en.php" target="_blank">
+        <img src="https://img.shields.io/badge/PHP-%3E%3D8.1-787CB5" alt="php-version">
+    </a>
+    <a href="https://github.com/yiisoft/yii2/tree/2.2" target="_blank">
+        <img src="https://img.shields.io/badge/Yii2%20version-2.2-blue" alt="yii2-version">
+    </a>
+    <a href="https://github.com/yii2-extensions/debug/actions/workflows/build.yml" target="_blank">
+        <img src="https://github.com/yii2-extensions/debug/actions/workflows/build.yml/badge.svg" alt="PHPUnit">
+    </a>
+    <a href="https://codecov.io/gh/yii2-extensions/debug" target="_blank">
+        <img src="https://codecov.io/gh/yii2-extensions/debug/branch/main/graph/badge.svg?token=MF0XUGVLYC" alt="Codecov">
+    </a>
+    <a href="https://github.com/yii2-extensions/debug/actions/workflows/static.yml" target="_blank">
+        <img src="https://github.com/yii2-extensions/debug/actions/workflows/static.yml/badge.svg" alt="PHPStan">
+    </a>
+    <a href="https://github.com/yii2-extensions/app-basic/actions/workflows/static.yml" target="_blank">
+        <img src="https://img.shields.io/badge/PHPStan%20level-1-blue" alt="PHPStan level">
+    </a>    
+    <a href="https://github.styleci.io/repos/699842423?branch=main" target="_blank">
+        <img src="https://github.styleci.io/repos/699842423/shield?branch=main" alt="Code style">
+    </a>        
+</p>
 
 ## Installation
 
@@ -101,6 +118,19 @@ Or you can create a callback for `traceLine` for even more control:
     }
     return strtr('<a href="ide://open?url=file://{file}&line={line}">{text}</a>', ['{file}' => $filePath]);
 },
+```
+
+### Configure with yiisoft/config
+
+> Add the following code to your `config/config-plugin` file in your application.
+
+```php
+'config-plugin' => [
+    'web' => [
+        '$yii2-debug', // add this line
+        'web/*.php'
+    ],
+],
 ```
 
 ## Testing

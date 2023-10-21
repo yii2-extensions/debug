@@ -43,8 +43,7 @@
             "source-directory": "config"
         },
         "config-plugin": {
-            "web": "web/*.php",
-            "params": "params.php"
+            "yii2-debug": "modules.php"
         }
     },
     "config": {
