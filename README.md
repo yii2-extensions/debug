@@ -103,6 +103,19 @@ Or you can create a callback for `traceLine` for even more control:
 },
 ```
 
+### Configure with yiisoft/config
+
+> Add the following code to your `config/config-plugin` file in your application.
+
+```php
+'config-plugin' => [
+    'web' => [
+        '$yii2-debug', // add this line
+        'web/*.php'
+    ],
+],
+```
+
 ## Testing
 
 [Check the documentation testing](/docs/testing.md) to learn about testing.
