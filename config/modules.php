@@ -15,7 +15,7 @@ if (isset($params['yii.debug']) && $params['yii.debug'] === true) {
         'modules' => [
             'debug' => [
                 'class' => Module::class,
-                'allowedIPs' => $params['yii.debug.allowedIPs'] ?? [],
+                'allowedIPs' => $params['yii.debug.allowedIPs'] ?? ['127.0.0.1', '::1'],
             ],
         ],
     ];
