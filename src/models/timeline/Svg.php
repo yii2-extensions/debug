@@ -22,6 +22,7 @@ use function usort;
  * Svg is used to draw a graph using SVG
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class Svg extends BaseObject

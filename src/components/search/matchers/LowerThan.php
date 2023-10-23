@@ -15,6 +15,7 @@ namespace yii\debug\components\search\matchers;
  * Checks if the given value is lower than the base one.
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class LowerThan extends Base

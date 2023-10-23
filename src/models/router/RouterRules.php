@@ -26,6 +26,7 @@ use function get_class;
  * RouterRules model
  *
  * @author Paweł Brzozowski <pawel@positive.codes>
+ *
  * @since 2.1.14
  */
 class RouterRules extends Model

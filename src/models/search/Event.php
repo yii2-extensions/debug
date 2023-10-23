@@ -18,6 +18,7 @@ use yii\debug\components\search\Filter;
  * Event
  *
  * @author Paul Klimov <klimov.paul@gmail.com>
+ *
  * @since 2.0.14
  */
 class Event extends Base

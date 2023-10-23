@@ -15,6 +15,7 @@ namespace yii\debug\components\search\matchers;
  * MatcherInterface should be implemented by all matchers that are used in a filter.
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 interface MatcherInterface

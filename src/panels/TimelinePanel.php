@@ -27,11 +27,12 @@ use function microtime;
  * Debugger panel that collects and displays timeline data.
  *
  * @property array $colors
- * @property-read float $duration
- * @property-read float $start
+ * @property float $duration
+ * @property float $start
  * @property array $svgOptions
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.7
  */
 class TimelinePanel extends Panel

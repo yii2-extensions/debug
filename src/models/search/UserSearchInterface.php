@@ -19,6 +19,7 @@ use yii\web\IdentityInterface;
  * method.
  *
  * @author Semen Dubina <yii2debug@sam002.net>
+ *
  * @since 2.0.10
  */
 interface UserSearchInterface extends IdentityInterface

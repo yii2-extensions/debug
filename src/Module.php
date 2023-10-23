@@ -56,6 +56,7 @@ use function strpos;
  * The Yii Debug Module provides the debug toolbar and debugger.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class Module extends \yii\base\Module implements BootstrapInterface

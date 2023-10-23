@@ -20,9 +20,10 @@ use function sprintf;
 /**
  * DataProvider implements a data provider based on a data array.
  *
- * @property-read array $rulers
+ * @property array $rulers
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class DataProvider extends ArrayDataProvider

@@ -31,6 +31,7 @@ use function str_contains;
  * @see \yii\debug\Panel
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class DefaultController extends Controller

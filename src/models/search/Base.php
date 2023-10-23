@@ -22,6 +22,7 @@ use function str_replace;
  * Base search model
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Base extends Model

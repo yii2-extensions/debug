@@ -41,10 +41,11 @@ use function is_subclass_of;
 /**
  * Debugger panel that collects and displays user data.
  *
- * @property-read DataProviderInterface $userDataProvider
- * @property-read Model|UserSearchInterface $usersFilterModel
+ * @property DataProviderInterface $userDataProvider
+ * @property Model|UserSearchInterface $usersFilterModel
  *
  * @author Daniel Gomez Pan <pana_1990@hotmail.com>
+ *
  * @since 2.0.8
  */
 class UserPanel extends Panel

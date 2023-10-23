@@ -48,6 +48,7 @@ use function trim;
  * ActionRoutes model
  *
  * @author Paweł Brzozowski <pawel@positive.codes>
+ *
  * @since 2.1.14
  */
 class ActionRoutes extends Model

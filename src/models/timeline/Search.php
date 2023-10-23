@@ -20,6 +20,7 @@ use yii\debug\panels\TimelinePanel;
  * Search model for timeline data.
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class Search extends Base

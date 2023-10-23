@@ -26,6 +26,7 @@ use function is_callable;
  *
  * @author Pistej <pistej2@gmail.com>
  * @author Simon Karlen <simi.albi@outlook.com>
+ *
  * @since 2.1.0
  */
 class DumpPanel extends Panel

@@ -23,6 +23,7 @@ use yii\web\User;
  * User controller
  *
  * @author Semen Dubina <yii2debug@sam002.net>
+ *
  * @since 2.0.10
  */
 class UserController extends Controller

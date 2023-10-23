@@ -23,6 +23,7 @@ use function strcmp;
  * Checks if the given value is exactly or partially same as the base one.
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class SameAs extends Base

@@ -19,6 +19,7 @@ use yii\debug\components\search\Filter;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Profile extends Base

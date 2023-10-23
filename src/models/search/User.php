@@ -23,6 +23,7 @@ use function array_keys;
  * Search model for implementation of IdentityInterface
  *
  * @author Semen Dubina <yii2debug@sam002.net>
+ *
  * @since 2.0.10
  */
 class User extends Model

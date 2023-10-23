@@ -34,6 +34,7 @@ use function is_resource;
  * Ported from Symfony components @link https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Debug/Exception/FlattenException.php
  *
  * @author Dmitry Bashkarev <dmitry@bashkarev.com>
+ *
  * @since 2.0.10
  */
 class FlattenException

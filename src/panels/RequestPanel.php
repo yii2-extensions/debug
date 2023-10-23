@@ -23,6 +23,7 @@ use yii\web\Session;
  * Debugger panel that collects and displays request data.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class RequestPanel extends Panel

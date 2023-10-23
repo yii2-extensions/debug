@@ -27,6 +27,7 @@ use function microtime;
  *   appear at lower version.
  *
  * @author Paul Klimov <klimov.paul@gmail.com>
+ *
  * @since 2.0.14
  */
 class EventPanel extends Panel

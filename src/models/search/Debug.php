@@ -21,6 +21,7 @@ use function in_array;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Debug extends Base

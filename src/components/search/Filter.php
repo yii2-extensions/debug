@@ -18,6 +18,7 @@ use yii\debug\components\search\matchers\MatcherInterface;
  * Provides array filtering capabilities.
  *
  * @author Mark Jebri <mark.github@yandex.ru>
+ *
  * @since 2.0
  */
 class Filter extends Component

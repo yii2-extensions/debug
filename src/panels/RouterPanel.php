@@ -30,6 +30,7 @@ use function is_array;
  * See [[getCategories()]] and [[setCategories()]] for details.
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class RouterPanel extends Panel

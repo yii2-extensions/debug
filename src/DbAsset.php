@@ -17,6 +17,7 @@ use yii\web\AssetBundle;
  * DB asset bundle.
  *
  * @author Simon Karlen (simi.albi@outlook.com)
+ *
  * @since 2.1.0
  */
 class DbAsset extends AssetBundle

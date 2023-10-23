@@ -20,6 +20,7 @@ use function is_string;
  * CurrentRoute model
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
  * @since 2.0.8
  */
 class CurrentRoute extends Model

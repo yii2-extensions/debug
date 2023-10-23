@@ -24,10 +24,11 @@ use function str_replace;
 /**
  * Debugger panel that collects and displays application configuration and environment.
  *
- * @property-read array $extensions
- * @property-read array $phpInfo
+ * @property array $extensions
+ * @property array $phpInfo
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
+ *
  * @since 2.0
  */
 class ConfigPanel extends Panel

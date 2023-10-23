@@ -23,6 +23,7 @@ use function array_walk;
  * Debugger panel that collects and displays asset bundles data.
  *
  * @author Artur Fursa <arturfursa@gmail.com>
+ *
  * @since 2.0
  */
 class AssetPanel extends Panel
