@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\models\router;
 
 use yii\base\Model;
@@ -11,6 +18,10 @@ use function is_string;
 
 /**
  * CurrentRoute model
+ *
+ * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
+ * @since 2.0.8
  */
 class CurrentRoute extends Model
 {

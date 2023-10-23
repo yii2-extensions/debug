@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\panels;
 
 use Yii;
@@ -15,7 +22,12 @@ use function call_user_func;
 use function is_callable;
 
 /**
- * Dump a panel that collects and displays debug messages (Logger::LEVEL_TRACE).
+ * Dump panel that collects and displays debug messages (Logger::LEVEL_TRACE).
+ *
+ * @author Pistej <pistej2@gmail.com>
+ * @author Simon Karlen <simi.albi@outlook.com>
+ *
+ * @since 2.1.0
  */
 class DumpPanel extends Panel
 {

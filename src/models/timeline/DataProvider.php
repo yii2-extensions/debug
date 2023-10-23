@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\models\timeline;
 
 use yii\data\ArrayDataProvider;
@@ -12,6 +19,12 @@ use function sprintf;
 
 /**
  * DataProvider implements a data provider based on a data array.
+ *
+ * @property array $rulers
+ *
+ * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
+ * @since 2.0.8
  */
 class DataProvider extends ArrayDataProvider
 {

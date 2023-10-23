@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\panels;
 
 use RuntimeException;
@@ -18,6 +25,15 @@ use function microtime;
 
 /**
  * Debugger panel that collects and displays timeline data.
+ *
+ * @property array $colors
+ * @property float $duration
+ * @property float $start
+ * @property array $svgOptions
+ *
+ * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
+ * @since 2.0.7
  */
 class TimelinePanel extends Panel
 {

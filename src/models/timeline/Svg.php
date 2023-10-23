@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\models\timeline;
 
 use yii\base\BaseObject;
@@ -12,7 +19,11 @@ use function strtr;
 use function usort;
 
 /**
- * Svg is used to draw a graph using SVG.
+ * Svg is used to draw a graph using SVG
+ *
+ * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ *
+ * @since 2.0.8
  */
 class Svg extends BaseObject
 {

@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
@@ -11,6 +18,11 @@ use function in_array;
 
 /**
  * Search model for requests manifest data.
+ *
+ * @author Qiang Xue <qiang.xue@gmail.com>
+ * @author Mark Jebri <mark.github@yandex.ru>
+ *
+ * @since 2.0
  */
 class Debug extends Base
 {

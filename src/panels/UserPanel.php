@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\panels;
 
 use Exception;
@@ -33,6 +40,13 @@ use function is_subclass_of;
 
 /**
  * Debugger panel that collects and displays user data.
+ *
+ * @property DataProviderInterface $userDataProvider
+ * @property Model|UserSearchInterface $usersFilterModel
+ *
+ * @author Daniel Gomez Pan <pana_1990@hotmail.com>
+ *
+ * @since 2.0.8
  */
 class UserPanel extends Panel
 {

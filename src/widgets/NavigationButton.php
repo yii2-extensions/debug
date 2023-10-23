@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\widgets;
 
 use yii\base\Widget;
@@ -14,7 +21,9 @@ use function end;
 use function reset;
 
 /**
- * Render button for navigation to previous or next request in a debug panel
+ * Render button for navigation to previous or next request in debug panel.
+ *
+ * @since 2.0.11
  */
 class NavigationButton extends Widget
 {

@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\panels;
 
 use Yii;
@@ -15,6 +22,13 @@ use function microtime;
 
 /**
  * Debugger panel that collects and displays information about triggered events.
+ *
+ * > Note: this panel requires Yii framework version >= 2.0.14 to function and will not
+ *   appear at lower version.
+ *
+ * @author Paul Klimov <klimov.paul@gmail.com>
+ *
+ * @since 2.0.14
  */
 class EventPanel extends Panel
 {
