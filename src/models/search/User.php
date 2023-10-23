@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\base\Model;
@@ -13,7 +20,10 @@ use yii\db\ActiveRecord;
 use function array_keys;
 
 /**
- * Search model for implementation of IdentityInterface.
+ * Search model for implementation of IdentityInterface
+ *
+ * @author Semen Dubina <yii2debug@sam002.net>
+ * @since 2.0.10
  */
 class User extends Model
 {

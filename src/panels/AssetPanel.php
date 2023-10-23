@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\panels;
 
 use Closure;
@@ -14,6 +21,9 @@ use function array_walk;
 
 /**
  * Debugger panel that collects and displays asset bundles data.
+ *
+ * @author Artur Fursa <arturfursa@gmail.com>
+ * @since 2.0
  */
 class AssetPanel extends Panel
 {

@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\panels;
 
 use Yii;
@@ -17,7 +24,13 @@ use function get_class;
 use function is_array;
 
 /**
- * RouterPanel provides a panel which displays information about a routing process.
+ * RouterPanel provides a panel which displays information about routing process.
+ *
+ * @property array $categories Note that the type of this property differs in getter and setter.
+ * See [[getCategories()]] and [[setCategories()]] for details.
+ *
+ * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
+ * @since 2.0.8
  */
 class RouterPanel extends Panel
 {

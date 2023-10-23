@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\panels;
 
 use Yii;
@@ -25,6 +32,14 @@ use function preg_match;
 
 /**
  * Debugger panel that collects and displays database queries performed.
+ *
+ * @property-read array $excessiveCallers The number of DB calls indexed by the backtrace hash of excessive
+ * caller(s).
+ * @property-read array $profileLogs
+ * @property-read string $summaryName Short name of the panel, which will be use in summary.
+ *
+ * @author Qiang Xue <qiang.xue@gmail.com>
+ * @since 2.0
  */
 class DbPanel extends Panel
 {

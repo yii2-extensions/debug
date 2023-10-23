@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
@@ -9,6 +16,9 @@ use yii\debug\components\search\Filter;
 
 /**
  * Mail represents the model behind the search form about current send emails.
+ *
+ * @author Mark Jebri <mark.github@yandex.ru>
+ * @since 2.0
  */
 class Mail extends Base
 {

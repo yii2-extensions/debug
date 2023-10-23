@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\panels;
 
 use Yii;
@@ -16,6 +23,12 @@ use function str_replace;
 
 /**
  * Debugger panel that collects and displays application configuration and environment.
+ *
+ * @property-read array $extensions
+ * @property-read array $phpInfo
+ *
+ * @author Qiang Xue <qiang.xue@gmail.com>
+ * @since 2.0
  */
 class ConfigPanel extends Panel
 {

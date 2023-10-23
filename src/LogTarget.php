@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug;
 
 use Yii;
@@ -21,6 +28,9 @@ use function array_reverse;
 
 /**
  * The debug LogTarget is used to store logs for later use in the debugger tool.
+ *
+ * @author Qiang Xue <qiang.xue@gmail.com>
+ * @since 2.0
  */
 class LogTarget extends Target
 {

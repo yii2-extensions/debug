@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * @link https://www.yiiframework.com/
+ *
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
 namespace yii\debug\actions\db;
 
 use yii\base\Action;
@@ -18,6 +25,9 @@ use function implode;
 
 /**
  * ExplainAction provides EXPLAIN information for SQL queries
+ *
+ * @author Laszlo <github@lvlconsultancy.nl>
+ * @since 2.0.6
  */
 class ExplainAction extends Action
 {
