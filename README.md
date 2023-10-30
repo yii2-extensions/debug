@@ -149,6 +149,19 @@ return [
 ];
 ```
 
+> For class map module, add in your config/params.php file in your application.
+
+```php
+use App\YourClass;
+
+return [
+    'yii2.debug.classMap' => [
+        'class' => YourClass::class,
+    ],
+];
+```
+
+
 ## Testing
 
 [Check the documentation testing](/docs/testing.md) to learn about testing.
