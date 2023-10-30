@@ -133,6 +133,21 @@ Or you can create a callback for `traceLine` for even more control:
 ],
 ```
 
+> For activate the debug toolbar, add in your config/params.php file in your application.
+
+```php
+return [
+    'yii2.debug' => true,
+];
+```	
+
+> For change allowed IPs, add in your config/params.php file in your application.
+
+```php
+return [
+    'yii2.debug.allowedIPs' => ['192.168.1.1'],
+];
+
 ## Testing
 
 [Check the documentation testing](/docs/testing.md) to learn about testing.

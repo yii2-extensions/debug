@@ -9,13 +9,13 @@ use yii\debug\Module;
  */
 $debug = [];
 
-if (isset($params['yii.debug']) && $params['yii.debug'] === true) {
+if (isset($params['yii2.debug']) && $params['yii2.debug'] === true) {
     $debug = [
         // configuration adjustments for 'dev' environment
         'modules' => [
             'debug' => [
                 'class' => Module::class,
-                'allowedIPs' => $params['yii.debug.allowedIPs'] ?? ['127.0.0.1', '::1'],
+                'allowedIPs' => $params['yii2.debug.allowedIPs'] ?? ['127.0.0.1', '::1'],
             ],
         ],
     ];
