@@ -147,6 +147,7 @@ return [
 return [
     'yii2.debug.allowedIPs' => ['192.168.1.1'],
 ];
+```
 
 ## Testing
 
