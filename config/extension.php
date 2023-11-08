@@ -9,6 +9,9 @@ $debug = [];
 
 if (isset($params['yii2.debug']) && $params['yii2.debug'] === true) {
     $debug = [
+        'bootstrap' => [
+            'debug',
+        ],
         // configuration adjustments for 'dev' environment
         'modules' => [
             'debug' => [
