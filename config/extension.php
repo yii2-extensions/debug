@@ -9,10 +9,8 @@ $debug = [];
 
 if (isset($params['yii2.debug']) && $params['yii2.debug'] === true) {
     $debug = [
-        'bootstrap' => [
-            'debug',
-        ],
         // configuration adjustments for 'dev' environment
+        'bootstrap' => ['debug'],
         'modules' => [
             'debug' => [
                 'class' => $params['yii2.debug.classMap'] ?? \yii\debug\Module::class,
