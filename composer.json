@@ -43,7 +43,7 @@
             "source-directory": "config"
         },
         "config-plugin": {
-            "yii2-debug": "modules.php"
+            "yii2-debug": "extension.php"
         }
     },
     "config": {
