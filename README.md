@@ -16,6 +16,9 @@
     <a href="https://github.com/yii2-extensions/debug/actions/workflows/build.yml" target="_blank">
         <img src="https://github.com/yii2-extensions/debug/actions/workflows/build.yml/badge.svg" alt="PHPUnit">
     </a>
+    <a href="https://github.com/yii2-extensions/debug/actions/workflows/compatibility.yml" target="_blank">
+        <img src="https://github.com/yii2-extensions/debug/actions/workflows/compatibility.yml/badge.svg" alt="Compatibility">
+    </a>     
     <a href="https://codecov.io/gh/yii2-extensions/debug" target="_blank">
         <img src="https://codecov.io/gh/yii2-extensions/debug/branch/main/graph/badge.svg?token=MF0XUGVLYC" alt="Codecov">
     </a>
@@ -69,7 +72,6 @@ return [
 
 You will see a debugger toolbar showing at the bottom of every page of your application.
 You can click on the toolbar to see more detailed debug information.
-
 
 ### Open Files in IDE
 
@@ -160,7 +162,6 @@ return [
     ],
 ];
 ```
-
 
 ## Testing
 
