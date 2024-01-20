@@ -16,18 +16,12 @@
     <a href="https://github.com/yii2-extensions/debug/actions/workflows/build.yml" target="_blank">
         <img src="https://github.com/yii2-extensions/debug/actions/workflows/build.yml/badge.svg" alt="PHPUnit">
     </a>
+    <a href="https://github.com/yii2-extensions/debug/actions/workflows/compatibility.yml" target="_blank">
+        <img src="https://github.com/yii2-extensions/debug/actions/workflows/compatibility.yml/badge.svg" alt="Compatibility">
+    </a>     
     <a href="https://codecov.io/gh/yii2-extensions/debug" target="_blank">
         <img src="https://codecov.io/gh/yii2-extensions/debug/branch/main/graph/badge.svg?token=MF0XUGVLYC" alt="Codecov">
-    </a>
-    <a href="https://github.com/yii2-extensions/debug/actions/workflows/static.yml" target="_blank">
-        <img src="https://github.com/yii2-extensions/debug/actions/workflows/static.yml/badge.svg" alt="PHPStan">
-    </a>
-    <a href="https://github.com/yii2-extensions/debug/actions/workflows/static.yml" target="_blank">
-        <img src="https://img.shields.io/badge/PHPStan%20level-1-blue" alt="PHPStan level">
-    </a>    
-    <a href="https://github.styleci.io/repos/699842423?branch=main" target="_blank">
-        <img src="https://github.styleci.io/repos/699842423/shield?branch=main" alt="Code style">
-    </a>        
+    </a>     
 </p>
 
 ## Installation
@@ -69,7 +63,6 @@ return [
 
 You will see a debugger toolbar showing at the bottom of every page of your application.
 You can click on the toolbar to see more detailed debug information.
-
 
 ### Open Files in IDE
 
@@ -161,10 +154,15 @@ return [
 ];
 ```
 
-
 ## Testing
 
 [Check the documentation testing](/docs/testing.md) to learn about testing.
+
+## Quality code
+
+[![static-analysis](https://github.com/yii2-extensions/debug/actions/workflows/static.yml/badge.svg)](https://github.com/yii2-extensions/debug/actions/workflows/static.yml)
+[![phpstan-level](https://img.shields.io/badge/PHPStan%20level-1-blue)](https://github.com/yii2-extensions/debug/actions/workflows/static.yml)
+[![StyleCI](https://github.styleci.io/repos/699842423/shield?branch=main)](https://github.styleci.io/repos/699842423?branch=main)
 
 ## Our social networks
 

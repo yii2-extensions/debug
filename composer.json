@@ -15,14 +15,14 @@
         "ext-mbstring": "*",
         "ext-intl": "*",
         "symfony/mime": "^6.3",
-        "yiisoft/yii2": "^2.2",
+        "yiisoft/yii2": "*",
         "yiisoft/yii2-symfonymailer": "^3.0"
     },
     "require-dev": {
         "maglnet/composer-require-checker": "^4.6",
         "phpstan/phpstan": "^1.10",
         "phpunit/phpunit": "^10.2",
-        "rector/rector": "^0.18",
+        "rector/rector": "^0.19",
         "yii2-extensions/phpstan": "dev-main"
     },
     "autoload": {
