@@ -27,7 +27,6 @@ jobs:
     with:
       composer-command: |
         composer require yiisoft/yii2:^2.2.x-dev --prefer-dist --no-progress --no-interaction --no-scripts --ansi
-      extensions: mbstring, intl
       os: >-
         ['ubuntu-latest', 'windows-latest']
       php: >-
