@@ -158,6 +158,11 @@ return [
 
 [Check the documentation testing](/docs/testing.md) to learn about testing.
 
+## Support versions Yii2
+
+[![Yii20](https://img.shields.io/badge/Yii2%20version-2.0-blue)](https://github.com/yiisoft/yii2/tree/2.0.49.3)
+[![Yii22](https://img.shields.io/badge/Yii2%20version-2.2-blue)](https://github.com/yiisoft/yii2/tree/2.2)
+
 ## Quality code
 
 [![static-analysis](https://github.com/yii2-extensions/debug/actions/workflows/static.yml/badge.svg)](https://github.com/yii2-extensions/debug/actions/workflows/static.yml)
