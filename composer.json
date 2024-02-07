@@ -22,7 +22,7 @@
         "maglnet/composer-require-checker": "^4.6",
         "phpstan/phpstan": "^1.10",
         "phpunit/phpunit": "^10.2",
-        "rector/rector": "^0.19",
+        "rector/rector": "^1.0",
         "yii2-extensions/phpstan": "dev-main"
     },
     "autoload": {
