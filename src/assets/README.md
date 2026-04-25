@@ -5,7 +5,7 @@ pages and the debug toolbar custom element.
 
 ## Layout
 
-```
+```text
 assets/
 ├── arrow.svg               # static asset
 ├── build.sh                # SCSS compile script
