@@ -1,178 +1,87 @@
+<!-- markdownlint-disable MD041 -->
 <p align="center">
-    <a href="https://github.com/yii2-extensions/debug" target="_blank">
-        <img src="https://www.yiiframework.com/image/yii_logo_light.svg" height="100px;">
-    </a>
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://www.yiiframework.com/image/design/logo/yii3_full_for_dark.svg">
+        <source media="(prefers-color-scheme: light)" srcset="https://www.yiiframework.com/image/design/logo/yii3_full_for_light.svg">
+        <img src="https://www.yiiframework.com/image/design/logo/yii3_full_for_light.svg" alt="Yii Framework" width="80%">
+    </picture>
     <h1 align="center">Debug</h1>
     <br>
 </p>
+<!-- markdownlint-enable MD041 -->
 
 <p align="center">
-    <a href="https://www.php.net/releases/8.1/en.php" target="_blank">
-        <img src="https://img.shields.io/badge/PHP-%3E%3D8.1-787CB5" alt="php-version">
-    </a>
-    <a href="https://github.com/yiisoft/yii2/tree/2.2" target="_blank">
-        <img src="https://img.shields.io/badge/Yii2%20version-2.2-blue" alt="yii2-version">
-    </a>
     <a href="https://github.com/yii2-extensions/debug/actions/workflows/build.yml" target="_blank">
-        <img src="https://github.com/yii2-extensions/debug/actions/workflows/build.yml/badge.svg" alt="PHPUnit">
+        <img src="https://img.shields.io/github/actions/workflow/status/yii2-extensions/debug/build.yml?style=for-the-badge&label=PHPUnit&logo=github" alt="PHPUnit">
     </a>
-    <a href="https://github.com/yii2-extensions/debug/actions/workflows/compatibility.yml" target="_blank">
-        <img src="https://github.com/yii2-extensions/debug/actions/workflows/compatibility.yml/badge.svg" alt="Compatibility">
-    </a>     
-    <a href="https://codecov.io/gh/yii2-extensions/debug" target="_blank">
-        <img src="https://codecov.io/gh/yii2-extensions/debug/branch/main/graph/badge.svg?token=MF0XUGVLYC" alt="Codecov">
-    </a>     
+    <a href="https://dashboard.stryker-mutator.io/reports/github.com/yii2-extensions/debug/main" target="_blank">
+        <img src="https://img.shields.io/endpoint?style=for-the-badge&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fyii2-extensions%2Fdebug%2Fmain" alt="Mutation Testing">
+    </a>
+    <a href="https://github.com/yii2-extensions/debug/actions/workflows/static.yml" target="_blank">
+        <img src="https://img.shields.io/github/actions/workflow/status/yii2-extensions/debug/static.yml?style=for-the-badge&label=PHPStan&logo=github" alt="PHPStan">
+    </a>
 </p>
 
-## Installation
+<p align="center">
+    <strong>Debugger and toolbar for Yii2 applications</strong><br>
+    <em>Pico-inspired UI, scoped CSS, light/dark mode, and 14 inspection panels</em>
+</p>
 
-The preferred way to install this extension is through [composer](https://getcomposer.org/download/).
+## Features
 
-Either run
+<picture>
+    <source media="(min-width: 768px)" srcset="./docs/svgs/features.svg">
+    <img src="./docs/svgs/features-mobile.svg" alt="Feature Overview" style="width: 100%;">
+</picture>
 
+## Quick start
+
+### Installation
+
+```bash
+composer require yii2-extensions/debug --dev
 ```
-php composer.phar require --dev --prefer-dist yii2-extensions/debug
-```
 
-or add
+### Basic Usage
 
-```
-"yii2-extensions/debug": "dev-main"
-```
-
-to the require-dev section of your `composer.json` file.
-
-## Usage
-
-Once the extension is installed, simply modify your application configuration as follows:
+Enable the debug module in your application configuration (`config/web.php`).
 
 ```php
-return [
-    'bootstrap' => ['debug'],
-    'modules' => [
-        'debug' => [
-            'class' => 'yii\debug\Module',
-            // uncomment and adjust the following to add your IP if you are not connecting from localhost.
-            //'allowedIPs' => ['127.0.0.1', '::1'],
-        ],
-        // ...
-    ],
-    ...
-];
+if (YII_ENV_DEV) {
+    $config['bootstrap'][] = 'debug';
+    $config['modules']['debug'] = [
+        'class' => \yii\debug\Module::class,
+        'allowedIPs' => ['127.0.0.1', '::1'],
+    ];
+}
 ```
 
-You will see a debugger toolbar showing at the bottom of every page of your application.
-You can click on the toolbar to see more detailed debug information.
+The toolbar appears at the bottom of every rendered page; click any panel chip to open the full debugger.
 
-### Open Files in IDE
+## Documentation
 
-You can create a link to open files in your favorite IDE with this configuration:
+For detailed configuration options and advanced usage.
 
-```php
-return [
-    'bootstrap' => ['debug'],
-    'modules' => [
-        'debug' => [
-            'class' => 'yii\debug\Module',
-            'traceLine' => '<a href="phpstorm://open?url={file}&line={line}">{file}:{line}</a>',
-            // uncomment and adjust the following to add your IP if you are not connecting from localhost.
-            //'allowedIPs' => ['127.0.0.1', '::1'],
-        ],
-        // ...
-    ],
-    ...
-];
-```
+- 🧪 [Testing Guide](docs/testing.md)
 
-You must make some changes to your OS. See these examples: 
- - PHPStorm: https://github.com/aik099/PhpStormProtocol
- - Sublime Text 3 on Windows or Linux: https://packagecontrol.io/packages/subl%20protocol
- - Sublime Text 3 on Mac: https://github.com/inopinatus/sublime_url
+## Package information
 
-### Virtualized or dockerized
-
-If your application is run under a virtualized or dockerized environment, it is often the case that the application's 
-base path is different inside of the virtual machine or container than on your host machine. For the links work in those
- situations, you can configure `tracePathMappings` like this (change the path to your app):
-
-```php
-'tracePathMappings' => [
-    '/app' => '/path/to/your/app',
-],
-```
-
-Or you can create a callback for `traceLine` for even more control:
-
-```php
-'traceLine' => function($options, $panel) {
-    $filePath = $options['file'];
-    if (StringHelper::startsWith($filePath, Yii::$app->basePath)) {
-        $filePath = '/path/to/your/app' . substr($filePath, strlen(Yii::$app->basePath));
-    }
-    return strtr('<a href="ide://open?url=file://{file}&line={line}">{text}</a>', ['{file}' => $filePath]);
-},
-```
-
-### Configure with yiisoft/config
-
-> Add the following code to your `config/config-plugin` file in your application.
-
-```php
-'config-plugin' => [
-    'web' => [
-        '$yii2-debug', // add this line
-        'web/*.php'
-    ],
-],
-```
-
-> For activate the debug toolbar, add in your config/params.php file in your application.
-
-```php
-return [
-    'yii2.debug' => true,
-];
-```	
-
-> For change allowed IPs, add in your config/params.php file in your application.
-
-```php
-return [
-    'yii2.debug.allowedIPs' => ['192.168.1.1'],
-];
-```
-
-> For class map module, add in your config/params.php file in your application.
-
-```php
-use App\YourClass;
-
-return [
-    'yii2.debug.classMap' => [
-        'class' => YourClass::class,
-    ],
-];
-```
-
-## Testing
-
-[Check the documentation testing](/docs/testing.md) to learn about testing.
-
-## Support versions Yii2
-
-[![Yii20](https://img.shields.io/badge/Yii2%20version-2.0-blue)](https://github.com/yiisoft/yii2/tree/2.0.49.3)
-[![Yii22](https://img.shields.io/badge/Yii2%20version-2.2-blue)](https://github.com/yiisoft/yii2/tree/2.2)
+[![PHP](https://img.shields.io/badge/%3E%3D8.3-777BB4.svg?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/releases/8.3/en.php)
+[![Yii 22.0.x](https://img.shields.io/badge/22.0.x-0073AA.svg?style=for-the-badge&logo=yii&logoColor=white)](https://github.com/yiisoft/yii2/tree/22.0)
+[![Latest Stable Version](https://img.shields.io/packagist/v/yii2-extensions/debug.svg?style=for-the-badge&logo=packagist&logoColor=white&label=Stable)](https://packagist.org/packages/yii2-extensions/debug)
+[![Total Downloads](https://img.shields.io/packagist/dt/yii2-extensions/debug.svg?style=for-the-badge&logo=composer&logoColor=white&label=Downloads)](https://packagist.org/packages/yii2-extensions/debug)
 
 ## Quality code
 
-[![static-analysis](https://github.com/yii2-extensions/debug/actions/workflows/static.yml/badge.svg)](https://github.com/yii2-extensions/debug/actions/workflows/static.yml)
-[![phpstan-level](https://img.shields.io/badge/PHPStan%20level-1-blue)](https://github.com/yii2-extensions/debug/actions/workflows/static.yml)
-[![StyleCI](https://github.styleci.io/repos/699842423/shield?branch=main)](https://github.styleci.io/repos/699842423?branch=main)
+[![Codecov](https://img.shields.io/codecov/c/github/yii2-extensions/debug.svg?style=for-the-badge&logo=codecov&logoColor=white&label=Coverage)](https://codecov.io/github/yii2-extensions/debug)
+[![PHPStan Level Max](https://img.shields.io/badge/PHPStan-Level%20Max-4F5D95.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/yii2-extensions/debug/actions/workflows/static.yml)
+[![Super-Linter](https://img.shields.io/github/actions/workflow/status/yii2-extensions/debug/linter.yml?style=for-the-badge&label=Super-Linter&logo=github)](https://github.com/yii2-extensions/debug/actions/workflows/linter.yml)
+[![StyleCI](https://img.shields.io/badge/StyleCI-Passed-44CC11.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.styleci.io/repos/yii2-extensions/debug?branch=main)
 
 ## Our social networks
 
-[![Twitter](https://img.shields.io/badge/twitter-follow-1DA1F2?logo=twitter&logoColor=1DA1F2&labelColor=555555?style=flat)](https://twitter.com/Terabytesoftw)
+[![Follow on X](https://img.shields.io/badge/-Follow%20on%20X-1DA1F2.svg?style=for-the-badge&logo=x&logoColor=white&labelColor=000000)](https://x.com/Terabytesoftw)
 
 ## License
 
-The MIT License. Please see [License File](LICENSE.md) for more information.
+[![License](https://img.shields.io/badge/License-BSD--3--Clause-brightgreen.svg?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=555555)](LICENSE)
