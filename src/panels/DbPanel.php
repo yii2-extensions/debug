@@ -12,7 +12,6 @@ namespace yii\debug\panels;
 
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\data\ArrayDataProvider;
 use yii\debug\models\search\Db;
 use yii\debug\Panel;
 use yii\helpers\ArrayHelper;
