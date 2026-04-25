@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\actions\db;
 
+use Yii;
 use yii\base\Action;
 use yii\base\InvalidConfigException;
 use yii\db\Exception;
@@ -45,30 +46,12 @@ class ExplainAction extends Action
         }
 
         $query = $timings[$seq]['info'];
-
         $results = $this->panel->getDb()->createCommand('EXPLAIN ' . $query)->queryAll();
 
-        $output[] = '<table class="table"><thead><tr>'
-            . implode(
-                array_map(
-                    static fn($key): string => "<th>{$key}</th>",
-                    array_keys($results[0]),
-                ),
-            )
-            . '</tr></thead><tbody>';
+        $params = ['query' => $query, 'results' => $results];
 
-        foreach ($results as $result) {
-            $output[] = '<tr>' . implode(
-                array_map(
-                    static fn($value): string => '<td>' . (empty($value) ? 'NULL' : htmlspecialchars($value)) . '</td>',
-                    $result,
-                ),
-            )
-            . '</tr>';
-        }
-
-        $output[] = '</tbody></table>';
-
-        return implode($output);
+        return Yii::$app->request->isAjax
+            ? $this->controller->renderPartial('db-explain', $params)
+            : $this->controller->render('db-explain', $params);
     }
 }

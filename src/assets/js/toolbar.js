@@ -228,6 +228,23 @@
     toolbars.forEach(function (toolbar) {
       toolbar.setAjaxRequests(requestStack);
     });
+
+    // Follow the most recent AJAX request that carries an X-Debug-Tag header so
+    // the chips reflect what just happened on the server (e.g. login that hit
+    // the database) instead of staying frozen on the initial page-load tag.
+    for (var i = requestStack.length - 1; i >= 0; i--) {
+      var item = requestStack[i];
+
+      if (item.loading || !item.profile) {
+        continue;
+      }
+
+      toolbars.forEach(function (toolbar) {
+        toolbar.followTag(item.profile);
+      });
+
+      return;
+    }
   }
 
   function trackXhr() {
@@ -482,6 +499,25 @@
 
   YiiDebugToolbar.prototype.withTheme = function (url) {
     return addThemeToUrl(url, this.theme || this.detectTheme());
+  };
+
+  YiiDebugToolbar.prototype.followTag = function (tag) {
+    if (!tag || this.currentTag === tag) {
+      return;
+    }
+
+    var url = this.getAttribute("data-url");
+
+    if (!url) {
+      return;
+    }
+
+    this.currentTag = tag;
+    this.setAttribute(
+      "data-url",
+      url.replace(/([?&]tag=)[^&]+/, "$1" + encodeURIComponent(tag)),
+    );
+    this.load();
   };
 
   YiiDebugToolbar.prototype.load = function () {

@@ -1064,6 +1064,52 @@
     width: 25%;
   }
 
+  // EXPLAIN output: table can be very wide; wrap in a scroll container so it
+  // never breaks out of the panel.
+  .yii-debug-explain {
+    margin-top: var(--yii-debug-space-3);
+  }
+
+  .yii-debug-explain-title {
+    margin-bottom: var(--yii-debug-space-2);
+    font-size: var(--yii-debug-fs-lg);
+    font-weight: 700;
+  }
+
+  .yii-debug-explain-query {
+    margin-bottom: var(--yii-debug-space-3);
+    padding: var(--yii-debug-space-3);
+    background: var(--yii-debug-panel-code-bg);
+    border-radius: var(--yii-debug-radius-md);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
+  .yii-debug-explain-empty {
+    color: var(--yii-debug-panel-muted);
+    font-style: italic;
+  }
+
+  .yii-debug-explain-scroll {
+    overflow-x: auto;
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+  }
+
+  .yii-debug-explain-table {
+    margin: 0;
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+    white-space: nowrap;
+
+    th,
+    td {
+      padding: var(--yii-debug-space-2) var(--yii-debug-space-3);
+    }
+  }
+
   // Trace lists.
   ul.yii-debug-trace {
     margin: 2px 0 0;
