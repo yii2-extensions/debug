@@ -29,6 +29,7 @@ use function is_string;
 class Module extends \yii\base\Module implements BootstrapInterface
 {
     public const string DEFAULT_IDE_TRACELINE = '<a href="ide://open?url=file://{file}&line={line}">{text}</a>';
+    public const string VERSION = '0.1.0';
     /**
      * @var array The list of hosts that are allowed to access this module.
      * Each array element is a hostname that will be resolved to an IP address that is compared with the IP address of
@@ -521,11 +522,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     protected function defaultVersion()
     {
-        if (isset(Yii::$app->extensions['yiisoft/yii2-debug']['version'])) {
-            return Yii::$app->extensions['yiisoft/yii2-debug']['version'];
-        }
-
-        return VersionResolver::forPackage('yiisoft/yii2-debug') ?? parent::defaultVersion();
+        return self::VERSION;
     }
 
     /**

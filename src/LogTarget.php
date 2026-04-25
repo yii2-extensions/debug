@@ -284,7 +284,7 @@ class LogTarget extends Target
     protected function removeStaleDataFiles($manifest)
     {
         $storageTags = array_map(
-            static fn ($file) => pathinfo($file, PATHINFO_FILENAME),
+            static fn($file) => pathinfo($file, PATHINFO_FILENAME),
             FileHelper::findFiles($this->module->dataPath, ['except' => ['index.data']]),
         );
 

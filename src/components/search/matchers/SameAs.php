@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\components\search\matchers;
 
-use yii\helpers\VarDumper;
 use Yii;
+use yii\helpers\VarDumper;
 
 use function is_scalar;
 
@@ -19,7 +19,7 @@ class SameAs extends Base
      */
     public $partial = false;
 
-    private ?string $baseValueUpper = null;
+    private string|null $baseValueUpper = null;
 
     public function match($value)
     {

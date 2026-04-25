@@ -53,7 +53,7 @@ class ExplainAction extends Action
                 array_map(
                     static fn($key): string => "<th>{$key}</th>",
                     array_keys($results[0]),
-                )
+                ),
             )
             . '</tr></thead><tbody>';
 
@@ -62,7 +62,7 @@ class ExplainAction extends Action
                 array_map(
                     static fn($value): string => '<td>' . (empty($value) ? 'NULL' : htmlspecialchars($value)) . '</td>',
                     $result,
-                )
+                ),
             )
             . '</tr>';
         }
