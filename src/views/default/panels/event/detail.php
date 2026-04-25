@@ -9,7 +9,10 @@ use yii\grid\GridView;
 /** @var yii\debug\models\search\Event $searchModel */
 /** @var yii\data\ArrayDataProvider $dataProvider */
 ?>
-<h1>Events</h1>
+<h1 class="yii-debug-sr-only">Events</h1>
+<header class="yii-debug-grid-summary">
+    <span><strong><?= $dataProvider->getTotalCount() ?></strong> events captured</span>
+</header>
 <?= GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $dataProvider,
     'id' => 'log-panel-detailed-event',

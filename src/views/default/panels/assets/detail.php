@@ -7,7 +7,7 @@ use yii\helpers\Inflector;
 
 /** @var yii\debug\panels\AssetPanel $panel */
 ?>
-<h1>Asset Bundles</h1>
+<h1 class="yii-debug-sr-only">Asset Bundles</h1>
 
 <?php if (empty($panel->data)) {
     echo '<p>No asset bundle was used.</p>';

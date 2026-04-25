@@ -41,6 +41,14 @@ final class GridViewConfig
         return [
             'tableOptions' => ['class' => 'yii-debug-table'],
             'options' => ['class' => 'yii-debug-grid'],
+            // Move the row count below the table and align it right; the panel-level
+            // `<header class="yii-debug-grid-summary">` already carries the meaningful
+            // summary above the table, so the GridView's own count is just a footer hint
+            // alongside an inline page-size selector.
+            'layout' => "{items}\n<div class=\"yii-debug-grid-footer\">"
+                . self::pageSizeSelectorHtml()
+                . "{summary}\n{pager}\n</div>",
+            'summaryOptions' => ['class' => 'summary yii-debug-grid-count'],
             'pager' => [
                 'options' => ['class' => 'yii-debug-pager'],
                 'linkContainerOptions' => ['class' => 'yii-debug-pager-item'],
@@ -52,6 +60,66 @@ final class GridViewConfig
                 'activePageCssClass' => 'is-active',
                 'disabledPageCssClass' => 'is-disabled',
             ],
+        ];
+    }
+
+    /**
+     * Returns the inline page-size selector markup rendered inside the GridView footer.
+     *
+     * The dropdown lets the user switch between 25 / 50 / 100 / All rows per page. JavaScript wired in `debug.js`
+     * picks up the change event, rewrites the `per-page` query param and reloads the panel — keeping every other
+     * filter/sort param intact.
+     *
+     * @since 2.1.30
+     */
+    public static function pageSizeSelectorHtml(): string
+    {
+        $current = (string) (\Yii::$app?->getRequest()->getQueryParam('per-page') ?? '50');
+        $options = ['10', '25', '50', '100', 'all'];
+        $items = '';
+
+        foreach ($options as $value) {
+            $selected = $value === $current ? ' selected' : '';
+            $label = $value === 'all' ? 'All' : $value;
+            $items .= '<option value="' . $value . '"' . $selected . '>' . $label . '</option>';
+        }
+
+        return '<label class="yii-debug-grid-pagesize">'
+            . '<span class="yii-debug-grid-pagesize-label">Rows</span>'
+            . '<select class="yii-debug-grid-pagesize-select" data-yii-debug-pagesize>'
+            . $items
+            . '</select>'
+            . '</label>';
+    }
+
+    /**
+     * Returns a pagination config keyed off the `per-page` query parameter.
+     *
+     * Reads `Yii::$app->request->get('per-page')` and translates it to a Yii pagination array. The literal string
+     * `"all"` (case-insensitive) disables pagination entirely. Numeric values within sensible bounds are honoured;
+     * anything else falls back to `$default`.
+     *
+     * @param int $default Page size used when no `per-page` param is supplied.
+     *
+     * @return array<string, mixed>|false `false` when "all" was requested, otherwise a pagination config.
+     */
+    public static function paginationFromRequest(int $default = 50): array|false
+    {
+        $raw = \Yii::$app?->getRequest()->getQueryParam('per-page');
+
+        if (is_string($raw) && strcasecmp($raw, 'all') === 0) {
+            return false;
+        }
+
+        $size = (int) ($raw ?? $default);
+        if ($size <= 0) {
+            $size = $default;
+        }
+
+        return [
+            'pageSize' => min($size, 1000),
+            'pageSizeParam' => 'per-page',
+            'pageSizeLimit' => false,
         ];
     }
 

@@ -19,13 +19,13 @@ use yii\web\View;
 $timings = $panel->calculateTimings();
 $totalMs = number_format(array_sum(array_column($timings, 'duration')) * 1000, 3);
 ?>
-<header class="yii-debug-db-header">
-    <span class="yii-debug-db-header-stat"><strong><?= count($timings) ?></strong> queries</span>
-    <span class="yii-debug-db-header-sep">·</span>
-    <span class="yii-debug-db-header-stat"><strong><?= $totalMs ?></strong> ms total</span>
+<header class="yii-debug-grid-summary">
+    <span><strong><?= count($timings) ?></strong> queries</span>
+    <span class="yii-debug-grid-summary-sep">·</span>
+    <span><strong><?= $totalMs ?></strong> ms total</span>
     <?php if ($sumDuplicates > 0): ?>
-        <span class="yii-debug-db-header-sep">·</span>
-        <span class="yii-debug-db-header-stat yii-debug-db-header-stat-warn">
+        <span class="yii-debug-grid-summary-sep">·</span>
+        <span class="yii-debug-grid-summary-stat-warn">
             <strong><?= $sumDuplicates ?></strong> duplicated
         </span>
     <?php endif; ?>

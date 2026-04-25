@@ -23,7 +23,7 @@ $items['nav'][] = 'Action Routes';
 $items['content'][] = $this->render('actions', ['actionRoutes' => $actionRoutes]);
 
 ?>
-<h1>Router</h1>
+<h1 class="yii-debug-sr-only">Router</h1>
 
 <ul class="yii-debug-tabs">
     <?php

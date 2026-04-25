@@ -77,11 +77,6 @@ class ConfigPanel extends Panel
         return Yii::$app->view->render('panels/config/summary', ['panel' => $this]);
     }
 
-    public function hasRequestNavigation()
-    {
-        return false;
-    }
-
     public function save()
     {
         $yiiVersion = VersionResolver::yii();

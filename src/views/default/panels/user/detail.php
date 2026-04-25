@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use yii\helpers\Html;
-use yii\widgets\DetailView;
 
 /** @var \yii\web\View $this */
 /** @var yii\debug\panels\UserPanel $panel */
@@ -11,16 +10,16 @@ use yii\widgets\DetailView;
 $encodedName = Html::encode($panel->getName());
 ?>
 
-<h1><?= $encodedName ?></h1>
+<h1 class="yii-debug-sr-only"><?= $encodedName ?></h1>
 
 <?php
 if (isset($panel->data['identity'])) {
     $items = [
         'nav' => [$encodedName],
         'content' => [
-            "<h2>{$encodedName} Info</h2>" . DetailView::widget([
-                'model' => $panel->data['identity'],
-                'attributes' => $panel->data['attributes'],
+            $this->render('_identity', [
+                'identity' => $panel->data['identity'],
+                'attributes' => $panel->data['attributes'] ?? null,
             ]),
         ],
     ];

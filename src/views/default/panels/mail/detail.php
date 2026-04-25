@@ -18,7 +18,7 @@ $listView = new ListView([
 $listView->sorter = ['options' => ['class' => 'yii-debug-mail-sorter']];
 ?>
 
-<h1>Email messages</h1>
+<h1 class="yii-debug-sr-only">Email messages</h1>
 
 <div class="yii-debug-mini-toolbar">
     <?= Html::button('Form filtering', [

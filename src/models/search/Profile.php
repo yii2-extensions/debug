@@ -57,7 +57,7 @@ class Profile extends Base
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
-            'pagination' => false,
+            'pagination' => \yii\debug\GridViewConfig::paginationFromRequest(50),
             'sort' => [
                 'attributes' => ['category', 'seq', 'duration', 'info'],
                 'defaultOrder' => [

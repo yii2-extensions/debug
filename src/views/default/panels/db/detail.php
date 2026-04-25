@@ -14,7 +14,7 @@ use yii\web\View;
 
 ?>
 
-<h1><?= Html::encode($panel->getName()) ?></h1>
+<h1 class="yii-debug-sr-only"><?= Html::encode($panel->getName()) ?></h1>
 
 <?= $this->render('queries', [
     'panel' => $panel,

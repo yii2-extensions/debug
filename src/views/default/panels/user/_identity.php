@@ -1,0 +1,207 @@
+<?php
+
+declare(strict_types=1);
+
+use yii\helpers\Html;
+
+/** @var \yii\web\View $this */
+/** @var array<string, string> $identity Map of attribute name → VarDumper-formatted string. */
+/** @var array<int, array{attribute: string, label: string}>|null $attributes */
+
+// Build a [attribute => label] lookup for clean section rendering.
+$labels = [];
+if (is_array($attributes)) {
+    foreach ($attributes as $attr) {
+        if (isset($attr['attribute'])) {
+            $labels[$attr['attribute']] = (string) ($attr['label'] ?? $attr['attribute']);
+        }
+    }
+}
+
+$labelFor = static function (string $key) use ($labels): string {
+    if (isset($labels[$key])) {
+        return $labels[$key];
+    }
+    return ucwords(str_replace(['_', '.'], ' ', $key));
+};
+
+// Strip VarDumper's surrounding quotes for nicer display; keep the raw form available.
+$display = static function (string $value): string {
+    if ($value === 'null' || $value === '') {
+        return '';
+    }
+    if (str_starts_with($value, "'") && str_ends_with($value, "'") && strlen($value) > 1) {
+        return substr($value, 1, -1);
+    }
+    return $value;
+};
+
+$isSensitive = static fn(string $key): bool => (bool) preg_match(
+    '/auth[_\-]?key|password|token|secret|hash|salt/i',
+    $key,
+);
+
+$isTimestamp = static function (string $key, string $value): bool {
+    if (preg_match('/_at$|_time$|^(?:created|updated|deleted|signed_up|last_login)/i', $key)) {
+        return true;
+    }
+    return ctype_digit(trim($value, "'")) && strlen(trim($value, "'")) === 10;
+};
+
+$humanTime = static function (string $value): array {
+    $unix = (int) trim($value, "'");
+    if ($unix <= 0) {
+        return ['—', '0'];
+    }
+    $diff = time() - $unix;
+    $absolute = date('M j, Y · H:i', $unix);
+    if ($diff < 60) {
+        $relative = 'just now';
+    } elseif ($diff < 3600) {
+        $relative = floor($diff / 60) . ' min ago';
+    } elseif ($diff < 86400) {
+        $relative = floor($diff / 3600) . ' h ago';
+    } elseif ($diff < 2592000) {
+        $relative = floor($diff / 86400) . ' d ago';
+    } else {
+        $relative = $absolute;
+    }
+    return [$relative, $absolute];
+};
+
+$resolveStatus = static function (string $value): array {
+    $raw = trim($value, "'");
+    return match ($raw) {
+        '10' => ['Active', 'success'],
+        '9' => ['Banned', 'danger'],
+        '0' => ['Inactive', 'muted'],
+        default => [$raw === '' ? 'Unknown' : $raw, 'muted'],
+    };
+};
+
+// Pull hero fields (with defensive fallbacks).
+$username = $display((string) ($identity['username'] ?? $identity['name'] ?? ''));
+$email = $display((string) ($identity['email'] ?? ''));
+$idValue = $display((string) ($identity['id'] ?? ''));
+$rawStatus = (string) ($identity['status'] ?? '');
+[$statusLabel, $statusVariant] = $rawStatus !== '' ? $resolveStatus($rawStatus) : ['', 'muted'];
+
+// Monogram seed: prefer username, fall back to email local part, then "?".
+$monogramSource = $username !== '' ? $username : ($email !== '' ? $email : '?');
+$monogram = mb_strtoupper(mb_substr($monogramSource, 0, 1));
+
+// Bucket every remaining attribute into a semantic section. Anything not matched
+// lands in "Other" so custom user models still render fully.
+$buckets = ['identity' => [], 'security' => [], 'timestamps' => [], 'other' => []];
+$heroKeys = ['id', 'username', 'name', 'email', 'status'];
+
+foreach ($identity as $key => $value) {
+    if (in_array($key, $heroKeys, true)) {
+        continue;
+    }
+    if ($isSensitive($key)) {
+        $buckets['security'][$key] = $value;
+    } elseif ($isTimestamp($key, (string) $value)) {
+        $buckets['timestamps'][$key] = $value;
+    } else {
+        $buckets['other'][$key] = $value;
+    }
+}
+
+// "Identity" section gets a stable slice — keeps the layout predictable across users.
+foreach (['id', 'username', 'name', 'email'] as $key) {
+    if (isset($identity[$key])) {
+        $buckets['identity'][$key] = $identity[$key];
+    }
+}
+?>
+<section class="yii-debug-user">
+    <header class="yii-debug-user-card">
+        <span class="yii-debug-user-avatar" aria-hidden="true"><?= Html::encode($monogram) ?></span>
+        <div class="yii-debug-user-meta">
+            <h2 class="yii-debug-user-name"><?= Html::encode($username !== '' ? $username : 'Unknown user') ?></h2>
+            <?php if ($email !== ''): ?>
+                <p class="yii-debug-user-handle"><?= Html::encode($email) ?></p>
+            <?php endif; ?>
+            <div class="yii-debug-user-tags">
+                <?php if ($statusLabel !== ''): ?>
+                    <span class="yii-debug-user-status yii-debug-user-status-<?= $statusVariant ?>">
+                        <?= Html::encode($statusLabel) ?>
+                    </span>
+                <?php endif; ?>
+                <?php if ($idValue !== ''): ?>
+                    <span class="yii-debug-user-pill">ID #<?= Html::encode($idValue) ?></span>
+                <?php endif; ?>
+            </div>
+        </div>
+    </header>
+
+    <?php
+    $sections = [
+        'identity' => [
+            'label' => 'Identity',
+            'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg>',
+        ],
+        'security' => [
+            'label' => 'Security',
+            'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9.5 12l2 2 3.5-4"/></svg>',
+        ],
+        'timestamps' => [
+            'label' => 'Timestamps',
+            'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+        ],
+        'other' => [
+            'label' => 'Other attributes',
+            'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>',
+        ],
+    ];
+    ?>
+
+    <?php foreach ($sections as $key => $meta): ?>
+        <?php if ($buckets[$key] === []) {
+            continue;
+        } ?>
+        <article class="yii-debug-user-section">
+            <header>
+                <span class="yii-debug-user-section-icon" aria-hidden="true"><?= $meta['icon'] ?></span>
+                <span><?= Html::encode($meta['label']) ?></span>
+            </header>
+            <dl>
+                <?php foreach ($buckets[$key] as $attrKey => $attrValue): ?>
+                    <?php
+                    $strValue = (string) $attrValue;
+                    $rendered = $display($strValue);
+                    $isEmpty = $rendered === '' || $strValue === 'null';
+                    ?>
+                    <div class="yii-debug-user-row">
+                        <dt><?= Html::encode($labelFor($attrKey)) ?></dt>
+                        <dd>
+                            <?php if ($isEmpty): ?>
+                                <span class="yii-debug-user-empty">—</span>
+                            <?php elseif ($key === 'security'): ?>
+                                <button
+                                    type="button"
+                                    class="yii-debug-user-reveal"
+                                    data-yii-debug-reveal
+                                    aria-label="Reveal <?= Html::encode($labelFor($attrKey)) ?>"
+                                >
+                                    <span class="yii-debug-user-mask">••••••••••••</span>
+                                    <span class="yii-debug-user-real"><?= Html::encode($rendered) ?></span>
+                                    <span class="yii-debug-user-reveal-cta" aria-hidden="true"></span>
+                                </button>
+                            <?php elseif ($key === 'timestamps'): ?>
+                                <?php [$rel, $abs] = $humanTime($strValue); ?>
+                                <span class="yii-debug-user-time" title="<?= Html::encode($rendered) ?>">
+                                    <span class="yii-debug-user-time-rel"><?= Html::encode($rel) ?></span>
+                                    <span class="yii-debug-user-time-abs"><?= Html::encode($abs) ?></span>
+                                </span>
+                            <?php else: ?>
+                                <span class="yii-debug-user-value"><?= Html::encode($rendered) ?></span>
+                            <?php endif; ?>
+                        </dd>
+                    </div>
+                <?php endforeach; ?>
+            </dl>
+        </article>
+    <?php endforeach; ?>
+</section>

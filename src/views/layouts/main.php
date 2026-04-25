@@ -26,6 +26,7 @@ $debugThemeAttributes = in_array($debugTheme, ['dark', 'light'], true) ? ['data-
     <meta name="robots" content="none"/>
     <?= Html::csrfMetaTags() ?>
     <title><?= Html::encode(Yii::$app->controller->module->htmlTitle()) ?></title>
+    <link rel="icon" type="image/png" href="<?= \yii\debug\Module::getYiiLogo() ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Major+Mono+Display&display=swap">

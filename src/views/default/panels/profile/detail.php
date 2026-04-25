@@ -12,15 +12,18 @@ use yii\helpers\Html;
 /** @var int $time */
 /** @var int $memory */
 ?>
-    <h1>Performance Profiling</h1>
-    <p>
-        Total processing time: <b><?= $time ?></b>; Peak memory: <b><?= $memory ?></b>.
-        <?= Html::a('Show Profiling Timeline', [
+    <h1 class="yii-debug-sr-only">Performance Profiling</h1>
+    <header class="yii-debug-grid-summary">
+        <span><strong><?= $time ?></strong> total</span>
+        <span class="yii-debug-grid-summary-sep">·</span>
+        <span><strong><?= $memory ?></strong> peak</span>
+        <span class="yii-debug-grid-summary-sep">·</span>
+        <?= Html::a('Open timeline', [
             '/' . $panel->module->getUniqueId() . '/default/view',
             'panel' => 'timeline',
             'tag' => $panel->tag,
         ]) ?>
-    </p>
+    </header>
 <?php
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $dataProvider,

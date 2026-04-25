@@ -7,14 +7,29 @@ use yii\helpers\VarDumper;
 
 /** @var string $caption */
 /** @var array $values */
+/** @var bool $filterable */
+
+$filterable = $filterable ?? false;
+$rowCount = count($values);
 ?>
-<h3><?= $caption ?></h3>
+<header class="yii-debug-section-header">
+    <h3><?= Html::encode($caption) ?></h3>
+    <?php if ($filterable && $rowCount > 0): ?>
+        <input
+            type="search"
+            class="yii-debug-filter-input"
+            data-yii-debug-filter
+            placeholder="Filter…"
+            aria-label="Filter <?= Html::encode($caption) ?>"
+        >
+    <?php endif; ?>
+</header>
 
 <?php if (empty($values)): ?>
-    <p>Empty.</p>
+    <p class="yii-debug-table-empty">No data</p>
 
 <?php else: ?>
-    <div class="yii-debug-table-wrap">
+    <div class="yii-debug-table-wrap"<?= $filterable ? ' data-yii-debug-filter-target' : '' ?>>
         <table class="yii-debug-table yii-debug-table-mono" style="table-layout: fixed;">
             <thead>
             <tr>

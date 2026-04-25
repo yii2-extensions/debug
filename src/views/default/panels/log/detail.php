@@ -18,8 +18,35 @@ $levelToVariant = [
     Logger::LEVEL_INFO => 'info',
 ];
 
+$counts = ['total' => 0, 'errors' => 0, 'warnings' => 0, 'info' => 0];
+foreach ((array) ($panel->data['messages'] ?? []) as $entry) {
+    $counts['total']++;
+    $level = (int) ($entry[1] ?? 0);
+    match ($level) {
+        Logger::LEVEL_ERROR => $counts['errors']++,
+        Logger::LEVEL_WARNING => $counts['warnings']++,
+        Logger::LEVEL_INFO => $counts['info']++,
+        default => null,
+    };
+}
+
 ?>
-    <h1>Log Messages</h1>
+    <h1 class="yii-debug-sr-only">Log Messages</h1>
+    <header class="yii-debug-grid-summary">
+        <span><strong><?= $counts['total'] ?></strong> messages</span>
+        <?php if ($counts['errors'] > 0): ?>
+            <span class="yii-debug-grid-summary-sep">·</span>
+            <span class="yii-debug-grid-summary-stat-danger"><strong><?= $counts['errors'] ?></strong> errors</span>
+        <?php endif; ?>
+        <?php if ($counts['warnings'] > 0): ?>
+            <span class="yii-debug-grid-summary-sep">·</span>
+            <span class="yii-debug-grid-summary-stat-warn"><strong><?= $counts['warnings'] ?></strong> warnings</span>
+        <?php endif; ?>
+        <?php if ($counts['info'] > 0): ?>
+            <span class="yii-debug-grid-summary-sep">·</span>
+            <span><strong><?= $counts['info'] ?></strong> info</span>
+        <?php endif; ?>
+    </header>
 <?php
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $dataProvider,

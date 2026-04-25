@@ -45,7 +45,7 @@ $renderCorners = function () use ($corners) {
     return $out;
 };
 ?>
-<h1 class="yii-debug-hero-title">configuration</h1>
+<h1 class="yii-debug-sr-only">Configuration</h1>
 
 <div class="yii-debug-readout">
     <article class="yii-debug-readout-card">

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /* @var $panel yii\debug\panels\QueuePanel */
 ?>
-<h1>Queue</h1>
+<h1 class="yii-debug-sr-only">Queue</h1>
 
 <div class="yii-debug-callout yii-debug-callout-info">
     No queue component detected. Install <code>yiisoft/yii2-queue</code> and register

@@ -300,6 +300,8 @@
     .yii-debug-sidebar {
       position: sticky;
       top: var(--yii-debug-space-4);
+      max-height: calc(100vh - var(--yii-debug-space-5));
+      overflow-y: auto;
     }
   }
 
@@ -315,15 +317,306 @@
     margin-bottom: var(--yii-debug-space-4);
   }
 
-  // Slim request-history navigation used above panel content (no chunky callout).
-  .yii-debug-request-nav {
+  // Sidebar section used to host the request history nav (Prev/Next/Latest/Last 10/All).
+  // Sits directly above the panel list and shares its visual weight.
+  .yii-debug-side-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-2);
+    margin: 0 0 var(--yii-debug-space-3);
+    padding: var(--yii-debug-space-3);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-lg);
+    background: var(--yii-debug-panel-surface);
+    box-shadow: var(--yii-debug-shadow-sm);
+  }
+
+  .yii-debug-side-section-title {
+    color: var(--yii-debug-panel-muted);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .yii-debug-side-section-link {
+    color: var(--yii-debug-panel-link);
+    font-size: var(--yii-debug-fs-sm);
+    text-decoration: none;
+
+    &:hover,
+    &:focus {
+      color: var(--yii-debug-panel-link-hover);
+      text-decoration: underline;
+    }
+  }
+
+  // Prev/Next live side-by-side; the rest of the actions stack vertically below.
+  .yii-debug-request-nav-row {
+    display: flex;
+    gap: var(--yii-debug-space-2);
+
+    > * {
+      flex: 1 1 0;
+    }
+  }
+
+  .yii-debug-request-nav-action {
+    align-self: stretch;
+  }
+
+  // Buttons inside the sidebar request-nav fill their slot (no compact pill width).
+  .yii-debug-request-nav .yii-debug-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  // Brand strip pinned at the top of the panel page. Replaces the legacy
+  // mini-toolbar — keeps only info that the sidebar does NOT show: Yii + PHP
+  // versions and peak memory. No status/route/db chips here (those duplicate
+  // the sidebar HISTORY card and the panel hero).
+  .yii-debug-brand-bar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--yii-debug-space-2) var(--yii-debug-space-3);
-    margin: 0 0 var(--yii-debug-space-4);
-    padding-bottom: var(--yii-debug-space-3);
+    gap: var(--yii-debug-space-2);
+    margin-bottom: var(--yii-debug-space-3);
+    padding: 8px 12px;
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-lg);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--yii-debug-panel-surface) 96%, transparent),
+      color-mix(in srgb, var(--yii-debug-panel-surface-muted) 88%, transparent)
+    );
+    box-shadow: var(--yii-debug-shadow-sm);
+  }
+
+  .yii-debug-brand-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-border) 70%, transparent);
+    border-radius: var(--yii-debug-radius-pill);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-surface),
+      transparent 30%
+    );
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    text-decoration: none;
+    transition:
+      border-color 0.14s ease,
+      transform 0.14s ease,
+      box-shadow 0.14s ease;
+  }
+
+  a.yii-debug-brand-chip:hover,
+  a.yii-debug-brand-chip:focus {
+    border-color: var(--yii-debug-panel-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--yii-debug-shadow-sm);
+    text-decoration: none;
+  }
+
+  .yii-debug-brand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    flex: none;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .yii-debug-brand-chip-php .yii-debug-brand-icon {
+    width: 32px;
+
+    svg {
+      fill: var(--yii-debug-panel-muted);
+    }
+  }
+
+  .yii-debug-brand-label {
+    color: var(--yii-debug-panel-muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .yii-debug-brand-value {
+    color: var(--yii-debug-panel-text);
+    font-weight: 700;
+  }
+
+  .yii-debug-brand-chip-mem {
+    margin-left: auto;
+  }
+
+  // Identity card for the currently inspected snapshot — sits between the section title
+  // and the navigation buttons. Truncates long URLs while keeping the full value reachable
+  // via the parent's `title` attribute.
+  .yii-debug-snapshot {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--yii-debug-space-2) 0;
     border-bottom: 1px dashed var(--yii-debug-panel-border);
+  }
+
+  .yii-debug-snapshot-line {
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+  }
+
+  .yii-debug-snapshot-method {
+    flex: none;
+    color: var(--yii-debug-panel-primary-strong);
+    font-weight: 700;
+  }
+
+  .yii-debug-snapshot-url {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--yii-debug-panel-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .yii-debug-snapshot-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+  }
+
+  .yii-debug-snapshot-status {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: var(--yii-debug-radius-pill);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .yii-debug-snapshot-status-success {
+    background: var(--yii-debug-panel-success);
+  }
+
+  .yii-debug-snapshot-status-warning {
+    background: var(--yii-debug-panel-warning);
+    color: #1c1917;
+  }
+
+  .yii-debug-snapshot-status-danger {
+    background: var(--yii-debug-panel-danger);
+  }
+
+  .yii-debug-snapshot-status-muted {
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-snapshot-tag {
+    padding: 0 6px;
+    border: 1px solid var(--yii-debug-panel-border);
+    border-radius: var(--yii-debug-radius-pill);
+  }
+
+  // Hero block at the top of the Request panel — verb + URL + status + meta line.
+  // Reuses the snapshot status pill so colors stay consistent with the sidebar card.
+  .yii-debug-request-hero {
+    margin-bottom: var(--yii-debug-space-4);
+    padding: var(--yii-debug-space-3) var(--yii-debug-space-4);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface-muted);
+  }
+
+  .yii-debug-request-hero-line {
+    display: flex;
+    align-items: center;
+    gap: var(--yii-debug-space-2);
+    min-width: 0;
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-base);
+  }
+
+  .yii-debug-request-hero-method {
+    flex: none;
+    padding: 2px 10px;
+    border-radius: var(--yii-debug-radius-pill);
+    background: var(--yii-debug-panel-info);
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .yii-debug-request-hero-url {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--yii-debug-panel-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .yii-debug-request-hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px var(--yii-debug-space-3);
+    margin-top: 6px;
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+  }
+
+  // Inline section header used by tabular blocks; pairs the title with an
+  // optional filter input on the right.
+  .yii-debug-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--yii-debug-space-3);
+    margin: var(--yii-debug-space-4) 0 var(--yii-debug-space-2);
+
+    h3 {
+      margin: 0;
+    }
+  }
+
+  .yii-debug-filter-input {
+    flex: none;
+    width: 240px;
+    max-width: 50%;
+    padding: 4px var(--yii-debug-space-2);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    color: var(--yii-debug-panel-text);
+    font: inherit;
+
+    &::placeholder {
+      color: var(--yii-debug-panel-muted);
+    }
+
+    &:focus {
+      border-color: var(--yii-debug-panel-primary);
+      outline: none;
+    }
   }
 
   .yii-debug-stack > * + * {
@@ -1054,19 +1347,530 @@
     }
   }
 
-  // Monospace / wrap helpers for request + log tables.
-  .yii-debug-table-mono td {
+  // ------------------------------------------------------------------
+  // "Quiet Console" key/value table — used by Request, Session, $_SERVER
+  // panels. Reads like a typeset man-page entry: muted-uppercase keys, full
+  // monospace values, sticky header, hairline row separators, accent bar on
+  // hover. No internal cell borders — the card carries the only outline.
+  // ------------------------------------------------------------------
+  .yii-debug-table-mono {
+    min-width: 0; // override the GridView-friendly min-width: 640px
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 8px 16px;
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-surface-muted),
+        transparent 10%
+      );
+      backdrop-filter: blur(6px);
+      font-family: var(--yii-debug-font-sans);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+    }
+
+    tbody tr {
+      transition: background-color 0.14s ease;
+    }
+
+    // Accent bar on hover — appears on the left edge of the row without
+    // shifting layout. The 3-pixel inset shadow doubles as a focus indicator.
+    tbody tr:hover td,
+    tbody tr:hover th {
+      background: var(--yii-debug-panel-surface-hover);
+    }
+
+    tbody tr:hover th {
+      box-shadow: inset 3px 0 0 var(--yii-debug-panel-primary);
+      color: var(--yii-debug-panel-text);
+    }
+
+    // Use the same monospace font + size on both columns so the row reads as a
+    // single line of typeset code. Hierarchy comes from color/weight, not size.
+    tbody th,
+    tbody td {
+      padding: 12px 16px;
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-sm);
+      line-height: 1.55;
+    }
+
+    tbody th {
+      width: 1%; // collapse to content; min-width below sets the floor.
+      min-width: 120px;
+      max-width: 220px;
+      color: var(--yii-debug-panel-muted);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition:
+        color 0.14s ease,
+        box-shadow 0.14s ease;
+    }
+
+    tbody td {
+      color: var(--yii-debug-panel-text);
+      word-break: normal;
+      overflow-wrap: anywhere;
+    }
+
+    // Hairline row separators only — no borders around individual cells.
+    tbody tr + tr td,
+    tbody tr + tr th {
+      border-top: 1px solid
+        color-mix(in srgb, var(--yii-debug-panel-border) 55%, transparent);
+    }
+
+    // Soften the existing zebra so the hover lift reads more clearly.
+    tbody tr:nth-child(even) td,
+    tbody tr:nth-child(even) th {
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-surface-muted),
+        transparent 70%
+      );
+    }
+  }
+
+  // Tables wrapped with .yii-debug-table-mono get a refined card frame.
+  .yii-debug-table-wrap:has(.yii-debug-table-mono) {
+    overflow: auto;
+    max-height: 70vh;
+    border-radius: var(--yii-debug-radius-md);
+    box-shadow:
+      var(--yii-debug-shadow-sm),
+      inset 0 0 0 1px
+        color-mix(in srgb, var(--yii-debug-panel-border) 60%, transparent);
+  }
+
+  // Small total-duration line shown at the top of the Timeline panel.
+  .yii-debug-timeline-duration {
+    margin: 0 0 var(--yii-debug-space-3);
+    color: var(--yii-debug-panel-muted);
     font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+    letter-spacing: 0.04em;
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // User panel — "Personnel Dossier"
+  // Identity card with monogram avatar, status pill, and semantic sections.
+  // Sensitive values masked behind a click-to-reveal pill.
+  // ────────────────────────────────────────────────────────────────────
+  .yii-debug-user {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-3);
+  }
+
+  .yii-debug-user-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--yii-debug-space-4);
+    align-items: center;
+    padding: var(--yii-debug-space-4) var(--yii-debug-space-5);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-lg);
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, var(--yii-debug-panel-primary), transparent 80%),
+        transparent 60%
+      ),
+      var(--yii-debug-panel-surface);
+    box-shadow: var(--yii-debug-shadow-sm);
+    overflow: hidden;
+  }
+
+  .yii-debug-user-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    flex: none;
+    border-radius: 50%;
+    background: linear-gradient(
+      135deg,
+      var(--yii-debug-panel-primary),
+      var(--yii-debug-panel-info)
+    );
+    box-shadow:
+      0 4px 12px
+        color-mix(in srgb, var(--yii-debug-panel-primary), transparent 50%),
+      inset 0 1px 0 rgb(255 255 255 / 22%);
+    color: #fff;
+    font-family: var(--yii-debug-font-mono);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .yii-debug-user-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .yii-debug-user-name {
+    margin: 0;
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xl);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .yii-debug-user-handle {
+    margin: 0;
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+  }
+
+  .yii-debug-user-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .yii-debug-user-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px 4px 8px;
+    border-radius: var(--yii-debug-radius-pill);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    &::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentcolor;
+    }
+  }
+
+  .yii-debug-user-status-success {
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-success),
+      transparent 84%
+    );
+    color: var(--yii-debug-panel-success);
+
+    &::before {
+      animation: yii-debug-user-pulse 2.4s ease-in-out infinite;
+      box-shadow:
+        0 0 0 0
+        color-mix(in srgb, var(--yii-debug-panel-success), transparent 30%);
+    }
+  }
+
+  .yii-debug-user-status-danger {
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-danger),
+      transparent 84%
+    );
+    color: var(--yii-debug-panel-danger);
+  }
+
+  .yii-debug-user-status-warning {
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-warning),
+      transparent 84%
+    );
+    color: var(--yii-debug-panel-warning);
+  }
+
+  .yii-debug-user-status-muted {
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-muted);
+  }
+
+  @keyframes yii-debug-user-pulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.55;
+      transform: scale(0.85);
+    }
+  }
+
+  .yii-debug-user-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border: 1px solid var(--yii-debug-panel-border);
+    border-radius: var(--yii-debug-radius-pill);
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    letter-spacing: 0.04em;
+  }
+
+  .yii-debug-user-section {
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    overflow: hidden;
+
+    > header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px var(--yii-debug-space-3);
+      border-bottom: var(--yii-debug-border);
+      background: var(--yii-debug-panel-surface-muted);
+      color: var(--yii-debug-panel-muted);
+      font-family: var(--yii-debug-font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    dl {
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  .yii-debug-user-section-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    color: var(--yii-debug-panel-primary);
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .yii-debug-user-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 22%) 1fr;
+    gap: var(--yii-debug-space-3);
+    padding: 12px var(--yii-debug-space-3);
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-border) 50%, transparent);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    dt {
+      align-self: center;
+      color: var(--yii-debug-panel-muted);
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-xs);
+      letter-spacing: 0.02em;
+    }
+
+    dd {
+      margin: 0;
+      min-width: 0;
+    }
+  }
+
+  .yii-debug-user-value {
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
     word-break: break-all;
   }
 
-  .yii-debug-table-mono tr > th:first-child {
-    width: 25%;
+  .yii-debug-user-empty {
+    color: color-mix(
+      in srgb,
+      var(--yii-debug-panel-muted),
+      transparent 35%
+    );
+    font-family: var(--yii-debug-font-mono);
   }
 
-  // DB panel: stats header, type badges, chevron-driven inline EXPLAIN.
-  .yii-debug-db-header {
+  .yii-debug-user-time {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+
+    .yii-debug-user-time-rel {
+      color: var(--yii-debug-panel-text);
+      font-weight: 600;
+    }
+
+    .yii-debug-user-time-abs {
+      color: var(--yii-debug-panel-muted);
+      font-size: var(--yii-debug-fs-xs);
+    }
+  }
+
+  // Click-to-reveal pill for sensitive fields. Native button so the keyboard
+  // toggles it for free; CSS swaps mask/value via `.is-revealed`.
+  .yii-debug-user-reveal {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 6px 6px 14px;
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-border) 80%, transparent);
+    border-radius: var(--yii-debug-radius-pill);
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-text);
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition:
+      border-color 0.14s ease,
+      background 0.14s ease;
+
+    &:hover,
+    &:focus {
+      border-color: var(--yii-debug-panel-primary);
+      outline: none;
+    }
+
+    .yii-debug-user-mask,
+    .yii-debug-user-real {
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-sm);
+    }
+
+    .yii-debug-user-mask {
+      letter-spacing: 0.1em;
+      color: var(--yii-debug-panel-muted);
+    }
+
+    .yii-debug-user-real {
+      display: none;
+      max-width: 60ch;
+      overflow-wrap: anywhere;
+      color: var(--yii-debug-panel-text);
+    }
+
+    .yii-debug-user-reveal-cta {
+      flex: none;
+      padding: 3px 10px;
+      border-radius: var(--yii-debug-radius-pill);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-primary),
+        transparent 80%
+      );
+      color: var(--yii-debug-panel-primary);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+
+      &::before {
+        content: "Reveal";
+      }
+    }
+
+    &.is-revealed {
+      .yii-debug-user-mask {
+        display: none;
+      }
+
+      .yii-debug-user-real {
+        display: inline;
+      }
+
+      .yii-debug-user-reveal-cta {
+        background: color-mix(
+          in srgb,
+          var(--yii-debug-panel-warning),
+          transparent 84%
+        );
+        color: var(--yii-debug-panel-warning);
+
+        &::before {
+          content: "Hide";
+        }
+      }
+    }
+  }
+
+  // Visually hide an element while keeping it in the accessibility tree —
+  // used on per-panel <h1>s that are visually redundant (the active sidebar
+  // item already says which panel you're on) but useful for screen readers.
+  .yii-debug-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  // Empty-state placeholder used in place of a "<p>Empty.</p>" paragraph.
+  // Reads as an intentional dashed-stroke card rather than orphan text.
+  .yii-debug-table-empty {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0;
+    padding: var(--yii-debug-space-4);
+    border: 1px dashed
+      color-mix(in srgb, var(--yii-debug-panel-border) 70%, transparent);
+    border-radius: var(--yii-debug-radius-md);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-surface-muted),
+      transparent 40%
+    );
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+
+    &::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border: 1.5px solid currentcolor;
+      border-radius: 50%;
+      opacity: 0.5;
+    }
+  }
+
+  // Generic stat-bar above any GridView. Displays per-panel counters in a
+  // uniform, compact card. Each `<span>` child is one stat; separators are
+  // their own muted spans. Variant classes (`...-stat-warn`, `...-stat-danger`,
+  // `...-stat-success`) recolor `<strong>` content for level-aware metrics.
+  .yii-debug-grid-summary {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--yii-debug-space-3);
     margin-bottom: var(--yii-debug-space-3);
@@ -1088,12 +1892,67 @@
     }
   }
 
-  .yii-debug-db-header-sep {
+  .yii-debug-grid-summary-sep {
     color: var(--yii-debug-panel-muted);
   }
 
-  .yii-debug-db-header-stat-warn strong {
+  .yii-debug-grid-summary-stat-warn strong {
     color: var(--yii-debug-panel-warning);
+  }
+
+  .yii-debug-grid-summary-stat-danger strong {
+    color: var(--yii-debug-panel-danger);
+  }
+
+  .yii-debug-grid-summary-stat-success strong {
+    color: var(--yii-debug-panel-success);
+  }
+
+  // Footer slot below the GridView table — pairs the row-count summary with
+  // the page-size selector and (when paginated) the pager.
+  .yii-debug-grid-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--yii-debug-space-3);
+    margin-top: var(--yii-debug-space-2);
+    color: var(--yii-debug-panel-muted);
+    font-size: var(--yii-debug-fs-xs);
+  }
+
+  // Row-count summary lives inside the footer; align with the rest of the row.
+  .yii-debug-grid-count {
+    margin: 0;
+  }
+
+  .yii-debug-grid-pagesize {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: auto;
+  }
+
+  .yii-debug-grid-pagesize-label {
+    color: var(--yii-debug-panel-muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .yii-debug-grid-pagesize-select {
+    padding: 3px var(--yii-debug-space-2);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-sm);
+    background: var(--yii-debug-panel-surface);
+    color: var(--yii-debug-panel-text);
+    font: inherit;
+    cursor: pointer;
+
+    &:focus {
+      border-color: var(--yii-debug-panel-primary);
+      outline: none;
+    }
   }
 
   .yii-debug-db-type {

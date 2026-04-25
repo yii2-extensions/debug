@@ -10,7 +10,10 @@ use yii\helpers\Html;
 /** @var yii\debug\models\search\Log $searchModel */
 /** @var yii\data\ArrayDataProvider $dataProvider */
 ?>
-    <h1>Dump</h1>
+    <h1 class="yii-debug-sr-only">Dump</h1>
+    <header class="yii-debug-grid-summary">
+        <span><strong><?= $dataProvider->getTotalCount() ?></strong> dumps captured</span>
+    </header>
 <?php
 
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [

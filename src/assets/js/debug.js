@@ -320,4 +320,80 @@
       hideDropdowns(null);
     }
   });
+
+  // Click-to-reveal toggle for sensitive User-panel fields.
+  document.addEventListener("click", function (event) {
+    var btn = event.target.closest("[data-yii-debug-reveal]");
+
+    if (!btn) {
+      return;
+    }
+
+    btn.classList.toggle("is-revealed");
+    btn.setAttribute(
+      "aria-pressed",
+      btn.classList.contains("is-revealed") ? "true" : "false",
+    );
+  });
+
+  // Page-size selector inside GridView footers. Picks up the change event,
+  // rewrites the `per-page` query param while keeping every other filter/sort
+  // intact, and reloads the panel.
+  document.addEventListener("change", function (event) {
+    var select = event.target;
+
+    if (!select || !select.matches("[data-yii-debug-pagesize]")) {
+      return;
+    }
+
+    var url = new URL(window.location.href);
+
+    if (select.value === "" || select.value === "0") {
+      url.searchParams.delete("per-page");
+    } else {
+      url.searchParams.set("per-page", select.value);
+    }
+
+    // Drop the page param so we land on page 1 with the new size.
+    url.searchParams.delete("page");
+    window.location.href = url.toString();
+  });
+
+  // Live filter for tabular sections marked with [data-yii-debug-filter].
+  // The input filters its sibling [data-yii-debug-filter-target] table rows by
+  // case-insensitive substring against the row's text content. Hiding rows
+  // client-side is cheap and avoids round-trips for >100-header request panels.
+  document.addEventListener("input", function (event) {
+    var input = event.target;
+
+    if (!input || !input.matches("[data-yii-debug-filter]")) {
+      return;
+    }
+
+    // Target is the closest following sibling block that opted in via
+    // [data-yii-debug-filter-target]. Walking from the input's wrapper keeps
+    // each filter scoped to its own table when several share a tab.
+    var anchor = input.closest("header, .yii-debug-section-header") || input;
+    var target = anchor.nextElementSibling;
+
+    while (target && !target.matches("[data-yii-debug-filter-target]")) {
+      target = target.nextElementSibling;
+    }
+
+    if (!target) {
+      return;
+    }
+
+    var rows = target.querySelectorAll("tbody tr");
+    var query = input.value.trim().toLowerCase();
+
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (query === "") {
+        row.hidden = false;
+        continue;
+      }
+      row.hidden = row.textContent.toLowerCase().indexOf(query) === -1;
+    }
+  });
 })();
