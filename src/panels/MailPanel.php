@@ -21,7 +21,7 @@ use yii\mail\MessageInterface;
 /**
  * Debugger panel that collects and displays the generated emails.
  *
- * @property-read array $messagesFileName
+ * @property array $messagesFileName
  *
  * @author Mark Jebri <mark.github@yandex.ru>
  * @since 2.0
@@ -81,7 +81,6 @@ class MailPanel extends Panel
     {
         return 'mail';
     }
-
 
     public function init()
     {

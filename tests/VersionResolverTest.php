@@ -81,6 +81,7 @@ final class VersionResolverTest extends TestCase
             'Unknown packages must resolve to `null` so callers can fall back gracefully.',
         );
     }
+
     public function testForPackageReturnsPrettyVersionForInstalledFrameworkPackage(): void
     {
         $version = VersionResolver::forPackage('yiisoft/yii2');

@@ -17,8 +17,8 @@ use yii\debug\VersionResolver;
 /**
  * Debugger panel that collects and displays application configuration and environment.
  *
- * @property-read array $extensions
- * @property-read array $phpInfo
+ * @property array $extensions
+ * @property array $phpInfo
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -45,6 +45,7 @@ class ConfigPanel extends Panel
 
         return $data;
     }
+
     public function getName()
     {
         return 'Configuration';
@@ -68,8 +69,7 @@ class ConfigPanel extends Panel
             $phpinfo,
         );
         $phpinfo = str_replace('</table>', '</table></div>', $phpinfo);
-        $phpinfo = str_replace('<div class="center">', '<div class="yii-debug-phpinfo">', $phpinfo);
-        return $phpinfo;
+        return str_replace('<div class="center">', '<div class="yii-debug-phpinfo">', $phpinfo);
     }
 
     public function getSummary()

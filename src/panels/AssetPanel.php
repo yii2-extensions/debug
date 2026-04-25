@@ -28,6 +28,7 @@ class AssetPanel extends Panel
     {
         return Yii::$app->view->render('panels/assets/detail', ['panel' => $this]);
     }
+
     public function getName()
     {
         return 'Asset Bundles';

@@ -41,7 +41,6 @@ class LogPanel extends Panel
         ]);
     }
 
-
     public function getName()
     {
         return 'Logs';
@@ -85,7 +84,7 @@ class LogPanel extends Panel
             $previousTime = null;
             $id = 1;
             foreach ($this->data['messages'] as $message) {
-                if (is_null($previousTime)) {
+                if (null === $previousTime) {
                     $previousTime = $message[3];
                 } else {
                     $this->_models[$previousId]['id_of_next'] = $id;
@@ -100,7 +99,7 @@ class LogPanel extends Panel
                     'time_since_previous' => $message[3] - $previousTime,
                     'id_of_previous' => $previousId,
                     'id_of_next' => null,
-                    'trace' => isset($message[4]) ? $message[4] : [],
+                    'trace' => $message[4] ?? [],
                 ];
                 $previousId = $id;
                 $previousTime = $message[3];

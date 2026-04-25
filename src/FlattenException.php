@@ -20,7 +20,7 @@ use function get_object_vars;
 class FlattenException
 {
     /**
-     * @var mixed|int
+     * @var int|mixed
      */
     protected $code;
     /**
@@ -91,7 +91,7 @@ class FlattenException
     /**
      * Gets the Exception code.
      *
-     * @return mixed|int the exception code as integer.
+     * @return int|mixed the exception code as integer.
      */
     public function getCode()
     {
@@ -175,7 +175,7 @@ class FlattenException
     }
 
     /**
-     * @param mixed|int $code the exception code as integer.
+     * @param int|mixed $code the exception code as integer.
      */
     protected function setCode($code)
     {
@@ -209,7 +209,7 @@ class FlattenException
     /**
      * @param FlattenException $previous previous Exception.
      */
-    protected function setPrevious(FlattenException $previous)
+    protected function setPrevious(self $previous)
     {
         $this->_previous = $previous;
     }

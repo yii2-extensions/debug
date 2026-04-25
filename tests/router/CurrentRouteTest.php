@@ -38,6 +38,7 @@ final class CurrentRouteTest extends TestCase
         );
         self::assertSame(2, $router->count, 'Counter must equal the number of rule-trace entries.');
     }
+
     public function testEmptyMessagesYieldEmptyDefaults(): void
     {
         $router = new CurrentRoute();

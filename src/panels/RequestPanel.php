@@ -46,7 +46,6 @@ class RequestPanel extends Panel
         return Yii::$app->view->render('panels/request/detail', ['panel' => $this]);
     }
 
-
     public function getName()
     {
         return 'Request';

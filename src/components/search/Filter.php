@@ -17,7 +17,6 @@ class Filter extends Component
      */
     protected $rules = [];
 
-
     /**
      * Adds data filtering rule.
      *

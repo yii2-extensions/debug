@@ -20,10 +20,10 @@ use yii\debug\Panel;
  * Debugger panel that collects and displays timeline data.
  *
  * @property array $colors
- * @property-read float $duration
- * @property-read int $memory
- * @property-read float $start
- * @property-read Svg $svg
+ * @property float $duration
+ * @property int $memory
+ * @property float $start
+ * @property Svg $svg
  * @property array $svgOptions
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
@@ -129,9 +129,9 @@ class TimelinePanel extends Panel
     }
 
     /**
+     * @throws InvalidConfigException
      * @return Svg
      * @since 2.0.8
-     * @throws InvalidConfigException
      */
     public function getSvg()
     {
@@ -153,7 +153,6 @@ class TimelinePanel extends Panel
     {
         return 'timeline';
     }
-
 
     /**
      * @throws InvalidConfigException

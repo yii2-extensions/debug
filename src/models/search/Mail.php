@@ -75,7 +75,6 @@ class Mail extends Base
         ];
     }
 
-
     public function rules()
     {
         return [

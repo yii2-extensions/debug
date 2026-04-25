@@ -76,6 +76,7 @@ final class LogTargetTest extends TestCase
         self::assertStringContainsString("\$cbArg . 'cbResult'", $closureMessage, 'Closure body literals must be preserved.');
         self::assertSame(Logger::LEVEL_INFO, $panelData['messages'][2][1], 'Closure-bearing entry must keep INFO severity.');
     }
+
     protected function setUp(): void
     {
         parent::setUp();

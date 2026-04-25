@@ -17,6 +17,7 @@ class RedirectController extends Controller
     {
         return ['test' => 'yii\web\ErrorAction'];
     }
+
     public function init()
     {
         \Yii::$app->response->redirect('web/first');

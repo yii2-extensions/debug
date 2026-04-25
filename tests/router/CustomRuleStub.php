@@ -12,6 +12,7 @@ class CustomRuleStub implements UrlRuleInterface
     {
         return false;
     }
+
     public function parseRequest($manager, $request)
     {
         return false;

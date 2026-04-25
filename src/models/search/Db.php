@@ -39,7 +39,6 @@ class Db extends Base
         ];
     }
 
-
     public function rules()
     {
         return [

@@ -89,7 +89,7 @@ final class FlattenExceptionTest extends TestCase
         self::assertSame(['float', INF], $array[$i++], 'Infinity must round-trip as float.');
 
         self::assertSame('float', $array[$i][0], 'NaN must still be tagged float.');
-        self::assertTrue(is_nan($array[$i++][1]), 'NaN payload must remain a NaN value.');
+        self::assertNan($array[$i++][1], 'NaN payload must remain a NaN value.');
     }
 
     public function testGetClassExposesOriginalClassName(): void
@@ -235,6 +235,7 @@ final class FlattenExceptionTest extends TestCase
             '__toString must mirror the original on a populated exception.',
         );
     }
+
     protected function setUp(): void
     {
         ini_set('zend.exception_ignore_args', '0');

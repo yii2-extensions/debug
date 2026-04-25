@@ -78,6 +78,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
             ],
         ], $config));
     }
+
     protected function tearDown(): void
     {
         parent::tearDown();

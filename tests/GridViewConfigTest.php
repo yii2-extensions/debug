@@ -75,6 +75,7 @@ final class GridViewConfigTest extends TestCase
         self::assertSame('is-active', $pager['activePageCssClass'], 'Active pager item must use `is-active` modifier.');
         self::assertSame('is-disabled', $pager['disabledPageCssClass'], 'Disabled pager item must use `is-disabled` modifier.');
     }
+
     public function testDefaultsTableOptionsCarryYiiDebugTableClass(): void
     {
         $defaults = GridViewConfig::defaults();

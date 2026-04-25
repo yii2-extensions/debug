@@ -216,6 +216,7 @@ final class ModuleTest extends TestCase
         self::assertArrayHasKey('phpVersion', $data, 'Brand chip must include phpVersion.');
         self::assertArrayHasKey('iconBaseUrl', $data, 'Toolbar icons must resolve from iconBaseUrl.');
     }
+
     protected function setUp(): void
     {
         parent::setUp();

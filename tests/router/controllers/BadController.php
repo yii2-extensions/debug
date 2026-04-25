@@ -17,6 +17,7 @@ class BadController extends Controller
     {
         return ['test' => 'Something not important'];
     }
+
     public function init()
     {
         throw new \Exception('Simulates problem with controller when initialing');

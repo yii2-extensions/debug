@@ -32,7 +32,6 @@ class ActionRoutes extends Model
      */
     public $routes = [];
 
-
     public function init()
     {
         parent::init();
@@ -52,7 +51,7 @@ class ActionRoutes extends Model
                         trim(preg_replace('/\p{Lu}/u', '-\0', $actionId), '-'),
                         'UTF-8',
                     );
-                    list($rule, $count) = $this->getMatchedCreationRule($route);
+                    [$rule, $count] = $this->getMatchedCreationRule($route);
                     $name = $controllerClass . '::' . $actionName . '()';
                 }
 
@@ -93,8 +92,8 @@ class ActionRoutes extends Model
 
     /**
      * Returns all available application routes (non-console) grouped by the controller's name.
-     * @return array
      * @throws \ReflectionException
+     * @return array
      */
     protected function getAppRoutes()
     {
@@ -150,8 +149,8 @@ class ActionRoutes extends Model
     /**
      * Returns available controllers of a specified module.
      * @param \yii\base\Module $module the module instance
-     * @return array the available controller IDs and their class names
      * @throws \ReflectionException
+     * @return array the available controller IDs and their class names
      */
     protected function getModuleControllers($module)
     {
@@ -215,8 +214,8 @@ class ActionRoutes extends Model
     /**
      * Validates if the given class is a valid web or REST controller class.
      * @param string $controllerClass
-     * @return bool
      * @throws \ReflectionException
+     * @return bool
      */
     protected function validateControllerClass($controllerClass)
     {

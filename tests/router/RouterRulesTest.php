@@ -43,6 +43,7 @@ final class RouterRulesTest extends TestCase
         self::assertFalse($router->strictParsing, 'strictParsing must remain false when only prettyUrl is configured.');
         self::assertNull($router->suffix, 'suffix must remain null when only prettyUrl is configured.');
     }
+
     public function testDetectsPrettyUrlEnabled(): void
     {
         $this->mockWebApplication(['components' => ['urlManager' => ['enablePrettyUrl' => true]]]);

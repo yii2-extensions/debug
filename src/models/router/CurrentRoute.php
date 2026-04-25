@@ -59,7 +59,6 @@ class CurrentRoute extends Model
      */
     public $route = '';
 
-
     public function init()
     {
         parent::init();

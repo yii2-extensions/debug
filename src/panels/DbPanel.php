@@ -21,13 +21,13 @@ use yii\log\Logger;
 /**
  * Debugger panel that collects and displays database queries performed.
  *
- * @property-read \yii\db\Connection $db
- * @property-read array $excessiveCallers The number of DB calls indexed by the backtrace hash of excessive
+ * @property \yii\db\Connection $db
+ * @property array $excessiveCallers The number of DB calls indexed by the backtrace hash of excessive
  * caller(s).
- * @property-read int $excessiveCallersCount
- * @property-read array $profileLogs
- * @property-read string $summaryName Short name of the panel, which will be use in summary.
- * @property-read array<string, string> $types
+ * @property int $excessiveCallersCount
+ * @property array $profileLogs
+ * @property string $summaryName Short name of the panel, which will be use in summary.
+ * @property array<string, string> $types
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -102,7 +102,7 @@ class DbPanel extends Panel
     public function calculateTimings()
     {
         if ($this->_timings === null) {
-            $this->_timings = Yii::getLogger()->calculateTimings(isset($this->data['messages']) ? $this->data['messages'] : $this->getProfileLogs());
+            $this->_timings = Yii::getLogger()->calculateTimings($this->data['messages'] ?? $this->getProfileLogs());
 
             // Parse aliases
             $ignoredPathsInBacktrace = array_map(
@@ -215,9 +215,9 @@ class DbPanel extends Panel
     /**
      * Returns a reference to the DB component associated with the panel
      *
+     * @throws InvalidConfigException
      * @return \yii\db\Connection
      * @since 2.0.5
-     * @throws InvalidConfigException
      */
     public function getDb()
     {
@@ -509,9 +509,9 @@ class DbPanel extends Panel
     }
 
     /**
+     * @throws InvalidConfigException
      * @return bool Whether the DB component has support for EXPLAIN queries
      * @since 2.0.5
-     * @throws InvalidConfigException
      */
     protected function hasExplain()
     {

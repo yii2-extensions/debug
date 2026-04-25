@@ -12,6 +12,7 @@ class WebController extends Controller
     {
         return true;
     }
+
     public function actions()
     {
         return [

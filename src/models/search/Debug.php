@@ -86,7 +86,6 @@ class Debug extends Base
         return in_array($code, $this->criticalCodes, false);
     }
 
-
     public function rules()
     {
         return [

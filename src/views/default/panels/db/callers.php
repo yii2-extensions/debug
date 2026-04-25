@@ -25,7 +25,7 @@ echo GridView::widget(array_merge(GridViewConfig::defaults(), [
         [
             'label' => 'Caller',
             'attribute' => 'trace',
-            'value' => function ($data) use ($hasExplain, $panel) {
+            'value' => function ($data) use ($panel) {
                 return Html::ul($data['trace'], [
                     'class' => 'yii-debug-trace',
                     'item' => function ($trace) use ($panel) {

@@ -90,9 +90,8 @@ class RouterPanel extends Panel
         ];
     }
 
-
     /**
-     * @param string|array $values
+     * @param array|string $values
      */
     public function setCategories($values)
     {

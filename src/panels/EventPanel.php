@@ -60,7 +60,6 @@ class EventPanel extends Panel
         return 'events';
     }
 
-
     public function init()
     {
         parent::init();

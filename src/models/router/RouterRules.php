@@ -54,7 +54,6 @@ class RouterRules extends Model
      */
     public $suffix;
 
-
     public function init()
     {
         parent::init();

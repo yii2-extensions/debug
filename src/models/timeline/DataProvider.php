@@ -16,7 +16,7 @@ use yii\debug\panels\TimelinePanel;
 /**
  * DataProvider implements a data provider based on a data array.
  *
- * @property-read array $rulers
+ * @property array $rulers
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
  * @since 2.0.8
@@ -27,7 +27,6 @@ class DataProvider extends ArrayDataProvider
      * @var TimelinePanel
      */
     protected $panel;
-
 
     /**
      * @param array $config
@@ -45,7 +44,7 @@ class DataProvider extends ArrayDataProvider
      */
     public function getColor($model)
     {
-        $width = isset($model['css']['width']) ? $model['css']['width'] : $this->getWidth($model);
+        $width = $model['css']['width'] ?? $this->getWidth($model);
         foreach ($this->panel->colors as $percent => $color) {
             if ($width >= $percent) {
                 return $color;

@@ -45,7 +45,6 @@ class Log extends Base
         ];
     }
 
-
     public function rules()
     {
         return [

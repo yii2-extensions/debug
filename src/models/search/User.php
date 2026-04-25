@@ -42,7 +42,6 @@ class User extends Model
         return $this->identityImplement->attributes();
     }
 
-
     public function init()
     {
         if (\Yii::$app->user && \Yii::$app->user->identityClass) {
@@ -74,8 +73,8 @@ class User extends Model
     /**
      * Search method for ActiveRecord
      * @param array $params the data array to load model.
-     * @return ActiveDataProvider
      * @throws \yii\base\InvalidConfigException
+     * @return ActiveDataProvider
      */
     private function searchActiveDataProvider($params)
     {

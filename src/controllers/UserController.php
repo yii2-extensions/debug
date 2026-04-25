@@ -26,8 +26,8 @@ class UserController extends Controller
 {
     /**
      * Reset identity, switch to main user
-     * @return \yii\web\User
      * @throws \yii\base\InvalidConfigException
+     * @return \yii\web\User
      */
     public function actionResetIdentity()
     {
@@ -38,8 +38,8 @@ class UserController extends Controller
 
     /**
      * Set new identity, switch user
-     * @return \yii\web\User
      * @throws \yii\base\InvalidConfigException
+     * @return \yii\web\User
      */
     public function actionSetIdentity()
     {
@@ -50,6 +50,7 @@ class UserController extends Controller
         $userSwitch->setUserByIdentity($newIdentity);
         return Yii::$app->user;
     }
+
     /**
      * @throws BadRequestHttpException
      */

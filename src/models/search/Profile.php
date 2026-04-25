@@ -39,7 +39,6 @@ class Profile extends Base
         ];
     }
 
-
     public function rules()
     {
         return [

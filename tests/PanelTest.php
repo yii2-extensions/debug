@@ -219,6 +219,7 @@ final class PanelTest extends TestCase
     {
         self::assertTrue($this->createPanel()->hasRequestNavigation(), 'Default panels participate in request navigation.');
     }
+
     protected function setUp(): void
     {
         parent::setUp();

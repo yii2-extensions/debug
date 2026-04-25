@@ -39,7 +39,6 @@ class Search extends Base
         ];
     }
 
-
     public function rules()
     {
         return [

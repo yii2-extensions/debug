@@ -29,7 +29,6 @@ class LogTarget extends Target
      */
     public $tag;
 
-
     /**
      * @param \yii\debug\Module $module
      * @param array $config
@@ -272,7 +271,7 @@ class LogTarget extends Target
 
         $profileLogs = $this->module->panels['db']->getProfileLogs();
 
-        # / 2 because messages are in couple (begin/end)
+        // / 2 because messages are in couple (begin/end)
         return count($profileLogs) / 2;
     }
 

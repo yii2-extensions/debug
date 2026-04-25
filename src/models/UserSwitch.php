@@ -18,10 +18,10 @@ use yii\web\User;
 /**
  * UserSwitch is a model used to temporary logging in another user
  *
- * @property-read User $mainUser
+ * @property User $mainUser
  * @property User|null $user Note that the type of this property differs in getter and setter. See
  * [[getUser()]] and [[setUser()]] for details.
- * @property-write IdentityInterface $userByIdentity
+ * @property IdentityInterface $userByIdentity
  *
  * @author Semen Dubina <yii2debug@sam002.net>
  * @since 2.0.10
@@ -52,8 +52,8 @@ class UserSwitch extends Model
 
     /**
      * Get main user
-     * @return User
      * @throws \yii\base\InvalidConfigException
+     * @return User
      */
     public function getMainUser()
     {
@@ -78,8 +78,8 @@ class UserSwitch extends Model
 
     /**
      * Get current user
-     * @return User|null
      * @throws \yii\base\InvalidConfigException
+     * @return User|null
      */
     public function getUser()
     {
@@ -92,8 +92,8 @@ class UserSwitch extends Model
 
     /**
      * Checks if current user is main or not.
-     * @return bool
      * @throws \yii\base\InvalidConfigException
+     * @return bool
      */
     public function isMainUser()
     {

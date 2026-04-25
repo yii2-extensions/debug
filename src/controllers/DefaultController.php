@@ -35,8 +35,8 @@ class DefaultController extends Controller
      * Download mail action
      *
      * @param string $file
-     * @return \yii\console\Response|Response
      * @throws NotFoundHttpException
+     * @return Response|\yii\console\Response
      */
     public function actionDownloadMail($file)
     {
@@ -52,8 +52,8 @@ class DefaultController extends Controller
     /**
      * Index action
      *
-     * @return string
      * @throws NotFoundHttpException
+     * @return string
      */
     public function actionIndex()
     {
@@ -90,7 +90,6 @@ class DefaultController extends Controller
         return $this->render('phpinfo');
     }
 
-
     public function actions()
     {
         $actions = [];
@@ -105,8 +104,8 @@ class DefaultController extends Controller
      * Toolbar action
      *
      * @param string $tag
-     * @return string
      * @throws NotFoundHttpException
+     * @return string
      */
     public function actionToolbar($tag)
     {

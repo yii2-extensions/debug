@@ -37,7 +37,6 @@ class Event extends Base
         ];
     }
 
-
     public function rules()
     {
         return [

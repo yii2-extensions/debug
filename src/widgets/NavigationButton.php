@@ -50,7 +50,6 @@ class NavigationButton extends Widget
      */
     private $lastTag;
 
-
     public function beforeRun()
     {
         $manifestKeys = array_keys($this->manifest);

@@ -18,13 +18,13 @@ use yii\helpers\Url;
 use yii\web\ForbiddenHttpException;
 use yii\web\Response;
 use yii\web\View;
-use function call_user_func;
+
 use function is_string;
 
 /**
  * Debug Module provides the debug toolbar and debugger
  *
- * @property-write \yii\base\Event $debugHeaders
+ * @property \yii\base\Event $debugHeaders
  */
 class Module extends \yii\base\Module implements BootstrapInterface
 {
@@ -47,7 +47,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public $allowedIPs = ['127.0.0.1', '::1'];
     /**
-     * @var \yii\rbac\BaseManager|string|array the RBAC access checker [[BaseManager]] object or the application
+     * @var array|string|\yii\rbac\BaseManager the RBAC access checker [[BaseManager]] object or the application
      * component ID of the AuthManager [[BaseManager]].
      */
     public $authManager = 'authManager';
@@ -113,11 +113,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public $historySize = 50;
     /**
-     * @var LogTarget|array|string the logTarget object, or the configuration for creating the logTarget object.
+     * @var array|LogTarget|string the logTarget object, or the configuration for creating the logTarget object.
      */
     public $logTarget = 'yii\debug\LogTarget';
     /**
-     * @var string|callable Page title could be a string or a callable function
+     * @var callable|string Page title could be a string or a callable function
      *
      * ```php
      * ...
@@ -334,7 +334,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         if (is_callable($this->pageTitle)) {
-            return call_user_func($this->pageTitle, Url::base(true));
+            return ($this->pageTitle)(Url::base(true));
         }
 
         return 'Yii Debugger';
@@ -464,7 +464,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return false;
         }
 
-        if ($this->checkAccessCallback !== null && call_user_func($this->checkAccessCallback, $action) !== true) {
+        if ($this->checkAccessCallback !== null && ($this->checkAccessCallback)($action) !== true) {
             if (!$this->disableCallbackRestrictionWarning) {
                 Yii::warning(
                     'Access to debugger is denied due to checkAccessCallback.',

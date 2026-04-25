@@ -63,7 +63,6 @@ class DumpPanel extends Panel
         ]);
     }
 
-
     public function getName()
     {
         return 'Dump';

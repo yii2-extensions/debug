@@ -30,9 +30,9 @@ use yii\web\User;
 /**
  * Debugger panel that collects and displays user data.
  *
- * @property-read User|null $user
- * @property-read DataProviderInterface $userDataProvider
- * @property-read Model|UserSearchInterface $usersFilterModel
+ * @property User|null $user
+ * @property DataProviderInterface $userDataProvider
+ * @property Model|UserSearchInterface $usersFilterModel
  *
  * @author Daniel Gomez Pan <pana_1990@hotmail.com>
  * @since 2.0.8
@@ -92,8 +92,8 @@ class UserPanel extends Panel
 
     /**
      * Check can main user switch identity.
-     * @return bool
      * @throws InvalidConfigException
+     * @return bool
      */
     public function canSwitchUser()
     {
@@ -145,9 +145,9 @@ class UserPanel extends Panel
     }
 
     /**
+     * @throws InvalidConfigException
      * @return User|null
      * @since 2.0.13
-     * @throws InvalidConfigException
      */
     public function getUser()
     {
@@ -172,7 +172,6 @@ class UserPanel extends Panel
     {
         return $this->filterModel;
     }
-
 
     /**
      * @throws InvalidConfigException
