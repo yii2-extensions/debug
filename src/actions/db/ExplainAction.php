@@ -46,7 +46,12 @@ class ExplainAction extends Action
         }
 
         $query = $timings[$seq]['info'];
-        $results = $this->panel->getDb()->createCommand('EXPLAIN ' . $query)->queryAll();
+        $db = $this->panel->getDb();
+        // SQLite's bare `EXPLAIN` dumps VDBE bytecode (Init/Halt/Goto…) which is useless to
+        // application developers. `EXPLAIN QUERY PLAN` is the human-readable equivalent.
+        // MySQL/PostgreSQL/CUBRID already return a usable plan from plain `EXPLAIN`.
+        $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';
+        $results = $db->createCommand($explainPrefix . $query)->queryAll();
 
         $params = ['query' => $query, 'results' => $results];
 

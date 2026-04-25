@@ -1064,6 +1064,134 @@
     width: 25%;
   }
 
+  // DB panel: stats header, type badges, chevron-driven inline EXPLAIN.
+  .yii-debug-db-header {
+    display: flex;
+    align-items: center;
+    gap: var(--yii-debug-space-3);
+    margin-bottom: var(--yii-debug-space-3);
+    padding: var(--yii-debug-space-3) var(--yii-debug-space-4);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    color: var(--yii-debug-panel-text);
+    font-size: var(--yii-debug-fs-sm);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    strong {
+      margin-right: 0.35em;
+      color: var(--yii-debug-panel-primary-strong);
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+  }
+
+  .yii-debug-db-header-sep {
+    color: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-db-header-stat-warn strong {
+    color: var(--yii-debug-panel-warning);
+  }
+
+  .yii-debug-db-type {
+    display: inline-block;
+    min-width: 5em;
+    padding: 2px 8px;
+    border-radius: var(--yii-debug-radius-pill);
+    font-family: var(--yii-debug-font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .yii-debug-db-type-info {
+    background: var(--yii-debug-panel-info);
+  }
+
+  .yii-debug-db-type-success {
+    background: var(--yii-debug-panel-success);
+  }
+
+  .yii-debug-db-type-warning {
+    background: var(--yii-debug-panel-warning);
+    color: #1c1917;
+  }
+
+  .yii-debug-db-type-danger {
+    background: var(--yii-debug-panel-danger);
+  }
+
+  .yii-debug-db-type-muted {
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-db-sql {
+    font-family: var(--yii-debug-font-mono);
+    overflow-wrap: break-word;
+  }
+
+  .yii-debug-db-explain {
+    margin-top: var(--yii-debug-space-2);
+  }
+
+  .yii-debug-db-explain-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px 2px 6px;
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-pill);
+    background: transparent;
+    color: var(--yii-debug-panel-link);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 0.12s ease,
+      border-color 0.12s ease;
+  }
+
+  .yii-debug-db-explain-toggle:hover,
+  .yii-debug-db-explain-toggle:focus {
+    background: var(--yii-debug-panel-bg-accent);
+    border-color: var(--yii-debug-panel-primary);
+    text-decoration: none;
+  }
+
+  .yii-debug-db-explain-chevron {
+    display: inline-block;
+    width: 10px;
+    font-size: 14px;
+    line-height: 1;
+    transition: transform 0.16s ease;
+  }
+
+  .yii-debug-db-explain.is-open .yii-debug-db-explain-chevron {
+    transform: rotate(90deg);
+  }
+
+  .yii-debug-db-explain.is-loading .yii-debug-db-explain-toggle {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .yii-debug-db-explain-text {
+    display: none;
+    margin-top: var(--yii-debug-space-2);
+  }
+
+  .yii-debug-db-explain.is-open .yii-debug-db-explain-text {
+    display: block;
+  }
+
   // EXPLAIN output: table can be very wide; wrap in a scroll container so it
   // never breaks out of the panel.
   .yii-debug-explain {

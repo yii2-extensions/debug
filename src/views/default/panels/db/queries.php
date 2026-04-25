@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use yii\debug\DbAsset;
 use yii\debug\GridViewConfig;
+use yii\debug\panels\DbPanel;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\web\View;
@@ -15,7 +16,21 @@ use yii\web\View;
 /** @var int $sumDuplicates */
 /** @var View $this */
 
-echo Html::tag('h3', $panel->getName() . ' Queries');
+$timings = $panel->calculateTimings();
+$totalMs = number_format(array_sum(array_column($timings, 'duration')) * 1000, 3);
+?>
+<header class="yii-debug-db-header">
+    <span class="yii-debug-db-header-stat"><strong><?= count($timings) ?></strong> queries</span>
+    <span class="yii-debug-db-header-sep">·</span>
+    <span class="yii-debug-db-header-stat"><strong><?= $totalMs ?></strong> ms total</span>
+    <?php if ($sumDuplicates > 0): ?>
+        <span class="yii-debug-db-header-sep">·</span>
+        <span class="yii-debug-db-header-stat yii-debug-db-header-stat-warn">
+            <strong><?= $sumDuplicates ?></strong> duplicated
+        </span>
+    <?php endif; ?>
+</header>
+<?php
 
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $queryDataProvider,
@@ -24,6 +39,20 @@ echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'filterModel' => $searchModel,
     'filterUrl' => $panel->getUrl(),
     'columns' => [
+        [
+            'attribute' => 'type',
+            'label' => 'Type',
+            'format' => 'raw',
+            'value' => static function ($data): string {
+                $variant = DbPanel::typeBadgeVariant((string) $data['type']);
+
+                return Html::tag('span', Html::encode($data['type']), [
+                    'class' => "yii-debug-db-type yii-debug-db-type-{$variant}",
+                ]);
+            },
+            'filter' => $panel->getTypes(),
+            'options' => ['width' => '8%'],
+        ],
         [
             'attribute' => 'seq',
             'label' => 'Time',
@@ -34,32 +63,39 @@ echo GridView::widget(array_merge(GridViewConfig::defaults(), [
                 return date('H:i:s.', (int) $timeInSeconds) . sprintf('%03d', $millisecondsDiff);
             },
             'headerOptions' => ['class' => 'sort-numerical'],
+            'options' => ['width' => '10%'],
         ],
         [
             'attribute' => 'duration',
             'value' => function ($data) {
                 return sprintf('%.1f ms', $data['duration']);
             },
-            'options' => ['width' => '10%'],
+            'options' => ['width' => '8%'],
             'headerOptions' => ['class' => 'sort-numerical'],
         ],
         [
-            'attribute' => 'type',
-            'value' => function ($data) {
-                return Html::encode($data['type']);
+            'attribute' => 'rows',
+            'label' => 'Rows',
+            'value' => static function ($data): string {
+                if (!isset($data['rows']) || $data['rows'] === null) {
+                    return '–';
+                }
+
+                return $data['rows'] . ' ' . ($data['rows'] === 1 ? 'row' : 'rows');
             },
-            'filter' => $panel->getTypes(),
+            'options' => ['width' => '7%'],
+            'headerOptions' => ['class' => 'sort-numerical'],
         ],
         [
             'attribute' => 'duplicate',
-            'label' => 'Duplicated',
+            'label' => 'Dup',
             'options' => ['width' => '5%'],
             'headerOptions' => ['class' => 'sort-numerical'],
         ],
         [
             'attribute' => 'query',
             'value' => function ($data) use ($hasExplain, $panel) {
-                $query = Html::tag('div', Html::encode($data['query']));
+                $query = Html::tag('div', Html::encode($data['query']), ['class' => 'yii-debug-db-sql']);
 
                 if (!empty($data['trace'])) {
                     $query .= Html::ul($data['trace'], [
@@ -71,16 +107,22 @@ echo GridView::widget(array_merge(GridViewConfig::defaults(), [
                 }
 
                 if ($hasExplain && $panel::canBeExplained($data['type'])) {
-                    $query .= Html::tag('p', '', ['class' => 'yii-debug-db-explain-text']);
+                    $url = ['db-explain', 'seq' => $data['seq'], 'tag' => Yii::$app->controller->summary['tag']];
 
-                    $query .= Html::tag(
-                        'div',
-                        Html::a(
-                            '[+] Explain',
-                            ['db-explain', 'seq' => $data['seq'], 'tag' => Yii::$app->controller->summary['tag']],
-                        ),
-                        ['class' => 'yii-debug-db-explain'],
+                    $query .= Html::beginTag('div', ['class' => 'yii-debug-db-explain']);
+                    $query .= Html::a(
+                        '<span class="yii-debug-db-explain-chevron" aria-hidden="true">›</span>'
+                            . '<span class="yii-debug-db-explain-label">Explain</span>',
+                        $url,
+                        [
+                            'class' => 'yii-debug-db-explain-toggle',
+                            'role' => 'button',
+                            'aria-expanded' => 'false',
+                            'aria-label' => 'Toggle EXPLAIN output',
+                        ],
                     );
+                    $query .= Html::tag('div', '', ['class' => 'yii-debug-db-explain-text']);
+                    $query .= Html::endTag('div');
                 }
 
                 return $query;

@@ -512,20 +512,39 @@
       return;
     }
 
+    var previousUrl = url;
+    var previousTag = this.currentTag;
+
     this.currentTag = tag;
     this.setAttribute(
       "data-url",
       url.replace(/([?&]tag=)[^&]+/, "$1" + encodeURIComponent(tag)),
     );
-    this.load();
+    this.load(function (ok) {
+      if (ok) {
+        return;
+      }
+
+      // The tag we tried to follow was rejected (404 — rotated out of history,
+      // 500, etc.). Roll back so the toolbar keeps showing the last good data
+      // instead of leaving the user with a broken state.
+      this.currentTag = previousTag;
+      this.setAttribute("data-url", previousUrl);
+    });
   };
 
-  YiiDebugToolbar.prototype.load = function () {
+  YiiDebugToolbar.prototype.load = function (done) {
     var self = this;
     var url = this.getAttribute("data-url");
+    var notify = function (ok) {
+      if (typeof done === "function") {
+        done.call(self, ok);
+      }
+    };
 
     if (!url) {
       this.renderError("Debug toolbar data URL is missing.");
+      notify(false);
       return;
     }
 
@@ -539,9 +558,30 @@
       }
 
       if (xhr.status !== 200) {
-        self.renderError(
-          xhr.responseText || "Unable to load debug toolbar data.",
-        );
+        // Don't render an error for stale-tag fetches that the caller is
+        // ready to recover from; just signal failure.
+        if (typeof done !== "function") {
+          var message;
+          if (xhr.status === 404) {
+            // Request was profiled but its tag has rotated out of the debug
+            // history (or never made it to the manifest). Don't dump the raw
+            // JSON body at the user.
+            message = "Debug data is no longer available for this request.";
+          } else {
+            // Try to read a structured `{error: "..."}` payload first, then
+            // fall back to a generic message instead of leaking raw HTML/JSON.
+            try {
+              var parsed = JSON.parse(xhr.responseText);
+              message =
+                (parsed && parsed.error) ||
+                "Unable to load debug toolbar data.";
+            } catch {
+              message = "Unable to load debug toolbar data.";
+            }
+          }
+          self.renderError(message);
+        }
+        notify(false);
         return;
       }
 
@@ -549,11 +589,13 @@
         self.data = JSON.parse(xhr.responseText);
       } catch {
         self.renderError("Invalid debug toolbar data response.");
+        notify(false);
         return;
       }
 
       self.render();
       self.dispatchAttachedEvent();
+      notify(true);
     };
     xhr.send();
   };

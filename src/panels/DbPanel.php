@@ -142,7 +142,14 @@ class DbPanel extends Panel
      */
     public static function canBeExplained($type)
     {
-        return $type !== 'SHOW';
+        // Only DML statements that touch tables produce a meaningful plan. Skip metadata,
+        // session-control and transaction-control statements where EXPLAIN either errors
+        // or returns noise (e.g. SQLite PRAGMAs that compile down to a few VDBE opcodes).
+        return in_array(
+            mb_strtoupper((string) $type, 'utf8'),
+            ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'REPLACE', 'WITH'],
+            true,
+        );
     }
 
     /**
@@ -173,46 +180,6 @@ class DbPanel extends Panel
     }
 
     /**
-     * Creates an ArrayDataProvider for the DB query callers.
-     *
-     * @param array $modelData
-     * @return ArrayDataProvider
-     * @since 2.1.23
-     */
-    public function generateQueryCallersDataProvider($modelData)
-    {
-        $callers = [];
-        foreach ($modelData as $data) {
-            if (!array_key_exists($data['traceHash'], $callers)) {
-                $callers[$data['traceHash']] = [
-                    'trace' => $data['trace'],
-                    'numCalls' => 0,
-                    'totalDuration' => 0,
-                    'queries' => [],
-                ];
-            }
-            $callers[$data['traceHash']]['numCalls'] += 1;
-            $callers[$data['traceHash']]['totalDuration'] += $data['duration'];
-            $callers[$data['traceHash']]['queries'][] = [
-                'timestamp' => $data['timestamp'],
-                'duration' => $data['duration'],
-                'query' => $data['query'],
-                'type' => $data['type'],
-                'seq' => $data['seq'],
-            ];
-        }
-
-        return new ArrayDataProvider([
-            'allModels' => $callers,
-            'pagination' => false,
-            'sort' => [
-                'attributes' => ['numCalls', 'totalDuration'],
-                'defaultOrder' => ['numCalls' => SORT_DESC],
-            ],
-        ]);
-    }
-
-    /**
      * Returns a reference to the DB component associated with the panel
      *
      * @throws InvalidConfigException
@@ -239,12 +206,10 @@ class DbPanel extends Panel
         $queryDataProvider = $searchModel->search($models);
         $queryDataProvider->getSort()->defaultOrder = $this->defaultOrder;
         $sumDuplicates = $this->sumDuplicateQueries($models);
-        $callerDataProvider = $this->generateQueryCallersDataProvider($models);
 
         return Yii::$app->view->render('panels/db/detail', [
             'panel' => $this,
             'queryDataProvider' => $queryDataProvider,
-            'callerDataProvider' => $callerDataProvider,
             'searchModel' => $searchModel,
             'hasExplain' => $this->hasExplain(),
             'sumDuplicates' => $sumDuplicates,
@@ -347,12 +312,55 @@ class DbPanel extends Panel
         );
     }
 
+    /**
+     * Returns the badge variant for a query type.
+     *
+     * Maps SQL command verbs to a visual class so the queries grid can render a colored pill (info / success / warning /
+     * danger / muted) at a glance.
+     *
+     * @since 2.1.30
+     */
+    public static function typeBadgeVariant(string $type): string
+    {
+        return match (strtoupper($type)) {
+            'SELECT', 'SHOW', 'EXPLAIN', 'DESCRIBE', 'PRAGMA' => 'info',
+            'INSERT' => 'success',
+            'UPDATE', 'REPLACE', 'UPSERT' => 'warning',
+            'DELETE', 'DROP', 'TRUNCATE' => 'danger',
+            default => 'muted',
+        };
+    }
+
     public function init()
     {
         $this->actions['db-explain'] = [
             'class' => 'yii\\debug\\actions\\db\\ExplainAction',
             'panel' => $this,
         ];
+
+        // Hook the panel-bound DB component so every prepared statement records its rowCount.
+        // We swap PDOStatement subclass via the PDO attribute — works across Yii 2 forks since it
+        // does not depend on Connection::$commandClass (which not every fork exposes).
+        $db = Yii::$app->get($this->db, false);
+
+        if (!$db instanceof \yii\db\Connection) {
+            return;
+        }
+
+        $apply = static function (\yii\db\Connection $conn): void {
+            $conn->pdo?->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [\yii\debug\db\DebugPdoStatement::class, []]);
+        };
+
+        if ($db->pdo !== null) {
+            $apply($db);
+        }
+
+        $db->on(
+            \yii\db\Connection::EVENT_AFTER_OPEN,
+            static function (\yii\base\Event $event) use ($apply): void {
+                $apply($event->sender);
+            },
+        );
     }
 
     public function isEnabled()
@@ -390,7 +398,10 @@ class DbPanel extends Panel
 
     public function save()
     {
-        return ['messages' => $this->getProfileLogs()];
+        return [
+            'messages' => $this->getProfileLogs(),
+            'rowCounts' => \yii\debug\db\DebugPdoStatement::$rowCounts,
+        ];
     }
 
     /**
@@ -422,8 +433,13 @@ class DbPanel extends Panel
             $this->_models = [];
             $timings = $this->calculateTimings();
             $duplicates = $this->countDuplicateQuery($timings);
+            $rowCounts = $this->data['rowCounts'] ?? \yii\debug\db\DebugPdoStatement::$rowCounts;
+            $rowCountIndex = 0;
 
             foreach ($timings as $seq => $dbTiming) {
+                $rows = $rowCounts[$rowCountIndex] ?? null;
+                $rowCountIndex++;
+
                 $this->_models[] = [
                     'type' => $this->getQueryType($dbTiming['info']),
                     'query' => $dbTiming['info'],
@@ -433,6 +449,7 @@ class DbPanel extends Panel
                     'timestamp' => ($dbTiming['timestamp'] * 1000), // in milliseconds
                     'seq' => $seq,
                     'duplicate' => $duplicates[$dbTiming['info']],
+                    'rows' => is_int($rows) && $rows >= 0 ? $rows : null,
                 ];
             }
         }

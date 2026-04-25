@@ -133,10 +133,18 @@ class DefaultController extends Controller
      */
     public function actionToolbarData($tag)
     {
-        $this->loadData($tag, 5);
-
         if (Yii::$app instanceof \yii\web\Application) {
             Yii::$app->getResponse()->format = Response::FORMAT_JSON;
+        }
+
+        try {
+            $this->loadData($tag, 5);
+        } catch (NotFoundHttpException) {
+            // Tag rotated out of history. Return a JSON 404 so the toolbar can degrade
+            // gracefully without triggering the host application's HTML error page.
+            Yii::$app->getResponse()->setStatusCode(404);
+
+            return ['error' => 'Debug tag not found.', 'tag' => $tag];
         }
 
         $items = [];
