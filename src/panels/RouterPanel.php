@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -19,56 +18,37 @@ use yii\debug\models\router\RouterRules;
 use yii\debug\Panel;
 use yii\log\Logger;
 
-use function array_merge;
-use function get_class;
-use function is_array;
-
 /**
  * RouterPanel provides a panel which displays information about routing process.
  *
- * @property array $categories Note that the type of this property differs in getter and setter.
- * See [[getCategories()]] and [[setCategories()]] for details.
+ * @property array $categories Note that the type of this property differs in getter and setter. See
+ * [[getCategories()]] and [[setCategories()]] for details.
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
  * @since 2.0.8
  */
 class RouterPanel extends Panel
 {
-    private array $_categories = [
+    /**
+     * @var array
+     */
+    private $_categories = [
         'yii\web\UrlManager::parseRequest',
         'yii\web\UrlRule::parseRequest',
         'yii\web\CompositeUrlRule::parseRequest',
         'yii\rest\UrlRule::parseRequest',
     ];
 
-    public function setCategories(array|string $values): void
-    {
-        if (!is_array($values)) {
-            $values = [$values];
-        }
-        $this->_categories = array_merge($this->_categories, $values);
-    }
-
     /**
-     * Listens to categories of the messages.
+     * Listens categories of the messages.
+     * @return array
      */
-    public function getCategories(): array
+    public function getCategories()
     {
         return $this->_categories;
     }
 
-    public function getName(): string
-    {
-        return 'Router';
-    }
-
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render('panels/router/summary', ['panel' => $this]);
-    }
-
-    public function getDetail(): string
+    public function getDetail()
     {
         return Yii::$app->view->render('panels/router/detail', [
             'currentRoute' => new CurrentRoute($this->data),
@@ -77,7 +57,22 @@ class RouterPanel extends Panel
         ]);
     }
 
-    public function save(): mixed
+    public function getName()
+    {
+        return 'Router';
+    }
+
+    public function getSummary()
+    {
+        return Yii::$app->view->render('panels/router/summary', ['panel' => $this]);
+    }
+
+    public function getToolbarIcon()
+    {
+        return 'router';
+    }
+
+    public function save()
     {
         if (Yii::$app->requestedAction) {
             if (Yii::$app->requestedAction instanceof InlineAction) {
@@ -92,6 +87,31 @@ class RouterPanel extends Panel
             'messages' => $this->getLogMessages(Logger::LEVEL_TRACE, $this->_categories),
             'route' => Yii::$app->requestedAction ? Yii::$app->requestedAction->getUniqueId() : Yii::$app->requestedRoute,
             'action' => $action,
+        ];
+    }
+
+
+    /**
+     * @param string|array $values
+     */
+    public function setCategories($values)
+    {
+        if (!is_array($values)) {
+            $values = [$values];
+        }
+        $this->_categories = array_merge($this->_categories, $values);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>|null
+     */
+    protected function getToolbarItems()
+    {
+        return [
+            [
+                'value' => (string) ($this->data['route'] ?? ''),
+                'title' => 'Action: ' . (string) ($this->data['action'] ?? ''),
+            ],
         ];
     }
 }

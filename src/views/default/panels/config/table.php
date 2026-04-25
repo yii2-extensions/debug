@@ -1,27 +1,24 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 use yii\helpers\Html;
 
-/**
- * @var array $values
- * @var string $caption
- */
+/** @var string $caption */
+/** @var array $values */
 ?>
 
 <h3><?= $caption ?></h3>
 
 <?php if (empty($values)): ?>
-
     <p>Empty.</p>
 
 <?php else: ?>
-    <div class="table-responsive">
-        <table class="table table-condensed table-bordered table-striped table-hover" style="table-layout: fixed;">
+    <div class="yii-debug-table-wrap">
+        <table class="yii-debug-table" style="table-layout: fixed;">
             <thead>
             <tr>
-                <th style="nowrap">Name</th>
+                <th>Name</th>
                 <th>Value</th>
             </tr>
             </thead>

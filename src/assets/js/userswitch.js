@@ -106,18 +106,28 @@
             }
         }
         return q.join("&");
-    }, sendSetIdentity = function (url, data) {
+    }, renderError = function (form, xhr) {
+        var message = xhr.responseText || 'Unable to switch user.';
+        var error = form.querySelector('.debug-userswitch__error');
+
+        if (!error) {
+            error = document.createElement('div');
+            error.className = 'debug-userswitch__error yii-debug-callout yii-debug-callout--danger';
+            error.setAttribute('role', 'alert');
+            form.insertBefore(error, form.firstChild);
+        }
+
+        error.textContent = message;
+    }, sendSetIdentity = function (form) {
         ajax({
-            url: url,
+            url: form.action,
             method: 'post',
-            data: data,
+            data: serialize(form),
             success: function () {
                 window.top.location.reload();
             },
-            error: function (data) {
-                if (window.jQuery) {
-                    window.jQuery(form).yiiActiveForm('updateMessages', data.responseJSON, true);
-                }
+            error: function (xhr) {
+                renderError(form, xhr);
             }
         });
     };
@@ -134,7 +144,7 @@
 
         var form = document.getElementById('debug-userswitch__set-identity');
         document.getElementById('user_id').value = el.dataset.key;
-        sendSetIdentity(form.action, serialize(form));
+        sendSetIdentity(form);
         e.stopPropagation();
     });
     on(document.getElementById('debug-userswitch__reset-identity-button'), 'click', function (e) {
@@ -143,6 +153,6 @@
         e.preventDefault();
         e.stopPropagation();
 
-        sendSetIdentity(form.action, serialize(form));
+        sendSetIdentity(form);
     })
 })();

@@ -2,68 +2,34 @@
 
 declare(strict_types=1);
 
-use yii\debug\panels\UserPanel;
+use yii\debug\GridViewConfig;
 use yii\grid\GridView;
 
-/**
- * @var UserPanel $panel
- */
+/** @var yii\debug\panels\UserPanel $panel */
+
+$columns = [
+    'name',
+    'description',
+    'ruleName',
+    'data',
+    'createdAt:datetime',
+    'updatedAt:datetime',
+];
+
 if ($panel->data['rolesProvider']) {
     echo '<h2>Roles</h2>';
 
-    echo GridView::widget([
+    echo GridView::widget(array_merge(GridViewConfig::defaults(), [
         'dataProvider' => $panel->data['rolesProvider'],
-        'pager' => [
-            'linkContainerOptions' => [
-                'class' => 'page-item',
-            ],
-            'linkOptions' => [
-                'class' => 'page-link',
-            ],
-            'disabledListItemSubTagOptions' => [
-                'tag' => 'a',
-                'href' => 'javascript:;',
-                'tabindex' => '-1',
-                'class' => 'page-link',
-            ],
-        ],
-        'columns' => [
-            'name',
-            'description',
-            'ruleName',
-            'data',
-            'createdAt:datetime',
-            'updatedAt:datetime',
-        ],
-    ]);
+        'columns' => $columns,
+    ]));
 }
 
 if ($panel->data['permissionsProvider']) {
     echo '<h2>Permissions</h2>';
 
-    echo GridView::widget([
+    echo GridView::widget(array_merge(GridViewConfig::defaults(), [
         'dataProvider' => $panel->data['permissionsProvider'],
-        'pager' => [
-            'linkContainerOptions' => [
-                'class' => 'page-item',
-            ],
-            'linkOptions' => [
-                'class' => 'page-link',
-            ],
-            'disabledListItemSubTagOptions' => [
-                'tag' => 'a',
-                'href' => 'javascript:;',
-                'tabindex' => '-1',
-                'class' => 'page-link',
-            ],
-        ],
-        'columns' => [
-            'name',
-            'description',
-            'ruleName',
-            'data',
-            'createdAt:datetime',
-            'updatedAt:datetime',
-        ],
-    ]);
+        'columns' => $columns,
+    ]));
 }

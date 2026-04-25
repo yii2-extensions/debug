@@ -8,12 +8,11 @@ use yii\web\UrlRuleInterface;
 
 class CustomRuleStub implements UrlRuleInterface
 {
-    public function parseRequest($manager, $request)
+    public function createUrl($manager, $route, $params)
     {
         return false;
     }
-
-    public function createUrl($manager, $route, $params)
+    public function parseRequest($manager, $request)
     {
         return false;
     }

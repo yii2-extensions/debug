@@ -8,11 +8,6 @@ use yii\web\Controller;
 
 class RedirectController extends Controller
 {
-    public function init(): void
-    {
-        \Yii::$app->response->redirect('web/first');
-    }
-
     public function actionOnly()
     {
         return true;
@@ -21,5 +16,9 @@ class RedirectController extends Controller
     public function actions()
     {
         return ['test' => 'yii\web\ErrorAction'];
+    }
+    public function init()
+    {
+        \Yii::$app->response->redirect('web/first');
     }
 }

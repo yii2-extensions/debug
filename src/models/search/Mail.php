@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -18,60 +17,52 @@ use yii\debug\components\search\Filter;
  * Mail represents the model behind the search form about current send emails.
  *
  * @author Mark Jebri <mark.github@yandex.ru>
- *
  * @since 2.0
  */
 class Mail extends Base
 {
     /**
-     * @var string from attribute input search value.
+     * @var string bcc attribute input search value
      */
-    public string $from = '';
+    public $bcc;
     /**
-     * @var string to attribute input search value.
+     * @var string body attribute input search value
      */
-    public string $to = '';
+    public $body;
     /**
-     * @var string reply attribute input search value.
+     * @var string cc attribute input search value
      */
-    public string $reply = '';
+    public $cc;
     /**
-     * @var string cc attribute input search value.
+     * @var string charset attribute input search value
      */
-    public string $cc = '';
+    public $charset;
     /**
-     * @var string bcc attribute input search value.
+     * @var string file attribute input search value
      */
-    public string $bcc = '';
+    public $file;
     /**
-     * @var string subject attribute input search value.
+     * @var string from attribute input search value
      */
-    public string $subject = '';
+    public $from;
     /**
-     * @var string body attribute input search value.
+     * @var string headers attribute input search value
      */
-    public string $body = '';
+    public $headers;
     /**
-     * @var string charset attribute input search value.
+     * @var string reply attribute input search value
      */
-    public string $charset = '';
+    public $reply;
     /**
-     * @var string headers attribute input search value.
+     * @var string subject attribute input search value
      */
-    public string $headers = '';
+    public $subject;
     /**
-     * @var string file attribute input search value.
+     * @var string to attribute input search value
      */
-    public string $file;
+    public $to;
 
-    public function rules(): array
-    {
-        return [
-            [['from', 'to', 'reply', 'cc', 'bcc', 'subject', 'body', 'charset'], 'safe'],
-        ];
-    }
-
-    public function attributeLabels(): array
+    public function attributeLabels()
     {
         return [
             'from' => 'From',
@@ -84,10 +75,21 @@ class Mail extends Base
         ];
     }
 
+
+    public function rules()
+    {
+        return [
+            [['from', 'to', 'reply', 'cc', 'bcc', 'subject', 'body', 'charset'], 'safe'],
+        ];
+    }
+
     /**
      * Returns data provider with filled models. Filter applied if needed.
+     * @param array $params
+     * @param array $models
+     * @return \yii\data\ArrayDataProvider
      */
-    public function search(array $params, array $models): ArrayDataProvider
+    public function search($params, $models)
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
@@ -104,7 +106,6 @@ class Mail extends Base
         }
 
         $filter = new Filter();
-
         $this->addCondition($filter, 'from', true);
         $this->addCondition($filter, 'to', true);
         $this->addCondition($filter, 'reply', true);
@@ -113,7 +114,6 @@ class Mail extends Base
         $this->addCondition($filter, 'subject', true);
         $this->addCondition($filter, 'body', true);
         $this->addCondition($filter, 'charset', true);
-
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

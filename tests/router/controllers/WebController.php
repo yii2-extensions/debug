@@ -8,6 +8,10 @@ use yii\web\Controller;
 
 class WebController extends Controller
 {
+    public function actionFirst()
+    {
+        return true;
+    }
     public function actions()
     {
         return [
@@ -16,11 +20,6 @@ class WebController extends Controller
             ],
             'errorStraight' => 'yii\web\ErrorAction',
         ];
-    }
-
-    public function actionFirst()
-    {
-        return true;
     }
 
     public function actionSecond()

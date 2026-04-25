@@ -35,9 +35,14 @@
             var links = document.querySelectorAll('.debug-timeline-panel__item a');
 
             for (var i = 0, len = links.length; i < len; i++) {
-                new Tooltip(links[i]);
-
-                on(links[i], 'show.bs.tooltip', function() {
+                on(links[i], 'mouseenter', function() {
+                    if (this.hasAttribute('data-memory')) {
+                        var data = this.dataset.memory;
+                        self.options.$memory.textContent = data[0];
+                        self.options.$memory.style.bottom = data[1] + '%';
+                    }
+                });
+                on(links[i], 'focus', function() {
                     if (this.hasAttribute('data-memory')) {
                         var data = this.dataset.memory;
                         self.options.$memory.textContent = data[0];
@@ -52,10 +57,6 @@
             this.options.$focus = $elem;
             return $elem;
         };
-
-        on(document, 'pjax:success', function () {
-            self.init();
-        });
 
         on(self.options.$header, 'dblclick', function () {
             self.options.$timeline.classList.toggle('inline');

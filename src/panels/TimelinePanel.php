@@ -4,35 +4,29 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\debug\panels;
 
-use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\models\timeline\Search;
 use yii\debug\models\timeline\Svg;
 use yii\debug\Panel;
 
-use function array_merge;
-use function krsort;
-use function memory_get_peak_usage;
-use function microtime;
-
 /**
  * Debugger panel that collects and displays timeline data.
  *
  * @property array $colors
- * @property float $duration
- * @property float $start
+ * @property-read float $duration
+ * @property-read int $memory
+ * @property-read float $start
+ * @property-read Svg $svg
  * @property array $svgOptions
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
  * @since 2.0.7
  */
 class TimelinePanel extends Panel
@@ -40,61 +34,56 @@ class TimelinePanel extends Panel
     /**
      * @var array Color indicators item profile.
      *
-     * - keys: percentages of time request.
-     * - values: hex color.
+     * - keys: percentages of time request
+     * - values: hex color
      */
-    private array $_colors = [
+    private $_colors = [
         20 => '#1e6823',
         10 => '#44a340',
         1 => '#8cc665',
     ];
     /**
+     * @var float Request duration, milliseconds
+     */
+    private $_duration;
+    /**
+     * @var float End request, timestamp (obtained by microtime(true))
+     */
+    private $_end;
+    /**
+     * @var int Used memory in request
+     */
+    private $_memory;
+    /**
      * @var array log messages extracted to array as models, to use with data provider.
      */
-    private array $_models = [];
+    private $_models;
     /**
-     * @var float Start request, timestamp (obtained by microtime(true)).
+     * @var float Start request, timestamp (obtained by microtime(true))
      */
-    private float $_start = 0;
+    private $_start;
     /**
-     * @var float End request, timestamp (obtained by microtime(true)).
+     * @var Svg|null
      */
-    private float $_end = 0;
+    private $_svg;
     /**
-     * @var float Request duration, milliseconds.
+     * @var array
      */
-    private float $_duration = 0;
-    private Svg|null $_svg = null;
-    private array $_svgOptions = [
-        'class' => Svg::class,
+    private $_svgOptions = [
+        'class' => 'yii\debug\models\timeline\Svg',
     ];
-    /**
-     * @var int Used memory in request.
-     */
-    private int $_memory = 0;
-
-    /**
-     * @throws InvalidConfigException
-     */
-    public function init(): void
-    {
-        if (!isset($this->module->panels['profiling'])) {
-            throw new InvalidConfigException('Unable to determine the profiling panel');
-        }
-
-        parent::init();
-    }
 
     /**
      * Color indicators item profile,
-     * key: percentages of time request, value: hex color.
+     * key: percentages of time request, value: hex color
+     * @return array
      */
-    public function getColors(): array
+    public function getColors()
     {
         return $this->_colors;
     }
 
-    public function getDetail(): string
+    public function getDetail()
     {
         $searchModel = new Search();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this);
@@ -107,80 +96,86 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Request duration, milliseconds.
+     * Request duration, milliseconds
+     * @return float
      */
-    public function getDuration(): float
+    public function getDuration()
     {
         return $this->_duration;
     }
 
     /**
-     * Memory peak in request, bytes. (Obtained by memory_get_peak_usage()).
+     * Memory peak in request, bytes. (obtained by memory_get_peak_usage())
+     * @return int
+     * @since 2.0.8
      */
-    public function getMemory(): int
+    public function getMemory()
     {
         return $this->_memory;
     }
 
-    /**
-     * Returns an array of models that represents logs of the current request.
-     * Can be used with data providers, such as \yii\data\ArrayDataProvider.
-     *
-     * @param bool $refresh if you need to build models from log messages and refresh them.
-     */
-    public function getModels(bool $refresh = false): array
-    {
-        if ($this->_models === [] || $refresh) {
-            if (isset($this->module->panels['profiling']->data['messages'])) {
-                $this->_models = Yii::getLogger()->calculateTimings($this->module->panels['profiling']->data['messages']);
-            }
-        }
-
-        return $this->_models;
-    }
-
-    public function getName(): string
+    public function getName()
     {
         return 'Timeline';
     }
 
     /**
-     * Start request, timestamp (obtained by microtime(true)).
+     * Start request, timestamp (obtained by microtime(true))
+     * @return float
      */
-    public function getStart(): float
+    public function getStart()
     {
         return $this->_start;
     }
 
     /**
+     * @return Svg
+     * @since 2.0.8
      * @throws InvalidConfigException
      */
-    public function getSvg(): Svg
+    public function getSvg()
     {
         if ($this->_svg === null) {
             $this->_svg = Yii::createObject($this->_svgOptions, [$this]);
         }
-
         return $this->_svg;
     }
 
-    public function getSvgOptions(): array
+    /**
+     * @return array
+     */
+    public function getSvgOptions()
     {
         return $this->_svgOptions;
     }
 
-    public function load(mixed $data): void
+    public function getToolbarIcon()
     {
-        if (empty($data['start'])) {
-            throw new RuntimeException('Unable to determine request start time');
-        }
+        return 'timeline';
+    }
 
+
+    /**
+     * @throws InvalidConfigException
+     */
+    public function init()
+    {
+        if (!isset($this->module->panels['profiling'])) {
+            throw new InvalidConfigException('Unable to determine the profiling panel');
+        }
+        parent::init();
+    }
+
+    public function load($data)
+    {
+        if (!isset($data['start']) || empty($data['start'])) {
+            throw new \RuntimeException('Unable to determine request start time');
+        }
         $this->_start = $data['start'] * 1000;
 
-        if (empty($data['end'])) {
-            throw new RuntimeException('Unable to determine request end time');
+        if (!isset($data['end']) || empty($data['end'])) {
+            throw new \RuntimeException('Unable to determine request end time');
         }
-
         $this->_end = $data['end'] * 1000;
 
         if (isset($this->module->panels['profiling']->data['time'])) {
@@ -190,20 +185,19 @@ class TimelinePanel extends Panel
         }
 
         if ($this->_duration <= 0) {
-            throw new RuntimeException('Duration cannot be zero');
+            throw new \RuntimeException('Duration cannot be zero');
         }
 
-        if (empty($data['memory'])) {
-            throw new RuntimeException('Unable to determine used memory in request');
+        if (!isset($data['memory']) || empty($data['memory'])) {
+            throw new \RuntimeException('Unable to determine used memory in request');
         }
-
         $this->_memory = $data['memory'];
     }
 
-    public function save(): mixed
+    public function save()
     {
         return [
-            'start' => YII_BEGIN_TIME,
+            'start' => $_SERVER['REQUEST_TIME_FLOAT'],
             'end' => microtime(true),
             'memory' => memory_get_peak_usage(),
         ];
@@ -211,20 +205,41 @@ class TimelinePanel extends Panel
 
     /**
      * Sets color indicators.
-     * key: percentages of time request, value: hex color.
+     * key: percentages of time request, value: hex color
+     * @param array $colors
      */
-    public function setColors(array $colors): void
+    public function setColors($colors)
     {
         krsort($colors);
         $this->_colors = $colors;
     }
 
-    public function setSvgOptions(array $options): void
+    /**
+     * @param array $options
+     */
+    public function setSvgOptions($options)
     {
         if ($this->_svg !== null) {
             $this->_svg = null;
         }
-
         $this->_svgOptions = array_merge($this->_svgOptions, $options);
+    }
+
+    /**
+     * Returns an array of models that represents logs of the current request.
+     * Can be used with data providers, such as \yii\data\ArrayDataProvider.
+     *
+     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @return array models
+     */
+    protected function getModels($refresh = false)
+    {
+        if ($this->_models === null || $refresh) {
+            $this->_models = [];
+            if (isset($this->module->panels['profiling']->data['messages'])) {
+                $this->_models = Yii::getLogger()->calculateTimings($this->module->panels['profiling']->data['messages']);
+            }
+        }
+        return $this->_models;
     }
 }

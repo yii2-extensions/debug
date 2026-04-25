@@ -1,38 +1,33 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\helpers\Html;
+use yii\debug\GridViewConfig;
 use yii\grid\GridView;
-use yii\debug\panels\DumpPanel;
-use yii\debug\models\search\Log;
-use yii\data\ArrayDataProvider;
+use yii\helpers\Html;
 
-/**
- * @var ArrayDataProvider $dataProvider
- * @var DumpPanel $panel
- * @var Log $searchModel
- */
+/** @var yii\debug\panels\DumpPanel $panel */
+/** @var yii\debug\models\search\Log $searchModel */
+/** @var yii\data\ArrayDataProvider $dataProvider */
 ?>
-<h1>Dump</h1>
+    <h1>Dump</h1>
 <?php
 
-echo GridView::widget([
+echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $dataProvider,
     'id' => 'dump-panel-detailed-grid',
-    'options' => ['class' => 'detail-grid-view table-responsive'],
     'filterModel' => $searchModel,
     'filterUrl' => $panel->getUrl(),
     'columns' => [
         'category',
         [
             'attribute' => 'message',
-            'value' => static function ($data) use ($panel) {
+            'value' => function ($data) use ($panel) {
                 $message = $data['message'];
 
                 if (!empty($data['trace'])) {
                     $message .= Html::ul($data['trace'], [
-                        'class' => 'trace',
+                        'class' => 'yii-debug-trace',
                         'item' => function ($trace) use ($panel) {
                             return '<li>' . $panel->getTraceLine($trace) . '</li>';
                         },
@@ -47,4 +42,4 @@ echo GridView::widget([
             ],
         ],
     ],
-]);
+]));

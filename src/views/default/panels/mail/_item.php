@@ -5,9 +5,8 @@ declare(strict_types=1);
 use yii\helpers\Html;
 use yii\widgets\DetailView;
 
-/**
- * @var array $model
- */
+/** @var array $model */
+
 echo DetailView::widget([
     'model' => $model,
     'attributes' => [

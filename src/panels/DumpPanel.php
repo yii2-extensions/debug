@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -18,53 +17,41 @@ use yii\helpers\Html;
 use yii\helpers\VarDumper;
 use yii\log\Logger;
 
-use function call_user_func;
-use function is_callable;
-
 /**
  * Dump panel that collects and displays debug messages (Logger::LEVEL_TRACE).
  *
  * @author Pistej <pistej2@gmail.com>
  * @author Simon Karlen <simi.albi@outlook.com>
- *
  * @since 2.1.0
  */
 class DumpPanel extends Panel
 {
     /**
-     * @var array the message categories to filter by. If empty array, it means all categories are allowed.
+     * @var array the message categories to filter by. If empty array, it means
+     * all categories are allowed
      */
-    public array $categories = ['application'];
+    public $categories = ['application'];
     /**
-     * @var bool whether the result should be syntax-highlighted.
+     * @var int maximum depth that the dumper should go into the variable
      */
-    public bool $highlight = true;
+    public $depth = 10;
     /**
-     * @var int maximum depth that the dumper should go into the variable.
+     * @var bool whether the result should be syntax-highlighted
      */
-    public int $depth = 10;
+    public $highlight = true;
     /**
-     * @var callable callback that replaces the built-in var dumper. The signature of this function should be:
-     * `function (mixed $data, DumpPanel $panel)`
+     * @var callable callback that replaces the built-in var dumper. The signature of
+     * this function should be: `function (mixed $data, DumpPanel $panel)`
+     * @since 2.1.3
      */
     public $varDumpCallback;
 
     /**
      * @var array log messages extracted to array as models, to use with data provider.
      */
-    private array $_models = [];
+    private $_models;
 
-    public function getName(): string
-    {
-        return 'Dump';
-    }
-
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render('panels/dump/summary', ['panel' => $this]);
-    }
-
-    public function getDetail(): string
+    public function getDetail()
     {
         $searchModel = new Log();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
@@ -76,7 +63,23 @@ class DumpPanel extends Panel
         ]);
     }
 
-    public function save(): mixed
+
+    public function getName()
+    {
+        return 'Dump';
+    }
+
+    public function getSummary()
+    {
+        return Yii::$app->view->render('panels/dump/summary', ['panel' => $this]);
+    }
+
+    public function getToolbarIcon()
+    {
+        return 'dump';
+    }
+
+    public function save()
     {
         $except = [];
         if (isset($this->module->panels['router'])) {
@@ -98,6 +101,8 @@ class DumpPanel extends Panel
 
     /**
      * Called by `save()` to format the dumped variable.
+     *
+     * @since 2.1.3
      */
     public function varDump($var)
     {
@@ -119,11 +124,12 @@ class DumpPanel extends Panel
      * Returns an array of models that represents logs of the current request.
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
-     * @param bool $refresh if you need to build models from log messages and refresh them.
+     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @return array models
      */
-    protected function getModels(bool $refresh = false): array
+    protected function getModels($refresh = false)
     {
-        if ($refresh) {
+        if ($this->_models === null || $refresh) {
             $this->_models = [];
 
             foreach ($this->data as $message) {
@@ -138,5 +144,23 @@ class DumpPanel extends Panel
         }
 
         return $this->_models;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>|null
+     */
+    protected function getToolbarItems()
+    {
+        if (empty($this->data)) {
+            return null;
+        }
+
+        return [
+            [
+                'value' => count($this->data),
+                'status' => 'info',
+                'title' => 'Number of dumped variables',
+            ],
+        ];
     }
 }

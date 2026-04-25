@@ -1,12 +1,8 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\debug\panels\ConfigPanel;
-
-/**
- * @var ConfigPanel $panel
- */
+/** @var yii\debug\panels\ConfigPanel $panel */
 ?>
 <div class="yii-debug-toolbar__block">
     <a href="<?= $panel->getUrl() ?>">

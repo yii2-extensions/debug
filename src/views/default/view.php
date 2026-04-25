@@ -1,31 +1,42 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\debug\Module;
-use yii\debug\Panel;
 use yii\debug\widgets\NavigationButton;
 use yii\helpers\Html;
 use yii\helpers\Url;
-use yii\web\View;
-use yii\widgets\Menu;
 
-/**
- * @var array $manifest
- * @var array $summary
- * @var Panel $activePanel
- * @var Panel[] $panels
- * @var string $tag
- * @var View $this
- */
+/** @var \yii\web\View $this */
+/** @var array $summary */
+/** @var string $tag */
+/** @var array $manifest */
+/** @var \yii\debug\Panel[] $panels */
+/** @var \yii\debug\Panel $activePanel */
+
 $this->title = 'Yii Debugger';
+
+$historyItems = [];
+$count = 0;
+foreach ($manifest as $meta) {
+    $label = ($meta['tag'] === $tag ? Html::tag('strong', '&#9658;&nbsp;' . $meta['tag']) : $meta['tag'])
+        . ': ' . Html::encode($meta['method']) . ' ' . Html::encode($meta['url']) . ($meta['ajax'] ? ' (AJAX)' : '')
+        . ', ' . date('Y-m-d h:i:s a', (int) $meta['time'])
+        . ', ' . $meta['ip'];
+    $historyItems[] = [
+        'label' => $label,
+        'url' => ['view', 'tag' => $meta['tag'], 'panel' => $activePanel->id],
+    ];
+    if (++$count >= 10) {
+        break;
+    }
+}
 ?>
-<div class="yii-debug-main-container default-view">
+<div class="yii-debug-page default-view">
     <div id="yii-debug-toolbar" class="yii-debug-toolbar yii-debug-toolbar_position_top" style="display: none;">
         <div class="yii-debug-toolbar__bar">
             <div class="yii-debug-toolbar__block yii-debug-toolbar__title">
                 <a href="<?= Url::to(['index']) ?>">
-                    <img width="29" height="30" alt="" src="<?= Module::getYiiLogo() ?>">
+                    <img width="29" height="30" alt="" src="<?= \yii\debug\Module::getYiiLogo() ?>">
                 </a>
             </div>
 
@@ -35,95 +46,57 @@ $this->title = 'Yii Debugger';
         </div>
     </div>
 
-    <div class="container-fluid main-container">
-        <div class="row">
-            <div class="col-md-2">
-                <div class="list-group">
+    <div class="yii-debug-layout">
+        <aside class="yii-debug-sidebar">
+            <nav class="yii-debug-nav" aria-label="Debug panels">
+                <?php foreach ($panels as $id => $panel): ?>
                     <?php
-                    $classes = ['list-group-item', 'd-flex', 'justify-content-between', 'align-items-center'];
-                    foreach ($panels as $id => $panel) {
-                        $label = Html::tag('span', Html::encode($panel->getName())) . '<span class="icon"></span>';
-                        echo Html::a($label, ['view', 'tag' => $tag, 'panel' => $id], [
-                            'class' => $panel === $activePanel ? array_merge($classes, ['active']) : $classes,
-                        ]);
+                    $isActive = $panel === $activePanel;
+                    $linkOptions = ['class' => $isActive ? 'yii-debug-nav-link is-active' : 'yii-debug-nav-link'];
+                    if ($isActive) {
+                        $linkOptions['aria-current'] = 'page';
                     }
+                    echo Html::a(Html::encode($panel->getName()), ['view', 'tag' => $tag, 'panel' => $id], $linkOptions);
                     ?>
-                </div>
-            </div>
-            <div class="col-md-10">
-                <?php
-                $statusCode = $summary['statusCode'];
-                $method = $summary['method'];
-                if ($statusCode === null) {
-                    $statusCode = 200;
-                }
-                if (($statusCode >= 200 && $statusCode < 300) || ($method == 'COMMAND' && $statusCode == 0)) {
-                    $calloutClass = 'callout-success';
-                } elseif ($statusCode >= 300 && $statusCode < 400) {
-                    $calloutClass = 'callout-info';
-                } else {
-                    $calloutClass = 'callout-danger';
-                }
-                ?>
-                <div class="callout <?= $calloutClass ?>">
-                    <?php
-                    $count = 0;
-                    $items = [];
-                    foreach ($manifest as $meta) {
-                        $label = ($meta['tag'] == $tag ? Html::tag('strong',
-                                '&#9658;&nbsp;' . $meta['tag']) : $meta['tag'])
-                            . ': ' . Html::encode($meta['method']) . ' ' . Html::encode($meta['url']) . ($meta['ajax'] ? ' (AJAX)' : '')
-                            . ', ' . date('Y-m-d h:i:s a', (int) $meta['time'])
-                            . ', ' . $meta['ip'];
-                        $url = ['view', 'tag' => $meta['tag'], 'panel' => $activePanel->id];
-                        $items[] = [
-                            'label' => $label,
-                            'url' => $url,
-                        ];
-                        if (++$count >= 10) {
-                            break;
-                        }
-                    }
+                <?php endforeach; ?>
+            </nav>
+        </aside>
 
-                    ?>
-                    <div class="btn-group btn-group-sm" role="group">
+        <main class="yii-debug-main yii-debug-card">
+            <?php if ($activePanel->hasRequestNavigation()): ?>
+                <nav class="yii-debug-request-nav" aria-label="Request history">
+                    <div class="yii-debug-btn-group" role="group">
                         <?= NavigationButton::widget(
-                            ['manifest' => $manifest, 'tag' => $tag, 'panel' => $activePanel, 'button' => 'Prev']
+                            ['manifest' => $manifest, 'tag' => $tag, 'panel' => $activePanel, 'button' => 'Prev'],
                         ) ?>
                         <?= NavigationButton::widget(
-                            ['manifest' => $manifest, 'tag' => $tag, 'panel' => $activePanel, 'button' => 'Next']
+                            ['manifest' => $manifest, 'tag' => $tag, 'panel' => $activePanel, 'button' => 'Next'],
                         ) ?>
                     </div>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <?=Html::a('All', ['index'], ['class' => ['btn', 'btn-light']]) ?>
-                        <?=Html::a('Latest', ['view', 'panel' => $activePanel->id], ['class' => ['btn', 'btn-light']]) ?>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <?=Html::button('Last 10', [
+                    <div class="yii-debug-btn-group" role="group">
+                        <?= Html::a('All', ['index'], ['class' => 'yii-debug-btn yii-debug-btn--ghost yii-debug-btn--sm']) ?>
+                        <?= Html::a('Latest', ['view', 'panel' => $activePanel->id], ['class' => 'yii-debug-btn yii-debug-btn--ghost yii-debug-btn--sm']) ?>
+                        <div class="yii-debug-dropdown">
+                            <?= Html::button('Last 10 ▾', [
                                 'type' => 'button',
-                                'class' => ['btn', 'btn-light', 'dropdown-toggle'],
-                                'data' => [
-                                    'toggle' => 'dropdown'
-                                ],
+                                'class' => 'yii-debug-btn yii-debug-btn--ghost yii-debug-btn--sm',
+                                'data-yii-debug-toggle' => 'dropdown',
                                 'aria-haspopup' => 'true',
-                                'aria-expanded' => 'false'
+                                'aria-expanded' => 'false',
                             ]) ?>
-                            <?= Menu::widget([
+                            <?= \yii\widgets\Menu::widget([
                                 'encodeLabels' => false,
-                                'items' => $items,
-                                'options' => ['class' => 'dropdown-menu'],
-                                'itemOptions' => ['class' => 'dropdown-item']
+                                'items' => $historyItems,
+                                'options' => ['class' => 'yii-debug-dropdown__menu'],
+                                'itemOptions' => ['tag' => 'li'],
+                                'linkTemplate' => '<a href="{url}" class="yii-debug-dropdown__item">{label}</a>',
                             ]) ?>
                         </div>
                     </div>
-                    <?php
-                    echo "\n" . $summary['tag'] . ': ' . Html::encode($summary['method']) . ' ' . Html::a(Html::encode($summary['url']),
-                            $summary['url']);
-                    echo ' at ' . date('Y-m-d h:i:s a', (int) $summary['time']) . ' by ' . $summary['ip'];
-                    ?>
-                </div>
-                <?= $activePanel->getDetail() ?>
-            </div>
-        </div>
+                </nav>
+            <?php endif; ?>
+            <?= $activePanel->getDetail() ?>
+        </main>
     </div>
 </div>
 <script type="text/javascript">

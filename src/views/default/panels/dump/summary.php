@@ -1,12 +1,7 @@
 <?php
 
-declare (strict_types=1);
-
-use yii\debug\panels\AssetPanel;
-
-/**
- * @var AssetPanel $panel
- */
+declare(strict_types=1);
+/** @var yii\debug\panels\AssetPanel $panel */
 if (!empty($panel->data)):
     ?>
     <div class="yii-debug-toolbar__block">

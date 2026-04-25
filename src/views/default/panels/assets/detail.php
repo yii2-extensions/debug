@@ -2,13 +2,10 @@
 
 declare(strict_types=1);
 
-use yii\debug\panels\AssetPanel;
 use yii\helpers\Html;
 use yii\helpers\Inflector;
 
-/**
- * @var AssetPanel $panel
- */
+/** @var yii\debug\panels\AssetPanel $panel */
 ?>
 <h1>Asset Bundles</h1>
 
@@ -16,8 +13,8 @@ use yii\helpers\Inflector;
     echo '<p>No asset bundle was used.</p>';
     return;
 } ?>
-<div class="table-responsive">
-    <table class="table table-striped table-bordered">
+<div class="yii-debug-table-wrap">
+    <table class="yii-debug-table">
         <caption>
             <p>Total <b><?= count($panel->data) ?></b> asset bundles were loaded.</p>
         </caption>
@@ -32,7 +29,7 @@ use yii\helpers\Inflector;
             <tbody>
             <tr>
                 <th>sourcePath</th>
-                <td><?= Html::encode($bundle['sourcePath'] ?? $bundle['basePath']) ?></td>
+                <td><?= Html::encode($bundle['sourcePath'] !== null ? $bundle['sourcePath'] : $bundle['basePath']) ?></td>
             </tr>
             <?php if ($bundle['basePath'] !== null): ?>
                 <tr>
@@ -51,13 +48,13 @@ use yii\helpers\Inflector;
                     <th>css</th>
                     <td class="ws-normal">
                         <?= Html::ul($bundle['css'], [
-                            'class' => 'assets',
-                            'item' => static function ($item) {
+                            'class' => 'yii-debug-list',
+                            'item' => function ($item) {
                                 if (is_array($item)) {
                                     $item = reset($item);
                                 }
                                 return Html::tag('li', Html::encode($item));
-                            }
+                            },
                         ]) ?>
                     </td>
                 </tr>
@@ -67,13 +64,13 @@ use yii\helpers\Inflector;
                     <th>js</th>
                     <td class="ws-normal">
                         <?= Html::ul($bundle['js'], [
-                            'class' => 'assets',
-                            'item' => static function ($item) {
+                            'class' => 'yii-debug-list',
+                            'item' => function ($item) {
                                 if (is_array($item)) {
                                     $item = reset($item);
                                 }
                                 return Html::tag('li', Html::encode($item));
-                            }
+                            },
                         ]) ?>
                     </td>
                 </tr>
@@ -82,7 +79,7 @@ use yii\helpers\Inflector;
                 <tr>
                     <th>depends</th>
                     <td class="ws-normal">
-                        <ul class="assets">
+                        <ul class="yii-debug-list">
                             <?php foreach ($bundle['depends'] as $depend): ?>
                                 <li><?= Html::a($depend, '#' . Inflector::camel2id($depend)) ?></li>
                             <?php endforeach; ?>
@@ -93,6 +90,6 @@ use yii\helpers\Inflector;
             </tbody>
             <?php
         }
-        ?>
+?>
     </table>
 </div>

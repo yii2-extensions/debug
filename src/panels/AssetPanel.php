@@ -4,77 +4,71 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\debug\panels;
 
-use Closure;
 use Yii;
+use yii\base\InvalidConfigException;
 use yii\debug\Panel;
 use yii\helpers\Html;
 use yii\web\AssetBundle;
-
-use function array_walk;
 
 /**
  * Debugger panel that collects and displays asset bundles data.
  *
  * @author Artur Fursa <arturfursa@gmail.com>
- *
  * @since 2.0
  */
 class AssetPanel extends Panel
 {
-    public function getDetail(): string
+    public function getDetail()
     {
         return Yii::$app->view->render('panels/assets/detail', ['panel' => $this]);
     }
-
-    public function getName(): string
+    public function getName()
     {
         return 'Asset Bundles';
     }
 
-    public function getSummary(): string
+    public function getSummary()
     {
         return Yii::$app->view->render('panels/assets/summary', ['panel' => $this]);
     }
 
-    public function isEnabled(): bool
+    public function getToolbarIcon()
     {
-        return isset(Yii::$app->view->assetManager) && Yii::$app->view->assetManager;
+        return 'asset';
     }
 
-    public function save(): mixed
+    public function isEnabled()
+    {
+        try {
+            isset(Yii::$app->view->assetManager) && Yii::$app->view->assetManager;
+        } catch (InvalidConfigException $exception) {
+            return false;
+        }
+        return true;
+    }
+
+    public function save()
     {
         $bundles = Yii::$app->view->assetManager->bundles;
-
         if (empty($bundles)) { // bundles can be false
             return [];
         }
-
         $data = [];
-
         foreach ($bundles as $name => $bundle) {
             if ($bundle instanceof AssetBundle) {
-                $bundleData = (array)$bundle;
-                if (
-                    isset($bundleData['publishOptions']['beforeCopy']) &&
-                    $bundleData['publishOptions']['beforeCopy'] instanceof Closure
-                ) {
-                    $bundleData['publishOptions']['beforeCopy'] = Closure::class;
+                $bundleData = (array) $bundle;
+                if (isset($bundleData['publishOptions']['beforeCopy']) && $bundleData['publishOptions']['beforeCopy'] instanceof \Closure) {
+                    $bundleData['publishOptions']['beforeCopy'] = '\Closure';
                 }
-
-                if (
-                    isset($bundleData['publishOptions']['afterCopy']) &&
-                    $bundleData['publishOptions']['afterCopy'] instanceof Closure
-                ) {
-                    $bundleData['publishOptions']['afterCopy'] = Closure::class;
+                if (isset($bundleData['publishOptions']['afterCopy']) && $bundleData['publishOptions']['afterCopy'] instanceof \Closure) {
+                    $bundleData['publishOptions']['afterCopy'] = '\Closure';
                 }
-
                 $data[$name] = $bundleData;
             }
         }
@@ -88,18 +82,19 @@ class AssetPanel extends Panel
      *
      * @return AssetBundle[]
      */
-    protected function format(array $bundles): array
+    protected function format(array $bundles)
     {
+        // @todo remove
         foreach ($bundles as $bundle) {
-            array_walk($bundle->css, static function (&$file, $key, $userData) {
+            array_walk($bundle->css, function (&$file, $key, $userData) {
                 $file = Html::a($file, $userData->baseUrl . '/' . $file, ['target' => '_blank']);
             }, $bundle);
 
-            array_walk($bundle->js, static function (&$file, $key, $userData) {
+            array_walk($bundle->js, function (&$file, $key, $userData) {
                 $file = Html::a($file, $userData->baseUrl . '/' . $file, ['target' => '_blank']);
             }, $bundle);
 
-            array_walk($bundle->depends, static function (&$depend) {
+            array_walk($bundle->depends, function (&$depend) {
                 $depend = Html::a($depend, '#' . $depend);
             });
 
@@ -113,13 +108,37 @@ class AssetPanel extends Panel
 
     /**
      * Format associative array of params to simple value.
+     *
+     * @return array
      */
-    protected function formatOptions(array &$params): array
+    protected function formatOptions(array &$params)
     {
+        if (!is_array($params)) {
+            return $params;
+        }
+
         foreach ($params as $param => $value) {
-            $params[$param] = Html::tag('strong', '\'' . $param . '\' => ') . $value;
+            $params[$param] = Html::tag('strong', '\'' . $param . '\' => ') . (string) $value;
         }
 
         return $params;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>|null
+     */
+    protected function getToolbarItems()
+    {
+        if (empty($this->data)) {
+            return null;
+        }
+
+        return [
+            [
+                'value' => count($this->data),
+                'status' => 'info',
+                'title' => 'Number of asset bundles loaded',
+            ],
+        ];
     }
 }

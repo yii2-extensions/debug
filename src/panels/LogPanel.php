@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,12 +14,12 @@ use Yii;
 use yii\debug\models\search\Log;
 use yii\debug\Panel;
 use yii\log\Logger;
+use yii\log\Target;
 
 /**
  * Debugger panel that collects and displays logs.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
- *
  * @since 2.0
  */
 class LogPanel extends Panel
@@ -28,19 +27,9 @@ class LogPanel extends Panel
     /**
      * @var array log messages extracted to array as models, to use with data provider.
      */
-    private array $_models = [];
+    private $_models;
 
-    public function getName(): string
-    {
-        return 'Logs';
-    }
-
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render('panels/log/summary', ['data' => $this->data, 'panel' => $this]);
-    }
-
-    public function getDetail(): string
+    public function getDetail()
     {
         $searchModel = new Log();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
@@ -52,7 +41,23 @@ class LogPanel extends Panel
         ]);
     }
 
-    public function save(): mixed
+
+    public function getName()
+    {
+        return 'Logs';
+    }
+
+    public function getSummary()
+    {
+        return Yii::$app->view->render('panels/log/summary', ['data' => $this->data, 'panel' => $this]);
+    }
+
+    public function getToolbarIcon()
+    {
+        return 'logs';
+    }
+
+    public function save()
     {
         $except = [];
         if (isset($this->module->panels['router'])) {
@@ -68,16 +73,19 @@ class LogPanel extends Panel
      * Returns an array of models that represents logs of the current request.
      * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
-     * @param bool $refresh if you need to build models from log messages and refresh them.
+     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @return array models
      */
-    protected function getModels(bool $refresh = false): array
+    protected function getModels($refresh = false)
     {
-        if ($this->_models === [] || $refresh) {
+        if ($this->_models === null || $refresh) {
+            $this->_models = [];
+
             $previousId = null;
             $previousTime = null;
             $id = 1;
             foreach ($this->data['messages'] as $message) {
-                if (null === $previousTime) {
+                if (is_null($previousTime)) {
                     $previousTime = $message[3];
                 } else {
                     $this->_models[$previousId]['id_of_next'] = $id;
@@ -92,7 +100,7 @@ class LogPanel extends Panel
                     'time_since_previous' => $message[3] - $previousTime,
                     'id_of_previous' => $previousId,
                     'id_of_next' => null,
-                    'trace' => $message[4] ?? [],
+                    'trace' => isset($message[4]) ? $message[4] : [],
                 ];
                 $previousId = $id;
                 $previousTime = $message[3];
@@ -101,5 +109,41 @@ class LogPanel extends Panel
         }
 
         return $this->_models;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>|null
+     */
+    protected function getToolbarItems()
+    {
+        $messageCount = count($this->data['messages']);
+        $errorCount = count(Target::filterMessages($this->data['messages'], Logger::LEVEL_ERROR));
+        $warningCount = count(Target::filterMessages($this->data['messages'], Logger::LEVEL_WARNING));
+
+        $items = [
+            [
+                'value' => $messageCount,
+            ],
+        ];
+
+        if ($errorCount) {
+            $items[] = [
+                'label' => 'Errors',
+                'value' => $errorCount,
+                'status' => 'danger',
+                'url' => $this->getUrl(['Log[level]' => Logger::LEVEL_ERROR]),
+            ];
+        }
+
+        if ($warningCount) {
+            $items[] = [
+                'label' => 'Warnings',
+                'value' => $warningCount,
+                'status' => 'warning',
+                'url' => $this->getUrl(['Log[level]' => Logger::LEVEL_WARNING]),
+            ];
+        }
+
+        return $items;
     }
 }

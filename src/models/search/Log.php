@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -19,32 +18,24 @@ use yii\debug\components\search\Filter;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Mark Jebri <mark.github@yandex.ru>
- *
  * @since 2.0
  */
 class Log extends Base
 {
     /**
-     * @var string ip attribute input search value.
+     * @var string method attribute input search value
      */
-    public string $level = '';
+    public $category;
     /**
-     * @var string method attribute input search value.
+     * @var string ip attribute input search value
      */
-    public string $category = '';
+    public $level;
     /**
-     * @var int message attribute input search value.
+     * @var int message attribute input search value
      */
-    public int $message = 0;
+    public $message;
 
-    public function rules(): array
-    {
-        return [
-            [['level', 'message', 'category'], 'safe'],
-        ];
-    }
-
-    public function attributeLabels(): array
+    public function attributeLabels()
     {
         return [
             'level' => 'Level',
@@ -54,13 +45,22 @@ class Log extends Base
         ];
     }
 
+
+    public function rules()
+    {
+        return [
+            [['level', 'message', 'category'], 'safe'],
+        ];
+    }
+
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array $params an array of parameter values indexed by parameter names.
-     * @param array $models data to return provider for.
+     * @param array $params an array of parameter values indexed by parameter names
+     * @param array $models data to return provider for
+     * @return \yii\data\ArrayDataProvider
      */
-    public function search(array $params, array $models): ArrayDataProvider
+    public function search($params, $models)
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
@@ -86,11 +86,9 @@ class Log extends Base
         }
 
         $filter = new Filter();
-
         $this->addCondition($filter, 'level');
         $this->addCondition($filter, 'category', true);
         $this->addCondition($filter, 'message', true);
-
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

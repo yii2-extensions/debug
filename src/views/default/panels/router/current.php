@@ -1,13 +1,10 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\debug\models\router\CurrentRoute;
 use yii\helpers\Html;
 
-/**
- * @var CurrentRoute $currentRoute
- */
+/** @var yii\debug\models\router\CurrentRoute $currentRoute */
 ?>
 <h3>
     <?= Yii::$app->i18n->format(
@@ -16,18 +13,18 @@ use yii\helpers\Html;
             'rulesTested' => $currentRoute->count,
             'hasMatch' => (int) $currentRoute->hasMatch,
         ],
-        'en_US'
-    ) ?>
+        'en_US',
+    ); ?>
 </h3>
 
 <?php if ($currentRoute->message !== null): ?>
-    <div class="alert alert-info">
+    <div class="yii-debug-callout yii-debug-callout--info">
         <?= Html::encode($currentRoute->message) ?>
     </div>
 <?php endif; ?>
 <?php if (count($currentRoute->logs)): ?>
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered table-hover">
+    <div class="yii-debug-table-wrap">
+        <table class="yii-debug-table">
             <thead>
             <tr>
                 <th>#</th>
@@ -37,8 +34,8 @@ use yii\helpers\Html;
             </thead>
             <tbody>
             <?php foreach ($currentRoute->logs as $i => $log): ?>
-                <tr<?= $log['match'] ? ' class="table-success"' : '' ?>>
-                    <td><?= $i + 1 ?></td>
+                <tr<?= $log['match'] ? ' class="yii-debug-row--success"' : '' ?>>
+                    <td><?= $i + 1; ?></td>
                     <td><?= Html::encode($log['rule']) ?></td>
                     <td><?= Html::encode($log['parent']) ?></td>
                 </tr>

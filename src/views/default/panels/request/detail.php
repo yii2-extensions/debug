@@ -1,20 +1,16 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\debug\panels\RequestPanel;
 use yii\helpers\Html;
-use yii\web\View;
 
-/**
- * @var RequestPanel $panel
- * @var View $this
- */
+/** @var yii\debug\panels\RequestPanel $panel */
+
 echo '<h1>Request</h1>';
 
 $items = [
     'nav' => [],
-    'content' => []
+    'content' => [],
 ];
 
 $parametersContent = '';
@@ -54,8 +50,7 @@ $items['nav'][] = 'Parameters';
 $items['content'][] = $parametersContent;
 
 $items['nav'][] = 'Headers';
-$items['content'][] = $this->render('table',
-        ['caption' => 'Request Headers', 'values' => $panel->data['requestHeaders']])
+$items['content'][] = $this->render('table', ['caption' => 'Request Headers', 'values' => $panel->data['requestHeaders']])
     . $this->render('table', ['caption' => 'Response Headers', 'values' => $panel->data['responseHeaders']]);
 
 if (isset($panel->data['SESSION'], $panel->data['flashes'])) {
@@ -70,32 +65,32 @@ if (isset($panel->data['SERVER'])) {
 }
 
 ?>
-<ul class="nav nav-tabs">
+<ul class="yii-debug-tabs">
     <?php
     foreach ($items['nav'] as $k => $item) {
         echo Html::tag(
             'li',
             Html::a($item, '#r-tab-' . $k, [
-                'class' => $k === 0 ? 'nav-link active' : 'nav-link',
-                'data-toggle' => 'tab',
+                'class' => $k === 0 ? 'yii-debug-tab__link is-active' : 'yii-debug-tab__link',
+                'data-yii-debug-toggle' => 'tab',
                 'role' => 'tab',
                 'aria-controls' => 'r-tab-' . $k,
-                'aria-selected' => $k === 0 ? 'true' : 'false'
+                'aria-selected' => $k === 0 ? 'true' : 'false',
             ]),
             [
-                'class' => 'nav-item'
-            ]
+                'class' => 'yii-debug-tab',
+            ],
         );
     }
-    ?>
+?>
 </ul>
-<div class="tab-content">
+<div class="yii-debug-tab-content">
     <?php
-    foreach ($items['content'] as $k => $item) {
-       echo Html::tag('div', $item, [
-            'class' => $k === 0 ? 'tab-pane fade active show' : 'tab-pane fade',
-            'id' => 'r-tab-' . $k
-        ]);
-    }
-    ?>
+foreach ($items['content'] as $k => $item) {
+    echo Html::tag('div', $item, [
+        'class' => $k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel',
+        'id' => 'r-tab-' . $k,
+    ]);
+}
+?>
 </div>

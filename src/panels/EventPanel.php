@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,11 +14,6 @@ use Yii;
 use yii\base\Event;
 use yii\debug\Panel;
 
-use function count;
-use function get_class;
-use function is_object;
-use function microtime;
-
 /**
  * Debugger panel that collects and displays information about triggered events.
  *
@@ -27,22 +21,52 @@ use function microtime;
  *   appear at lower version.
  *
  * @author Paul Klimov <klimov.paul@gmail.com>
- *
  * @since 2.0.14
  */
 class EventPanel extends Panel
 {
     /**
-     * @var array current request events.
+     * @var array current request events
      */
-    private array $_events = [];
+    private $_events = [];
 
-    public function init(): void
+    public function getDetail()
+    {
+        $searchModel = new \yii\debug\models\search\Event();
+        $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->data);
+
+        return Yii::$app->view->render('panels/event/detail', [
+            'panel' => $this,
+            'dataProvider' => $dataProvider,
+            'searchModel' => $searchModel,
+        ]);
+    }
+
+    public function getName()
+    {
+        return 'Events';
+    }
+
+    public function getSummary()
+    {
+        return Yii::$app->view->render('panels/event/summary', [
+            'panel' => $this,
+            'eventCount' => count($this->data),
+        ]);
+    }
+
+    public function getToolbarIcon()
+    {
+        return 'events';
+    }
+
+
+    public function init()
     {
         parent::init();
 
         Event::on('*', '*', function ($event) {
-            /* @var $event Event */
+            /** @var Event $event */
             $eventData = [
                 'time' => microtime(true),
                 'name' => $event->name,
@@ -55,38 +79,36 @@ class EventPanel extends Panel
         });
     }
 
-    public function getName(): string
+    public function isEnabled()
     {
-        return 'Events';
+        $yiiVersion = Yii::getVersion();
+        if (!version_compare($yiiVersion, '2.0.14', '>=') && strpos($yiiVersion, '-dev') === false) {
+            return false;
+        }
+
+        return parent::isEnabled();
     }
 
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render('panels/event/summary', [
-            'panel' => $this,
-            'eventCount' => count($this->data),
-        ]);
-    }
-
-    public function getDetail(): string
-    {
-        $searchModel = new \yii\debug\models\search\Event();
-        $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->data);
-
-        return Yii::$app->view->render('panels/event/detail', [
-            'panel' => $this,
-            'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel,
-        ]);
-    }
-
-    public function save(): mixed
+    public function save()
     {
         return $this->_events;
     }
 
-    public function isEnabled(): bool
+    /**
+     * @return array<int, array<string, mixed>>|null
+     */
+    protected function getToolbarItems()
     {
-        return parent::isEnabled();
+        $eventCount = is_array($this->data) ? count($this->data) : 0;
+
+        if ($eventCount === 0) {
+            return null;
+        }
+
+        return [
+            [
+                'value' => $eventCount,
+            ],
+        ];
     }
 }

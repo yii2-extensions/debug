@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -19,28 +18,20 @@ use yii\debug\components\search\Filter;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Mark Jebri <mark.github@yandex.ru>
- *
  * @since 2.0
  */
 class Db extends Base
 {
     /**
-     * @var string type of the input search value.
+     * @var int query attribute input search value
      */
-    public string $type = '';
+    public $query;
     /**
-     * @var int query attribute input search value.
+     * @var string type of the input search value
      */
-    public int $query = 0;
+    public $type;
 
-    public function rules(): array
-    {
-        return [
-            [['type', 'query'], 'safe'],
-        ];
-    }
-
-    public function attributeLabels(): array
+    public function attributeLabels()
     {
         return [
             'type' => 'Type',
@@ -48,10 +39,21 @@ class Db extends Base
         ];
     }
 
+
+    public function rules()
+    {
+        return [
+            [['type', 'query'], 'safe'],
+        ];
+    }
+
     /**
      * Returns data provider with filled models. Filter applied if needed.
+     *
+     * @param array $models data to return provider for
+     * @return \yii\data\ArrayDataProvider
      */
-    public function search(array $models): ArrayDataProvider
+    public function search($models)
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
@@ -66,10 +68,8 @@ class Db extends Base
         }
 
         $filter = new Filter();
-
         $this->addCondition($filter, 'type', true);
         $this->addCondition($filter, 'query', true);
-
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

@@ -1,19 +1,16 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\debug\models\router\RouterRules;
 use yii\helpers\Html;
 
-/**
- * @var RouterRules $routerRules
- */
+/** @var \yii\debug\models\router\RouterRules $routerRules */
 ?>
 <?php if (count($routerRules->rules) === 0): ?>
     <h3>No routing rules configured.</h3>
 <?php else: ?>
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered table-hover">
+    <div class="yii-debug-table-wrap">
+        <table class="yii-debug-table">
             <thead>
             <tr>
                 <th>#</th>
@@ -28,14 +25,14 @@ use yii\helpers\Html;
             <tbody>
                 <?php foreach ($routerRules->rules as $i => $rule): ?>
                     <tr>
-                        <td><?= $i + 1 ?></td>
-                        <td><?= Html::encode($rule['name']) ?></td>
-                        <td><?= Html::encode($rule['route']) ?></td>
-                        <td><?= is_array($rule['verb']) ? implode(', ', array_map(static function ($element) {
-                                return Html::encode($element);
-                            }, $rule['verb'])) : null ?></td>
-                        <td><?= Html::encode($rule['suffix']) ?></td>
-                        <td><?= Html::encode($rule['mode']) ?></td>
+                        <td><?= $i + 1; ?></td>
+                        <td><?= Html::encode($rule['name']); ?></td>
+                        <td><?= Html::encode($rule['route']); ?></td>
+                        <td><?= is_array($rule['verb']) ? implode(', ', array_map(function ($element) {
+                            return Html::encode($element);
+                        }, $rule['verb'])) : null ?></td>
+                        <td><?= Html::encode($rule['suffix']); ?></td>
+                        <td><?= Html::encode($rule['mode']); ?></td>
                         <td><?= $rule['type'] ?></td>
                     </tr>
                 <?php endforeach; ?>

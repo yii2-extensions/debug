@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,41 +14,49 @@ use yii\base\Widget;
 use yii\debug\Panel;
 use yii\helpers\Html;
 
-use function array_keys;
-use function array_search;
-use function end;
-use function reset;
-
 /**
- * Render button for navigation to previous or next request in debug panel.
- *
+ * Render button for navigation to previous or next request in debug panel
  * @since 2.0.11
  */
 class NavigationButton extends Widget
 {
-    public array $manifest = [];
-
-    public string $tag = '';
-
-    public string $button = '';
     /**
-     * @var Panel|null
+     * @var string
      */
-    public Panel $panel;
+    public $button;
+    /**
+     * @var array
+     */
+    public $manifest;
+    /**
+     * @var Panel
+     */
+    public $panel;
+    /**
+     * @var string
+     */
+    public $tag;
+    /**
+     * @var int
+     */
+    private $currentTagIndex;
+
+    /**
+     * @var string
+     */
+    private $firstTag;
+    /**
+     * @var string
+     */
+    private $lastTag;
 
 
-    private string $firstTag = '';
-
-    private string $lastTag = '';
-
-    private int $currentTagIndex = 0;
-
-    public function beforeRun(): bool
+    public function beforeRun()
     {
         $manifestKeys = array_keys($this->manifest);
         $this->firstTag = reset($manifestKeys);
         $this->lastTag = end($manifestKeys);
-        $this->currentTagIndex = array_search($this->tag, $manifestKeys);
+        $this->currentTagIndex = array_search($this->tag, $manifestKeys, true);
 
         return parent::beforeRun();
     }
@@ -61,37 +68,44 @@ class NavigationButton extends Widget
         return $this->$method();
     }
 
-    private function renderPrevButton(): string
+    /**
+     * @param int $inc Direction
+     * @return array
+     */
+    private function getRoute($inc)
     {
-        $needLink = $this->tag !== $this->firstTag;
-
-        return Html::a(
-            'Prev',
-            $needLink ? $this->getRoute(-1) : '',
-            ['class' => ['btn', 'btn-light', $needLink ? '' : 'disabled']]
-        );
+        return [
+            'view',
+            'panel' => $this->panel->id,
+            'tag' => array_keys($this->manifest)[$this->currentTagIndex + $inc],
+        ];
     }
 
-    private function renderNextButton(): string
+    /**
+     * @return string
+     */
+    private function renderNextButton()
     {
         $needLink = $this->tag !== $this->lastTag;
 
         return Html::a(
             'Next',
             $needLink ? $this->getRoute(1) : '',
-            ['class' => ['btn', 'btn-light', $needLink ? '' : 'disabled']]
+            ['class' => ['yii-debug-btn', 'yii-debug-btn--ghost', $needLink ? '' : 'is-disabled']],
         );
     }
 
     /**
-     * @param int $inc Direction
+     * @return string
      */
-    private function getRoute(int $inc): array
+    private function renderPrevButton()
     {
-        return [
-            'view',
-            'panel' => $this->panel?->id,
-            'tag' => array_keys($this->manifest)[$this->currentTagIndex + $inc],
-        ];
+        $needLink = $this->tag !== $this->firstTag;
+
+        return Html::a(
+            'Prev',
+            $needLink ? $this->getRoute(-1) : '',
+            ['class' => ['yii-debug-btn', 'yii-debug-btn--ghost', $needLink ? '' : 'is-disabled']],
+        );
     }
 }

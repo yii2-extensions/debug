@@ -4,33 +4,51 @@ declare(strict_types=1);
 
 namespace yiiunit\debug;
 
+use ReflectionClass;
 use Yii;
+use yii\base\Application;
 use yii\di\Container;
 use yii\helpers\ArrayHelper;
 
 /**
- * This is the base class for all yii framework unit tests.
+ * Base class for the debug-extension test suite.
+ *
+ * Provides Yii application bootstrapping (web + console), automatic teardown, and a reflection
+ * helper for invoking non-public methods inside fixtures.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.1.29
  */
 abstract class TestCase extends \PHPUnit\Framework\TestCase
 {
     /**
-     * Clean up after test.
-     * By default the application created with [[mockApplication]] will be destroyed.
+     * Destroys the active application by clearing `Yii::$app` and resetting the DI container.
      */
-    protected function tearDown(): void
+    protected function destroyApplication(): void
     {
-        parent::tearDown();
-        $this->destroyApplication();
+        Yii::$app = null;
+        Yii::$container = new Container();
     }
 
     /**
-     * Populates Yii::$app with a new application
-     * The application will be destroyed on tearDown() automatically.
+     * Invokes a non-public method on the given object via reflection and returns its result.
      *
-     * @param array $config The application configuration, if needed
-     * @param string $appClass name of the application class to create
+     * @param array<int, mixed> $args Arguments forwarded to the method.
      */
-    protected function mockApplication($config = [], $appClass = '\yii\console\Application')
+    protected function invoke(object $object, string $method, array $args = []): mixed
+    {
+        $methodReflection = (new ReflectionClass($object))->getMethod($method);
+
+        return $methodReflection->invokeArgs($object, $args);
+    }
+
+    /**
+     * Populates `Yii::$app` with a new console application instance.
+     *
+     * @param array<string, mixed> $config Extra application configuration merged on top of the defaults.
+     * @param class-string<Application> $appClass Application class to instantiate.
+     */
+    protected function mockApplication(array $config = [], string $appClass = \yii\console\Application::class): void
     {
         new $appClass(ArrayHelper::merge([
             'id' => 'testapp',
@@ -39,7 +57,13 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         ], $config));
     }
 
-    protected function mockWebApplication($config = [], $appClass = '\yii\web\Application')
+    /**
+     * Populates `Yii::$app` with a new web application instance pre-wired with a request component.
+     *
+     * @param array<string, mixed> $config Extra application configuration merged on top of the defaults.
+     * @param class-string<Application> $appClass Application class to instantiate.
+     */
+    protected function mockWebApplication(array $config = [], string $appClass = \yii\web\Application::class): void
     {
         new $appClass(ArrayHelper::merge([
             'id' => 'testapp',
@@ -54,34 +78,9 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
             ],
         ], $config));
     }
-
-    /**
-     * Destroys application in Yii::$app by setting it to null.
-     */
-    protected function destroyApplication()
+    protected function tearDown(): void
     {
-        Yii::$app = null;
-        Yii::$container = new Container();
-    }
-
-    /**
-     * Invokes object method, even if it is private or protected.
-     *
-     * @param object $object object.
-     * @param string $method method name.
-     * @param array $args method arguments
-     *
-     * @throws \ReflectionException
-     *
-     * @return mixed method result
-     */
-    protected function invoke($object, $method, array $args = [])
-    {
-        $classReflection = new \ReflectionClass($object::class);
-        $methodReflection = $classReflection->getMethod($method);
-        $methodReflection->setAccessible(true);
-        $result = $methodReflection->invokeArgs($object, $args);
-        $methodReflection->setAccessible(false);
-        return $result;
+        parent::tearDown();
+        $this->destroyApplication();
     }
 }

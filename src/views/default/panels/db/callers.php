@@ -2,63 +2,44 @@
 
 declare(strict_types=1);
 
-use yii\data\ArrayDataProvider;
 use yii\debug\DbAsset;
-use yii\debug\models\search\Db;
-use yii\debug\panels\DbPanel;
+use yii\debug\GridViewConfig;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\web\View;
 
-/**
- * @var DbPanel $panel
- * @var Db $searchModel
- * @var ArrayDataProvider $callerDataProvider
- * @var bool $hasExplain
- * @var int $sumDuplicates
- * @var View $this
- */
+/** @var yii\debug\panels\DbPanel $panel */
+/** @var yii\debug\models\search\Db $searchModel */
+/** @var yii\data\ArrayDataProvider $callerDataProvider */
+/** @var bool $hasExplain */
+/** @var int $sumDuplicates */
+/** @var View $this */
+
 echo Html::tag('h3', $panel->getName() . ' Callers');
 
-echo GridView::widget([
+echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $callerDataProvider,
     'id' => 'db-panel-detailed-callers-grid',
-    'options' => ['class' => 'detail-grid-view db-panel-detailed-grid table-responsive'],
-    'pager' => [
-        'linkContainerOptions' => [
-            'class' => 'page-item',
-        ],
-        'linkOptions' => [
-            'class' => 'page-link',
-        ],
-        'disabledListItemSubTagOptions' => [
-            'tag' => 'a',
-            'href' => 'javascript:;',
-            'tabindex' => '-1',
-            'class' => 'page-link',
-        ],
-    ],
+    'options' => ['class' => 'yii-debug-grid yii-debug-grid--db'],
     'columns' => [
         [
             'label' => 'Caller',
             'attribute' => 'trace',
-            'value' => static function ($data) use ($panel) {
+            'value' => function ($data) use ($hasExplain, $panel) {
                 return Html::ul($data['trace'], [
-                    'class' => 'trace',
+                    'class' => 'yii-debug-trace',
                     'item' => function ($trace) use ($panel) {
                         return '<li>' . $panel->getTraceLine($trace) . '</li>';
                     },
                 ]);
             },
             'format' => 'raw',
-            'options' => [
-                'width' => '25%',
-            ],
+            'options' => ['width' => '25%'],
         ],
         [
             'label' => 'No. of Calls',
             'attribute' => 'numCalls',
-            'value' => static function ($data) use ($panel) {
+            'value' => function ($data) use ($panel) {
                 $result = $data['numCalls'];
                 if ($panel->isNumberOfCallsExcessive($data['numCalls'])) {
                     $result .= ' ' . Html::tag('span', '&#x26a0;', [
@@ -68,30 +49,22 @@ echo GridView::widget([
                 return $result;
             },
             'format' => 'raw',
-            'options' => [
-                'width' => '5%',
-            ],
-            'headerOptions' => [
-                'class' => 'sort-numerical',
-            ],
+            'options' => ['width' => '5%'],
+            'headerOptions' => ['class' => 'sort-numerical'],
         ],
         [
             'attribute' => 'totalDuration',
-            'value' => static function ($data) {
+            'value' => function ($data) {
                 return sprintf('%.1f ms', $data['totalDuration']);
             },
-            'options' => [
-                'width' => '10%',
-            ],
-            'headerOptions' => [
-                'class' => 'sort-numerical',
-            ],
+            'options' => ['width' => '10%'],
+            'headerOptions' => ['class' => 'sort-numerical'],
         ],
         [
             'attribute' => 'queries',
-            'value' => static function ($data) use ($hasExplain, $panel) {
-                $queries =
-                    '<table style="width: 100%;">
+            'value' => function ($data) use ($hasExplain, $panel) {
+                $queries
+                    = '<table class="yii-debug-table" style="width: 100%;">
                         <thead>
                             <th style="width: 5%;">Time</th>
                             <th style="width: 5%;">Duration</th>
@@ -103,23 +76,23 @@ echo GridView::widget([
                     $queries .= '<tr>';
 
                     $timeInSeconds = $queryData['timestamp'] / 1000;
-                    $millisecondsDiff = (int)(($timeInSeconds - (int)$timeInSeconds) * 1000);
-                    $queries .= '<td>' . date('H:i:s.', (int)$timeInSeconds)
+                    $millisecondsDiff = (int) (($timeInSeconds - (int) $timeInSeconds) * 1000);
+                    $queries .= '<td>' . date('H:i:s.', (int) $timeInSeconds)
                         . sprintf('%03d', $millisecondsDiff) . '</td>';
 
                     $queries .= '<td>' . sprintf('%.1f ms', $queryData['duration']) . '</td>';
 
                     $queries .= '<td>' . Html::tag('div', Html::encode($queryData['query']));
                     if ($hasExplain && $panel::canBeExplained($queryData['type'])) {
-                        $queries .= Html::tag('p', '', ['class' => 'db-explain-text']);
+                        $queries .= Html::tag('p', '', ['class' => 'yii-debug-db-explain-text']);
 
                         $queries .= Html::tag(
                             'div',
                             Html::a(
                                 '[+] Explain',
-                                ['db-explain', 'seq' => $queryData['seq'], 'tag' => Yii::$app->controller->summary['tag']]
+                                ['db-explain', 'seq' => $queryData['seq'], 'tag' => Yii::$app->controller->summary['tag']],
                             ),
-                            ['class' => 'db-explain']
+                            ['class' => 'yii-debug-db-explain'],
                         );
                     }
                     $queries .= '</td>
@@ -133,12 +106,10 @@ echo GridView::widget([
                 return $queries;
             },
             'format' => 'raw',
-            'options' => [
-                'width' => '60%',
-            ],
+            'options' => ['width' => '60%'],
         ],
     ],
-]);
+]));
 
 if ($hasExplain) {
     DbAsset::register($this);
@@ -146,6 +117,6 @@ if ($hasExplain) {
     echo Html::tag(
         'div',
         Html::a('[+] Explain all', 'javascript:;'),
-        ['class' => 'db-explain-all']
+        ['class' => 'yii-debug-db-explain-all'],
     );
 }

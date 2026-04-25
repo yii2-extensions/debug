@@ -1,30 +1,25 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 use yii\log\Logger;
 use yii\log\Target;
-use yii\debug\panels\LogPanel;
 
-/**
- * @var array $data
- * @var LogPanel $panel
- */
+/** @var yii\debug\panels\LogPanel $panel */
+/** @var array $data */
+
 $titles = [
-    'all' => Yii::$app->i18n->format('Logged {n,plural,=1{1 message} other{# messages}}',
-        ['n' => count($data['messages'])], 'en-US')
+    'all' => Yii::$app->i18n->format('Logged {n,plural,=1{1 message} other{# messages}}', ['n' => count($data['messages'])], 'en-US'),
 ];
 $errorCount = count(Target::filterMessages($data['messages'], Logger::LEVEL_ERROR));
 $warningCount = count(Target::filterMessages($data['messages'], Logger::LEVEL_WARNING));
 
 if ($errorCount) {
-    $titles['errors'] = Yii::$app->i18n->format('{n,plural,=1{1 error} other{# errors}}', ['n' => $errorCount],
-        'en-US');
+    $titles['errors'] = Yii::$app->i18n->format('{n,plural,=1{1 error} other{# errors}}', ['n' => $errorCount], 'en-US');
 }
 
 if ($warningCount) {
-    $titles['warnings'] = Yii::$app->i18n->format('{n,plural,=1{1 warning} other{# warnings}}', ['n' => $warningCount],
-        'en-US');
+    $titles['warnings'] = Yii::$app->i18n->format('{n,plural,=1{1 warning} other{# warnings}}', ['n' => $warningCount], 'en-US');
 }
 ?>
 

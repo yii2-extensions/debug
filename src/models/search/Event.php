@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -15,33 +14,20 @@ use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 
 /**
- * Event
- *
  * @author Paul Klimov <klimov.paul@gmail.com>
- *
  * @since 2.0.14
  */
 class Event extends Base
 {
+    public $class;
     /**
      * @var bool whether event is static or not.
      */
-    public bool $isStatic = false;
-    public string $name = '';
-    public string $class = '';
-    public string $senderClass = '';
+    public $isStatic;
+    public $name;
+    public $senderClass;
 
-    public function rules(): array
-    {
-        return [
-            [['name', 'class', 'senderClass'], 'string'],
-            [['isStatic'], 'boolean'],
-            //[['isStatic'], 'filter', 'filter' => function ($value) {return strlen($value) > 0 ? (bool)$value : $value;}],
-            [$this->attributes(), 'safe'],
-        ];
-    }
-
-    public function attributeLabels(): array
+    public function attributeLabels()
     {
         return [
             'name' => 'Name',
@@ -51,13 +37,25 @@ class Event extends Base
         ];
     }
 
+
+    public function rules()
+    {
+        return [
+            [['name', 'class', 'senderClass'], 'string'],
+            [['isStatic'], 'boolean'],
+            //[['isStatic'], 'filter', 'filter' => function ($value) {return strlen($value) > 0 ? (bool)$value : $value;}],
+            [$this->attributes(), 'safe'],
+        ];
+    }
+
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
      * @param array $params an array of parameter values indexed by parameter names
      * @param array $models data to return provider for
+     * @return \yii\data\ArrayDataProvider
      */
-    public function search(array $params, array $models): ArrayDataProvider
+    public function search($params, $models)
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,
@@ -75,12 +73,10 @@ class Event extends Base
         }
 
         $filter = new Filter();
-
         $this->addCondition($filter, 'isStatic');
         $this->addCondition($filter, 'name', true);
         $this->addCondition($filter, 'class', true);
         $this->addCondition($filter, 'senderClass', true);
-
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

@@ -1,16 +1,13 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\debug\panels\UserPanel;
 use yii\helpers\Html;
-use yii\web\View;
 use yii\widgets\DetailView;
 
-/**
- * @var UserPanel $panel
- * @var View $this
- */
+/** @var \yii\web\View $this */
+/** @var yii\debug\panels\UserPanel $panel */
+
 $encodedName = Html::encode($panel->getName());
 ?>
 
@@ -18,15 +15,14 @@ $encodedName = Html::encode($panel->getName());
 
 <?php
 if (isset($panel->data['identity'])) {
-    $name =
     $items = [
         'nav' => [$encodedName],
         'content' => [
-            "<h2>$encodedName Info</h2>" . DetailView::widget([
+            "<h2>{$encodedName} Info</h2>" . DetailView::widget([
                 'model' => $panel->data['identity'],
-                'attributes' => $panel->data['attributes']
-            ])
-        ]
+                'attributes' => $panel->data['attributes'],
+            ]),
+        ],
     ];
     if ($panel->data['rolesProvider'] || $panel->data['permissionsProvider']) {
         $items['nav'][] = 'Roles and Permissions';
@@ -34,42 +30,41 @@ if (isset($panel->data['identity'])) {
     }
 
     if ($panel->canSwitchUser()) {
-        $items['nav'][] = "Switch $encodedName";
+        $items['nav'][] = "Switch {$encodedName}";
         $items['content'][] = $this->render('switch', ['panel' => $panel]);
     }
 
     ?>
-    <ul class="nav nav-tabs">
+    <ul class="yii-debug-tabs">
         <?php
         foreach ($items['nav'] as $k => $item) {
             echo Html::tag(
                 'li',
                 Html::a($item, '#u-tab-' . $k, [
-                    'class' => $k === 0 ? 'nav-link active' : 'nav-link',
-                    'data-toggle' => 'tab',
+                    'class' => $k === 0 ? 'yii-debug-tab__link is-active' : 'yii-debug-tab__link',
+                    'data-yii-debug-toggle' => 'tab',
                     'role' => 'tab',
                     'aria-controls' => 'u-tab-' . $k,
-                    'aria-selected' => $k === 0 ? 'true' : 'false'
+                    'aria-selected' => $k === 0 ? 'true' : 'false',
                 ]),
                 [
-                    'class' => 'nav-item'
-                ]
+                    'class' => 'yii-debug-tab',
+                ],
             );
         }
-        ?>
+    ?>
     </ul>
-    <div class="tab-content">
+    <div class="yii-debug-tab-content">
         <?php
-        foreach ($items['content'] as $k => $item) {
-            echo Html::tag('div', $item, [
-                'class' => $k === 0 ? 'tab-pane fade active show' : 'tab-pane fade',
-                'id' => 'u-tab-' . $k
-            ]);
-        }
-        ?>
+    foreach ($items['content'] as $k => $item) {
+        echo Html::tag('div', $item, [
+            'class' => $k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel',
+            'id' => 'u-tab-' . $k,
+        ]);
+    }
+    ?>
     </div>
     <?php
-
 } else {
     echo 'Is guest.';
 } ?>

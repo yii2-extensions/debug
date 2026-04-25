@@ -2,13 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug;
 
 use Yii;
@@ -20,45 +13,72 @@ use yii\debug\panels\DbPanel;
 use yii\helpers\FileHelper;
 use yii\log\Target;
 
-use function array_diff;
-use function array_keys;
-use function array_map;
-use function array_merge;
-use function array_reverse;
+use function count;
 
 /**
- * The debug LogTarget is used to store logs for later use in the debugger tool.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- *
- * @since 2.0
+ * Debug LogTarget is used to store logs for later use in the debugger tool.
  */
 class LogTarget extends Target
 {
-    public Module $module;
-    public string $tag = '';
+    /**
+     * @var Module
+     */
+    public $module;
+    /**
+     * @var string
+     */
+    public $tag;
 
-    public function __construct(Module $module, array $config = [])
+
+    /**
+     * @param \yii\debug\Module $module
+     * @param array $config
+     */
+    public function __construct($module, $config = [])
     {
         parent::__construct($config);
-
         $this->module = $module;
         $this->tag = uniqid();
     }
 
     /**
+     * Processes the given log messages.
+     *
+     * This method will filter the given messages with [[levels]] and [[categories]].
+     *
+     * And if requested, it will also export the filtering result to specific medium (for example, email).
+     *
+     * @param array $messages log messages to be processed. See [[\yii\log\Logger::messages]] for the structure of each
+     * message.
+     * @param bool $final Whether this method is called at the end of the current application
+     *
+     * @throws Exception
+     */
+    public function collect($messages, $final)
+    {
+        $this->messages = array_merge($this->messages, $messages);
+
+        if ($final) {
+            $this->export();
+        }
+    }
+
+    /**
      * Exports log messages to a specific destination.
+     *
      * Child classes must implement this method.
      *
      * @throws Exception
      */
-    public function export(): void
+    public function export()
     {
         $path = $this->module->dataPath;
+
         FileHelper::createDirectory($path, $this->module->dirMode);
 
         $summary = $this->collectSummary();
-        $dataFile = "$path/$this->tag.data";
+        $dataFile = "$path/{$this->tag}.data";
+
         $data = [];
         $exceptions = [];
 
@@ -70,7 +90,7 @@ class LogTarget extends Target
                     $summary['processingTime'] = $panelData['time'];
                 }
                 $data[$id] = serialize($panelData);
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 $exceptions[$id] = new FlattenException($exception);
             }
         }
@@ -85,17 +105,21 @@ class LogTarget extends Target
         }
 
         $indexFile = "$path/index.data";
+
         $this->updateIndexFile($indexFile, $summary);
     }
 
     /**
      * @see DefaultController
+     *
+     * @return array
      */
-    public function loadManifest(): array
+    public function loadManifest()
     {
         $indexFile = $this->module->dataPath . '/index.data';
 
         $content = '';
+
         $fp = @fopen($indexFile, 'r');
 
         if ($fp !== false) {
@@ -114,8 +138,10 @@ class LogTarget extends Target
 
     /**
      * @see DefaultController
+     *
+     * @return array
      */
-    public function loadTagToPanels($tag): array
+    public function loadTagToPanels($tag)
     {
         $dataFile = $this->module->dataPath . "/$tag.data";
 
@@ -139,31 +165,61 @@ class LogTarget extends Target
     }
 
     /**
-     * Processes the given log messages.
-     * This method will filter the given messages with [[levels]] and [[categories]].
-     * And if requested, it will also export the filtering result to a specific medium (e.g. email).
+     * Collects summary data of current request.
      *
-     * @param array $messages log messages to be processed. See [[\yii\log\Logger::messages]] for the structure
-     * of each message.
-     * @param bool $final whether this method is called at the end of the current application.
-     *
-     * @throws Exception
+     * @return array
      */
-    public function collect($messages, $final): void
+    protected function collectSummary()
     {
-        $this->messages = array_merge($this->messages, $messages);
-        if ($final) {
-            $this->export();
+        if (Yii::$app === null) {
+            return [];
         }
+
+        $request = Yii::$app->getRequest();
+        $response = Yii::$app->getResponse();
+
+        $summary = [
+            'tag' => $this->tag,
+            'url' => $request instanceof Request
+                ? 'php yii ' . implode(' ', $request->getParams())
+                : $request->getAbsoluteUrl(),
+            'ajax' => $request instanceof Request
+                ? 0
+                : (int) $request->getIsAjax(),
+            'method' => $request instanceof Request
+                ? 'COMMAND'
+                : $request->getMethod(),
+            'ip' => $request instanceof Request
+                ? exec('whoami')
+                : $request->getUserIP(),
+            'time' => $_SERVER['REQUEST_TIME_FLOAT'],
+            'statusCode' => $response instanceof Response
+                ? $response->exitStatus
+                : $response->statusCode,
+            'sqlCount' => $this->getSqlTotalCount(),
+            'excessiveCallersCount' => $this->getExcessiveDbCallersCount(),
+        ];
+
+        if (isset($this->module->panels['mail'])) {
+            $mailFiles = $this->module->panels['mail']->getMessagesFileName();
+
+            $summary['mailCount'] = count($mailFiles);
+
+            $summary['mailFiles'] = $mailFiles;
+        }
+
+        return $summary;
     }
 
     /**
      * Removes obsolete data files
+     * @param array $manifest
      */
-    protected function gc(array &$manifest): void
+    protected function gc(&$manifest)
     {
         if (count($manifest) > $this->module->historySize + 10) {
             $n = count($manifest) - $this->module->historySize;
+
             foreach (array_keys($manifest) as $tag) {
                 $file = $this->module->dataPath . "/$tag.data";
 
@@ -181,21 +237,56 @@ class LogTarget extends Target
                     break;
                 }
             }
+
             $this->removeStaleDataFiles($manifest);
         }
     }
 
     /**
-     * Remove staled data files i.e., files that are not in the current index file (may happen because of corrupted or
-     * rotated index file).
+     * Get the number of excessive Database caller(s).
+     *
+     * @return int
      */
-    protected function removeStaleDataFiles(array $manifest): void
+    protected function getExcessiveDbCallersCount()
+    {
+        if (!isset($this->module->panels['db'])) {
+            return 0;
+        }
+
+        /** @var DbPanel $dbPanel */
+        $dbPanel = $this->module->panels['db'];
+
+        return $dbPanel->getExcessiveCallersCount();
+    }
+
+    /**
+     * Returns total sql count executed in current request. If database panel is not configured returns 0.
+     *
+     * @return int
+     */
+    protected function getSqlTotalCount()
+    {
+        if (!isset($this->module->panels['db'])) {
+            return 0;
+        }
+
+        $profileLogs = $this->module->panels['db']->getProfileLogs();
+
+        # / 2 because messages are in couple (begin/end)
+        return count($profileLogs) / 2;
+    }
+
+    /**
+     * Remove staled data files i.e. files that are not in the current index file (may happen because of corrupted or
+     * rotated index file)
+     *
+     * @param array $manifest
+     */
+    protected function removeStaleDataFiles($manifest)
     {
         $storageTags = array_map(
-            static function ($file) {
-                return pathinfo($file, PATHINFO_FILENAME);
-            },
-            FileHelper::findFiles($this->module->dataPath, ['except' => ['index.data']])
+            static fn ($file) => pathinfo($file, PATHINFO_FILENAME),
+            FileHelper::findFiles($this->module->dataPath, ['except' => ['index.data']]),
         );
 
         $staledTags = array_diff($storageTags, array_keys($manifest));
@@ -206,77 +297,14 @@ class LogTarget extends Target
     }
 
     /**
-     * Collects summary data of the current request.
-     */
-    protected function collectSummary(): array
-    {
-        if (Yii::$app === null) {
-            return [];
-        }
-
-        $request = Yii::$app->getRequest();
-        $response = Yii::$app->getResponse();
-        $summary = [
-            'tag' => $this->tag,
-            'url' => $request instanceof Request ? 'php yii ' . implode(' ', $request->getParams()) : $request->getAbsoluteUrl(),
-            'ajax' => $request instanceof Request ? 0 : (int) $request->getIsAjax(),
-            'method' => $request instanceof Request ? 'COMMAND' : $request->getMethod(),
-            'ip' => $request instanceof Request ? exec('whoami') : $request->getUserIP(),
-            'time' => $_SERVER['REQUEST_TIME_FLOAT'],
-            'statusCode' => $response instanceof Response ? $response->exitStatus : $response->statusCode,
-            'sqlCount' => $this->getSqlTotalCount(),
-            'excessiveCallersCount' => $this->getExcessiveDbCallersCount(),
-        ];
-
-        if (isset($this->module->panels['mail'])) {
-            $mailFiles = $this->module->panels['mail']->getMessagesFileName();
-            $summary['mailCount'] = count($mailFiles);
-            $summary['mailFiles'] = $mailFiles;
-        }
-
-        return $summary;
-    }
-
-    /**
-     * Returns total sql count executed in current request. If database panel is not configured
-     * returns 0.
-     */
-    protected function getSqlTotalCount(): float|int
-    {
-        if (!isset($this->module->panels['db'])) {
-            return 0;
-        }
-
-        $profileLogs = $this->module->panels['db']->getProfileLogs();
-
-        // / 2 because messages are in couple (begin/end)
-
-        return count($profileLogs) / 2;
-    }
-
-    /**
-     * Get the number of excessive Database caller(s).
-     */
-    protected function getExcessiveDbCallersCount(): int
-    {
-        if (!isset($this->module->panels['db'])) {
-            return 0;
-        }
-        /** @var DbPanel $dbPanel */
-        $dbPanel = $this->module->panels['db'];
-
-        return $dbPanel->getExcessiveCallersCount();
-    }
-
-    /**
      * Updates index file with summary log data.
      *
-     * @param string $indexFile path to index file.
-     * @param array $summary summary log data.
+     * @param string $indexFile Path to index file.
+     * @param array $summary Summary log data.
      *
      * @throws InvalidConfigException
      */
-    private function updateIndexFile(string $indexFile, array $summary): void
+    private function updateIndexFile($indexFile, $summary)
     {
         if (!@touch($indexFile) || ($fp = @fopen($indexFile, 'r+')) === false) {
             throw new InvalidConfigException("Unable to open debug data index file: $indexFile");
@@ -303,7 +331,6 @@ class LogTarget extends Target
         ftruncate($fp, 0);
         rewind($fp);
         fwrite($fp, serialize($manifest));
-
         @flock($fp, LOCK_UN);
         @fclose($fp);
 

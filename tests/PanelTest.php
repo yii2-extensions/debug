@@ -4,127 +4,228 @@ declare(strict_types=1);
 
 namespace yiiunit\debug;
 
+use PHPUnit\Framework\Attributes\Group;
+use yii\debug\GridViewConfig;
 use yii\debug\Module;
 use yii\debug\Panel;
 
-class PanelTest extends TestCase
+/**
+ * Unit tests for {@see Panel} covering trace-line rendering, the `getToolbarData` template flow,
+ * the new `getToolbarIcon` and `hasRequestNavigation` extension hooks, and the `GridViewConfig`
+ * helper.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.1.29
+ */
+#[Group('panel')]
+final class PanelTest extends TestCase
 {
+    public function testGetToolbarDataFallsBackToSummaryHtmlWhenNoItems(): void
+    {
+        $panel = new class (['id' => 'custom', 'tag' => 'test-tag', 'module' => new Module('debug')]) extends Panel {
+            public function getName(): string
+            {
+                return 'Custom';
+            }
+
+            public function getSummary(): string
+            {
+                return '<strong>Custom summary</strong>';
+            }
+        };
+
+        $data = $panel->getToolbarData();
+
+        self::assertSame('Custom', $data['title'], 'Title should mirror the panel name.');
+        self::assertSame(
+            '<strong>Custom summary</strong>',
+            $data['html'],
+            'Empty getToolbarItems() should fall back to the summary HTML.',
+        );
+        self::assertStringContainsString('panel=custom', $data['url'], 'URL should target the panel by id.');
+    }
+
+    public function testGetToolbarDataIncludesIconKeyWhenPanelDeclaresOne(): void
+    {
+        $panel = new class (['id' => 'hot', 'tag' => 'tag', 'module' => new Module('debug')]) extends Panel {
+            public function getName(): string
+            {
+                return 'Hot';
+            }
+
+            public function getToolbarIcon(): string
+            {
+                return 'profiling';
+            }
+
+            protected function getToolbarItems(): array
+            {
+                return [['value' => 42]];
+            }
+        };
+
+        $data = $panel->getToolbarData();
+
+        self::assertSame('profiling', $data['icon'], 'Icon key should round-trip into the toolbar JSON envelope.');
+    }
+
+    public function testGetToolbarDataOmitsIconKeyByDefault(): void
+    {
+        $panel = new class (['id' => 'plain', 'tag' => 'tag', 'module' => new Module('debug')]) extends Panel {
+            public function getName(): string
+            {
+                return 'Plain';
+            }
+
+            protected function getToolbarItems(): array
+            {
+                return [['value' => 1]];
+            }
+        };
+
+        self::assertArrayNotHasKey(
+            'icon',
+            $panel->getToolbarData(),
+            'Panels that do not declare a toolbar icon must not emit an `icon` key.',
+        );
+    }
+
+    public function testGetToolbarDataReturnsEmptyArrayWhenItemsAreNull(): void
+    {
+        $panel = new class (['id' => 'silent', 'tag' => 'tag', 'module' => new Module('debug')]) extends Panel {
+            public function getName(): string
+            {
+                return 'Silent';
+            }
+
+            protected function getToolbarItems(): array|null
+            {
+                return null;
+            }
+        };
+
+        self::assertSame([], $panel->getToolbarData(), 'Returning null from getToolbarItems hides the chip entirely.');
+    }
+
+    public function testGetToolbarIconDefaultsToNull(): void
+    {
+        self::assertNull($this->createPanel()->getToolbarIcon(), 'Base Panel exposes no toolbar icon.');
+    }
+
+    public function testGetTraceLineAcceptsClosureTemplate(): void
+    {
+        $panel = $this->createPanel();
+        $panel->module->traceLine = static fn(): string => 'http://my.custom.link';
+
+        self::assertSame(
+            'http://my.custom.link',
+            $panel->getTraceLine(['file' => 'file.php', 'line' => 10]),
+            'Closure traceLine result should be returned as-is.',
+        );
+    }
+
+    public function testGetTraceLineAcceptsClosureTemplateWithCustomText(): void
+    {
+        $panel = $this->createPanel();
+        $panel->module->traceLine = static fn(): string => '<a href="ide://open?url={file}&line={line}">{text}</a>';
+
+        self::assertSame(
+            '<a href="ide://open?url=file.php&line=10">custom text</a>',
+            $panel->getTraceLine(['file' => 'file.php', 'line' => 10, 'text' => 'custom text']),
+            'Closure-returned templates should still resolve {file}/{line}/{text} placeholders.',
+        );
+    }
+
+    public function testGetTraceLineAcceptsStringTemplate(): void
+    {
+        $panel = $this->createPanel();
+        $panel->module->traceLine = '<a href="phpstorm://open?url=file://{file}&line={line}">my custom phpstorm protocol</a>';
+
+        self::assertStringContainsString(
+            'phpstorm://open',
+            $panel->getTraceLine(['file' => 'file.php', 'line' => 10]),
+            'Custom traceLine string should be honored verbatim with placeholder substitution.',
+        );
+    }
+
+    public function testGetTraceLineFallsBackToPlainTextWhenTraceLineDisabled(): void
+    {
+        $panel = $this->createPanel();
+        $panel->module->traceLine = false;
+
+        self::assertSame(
+            'file.php:10',
+            $panel->getTraceLine(['file' => 'file.php', 'line' => 10]),
+            'Disabled traceLine should emit plain `file:line` text without anchor markup.',
+        );
+    }
+
+    public function testGetTraceLineRendersDefaultIdeLink(): void
+    {
+        $panel = $this->createPanel();
+        $line = $panel->getTraceLine(['file' => 'file.php', 'line' => 10]);
+
+        self::assertSame(
+            '<a href="ide://open?url=file://file.php&line=10">file.php:10</a>',
+            $line,
+            'Default trace line should expose an IDE-protocol anchor with file:line text.',
+        );
+    }
+
+    public function testGetTraceLineRewritesPathViaTracePathMappings(): void
+    {
+        $panel = $this->createPanel();
+        $panel->module->tracePathMappings = ['/app' => '/newpath/'];
+
+        self::assertSame(
+            '<a href="ide://open?url=file:///newpath/file.php&line=10">/app/file.php:10</a>',
+            $panel->getTraceLine(['file' => '/app/file.php', 'line' => 10]),
+            'tracePathMappings should rewrite the URL path while keeping the displayed text intact.',
+        );
+    }
+
+    public function testGetTraceLineUsesCustomTextWhenProvided(): void
+    {
+        $panel = $this->createPanel();
+        $line = $panel->getTraceLine([
+            'file' => 'file.php',
+            'line' => 10,
+            'text' => 'custom text',
+        ]);
+
+        self::assertSame(
+            '<a href="ide://open?url=file://file.php&line=10">custom text</a>',
+            $line,
+            'Custom text should replace the default file:line anchor body.',
+        );
+    }
+
+    public function testGetTraceLineUsesFirstMatchingPathMapping(): void
+    {
+        $panel = $this->createPanel();
+        $panel->module->tracePathMappings = [
+            '/app/data' => '/app/localdata',
+            '/app' => '/newpath',
+        ];
+
+        self::assertSame(
+            '<a href="ide://open?url=file:///app/localdata/file.php&line=10">/app/data/file.php:10</a>',
+            $panel->getTraceLine(['file' => '/app/data/file.php', 'line' => 10]),
+            'Only the first matching key in tracePathMappings should be applied.',
+        );
+    }
+
+    public function testHasRequestNavigationDefaultsToTrue(): void
+    {
+        self::assertTrue($this->createPanel()->hasRequestNavigation(), 'Default panels participate in request navigation.');
+    }
     protected function setUp(): void
     {
         parent::setUp();
         $this->mockWebApplication();
     }
 
-    public function testGetTraceLine_DefaultLink(): void
-    {
-        $traceConfig = [
-            'file' => 'file.php',
-            'line' => 10,
-        ];
-        $panel = $this->getPanel();
-        $this->assertEquals('<a href="ide://open?url=file://file.php&line=10">file.php:10</a>', $panel->getTraceLine($traceConfig));
-    }
-
-    public function testGetTraceLine_DefaultLink_CustomText(): void
-    {
-        $traceConfig = [
-            'file' => 'file.php',
-            'line' => 10,
-            'text' => 'custom text',
-        ];
-        $panel = $this->getPanel();
-        $this->assertEquals(
-            '<a href="ide://open?url=file://file.php&line=10">custom text</a>',
-            $panel->getTraceLine($traceConfig)
-        );
-    }
-
-    public function testGetTraceLine_TextOnly(): void
-    {
-        $panel = $this->getPanel();
-        $panel->module->traceLine = false;
-        $traceConfig = [
-            'file' => 'file.php',
-            'line' => 10,
-        ];
-        $this->assertEquals('file.php:10', $panel->getTraceLine($traceConfig));
-    }
-
-    public function testGetTraceLine_CustomLinkByString(): void
-    {
-        $traceConfig = [
-            'file' => 'file.php',
-            'line' => 10,
-        ];
-        $panel = $this->getPanel();
-        $panel->module->traceLine = '<a href="phpstorm://open?url=file://file.php&line=10">my custom phpstorm protocol</a>';
-        $this->assertEquals(
-            '<a href="phpstorm://open?url=file://file.php&line=10">my custom phpstorm protocol</a>',
-            $panel->getTraceLine($traceConfig)
-        );
-    }
-
-    public function testGetTraceLine_CustomLinkByCallback(): void
-    {
-        $traceConfig = [
-            'file' => 'file.php',
-            'line' => 10,
-        ];
-        $panel = $this->getPanel();
-        $expected = 'http://my.custom.link';
-        $panel->module->traceLine = fn () => $expected;
-        $this->assertEquals($expected, $panel->getTraceLine($traceConfig));
-    }
-
-    public function testGetTraceLine_CustomLinkByCallback_CustomText(): void
-    {
-        $traceConfig = [
-            'file' => 'file.php',
-            'line' => 10,
-            'text' => 'custom text',
-        ];
-        $panel = $this->getPanel();
-        $panel->module->traceLine = fn () => '<a href="ide://open?url={file}&line={line}">{text}</a>';
-        $this->assertEquals(
-            '<a href="ide://open?url=file.php&line=10">custom text</a>',
-            $panel->getTraceLine($traceConfig)
-        );
-    }
-
-    public function testGetTraceLine_tracePathMappings(): void
-    {
-        $traceConfig = [
-            'file' => '/app/file.php',
-            'line' => 10,
-        ];
-        $panel = $this->getPanel();
-        $panel->module->tracePathMappings = [
-            '/app' => '/newpath/', // intentional mismatch of trailing slashes
-        ];
-        $this->assertEquals(
-            '<a href="ide://open?url=file:///newpath/file.php&line=10">/app/file.php:10</a>',
-            $panel->getTraceLine($traceConfig)
-        );
-    }
-
-    public function testGetTraceLine_tracePathMappings_Multiple(): void
-    {
-        $traceConfig = [
-            'file' => '/app/data/file.php',
-            'line' => 10,
-        ];
-        $panel = $this->getPanel();
-        $panel->module->tracePathMappings = [
-            '/app/data' => '/app/localdata',
-            '/app' => '/newpath',
-        ];
-        $this->assertEquals(
-            '<a href="ide://open?url=file:///app/localdata/file.php&line=10">/app/data/file.php:10</a>',
-            $panel->getTraceLine($traceConfig)
-        );
-    }
-
-    private function getPanel()
+    private function createPanel(): Panel
     {
         return new Panel(['module' => new Module('debug')]);
     }

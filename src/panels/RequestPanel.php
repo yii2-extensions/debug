@@ -4,76 +4,73 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\debug\panels;
 
-use Exception;
 use Yii;
 use yii\base\InlineAction;
-use yii\base\InvalidConfigException;
 use yii\debug\Panel;
 use yii\helpers\ArrayHelper;
-use yii\web\Session;
+use yii\web\Response;
 
 /**
  * Debugger panel that collects and displays request data.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
- *
  * @since 2.0
  */
 class RequestPanel extends Panel
 {
     /**
+     * @var array list of variable names which values should be censored in the output
+     * @since 2.1.20
+     */
+    public $censoredVariableNames = [];
+    /**
+     * @var string value to display instead of the variable value if the name is on the censor list
+     * @since 2.1.20
+     */
+    public $censorString = '****';
+    /**
      * @var array list of the PHP predefined variables that are allowed to be displayed in the request panel.
-     *
-     * Note that a variable must be accessible via `$GLOBALS`. Otherwise, it won't be displayed.
+     * Note that a variable must be accessible via `$GLOBALS`. Otherwise it won't be displayed.
+     * @since 2.0.10
      */
-    public array $displayVars = ['_SERVER', '_GET', '_POST', '_COOKIE', '_FILES', '_SESSION'];
-    /**
-     * @var array list of variable names which values should be censored in the output.
-     */
-    public array $censoredVariableNames = [];
-    /**
-     * @var string value to display instead of the variable value if the name is on the censor list.
-     */
-    public string $censorString = '****';
+    public $displayVars = ['_SERVER', '_GET', '_POST', '_COOKIE', '_FILES', '_SESSION'];
 
-    public function getName(): string
-    {
-        return 'Request';
-    }
-
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render('panels/request/summary', ['panel' => $this]);
-    }
-
-    public function getDetail(): string
+    public function getDetail()
     {
         return Yii::$app->view->render('panels/request/detail', ['panel' => $this]);
     }
 
-    /**
-     * @throws InvalidConfigException
-     * @throws Exception
-     */
-    public function save(): mixed
+
+    public function getName()
+    {
+        return 'Request';
+    }
+
+    public function getSummary()
+    {
+        return Yii::$app->view->render('panels/request/summary', ['panel' => $this]);
+    }
+
+    public function getToolbarIcon()
+    {
+        return 'request';
+    }
+
+    public function save()
     {
         $headers = Yii::$app->getRequest()->getHeaders();
-
         $requestHeaders = [];
         $hasCensorList = count($this->censoredVariableNames);
-
         foreach ($headers as $name => $value) {
             if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
                 $value = $this->censorString;
             }
-
             if (is_array($value) && count($value) === 1) {
                 $requestHeaders[$name] = current($value);
             } else {
@@ -82,17 +79,14 @@ class RequestPanel extends Panel
         }
 
         $responseHeaders = [];
-
         foreach (headers_list() as $header) {
             if (($pos = strpos($header, ':')) !== false) {
                 $name = substr($header, 0, $pos);
-
                 if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
                     $value = $this->censorString;
                 } else {
                     $value = trim(substr($header, $pos + 1));
                 }
-
                 if (isset($responseHeaders[$name])) {
                     if (!is_array($responseHeaders[$name])) {
                         $responseHeaders[$name] = [$responseHeaders[$name], $value];
@@ -106,7 +100,6 @@ class RequestPanel extends Panel
                 $responseHeaders[] = $header;
             }
         }
-
         if (Yii::$app->requestedAction) {
             if (Yii::$app->requestedAction instanceof InlineAction) {
                 $action = get_class(Yii::$app->requestedAction->controller) . '::' . Yii::$app->requestedAction->actionMethod . '()';
@@ -132,7 +125,7 @@ class RequestPanel extends Panel
                 'isFlash' => Yii::$app->getRequest()->getIsFlash(),
                 'isSecureConnection' => Yii::$app->getRequest()->getIsSecureConnection(),
             ],
-            'requestBody' => Yii::$app->getRequest()->getRawBody() == '' ? [] : [
+            'requestBody' => Yii::$app->getRequest()->getRawBody() === '' ? [] : [
                 'Content Type' => Yii::$app->getRequest()->getContentType(),
                 'Raw' => Yii::$app->getRequest()->getRawBody(),
                 'Decoded' => Yii::$app->getRequest()->getBodyParams(),
@@ -147,24 +140,42 @@ class RequestPanel extends Panel
     }
 
     /**
-     * Getting flash messages without deleting them or touching deletion counters.
-     *
-     * @throws InvalidConfigException
+     * @param array $data
+     * @return array
+     * @since 2.1.20
+     */
+    protected function censorArray($data)
+    {
+        if (empty($this->censoredVariableNames) || empty($data)) {
+            return $data;
+        }
+        foreach ($this->censoredVariableNames as $var) {
+            $key = ltrim($var, '_');
+            if (ArrayHelper::getValue($data, $key) !== null) {
+                ArrayHelper::setValue($data, $key, $this->censorString);
+                if (strpos($key, 'requestBody') === 0) {
+                    ArrayHelper::setValue($data, 'requestBody.Raw', $this->censorString);
+                }
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * Getting flash messages without deleting them or touching deletion counters
      *
      * @return array flash messages (key => message).
      */
-    protected function getFlashes(): array
+    protected function getFlashes()
     {
-        /* @var Session $session */
+        /** @var \yii\web\Session $session */
         $session = Yii::$app->has('session', true) ? Yii::$app->get('session') : null;
-
         if ($session === null || !$session->getIsActive()) {
             return [];
         }
 
         $counters = $session->get($session->flashParam, []);
         $flashes = [];
-
         foreach (array_keys($counters) as $key) {
             if (array_key_exists($key, $_SESSION)) {
                 $flashes[$key] = $_SESSION[$key];
@@ -174,24 +185,28 @@ class RequestPanel extends Panel
     }
 
     /**
-     * @throws Exception
+     * @return array<int, array<string, mixed>>|null
      */
-    protected function censorArray(array $data): array
+    protected function getToolbarItems()
     {
-        if (empty($this->censoredVariableNames) || empty($data)) {
-            return $data;
+        $statusCode = $this->data['statusCode'] ?? 200;
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            $status = 'success';
+        } elseif ($statusCode >= 300 && $statusCode < 400) {
+            $status = 'info';
+        } else {
+            $status = 'danger';
         }
 
-        foreach ($this->censoredVariableNames as $var) {
-            $key = ltrim($var, '_');
-            if (ArrayHelper::getValue($data, $key) !== null) {
-                ArrayHelper::setValue($data, $key, $this->censorString);
-                if (str_starts_with($key, 'requestBody')) {
-                    ArrayHelper::setValue($data, 'requestBody.Raw', $this->censorString);
-                }
-            }
-        }
+        $statusText = Response::$httpStatuses[$statusCode] ?? '';
 
-        return $data;
+        return [
+            [
+                'value' => $statusCode,
+                'status' => $status,
+                'title' => "Status code: $statusCode $statusText",
+            ],
+        ];
     }
 }

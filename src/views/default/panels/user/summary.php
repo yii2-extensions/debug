@@ -1,15 +1,11 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\debug\panels\UserPanel;
 use yii\helpers\Html;
-use yii\web\View;
 
-/**
- * @var UserPanel $panel
- * @var View $this
- */
+/** @var \yii\web\View $this */
+/** @var yii\debug\panels\UserPanel $panel */
 ?>
 <div class="yii-debug-toolbar__block">
     <a href="<?= $panel->getUrl() ?>">

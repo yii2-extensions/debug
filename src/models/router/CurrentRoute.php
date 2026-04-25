@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
@@ -14,33 +13,26 @@ namespace yii\debug\models\router;
 use yii\base\Model;
 use yii\log\Logger;
 
-use function is_string;
-
 /**
  * CurrentRoute model
  *
  * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
  * @since 2.0.8
  */
 class CurrentRoute extends Model
 {
     /**
-     * @var array logged messages.
-     */
-    public array $messages = [];
-    /**
-     * @var string logged route.
-     */
-    public string $route = '';
-    /**
      * @var string logged action.
      */
-    public string $action = '';
+    public $action = '';
     /**
-     * @var string|null info message.
+     * @var int count, before match.
      */
-    public string|null $message = null;
+    public $count = 0;
+    /**
+     * @var bool
+     */
+    public $hasMatch = false;
     /**
      * @var array logged rules.
      * ```php
@@ -53,14 +45,22 @@ class CurrentRoute extends Model
      * ]
      * ```
      */
-    public array $logs = [];
+    public $logs = [];
     /**
-     * @var int count, before match.
+     * @var string|null info message.
      */
-    public int $count = 0;
-    public bool $hasMatch = false;
+    public $message;
+    /**
+     * @var array logged messages.
+     */
+    public $messages = [];
+    /**
+     * @var string logged route.
+     */
+    public $route = '';
 
-    public function init(): void
+
+    public function init()
     {
         parent::init();
         $last = null;

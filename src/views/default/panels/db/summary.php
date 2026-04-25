@@ -1,26 +1,21 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
+/** @var yii\debug\panels\DbPanel $panel */
+/** @var int $queryCount */
+/** @var int $queryTime */
+/** @var int $excessiveCallerCount */
 
-use yii\debug\panels\DbPanel;
-
-/**
- * @var DbPanel $panel
- * @var int $excessiveCallerCount
- * @var int $queryCount
- * @var int $queryTime
- */
 $title = "Executed $queryCount database queries which took $queryTime.";
 $warning = '';
 
 if ($panel->isQueryCountCritical($queryCount)) {
-    $warning .= "Too many queries, allowed count is $panel->criticalQueryThreshold.";
+    $warning .= "Too many queries, allowed count is {$panel->criticalQueryThreshold}.";
 }
-
 if ($excessiveCallerCount) {
     $warning .= ($warning ? ' &#10;' : '') . $excessiveCallerCount . ' '
-        . ($excessiveCallerCount == 1 ? 'caller is' : 'callers are')
-        .   ' making too many calls.';
+        . ($excessiveCallerCount === 1 ? 'caller is' : 'callers are')
+        . ' making too many calls.';
 }
 ?>
 <?php if ($queryCount): ?>

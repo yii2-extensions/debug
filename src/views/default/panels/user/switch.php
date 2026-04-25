@@ -1,87 +1,74 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\debug\panels\UserPanel;
+use yii\debug\GridViewConfig;
 use yii\debug\UserswitchAsset;
 use yii\grid\GridView;
 use yii\helpers\Html;
-use yii\helpers\Url;
-use yii\web\View;
 use yii\widgets\ActiveForm;
 
-/**
- * @var UserPanel $panel
- * @var View $this
- */
+/** @var \yii\web\View $this */
+/** @var yii\debug\panels\UserPanel $panel */
+
 UserswitchAsset::register($this);
 ?>
     <h2>Switch user</h2>
-    <div class="row">
-        <div class="col-sm-7">
+    <div class="yii-debug-grid-2">
+        <div>
             <?php $formSet = ActiveForm::begin([
-                'action' => Url::to(['user/set-identity']),
+                'action' => \yii\helpers\Url::to(['user/set-identity']),
+                'enableClientScript' => false,
                 'options' => [
                     'id' => 'debug-userswitch__set-identity',
-                    'style' => $panel->canSearchUsers() ? 'display:none' : ''
-                ]
+                    'style' => $panel->canSearchUsers() ? 'display:none' : '',
+                    'class' => 'yii-debug-stack',
+                ],
             ]);
-            echo $formSet->field(
-                $panel->userSwitch,
-                'user[id]', ['options' => ['class' => '']])
-                ->textInput(['id' => 'user_id', 'name' => 'user_id'])
-                ->label('Switch User');
-            echo Html::submitButton('Switch', ['class' => 'btn btn-primary']);
-            ActiveForm::end();
-            ?>
-
+echo $formSet->field(
+    $panel->userSwitch,
+    'user[id]',
+    ['options' => ['class' => 'yii-debug-field']],
+)
+    ->textInput(['id' => 'user_id', 'name' => 'user_id', 'class' => 'yii-debug-input'])
+    ->label('Switch User', ['class' => 'yii-debug-label']);
+echo Html::submitButton('Switch', ['class' => 'yii-debug-btn yii-debug-btn--primary']);
+ActiveForm::end();
+?>
         </div>
-        <div class="col-sm-5">
+        <div>
             <?php
-            if (!$panel->userSwitch->isMainUser()) {
-                $formReset = ActiveForm::begin([
-                    'action' => Url::to(['user/reset-identity']),
-                    'options' => [
-                        'id' => 'debug-userswitch__reset-identity',
-                    ]
-                ]);
-                echo Html::submitButton('Reset to <span class="yii-debug-toolbar__label yii-debug-toolbar__label_info">' .
-                    $panel->userSwitch->getMainUser()->getId() .
-                    '</span>', [
-                    'class' => 'btn btn-outline-secondary',
-                    'id' => 'debug-userswitch__reset-identity-button'
-                ]);
-                ActiveForm::end();
-            }
-            ?>
+if (!$panel->userSwitch->isMainUser()) {
+    $formReset = ActiveForm::begin([
+        'action' => \yii\helpers\Url::to(['user/reset-identity']),
+        'enableClientScript' => false,
+        'options' => [
+            'id' => 'debug-userswitch__reset-identity',
+        ],
+    ]);
+    echo Html::submitButton('Reset to <span class="yii-debug-toolbar__label yii-debug-toolbar__label_info">'
+        . $panel->userSwitch->getMainUser()->getId()
+        . '</span>', [
+            'class' => 'yii-debug-btn yii-debug-btn--ghost',
+            'id' => 'debug-userswitch__reset-identity-button',
+        ]);
+    ActiveForm::end();
+}
+?>
         </div>
     </div>
 
 <?php
 if ($panel->canSearchUsers()) {
-    yii\widgets\Pjax::begin(['id' => 'debug-userswitch__filter', 'timeout' => false]);
-    echo GridView::widget([
+    echo Html::beginTag('div', ['id' => 'debug-userswitch__filter']);
+    echo GridView::widget(array_merge(GridViewConfig::defaults(), [
         'dataProvider' => $panel->getUserDataProvider(),
         'filterModel' => $panel->getUsersFilterModel(),
         'tableOptions' => [
-            'class' => 'table table-bordered table-responsive table-hover table-pointer'
+            'class' => 'yii-debug-table yii-debug-table--pointer',
         ],
-        'pager' => [
-            'linkContainerOptions' => [
-                'class' => 'page-item'
-            ],
-            'linkOptions' => [
-                'class' => 'page-link'
-            ],
-            'disabledListItemSubTagOptions' => [
-                'tag' => 'a',
-                'href' => 'javascript:;',
-                'tabindex' => '-1',
-                'class' => 'page-link'
-            ]
-        ],
-        'columns' => $panel->filterColumns
-    ]);
-    yii\widgets\Pjax::end();
+        'columns' => $panel->filterColumns,
+    ]));
+    echo Html::endTag('div');
 }
 ?>

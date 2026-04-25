@@ -1,76 +1,56 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\data\ArrayDataProvider;
-use yii\debug\models\search\Log;
-use yii\debug\panels\LogPanel;
+/** @var yii\debug\panels\LogPanel $panel */
+/** @var yii\debug\models\search\Log $searchModel */
+/** @var yii\data\ArrayDataProvider $dataProvider */
+
+use yii\debug\GridViewConfig;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\VarDumper;
 use yii\log\Logger;
 
-/**
- * @var ArrayDataProvider $dataProvider
- * @var Log $searchModel
- * @var LogPanel $panel
- */
+$levelToVariant = [
+    Logger::LEVEL_ERROR => 'danger',
+    Logger::LEVEL_WARNING => 'warning',
+    Logger::LEVEL_INFO => 'info',
+];
+
 ?>
     <h1>Log Messages</h1>
 <?php
-echo GridView::widget([
+echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $dataProvider,
     'id' => 'log-panel-detailed-grid',
-    'options' => ['class' => ['detail-grid-view', 'table-responsive', 'logs-messages-table']],
+    'options' => ['class' => 'yii-debug-grid yii-debug-grid--log'],
     'filterModel' => $searchModel,
     'filterUrl' => $panel->getUrl(),
-    'rowOptions' => static function ($model) {
-        $options = [
-            'id' => 'log-' . $model['id']
-        ];
-        switch ($model['level']) {
-            case Logger::LEVEL_ERROR : Html::addCssClass($options, 'table-danger'); break;
-            case Logger::LEVEL_WARNING : Html::addCssClass($options, 'table-warning'); break;
-            case Logger::LEVEL_INFO : Html::addCssClass($options, 'table-success'); break;
+    'rowOptions' => static function ($model) use ($levelToVariant) {
+        $options = ['id' => 'log-' . $model['id']];
+        $variant = $levelToVariant[$model['level']] ?? null;
+        if ($variant !== null) {
+            Html::addCssClass($options, 'yii-debug-row--' . $variant);
         }
         return $options;
     },
-    'pager' => [
-        'linkContainerOptions' => [
-            'class' => 'page-item'
-        ],
-        'linkOptions' => [
-            'class' => 'page-link'
-        ],
-        'disabledListItemSubTagOptions' => [
-            'tag' => 'a',
-            'href' => 'javascript:;',
-            'tabindex' => '-1',
-            'class' => 'page-link'
-        ]
-    ],
     'columns' => [
         [
             'attribute' => 'id',
             'label' => '#',
-            'contentOptions' => [
-                'class' => 'word-break-keep'
-            ]
+            'contentOptions' => ['class' => 'yii-debug-nowrap'],
         ],
         [
             'attribute' => 'time',
             'value' => static function ($data) {
                 $timeInSeconds = $data['time'] / 1000;
-                $millisecondsDiff = (int)(($timeInSeconds - (int)$timeInSeconds) * 1000);
+                $millisecondsDiff = (int) (($timeInSeconds - (int) $timeInSeconds) * 1000);
 
                 return date('H:i:s.', (int) $timeInSeconds) . sprintf('%03d', $millisecondsDiff);
             },
-            'headerOptions' => [
-                'class' => 'sort-numerical'
-            ],
-            'contentOptions' => [
-                'class' => 'word-break-keep'
-            ]
+            'headerOptions' => ['class' => 'sort-numerical'],
+            'contentOptions' => ['class' => 'yii-debug-nowrap'],
         ],
         [
             'attribute' => 'time_since_previous',
@@ -80,10 +60,10 @@ echo GridView::widget([
                 $diffInMinutes = $diffInSeconds / 60;
                 $diffInHours = $diffInMinutes / 60;
 
-                $diffMs = (int)$diffInMs % 1000;
-                $diffSeconds = (int)$diffInSeconds % 60;
-                $diffMinutes = (int)$diffInMinutes % 60;
-                $diffHours = (int)$diffInHours;
+                $diffMs = (int) $diffInMs % 1000;
+                $diffSeconds = (int) $diffInSeconds % 60;
+                $diffMinutes = (int) $diffInMinutes % 60;
+                $diffHours = (int) $diffInHours;
 
                 $formattedDiff = [];
                 if ($diffHours > 0) {
@@ -98,29 +78,24 @@ echo GridView::widget([
                 $formattedDiff[] = $diffMs . 'ms';
                 $formattedDiff = implode('&nbsp;', $formattedDiff);
 
+                $btnClass = 'yii-debug-since-previous__btn';
+
                 if ($data['id_of_previous'] === null) {
-                    $previous = Html::tag('span', '< ', ['class' => 'button']);
+                    $previous = Html::tag('span', '<', ['class' => $btnClass . ' is-disabled']);
                 } else {
-                    $previous = Html::a('< ', '#log-' . $data['id_of_previous'], ['class' => 'button']);
+                    $previous = Html::a('<', '#log-' . $data['id_of_previous'], ['class' => $btnClass]);
                 }
 
                 if ($data['id_of_next'] === null) {
-                    $next = Html::tag('span', ' >', ['class' => 'button']);
+                    $next = Html::tag('span', '>', ['class' => $btnClass . ' is-disabled']);
                 } else {
-                    $next = Html::a(' >', '#log-' . $data['id_of_next'], ['class' => 'button']);
+                    $next = Html::a('>', '#log-' . $data['id_of_next'], ['class' => $btnClass]);
                 }
 
-                return
-                    '<div class="since-previous">' .
-                    $previous .
-                    $formattedDiff .
-                    $next .
-                    '</div>';
+                return '<div class="yii-debug-since-previous">' . $previous . '<span>' . $formattedDiff . '</span>' . $next . '</div>';
             },
             'format' => 'raw',
-            'headerOptions' => [
-                'class' => 'sort-numerical'
-            ]
+            'headerOptions' => ['class' => 'sort-numerical'],
         ],
         [
             'attribute' => 'level',
@@ -141,18 +116,16 @@ echo GridView::widget([
                 $message = Html::encode(is_string($data['message']) ? $data['message'] : VarDumper::export($data['message']));
                 if (!empty($data['trace'])) {
                     $message .= Html::ul($data['trace'], [
-                        'class' => 'trace',
+                        'class' => 'yii-debug-trace',
                         'item' => static function ($trace) use ($panel) {
                             return '<li>' . $panel->getTraceLine($trace) . '</li>';
-                        }
+                        },
                     ]);
                 }
                 return $message;
             },
             'format' => 'raw',
-            'options' => [
-                'width' => '50%',
-            ],
+            'options' => ['width' => '50%'],
         ],
     ],
-]);
+]));

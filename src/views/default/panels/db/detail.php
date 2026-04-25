@@ -1,30 +1,25 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\data\ArrayDataProvider;
-use yii\debug\models\search\Db;
-use yii\debug\panels\DbPanel;
 use yii\helpers\Html;
 use yii\web\View;
 
-/**
- * @var ArrayDataProvider $callerDataProvider
- * @var ArrayDataProvider $queryDataProvider
- * @var bool $hasExplain
- * @var Db $searchModel
- * @var DbPanel $panel
- * @var int $sumDuplicates
- * @var View $this
- */
+/** @var yii\debug\panels\DbPanel $panel */
+/** @var yii\debug\models\search\Db $searchModel */
+/** @var yii\data\ArrayDataProvider $queryDataProvider */
+/** @var yii\data\ArrayDataProvider $callerDataProvider */
+/** @var bool $hasExplain */
+/** @var int $sumDuplicates */
+/** @var View $this */
+
 ?>
 
 <h1><?= Html::encode($panel->getName()) ?></h1>
 
 <?php
-
 if (Yii::$app->log->traceLevel < 1) {
-    echo "<div class=\"callout callout-warning\">Check application configuration section [log] for <b>traceLevel</b></div>";
+    echo '<div class="yii-debug-callout yii-debug-callout--warning">Check application configuration section [log] for <b>traceLevel</b></div>';
 }
 
 if ($sumDuplicates === 1) {
@@ -36,10 +31,9 @@ if ($sumDuplicates === 1) {
 
 $excessiveCallers = $panel->getExcessiveCallers();
 $numExcessiveCallers = count($excessiveCallers);
-
 if ($numExcessiveCallers) {
     $excessiveCallersInfo = "<p><b>$numExcessiveCallers</b> excessive caller" . ($numExcessiveCallers > 1 ? 's' : '')
-        . ' making '. array_sum($excessiveCallers) .' cals.</p>';
+        . ' making ' . array_sum($excessiveCallers) . ' cals.</p>';
 
     echo $excessiveCallersInfo;
 }
@@ -56,10 +50,10 @@ $items['content'][] = $this->render('queries', [
 ]);
 
 $items['nav'][] = 'Callers' . (
-        !empty($excessiveCallersInfo)
+    !empty($excessiveCallersInfo)
             ? ' ' . Html::tag('span', '&#x26a0;', ['title' => strip_tags($excessiveCallersInfo)])
             : ''
-    );
+);
 $items['content'][] = $this->render('callers', [
     'panel' => $panel,
     'searchModel' => $searchModel,
@@ -69,32 +63,32 @@ $items['content'][] = $this->render('callers', [
 ]);
 
 ?>
-<ul class="nav nav-tabs">
+<ul class="yii-debug-tabs">
     <?php
     foreach ($items['nav'] as $k => $item) {
         echo Html::tag(
             'li',
             Html::a($item, '#u-tab-' . $k, [
-                'class' => $k === 0 ? 'nav-link active' : 'nav-link',
-                'data-toggle' => 'tab',
+                'class' => $k === 0 ? 'yii-debug-tab__link is-active' : 'yii-debug-tab__link',
+                'data-yii-debug-toggle' => 'tab',
                 'role' => 'tab',
                 'aria-controls' => 'u-tab-' . $k,
-                'aria-selected' => $k === 0 ? 'true' : 'false'
+                'aria-selected' => $k === 0 ? 'true' : 'false',
             ]),
             [
-                'class' => 'nav-item'
-            ]
+                'class' => 'yii-debug-tab',
+            ],
         );
     }
-    ?>
+?>
 </ul>
-<div class="tab-content">
+<div class="yii-debug-tab-content">
     <?php
-    foreach ($items['content'] as $k => $item) {
-        echo Html::tag('div', $item, [
-            'class' => $k === 0 ? 'tab-pane fade active show' : 'tab-pane fade',
-            'id' => 'u-tab-' . $k
-        ]);
-    }
-    ?>
+foreach ($items['content'] as $k => $item) {
+    echo Html::tag('div', $item, [
+        'class' => $k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel',
+        'id' => 'u-tab-' . $k,
+    ]);
+}
+?>
 </div>

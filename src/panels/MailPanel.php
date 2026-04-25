@@ -4,36 +4,26 @@ declare(strict_types=1);
 
 /**
  * @link https://www.yiiframework.com/
- *
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\debug\panels;
 
-use Symfony\Component\Mime\Part\TextPart;
 use Yii;
 use yii\base\Event;
 use yii\debug\models\search\Mail;
 use yii\debug\Panel;
 use yii\helpers\FileHelper;
 use yii\mail\BaseMailer;
-use yii\mail\MailEvent;
 use yii\mail\MessageInterface;
-
-use function array_keys;
-use function count;
-use function file_put_contents;
-use function implode;
-use function is_array;
 
 /**
  * Debugger panel that collects and displays the generated emails.
  *
- * @property array $messagesFileName
+ * @property-read array $messagesFileName
  *
  * @author Mark Jebri <mark.github@yandex.ru>
- *
  * @since 2.0
  */
 class MailPanel extends Panel
@@ -41,19 +31,64 @@ class MailPanel extends Panel
     /**
      * @var string path where all emails will be saved. should be an alias.
      */
-    public string $mailPath = '@runtime/debug/mail';
+    public $mailPath = '@runtime/debug/mail';
 
     /**
      * @var array current request sent messages
      */
-    private array $_messages = [];
+    private $_messages = [];
 
-    public function init(): void
+    public function getDetail()
+    {
+        $searchModel = new Mail();
+        $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->data);
+
+        return Yii::$app->view->render('panels/mail/detail', [
+            'panel' => $this,
+            'dataProvider' => $dataProvider,
+            'searchModel' => $searchModel,
+        ]);
+    }
+
+    /**
+     * Return array of created email files
+     * @return array
+     */
+    public function getMessagesFileName()
+    {
+        $names = [];
+        foreach ($this->_messages as $message) {
+            $names[] = $message['file'];
+        }
+
+        return $names;
+    }
+
+    public function getName()
+    {
+        return 'Mail';
+    }
+
+    public function getSummary()
+    {
+        return Yii::$app->view->render('panels/mail/summary', [
+            'panel' => $this,
+            'mailCount' => is_array($this->data) ? count($this->data) : '⚠',
+        ]);
+    }
+
+    public function getToolbarIcon()
+    {
+        return 'mail';
+    }
+
+
+    public function init()
     {
         parent::init();
 
-        Event::on(BaseMailer::class, BaseMailer::EVENT_AFTER_SEND, function ($event) {
-            /** @var MailEvent $event */
+        Event::on('yii\mail\BaseMailer', BaseMailer::EVENT_AFTER_SEND, function ($event) {
+            /** @var \yii\mail\MailEvent $event */
             $message = $event->message;
             /** @var MessageInterface $message */
             $messageData = [
@@ -80,82 +115,56 @@ class MailPanel extends Panel
         });
     }
 
-    public function getName(): string
-    {
-        return 'Mail';
-    }
-
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render('panels/mail/summary', [
-            'panel' => $this,
-            'mailCount' => is_array($this->data) ? count($this->data) : '⚠',
-        ]);
-    }
-
-    public function getDetail(): string
-    {
-        $searchModel = new Mail();
-        $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->data);
-
-        return Yii::$app->view->render('panels/mail/detail', [
-            'panel' => $this,
-            'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel,
-        ]);
-    }
-
     /**
-     * Save info about messages of current request. Each element is array holding message info, such as: time, reply,
-     * bc, cc, from, to and other.     */
-    public function save(): array
+     * Save info about messages of current request. Each element is array holding
+     * message info, such as: time, reply, bc, cc, from, to and other.
+     * @return array messages
+     */
+    public function save()
     {
         return $this->_messages;
     }
 
     /**
-     * Return array of created email files.
+     * @return array<int, array<string, mixed>>|null
      */
-    public function getMessagesFileName(): array
+    protected function getToolbarItems()
     {
-        $names = [];
-        foreach ($this->_messages as $message) {
-            $names[] = $message['file'];
+        if (!is_array($this->data)) {
+            return [
+                [
+                    'value' => '!',
+                    'status' => 'warning',
+                ],
+            ];
         }
 
-        return $names;
-    }
+        $mailCount = count($this->data);
 
-    private function convertParams(mixed $attr): string
-    {
-        if (is_array($attr)) {
-            $attr = implode(', ', array_keys($attr));
+        if ($mailCount === 0) {
+            return null;
         }
 
-        if (is_string($attr) === false) {
-            $attr = (string) $attr;
-        }
-
-        return $attr;
+        return [
+            [
+                'value' => $mailCount,
+            ],
+        ];
     }
 
-    private function addMoreInformation(MessageInterface $message, array &$messageData): void
-    {
-        $this->addMoreInformationFromSymfonyMailer($message, $messageData);
-    }
-
-    private function addMoreInformationFromSymfonyMailer(MessageInterface $message, array &$messageData): void
+    private function addMoreInformation(MessageInterface $message, array &$messageData)
     {
         if (!$message instanceof \yii\symfonymailer\Message) {
             return;
         }
 
+        /** @var \Symfony\Component\Mime\Email $symfonyMessage */
         $symfonyMessage = $message->getSymfonyEmail();
+
+        /** @var \Symfony\Component\Mime\Part\AbstractPart $part */
         $part = $symfonyMessage->getBody();
-
         $body = null;
-
-        if ($part instanceof TextPart && 'plain' === $part->getMediaSubtype()) {
+        if ($part instanceof \Symfony\Component\Mime\Part\TextPart && 'plain' === $part->getMediaSubtype()) {
             $messageData['charset'] = $part->asDebugString();
             $body = $part->getBody();
         }
@@ -163,5 +172,18 @@ class MailPanel extends Panel
         $messageData['body'] = $body;
         $messageData['headers'] = $part->getPreparedHeaders()->toString();
         $messageData['time'] = $symfonyMessage->getDate();
+    }
+
+    /**
+     * @param mixed $attr
+     * @return string
+     */
+    private function convertParams($attr)
+    {
+        if (is_array($attr)) {
+            $attr = implode(', ', array_keys($attr));
+        }
+
+        return $attr;
     }
 }
