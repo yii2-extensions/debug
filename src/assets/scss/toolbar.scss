@@ -1,704 +1,832 @@
 #yii-debug-toolbar-logo {
-    position: fixed;
-    right: 31px;
-    bottom: 4px;
+  position: fixed;
+  right: 31px;
+  bottom: 4px;
 }
 
 @media print {
-    .yii-debug-toolbar {
-        display: none !important;
-    }
+  .yii-debug-toolbar {
+    display: none !important;
+  }
 }
 
 .yii-debug-toolbar {
-    font: 11px Verdana, Arial, sans-serif;
-    text-align: left;
-    width: 96px;
-    transition: width .3s ease;
-    z-index: 1000000;
+  font:
+    11px Verdana,
+    Arial,
+    sans-serif;
+  text-align: left;
+  width: 96px;
+  transition: width 0.3s ease;
+  z-index: 1000000;
 
-
-    &.yii-debug-toolbar-active {
-        &:not(.yii-debug-toolbar-animating) {
-            .yii-debug-toolbar-bar {
-                overflow: visible;
-                user-select: none;
-            }
-        }
+  &.yii-debug-toolbar-active {
+    &:not(.yii-debug-toolbar-animating) {
+      .yii-debug-toolbar-bar {
+        overflow: visible;
+        user-select: none;
+      }
     }
+  }
 
-    &.yii-debug-toolbar-iframe-active {
-        &:not(.yii-debug-toolbar-animating) {
-            .yii-debug-toolbar-resize-handle {
-                display: block;
-                height: 4px;
-                cursor: ns-resize;
-                margin-bottom: 0;
-                z-index: 1000001;
-                position: absolute;
-                left: 0;
-                right: 0;
-            }
-        }
+  &.yii-debug-toolbar-iframe-active {
+    &:not(.yii-debug-toolbar-animating) {
+      .yii-debug-toolbar-resize-handle {
+        display: block;
+        height: 4px;
+        cursor: ns-resize;
+        margin-bottom: 0;
+        z-index: 1000001;
+        position: absolute;
+        left: 0;
+        right: 0;
+      }
     }
+  }
 
-    &:not(.yii-debug-toolbar-active) .yii-debug-toolbar-bar,
-    &.yii-debug-toolbar-animating .yii-debug-toolbar-bar {
-        height: 40px;
-    }
+  &:not(.yii-debug-toolbar-active) .yii-debug-toolbar-bar,
+  &.yii-debug-toolbar-animating .yii-debug-toolbar-bar {
+    height: 40px;
+  }
 }
 
 .yii-debug-toolbar-active {
-    width: 100%;
+  width: 100%;
 
-    .yii-debug-toolbar-toggle-icon {
-        transform: rotate(0);
-    }
+  .yii-debug-toolbar-toggle-icon {
+    transform: rotate(0);
+  }
 }
 
 .yii-debug-toolbar-position-top {
-    margin: 0 0 20px;
-    width: 100%;
+  margin: 0 0 20px;
+  width: 100%;
 }
 
 .yii-debug-toolbar-position-bottom {
-    position: fixed;
-    right: 0;
-    bottom: 0;
-    margin: 0;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  margin: 0;
 }
 
 .yii-debug-toolbar-position-upper {
-    position: fixed;
-    right: 0;
-    top: 0;
-    margin: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  margin: 0;
 }
 
 .yii-debug-toolbar-position-upper.yii-debug-toolbar-iframe-active {
-    border-bottom: 1px solid rgb(0 0 0 / 11%);
+  border-bottom: 1px solid rgb(0 0 0 / 11%);
 
-    .yii-debug-toolbar-toggle-icon {
-        transform: rotate(-90deg);
-    }
+  .yii-debug-toolbar-toggle-icon {
+    transform: rotate(-90deg);
+  }
 }
 
 .yii-debug-toolbar-bar {
-    position: relative;
-    padding: 0;
-    font: 11px Verdana, Arial, sans-serif;
-    text-align: left;
-    overflow: hidden;
-    box-sizing: content-box;
-    display: flex;
-    flex-wrap: wrap;
-    background: linear-gradient(to bottom, rgb(255 255 255) 0%, rgb(247 247 247) 100%);
-    border: 1px solid rgb(0 0 0 / 11%);
+  position: relative;
+  padding: 0;
+  font:
+    11px Verdana,
+    Arial,
+    sans-serif;
+  text-align: left;
+  overflow: hidden;
+  box-sizing: content-box;
+  display: flex;
+  flex-wrap: wrap;
+  background: linear-gradient(
+    to bottom,
+    rgb(255 255 255) 0%,
+    rgb(247 247 247) 100%
+  );
+  border: 1px solid rgb(0 0 0 / 11%);
 
-    /* ensure debug toolbar text is displayed ltr even on rtl pages */
-    direction: ltr;
+  /* ensure debug toolbar text is displayed ltr even on rtl pages */
+  direction: ltr;
 
-    &::after {
-        content: '';
-        display: table;
-        clear: both;
-    }
+  &::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
 }
 
 .yii-debug-toolbar-view {
-    height: 0;
-    overflow: hidden;
-    background: white;
+  height: 0;
+  overflow: hidden;
+  background: white;
 
-    iframe {
-        margin: 0;
-        padding: 10px 0 0;
-        height: 100%;
-        width: 100%;
-        border: 0;
-    }
+  iframe {
+    margin: 0;
+    padding: 10px 0 0;
+    height: 100%;
+    width: 100%;
+    border: 0;
+  }
 }
 
 .yii-debug-toolbar-iframe-active {
-    .yii-debug-toolbar-view {
-        height: 100%;
-    }
+  .yii-debug-toolbar-view {
+    height: 100%;
+  }
 
-    .yii-debug-toolbar-toggle-icon {
-        transform: rotate(90deg);
-    }
+  .yii-debug-toolbar-toggle-icon {
+    transform: rotate(90deg);
+  }
 
-    .yii-debug-toolbar-external {
-        display: block;
-    }
+  .yii-debug-toolbar-external {
+    display: block;
+  }
 }
 
 .yii-debug-toolbar-iframe-animating {
-    .yii-debug-toolbar-view {
-        transition: height .3s ease;
-    }
+  .yii-debug-toolbar-view {
+    transition: height 0.3s ease;
+  }
 }
 
 .yii-debug-toolbar-block {
-    margin: 0;
-    border-right: 1px solid rgb(0 0 0 / 11%);
-    border-bottom: 1px solid rgb(0 0 0 / 11%);
-    padding: 4px 8px;
-    line-height: 32px;
-    white-space: nowrap;
+  margin: 0;
+  border-right: 1px solid rgb(0 0 0 / 11%);
+  border-bottom: 1px solid rgb(0 0 0 / 11%);
+  padding: 4px 8px;
+  line-height: 32px;
+  white-space: nowrap;
 
-    @media (width <= 575.98px) {
-        flex-grow: 1;
-        text-align: center;
-    }
+  @media (width <= 575.98px) {
+    flex-grow: 1;
+    text-align: center;
+  }
 
-    a {
-        display: inline-block;
-        text-decoration: none;
-        color: black;
-    }
+  a {
+    display: inline-block;
+    text-decoration: none;
+    color: black;
+  }
 
-    img {
-        vertical-align: middle;
-        width: 30px;
-        height: 30px;
-    }
+  img {
+    vertical-align: middle;
+    width: 30px;
+    height: 30px;
+  }
 }
 
 .yii-debug-toolbar-block-active,
 .yii-debug-toolbar-ajax:hover {
-    background: linear-gradient(to bottom, rgb(247 247 247) 0%, rgb(224 224 224) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgb(247 247 247) 0%,
+    rgb(224 224 224) 100%
+  );
 }
 
 .yii-debug-toolbar-label {
-    display: inline-block;
-    padding: 2px 4px;
-    font-size: 12px;
-    font-weight: normal;
-    line-height: 14px;
-    white-space: nowrap;
-    vertical-align: middle;
-    max-width: 100px;
-    overflow-x: hidden;
-    text-overflow: ellipsis;
-    color: #fff;
-    text-shadow: 0 -1px 0 rgb(0 0 0 / 25%);
-    background-color: #737373;
-    border-radius: 3px;
+  display: inline-block;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 14px;
+  white-space: nowrap;
+  vertical-align: middle;
+  max-width: 100px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  text-shadow: 0 -1px 0 rgb(0 0 0 / 25%);
+  background-color: #737373;
+  border-radius: 3px;
 
-    &:empty {
-        display: none;
-    }
+  &:empty {
+    display: none;
+  }
 }
 
 a.yii-debug-toolbar-label:hover,
 a.yii-debug-toolbar-label:focus {
-    color: #fff;
-    text-decoration: none;
-    cursor: pointer;
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .yii-debug-toolbar-label-important,
 .yii-debug-toolbar-label-error {
-    background-color: #b94a48;
+  background-color: #b94a48;
 }
 
 .yii-debug-toolbar-label-important[href] {
-    background-color: #953b39;
+  background-color: #953b39;
 }
 
 .yii-debug-toolbar-label-warning,
 .yii-debug-toolbar-badge-warning {
-    background-color: #f89406;
+  background-color: #f89406;
 }
 
 .yii-debug-toolbar-label-warning[href] {
-    background-color: #c67605;
+  background-color: #c67605;
 }
 
 .yii-debug-toolbar-label-success {
-    background-color: #217822;
+  background-color: #217822;
 
-    &[href] {
-        background-color: #356635;
-    }
+  &[href] {
+    background-color: #356635;
+  }
 }
 
 .yii-debug-toolbar-label-info {
-    background-color: #0b72b8;
+  background-color: #0b72b8;
 
-    &[href] {
-        background-color: #2d6987;
-    }
+  &[href] {
+    background-color: #2d6987;
+  }
 }
 
 .yii-debug-toolbar-label-inverse,
 .yii-debug-toolbar-badge-inverse {
-    background-color: #333;
+  background-color: #333;
 
-    &[href] {
-        background-color: #1a1a1a;
-    }
+  &[href] {
+    background-color: #1a1a1a;
+  }
 }
 
 .yii-debug-toolbar-title {
-    background: linear-gradient(to bottom, rgb(247 247 247) 0%, rgb(224 224 224) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgb(247 247 247) 0%,
+    rgb(224 224 224) 100%
+  );
 }
 
-.yii-debug-toolbar-block-last { /* creates space for .yii-debug-toolbar-toggle, .yii-debug-toolbar-external */
-    width: 80px;
-    height: 40px;
-    float: left;
+.yii-debug-toolbar-block-last {
+  /* creates space for .yii-debug-toolbar-toggle, .yii-debug-toolbar-external */
+  width: 80px;
+  height: 40px;
+  float: left;
 }
 
 .yii-debug-toolbar-toggle,
 .yii-debug-toolbar-external {
-    cursor: pointer;
-    position: absolute;
-    width: 30px;
-    height: 30px;
-    font-size: 25px;
-    font-weight: 100;
-    line-height: 28px;
-    color: #fff;
-    text-align: center;
-    opacity: 0.5;
-    filter: alpha(opacity=50);
-    transition: opacity .3s ease;
+  cursor: pointer;
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  font-size: 25px;
+  font-weight: 100;
+  line-height: 28px;
+  color: #fff;
+  text-align: center;
+  opacity: 0.5;
+  filter: alpha(opacity=50);
+  transition: opacity 0.3s ease;
 
-    &:hover, &:focus {
-        color: #fff;
-        text-decoration: none;
-        opacity: 0.9;
-        filter: alpha(opacity=90);
-    }
+  &:hover,
+  &:focus {
+    color: #fff;
+    text-decoration: none;
+    opacity: 0.9;
+    filter: alpha(opacity=90);
+  }
 }
 
 .yii-debug-toolbar-toggle-icon,
 .yii-debug-toolbar-external-icon {
-    display: inline-block;
-    background-position: 50% 50%;
-    background-repeat: no-repeat;
+  display: inline-block;
+  background-position: 50% 50%;
+  background-repeat: no-repeat;
 }
 
 .yii-debug-toolbar-toggle {
-    right: 10px;
-    bottom: 4px;
+  right: 10px;
+  bottom: 4px;
 
-    &-icon {
-        padding: 7px 0;
-        width: 10px;
-        height: 16px;
-        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDUwIDUwIj48cGF0aCBmaWxsPSIjNDQ0IiBkPSJNMTUuNTYzIDQwLjgzNmEuOTk3Ljk5NyAwIDAgMCAxLjQxNCAwbDE1LTE1YTEgMSAwIDAgMCAwLTEuNDE0bC0xNS0xNWExIDEgMCAwIDAtMS40MTQgMS40MTRMMjkuODU2IDI1LjEzIDE1LjU2MyAzOS40MmExIDEgMCAwIDAgMCAxLjQxNHoiLz48L3N2Zz4=');
-        transition: transform .3s ease-out;
-        transform: rotate(180deg);
-    }
+  &-icon {
+    padding: 7px 0;
+    width: 10px;
+    height: 16px;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDUwIDUwIj48cGF0aCBmaWxsPSIjNDQ0IiBkPSJNMTUuNTYzIDQwLjgzNmEuOTk3Ljk5NyAwIDAgMCAxLjQxNCAwbDE1LTE1YTEgMSAwIDAgMCAwLTEuNDE0bC0xNS0xNWExIDEgMCAwIDAtMS40MTQgMS40MTRMMjkuODU2IDI1LjEzIDE1LjU2MyAzOS40MmExIDEgMCAwIDAgMCAxLjQxNHoiLz48L3N2Zz4=");
+    transition: transform 0.3s ease-out;
+    transform: rotate(180deg);
+  }
 }
 
 .yii-debug-toolbar-external {
-    display: none;
-    right: 50px;
-    bottom: 4px;
+  display: none;
+  right: 50px;
+  bottom: 4px;
 
-    &-icon {
-        padding: 8px 0;
-        width: 14px;
-        height: 14px;
-        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDUwIDUwIj48cGF0aCBmaWxsPSIjNDQ0IiBkPSJNMzkuNjQyIDkuNzIyYTEuMDEgMS4wMSAwIDAgMC0uMzgyLS4wNzdIMjguMTAzYTEgMSAwIDAgMCAwIDJoOC43NDNMMjEuNyAyNi43OWExIDEgMCAwIDAgMS40MTQgMS40MTVMMzguMjYgMTMuMDZ2OC43NDNhMSAxIDAgMCAwIDIgMFYxMC42NDZhMS4wMDUgMS4wMDUgMCAwIDAtLjYxOC0uOTI0eiIvPjxwYXRoIGQ9Ik0zOS4yNiAyNy45ODVhMSAxIDAgMCAwLTEgMXYxMC42NmgtMjh2LTI4aDEwLjY4M2ExIDEgMCAwIDAgMC0ySDkuMjZhMSAxIDAgMCAwLTEgMXYzMGExIDEgMCAwIDAgMSAxaDMwYTEgMSAwIDAgMCAxLTF2LTExLjY2YTEgMSAwIDAgMC0xLTF6Ii8+PC9zdmc+');
-    }
+  &-icon {
+    padding: 8px 0;
+    width: 14px;
+    height: 14px;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDUwIDUwIj48cGF0aCBmaWxsPSIjNDQ0IiBkPSJNMzkuNjQyIDkuNzIyYTEuMDEgMS4wMSAwIDAgMC0uMzgyLS4wNzdIMjguMTAzYTEgMSAwIDAgMCAwIDJoOC43NDNMMjEuNyAyNi43OWExIDEgMCAwIDAgMS40MTQgMS40MTVMMzguMjYgMTMuMDZ2OC43NDNhMSAxIDAgMCAwIDIgMFYxMC42NDZhMS4wMDUgMS4wMDUgMCAwIDAtLjYxOC0uOTI0eiIvPjxwYXRoIGQ9Ik0zOS4yNiAyNy45ODVhMSAxIDAgMCAwLTEgMXYxMC42NmgtMjh2LTI4aDEwLjY4M2ExIDEgMCAwIDAgMC0ySDkuMjZhMSAxIDAgMCAwLTEgMXYzMGExIDEgMCAwIDAgMSAxaDMwYTEgMSAwIDAgMCAxLTF2LTExLjY2YTEgMSAwIDAgMC0xLTF6Ii8+PC9zdmc+");
+  }
 }
 
 .yii-debug-toolbar-switch-icon {
-    margin-left: 10px;
-    padding: 5px 10px;
-    width: 18px;
-    height: 18px;
-    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDUwIDUwIiB2ZXJzaW9uPSIxLjEiPjxwYXRoIGQ9Im00MS4xIDIzYy0wLjYgMC0xIDAuNC0xIDF2MTAuN2wtMjUuNi0wLjFjMCAwIDAtMiAwLTIuOCAwLTAuOC0wLjctMS0xLTAuNmwtMy41IDMuNWMtMC42IDAuNi0wLjYgMS4zIDAgMmwzLjQgMy40YzAuNCAwLjQgMS4xIDAuMiAxLTAuNmwwLTIuOWMwIDAgMjAuOCAwLjEgMjYuNiAwIDAuNiAwIDEtMC40IDEtMXYtMTEuN2MwLTAuNi0wLjQtMS0xLTF6TTkgMjYuOSA5IDI2LjkgOSAyNi45IDkgMjYuOSIvPjxwYXRoIGQ9Im05IDI2LjljMC42IDAgMS0wLjQgMS0xdi0xMC43bDI1LjYgMC4xYzAgMCAwIDIgMCAyLjggMCAwLjggMC43IDEgMSAwLjZsMy41LTMuNWMwLjYtMC42IDAuNi0xLjMgMC0ybC0zLjQtMy40Yy0wLjQtMC40LTEuMS0wLjItMSAwLjZsMCAyLjljMCAwLTIwLjgtMC4xLTI2LjYgMC0wLjYgMC0xIDAuNC0xIDF2MTEuN2MwIDAuNiAwLjQgMSAxIDF6Ii8+PC9zdmc+');
+  margin-left: 10px;
+  padding: 5px 10px;
+  width: 18px;
+  height: 18px;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDUwIDUwIiB2ZXJzaW9uPSIxLjEiPjxwYXRoIGQ9Im00MS4xIDIzYy0wLjYgMC0xIDAuNC0xIDF2MTAuN2wtMjUuNi0wLjFjMCAwIDAtMiAwLTIuOCAwLTAuOC0wLjctMS0xLTAuNmwtMy41IDMuNWMtMC42IDAuNi0wLjYgMS4zIDAgMmwzLjQgMy40YzAuNCAwLjQgMS4xIDAuMiAxLTAuNmwwLTIuOWMwIDAgMjAuOCAwLjEgMjYuNiAwIDAuNiAwIDEtMC40IDEtMXYtMTEuN2MwLTAuNi0wLjQtMS0xLTF6TTkgMjYuOSA5IDI2LjkgOSAyNi45IDkgMjYuOSIvPjxwYXRoIGQ9Im05IDI2LjljMC42IDAgMS0wLjQgMS0xdi0xMC43bDI1LjYgMC4xYzAgMCAwIDIgMCAyLjggMCAwLjggMC43IDEgMSAwLjZsMy41LTMuNWMwLjYtMC42IDAuNi0xLjMgMC0ybC0zLjQtMy40Yy0wLjQtMC40LTEuMS0wLjItMSAwLjZsMCAyLjljMCAwLTIwLjgtMC4xLTI2LjYgMC0wLjYgMC0xIDAuNC0xIDF2MTEuN2MwIDAuNiAwLjQgMSAxIDF6Ii8+PC9zdmc+");
 }
 
 .yii-debug-toolbar-ajax {
-    position: relative;
+  position: relative;
 
-    &:hover, &:focus {
-        .yii-debug-toolbar-ajax-info {
-            visibility: visible;
-        }
+  &:hover,
+  &:focus {
+    .yii-debug-toolbar-ajax-info {
+      visibility: visible;
+    }
+  }
+
+  a {
+    color: #337ab7;
+  }
+
+  table {
+    width: 100%;
+    table-layout: auto;
+    border-spacing: 0;
+    border-collapse: collapse;
+
+    td {
+      padding: 4px;
+      font-size: 12px;
+      line-height: normal;
+      vertical-align: top;
+      border-top: 1px solid #ddd;
     }
 
-    a {
-        color: #337ab7;
+    th {
+      padding: 4px;
+      font-size: 11px;
+      line-height: normal;
+      vertical-align: bottom;
+      border-bottom: 2px solid #ddd;
     }
-
-    table {
-        width: 100%;
-        table-layout: auto;
-        border-spacing: 0;
-        border-collapse: collapse;
-
-        td {
-            padding: 4px;
-            font-size: 12px;
-            line-height: normal;
-            vertical-align: top;
-            border-top: 1px solid #ddd;
-        }
-
-        th {
-            padding: 4px;
-            font-size: 11px;
-            line-height: normal;
-            vertical-align: bottom;
-            border-bottom: 2px solid #ddd;
-        }
-    }
+  }
 }
 
 .yii-debug-toolbar-ajax-info {
-    visibility: hidden;
-    transition: visibility .2s linear;
-    background-color: white;
-    box-shadow: inset 0 -10px 10px -10px #e1e1e1;
-    position: absolute;
-    bottom: 40px;
-    left: -1px;
-    padding: 10px;
-    max-width: 480px;
-    max-height: 480px;
-    overflow-wrap: break-word;
-    overflow: hidden;
-    overflow-y: auto;
-    box-sizing: border-box;
-    border: 1px solid rgb(0 0 0 / 11%);
-    z-index: 1000001;
+  visibility: hidden;
+  transition: visibility 0.2s linear;
+  background-color: white;
+  box-shadow: inset 0 -10px 10px -10px #e1e1e1;
+  position: absolute;
+  bottom: 40px;
+  left: -1px;
+  padding: 10px;
+  max-width: 480px;
+  max-height: 480px;
+  overflow-wrap: break-word;
+  overflow: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  border: 1px solid rgb(0 0 0 / 11%);
+  z-index: 1000001;
 }
 
 .yii-debug-toolbar-ajax-request-status {
-    color: white;
-    padding: 2px 5px;
+  color: white;
+  padding: 2px 5px;
 }
 
 .yii-debug-toolbar-ajax-request-url {
-    max-width: 170px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Modern standalone debugger toolbar theme. */
 #yii-debug-toolbar.yii-debug-toolbar-position-top {
-    position: sticky;
-    top: 0;
-    right: auto;
-    left: auto;
-    z-index: 30;
-    width: auto;
-    margin: -16px -16px 16px;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  position: sticky;
+  top: 0;
+  right: auto;
+  left: auto;
+  z-index: 30;
+  width: auto;
+  margin: -16px -16px 16px;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-bar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    min-height: 46px;
-    padding: 6px 16px;
-    border: 0;
-    border-bottom: 1px solid rgb(148 163 184 / 20%);
-    background:
-        radial-gradient(circle at top left, rgb(56 189 248 / 24%), transparent 22rem),
-        rgb(15 23 42 / 96%);
-    box-shadow: 0 18px 40px rgb(15 23 42 / 18%);
-    color: #e5edf7;
-    overflow: visible;
-    backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 46px;
+  padding: 6px 16px;
+  border: 0;
+  border-bottom: 1px solid rgb(148 163 184 / 20%);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgb(56 189 248 / 24%),
+      transparent 22rem
+    ),
+    rgb(15 23 42 / 96%);
+  box-shadow: 0 18px 40px rgb(15 23 42 / 18%);
+  color: #e5edf7;
+  overflow: visible;
+  backdrop-filter: blur(16px);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    min-height: 30px;
-    margin: 0;
-    padding: 4px 8px;
-    border: 1px solid rgb(148 163 184 / 18%);
-    border-radius: 999px;
-    background: rgb(255 255 255 / 8%);
-    color: #e5edf7;
-    line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid rgb(148 163 184 / 18%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 8%);
+  color: #e5edf7;
+  line-height: 1.2;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block:last-child {
-    margin-right: 0;
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block:last-child {
+  margin-right: 0;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block:hover,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block:focus-within {
-    border-color: rgb(125 211 252 / 50%);
-    background: rgb(14 165 233 / 16%);
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block:hover,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block:focus-within {
+  border-color: rgb(125 211 252 / 50%);
+  background: rgb(14 165 233 / 16%);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block a {
-    color: #f8fafc;
-    text-decoration: none;
+  color: #f8fafc;
+  text-decoration: none;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block a:hover,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block a:focus {
-    color: #7dd3fc;
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block
+  a:hover,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block
+  a:focus {
+  color: #7dd3fc;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-title {
-    padding: 0 8px 0 0;
-    border-right: 1px solid rgb(148 163 184 / 24%);
-    background: transparent;
+  padding: 0 8px 0 0;
+  border-right: 1px solid rgb(148 163 184 / 24%);
+  background: transparent;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-title img {
-    width: 32px;
-    height: 32px;
-    filter: drop-shadow(0 8px 18px rgb(14 165 233 / 28%));
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 8px 18px rgb(14 165 233 / 28%));
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value {
-    padding: 2px 0;
-    border: 0;
-    background: transparent;
-    color: #e5edf7;
-    font-size: 12px;
-    line-height: 1.2;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #e5edf7;
+  font-size: 12px;
+  line-height: 1.2;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label {
-    color: #cbd5e1;
+  color: #cbd5e1;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value {
-    font-weight: 720;
+  font-weight: 720;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value.yii-debug-toolbar-label-info,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-value.yii-debug-toolbar-label-info,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-info,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-info {
-    border-radius: 999px;
-    background: #0284c7;
-    color: #fff;
+  border-radius: 999px;
+  background: #0284c7;
+  color: #fff;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value.yii-debug-toolbar-label-success,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-success,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-value.yii-debug-toolbar-label-success,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-success,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-success {
-    border-radius: 999px;
-    background: #059669;
-    color: #fff;
+  border-radius: 999px;
+  background: #059669;
+  color: #fff;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value.yii-debug-toolbar-label-warning,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-warning,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-value.yii-debug-toolbar-label-warning,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-warning,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-warning {
-    border-radius: 999px;
-    background: #d97706;
-    color: #111827;
+  border-radius: 999px;
+  background: #d97706;
+  color: #111827;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value.yii-debug-toolbar-label-danger,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-danger,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-value.yii-debug-toolbar-label-danger,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-danger,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-danger {
-    border-radius: 999px;
-    background: #dc2626;
-    color: #fff;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-ajax-info {
-    top: 38px;
-    bottom: auto;
-    left: 0;
-    border: 1px solid var(--yii-debug-panel-border, rgb(148 163 184 / 28%));
-    border-radius: 14px;
-    background: var(--yii-debug-panel-surface, #fff);
-    box-shadow: var(--yii-debug-panel-shadow, 0 22px 60px rgb(15 23 42 / 12%));
-    color: var(--yii-debug-panel-text, #0f172a);
+  top: 38px;
+  bottom: auto;
+  left: 0;
+  border: 1px solid var(--yii-debug-panel-border, rgb(148 163 184 / 28%));
+  border-radius: 14px;
+  background: var(--yii-debug-panel-surface, #fff);
+  box-shadow: var(--yii-debug-panel-shadow, 0 22px 60px rgb(15 23 42 / 12%));
+  color: var(--yii-debug-panel-text, #0f172a);
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-ajax-info table td,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-ajax-info table th {
-    border-color: var(--yii-debug-panel-border, rgb(148 163 184 / 28%));
-    color: var(--yii-debug-panel-text, #0f172a);
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-ajax-info
+  table
+  td,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-ajax-info
+  table
+  th {
+  border-color: var(--yii-debug-panel-border, rgb(148 163 184 / 28%));
+  color: var(--yii-debug-panel-text, #0f172a);
 }
 
 @media (width <= 767.98px) {
-    #yii-debug-toolbar.yii-debug-toolbar-position-top {
-        margin: -8px -8px 12px;
-    }
+  #yii-debug-toolbar.yii-debug-toolbar-position-top {
+    margin: -8px -8px 12px;
+  }
 
-    #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-bar {
-        gap: 4px;
-        padding: 6px 8px;
-    }
+  #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-bar {
+    gap: 4px;
+    padding: 6px 8px;
+  }
 
-    #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block {
-        min-height: 28px;
-        padding: 4px 7px;
-    }
+  #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block {
+    min-height: 28px;
+    padding: 4px 7px;
+  }
 }
 
 /* Pico-like standalone toolbar action refinements. */
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-bar {
-    gap: 8px;
-    padding: 7px 16px;
-    background:
-        radial-gradient(circle at top left, rgb(56 189 248 / 28%), transparent 22rem),
-        linear-gradient(180deg, rgb(15 23 42 / 96%), rgb(15 23 42 / 91%));
+  gap: 8px;
+  padding: 7px 16px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgb(56 189 248 / 28%),
+      transparent 22rem
+    ),
+    linear-gradient(180deg, rgb(15 23 42 / 96%), rgb(15 23 42 / 91%));
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block {
-    gap: 6px;
-    min-height: 34px;
-    padding: 5px 10px;
-    border-color: rgb(148 163 184 / 22%);
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgb(30 41 59 / 88%), rgb(15 23 42 / 76%));
-    box-shadow: 0 1px 0 rgb(255 255 255 / 8%) inset, 0 10px 26px rgb(2 6 23 / 18%);
-    transition: transform .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease, color .16s ease;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 10px;
+  border-color: rgb(148 163 184 / 22%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(30 41 59 / 88%), rgb(15 23 42 / 76%));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 8%) inset,
+    0 10px 26px rgb(2 6 23 / 18%);
+  transition:
+    transform 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    color 0.16s ease;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block:hover,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block:focus-within {
-    border-color: rgb(56 189 248 / 68%);
-    background: linear-gradient(180deg, rgb(14 116 144 / 42%), rgb(15 23 42 / 78%));
-    box-shadow: 0 1px 0 rgb(255 255 255 / 10%) inset, 0 14px 32px rgb(14 165 233 / 18%), 0 0 0 3px rgb(14 165 233 / 12%);
-    transform: translateY(-1px);
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block:hover,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block:focus-within {
+  border-color: rgb(56 189 248 / 68%);
+  background: linear-gradient(
+    180deg,
+    rgb(14 116 144 / 42%),
+    rgb(15 23 42 / 78%)
+  );
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 10%) inset,
+    0 14px 32px rgb(14 165 233 / 18%),
+    0 0 0 3px rgb(14 165 233 / 12%);
+  transform: translateY(-1px);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-title {
-    padding-right: 10px;
-    border-right: 0;
-    background: linear-gradient(135deg, rgb(14 165 233 / 24%), rgb(15 23 42 / 86%) 52%, rgb(34 197 94 / 18%));
+  padding-right: 10px;
+  border-right: 0;
+  background: linear-gradient(
+    135deg,
+    rgb(14 165 233 / 24%),
+    rgb(15 23 42 / 86%) 52%,
+    rgb(34 197 94 / 18%)
+  );
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-title img {
-    width: 30px;
-    height: 30px;
+  width: 30px;
+  height: 30px;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value {
-    font-size: 12px;
+  font-size: 12px;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-info,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-success,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-warning,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-danger,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-success,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-warning,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-danger,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-info,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-success,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-warning,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-danger {
-    min-height: 22px;
-    padding: 2px 8px;
-    border: 1px solid rgb(255 255 255 / 8%);
-    border-radius: 999px;
-    box-shadow: 0 1px 0 rgb(255 255 255 / 10%) inset;
-    font-weight: 760;
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 999px;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 10%) inset;
+  font-weight: 760;
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-info,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-info {
-    background: linear-gradient(135deg, #0284c7, #38bdf8);
-    color: #082f49;
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  color: #082f49;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-success,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-success,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-success {
-    background: linear-gradient(135deg, #059669, #10b981);
-    color: #052e16;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #052e16;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-warning,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-warning,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-warning {
-    background: linear-gradient(135deg, #d97706, #fbbf24);
-    color: #1c1917;
+  background: linear-gradient(135deg, #d97706, #fbbf24);
+  color: #1c1917;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-danger,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-danger,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-danger {
-    background: linear-gradient(135deg, #dc2626, #fb7185);
-    color: #450a0a;
+  background: linear-gradient(135deg, #dc2626, #fb7185);
+  color: #450a0a;
 }
 
 /* Theme-aware standalone toolbar refinements. */
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-bar {
-    border-bottom: 1px solid var(--yii-debug-panel-border);
-    background:
-        radial-gradient(circle at top left, var(--yii-debug-panel-bg-accent), transparent 22rem),
-        linear-gradient(180deg, var(--yii-debug-panel-surface), var(--yii-debug-panel-surface-muted));
-    box-shadow: 0 12px 34px color-mix(in srgb, var(--yii-debug-panel-text), transparent 90%);
+  border-bottom: 1px solid var(--yii-debug-panel-border);
+  background:
+    radial-gradient(
+      circle at top left,
+      var(--yii-debug-panel-bg-accent),
+      transparent 22rem
+    ),
+    linear-gradient(
+      180deg,
+      var(--yii-debug-panel-surface),
+      var(--yii-debug-panel-surface-muted)
+    );
+  box-shadow: 0 12px 34px
+    color-mix(in srgb, var(--yii-debug-panel-text), transparent 90%);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block {
-    border-color: var(--yii-debug-panel-border);
-    background: linear-gradient(180deg, var(--yii-debug-panel-surface), var(--yii-debug-panel-surface-muted));
-    color: var(--yii-debug-panel-text);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 8%) inset, 0 10px 24px color-mix(in srgb, var(--yii-debug-panel-text), transparent 92%);
+  border-color: var(--yii-debug-panel-border);
+  background: linear-gradient(
+    180deg,
+    var(--yii-debug-panel-surface),
+    var(--yii-debug-panel-surface-muted)
+  );
+  color: var(--yii-debug-panel-text);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 8%) inset,
+    0 10px 24px color-mix(in srgb, var(--yii-debug-panel-text), transparent 92%);
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block:hover,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block:focus-within {
-    border-color: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 32%);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--yii-debug-panel-primary), var(--yii-debug-panel-surface) 86%), var(--yii-debug-panel-surface));
-    box-shadow: 0 1px 0 rgb(255 255 255 / 10%) inset, 0 14px 30px rgb(14 165 233 / 16%), 0 0 0 3px color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%);
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block:hover,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block:focus-within {
+  border-color: color-mix(
+    in srgb,
+    var(--yii-debug-panel-primary),
+    transparent 32%
+  );
+  background: linear-gradient(
+    180deg,
+    color-mix(
+      in srgb,
+      var(--yii-debug-panel-primary),
+      var(--yii-debug-panel-surface) 86%
+    ),
+    var(--yii-debug-panel-surface)
+  );
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 10%) inset,
+    0 14px 30px rgb(14 165 233 / 16%),
+    0 0 0 3px
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block a {
-    color: var(--yii-debug-panel-text);
+  color: var(--yii-debug-panel-text);
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block a:hover,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-block a:focus {
-    color: var(--yii-debug-panel-link-hover);
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block
+  a:hover,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-block
+  a:focus {
+  color: var(--yii-debug-panel-link-hover);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-title {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--yii-debug-panel-primary), transparent 76%), var(--yii-debug-panel-surface) 52%, color-mix(in srgb, var(--yii-debug-panel-success), transparent 84%));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--yii-debug-panel-primary), transparent 76%),
+    var(--yii-debug-panel-surface) 52%,
+    color-mix(in srgb, var(--yii-debug-panel-success), transparent 84%)
+  );
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value {
-    color: var(--yii-debug-panel-text);
+  color: var(--yii-debug-panel-text);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label {
-    color: var(--yii-debug-panel-muted);
+  color: var(--yii-debug-panel-muted);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-value,
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-inverse,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-inverse,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-inverse {
-    background: color-mix(in srgb, var(--yii-debug-panel-text), transparent 88%);
-    color: var(--yii-debug-panel-text);
+  background: color-mix(in srgb, var(--yii-debug-panel-text), transparent 88%);
+  color: var(--yii-debug-panel-text);
 }
 
 #yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-info,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-info {
-    background: linear-gradient(135deg, #0284c7, #38bdf8);
-    color: #082f49;
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  color: #082f49;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-success,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-success,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-success {
-    background: linear-gradient(135deg, #059669, #10b981);
-    color: #052e16;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #052e16;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-warning,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-warning,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-warning {
-    background: linear-gradient(135deg, #d97706, #fbbf24);
-    color: #1c1917;
+  background: linear-gradient(135deg, #d97706, #fbbf24);
+  color: #1c1917;
 }
 
-#yii-debug-toolbar.yii-debug-toolbar-position-top .yii-debug-toolbar-label-danger,
+#yii-debug-toolbar.yii-debug-toolbar-position-top
+  .yii-debug-toolbar-label-danger,
 #yii-debug-toolbar.yii-debug-toolbar-position-top .badge-danger {
-    background: linear-gradient(135deg, #dc2626, #fb7185);
-    color: #450a0a;
+  background: linear-gradient(135deg, #dc2626, #fb7185);
+  color: #450a0a;
 }
