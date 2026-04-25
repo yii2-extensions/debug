@@ -21,7 +21,7 @@ use yii\helpers\Html;
             <?php endif; ?>
             <?php if ($panel->canSwitchUser()): ?>
                 <span class="yii-debug-toolbar-switch-icon yii-debug-toolbar-userswitch"
-                      id="yii-debug-toolbar-switch-users">
+                    id="yii-debug-toolbar-switch-users">
             </span>
             <?php endif; ?>
         <?php endif; ?>

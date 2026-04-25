@@ -45,7 +45,7 @@ $url = $firstPanel->getUrl();
             <?php if ($panel->hasError()): ?>
                 <div class="yii-debug-toolbar-block">
                     <a href="<?= $panel->getUrl() ?>"
-                       title="<?= Html::encode($panel->getError()->getMessage()); ?>"><?= Html::encode($panel->getName()) ?>
+                        title="<?= Html::encode($panel->getError()->getMessage()); ?>"><?= Html::encode($panel->getName()) ?>
                         <span class="yii-debug-toolbar-label yii-debug-toolbar-label-error">error</span></a>
                 </div>
             <?php else: ?>

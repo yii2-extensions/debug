@@ -35,9 +35,3 @@ indent_size = 2
 [LICENSE*]
 indent_style = unset
 indent_size = unset
-
-[phpstan-baseline.neon]
-indent_style = unset
-indent_size = unset
-trim_trailing_whitespace = unset
-insert_final_newline = unset
