@@ -4,7 +4,7 @@
     margin-bottom: 20px;
 
     &.inline {
-        .debug-timeline-panel__item {
+        .debug-timeline-panel-item {
             height: 20px;
             margin-top: -20px;
             border-bottom: 0;
@@ -12,14 +12,15 @@
             &:first-child {
                 margin: 0;
             }
+
             &:not(.empty):hover {
                 background-color: transparent;
             }
         }
 
-        .debug-timeline-panel__items {
+        .debug-timeline-panel-items {
             .time {
-                box-shadow: inset 0 0 3px -1px rgba(255, 255, 255, 0.7);
+                box-shadow: inset 0 0 3px -1px rgb(255 255 255 / 70%);
             }
 
             .category {
@@ -33,15 +34,17 @@
             }
         }
     }
+
     &:not(.inline) {
-        .debug-timeline-panel__item {
+        .debug-timeline-panel-item {
             a:focus {
                 outline: none;
             }
         }
     }
-    &:not(.inline) .debug-timeline-panel__header .control button.inline,
-    &.inline .debug-timeline-panel__header .control button.open {
+
+    &:not(.inline) .debug-timeline-panel-header .control button.inline,
+    &.inline .debug-timeline-panel-header .control button.open {
         display: block;
     }
 
@@ -90,6 +93,7 @@
             top: auto;
             margin-top: 20px;
         }
+
         &.ruler-end {
             left: -1px;
             top: auto;
@@ -101,7 +105,7 @@
             color: black;
             font-weight: bold;
             white-space: nowrap;
-            background-color: rgba(255, 255, 255, .4);
+            background-color: rgb(255 255 255 / 40%);
             min-width: 40px;
             line-height: 19px;
             display: block;
@@ -121,20 +125,14 @@
             max-width: 300px;
             max-height: 180px;
             overflow: auto;
-            word-wrap: break-word;
             overflow-wrap: break-word;
         }
     }
 }
 
-.debug-timeline-panel__header {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
+.debug-timeline-panel-header {
     user-select: none;
-
-    background: #ffffff;
-    position: -webkit-sticky;
+    background: #fff;
     position: sticky;
     top: 0;
     z-index: 1;
@@ -155,6 +153,7 @@
             &:focus {
                 outline: none;
             }
+
             &:hover {
                 fill: #337ab7;
             }
@@ -162,16 +161,19 @@
     }
 }
 
-.debug-timeline-panel__item {
+.debug-timeline-panel-item {
     &:last-child {
         border-bottom: 0;
     }
+
     &:nth-child(2n) {
         background-color: #f9f9f9;
     }
+
     &:hover {
-        background-color: rgba(51, 122, 183, 0.16);
+        background-color: rgb(51 122 183 / 16%);
     }
+
     &.empty {
         background-color: #f9f9f9;
         line-height: 20px;
@@ -184,14 +186,14 @@
     }
 }
 
-.debug-timeline-panel__header,
-.debug-timeline-panel__item {
+.debug-timeline-panel-header,
+.debug-timeline-panel-item {
     min-height: 20px;
     border-bottom: 1px solid #ddd;
     overflow: hidden;
 }
 
-.debug-timeline-panel__search {
+.debug-timeline-panel-search {
     background-color: #f9f9f9;
     padding: 10px;
     margin-bottom: 10px;
@@ -201,12 +203,15 @@
         display: inline-block;
         margin-bottom: 10px;
     }
+
     .duration {
         margin-right: 20px;
     }
+
     label {
         width: 80px;
     }
+
     input {
         font-size: 16px;
         padding: 4px;
@@ -215,13 +220,14 @@
             width: 55px;
             text-align: right;
         }
+
         &#timeline-category {
             min-width: 185px;
         }
     }
 }
 
-.debug-timeline-panel__memory {
+.debug-timeline-panel-memory {
     position: relative;
     margin-top: 18px;
     box-sizing: content-box;
@@ -230,6 +236,7 @@
     svg {
         width: 100%;
     }
+
     .scale {
         font-size: 12px;
         line-height: 16px;
@@ -241,14 +248,14 @@
     }
 }
 
-@media (max-width: 767px) {
+@media (width <= 767px) {
     .debug-timeline-panel .ruler:nth-child(2n) b {
         display: none;
     }
 }
 
-@media (max-width: 991px) {
-    .debug-timeline-panel__header .control {
+@media (width <= 991px) {
+    .debug-timeline-panel-header .control {
         margin-left: -17px;
     }
 }

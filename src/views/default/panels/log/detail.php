@@ -24,7 +24,7 @@ $levelToVariant = [
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $dataProvider,
     'id' => 'log-panel-detailed-grid',
-    'options' => ['class' => 'yii-debug-grid yii-debug-grid--log'],
+    'options' => ['class' => 'yii-debug-grid yii-debug-grid-log'],
     'filterModel' => $searchModel,
     'filterUrl' => $panel->getUrl(),
     'rowOptions' => static function ($model) use ($levelToVariant) {
@@ -78,7 +78,7 @@ echo GridView::widget(array_merge(GridViewConfig::defaults(), [
                 $formattedDiff[] = $diffMs . 'ms';
                 $formattedDiff = implode('&nbsp;', $formattedDiff);
 
-                $btnClass = 'yii-debug-since-previous__btn';
+                $btnClass = 'yii-debug-since-previous-btn';
 
                 if ($data['id_of_previous'] === null) {
                     $previous = Html::tag('span', '<', ['class' => $btnClass . ' is-disabled']);

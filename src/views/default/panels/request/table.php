@@ -15,7 +15,7 @@ use yii\helpers\VarDumper;
 
 <?php else: ?>
     <div class="yii-debug-table-wrap">
-        <table class="yii-debug-table yii-debug-table--mono" style="table-layout: fixed;">
+        <table class="yii-debug-table yii-debug-table-mono" style="table-layout: fixed;">
             <thead>
             <tr>
                 <th>Name</th>

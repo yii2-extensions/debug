@@ -148,7 +148,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     public $skipAjaxRequestUrl = [];
     /**
      * @var string toolbar position on web page. Use 'bottom' or 'upper'.
-     * You may add custom value via .yii-debug-toolbar_position_{yourValue} css.
+     * You may add custom value via .yii-debug-toolbar-position-{yourValue} css.
      */
     public $toolbarPosition = 'bottom';
     /**

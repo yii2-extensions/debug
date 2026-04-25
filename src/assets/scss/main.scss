@@ -1,5 +1,5 @@
 // Yii Debug Panel UI — Pico-inspired, scoped under `.yii-debug`.
-//
+
 // Isolation strategy:
 // 1. Wrapper class `.yii-debug` on <body>.
 // 2. Namespace prefix `.yii-debug-*` on every component class.
@@ -15,13 +15,14 @@
 
 :root {
     color-scheme: light dark;
+
     --yii-debug-panel-bg: #eef4fb;
-    --yii-debug-panel-bg-accent: rgba(14, 165, 233, .12);
-    --yii-debug-panel-surface: rgba(255, 255, 255, .94);
+    --yii-debug-panel-bg-accent: rgb(14 165 233 / 12%);
+    --yii-debug-panel-surface: rgb(255 255 255 / 94%);
     --yii-debug-panel-surface-muted: #f8fafc;
     --yii-debug-panel-surface-hover: #eef6ff;
-    --yii-debug-panel-border: rgba(148, 163, 184, .28);
-    --yii-debug-panel-border-strong: rgba(100, 116, 139, .32);
+    --yii-debug-panel-border: rgb(148 163 184 / 28%);
+    --yii-debug-panel-border-strong: rgb(100 116 139 / 32%);
     --yii-debug-panel-text: #0f172a;
     --yii-debug-panel-muted: #64748b;
     --yii-debug-panel-link: #0369a1;
@@ -33,18 +34,18 @@
     --yii-debug-panel-danger: #dc2626;
     --yii-debug-panel-info: #0284c7;
     --yii-debug-panel-code-bg: #eef2f6;
-    --yii-debug-panel-shadow: 0 22px 60px rgba(15, 23, 42, .08);
+    --yii-debug-panel-shadow: 0 22px 60px rgb(15 23 42 / 8%);
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
         --yii-debug-panel-bg: #0b1120;
-        --yii-debug-panel-bg-accent: rgba(56, 189, 248, .12);
-        --yii-debug-panel-surface: rgba(15, 23, 42, .92);
+        --yii-debug-panel-bg-accent: rgb(56 189 248 / 12%);
+        --yii-debug-panel-surface: rgb(15 23 42 / 92%);
         --yii-debug-panel-surface-muted: #111827;
         --yii-debug-panel-surface-hover: #1e293b;
-        --yii-debug-panel-border: rgba(148, 163, 184, .2);
-        --yii-debug-panel-border-strong: rgba(148, 163, 184, .32);
+        --yii-debug-panel-border: rgb(148 163 184 / 20%);
+        --yii-debug-panel-border-strong: rgb(148 163 184 / 32%);
         --yii-debug-panel-text: #e5edf7;
         --yii-debug-panel-muted: #93a4b8;
         --yii-debug-panel-link: #7dd3fc;
@@ -56,19 +57,20 @@
         --yii-debug-panel-danger: #ef4444;
         --yii-debug-panel-info: #38bdf8;
         --yii-debug-panel-code-bg: #1e293b;
-        --yii-debug-panel-shadow: 0 22px 60px rgba(0, 0, 0, .38);
+        --yii-debug-panel-shadow: 0 22px 60px rgb(0 0 0 / 38%);
     }
 }
 
 :root[data-yii-debug-theme="light"] {
     color-scheme: light;
+
     --yii-debug-panel-bg: #eef4fb;
-    --yii-debug-panel-bg-accent: rgba(14, 165, 233, .12);
-    --yii-debug-panel-surface: rgba(255, 255, 255, .94);
+    --yii-debug-panel-bg-accent: rgb(14 165 233 / 12%);
+    --yii-debug-panel-surface: rgb(255 255 255 / 94%);
     --yii-debug-panel-surface-muted: #f8fafc;
     --yii-debug-panel-surface-hover: #eef6ff;
-    --yii-debug-panel-border: rgba(148, 163, 184, .28);
-    --yii-debug-panel-border-strong: rgba(100, 116, 139, .32);
+    --yii-debug-panel-border: rgb(148 163 184 / 28%);
+    --yii-debug-panel-border-strong: rgb(100 116 139 / 32%);
     --yii-debug-panel-text: #0f172a;
     --yii-debug-panel-muted: #64748b;
     --yii-debug-panel-link: #0369a1;
@@ -80,18 +82,19 @@
     --yii-debug-panel-danger: #dc2626;
     --yii-debug-panel-info: #0284c7;
     --yii-debug-panel-code-bg: #eef2f6;
-    --yii-debug-panel-shadow: 0 22px 60px rgba(15, 23, 42, .08);
+    --yii-debug-panel-shadow: 0 22px 60px rgb(15 23 42 / 8%);
 }
 
 :root[data-yii-debug-theme="dark"] {
     color-scheme: dark;
+
     --yii-debug-panel-bg: #0b1120;
-    --yii-debug-panel-bg-accent: rgba(56, 189, 248, .12);
-    --yii-debug-panel-surface: rgba(15, 23, 42, .92);
+    --yii-debug-panel-bg-accent: rgb(56 189 248 / 12%);
+    --yii-debug-panel-surface: rgb(15 23 42 / 92%);
     --yii-debug-panel-surface-muted: #111827;
     --yii-debug-panel-surface-hover: #1e293b;
-    --yii-debug-panel-border: rgba(148, 163, 184, .2);
-    --yii-debug-panel-border-strong: rgba(148, 163, 184, .32);
+    --yii-debug-panel-border: rgb(148 163 184 / 20%);
+    --yii-debug-panel-border-strong: rgb(148 163 184 / 32%);
     --yii-debug-panel-text: #e5edf7;
     --yii-debug-panel-muted: #93a4b8;
     --yii-debug-panel-link: #7dd3fc;
@@ -103,12 +106,12 @@
     --yii-debug-panel-danger: #ef4444;
     --yii-debug-panel-info: #38bdf8;
     --yii-debug-panel-code-bg: #1e293b;
-    --yii-debug-panel-shadow: 0 22px 60px rgba(0, 0, 0, .38);
+    --yii-debug-panel-shadow: 0 22px 60px rgb(0 0 0 / 38%);
 }
 
 // ---------------------------------------------------------------------------
 // Scoped styles.
-//
+
 // The `.yii-debug` wrapper class + `.yii-debug-*` prefix give every selector
 // at least class+class+tag specificity, which beats common host framework
 // resets (Bootstrap's `.btn`, Tailwind preflight `a { ... }`, Pico's element
@@ -125,27 +128,23 @@
         --yii-debug-space-4: 16px;
         --yii-debug-space-5: 24px;
         --yii-debug-space-6: 32px;
-
         --yii-debug-radius-sm: 6px;
         --yii-debug-radius-md: 10px;
         --yii-debug-radius-lg: 14px;
         --yii-debug-radius-pill: 999px;
-
         --yii-debug-fs-xs: 0.75rem;
         --yii-debug-fs-sm: 0.8125rem;
         --yii-debug-fs-base: 0.9375rem;
         --yii-debug-fs-lg: 1.0625rem;
         --yii-debug-fs-xl: 1.25rem;
         --yii-debug-fs-2xl: 1.5rem;
-
-        --yii-debug-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-        --yii-debug-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        --yii-debug-font-sans: ui-sans-serif, system-ui, -apple-system, blinkmacsystemfont, "Segoe UI", roboto, helvetica, arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        --yii-debug-font-mono: "JetBrains Mono", ui-monospace, sfmono-regular, menlo, monaco, consolas, "Liberation Mono", "Courier New", monospace;
         --yii-debug-font-display: "Major Mono Display", "JetBrains Mono", ui-monospace, monospace;
-
         --yii-debug-border: 1px solid var(--yii-debug-panel-border);
         --yii-debug-border-strong: 1px solid var(--yii-debug-panel-border-strong);
-        --yii-debug-shadow-sm: 0 1px 2px rgba(15, 23, 42, .06);
-        --yii-debug-shadow-md: 0 10px 24px rgba(15, 23, 42, .08);
+        --yii-debug-shadow-sm: 0 1px 2px rgb(15 23 42 / 6%);
+        --yii-debug-shadow-md: 0 10px 24px rgb(15 23 42 / 8%);
 
         min-height: 100vh;
         margin: 0;
@@ -255,12 +254,12 @@
             gap: var(--yii-debug-space-4);
             align-items: start;
 
-            @media (max-width: 767px) {
+            @media (width <= 767px) {
                 grid-template-columns: 1fr;
             }
         }
 
-        @media (min-width: 768px) {
+        @media (width >= 768px) {
             .yii-debug-sidebar {
                 position: sticky;
                 top: var(--yii-debug-space-4);
@@ -361,7 +360,7 @@
                 color: #fff;
 
                 &::after {
-                    color: rgba(255, 255, 255, .85);
+                    color: rgb(255 255 255 / 85%);
                 }
             }
         }
@@ -410,7 +409,7 @@
             }
         }
 
-        .yii-debug-btn--primary {
+        .yii-debug-btn-primary {
             border-color: transparent;
             background: linear-gradient(135deg, var(--yii-debug-panel-primary-strong), var(--yii-debug-panel-primary));
             color: #fff;
@@ -422,17 +421,17 @@
             }
         }
 
-        .yii-debug-btn--ghost {
+        .yii-debug-btn-ghost {
             border-color: var(--yii-debug-panel-border);
             background: transparent;
         }
 
-        .yii-debug-btn--subtle {
+        .yii-debug-btn-subtle {
             border-color: transparent;
             background: var(--yii-debug-panel-surface-muted);
         }
 
-        .yii-debug-btn--sm {
+        .yii-debug-btn-sm {
             min-height: 28px;
             padding: 4px 10px;
             font-size: var(--yii-debug-fs-xs);
@@ -461,11 +460,30 @@
             line-height: 1.4;
         }
 
-        .yii-debug-badge--success { background: var(--yii-debug-panel-success); color: #fff; }
-        .yii-debug-badge--info    { background: var(--yii-debug-panel-info);    color: #fff; }
-        .yii-debug-badge--warning { background: var(--yii-debug-panel-warning); color: #1c1917; }
-        .yii-debug-badge--danger  { background: var(--yii-debug-panel-danger);  color: #fff; }
-        .yii-debug-badge--muted   { background: var(--yii-debug-panel-surface-muted); color: var(--yii-debug-panel-muted); }
+        .yii-debug-badge-success {
+            background: var(--yii-debug-panel-success);
+            color: #fff;
+        }
+
+        .yii-debug-badge-info {
+            background: var(--yii-debug-panel-info);
+            color: #fff;
+        }
+
+        .yii-debug-badge-warning {
+            background: var(--yii-debug-panel-warning);
+            color: #1c1917;
+        }
+
+        .yii-debug-badge-danger {
+            background: var(--yii-debug-panel-danger);
+            color: #fff;
+        }
+
+        .yii-debug-badge-muted {
+            background: var(--yii-debug-panel-surface-muted);
+            color: var(--yii-debug-panel-muted);
+        }
 
         // -------------------------------------------------------------------
         // Callouts.
@@ -484,10 +502,10 @@
             color: var(--yii-debug-panel-text);
         }
 
-        .yii-debug-callout--info    { border-left-color: var(--yii-debug-panel-info); }
-        .yii-debug-callout--success { border-left-color: var(--yii-debug-panel-success); }
-        .yii-debug-callout--warning { border-left-color: var(--yii-debug-panel-warning); }
-        .yii-debug-callout--danger  { border-left-color: var(--yii-debug-panel-danger); }
+        .yii-debug-callout-info    { border-left-color: var(--yii-debug-panel-info); }
+        .yii-debug-callout-success { border-left-color: var(--yii-debug-panel-success); }
+        .yii-debug-callout-warning { border-left-color: var(--yii-debug-panel-warning); }
+        .yii-debug-callout-danger  { border-left-color: var(--yii-debug-panel-danger); }
 
         // -------------------------------------------------------------------
         // Tables + GridView integration.
@@ -570,23 +588,23 @@
             }
         }
 
-        .yii-debug-row--success td,
-        .yii-debug-row--success th {
+        .yii-debug-row-success td,
+        .yii-debug-row-success th {
             background: color-mix(in srgb, var(--yii-debug-panel-success), var(--yii-debug-panel-surface) 86%) !important;
         }
 
-        .yii-debug-row--info td,
-        .yii-debug-row--info th {
+        .yii-debug-row-info td,
+        .yii-debug-row-info th {
             background: color-mix(in srgb, var(--yii-debug-panel-info), var(--yii-debug-panel-surface) 86%) !important;
         }
 
-        .yii-debug-row--warning td,
-        .yii-debug-row--warning th {
+        .yii-debug-row-warning td,
+        .yii-debug-row-warning th {
             background: color-mix(in srgb, var(--yii-debug-panel-warning), var(--yii-debug-panel-surface) 86%) !important;
         }
 
-        .yii-debug-row--danger td,
-        .yii-debug-row--danger th {
+        .yii-debug-row-danger td,
+        .yii-debug-row-danger th {
             background: color-mix(in srgb, var(--yii-debug-panel-danger), var(--yii-debug-panel-surface) 86%) !important;
         }
 
@@ -640,11 +658,11 @@
             list-style: none;
         }
 
-        .yii-debug-pager__item {
+        .yii-debug-pager-item {
             display: inline-flex;
         }
 
-        .yii-debug-pager__link {
+        .yii-debug-pager-link {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -669,14 +687,14 @@
             }
         }
 
-        .yii-debug-pager__item.is-active .yii-debug-pager__link {
+        .yii-debug-pager-item.is-active .yii-debug-pager-link {
             border-color: transparent;
             background: linear-gradient(135deg, var(--yii-debug-panel-primary-strong), var(--yii-debug-panel-primary));
             color: #fff;
             cursor: default;
         }
 
-        .yii-debug-pager__item.is-disabled .yii-debug-pager__link {
+        .yii-debug-pager-item.is-disabled .yii-debug-pager-link {
             background: var(--yii-debug-panel-surface-muted);
             color: var(--yii-debug-panel-muted);
             cursor: not-allowed;
@@ -787,7 +805,7 @@
             display: inline-flex;
         }
 
-        .yii-debug-tab__link {
+        .yii-debug-tab-link {
             display: inline-flex;
             align-items: center;
             padding: 8px 14px;
@@ -805,14 +823,14 @@
             }
         }
 
-        .yii-debug-tab.is-active .yii-debug-tab__link,
-        .yii-debug-tab__link.is-active {
+        .yii-debug-tab.is-active .yii-debug-tab-link,
+        .yii-debug-tab-link.is-active {
             border-bottom-color: var(--yii-debug-panel-primary);
             color: var(--yii-debug-panel-text);
         }
 
         // Informational badge "tabs" (non-clickable status indicators).
-        .yii-debug-tab__link--badge {
+        .yii-debug-tab-link-badge {
             border-bottom-color: transparent;
             padding: 6px 8px;
             cursor: default;
@@ -852,7 +870,7 @@
             display: inline-block;
         }
 
-        .yii-debug-dropdown__menu {
+        .yii-debug-dropdown-menu {
             display: none;
             position: absolute;
             top: calc(100% + 4px);
@@ -868,11 +886,11 @@
             list-style: none;
         }
 
-        .yii-debug-dropdown.is-open .yii-debug-dropdown__menu {
+        .yii-debug-dropdown.is-open .yii-debug-dropdown-menu {
             display: block;
         }
 
-        .yii-debug-dropdown__item {
+        .yii-debug-dropdown-item {
             display: block;
             padding: 6px 10px;
             border-radius: var(--yii-debug-radius-sm);
@@ -899,7 +917,7 @@
             gap: 4px;
             white-space: nowrap;
 
-            .yii-debug-since-previous__btn {
+            .yii-debug-since-previous-btn {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
@@ -917,12 +935,12 @@
         }
 
         // Monospace / wrap helpers for request + log tables.
-        .yii-debug-table--mono td {
+        .yii-debug-table-mono td {
             font-family: var(--yii-debug-font-mono);
             word-break: break-all;
         }
 
-        .yii-debug-table--mono tr > th:first-child {
+        .yii-debug-table-mono tr > th:first-child {
             width: 25%;
         }
 
@@ -948,12 +966,11 @@
         }
 
         // ===================================================================
-        //  Configuration + PhpInfo panel — "terminal schematic" design system.
-        //
-        //  Mono-forward dashboard readouts with corner-tick cards, LED-pulsing
-        //  status pills, and a typewriter-flavored package manifest. Commits
-        //  to JetBrains Mono for data and Major Mono Display for the hero
-        //  title. Fonts are loaded via <link> in the layout head.
+        // Configuration + PhpInfo panel — "terminal schematic" design system.
+        // Mono-forward dashboard readouts with corner-tick cards, LED-pulsing
+        // status pills, and a typewriter-flavored package manifest. Commits
+        // to JetBrains Mono for data and Major Mono Display for the hero
+        // title. Fonts are loaded via <link> in the layout head.
         // ===================================================================
 
         // -- Section scaffolding --------------------------------------------
@@ -964,7 +981,7 @@
             &:last-child { margin-bottom: 0; }
         }
 
-        .yii-debug-section__title {
+        .yii-debug-section-title {
             display: flex;
             align-items: center;
             gap: var(--yii-debug-space-2);
@@ -978,12 +995,12 @@
             text-transform: uppercase;
         }
 
-        .yii-debug-section__mark {
+        .yii-debug-section-mark {
             color: var(--yii-debug-panel-primary);
             font-weight: 700;
         }
 
-        .yii-debug-section__count {
+        .yii-debug-section-count {
             display: inline-flex;
             align-items: center;
             padding: 2px 8px;
@@ -1026,7 +1043,7 @@
             margin-bottom: var(--yii-debug-space-6);
         }
 
-        .yii-debug-readout__card {
+        .yii-debug-readout-card {
             position: relative;
             display: flex;
             flex-direction: column;
@@ -1058,17 +1075,26 @@
             }
 
             @for $i from 1 through 6 {
-                &:nth-child(#{$i}) { animation-delay: #{0.04 * $i}s; }
+                &:nth-child(#{$i}) {
+                    animation-delay: #{0.04 * $i}s;
+                }
             }
         }
 
         @keyframes yii-debug-readout-in {
-            from { opacity: 0; transform: translateY(6px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         // Four L-shaped corner ticks per card, like gun sights on a schematic.
-        .yii-debug-readout__corner {
+        .yii-debug-readout-corner {
             position: absolute;
             width: 9px;
             height: 9px;
@@ -1076,17 +1102,40 @@
             pointer-events: none;
             transition: border-color .15s ease;
 
-            &[data-corner="tl"] { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
-            &[data-corner="tr"] { top: 8px; right: 8px; border-left: 0; border-bottom: 0; }
-            &[data-corner="bl"] { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
-            &[data-corner="br"] { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+            &[data-corner="tl"] {
+                top: 8px;
+                left: 8px;
+                border-right: 0;
+                border-bottom: 0;
+            }
+
+            &[data-corner="tr"] {
+                top: 8px;
+                right: 8px;
+                border-left: 0;
+                border-bottom: 0;
+            }
+
+            &[data-corner="bl"] {
+                bottom: 8px;
+                left: 8px;
+                border-right: 0;
+                border-top: 0;
+            }
+
+            &[data-corner="br"] {
+                bottom: 8px;
+                right: 8px;
+                border-left: 0;
+                border-top: 0;
+            }
         }
 
-        .yii-debug-readout__card:hover .yii-debug-readout__corner {
+        .yii-debug-readout-card:hover .yii-debug-readout-corner {
             border-color: var(--yii-debug-panel-primary);
         }
 
-        .yii-debug-readout__label {
+        .yii-debug-readout-label {
             position: relative;
             display: block;
             margin: 0;
@@ -1099,14 +1148,14 @@
             text-transform: uppercase;
         }
 
-        .yii-debug-readout__label::before {
+        .yii-debug-readout-label::before {
             content: ":: ";
             color: var(--yii-debug-panel-primary);
             font-weight: 700;
             opacity: .85;
         }
 
-        .yii-debug-readout__value {
+        .yii-debug-readout-value {
             display: block;
             margin: 0;
             color: var(--yii-debug-panel-text);
@@ -1115,10 +1164,10 @@
             font-weight: 700;
             letter-spacing: -0.015em;
             line-height: 1.15;
-            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
-        .yii-debug-readout__meta {
+        .yii-debug-readout-meta {
             display: inline-flex;
             align-items: center;
             gap: var(--yii-debug-space-2);
@@ -1131,7 +1180,7 @@
             text-transform: lowercase;
         }
 
-        .yii-debug-readout__chip {
+        .yii-debug-readout-chip {
             display: inline-flex;
             align-items: center;
             padding: 2px 7px;
@@ -1145,7 +1194,7 @@
             text-transform: uppercase;
         }
 
-        .yii-debug-readout__chip--muted {
+        .yii-debug-readout-chip-muted {
             background: var(--yii-debug-panel-surface-muted);
             color: var(--yii-debug-panel-muted);
         }
@@ -1185,7 +1234,7 @@
             transition: border-color .15s ease, background .15s ease;
         }
 
-        .yii-debug-ext-pill__dot {
+        .yii-debug-ext-pill-dot {
             display: inline-block;
             width: 7px;
             height: 7px;
@@ -1193,11 +1242,11 @@
             background: color-mix(in srgb, var(--yii-debug-panel-muted), transparent 60%);
         }
 
-        .yii-debug-ext-pill__label {
+        .yii-debug-ext-pill-label {
             color: var(--yii-debug-panel-text);
         }
 
-        .yii-debug-ext-pill__state {
+        .yii-debug-ext-pill-state {
             margin-left: var(--yii-debug-space-1);
             color: var(--yii-debug-panel-muted);
             font-size: 0.625rem;
@@ -1210,13 +1259,13 @@
             border-color: color-mix(in srgb, var(--yii-debug-panel-success), transparent 55%);
             background: color-mix(in srgb, var(--yii-debug-panel-success), var(--yii-debug-panel-surface) 90%);
 
-            .yii-debug-ext-pill__dot {
+            .yii-debug-ext-pill-dot {
                 background: var(--yii-debug-panel-success);
                 box-shadow: 0 0 0 3px color-mix(in srgb, var(--yii-debug-panel-success), transparent 75%);
                 animation: yii-debug-led-pulse 2.4s ease-in-out infinite;
             }
 
-            .yii-debug-ext-pill__state {
+            .yii-debug-ext-pill-state {
                 color: var(--yii-debug-panel-success);
                 opacity: 1;
             }
@@ -1230,6 +1279,7 @@
             0%, 100% {
                 box-shadow: 0 0 0 3px color-mix(in srgb, var(--yii-debug-panel-success), transparent 75%);
             }
+
             50% {
                 box-shadow: 0 0 0 6px color-mix(in srgb, var(--yii-debug-panel-success), transparent 90%);
             }
@@ -1246,7 +1296,7 @@
             overflow: hidden;
         }
 
-        .yii-debug-dl__row {
+        .yii-debug-dl-row {
             display: grid;
             grid-template-columns: minmax(160px, 200px) 1fr;
             gap: var(--yii-debug-space-4);
@@ -1271,7 +1321,7 @@
                 color: var(--yii-debug-panel-text);
                 font-family: var(--yii-debug-font-mono);
                 font-size: 0.8125rem;
-                word-break: break-word;
+                overflow-wrap: break-word;
             }
         }
 
@@ -1287,8 +1337,7 @@
             display: grid;
             grid-template-columns: auto 1fr;
             grid-template-rows: auto auto;
-            column-gap: var(--yii-debug-space-2);
-            row-gap: 4px;
+            gap: 4px var(--yii-debug-space-2);
             align-items: center;
             padding: 10px 14px;
             border: var(--yii-debug-border);
@@ -1304,14 +1353,14 @@
             }
         }
 
-        .yii-debug-package__glyph {
+        .yii-debug-package-glyph {
             grid-row: 1 / span 2;
             color: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 25%);
             font-size: 0.8125rem;
             line-height: 1;
         }
 
-        .yii-debug-package__name {
+        .yii-debug-package-name {
             color: var(--yii-debug-panel-text);
             font-family: var(--yii-debug-font-mono);
             font-size: 0.8125rem;
@@ -1320,7 +1369,7 @@
             overflow-wrap: anywhere;
         }
 
-        .yii-debug-package__version {
+        .yii-debug-package-version {
             justify-self: start;
             max-width: 100%;
             padding: 2px 8px;
@@ -1363,17 +1412,17 @@
                 text-decoration: none;
                 transform: translateX(3px);
 
-                .yii-debug-cta__prompt { transform: translateX(2px); }
+                .yii-debug-cta-prompt { transform: translateX(2px); }
             }
         }
 
-        .yii-debug-cta__prompt {
+        .yii-debug-cta-prompt {
             color: var(--yii-debug-panel-primary);
             font-weight: 700;
             transition: transform .15s ease;
         }
 
-        .yii-debug-cta__external {
+        .yii-debug-cta-external {
             margin-left: auto;
             color: var(--yii-debug-panel-muted);
             font-size: 0.875rem;
@@ -1396,19 +1445,19 @@
             color: var(--yii-debug-panel-muted);
         }
 
-        .yii-debug-phpinfo-meta__item {
+        .yii-debug-phpinfo-meta-item {
             display: inline-flex;
             align-items: center;
             gap: 6px;
         }
 
-        .yii-debug-phpinfo-meta__key {
+        .yii-debug-phpinfo-meta-key {
             color: var(--yii-debug-panel-muted);
             letter-spacing: 0.1em;
             text-transform: uppercase;
         }
 
-        .yii-debug-phpinfo-meta__value {
+        .yii-debug-phpinfo-meta-value {
             color: var(--yii-debug-panel-text);
             font-weight: 700;
         }
@@ -1429,7 +1478,7 @@
                 font-weight: 700;
             }
 
-            .yii-debug-table tr:not(.h):not(.v) td:first-child {
+            .yii-debug-table tr:not(.h, .v) td:first-child {
                 background: var(--yii-debug-panel-surface-muted);
                 font-weight: 600;
             }
@@ -1439,7 +1488,7 @@
         // Responsive tweaks.
         // -------------------------------------------------------------------
 
-        @media (max-width: 767px) {
+        @media (width <= 767px) {
             .yii-debug-page {
                 padding: var(--yii-debug-space-2);
             }

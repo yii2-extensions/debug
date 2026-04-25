@@ -26,11 +26,11 @@ final class GridViewConfigTest extends TestCase
     public static function rowClassProvider(): array
     {
         return [
-            'success' => ['success', ['class' => 'yii-debug-row--success']],
-            'info' => ['info', ['class' => 'yii-debug-row--info']],
-            'warning' => ['warning', ['class' => 'yii-debug-row--warning']],
-            'danger' => ['danger', ['class' => 'yii-debug-row--danger']],
-            'error alias collapses to danger' => ['error', ['class' => 'yii-debug-row--danger']],
+            'success' => ['success', ['class' => 'yii-debug-row-success']],
+            'info' => ['info', ['class' => 'yii-debug-row-info']],
+            'warning' => ['warning', ['class' => 'yii-debug-row-warning']],
+            'danger' => ['danger', ['class' => 'yii-debug-row-danger']],
+            'error alias collapses to danger' => ['error', ['class' => 'yii-debug-row-danger']],
             'unknown level returns empty array' => ['exotic', []],
             'empty string returns empty array' => ['', []],
             'null returns empty array' => [null, []],
@@ -58,19 +58,19 @@ final class GridViewConfigTest extends TestCase
             'Pager wrapper must use `yii-debug-pager`.',
         );
         self::assertSame(
-            ['class' => 'yii-debug-pager__item'],
+            ['class' => 'yii-debug-pager-item'],
             $pager['linkContainerOptions'],
-            'Pager <li> elements must use `yii-debug-pager__item`.',
+            'Pager <li> elements must use `yii-debug-pager-item`.',
         );
         self::assertSame(
-            ['class' => 'yii-debug-pager__link'],
+            ['class' => 'yii-debug-pager-link'],
             $pager['linkOptions'],
-            'Pager <a> elements must use `yii-debug-pager__link`.',
+            'Pager <a> elements must use `yii-debug-pager-link`.',
         );
         self::assertSame(
-            ['tag' => 'span', 'class' => 'yii-debug-pager__link'],
+            ['tag' => 'span', 'class' => 'yii-debug-pager-link'],
             $pager['disabledListItemSubTagOptions'],
-            'Disabled pager items must render as <span class="yii-debug-pager__link">.',
+            'Disabled pager items must render as <span class="yii-debug-pager-link">.',
         );
         self::assertSame('is-active', $pager['activePageCssClass'], 'Active pager item must use `is-active` modifier.');
         self::assertSame('is-disabled', $pager['disabledPageCssClass'], 'Disabled pager item must use `is-disabled` modifier.');

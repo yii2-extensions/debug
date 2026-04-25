@@ -22,7 +22,7 @@ $listView->sorter = ['options' => ['class' => 'yii-debug-mail-sorter']];
 
 <div class="yii-debug-mini-toolbar">
     <?= Html::button('Form filtering', [
-        'class' => 'yii-debug-btn yii-debug-btn--ghost',
+        'class' => 'yii-debug-btn yii-debug-btn-ghost',
         'type' => 'button',
         'data-yii-debug-toggle' => 'collapse',
         'data-target' => '#email-form',
@@ -58,7 +58,7 @@ $listView->sorter = ['options' => ['class' => 'yii-debug-mail-sorter']];
     </div>
 
     <div>
-        <?= Html::submitButton('Filter', ['class' => 'yii-debug-btn yii-debug-btn--primary']) ?>
+        <?= Html::submitButton('Filter', ['class' => 'yii-debug-btn yii-debug-btn-primary']) ?>
     </div>
 
     <?php ActiveForm::end(); ?>

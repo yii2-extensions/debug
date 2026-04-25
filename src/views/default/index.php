@@ -17,9 +17,9 @@ use yii\helpers\Url;
 $this->title = 'Yii Debugger';
 ?>
 <div class="yii-debug-page default-index">
-    <div id="yii-debug-toolbar" class="yii-debug-toolbar yii-debug-toolbar_position_top" style="display: none;">
-        <div class="yii-debug-toolbar__bar">
-            <div class="yii-debug-toolbar__block yii-debug-toolbar__title">
+    <div id="yii-debug-toolbar" class="yii-debug-toolbar yii-debug-toolbar-position-top" style="display: none;">
+        <div class="yii-debug-toolbar-bar">
+            <div class="yii-debug-toolbar-block yii-debug-toolbar-title">
                 <a href="<?= Url::to(['index']) ?>">
                     <img width="30" height="30" alt="" src="<?= \yii\debug\Module::getYiiLogo() ?>">
                 </a>

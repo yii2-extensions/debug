@@ -90,7 +90,7 @@ class NavigationButton extends Widget
         return Html::a(
             'Next',
             $needLink ? $this->getRoute(1) : '',
-            ['class' => ['yii-debug-btn', 'yii-debug-btn--ghost', $needLink ? '' : 'is-disabled']],
+            ['class' => ['yii-debug-btn', 'yii-debug-btn-ghost', $needLink ? '' : 'is-disabled']],
         );
     }
 
@@ -104,7 +104,7 @@ class NavigationButton extends Widget
         return Html::a(
             'Prev',
             $needLink ? $this->getRoute(-1) : '',
-            ['class' => ['yii-debug-btn', 'yii-debug-btn--ghost', $needLink ? '' : 'is-disabled']],
+            ['class' => ['yii-debug-btn', 'yii-debug-btn-ghost', $needLink ? '' : 'is-disabled']],
         );
     }
 }

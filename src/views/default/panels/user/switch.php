@@ -32,7 +32,7 @@ echo $formSet->field(
 )
     ->textInput(['id' => 'user_id', 'name' => 'user_id', 'class' => 'yii-debug-input'])
     ->label('Switch User', ['class' => 'yii-debug-label']);
-echo Html::submitButton('Switch', ['class' => 'yii-debug-btn yii-debug-btn--primary']);
+echo Html::submitButton('Switch', ['class' => 'yii-debug-btn yii-debug-btn-primary']);
 ActiveForm::end();
 ?>
         </div>
@@ -46,10 +46,10 @@ if (!$panel->userSwitch->isMainUser()) {
             'id' => 'debug-userswitch__reset-identity',
         ],
     ]);
-    echo Html::submitButton('Reset to <span class="yii-debug-toolbar__label yii-debug-toolbar__label_info">'
+    echo Html::submitButton('Reset to <span class="yii-debug-toolbar-label yii-debug-toolbar-label-info">'
         . $panel->userSwitch->getMainUser()->getId()
         . '</span>', [
-            'class' => 'yii-debug-btn yii-debug-btn--ghost',
+            'class' => 'yii-debug-btn yii-debug-btn-ghost',
             'id' => 'debug-userswitch__reset-identity-button',
         ]);
     ActiveForm::end();
@@ -65,7 +65,7 @@ if ($panel->canSearchUsers()) {
         'dataProvider' => $panel->getUserDataProvider(),
         'filterModel' => $panel->getUsersFilterModel(),
         'tableOptions' => [
-            'class' => 'yii-debug-table yii-debug-table--pointer',
+            'class' => 'yii-debug-table yii-debug-table-pointer',
         ],
         'columns' => $panel->filterColumns,
     ]));

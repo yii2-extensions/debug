@@ -12,7 +12,7 @@ use yii\web\AssetBundle;
 class TimelineAsset extends AssetBundle
 {
     public $css = [
-        'css/timeline.css',
+        'css/timeline.min.css',
     ];
     public $depends = [
         'yii\debug\DebugAsset',

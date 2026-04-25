@@ -9,5 +9,5 @@ else
     sass_cmd="npx --yes sass"
 fi
 for file in main toolbar timeline; do
-    $sass_cmd scss/$file.scss css/$file.css --no-source-map --style=compressed
+    $sass_cmd scss/$file.scss css/$file.min.css --no-source-map --style=compressed
 done

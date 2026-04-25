@@ -112,7 +112,7 @@
 
         if (!error) {
             error = document.createElement('div');
-            error.className = 'debug-userswitch__error yii-debug-callout yii-debug-callout--danger';
+            error.className = 'debug-userswitch__error yii-debug-callout yii-debug-callout-danger';
             error.setAttribute('role', 'alert');
             form.insertBefore(error, form.firstChild);
         }

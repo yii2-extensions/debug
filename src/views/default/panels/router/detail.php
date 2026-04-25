@@ -31,7 +31,7 @@ $items['content'][] = $this->render('actions', ['actionRoutes' => $actionRoutes]
         echo Html::tag(
             'li',
             Html::a($item, '#r-tab-' . $k, [
-                'class' => $k === 0 ? 'yii-debug-tab__link is-active' : 'yii-debug-tab__link',
+                'class' => $k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link',
                 'data-yii-debug-toggle' => 'tab',
                 'role' => 'tab',
                 'aria-controls' => 'r-tab-' . $k,
@@ -44,14 +44,14 @@ $items['content'][] = $this->render('actions', ['actionRoutes' => $actionRoutes]
     }
 ?>
     <li class="yii-debug-tab">
-        <span class="yii-debug-tab__link yii-debug-tab__link--badge">
+        <span class="yii-debug-tab-link yii-debug-tab-link-badge">
             <span class="yii-debug-badge yii-debug-badge--<?= $routerRules->prettyUrl ? 'success' : 'muted' ?>">
                 Pretty URL <?= $routerRules->prettyUrl ? 'Enabled' : 'Disabled' ?>
             </span>
         </span>
     </li>
     <li class="yii-debug-tab">
-        <span class="yii-debug-tab__link yii-debug-tab__link--badge">
+        <span class="yii-debug-tab-link yii-debug-tab-link-badge">
             <span class="yii-debug-badge yii-debug-badge--<?= $routerRules->strictParsing ? 'success' : 'muted' ?>">
                 Strict Parsing <?= $routerRules->strictParsing ? 'Enabled' : 'Disabled' ?>
             </span>
@@ -59,8 +59,8 @@ $items['content'][] = $this->render('actions', ['actionRoutes' => $actionRoutes]
     </li>
     <?php if ($routerRules->suffix): ?>
         <li class="yii-debug-tab">
-            <span class="yii-debug-tab__link yii-debug-tab__link--badge">
-                <span class="yii-debug-badge yii-debug-badge--warning">
+            <span class="yii-debug-tab-link yii-debug-tab-link-badge">
+                <span class="yii-debug-badge yii-debug-badge-warning">
                     Global Suffix: <?= $routerRules->suffix ?>
                 </span>
             </span>

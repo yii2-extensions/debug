@@ -43,11 +43,11 @@ final class GridViewConfig
             'options' => ['class' => 'yii-debug-grid'],
             'pager' => [
                 'options' => ['class' => 'yii-debug-pager'],
-                'linkContainerOptions' => ['class' => 'yii-debug-pager__item'],
-                'linkOptions' => ['class' => 'yii-debug-pager__link'],
+                'linkContainerOptions' => ['class' => 'yii-debug-pager-item'],
+                'linkOptions' => ['class' => 'yii-debug-pager-link'],
                 'disabledListItemSubTagOptions' => [
                     'tag' => 'span',
-                    'class' => 'yii-debug-pager__link',
+                    'class' => 'yii-debug-pager-link',
                 ],
                 'activePageCssClass' => 'is-active',
                 'disabledPageCssClass' => 'is-disabled',
@@ -76,6 +76,6 @@ final class GridViewConfig
             return [];
         }
 
-        return ['class' => 'yii-debug-row--' . $normalized];
+        return ['class' => 'yii-debug-row-' . $normalized];
     }
 }

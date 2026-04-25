@@ -23,18 +23,18 @@ if ($warningCount) {
 }
 ?>
 
-<div class="yii-debug-toolbar__block">
+<div class="yii-debug-toolbar-block">
     <a href="<?= $panel->getUrl() ?>" title="<?= implode(',&nbsp;', $titles) ?>">Log
-        <span class="yii-debug-toolbar__label"><?= count($data['messages']) ?></span>
+        <span class="yii-debug-toolbar-label"><?= count($data['messages']) ?></span>
     </a>
     <?php if ($errorCount): ?>
         <a href="<?= $panel->getUrl(['Log[level]' => Logger::LEVEL_ERROR]) ?>" title="<?= $titles['errors'] ?>">
-            <span class="yii-debug-toolbar__label yii-debug-toolbar__label_important"><?= $errorCount ?></span>
+            <span class="yii-debug-toolbar-label yii-debug-toolbar-label-important"><?= $errorCount ?></span>
         </a>
     <?php endif; ?>
     <?php if ($warningCount): ?>
         <a href="<?= $panel->getUrl(['Log[level]' => Logger::LEVEL_WARNING]) ?>" title="<?= $titles['warnings'] ?>">
-            <span class="yii-debug-toolbar__label yii-debug-toolbar__label_warning"><?= $warningCount ?></span>
+            <span class="yii-debug-toolbar-label yii-debug-toolbar-label-warning"><?= $warningCount ?></span>
         </a>
     <?php endif; ?>
 </div>

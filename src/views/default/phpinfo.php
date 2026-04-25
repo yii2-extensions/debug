@@ -34,9 +34,9 @@ $metaItems = [
 
     <div class="yii-debug-phpinfo-meta">
         <?php foreach ($metaItems as $key => $value): ?>
-            <span class="yii-debug-phpinfo-meta__item">
-                <span class="yii-debug-phpinfo-meta__key"><?= Html::encode($key) ?></span>
-                <span class="yii-debug-phpinfo-meta__value"><?= Html::encode($value) ?></span>
+            <span class="yii-debug-phpinfo-meta-item">
+                <span class="yii-debug-phpinfo-meta-key"><?= Html::encode($key) ?></span>
+                <span class="yii-debug-phpinfo-meta-value"><?= Html::encode($value) ?></span>
             </span>
         <?php endforeach; ?>
     </div>

@@ -32,9 +32,9 @@ foreach ($manifest as $meta) {
 }
 ?>
 <div class="yii-debug-page default-view">
-    <div id="yii-debug-toolbar" class="yii-debug-toolbar yii-debug-toolbar_position_top" style="display: none;">
-        <div class="yii-debug-toolbar__bar">
-            <div class="yii-debug-toolbar__block yii-debug-toolbar__title">
+    <div id="yii-debug-toolbar" class="yii-debug-toolbar yii-debug-toolbar-position-top" style="display: none;">
+        <div class="yii-debug-toolbar-bar">
+            <div class="yii-debug-toolbar-block yii-debug-toolbar-title">
                 <a href="<?= Url::to(['index']) ?>">
                     <img width="29" height="30" alt="" src="<?= \yii\debug\Module::getYiiLogo() ?>">
                 </a>
@@ -74,12 +74,12 @@ foreach ($manifest as $meta) {
                         ) ?>
                     </div>
                     <div class="yii-debug-btn-group" role="group">
-                        <?= Html::a('All', ['index'], ['class' => 'yii-debug-btn yii-debug-btn--ghost yii-debug-btn--sm']) ?>
-                        <?= Html::a('Latest', ['view', 'panel' => $activePanel->id], ['class' => 'yii-debug-btn yii-debug-btn--ghost yii-debug-btn--sm']) ?>
+                        <?= Html::a('All', ['index'], ['class' => 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm']) ?>
+                        <?= Html::a('Latest', ['view', 'panel' => $activePanel->id], ['class' => 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm']) ?>
                         <div class="yii-debug-dropdown">
                             <?= Html::button('Last 10 ▾', [
                                 'type' => 'button',
-                                'class' => 'yii-debug-btn yii-debug-btn--ghost yii-debug-btn--sm',
+                                'class' => 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm',
                                 'data-yii-debug-toggle' => 'dropdown',
                                 'aria-haspopup' => 'true',
                                 'aria-expanded' => 'false',
@@ -87,9 +87,9 @@ foreach ($manifest as $meta) {
                             <?= \yii\widgets\Menu::widget([
                                 'encodeLabels' => false,
                                 'items' => $historyItems,
-                                'options' => ['class' => 'yii-debug-dropdown__menu'],
+                                'options' => ['class' => 'yii-debug-dropdown-menu'],
                                 'itemOptions' => ['tag' => 'li'],
-                                'linkTemplate' => '<a href="{url}" class="yii-debug-dropdown__item">{label}</a>',
+                                'linkTemplate' => '<a href="{url}" class="yii-debug-dropdown-item">{label}</a>',
                             ]) ?>
                         </div>
                     </div>

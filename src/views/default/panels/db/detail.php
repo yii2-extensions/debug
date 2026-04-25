@@ -19,7 +19,7 @@ use yii\web\View;
 
 <?php
 if (Yii::$app->log->traceLevel < 1) {
-    echo '<div class="yii-debug-callout yii-debug-callout--warning">Check application configuration section [log] for <b>traceLevel</b></div>';
+    echo '<div class="yii-debug-callout yii-debug-callout-warning">Check application configuration section [log] for <b>traceLevel</b></div>';
 }
 
 if ($sumDuplicates === 1) {
@@ -69,7 +69,7 @@ $items['content'][] = $this->render('callers', [
         echo Html::tag(
             'li',
             Html::a($item, '#u-tab-' . $k, [
-                'class' => $k === 0 ? 'yii-debug-tab__link is-active' : 'yii-debug-tab__link',
+                'class' => $k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link',
                 'data-yii-debug-toggle' => 'tab',
                 'role' => 'tab',
                 'aria-controls' => 'u-tab-' . $k,

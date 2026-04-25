@@ -71,7 +71,7 @@ if (isset($panel->data['SERVER'])) {
         echo Html::tag(
             'li',
             Html::a($item, '#r-tab-' . $k, [
-                'class' => $k === 0 ? 'yii-debug-tab__link is-active' : 'yii-debug-tab__link',
+                'class' => $k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link',
                 'data-yii-debug-toggle' => 'tab',
                 'role' => 'tab',
                 'aria-controls' => 'r-tab-' . $k,

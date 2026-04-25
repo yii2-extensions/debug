@@ -18,7 +18,7 @@ use yii\helpers\Html;
 </h3>
 
 <?php if ($currentRoute->message !== null): ?>
-    <div class="yii-debug-callout yii-debug-callout--info">
+    <div class="yii-debug-callout yii-debug-callout-info">
         <?= Html::encode($currentRoute->message) ?>
     </div>
 <?php endif; ?>
@@ -34,7 +34,7 @@ use yii\helpers\Html;
             </thead>
             <tbody>
             <?php foreach ($currentRoute->logs as $i => $log): ?>
-                <tr<?= $log['match'] ? ' class="yii-debug-row--success"' : '' ?>>
+                <tr<?= $log['match'] ? ' class="yii-debug-row-success"' : '' ?>>
                     <td><?= $i + 1; ?></td>
                     <td><?= Html::encode($log['rule']) ?></td>
                     <td><?= Html::encode($log['parent']) ?></td>

@@ -40,7 +40,7 @@ $corners = ['tl', 'tr', 'bl', 'br'];
 $renderCorners = function () use ($corners) {
     $out = '';
     foreach ($corners as $c) {
-        $out .= '<span class="yii-debug-readout__corner" data-corner="' . $c . '" aria-hidden="true"></span>';
+        $out .= '<span class="yii-debug-readout-corner" data-corner="' . $c . '" aria-hidden="true"></span>';
     }
     return $out;
 };
@@ -48,37 +48,37 @@ $renderCorners = function () use ($corners) {
 <h1 class="yii-debug-hero-title">configuration</h1>
 
 <div class="yii-debug-readout">
-    <article class="yii-debug-readout__card">
+    <article class="yii-debug-readout-card">
         <?= $renderCorners() ?>
-        <span class="yii-debug-readout__label">Yii</span>
-        <span class="yii-debug-readout__value"><?= Html::encode($app['yii']) ?></span>
-        <span class="yii-debug-readout__meta">framework</span>
+        <span class="yii-debug-readout-label">Yii</span>
+        <span class="yii-debug-readout-value"><?= Html::encode($app['yii']) ?></span>
+        <span class="yii-debug-readout-meta">framework</span>
     </article>
-    <article class="yii-debug-readout__card">
+    <article class="yii-debug-readout-card">
         <?= $renderCorners() ?>
-        <span class="yii-debug-readout__label">PHP</span>
-        <span class="yii-debug-readout__value"><?= Html::encode($php['version']) ?></span>
-        <span class="yii-debug-readout__meta">runtime</span>
+        <span class="yii-debug-readout-label">PHP</span>
+        <span class="yii-debug-readout-value"><?= Html::encode($php['version']) ?></span>
+        <span class="yii-debug-readout-meta">runtime</span>
     </article>
-    <article class="yii-debug-readout__card">
+    <article class="yii-debug-readout-card">
         <?= $renderCorners() ?>
-        <span class="yii-debug-readout__label">Environment</span>
-        <span class="yii-debug-readout__value"><?= Html::encode($app['env']) ?></span>
-        <span class="yii-debug-readout__meta">
+        <span class="yii-debug-readout-label">Environment</span>
+        <span class="yii-debug-readout-value"><?= Html::encode($app['env']) ?></span>
+        <span class="yii-debug-readout-meta">
             <?php if ($app['debug']): ?>
-                <span class="yii-debug-readout__chip">debug&nbsp;on</span>
+                <span class="yii-debug-readout-chip">debug&nbsp;on</span>
             <?php else: ?>
-                <span class="yii-debug-readout__chip yii-debug-readout__chip--muted">debug&nbsp;off</span>
+                <span class="yii-debug-readout-chip yii-debug-readout-chip-muted">debug&nbsp;off</span>
             <?php endif; ?>
         </span>
     </article>
-    <article class="yii-debug-readout__card">
+    <article class="yii-debug-readout-card">
         <?= $renderCorners() ?>
-        <span class="yii-debug-readout__label">Application</span>
-        <span class="yii-debug-readout__value"><?= Html::encode($app['name'] ?: '—') ?></span>
-        <span class="yii-debug-readout__meta">
+        <span class="yii-debug-readout-label">Application</span>
+        <span class="yii-debug-readout-value"><?= Html::encode($app['name'] ?: '—') ?></span>
+        <span class="yii-debug-readout-meta">
             <?php if (!empty($app['version'])): ?>
-                <span class="yii-debug-readout__chip yii-debug-readout__chip--muted">v<?= Html::encode($app['version']) ?></span>
+                <span class="yii-debug-readout-chip yii-debug-readout-chip-muted">v<?= Html::encode($app['version']) ?></span>
             <?php else: ?>
                 instance
             <?php endif; ?>
@@ -87,34 +87,34 @@ $renderCorners = function () use ($corners) {
 </div>
 
 <section class="yii-debug-section">
-    <h2 class="yii-debug-section__title">
-        <span class="yii-debug-section__mark">::</span> PHP extensions
+    <h2 class="yii-debug-section-title">
+        <span class="yii-debug-section-mark">::</span> PHP extensions
     </h2>
     <div class="yii-debug-ext-strip">
         <?php foreach ($phpExtensions as $name => $enabled): ?>
             <span class="yii-debug-ext-pill <?= $enabled ? 'is-on' : 'is-off' ?>">
-                <span class="yii-debug-ext-pill__dot" aria-hidden="true"></span>
-                <span class="yii-debug-ext-pill__label"><?= Html::encode($name) ?></span>
-                <span class="yii-debug-ext-pill__state"><?= $enabled ? 'on' : 'off' ?></span>
+                <span class="yii-debug-ext-pill-dot" aria-hidden="true"></span>
+                <span class="yii-debug-ext-pill-label"><?= Html::encode($name) ?></span>
+                <span class="yii-debug-ext-pill-state"><?= $enabled ? 'on' : 'off' ?></span>
             </span>
         <?php endforeach; ?>
     </div>
 </section>
 
 <section class="yii-debug-section">
-    <h2 class="yii-debug-section__title">
-        <span class="yii-debug-section__mark">//</span> Application details
+    <h2 class="yii-debug-section-title">
+        <span class="yii-debug-section-mark">//</span> Application details
     </h2>
     <dl class="yii-debug-dl">
-        <div class="yii-debug-dl__row">
+        <div class="yii-debug-dl-row">
             <dt>Charset</dt>
             <dd><?= Html::encode($app['charset'] ?: '—') ?></dd>
         </div>
-        <div class="yii-debug-dl__row">
+        <div class="yii-debug-dl-row">
             <dt>Current language</dt>
             <dd><?= Html::encode($formatLanguage($app['language']) ?: '—') ?></dd>
         </div>
-        <div class="yii-debug-dl__row">
+        <div class="yii-debug-dl-row">
             <dt>Source language</dt>
             <dd><?= Html::encode($formatLanguage($app['sourceLanguage']) ?: '—') ?></dd>
         </div>
@@ -123,16 +123,16 @@ $renderCorners = function () use ($corners) {
 
 <?php if (!empty($extensions)): ?>
     <section class="yii-debug-section">
-        <h2 class="yii-debug-section__title">
-            <span class="yii-debug-section__mark">&gt;_</span> Installed extensions
-            <span class="yii-debug-section__count"><?= count($extensions) ?></span>
+        <h2 class="yii-debug-section-title">
+            <span class="yii-debug-section-mark">&gt;_</span> Installed extensions
+            <span class="yii-debug-section-count"><?= count($extensions) ?></span>
         </h2>
         <div class="yii-debug-packages">
             <?php foreach ($extensions as $name => $version): ?>
                 <article class="yii-debug-package">
-                    <span class="yii-debug-package__glyph" aria-hidden="true">◆</span>
-                    <span class="yii-debug-package__name"><?= Html::encode($name) ?></span>
-                    <span class="yii-debug-package__version">v<?= Html::encode($version) ?></span>
+                    <span class="yii-debug-package-glyph" aria-hidden="true">◆</span>
+                    <span class="yii-debug-package-name"><?= Html::encode($name) ?></span>
+                    <span class="yii-debug-package-version">v<?= Html::encode($version) ?></span>
                 </article>
             <?php endforeach; ?>
         </div>
@@ -140,7 +140,7 @@ $renderCorners = function () use ($corners) {
 <?php endif; ?>
 
 <a class="yii-debug-cta" href="<?= $phpInfoUrl ?>" target="_blank" rel="noopener">
-    <span class="yii-debug-cta__prompt" aria-hidden="true">→</span>
+    <span class="yii-debug-cta-prompt" aria-hidden="true">→</span>
     <span>View full phpinfo</span>
-    <span class="yii-debug-cta__external" aria-hidden="true">↗</span>
+    <span class="yii-debug-cta-external" aria-hidden="true">↗</span>
 </a>

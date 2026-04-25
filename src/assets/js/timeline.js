@@ -32,7 +32,7 @@
                 this.options.$focus.focus();
                 delete this.options.$focus;
             }
-            var links = document.querySelectorAll('.debug-timeline-panel__item a');
+            var links = document.querySelectorAll('.debug-timeline-panel-item a');
 
             for (var i = 0, len = links.length; i < len; i++) {
                 on(links[i], 'mouseenter', function() {
@@ -77,8 +77,8 @@
 
     (new Timeline({
         '$timeline': document.querySelector('.debug-timeline-panel'),
-        '$header': document.querySelector('.debug-timeline-panel__header'),
-        '$search': document.querySelectorAll('.debug-timeline-panel__search input'),
-        '$memory': document.querySelector('.debug-timeline-panel__memory .scale')
+        '$header': document.querySelector('.debug-timeline-panel-header'),
+        '$search': document.querySelectorAll('.debug-timeline-panel-search input'),
+        '$memory': document.querySelector('.debug-timeline-panel-memory .scale')
     }));
 })();

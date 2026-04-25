@@ -6,9 +6,9 @@ declare(strict_types=1);
 /** @var int $time */
 /** @var int $memory */
 ?>
-<div class="yii-debug-toolbar__block">
+<div class="yii-debug-toolbar-block">
     <a href="<?= $panel->getUrl() ?>" title="Total request processing time was <?= $time ?>">Time <span
-            class="yii-debug-toolbar__label yii-debug-toolbar__label_info"><?= $time ?></span></a>
+            class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= $time ?></span></a>
     <a href="<?= $panel->getUrl() ?>" title="Peak memory consumption">Memory <span
-            class="yii-debug-toolbar__label yii-debug-toolbar__label_info"><?= $memory ?></span></a>
+            class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= $memory ?></span></a>
 </div>

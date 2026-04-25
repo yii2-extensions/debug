@@ -20,7 +20,7 @@ echo Html::tag('h3', $panel->getName() . ' Callers');
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $callerDataProvider,
     'id' => 'db-panel-detailed-callers-grid',
-    'options' => ['class' => 'yii-debug-grid yii-debug-grid--db'],
+    'options' => ['class' => 'yii-debug-grid yii-debug-grid-db'],
     'columns' => [
         [
             'label' => 'Caller',

@@ -19,14 +19,14 @@ if ($excessiveCallerCount) {
 }
 ?>
 <?php if ($queryCount): ?>
-    <div class="yii-debug-toolbar__block">
+    <div class="yii-debug-toolbar-block">
         <a href="<?= $panel->getUrl() ?>" title="<?= $title ?>">
             <?= $panel->getSummaryName() ?>
-            <span class="yii-debug-toolbar__label yii-debug-toolbar__label_info"><?= $queryCount ?></span>
+            <span class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= $queryCount ?></span>
             <?php if ($warning): ?>
                 <span title="<?= $warning ?>">&#x26a0;</span>
             <?php endif; ?>
-            <span class="yii-debug-toolbar__label"><?= $queryTime ?></span>
+            <span class="yii-debug-toolbar-label"><?= $queryTime ?></span>
         </a>
     </div>
 <?php endif; ?>

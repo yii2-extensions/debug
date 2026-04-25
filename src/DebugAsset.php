@@ -12,8 +12,8 @@ use yii\web\AssetBundle;
 class DebugAsset extends AssetBundle
 {
     public $css = [
-        'css/main.css',
-        'css/toolbar.css',
+        'css/main.min.css',
+        'css/toolbar.min.css',
     ];
     public $js = [
         'js/debug.js',

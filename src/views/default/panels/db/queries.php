@@ -20,7 +20,7 @@ echo Html::tag('h3', $panel->getName() . ' Queries');
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $queryDataProvider,
     'id' => 'db-panel-detailed-queries-grid',
-    'options' => ['class' => 'yii-debug-grid yii-debug-grid--db'],
+    'options' => ['class' => 'yii-debug-grid yii-debug-grid-db'],
     'filterModel' => $searchModel,
     'filterUrl' => $panel->getUrl(),
     'columns' => [

@@ -179,7 +179,7 @@
     function hideDropdowns(except) {
         var wrappers = document.querySelectorAll('.yii-debug-dropdown.is-open');
         for (var i = 0; i < wrappers.length; i++) {
-            var menu = wrappers[i].querySelector('.yii-debug-dropdown__menu');
+            var menu = wrappers[i].querySelector('.yii-debug-dropdown-menu');
             if (except && menu === except) {
                 continue;
             }
@@ -254,7 +254,7 @@
 
         if (dropdown) {
             var wrapper = closest(dropdown, '.yii-debug-dropdown');
-            var menu = wrapper ? wrapper.querySelector('.yii-debug-dropdown__menu') : null;
+            var menu = wrapper ? wrapper.querySelector('.yii-debug-dropdown-menu') : null;
             event.preventDefault();
             event.stopPropagation();
 

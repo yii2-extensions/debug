@@ -13,7 +13,7 @@ use yii\widgets\ActiveForm;
 
 TimelineAsset::register($this);
 ?>
-<h1 class="debug-timeline-panel__title">Timeline - <?= number_format($panel->getDuration()); ?> ms</h1>
+<h1 class="debug-timeline-panel-title">Timeline - <?= number_format($panel->getDuration()); ?> ms</h1>
 
 <?php $form = ActiveForm::begin([
     'method' => 'get',
@@ -21,7 +21,7 @@ TimelineAsset::register($this);
     'id' => 'debug-timeline-search',
     'enableClientScript' => false,
     'options' => [
-        'class' => 'debug-timeline-panel__search yii-debug-mini-toolbar',
+        'class' => 'debug-timeline-panel-search yii-debug-mini-toolbar',
     ],
 ]) ?>
 
@@ -38,12 +38,12 @@ TimelineAsset::register($this);
 ])->textInput(['class' => 'yii-debug-input']);?>
 
 <div class="yii-debug-field">
-    <?=Html::submitButton('Filter', ['class' => 'yii-debug-btn yii-debug-btn--primary'])?>
+    <?=Html::submitButton('Filter', ['class' => 'yii-debug-btn yii-debug-btn-primary'])?>
 </div>
 
 <?php ActiveForm::end(); ?>
 <div class="debug-timeline-panel">
-    <div class="debug-timeline-panel__header">
+    <div class="debug-timeline-panel-header">
         <?php foreach ($dataProvider->getRulers() as $ms => $left): ?>
             <span class="ruler"
                   style="margin-left: <?= StringHelper::normalizeNumber($left) ?>%"><b><?= sprintf('%.1f ms', $ms) ?></b></span>
@@ -64,15 +64,15 @@ TimelineAsset::register($this);
         </div>
     </div>
     <?php if ($panel->svg->hasPoints()): ?>
-        <div class="debug-timeline-panel__memory"
+        <div class="debug-timeline-panel-memory"
              style="height: <?= StringHelper::normalizeNumber($panel->svg->y) ?>px;">
             <div class="scale" style="bottom: 100%;"><?= sprintf('%.2f MB', $panel->memory / 1048576) ?></div>
             <?= $panel->svg; ?>
         </div>
     <?php endif; ?>
-    <div class="debug-timeline-panel__items">
+    <div class="debug-timeline-panel-items">
         <?php if (($models = $dataProvider->models) === []): ?>
-            <div class="debug-timeline-panel__item empty">
+            <div class="debug-timeline-panel-item empty">
                 <span>No results found.</span>
             </div>
         <?php else: ?>
@@ -87,7 +87,7 @@ TimelineAsset::register($this);
                     $memory = ' / <span class="memory"' . $diff . '>' . sprintf('%.2f', $model['memory'] / 1048576) . ' MB</span>';
                 }
                 ?>
-                <div class="debug-timeline-panel__item">
+                <div class="debug-timeline-panel-item">
                     <?php if ($model['child']): ?>
                         <span class="ruler ruler-start"
                               style="height: <?= StringHelper::normalizeNumber($model['child'] * 21) ?>px; margin-left: <?= StringHelper::normalizeNumber($model['css']['left']) ?>%"></span>
