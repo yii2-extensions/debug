@@ -8,10 +8,9 @@ use yii\web\Response;
 
 /** @var RequestPanel $panel */
 
-$statusCode = isset($panel->data['statusCode']) ? $panel->data['statusCode'] : null;
-if ($statusCode === null) {
-    $statusCode = 200;
-}
+$rawStatus = is_array($panel->data) ? ($panel->data['statusCode'] ?? null) : null;
+$statusCode = is_int($rawStatus) ? $rawStatus : (is_numeric($rawStatus) ? (int) $rawStatus : 200);
+
 if ($statusCode >= 200 && $statusCode < 300) {
     $class = 'yii-debug-toolbar-label-success';
 } elseif ($statusCode >= 300 && $statusCode < 400) {
@@ -19,7 +18,9 @@ if ($statusCode >= 200 && $statusCode < 300) {
 } else {
     $class = 'yii-debug-toolbar-label-important';
 }
-$statusText = Html::encode(isset(Response::$httpStatuses[$statusCode]) ? Response::$httpStatuses[$statusCode] : '');
+
+$httpStatusText = Response::$httpStatuses[$statusCode] ?? '';
+$statusText = Html::encode(is_string($httpStatusText) ? $httpStatusText : '');
 ?>
 <div class="yii-debug-toolbar-block">
     <a href="<?= $panel->getUrl() ?>" title="Status code: <?= $statusCode ?> <?= $statusText ?>">Status <span

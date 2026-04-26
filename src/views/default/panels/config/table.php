@@ -5,12 +5,12 @@ declare(strict_types=1);
 use yii\helpers\Html;
 
 /** @var string $caption */
-/** @var array $values */
+/** @var array<int|string, mixed> $values */
 ?>
 
 <h3><?= $caption ?></h3>
 
-<?php if (empty($values)): ?>
+<?php if ($values === []): ?>
     <p>Empty.</p>
 
 <?php else: ?>
@@ -25,8 +25,8 @@ use yii\helpers\Html;
             <tbody>
             <?php foreach ($values as $name => $value): ?>
                 <tr>
-                    <th style="white-space: normal"><?= Html::encode($name) ?></th>
-                    <td style="overflow:auto"><?= Html::encode($value) ?></td>
+                    <th style="white-space: normal"><?= Html::encode((string) $name) ?></th>
+                    <td style="overflow:auto"><?= Html::encode(is_scalar($value) ? (string) $value : '') ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

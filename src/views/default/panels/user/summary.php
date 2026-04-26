@@ -6,18 +6,24 @@ use yii\helpers\Html;
 
 /** @var \yii\web\View $this */
 /** @var yii\debug\panels\UserPanel $panel */
+
+$data = is_array($panel->data) ? $panel->data : [];
+$id = $data['id'] ?? null;
+$idLabel = is_scalar($id) ? (string) $id : '';
+$user = $panel->getUser();
+$isGuest = $user === null || $user->isGuest;
 ?>
 <div class="yii-debug-toolbar-block">
     <a href="<?= $panel->getUrl() ?>">
-        <?php if (!isset($panel->data['id'])): ?>
+        <?php if ($id === null): ?>
             <span class="yii-debug-toolbar-label">Guest</span>
         <?php else: ?>
-            <?php if ($panel->getUser()->isGuest || $panel->userSwitch->isMainUser()): ?>
+            <?php if ($isGuest || $panel->userSwitch->isMainUser()): ?>
                 <?= Html::encode($panel->getName()) ?> <span
-                    class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= $panel->data['id'] ?></span>
+                    class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= Html::encode($idLabel) ?></span>
             <?php else: ?>
                 <?= Html::encode($panel->getName()) ?> switching <span
-                    class="yii-debug-toolbar-label yii-debug-toolbar-label-warning"><?= $panel->data['id'] ?></span>
+                    class="yii-debug-toolbar-label yii-debug-toolbar-label-warning"><?= Html::encode($idLabel) ?></span>
             <?php endif; ?>
             <?php if ($panel->canSwitchUser()): ?>
                 <span class="yii-debug-toolbar-switch-icon yii-debug-toolbar-userswitch"

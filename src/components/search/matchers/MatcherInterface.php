@@ -12,23 +12,23 @@ interface MatcherInterface
     /**
      * Checks if base value is set.
      *
-     * @return bool if base value is set.
+     * @return bool `true` if base value is set, `false` otherwise.
      */
-    public function hasValue();
+    public function hasValue(): bool;
 
     /**
      * Checks if the value passed matches base value.
      *
-     * @param mixed $value value to be matched.
+     * @param mixed $value Value to be matched.
      *
-     * @return bool if there is a match.
+     * @return bool `true` if the value passed matches base value, `false` otherwise.
      */
-    public function match($value);
+    public function match(mixed $value): bool;
 
     /**
      * Sets base value to match against.
      *
-     * @param mixed $value
+     * @param mixed $value Base value to match against.
      */
-    public function setValue($value);
+    public function setValue(mixed $value): void;
 }

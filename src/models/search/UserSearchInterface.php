@@ -24,8 +24,8 @@ interface UserSearchInterface extends IdentityInterface
 {
     /**
      * Creates data provider instance with search query applied.
-     * @param array $params the data array to load model.
-     * @return DataProviderInterface
+     *
+     * @param array<int|string, mixed> $params the data array to load model.
      */
-    public function search($params);
+    public function search(array $params): DataProviderInterface;
 }

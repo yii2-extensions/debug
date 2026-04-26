@@ -30,8 +30,8 @@ final class CurrentRouteTest extends TestCase
 
         self::assertSame(
             [
-                ['rule' => 'test rule 1', 'match' => false],
-                ['rule' => 'test rule 2', 'match' => false],
+                ['match' => false, 'rule' => 'test rule 1'],
+                ['match' => false, 'rule' => 'test rule 2'],
             ],
             $router->logs,
             'All rule-trace entries must round-trip into logs in input order.',
@@ -58,7 +58,7 @@ final class CurrentRouteTest extends TestCase
             'messages' => [[['rule' => 'test rule', 'match' => true], 999]],
         ]);
 
-        self::assertSame([['rule' => 'test rule', 'match' => true]], $router->logs, 'Rule-trace entry must round-trip into logs.');
+        self::assertSame([['match' => true, 'rule' => 'test rule']], $router->logs, 'Rule-trace entry must round-trip into logs.');
         self::assertSame(1, $router->count, 'A single rule-trace entry must set counter to 1.');
         self::assertTrue($router->hasMatch, 'A matching rule must flip hasMatch to true.');
     }
@@ -69,7 +69,7 @@ final class CurrentRouteTest extends TestCase
             'messages' => [[['rule' => 'test rule', 'match' => false], 999]],
         ]);
 
-        self::assertSame([['rule' => 'test rule', 'match' => false]], $router->logs, 'Non-matching rules must still appear in logs.');
+        self::assertSame([['match' => false, 'rule' => 'test rule']], $router->logs, 'Non-matching rules must still appear in logs.');
         self::assertSame(1, $router->count, 'Counter must include non-matching attempts.');
         self::assertFalse($router->hasMatch, 'Non-matching attempts must leave hasMatch false.');
     }
@@ -84,7 +84,7 @@ final class CurrentRouteTest extends TestCase
         ]);
 
         self::assertSame(
-            [['rule' => 'test rule', 'match' => false, 'parent' => 'test parent']],
+            [['match' => false, 'rule' => 'test rule', 'parent' => 'test parent']],
             $router->logs,
             'Parent rules must be deduplicated when a child entry already references them.',
         );

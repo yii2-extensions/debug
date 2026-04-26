@@ -23,15 +23,16 @@ use yii\debug\components\search\matchers;
 class Base extends Model
 {
     /**
-     * Adds filtering condition for a given attribute
+     * Adds filtering condition for a given attribute.
      *
      * @param Filter $filter filter instance
      * @param string $attribute attribute to filter
      * @param bool $partial if partial match should be used
      */
-    public function addCondition(Filter $filter, $attribute, $partial = false)
+    public function addCondition(Filter $filter, string $attribute, bool $partial = false): void
     {
-        $value = (string) $this->$attribute;
+        $rawValue = $this->getAttributes([$attribute])[$attribute] ?? null;
+        $value = is_scalar($rawValue) ? (string) $rawValue : '';
 
         if (mb_strpos($value, '>') !== false) {
             $value = (int) str_replace('>', '', $value);

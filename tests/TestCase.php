@@ -26,7 +26,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function destroyApplication(): void
     {
-        Yii::$app = null;
+        (new ReflectionClass(Yii::class))->setStaticPropertyValue('app', null);
         Yii::$container = new Container();
     }
 

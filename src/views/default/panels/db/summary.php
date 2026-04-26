@@ -12,18 +12,18 @@ $warning = '';
 if ($panel->isQueryCountCritical($queryCount)) {
     $warning .= "Too many queries, allowed count is {$panel->criticalQueryThreshold}.";
 }
-if ($excessiveCallerCount) {
-    $warning .= ($warning ? ' &#10;' : '') . $excessiveCallerCount . ' '
+if ($excessiveCallerCount > 0) {
+    $warning .= ($warning !== '' ? ' &#10;' : '') . $excessiveCallerCount . ' '
         . ($excessiveCallerCount === 1 ? 'caller is' : 'callers are')
         . ' making too many calls.';
 }
 ?>
-<?php if ($queryCount): ?>
+<?php if ($queryCount > 0): ?>
     <div class="yii-debug-toolbar-block">
         <a href="<?= $panel->getUrl() ?>" title="<?= $title ?>">
             <?= $panel->getSummaryName() ?>
             <span class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= $queryCount ?></span>
-            <?php if ($warning): ?>
+            <?php if ($warning !== ''): ?>
                 <span title="<?= $warning ?>">&#x26a0;</span>
             <?php endif; ?>
             <span class="yii-debug-toolbar-label"><?= $queryTime ?></span>

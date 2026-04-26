@@ -49,10 +49,9 @@ class Db extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array $models data to return provider for
-     * @return \yii\data\ArrayDataProvider
+     * @param array<int, array<string, mixed>> $models data to return provider for
      */
-    public function search($models)
+    public function search(array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,

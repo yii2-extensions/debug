@@ -12,16 +12,34 @@ use yii\base\Component;
 abstract class Base extends Component implements MatcherInterface
 {
     /**
-     * @var mixed base value to check
+     * Base value to check
      */
-    protected $baseValue;
+    protected mixed $baseValue = null;
 
-    public function hasValue()
+    /**
+     * Checks if the base value is set and not empty.
+     *
+     * @return bool `true` if the base value is set and not empty, `false` otherwise.
+     */
+    public function hasValue(): bool
     {
-        return !empty($this->baseValue) || ($this->baseValue === '0');
+        return match (true) {
+            $this->baseValue === null,
+            $this->baseValue === '',
+            $this->baseValue === false,
+            $this->baseValue === 0,
+            $this->baseValue === 0.0,
+            $this->baseValue === [] => false,
+            default => true,
+        };
     }
 
-    public function setValue($value)
+    /**
+     * Sets the base value to check.
+     *
+     * @param mixed $value Value to set as the base value.
+     */
+    public function setValue(mixed $value): void
     {
         $this->baseValue = $value;
     }

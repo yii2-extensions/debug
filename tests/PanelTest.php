@@ -36,12 +36,16 @@ final class PanelTest extends TestCase
 
         $data = $panel->getToolbarData();
 
+        self::assertArrayHasKey('title', $data, 'Toolbar envelope must expose a `title` key.');
+        self::assertArrayHasKey('html', $data, 'Toolbar envelope must expose a `html` key.');
+        self::assertArrayHasKey('url', $data, 'Toolbar envelope must expose a `url` key.');
         self::assertSame('Custom', $data['title'], 'Title should mirror the panel name.');
         self::assertSame(
             '<strong>Custom summary</strong>',
             $data['html'],
             'Empty getToolbarItems() should fall back to the summary HTML.',
         );
+        self::assertIsString($data['url'], 'URL value must be a string.');
         self::assertStringContainsString('panel=custom', $data['url'], 'URL should target the panel by id.');
     }
 
@@ -66,6 +70,7 @@ final class PanelTest extends TestCase
 
         $data = $panel->getToolbarData();
 
+        self::assertArrayHasKey('icon', $data, 'Toolbar envelope must expose an `icon` key when declared.');
         self::assertSame('profiling', $data['icon'], 'Icon key should round-trip into the toolbar JSON envelope.');
     }
 

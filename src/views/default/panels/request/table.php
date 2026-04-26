@@ -6,7 +6,7 @@ use yii\helpers\Html;
 use yii\helpers\VarDumper;
 
 /** @var string $caption */
-/** @var array $values */
+/** @var array<int|string, mixed> $values */
 /** @var bool $filterable */
 
 $filterable = $filterable ?? false;
@@ -25,7 +25,7 @@ $rowCount = count($values);
     <?php endif; ?>
 </header>
 
-<?php if (empty($values)): ?>
+<?php if ($values === []): ?>
     <p class="yii-debug-table-empty">No data</p>
 
 <?php else: ?>
@@ -40,7 +40,7 @@ $rowCount = count($values);
             <tbody>
             <?php foreach ($values as $name => $value): ?>
                 <tr>
-                    <th><?= Html::encode($name) ?></th>
+                    <th><?= Html::encode((string) $name) ?></th>
                     <td><?= htmlspecialchars(VarDumper::dumpAsString($value), ENT_QUOTES | ENT_SUBSTITUTE, \Yii::$app->charset, true) ?></td>
                 </tr>
             <?php endforeach; ?>

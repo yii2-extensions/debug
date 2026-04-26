@@ -6,11 +6,11 @@ namespace yii\debug\actions\db;
 
 use Yii;
 use yii\base\Action;
-use yii\base\InvalidConfigException;
-use yii\db\Exception;
+use yii\debug\controllers\DefaultController;
 use yii\debug\panels\DbPanel;
 use yii\web\HttpException;
-use yii\web\NotFoundHttpException;
+
+use function is_string;
 
 /**
  * ExplainAction provides EXPLAIN information for SQL queries
@@ -18,45 +18,69 @@ use yii\web\NotFoundHttpException;
 class ExplainAction extends Action
 {
     /**
-     * @var DbPanel
+     * Database panel instance, which will be used to retrieve the database connection and calculate timings.
      */
-    public $panel;
+    public DbPanel|null $panel = null;
 
     /**
      * Runs the action.
      *
-     * @param string $seq
-     * @param string $tag
+     * @param string $seq Sequence number of the log message to explain.
+     * @param string $tag Tag of the log message to explain.
      *
-     * @throws HttpException
-     * @throws Exception
-     * @throws NotFoundHttpException if the view file cannot be found
-     * @throws InvalidConfigException
+     * @throws HttpException if the controller is not an instance of DefaultController, if the log message is not found,
+     * or if the stored query is not a string.
      *
-     * @return string
+     * @return string Rendered view with the EXPLAIN results.
      */
-    public function run($seq, $tag)
+    public function run(string $seq, string $tag): string
     {
-        $this->controller->loadData($tag);
+        if ($this->panel === null) {
+            throw new HttpException(
+                500,
+                'DbPanel instance is not set for ExplainAction.',
+            );
+        }
+
+        $controller = $this->controller;
+
+        if (!$controller instanceof DefaultController) {
+            throw new HttpException(
+                500,
+                'EXPLAIN action must run inside the debug DefaultController.',
+            );
+        }
+
+        $controller->loadData($tag);
 
         $timings = $this->panel->calculateTimings();
 
-        if (!isset($timings[$seq])) {
+        $seqKey = (int) $seq;
+
+        if (!isset($timings[$seqKey])) {
             throw new HttpException(404, 'Log message not found.');
         }
 
-        $query = $timings[$seq]['info'];
+        $query = $timings[$seqKey]['info'] ?? '';
+
+        if (!is_string($query)) {
+            throw new HttpException(500, 'Stored query is not a string.');
+        }
+
         $db = $this->panel->getDb();
-        // SQLite's bare `EXPLAIN` dumps VDBE bytecode (Init/Halt/Goto…) which is useless to
-        // application developers. `EXPLAIN QUERY PLAN` is the human-readable equivalent.
-        // MySQL/PostgreSQL/CUBRID already return a usable plan from plain `EXPLAIN`.
+
+        /**
+         * SQLite bare `EXPLAIN` dumps VDBE bytecode (Init/Halt/Goto…) which is useless to application developers.
+         * `EXPLAIN QUERY PLAN` is the human-readable equivalent.
+         * MySQL/PostgreSQL already return a usable plan from plain `EXPLAIN`.
+         */
         $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';
         $results = $db->createCommand($explainPrefix . $query)->queryAll();
 
         $params = ['query' => $query, 'results' => $results];
 
         return Yii::$app->request->isAjax
-            ? $this->controller->renderPartial('db-explain', $params)
-            : $this->controller->render('db-explain', $params);
+            ? $controller->renderPartial('db-explain', $params)
+            : $controller->render('db-explain', $params);
     }
 }

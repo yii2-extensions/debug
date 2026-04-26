@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use yii\helpers\Html;
 
+/** @var \yii\web\View $this */
 /** @var yii\debug\models\router\CurrentRoute $currentRoute */
 /** @var yii\debug\models\router\RouterRules $routerRules */
 /** @var yii\debug\models\router\ActionRoutes $actionRoutes */
@@ -57,11 +58,11 @@ $items['content'][] = $this->render('actions', ['actionRoutes' => $actionRoutes]
             </span>
         </span>
     </li>
-    <?php if ($routerRules->suffix): ?>
+    <?php if ($routerRules->suffix !== null && $routerRules->suffix !== ''): ?>
         <li class="yii-debug-tab">
             <span class="yii-debug-tab-link yii-debug-tab-link-badge">
                 <span class="yii-debug-badge yii-debug-badge-warning">
-                    Global Suffix: <?= $routerRules->suffix ?>
+                    Global Suffix: <?= Html::encode($routerRules->suffix) ?>
                 </span>
             </span>
         </li>

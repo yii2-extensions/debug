@@ -9,13 +9,21 @@ use yii\helpers\Html;
 
 yii\debug\DebugAsset::register($this);
 
-$debugTheme = null;
-if (Yii::$app instanceof \yii\web\Application) {
+// `debugTheme` is primed by DefaultController::primeThemeContext() and exposed via $this->params; we still
+// fall back to the request/cookie pair so direct hits on the layout (legacy/tests) keep working.
+$debugTheme = is_string($this->params['debugTheme'] ?? null) ? $this->params['debugTheme'] : '';
+
+if ($debugTheme === '') {
     $request = Yii::$app->getRequest();
-    $debugTheme = $request->get('yii_debug_theme', $request->getCookies()->getValue('yii-debug-toolbar-theme'));
+    $rawTheme = $request->get('yii_debug_theme', $request->getCookies()->getValue('yii-debug-toolbar-theme'));
+    $debugTheme = is_string($rawTheme) ? strtolower($rawTheme) : '';
 }
-$debugTheme = strtolower((string) $debugTheme);
+
 $debugThemeAttributes = in_array($debugTheme, ['dark', 'light'], true) ? ['data-yii-debug-theme' => $debugTheme] : [];
+
+$controller = Yii::$app->controller;
+$module = $controller?->module;
+$title = $module instanceof \yii\debug\Module ? $module->htmlTitle() : 'Yii Debugger';
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
@@ -25,7 +33,7 @@ $debugThemeAttributes = in_array($debugTheme, ['dark', 'light'], true) ? ['data-
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="none"/>
     <?= Html::csrfMetaTags() ?>
-    <title><?= Html::encode(Yii::$app->controller->module->htmlTitle()) ?></title>
+    <title><?= Html::encode($title) ?></title>
     <link rel="icon" type="image/png" href="<?= \yii\debug\Module::getYiiLogo() ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

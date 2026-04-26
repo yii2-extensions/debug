@@ -2,74 +2,85 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\panels;
 
 use Yii;
 use yii\base\InlineAction;
 use yii\debug\Panel;
 use yii\helpers\ArrayHelper;
-use yii\web\Response;
+use yii\web\{Response, Session};
+
+use function array_key_exists;
+use function count;
+use function get_class;
+use function in_array;
+use function is_array;
+use function is_int;
+use function is_string;
 
 /**
  * Debugger panel that collects and displays request data.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- * @since 2.0
  */
 class RequestPanel extends Panel
 {
     /**
-     * @var array list of variable names which values should be censored in the output
-     * @since 2.1.20
+     * @var array<int, string> List of variable names which values should be censored in the output.
      */
-    public $censoredVariableNames = [];
+    public array $censoredVariableNames = [];
     /**
-     * @var string value to display instead of the variable value if the name is on the censor list
-     * @since 2.1.20
+     * Value to display instead of the variable value if the name is on the censor list
      */
-    public $censorString = '****';
+    public string $censorString = '****';
     /**
-     * @var array list of the PHP predefined variables that are allowed to be displayed in the request panel.
+     * @var array<int, string> List of the PHP predefined variables that are allowed to be displayed in the request
+     * panel.
      * Note that a variable must be accessible via `$GLOBALS`. Otherwise it won't be displayed.
-     * @since 2.0.10
      */
-    public $displayVars = ['_SERVER', '_GET', '_POST', '_COOKIE', '_FILES', '_SESSION'];
+    public array $displayVars = [
+        '_COOKIE',
+        '_FILES',
+        '_GET',
+        '_POST',
+        '_SERVER',
+        '_SESSION',
+    ];
 
-    public function getDetail()
+    public function getDetail(): string
     {
         return Yii::$app->view->render('panels/request/detail', ['panel' => $this]);
     }
 
-    public function getName()
+    public function getName(): string
     {
         return 'Request';
     }
 
-    public function getSummary()
+    public function getSummary(): string
     {
         return Yii::$app->view->render('panels/request/summary', ['panel' => $this]);
     }
 
-    public function getToolbarIcon()
+    public function getToolbarIcon(): string
     {
         return 'request';
     }
 
-    public function save()
+    /**
+     * @return array<string, mixed>
+     */
+    public function save(): array
     {
         $headers = Yii::$app->getRequest()->getHeaders();
+
         $requestHeaders = [];
-        $hasCensorList = count($this->censoredVariableNames);
+
+        $hasCensorList = $this->censoredVariableNames !== [];
+
         foreach ($headers as $name => $value) {
             if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
                 $value = $this->censorString;
             }
+
             if (is_array($value) && count($value) === 1) {
                 $requestHeaders[$name] = current($value);
             } else {
@@ -78,14 +89,17 @@ class RequestPanel extends Panel
         }
 
         $responseHeaders = [];
+
         foreach (headers_list() as $header) {
             if (($pos = strpos($header, ':')) !== false) {
                 $name = substr($header, 0, $pos);
+
                 if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
                     $value = $this->censorString;
                 } else {
                     $value = trim(substr($header, $pos + 1));
                 }
+
                 if (isset($responseHeaders[$name])) {
                     if (!is_array($responseHeaders[$name])) {
                         $responseHeaders[$name] = [$responseHeaders[$name], $value];
@@ -99,96 +113,111 @@ class RequestPanel extends Panel
                 $responseHeaders[] = $header;
             }
         }
-        if (Yii::$app->requestedAction) {
-            if (Yii::$app->requestedAction instanceof InlineAction) {
-                $action = get_class(Yii::$app->requestedAction->controller) . '::' . Yii::$app->requestedAction->actionMethod . '()';
+
+        $requestedAction = Yii::$app->requestedAction;
+
+        if ($requestedAction !== null) {
+            if ($requestedAction instanceof InlineAction) {
+                $action = get_class($requestedAction->controller) . '::' . $requestedAction->actionMethod . '()';
             } else {
-                $action = get_class(Yii::$app->requestedAction) . '::run()';
+                $action = get_class($requestedAction) . '::run()';
             }
         } else {
             $action = null;
         }
 
         $data = [
-            'flashes' => $this->getFlashes(),
-            'statusCode' => Yii::$app->getResponse()->getStatusCode(),
-            'requestHeaders' => $requestHeaders,
-            'responseHeaders' => $responseHeaders,
-            'route' => Yii::$app->requestedAction ? Yii::$app->requestedAction->getUniqueId() : Yii::$app->requestedRoute,
             'action' => $action,
             'actionParams' => Yii::$app->requestedParams,
+            'flashes' => $this->getFlashes(),
             'general' => [
-                'method' => Yii::$app->getRequest()->getMethod(),
                 'isAjax' => Yii::$app->getRequest()->getIsAjax(),
-                'isPjax' => Yii::$app->getRequest()->getIsPjax(),
                 'isFlash' => Yii::$app->getRequest()->getIsFlash(),
+                'isPjax' => Yii::$app->getRequest()->getIsPjax(),
                 'isSecureConnection' => Yii::$app->getRequest()->getIsSecureConnection(),
+                'method' => Yii::$app->getRequest()->getMethod(),
             ],
             'requestBody' => Yii::$app->getRequest()->getRawBody() === '' ? [] : [
                 'Content Type' => Yii::$app->getRequest()->getContentType(),
-                'Raw' => Yii::$app->getRequest()->getRawBody(),
                 'Decoded' => Yii::$app->getRequest()->getBodyParams(),
+                'Raw' => Yii::$app->getRequest()->getRawBody(),
             ],
+
+            'requestHeaders' => $requestHeaders,
+            'responseHeaders' => $responseHeaders,
+            'route' => $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
+            'statusCode' => Yii::$app->getResponse()->getStatusCode(),
         ];
 
         foreach ($this->displayVars as $name) {
-            $data[trim($name, '_')] = empty($GLOBALS[$name]) ? [] : $GLOBALS[$name];
+            $data[trim($name, '_')] = self::normalizeGlobalValue($GLOBALS[$name] ?? null);
         }
 
         return $this->censorArray($data);
     }
 
     /**
-     * @param array $data
-     * @return array
-     * @since 2.1.20
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
      */
-    protected function censorArray($data)
+    protected function censorArray(array $data): array
     {
-        if (empty($this->censoredVariableNames) || empty($data)) {
+        if ($this->censoredVariableNames === [] || $data === []) {
             return $data;
         }
+
         foreach ($this->censoredVariableNames as $var) {
             $key = ltrim($var, '_');
+
             if (ArrayHelper::getValue($data, $key) !== null) {
                 ArrayHelper::setValue($data, $key, $this->censorString);
+
                 if (strpos($key, 'requestBody') === 0) {
                     ArrayHelper::setValue($data, 'requestBody.Raw', $this->censorString);
                 }
             }
         }
-        return $data;
+
+        return self::normalizeTopLevelData($data);
     }
 
     /**
      * Getting flash messages without deleting them or touching deletion counters
      *
-     * @return array flash messages (key => message).
+     * @return array<int|string, mixed> Flash messages (key => message).
      */
-    protected function getFlashes()
+    protected function getFlashes(): array
     {
-        /** @var \yii\web\Session $session */
-        $session = Yii::$app->has('session', true) ? Yii::$app->get('session') : null;
-        if ($session === null || !$session->getIsActive()) {
+        $session = Yii::$app->has('session', true) ? Yii::$app->get('session', false) : null;
+
+        if (!$session instanceof Session || !$session->getIsActive()) {
             return [];
         }
 
         $counters = $session->get($session->flashParam, []);
+
+        if (!is_array($counters)) {
+            return [];
+        }
+
+        $sessionData = $_SESSION;
         $flashes = [];
+
         foreach (array_keys($counters) as $key) {
-            if (array_key_exists($key, $_SESSION)) {
-                $flashes[$key] = $_SESSION[$key];
+            if (array_key_exists($key, $sessionData)) {
+                $flashes[$key] = $sessionData[$key];
             }
         }
         return $flashes;
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
+     * @return array<int, array<string, mixed>>
      */
-    protected function getToolbarItems()
+    protected function getToolbarItems(): array
     {
-        $statusCode = $this->data['statusCode'] ?? 200;
+        $statusCode = $this->getStatusCode();
 
         if ($statusCode >= 200 && $statusCode < 300) {
             $status = 'success';
@@ -200,12 +229,58 @@ class RequestPanel extends Panel
 
         $statusText = Response::$httpStatuses[$statusCode] ?? '';
 
+        $statusText = is_string($statusText) ? $statusText : '';
+
         return [
             [
-                'value' => $statusCode,
                 'status' => $status,
                 'title' => "Status code: $statusCode $statusText",
+                'value' => $statusCode,
             ],
         ];
+    }
+
+    private function getStatusCode(): int
+    {
+        $data = is_array($this->data) ? $this->data : [];
+
+        $statusCode = $data['statusCode'] ?? 200;
+
+        if (is_int($statusCode)) {
+            return $statusCode;
+        }
+
+        if (is_numeric($statusCode)) {
+            return (int) $statusCode;
+        }
+
+        return 200;
+    }
+
+    private static function normalizeGlobalValue(mixed $value): mixed
+    {
+        if ($value === null || $value === false || $value === '' || $value === [] || $value === 0 || $value === '0') {
+            return [];
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<int|string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    private static function normalizeTopLevelData(array $data): array
+    {
+        $normalized = [];
+
+        foreach ($data as $key => $value) {
+            if (is_string($key)) {
+                $normalized[$key] = $value;
+            }
+        }
+
+        return $normalized;
     }
 }

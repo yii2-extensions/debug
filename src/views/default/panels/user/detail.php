@@ -13,17 +13,19 @@ $encodedName = Html::encode($panel->getName());
 <h1 class="yii-debug-sr-only"><?= $encodedName ?></h1>
 
 <?php
-if (isset($panel->data['identity'])) {
+$panelData = is_array($panel->data) ? $panel->data : [];
+$identity = $panelData['identity'] ?? null;
+if ($identity !== null) {
     $items = [
         'nav' => [$encodedName],
         'content' => [
             $this->render('_identity', [
-                'identity' => $panel->data['identity'],
-                'attributes' => $panel->data['attributes'] ?? null,
+                'identity' => $identity,
+                'attributes' => $panelData['attributes'] ?? null,
             ]),
         ],
     ];
-    if ($panel->data['rolesProvider'] || $panel->data['permissionsProvider']) {
+    if (($panelData['rolesProvider'] ?? null) !== null || ($panelData['permissionsProvider'] ?? null) !== null) {
         $items['nav'][] = 'Roles and Permissions';
         $items['content'][] = $this->render('roles', ['panel' => $panel]);
     }

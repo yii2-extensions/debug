@@ -2,133 +2,276 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\panels;
 
+use Stringable;
 use Yii;
 use yii\debug\models\search\Profile;
 use yii\debug\Panel;
 use yii\log\Logger;
 
+use function is_array;
+use function is_float;
+use function is_int;
+use function is_scalar;
+use function is_string;
+use function sprintf;
+
 /**
  * Debugger panel that collects and displays performance profiling info.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- * @since 2.0
  */
 class ProfilingPanel extends Panel
 {
     /**
-     * @var array current request profile timings
+     * @var array<int, array{
+     *   duration: float,
+     *   category: string,
+     *   info: string,
+     *   level: int,
+     *   timestamp: float,
+     *   seq: int
+     * }>|null Current request profile timings
      */
-    private $_models;
+    private array|null $models = null;
 
-    public function getDetail()
+    public function getDetail(): string
     {
+        $profileData = $this->getProfileData();
+
         $searchModel = new Profile();
+
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
 
-        return Yii::$app->view->render('panels/profile/detail', [
-            'panel' => $this,
-            'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel,
-            'memory' => sprintf('%.3f MB', $this->data['memory'] / 1048576),
-            'time' => number_format($this->data['time'] * 1000) . ' ms',
-        ]);
+        return Yii::$app->view->render(
+            'panels/profile/detail',
+            [
+                'dataProvider' => $dataProvider,
+                'memory' => sprintf('%.3f MB', $profileData['memory'] / 1048576),
+                'panel' => $this,
+                'searchModel' => $searchModel,
+                'time' => number_format($profileData['time'] * 1000) . ' ms',
+            ],
+        );
     }
 
-    public function getName()
+    public function getName(): string
     {
         return 'Profiling';
     }
 
-    public function getSummary()
+    public function getSummary(): string
     {
-        return Yii::$app->view->render('panels/profile/summary', [
-            'memory' => sprintf('%.3f MB', $this->data['memory'] / 1048576),
-            'time' => number_format($this->data['time'] * 1000) . ' ms',
-            'panel' => $this,
-        ]);
+        $profileData = $this->getProfileData();
+
+        return Yii::$app->view->render(
+            'panels/profile/summary',
+            [
+                'memory' => sprintf('%.3f MB', $profileData['memory'] / 1048576),
+                'panel' => $this,
+                'time' => number_format($profileData['time'] * 1000) . ' ms',
+            ],
+        );
     }
 
     /**
      * {@inheritdoc}
      *
-     * Hides the "Profiling" panel-title from the toolbar — the gauge icon plus the time/memory
-     * metrics are self-explanatory.
+     * Hides the "Profiling" panel-title from the toolbar — the gauge icon plus the time/memory metrics are
+     * self-explanatory.
      *
      * @return array<string, mixed>
      */
-    public function getToolbarData()
+    public function getToolbarData(): array
     {
         $data = parent::getToolbarData();
-        if (!empty($data) && !$this->hasError()) {
+
+        if ($data !== [] && !$this->hasError()) {
             $data['title'] = '';
         }
+
         return $data;
     }
 
-    public function getToolbarIcon()
+    public function getToolbarIcon(): string
     {
         return 'profiling';
     }
 
-    public function save()
+    /**
+     * @return array{memory: int, time: float, messages: array<int, array<int|string, mixed>>}
+     */
+    public function save(): array
     {
         $messages = $this->getLogMessages(Logger::LEVEL_PROFILE);
+
+        $requestStart = self::floatValue($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? YII_BEGIN_TIME;
+
         return [
             'memory' => memory_get_peak_usage(),
-            'time' => microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'],
+            'time' => microtime(true) - $requestStart,
             'messages' => $messages,
         ];
     }
 
     /**
      * Returns array of profiling models that can be used in a data provider.
-     * @return array models
+     *
+     * @return array<int, array{
+     *   duration: float,
+     *   category: string,
+     *   info: string,
+     *   level: int,
+     *   timestamp: float,
+     *   seq: int
+     * }>
      */
-    protected function getModels()
+    protected function getModels(): array
     {
-        if ($this->_models === null) {
-            $this->_models = [];
-            $timings = Yii::getLogger()->calculateTimings($this->data['messages'] ?? []);
+        if ($this->models === null) {
+            $this->models = [];
+
+            $timings = Yii::getLogger()->calculateTimings($this->getProfileData()['messages']);
 
             foreach ($timings as $seq => $profileTiming) {
-                $this->_models[] = [
-                    'duration' => $profileTiming['duration'] * 1000, // in milliseconds
-                    'category' => $profileTiming['category'],
-                    'info' => $profileTiming['info'],
-                    'level' => $profileTiming['level'],
-                    'timestamp' => $profileTiming['timestamp'] * 1000, //in milliseconds
-                    'seq' => $seq,
-                ];
+                $model = self::normalizeTiming($profileTiming, is_int($seq) ? $seq : count($this->models));
+
+                if ($model !== null) {
+                    $this->models[] = $model;
+                }
             }
         }
 
-        return $this->_models;
+        return $this->models;
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
+     * @return array<int, array<string, mixed>>
      */
-    protected function getToolbarItems()
+    protected function getToolbarItems(): array
     {
+        $profileData = $this->getProfileData();
+
         return [
             [
-                'value' => number_format($this->data['time'] * 1000) . ' ms',
                 'status' => 'info',
                 'title' => 'Total processing time',
+                'value' => number_format($profileData['time'] * 1000) . ' ms',
             ],
             [
-                'value' => sprintf('%.3f MB', $this->data['memory'] / 1048576),
                 'status' => 'info',
                 'title' => 'Peak memory',
+                'value' => sprintf('%.3f MB', $profileData['memory'] / 1048576),
             ],
         ];
+    }
+
+    private static function floatValue(mixed $value): float|null
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return (float) $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{memory: int, time: float, messages: array<int, array<int|string, mixed>>}
+     */
+    private function getProfileData(): array
+    {
+        $data = is_array($this->data) ? $this->data : [];
+
+        return [
+            'memory' => self::intValue($data['memory'] ?? null) ?? 0,
+            'time' => self::floatValue($data['time'] ?? null) ?? 0.0,
+            'messages' => self::normalizeMessages($data['messages'] ?? []),
+        ];
+    }
+
+    private static function intValue(mixed $value): int|null
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            return (int) $value;
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return (int) $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<int|string, mixed>|mixed $messages
+     *
+     * @return array<int, array<int|string, mixed>>
+     */
+    private static function normalizeMessages(mixed $messages): array
+    {
+        if (!is_array($messages)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($messages as $message) {
+            if (is_array($message)) {
+                $normalized[] = $message;
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param mixed $timing Raw timing returned by Yii logger.
+     *
+     * @return array{
+     *   duration: float,
+     *   category: string,
+     *   info: string,
+     *   level: int,
+     *   timestamp: float,
+     *   seq: int
+     * }|null
+     */
+    private static function normalizeTiming(mixed $timing, int $seq): array|null
+    {
+        if (!is_array($timing)) {
+            return null;
+        }
+
+        $duration = self::floatValue($timing['duration'] ?? null);
+        $timestamp = self::floatValue($timing['timestamp'] ?? null);
+
+        if ($duration === null || $timestamp === null) {
+            return null;
+        }
+
+        return [
+            'duration' => $duration * 1000, // in milliseconds
+            'category' => self::stringValue($timing['category'] ?? null) ?? '',
+            'info' => self::stringValue($timing['info'] ?? null) ?? '',
+            'level' => self::intValue($timing['level'] ?? null) ?? 0,
+            'timestamp' => $timestamp * 1000, // in milliseconds
+            'seq' => $seq,
+        ];
+    }
+
+    private static function stringValue(mixed $value): string|null
+    {
+        if (is_scalar($value) || $value instanceof Stringable) {
+            return (string) $value;
+        }
+
+        return null;
     }
 }

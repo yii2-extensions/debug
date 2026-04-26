@@ -27,7 +27,7 @@ class Debug extends Base
      */
     public $ajax;
     /**
-     * @var array critical codes, used to determine grid row options.
+     * @var array<int, int> critical codes, used to determine grid row options.
      */
     public $criticalCodes = [400, 404, 500];
     /**
@@ -77,13 +77,10 @@ class Debug extends Base
 
     /**
      * Checks if code is critical.
-     *
-     * @param int $code
-     * @return bool
      */
-    public function isCodeCritical($code)
+    public function isCodeCritical(int $code): bool
     {
-        return in_array($code, $this->criticalCodes, false);
+        return in_array($code, $this->criticalCodes, true);
     }
 
     public function rules()
@@ -95,11 +92,11 @@ class Debug extends Base
 
     /**
      * Returns data provider with filled models. Filter applied if needed.
-     * @param array $params an array of parameter values indexed by parameter names
-     * @param array $models data to return provider for
-     * @return \yii\data\ArrayDataProvider
+     *
+     * @param array<int|string, mixed> $params an array of parameter values indexed by parameter names
+     * @param array<int, array<string, mixed>> $models data to return provider for
      */
-    public function search($params, $models)
+    public function search(array $params, array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,

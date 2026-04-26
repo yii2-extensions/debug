@@ -8,27 +8,30 @@ use yii\web\Controller;
 
 class WebController extends Controller
 {
-    public function actionFirst()
+    public function actionFirst(): bool
     {
         return true;
     }
 
-    public function actions()
+    /**
+     * @return array<string, array{class: class-string}|class-string>
+     */
+    public function actions(): array
     {
         return [
             'error' => [
-                'class' => 'yii\web\ErrorAction',
+                'class' => \yii\web\ErrorAction::class,
             ],
-            'errorStraight' => 'yii\web\ErrorAction',
+            'errorStraight' => \yii\web\ErrorAction::class,
         ];
     }
 
-    public function actionSecond()
+    public function actionSecond(): bool
     {
         return true;
     }
 
-    public function someMethod()
+    public function someMethod(): bool
     {
         return true;
     }

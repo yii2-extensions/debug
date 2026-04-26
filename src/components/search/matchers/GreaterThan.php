@@ -9,7 +9,14 @@ namespace yii\debug\components\search\matchers;
  */
 class GreaterThan extends Base
 {
-    public function match($value)
+    /**
+     * Checks if the given value is greater than the base one.
+     *
+     * @param mixed $value Value to check.
+     *
+     * @return bool `true` if the given value is greater than the base one, `false` otherwise.
+     */
+    public function match(mixed $value): bool
     {
         return $value > $this->baseValue;
     }

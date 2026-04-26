@@ -6,7 +6,7 @@ directory to its origin and license.
 
 | File(s)                                                                        | Origin             | License                             | Project                                                                               |
 | ------------------------------------------------------------------------------ | ------------------ | ----------------------------------- | ------------------------------------------------------------------------------------- |
-| `ajax.svg`, `asset.svg`, `db.svg`, `profiling.svg`, `timeline.svg`, `user.svg` | Tabler Icons       | MIT                                 | <https://github.com/tabler/tabler-icons>                                              |
+| `ajax.svg`, `asset.svg`, `db.svg`, `moon.svg`, `profiling.svg`, `sun.svg`, `timeline.svg`, `user.svg` | Tabler Icons       | MIT                                 | <https://github.com/tabler/tabler-icons>                                              |
 | `dump.svg`, `logs.svg`, `queue.svg`, `request.svg`                             | Phosphor Icons     | MIT                                 | <https://github.com/phosphor-icons/core>                                              |
 | `events.svg`, `mail.svg`, `router.svg`                                         | Lucide / Heroicons | ISC / MIT                           | <https://github.com/lucide-icons/lucide>, <https://github.com/tailwindlabs/heroicons> |
 | `php-alt.svg`                                                                  | Devicon            | MIT                                 | <https://github.com/devicons/devicon>                                                 |

@@ -19,12 +19,21 @@ use yii\debug\components\search\Filter;
  */
 class Event extends Base
 {
+    /**
+     * @var string|null event class attribute input search value
+     */
     public $class;
     /**
-     * @var bool whether event is static or not.
+     * @var bool|null whether event is static or not.
      */
     public $isStatic;
+    /**
+     * @var string|null event name attribute input search value
+     */
     public $name;
+    /**
+     * @var string|null sender class attribute input search value
+     */
     public $senderClass;
 
     public function attributeLabels()
@@ -50,11 +59,10 @@ class Event extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array $params an array of parameter values indexed by parameter names
-     * @param array $models data to return provider for
-     * @return \yii\data\ArrayDataProvider
+     * @param array<int|string, mixed> $params an array of parameter values indexed by parameter names
+     * @param array<int, array<string, mixed>> $models data to return provider for
      */
-    public function search($params, $models)
+    public function search(array $params, array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,

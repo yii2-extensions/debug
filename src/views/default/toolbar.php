@@ -6,13 +6,10 @@ use yii\helpers\Html;
 use yii\helpers\Url;
 
 /** @var \yii\web\View $this */
-/** @var \yii\debug\Panel[] $panels */
+/** @var array<string, \yii\debug\Panel> $panels */
 /** @var string $tag */
 /** @var string $position */
 /** @var int $defaultHeight */
-
-$firstPanel = reset($panels);
-$url = $firstPanel->getUrl();
 ?>
 <div id="yii-debug-toolbar" class="yii-debug-toolbar yii-debug-toolbar-position-<?= $position ?>" data-height="<?= $defaultHeight ?>">
     <div class="yii-debug-toolbar-resize-handle"></div>
@@ -43,9 +40,10 @@ $url = $firstPanel->getUrl();
 
         <?php foreach ($panels as $panel): ?>
             <?php if ($panel->hasError()): ?>
+                <?php $panelError = $panel->getError(); ?>
                 <div class="yii-debug-toolbar-block">
                     <a href="<?= $panel->getUrl() ?>"
-                        title="<?= Html::encode($panel->getError()->getMessage()); ?>"><?= Html::encode($panel->getName()) ?>
+                        title="<?= Html::encode($panelError !== null ? $panelError->getMessage() : '') ?>"><?= Html::encode($panel->getName()) ?>
                         <span class="yii-debug-toolbar-label yii-debug-toolbar-label-error">error</span></a>
                 </div>
             <?php else: ?>

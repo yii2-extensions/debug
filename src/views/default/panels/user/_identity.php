@@ -12,9 +12,7 @@ use yii\helpers\Html;
 $labels = [];
 if (is_array($attributes)) {
     foreach ($attributes as $attr) {
-        if (isset($attr['attribute'])) {
-            $labels[$attr['attribute']] = (string) ($attr['label'] ?? $attr['attribute']);
-        }
+        $labels[$attr['attribute']] = $attr['label'];
     }
 }
 
@@ -36,13 +34,13 @@ $display = static function (string $value): string {
     return $value;
 };
 
-$isSensitive = static fn(string $key): bool => (bool) preg_match(
+$isSensitive = static fn(string $key): bool => preg_match(
     '/auth[_\-]?key|password|token|secret|hash|salt/i',
     $key,
-);
+) === 1;
 
 $isTimestamp = static function (string $key, string $value): bool {
-    if (preg_match('/_at$|_time$|^(?:created|updated|deleted|signed_up|last_login)/i', $key)) {
+    if (preg_match('/_at$|_time$|^(?:created|updated|deleted|signed_up|last_login)/i', $key) === 1) {
         return true;
     }
     return ctype_digit(trim($value, "'")) && strlen(trim($value, "'")) === 10;
@@ -80,10 +78,10 @@ $resolveStatus = static function (string $value): array {
 };
 
 // Pull hero fields (with defensive fallbacks).
-$username = $display((string) ($identity['username'] ?? $identity['name'] ?? ''));
-$email = $display((string) ($identity['email'] ?? ''));
-$idValue = $display((string) ($identity['id'] ?? ''));
-$rawStatus = (string) ($identity['status'] ?? '');
+$username = $display($identity['username'] ?? $identity['name'] ?? '');
+$email = $display($identity['email'] ?? '');
+$idValue = $display($identity['id'] ?? '');
+$rawStatus = $identity['status'] ?? '';
 [$statusLabel, $statusVariant] = $rawStatus !== '' ? $resolveStatus($rawStatus) : ['', 'muted'];
 
 // Monogram seed: prefer username, fall back to email local part, then "?".
@@ -101,7 +99,7 @@ foreach ($identity as $key => $value) {
     }
     if ($isSensitive($key)) {
         $buckets['security'][$key] = $value;
-    } elseif ($isTimestamp($key, (string) $value)) {
+    } elseif ($isTimestamp($key, $value)) {
         $buckets['timestamps'][$key] = $value;
     } else {
         $buckets['other'][$key] = $value;
@@ -155,7 +153,7 @@ foreach (['id', 'username', 'name', 'email'] as $key) {
             'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>',
         ],
     ];
-    ?>
+?>
 
     <?php foreach ($sections as $key => $meta): ?>
         <?php if ($buckets[$key] === []) {
@@ -169,7 +167,7 @@ foreach (['id', 'username', 'name', 'email'] as $key) {
             <dl>
                 <?php foreach ($buckets[$key] as $attrKey => $attrValue): ?>
                     <?php
-                    $strValue = (string) $attrValue;
+                    $strValue = $attrValue;
                     $rendered = $display($strValue);
                     $isEmpty = $rendered === '' || $strValue === 'null';
                     ?>

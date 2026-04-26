@@ -26,6 +26,8 @@ final class VersionResolverTest extends TestCase
             ],
         ]);
 
+        self::assertArrayHasKey('vendor/missing-extension', $resolved, 'Resolved map must keep the input keys.');
+        self::assertArrayHasKey('version', $resolved['vendor/missing-extension'], 'Entry must retain its `version` key.');
         self::assertSame(
             'dev-master',
             $resolved['vendor/missing-extension']['version'],
@@ -42,6 +44,8 @@ final class VersionResolverTest extends TestCase
             ],
         ]);
 
+        self::assertArrayHasKey('yiisoft/yii2-symfonymailer', $resolved, 'Resolved map must keep the input keys.');
+        self::assertArrayHasKey('version', $resolved['yiisoft/yii2-symfonymailer'], 'Entry must retain its `version` key.');
         self::assertNotSame(
             '99.99.99',
             $resolved['yiisoft/yii2-symfonymailer']['version'],
@@ -55,6 +59,8 @@ final class VersionResolverTest extends TestCase
             ['name' => 'broken', 'version' => 'dev-master'],
         ]);
 
+        self::assertArrayHasKey(0, $resolved, 'Numeric-keyed entries must survive the pass-through.');
+        self::assertArrayHasKey('version', $resolved[0], 'Entry must retain its `version` key.');
         self::assertSame(
             'dev-master',
             $resolved[0]['version'],

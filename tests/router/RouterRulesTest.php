@@ -105,31 +105,31 @@ final class RouterRulesTest extends TestCase
         return [
             'simple' => [
                 ['rule' => 'route'],
-                [['name' => 'rule', 'route' => 'route', 'verb' => null, 'suffix' => null, 'mode' => null, 'type' => null]],
+                [['mode' => null, 'name' => 'rule', 'route' => 'route', 'suffix' => null, 'type' => null, 'verb' => null]],
             ],
             'simple verb' => [
                 ['GET rule' => 'route'],
-                [['name' => 'rule', 'route' => 'route', 'verb' => ['GET'], 'suffix' => null, 'mode' => null, 'type' => null]],
+                [['mode' => null, 'name' => 'rule', 'route' => 'route', 'suffix' => null, 'type' => null, 'verb' => ['GET']]],
             ],
             'simple verb parse' => [
                 ['POST rule' => 'route'],
-                [['name' => 'rule', 'route' => 'route', 'verb' => ['POST'], 'suffix' => null, 'mode' => null, 'type' => null]],
+                [['mode' => null, 'name' => 'rule', 'route' => 'route', 'suffix' => null, 'type' => null, 'verb' => ['POST']]],
             ],
             'custom' => [
                 [['class' => CustomRuleStub::class]],
-                [['name' => CustomRuleStub::class, 'route' => null, 'verb' => null, 'suffix' => null, 'mode' => null, 'type' => null]],
+                [['mode' => null, 'name' => CustomRuleStub::class, 'route' => null, 'suffix' => null, 'type' => null, 'verb' => null]],
             ],
             'creation only' => [
                 [['pattern' => 'pattern', 'route' => 'route', 'mode' => UrlRule::CREATION_ONLY]],
-                [['name' => 'pattern', 'route' => 'route', 'verb' => null, 'suffix' => null, 'mode' => 'creation only', 'type' => null]],
+                [['mode' => 'creation only', 'name' => 'pattern', 'route' => 'route', 'suffix' => null, 'type' => null, 'verb' => null]],
             ],
             'unknown mode' => [
                 [['pattern' => 'pattern', 'route' => 'route', 'mode' => 999]],
-                [['name' => 'pattern', 'route' => 'route', 'verb' => null, 'suffix' => null, 'mode' => 'unknown', 'type' => null]],
+                [['mode' => 'unknown', 'name' => 'pattern', 'route' => 'route', 'suffix' => null, 'type' => null, 'verb' => null]],
             ],
             'suffix' => [
                 [['pattern' => 'pattern', 'route' => 'route', 'suffix' => '.html']],
-                [['name' => 'pattern', 'route' => 'route', 'verb' => null, 'suffix' => '.html', 'mode' => null, 'type' => null]],
+                [['mode' => null, 'name' => 'pattern', 'route' => 'route', 'suffix' => '.html', 'type' => null, 'verb' => null]],
             ],
             'group' => [
                 [[
@@ -138,20 +138,20 @@ final class RouterRulesTest extends TestCase
                     'rules' => ['login' => 'user/login', 'logout' => 'user/logout'],
                 ]],
                 [
-                    ['name' => 'admin/login', 'route' => 'admin/user/login', 'verb' => null, 'suffix' => null, 'mode' => null, 'type' => 'GROUP'],
-                    ['name' => 'admin/logout', 'route' => 'admin/user/logout', 'verb' => null, 'suffix' => null, 'mode' => null, 'type' => 'GROUP'],
+                    ['mode' => null, 'name' => 'admin/login', 'route' => 'admin/user/login', 'suffix' => null, 'type' => 'GROUP', 'verb' => null],
+                    ['mode' => null, 'name' => 'admin/logout', 'route' => 'admin/user/logout', 'suffix' => null, 'type' => 'GROUP', 'verb' => null],
                 ],
             ],
             'rest' => [
                 [['class' => 'yii\rest\UrlRule', 'controller' => 'user']],
                 [
-                    ['name' => 'users/<id:\d[\d,]*>', 'route' => 'user/update', 'verb' => ['PUT', 'PATCH'], 'suffix' => null, 'mode' => null, 'type' => 'REST'],
-                    ['name' => 'users/<id:\d[\d,]*>', 'route' => 'user/delete', 'verb' => ['DELETE'], 'suffix' => null, 'mode' => null, 'type' => 'REST'],
-                    ['name' => 'users/<id:\d[\d,]*>', 'route' => 'user/view', 'verb' => ['GET', 'HEAD'], 'suffix' => null, 'mode' => null, 'type' => 'REST'],
-                    ['name' => 'users', 'route' => 'user/create', 'verb' => ['POST'], 'suffix' => null, 'mode' => null, 'type' => 'REST'],
-                    ['name' => 'users', 'route' => 'user/index', 'verb' => ['GET', 'HEAD'], 'suffix' => null, 'mode' => null, 'type' => 'REST'],
-                    ['name' => 'users/<id:\d[\d,]*>', 'route' => 'user/options', 'verb' => [], 'suffix' => null, 'mode' => null, 'type' => 'REST'],
-                    ['name' => 'users', 'route' => 'user/options', 'verb' => [], 'suffix' => null, 'mode' => null, 'type' => 'REST'],
+                    ['mode' => null, 'name' => 'users/<id:\d[\d,]*>', 'route' => 'user/update', 'suffix' => null, 'type' => 'REST', 'verb' => ['PUT', 'PATCH']],
+                    ['mode' => null, 'name' => 'users/<id:\d[\d,]*>', 'route' => 'user/delete', 'suffix' => null, 'type' => 'REST', 'verb' => ['DELETE']],
+                    ['mode' => null, 'name' => 'users/<id:\d[\d,]*>', 'route' => 'user/view', 'suffix' => null, 'type' => 'REST', 'verb' => ['GET', 'HEAD']],
+                    ['mode' => null, 'name' => 'users', 'route' => 'user/create', 'suffix' => null, 'type' => 'REST', 'verb' => ['POST']],
+                    ['mode' => null, 'name' => 'users', 'route' => 'user/index', 'suffix' => null, 'type' => 'REST', 'verb' => ['GET', 'HEAD']],
+                    ['mode' => null, 'name' => 'users/<id:\d[\d,]*>', 'route' => 'user/options', 'suffix' => null, 'type' => 'REST', 'verb' => []],
+                    ['mode' => null, 'name' => 'users', 'route' => 'user/options', 'suffix' => null, 'type' => 'REST', 'verb' => []],
                 ],
             ],
         ];

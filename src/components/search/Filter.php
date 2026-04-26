@@ -13,16 +13,18 @@ use yii\debug\components\search\matchers\MatcherInterface;
 class Filter extends Component
 {
     /**
-     * @var array rules for matching filters in the way: [:fieldName => [rule1, rule2,..]]
+     * @var array<string, array<int, MatcherInterface>> Rules for matching filters in the way:
+     * `[:fieldName => [rule1, rule2,..]]`
      */
-    protected $rules = [];
+    protected array $rules = [];
 
     /**
      * Adds data filtering rule.
      *
-     * @param string $name attribute name
+     * @param string $name Attribute name.
+     * @param MatcherInterface $rule Rule to be applied for filtering.
      */
-    public function addMatcher($name, MatcherInterface $rule)
+    public function addMatcher(string $name, MatcherInterface $rule): void
     {
         if ($rule->hasValue()) {
             $this->rules[$name][] = $rule;
@@ -32,10 +34,11 @@ class Filter extends Component
     /**
      * Applies filter on a given array and returns filtered data.
      *
-     * @param array $data data to filter
-     * @return array filtered data
+     * @param array<int, array<string, mixed>> $data data to filter
+     *
+     * @return array<int, array<string, mixed>> filtered data
      */
-    public function filter(array $data)
+    public function filter(array $data): array
     {
         $filtered = [];
 
@@ -51,16 +54,14 @@ class Filter extends Component
     /**
      * Checks if the given data satisfies filters.
      *
-     * @param array $row data
-     * @return bool if data passed filtering
+     * @param array<string, mixed> $row data
      */
-    private function passesFilter(array $row)
+    private function passesFilter(array $row): bool
     {
         foreach ($row as $name => $value) {
             if (isset($this->rules[$name])) {
                 // check all rules for a given attribute
                 foreach ($this->rules[$name] as $rule) {
-                    /** @var MatcherInterface $rule */
                     if (!$rule->match($value)) {
                         return false;
                     }

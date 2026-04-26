@@ -16,20 +16,24 @@ $columns = [
     'updatedAt:datetime',
 ];
 
-if ($panel->data['rolesProvider']) {
+$data = is_array($panel->data) ? $panel->data : [];
+$rolesProvider = $data['rolesProvider'] ?? null;
+$permissionsProvider = $data['permissionsProvider'] ?? null;
+
+if ($rolesProvider !== null) {
     echo '<h2>Roles</h2>';
 
     echo GridView::widget(array_merge(GridViewConfig::defaults(), [
-        'dataProvider' => $panel->data['rolesProvider'],
+        'dataProvider' => $rolesProvider,
         'columns' => $columns,
     ]));
 }
 
-if ($panel->data['permissionsProvider']) {
+if ($permissionsProvider !== null) {
     echo '<h2>Permissions</h2>';
 
     echo GridView::widget(array_merge(GridViewConfig::defaults(), [
-        'dataProvider' => $panel->data['permissionsProvider'],
+        'dataProvider' => $permissionsProvider,
         'columns' => $columns,
     ]));
 }

@@ -2,69 +2,60 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\router;
 
+use ReflectionException;
 use Yii;
 use yii\base\Model;
 use yii\rest\UrlRule as RestUrlRule;
 use yii\web\GroupUrlRule;
-use yii\web\UrlManager;
 use yii\web\UrlRule as WebUrlRule;
 
+use function is_object;
+
 /**
- * RouterRules model
- *
- * @author Paweł Brzozowski <pawel@positive.codes>
- * @since 2.1.14
+ * Collects information about URL rules used in the application.
  */
 class RouterRules extends Model
 {
     /**
-     * @var bool whether pretty URL option has been enabled in UrlManager
+     * Whether pretty URL option has been enabled in UrlManager
      */
-    public $prettyUrl = false;
+    public bool $prettyUrl = false;
     /**
-     * @var array logged rules.
-     * ```php
-     * [
-     *  [
-     *      'name' => rule name or its class (string),
-     *      'route' => (string),
-     *      'verb' => (array),
-     *      'suffix' => (string),
-     *      'mode' => 'parsing only', 'creation only', or null,
-     *      'type' => 'REST', 'GROUP', or null,
-     *  ]
-     * ]
-     * ```
+     * @var array<int, array<string, mixed>> Logged rules.
+     *
+     * Each entry has the following keys:
+     * - `name` => rule name or its class (string)
+     * - `route` => (string)
+     * - `verb` => (array)
+     * - `suffix` => (string)
+     * - `mode` => 'parsing only', 'creation only', or null
+     * - `type` => 'REST', 'GROUP', or null
      */
-    public $rules = [];
+    public array $rules = [];
     /**
-     * @var bool whether strict parsing option has been enabled in UrlManager
+     * Whether strict parsing option has been enabled in UrlManager
      */
-    public $strictParsing = false;
+    public bool $strictParsing = false;
     /**
-     * @var string global suffix set in UrlManager
+     * Global suffix set in UrlManager
      */
-    public $suffix;
+    public string|null $suffix = null;
 
-    public function init()
+    public function init(): void
     {
         parent::init();
 
-        if (Yii::$app->urlManager instanceof UrlManager) {
-            $this->prettyUrl = Yii::$app->urlManager->enablePrettyUrl;
-            $this->suffix = Yii::$app->urlManager->suffix;
-            $this->strictParsing = Yii::$app->urlManager->enableStrictParsing;
+        $urlManager = Yii::$app->urlManager;
 
-            if ($this->prettyUrl) {
-                foreach (Yii::$app->urlManager->rules as $rule) {
+        $this->prettyUrl = $urlManager->enablePrettyUrl;
+        $this->suffix = $urlManager->suffix;
+        $this->strictParsing = $urlManager->enableStrictParsing;
+
+        if ($this->prettyUrl) {
+            foreach ($urlManager->rules as $rule) {
+                if (is_object($rule)) {
                     $this->scanRule($rule);
                 }
             }
@@ -73,45 +64,58 @@ class RouterRules extends Model
 
     /**
      * Scans group rule's rules for basic data.
-     * @param GroupUrlRule $groupRule
-     * @throws \ReflectionException
+     *
+     * @param GroupUrlRule $groupRule Group rule to scan.
+     *
+     * @throws ReflectionException if the rules property is not accessible or does not exist.
      */
-    protected function scanGroupRule($groupRule)
+    protected function scanGroupRule(GroupUrlRule $groupRule): void
     {
         foreach ($groupRule->rules as $rule) {
-            $this->scanRule($rule, 'GROUP');
+            if (is_object($rule)) {
+                $this->scanRule($rule, 'GROUP');
+            }
         }
     }
 
     /**
      * Scans REST rule's rules for basic data.
-     * @param RestUrlRule $restRule
-     * @throws \ReflectionException
+     *
+     * @throws ReflectionException if the rules property is not accessible or does not exist.
      */
-    protected function scanRestRule($restRule)
+    protected function scanRestRule(RestUrlRule $restRule): void
     {
         $reflectionClass = new \ReflectionClass($restRule);
+
         $reflectionProperty = $reflectionClass->getProperty('rules');
-
-        if (PHP_VERSION_ID < 80100) {
-            $reflectionProperty->setAccessible(true);
-        }
-
         $rulesGroups = $reflectionProperty->getValue($restRule);
 
+        if (!is_iterable($rulesGroups)) {
+            return;
+        }
+
         foreach ($rulesGroups as $rules) {
+            if (!is_iterable($rules)) {
+                continue;
+            }
+
             foreach ($rules as $rule) {
-                $this->scanRule($rule, 'REST');
+                if (is_object($rule)) {
+                    $this->scanRule($rule, 'REST');
+                }
             }
         }
     }
 
     /**
      * Scans rule for basic data.
-     * @param null $type
-     * @throws \ReflectionException
+     *
+     * @param object $rule Rule to scan.
+     * @param string|null $type Rule type (for example, 'REST', 'GROUP
+     *
+     * @throws ReflectionException if the rules property is not accessible or does not exist.
      */
-    protected function scanRule($rule, $type = null)
+    protected function scanRule(object $rule, string|null $type = null): void
     {
         $route = $verb = $suffix = $mode = null;
 
@@ -144,12 +148,12 @@ class RouterRules extends Model
             }
 
             $this->rules[] = [
+                'mode' => $mode,
                 'name' => $name,
                 'route' => $route,
-                'verb' => $verb,
                 'suffix' => $suffix,
-                'mode' => $mode,
                 'type' => $type,
+                'verb' => $verb,
             ];
         }
     }

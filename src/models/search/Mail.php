@@ -84,11 +84,11 @@ class Mail extends Base
 
     /**
      * Returns data provider with filled models. Filter applied if needed.
-     * @param array $params
-     * @param array $models
-     * @return \yii\data\ArrayDataProvider
+     *
+     * @param array<int|string, mixed> $params
+     * @param array<int, array<string, mixed>> $models
      */
-    public function search($params, $models)
+    public function search(array $params, array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider([
             'allModels' => $models,

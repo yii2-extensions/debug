@@ -25,17 +25,17 @@ use yii\debug\Panel;
  */
 class QueuePanel extends Panel
 {
-    public function getDetail()
+    public function getDetail(): string
     {
         return Yii::$app->view->render('panels/queue/detail', ['panel' => $this]);
     }
 
-    public function getName()
+    public function getName(): string
     {
         return 'Queue';
     }
 
-    public function getToolbarIcon()
+    public function getToolbarIcon(): string
     {
         return 'queue';
     }
@@ -47,7 +47,7 @@ class QueuePanel extends Panel
      * is registered automatically when the `yiisoft/yii2-queue` package is installed. Subclasses
      * (or that package's bootstrapper) override this to opt in.
      */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return false;
     }

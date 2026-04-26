@@ -12,6 +12,9 @@ use yii\helpers\Url;
 /** @var array $manifest */
 /** @var \yii\debug\Panel[] $panels */
 /** @var \yii\debug\Panel $activePanel */
+/** @var string $debugTheme Theme passed in by DefaultController::primeThemeContext(). */
+/** @var string $themeIconSun Pre-loaded sun glyph (read once on the controller). */
+/** @var string $themeIconMoon Pre-loaded moon glyph. */
 
 $this->title = 'Yii Debugger';
 
@@ -69,7 +72,54 @@ foreach ($manifest as $meta) {
                 <span class="yii-debug-brand-value"><?= Html::encode($peakMemory) ?></span>
             </div>
         <?php endif; ?>
+        <?php
+        // The button shows the icon that represents the *next* theme — clicking it moves the dev
+        // toward what they see (sun = "go light" while in dark, moon = "go dark" while in light).
+        // Both glyphs are pre-loaded by the controller and shipped in data-* attrs so the JS swap
+        // doesn't refetch.
+        $iconHtml = $debugTheme === 'dark' ? $themeIconSun : $themeIconMoon;
+        ?>
+        <button
+            type="button"
+            class="yii-debug-brand-chip yii-debug-brand-chip-theme"
+            data-yii-debug-theme-toggle
+            data-current-theme="<?= Html::encode($debugTheme) ?>"
+            data-icon-sun="<?= Html::encode($themeIconSun) ?>"
+            data-icon-moon="<?= Html::encode($themeIconMoon) ?>"
+            aria-label="Toggle debug panel theme"
+            title="Toggle debug panel theme"
+        >
+            <span class="yii-debug-brand-icon" aria-hidden="true"><?= $iconHtml ?></span>
+        </button>
     </header>
+    <script>
+        (function () {
+            var btn = document.querySelector('[data-yii-debug-theme-toggle]');
+            if (!btn) {
+                return;
+            }
+            var iconSlot = btn.querySelector('.yii-debug-brand-icon');
+            btn.addEventListener('click', function () {
+                var html = document.documentElement;
+                var current = html.getAttribute('data-yii-debug-theme') || btn.getAttribute('data-current-theme') || 'light';
+                var next = current === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-yii-debug-theme', next);
+                btn.setAttribute('data-current-theme', next);
+                if (iconSlot) {
+                    iconSlot.innerHTML = next === 'dark' ? btn.getAttribute('data-icon-sun') : btn.getAttribute('data-icon-moon');
+                }
+                try {
+                    localStorage.setItem('yii-debug-toolbar-theme', next);
+                } catch (_e) {}
+                document.cookie = 'yii-debug-toolbar-theme=' + next + ';path=/;max-age=31536000;samesite=lax';
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({ source: 'yii-debug-toolbar', type: 'theme', theme: next }, '*');
+                    } catch (_e) {}
+                }
+            });
+        }());
+    </script>
 
     <div class="yii-debug-layout">
         <aside class="yii-debug-sidebar">

@@ -37,7 +37,7 @@ use yii\helpers\Html;
                 <tr<?= $log['match'] ? ' class="yii-debug-row-success"' : '' ?>>
                     <td><?= $i + 1; ?></td>
                     <td><?= Html::encode($log['rule']) ?></td>
-                    <td><?= Html::encode($log['parent']) ?></td>
+                    <td><?= Html::encode($log['parent'] ?? '') ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

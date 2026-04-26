@@ -8,7 +8,7 @@ use yii\web\Controller;
 
 class ModuleWebController extends Controller
 {
-    public function actionInside()
+    public function actionInside(): bool
     {
         return true;
     }

@@ -25,14 +25,15 @@ echo GridView::widget(array_merge(GridViewConfig::defaults(), [
         'category',
         [
             'attribute' => 'message',
-            'value' => function ($data) use ($panel) {
-                $message = $data['message'];
+            'value' => static function (array $data) use ($panel): string {
+                $message = is_string($data['message'] ?? null) ? $data['message'] : '';
 
-                if (!empty($data['trace'])) {
-                    $message .= Html::ul($data['trace'], [
+                $trace = $data['trace'] ?? null;
+                if (is_array($trace) && $trace !== []) {
+                    $message .= Html::ul($trace, [
                         'class' => 'yii-debug-trace',
-                        'item' => function ($trace) use ($panel) {
-                            return '<li>' . $panel->getTraceLine($trace) . '</li>';
+                        'item' => static function ($traceItem) use ($panel): string {
+                            return '<li>' . $panel->getTraceLine(is_array($traceItem) ? $traceItem : []) . '</li>';
                         },
                     ]);
                 }

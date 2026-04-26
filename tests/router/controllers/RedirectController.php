@@ -8,17 +8,20 @@ use yii\web\Controller;
 
 class RedirectController extends Controller
 {
-    public function actionOnly()
+    public function actionOnly(): bool
     {
         return true;
     }
 
-    public function actions()
+    /**
+     * @return array<string, class-string>
+     */
+    public function actions(): array
     {
-        return ['test' => 'yii\web\ErrorAction'];
+        return ['test' => \yii\web\ErrorAction::class];
     }
 
-    public function init()
+    public function init(): void
     {
         \Yii::$app->response->redirect('web/first');
     }

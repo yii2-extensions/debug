@@ -12,7 +12,8 @@ use yii\helpers\Html;
 
 $this->title = 'EXPLAIN';
 
-$columns = $results === [] ? [] : array_keys($results[0]);
+$resultList = array_values($results);
+$columns = $resultList === [] ? [] : array_keys($resultList[0]);
 ?>
 <div class="yii-debug-explain">
     <h1 class="yii-debug-explain-title">EXPLAIN</h1>
@@ -29,7 +30,7 @@ $columns = $results === [] ? [] : array_keys($results[0]);
                 <thead>
                     <tr>
                         <?php foreach ($columns as $column): ?>
-                            <th><?= Html::encode((string) $column) ?></th>
+                            <th><?= Html::encode($column) ?></th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>

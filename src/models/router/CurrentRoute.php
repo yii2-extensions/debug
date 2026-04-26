@@ -2,81 +2,110 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\router;
 
 use yii\base\Model;
 use yii\log\Logger;
 
+use function is_array;
+use function is_bool;
+use function is_string;
+
 /**
- * CurrentRoute model
- *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- * @since 2.0.8
+ * Represents the currently matched route and its related information, such as the action, logged rules, and messages.
  */
 class CurrentRoute extends Model
 {
     /**
-     * @var string logged action.
+     * Logged action.
      */
-    public $action = '';
+    public string $action = '';
     /**
-     * @var int count, before match.
+     * Count, before match.
      */
-    public $count = 0;
+    public int $count = 0;
     /**
-     * @var bool
+     * Whether a match has been found.
      */
-    public $hasMatch = false;
+    public bool $hasMatch = false;
     /**
-     * @var array logged rules.
-     * ```php
-     * [
-     *  [
-     *      'rule' => (string),
-     *      'match' => (bool),
-     *      'parent'=> parent class (string)
-     *  ]
-     * ]
-     * ```
+     * @var list<array{rule: string, match: bool, parent?: string}> logged rules.
      */
-    public $logs = [];
+    public array $logs = [];
     /**
-     * @var string|null info message.
+     * Info message.
      */
-    public $message;
+    public string|null $message = null;
     /**
-     * @var array logged messages.
+     * @var array<int, array{0: mixed, 1: int, 2?: string, 3?: float, 4?: array<int, array<string, mixed>>}> logged messages.
      */
-    public $messages = [];
+    public array $messages = [];
     /**
-     * @var string logged route.
+     * Logged route.
      */
-    public $route = '';
+    public string $route = '';
 
-    public function init()
+    public function init(): void
     {
         parent::init();
+
         $last = null;
+
         foreach ($this->messages as $message) {
             if ($message[1] === Logger::LEVEL_TRACE && is_string($message[0])) {
                 $this->message = $message[0];
-            } elseif (isset($message[0]['rule'], $message[0]['match'])) {
-                if (!empty($last['parent']) && $last['parent'] === $message[0]['rule']) {
+                continue;
+            }
+
+            $log = $this->normalizeLogMessage($message[0]);
+
+            if ($log !== null) {
+                $previousParent = $last['parent'] ?? null;
+
+                if ($previousParent !== null && $previousParent !== '' && $previousParent === $log['rule']) {
                     continue;
                 }
-                $this->logs[] = $message[0];
+
+                $this->logs[] = $log;
                 ++$this->count;
-                if ($message[0]['match']) {
+
+                if ($log['match']) {
                     $this->hasMatch = true;
                 }
-                $last = $message[0];
+
+                $last = $log;
             }
         }
+    }
+
+    /**
+     * Normalizes log message to the format: ['rule' => string, 'match' => bool, 'parent' => string|null].
+     *
+     * @param mixed $message Log message to normalize.
+     *
+     * @return array{rule: string, match: bool, parent?: string}|null Normalized log message or null if the input
+     * message is not in the expected format.
+     */
+    private function normalizeLogMessage($message): array|null
+    {
+        if (
+            !is_array($message)
+            || !isset($message['rule'], $message['match'])
+            || !is_string($message['rule'])
+            || !is_bool($message['match'])
+        ) {
+            return null;
+        }
+
+        $log = [
+            'match' => $message['match'],
+            'rule' => $message['rule'],
+        ];
+
+        if (isset($message['parent']) && is_string($message['parent'])) {
+            $log['parent'] = $message['parent'];
+        }
+
+        return $log;
     }
 }

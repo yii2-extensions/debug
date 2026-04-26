@@ -21,9 +21,10 @@ use yii\grid\GridView;
     'columns' => [
         [
             'attribute' => 'time',
-            'value' => function ($data) {
-                $timeInSeconds = (int) $data['time'];
-                $millisecondsDiff = (int) (($data['time'] - $timeInSeconds) * 1000);
+            'value' => static function (array $data): string {
+                $time = is_numeric($data['time'] ?? null) ? (float) $data['time'] : 0.0;
+                $timeInSeconds = (int) $time;
+                $millisecondsDiff = (int) (($time - $timeInSeconds) * 1000);
                 return date('H:i:s.', $timeInSeconds) . sprintf('%03d', $millisecondsDiff);
             },
             'headerOptions' => ['class' => 'sort-numerical'],
@@ -37,8 +38,8 @@ use yii\grid\GridView;
         [
             'header' => 'Sender',
             'attribute' => 'senderClass',
-            'value' => function ($data) {
-                return $data['senderClass'];
+            'value' => static function (array $data): string {
+                return is_string($data['senderClass'] ?? null) ? $data['senderClass'] : '';
             },
         ],
         [

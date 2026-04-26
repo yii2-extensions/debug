@@ -74,7 +74,7 @@ final class GridViewConfig
      */
     public static function pageSizeSelectorHtml(): string
     {
-        $current = (string) (\Yii::$app?->getRequest()->getQueryParam('per-page') ?? '50');
+        $current = self::currentPageSize();
         $options = ['10', '25', '50', '100', 'all'];
         $items = '';
 
@@ -105,13 +105,13 @@ final class GridViewConfig
      */
     public static function paginationFromRequest(int $default = 50): array|false
     {
-        $raw = \Yii::$app?->getRequest()->getQueryParam('per-page');
+        $raw = self::queryParamString('per-page');
 
-        if (is_string($raw) && strcasecmp($raw, 'all') === 0) {
+        if ($raw !== null && strcasecmp($raw, 'all') === 0) {
             return false;
         }
 
-        $size = (int) ($raw ?? $default);
+        $size = $raw !== null && is_numeric($raw) ? (int) $raw : $default;
         if ($size <= 0) {
             $size = $default;
         }
@@ -145,5 +145,35 @@ final class GridViewConfig
         }
 
         return ['class' => 'yii-debug-row-' . $normalized];
+    }
+
+    private static function currentPageSize(): string
+    {
+        $raw = self::queryParamString('per-page');
+        return $raw ?? '50';
+    }
+
+    /**
+     * Reads a query parameter as a string or returns `null` when absent / non-scalar / no web request available.
+     */
+    private static function queryParamString(string $name): string|null
+    {
+        $app = \Yii::$app ?? null;
+
+        if (!$app instanceof \yii\web\Application) {
+            return null;
+        }
+
+        $value = $app->getRequest()->getQueryParam($name);
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return null;
     }
 }

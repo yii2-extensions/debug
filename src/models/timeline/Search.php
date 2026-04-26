@@ -49,13 +49,11 @@ class Search extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array $params $params an array of parameter values indexed by parameter names
-     * @param TimeLinePanel $panel
-     * @return DataProvider
+     * @param array<int|string, mixed> $params an array of parameter values indexed by parameter names
      */
-    public function search($params, $panel)
+    public function search(array $params, TimelinePanel $panel): DataProvider
     {
-        $models = $panel->models;
+        $models = $panel->getModels();
         $dataProvider = new DataProvider($panel, [
             'allModels' => $models,
             'sort' => [

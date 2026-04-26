@@ -2,201 +2,269 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\panels;
 
+use RuntimeException;
+use Stringable;
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\debug\models\timeline\Search;
-use yii\debug\models\timeline\Svg;
+use yii\debug\models\timeline\{Search, Svg};
 use yii\debug\Panel;
+
+use function is_array;
+use function is_float;
+use function is_int;
+use function is_scalar;
+use function is_string;
 
 /**
  * Debugger panel that collects and displays timeline data.
- *
- * @property array $colors
- * @property float $duration
- * @property int $memory
- * @property float $start
- * @property Svg $svg
- * @property array $svgOptions
- *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- * @since 2.0.7
  */
 class TimelinePanel extends Panel
 {
     /**
-     * @var array Color indicators item profile.
+     * @var array<int, string> Color indicators item profile.
      *
      * - keys: percentages of time request
      * - values: hex color
      */
-    private $_colors = [
-        20 => '#1e6823',
-        10 => '#44a340',
+    private array $colors = [
         1 => '#8cc665',
+        10 => '#44a340',
+        20 => '#1e6823',
     ];
     /**
-     * @var float Request duration, milliseconds
+     * Request duration, milliseconds
      */
-    private $_duration;
+    private float $duration = 0.0;
     /**
-     * @var float End request, timestamp (obtained by microtime(true))
+     * End request, timestamp (obtained by microtime(true))
      */
-    private $_end;
+    private float $end = 0.0;
     /**
-     * @var int Used memory in request
+     * Used memory in request
      */
-    private $_memory;
+    private int $memory = 0;
     /**
-     * @var array log messages extracted to array as models, to use with data provider.
+     * @var array<int, array<string, mixed>>|null Log messages extracted to array as models, to use with data provider.
      */
-    private $_models;
+    private array|null $models = null;
     /**
-     * @var float Start request, timestamp (obtained by microtime(true))
+     * Start request, timestamp (obtained by microtime(true))
      */
-    private $_start;
+    private float $start = 0.0;
     /**
-     * @var Svg|null
+     * SVG factory instance for rendering timeline graph.
      */
-    private $_svg;
+    private Svg|null $svg = null;
     /**
-     * @var array
+     * @var array<string, mixed>
      */
-    private $_svgOptions = [
-        'class' => 'yii\debug\models\timeline\Svg',
+    private array $svgOptions = [
+        'class' => Svg::class,
     ];
 
     /**
      * Color indicators item profile,
      * key: percentages of time request, value: hex color
-     * @return array
+     *
+     * @return array<int, string>
      */
-    public function getColors()
+    public function getColors(): array
     {
-        return $this->_colors;
+        return $this->colors;
     }
 
-    public function getDetail()
+    public function getDetail(): string
     {
         $searchModel = new Search();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this);
 
-        return Yii::$app->view->render('panels/timeline/detail', [
-            'panel' => $this,
-            'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel,
-        ]);
+        return Yii::$app->view->render(
+            'panels/timeline/detail',
+            [
+                'dataProvider' => $dataProvider,
+                'panel' => $this,
+                'searchModel' => $searchModel,
+            ],
+        );
     }
 
     /**
-     * Request duration, milliseconds
-     * @return float
+     * Request duration, milliseconds.
      */
-    public function getDuration()
+    public function getDuration(): float
     {
-        return $this->_duration;
+        return $this->duration;
     }
 
     /**
-     * Memory peak in request, bytes. (obtained by memory_get_peak_usage())
-     * @return int
-     * @since 2.0.8
+     * Memory peak in request, bytes. (obtained by memory_get_peak_usage()).
      */
-    public function getMemory()
+    public function getMemory(): int
     {
-        return $this->_memory;
+        return $this->memory;
     }
 
-    public function getName()
+    /**
+     * Returns an array of models that represents logs of the current request.
+     *
+     * Can be used with data providers, such as {@see \yii\data\ArrayDataProvider}.
+     *
+     * @param bool $refresh if need to build models from log messages and refresh them.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getModels(bool $refresh = false): array
+    {
+        if ($this->models === null || $refresh) {
+            $this->models = [];
+
+            $rawTimings = Yii::getLogger()->calculateTimings($this->getProfilingMessages());
+
+            foreach ($rawTimings as $rawTiming) {
+                $timing = self::normalizeTiming($rawTiming);
+
+                if ($timing !== null) {
+                    $this->models[] = $timing;
+                }
+            }
+        }
+
+        return $this->models;
+    }
+
+    public function getName(): string
     {
         return 'Timeline';
     }
 
     /**
      * Start request, timestamp (obtained by microtime(true))
-     * @return float
      */
-    public function getStart()
+    public function getStart(): float
     {
-        return $this->_start;
+        return $this->start;
     }
 
     /**
      * @throws InvalidConfigException
-     * @return Svg
      * @since 2.0.8
      */
-    public function getSvg()
+    public function getSvg(): Svg
     {
-        if ($this->_svg === null) {
-            $this->_svg = Yii::createObject($this->_svgOptions, [$this]);
+        $svg = $this->svg;
+
+        if ($svg === null) {
+            $class = self::stringValue($this->svgOptions['class'] ?? null) ?? Svg::class;
+
+            if (!is_a($class, Svg::class, true)) {
+                throw new InvalidConfigException('Timeline SVG class must extend ' . Svg::class . '.');
+            }
+
+            $config = $this->svgOptions;
+
+            unset($config['class']);
+
+            $object = Yii::$container->get($class, [$this], $config);
+
+            if (!$object instanceof Svg) {
+                throw new InvalidConfigException(
+                    'Timeline SVG factory must create ' . Svg::class . '.',
+                );
+            }
+
+            $svg = $object;
+
+            $this->svg = $svg;
         }
-        return $this->_svg;
+
+        return $svg;
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
-    public function getSvgOptions()
+    public function getSvgOptions(): array
     {
-        return $this->_svgOptions;
+        return $this->svgOptions;
     }
 
-    public function getToolbarIcon()
+    public function getToolbarIcon(): string
     {
         return 'timeline';
     }
 
     /**
-     * @throws InvalidConfigException
+     * @throws InvalidConfigException if the profiling panel is not found in the module configuration.
      */
-    public function init()
+    public function init(): void
     {
-        if (!isset($this->module->panels['profiling'])) {
+        if ($this->module === null || !isset($this->module->panels['profiling'])) {
             throw new InvalidConfigException('Unable to determine the profiling panel');
         }
+
         parent::init();
     }
 
-    public function load($data)
+    public function load(mixed $data): void
     {
-        if (!isset($data['start']) || empty($data['start'])) {
-            throw new \RuntimeException('Unable to determine request start time');
+        if (!is_array($data)) {
+            throw new \RuntimeException('Unable to load timeline data');
         }
-        $this->_start = $data['start'] * 1000;
 
-        if (!isset($data['end']) || empty($data['end'])) {
-            throw new \RuntimeException('Unable to determine request end time');
+        $start = self::floatValue($data['start'] ?? null);
+
+        if ($start === null || $start <= 0) {
+            throw new RuntimeException(
+                'Unable to determine request start time',
+            );
         }
-        $this->_end = $data['end'] * 1000;
 
-        if (isset($this->module->panels['profiling']->data['time'])) {
-            $this->_duration = $this->module->panels['profiling']->data['time'] * 1000;
+        $this->start = $start * 1000;
+
+        $end = self::floatValue($data['end'] ?? null);
+
+        if ($end === null || $end <= 0) {
+            throw new RuntimeException(
+                'Unable to determine request end time',
+            );
+        }
+
+        $this->end = $end * 1000;
+
+        $profilingTime = $this->getProfilingTime();
+
+        if ($profilingTime !== null) {
+            $this->duration = $profilingTime * 1000;
         } else {
-            $this->_duration = $this->_end - $this->_start;
+            $this->duration = $this->end - $this->start;
         }
 
-        if ($this->_duration <= 0) {
-            throw new \RuntimeException('Duration cannot be zero');
+        if ($this->duration <= 0) {
+            throw new RuntimeException(
+                'Duration cannot be zero',
+            );
         }
 
-        if (!isset($data['memory']) || empty($data['memory'])) {
-            throw new \RuntimeException('Unable to determine used memory in request');
+        $memory = self::intValue($data['memory'] ?? null);
+
+        if ($memory === null || $memory <= 0) {
+            throw new RuntimeException(
+                'Unable to determine used memory in request',
+            );
         }
-        $this->_memory = $data['memory'];
+
+        $this->memory = $memory;
     }
 
-    public function save()
+    /**
+     * @return array{start: float, end: float, memory: int}
+     */
+    public function save(): array
     {
         return [
-            'start' => $_SERVER['REQUEST_TIME_FLOAT'],
+            'start' => self::floatValue($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? YII_BEGIN_TIME,
             'end' => microtime(true),
             'memory' => memory_get_peak_usage(),
         ];
@@ -205,40 +273,194 @@ class TimelinePanel extends Panel
     /**
      * Sets color indicators.
      * key: percentages of time request, value: hex color
-     * @param array $colors
-     */
-    public function setColors($colors)
-    {
-        krsort($colors);
-        $this->_colors = $colors;
-    }
-
-    /**
-     * @param array $options
-     */
-    public function setSvgOptions($options)
-    {
-        if ($this->_svg !== null) {
-            $this->_svg = null;
-        }
-        $this->_svgOptions = array_merge($this->_svgOptions, $options);
-    }
-
-    /**
-     * Returns an array of models that represents logs of the current request.
-     * Can be used with data providers, such as \yii\data\ArrayDataProvider.
      *
-     * @param bool $refresh if need to build models from log messages and refresh them.
-     * @return array models
+     * @param array<int|string, mixed> $colors
      */
-    protected function getModels($refresh = false)
+    public function setColors(array $colors): void
     {
-        if ($this->_models === null || $refresh) {
-            $this->_models = [];
-            if (isset($this->module->panels['profiling']->data['messages'])) {
-                $this->_models = Yii::getLogger()->calculateTimings($this->module->panels['profiling']->data['messages']);
+        $this->colors = self::normalizeColors($colors);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function setSvgOptions(array $options): void
+    {
+        if ($this->svg !== null) {
+            $this->svg = null;
+        }
+
+        $this->svgOptions = [
+            ...$this->svgOptions,
+            ...$options,
+        ];
+    }
+
+    private static function floatValue(mixed $value): float|null
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return (float) $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, array<int|string, mixed>>
+     */
+    private function getProfilingMessages(): array
+    {
+        $profilingPanel = $this->module?->panels['profiling'] ?? null;
+
+        if (!$profilingPanel instanceof Panel || !is_array($profilingPanel->data)) {
+            return [];
+        }
+
+        return self::normalizeMessages($profilingPanel->data['messages'] ?? []);
+    }
+
+    private function getProfilingTime(): float|null
+    {
+        $profilingPanel = $this->module?->panels['profiling'] ?? null;
+
+        if (!$profilingPanel instanceof Panel || !is_array($profilingPanel->data)) {
+            return null;
+        }
+
+        return self::floatValue($profilingPanel->data['time'] ?? null);
+    }
+
+    private static function intValue(mixed $value): int|null
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            return (int) $value;
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return (int) $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<int|string, mixed> $colors
+     *
+     * @return array<int, string>
+     */
+    private static function normalizeColors(array $colors): array
+    {
+        $normalized = [];
+
+        foreach ($colors as $percent => $color) {
+            if (is_string($color)) {
+                $normalized[(int) $percent] = $color;
             }
         }
-        return $this->_models;
+
+        krsort($normalized);
+
+        return $normalized;
+    }
+
+    /**
+     * @param mixed $messages Raw profiling messages.
+     *
+     * @return array<int, array<int|string, mixed>>
+     */
+    private static function normalizeMessages(mixed $messages): array
+    {
+        if (!is_array($messages)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($messages as $message) {
+            if (is_array($message)) {
+                $normalized[] = $message;
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param mixed $timing Raw timing returned by Yii logger.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function normalizeTiming(mixed $timing): array|null
+    {
+        if (!is_array($timing)) {
+            return null;
+        }
+
+        $timestamp = self::floatValue($timing['timestamp'] ?? null);
+        $duration = self::floatValue($timing['duration'] ?? null);
+
+        if ($timestamp === null || $duration === null) {
+            return null;
+        }
+
+        return [
+            'category' => self::stringValue($timing['category'] ?? null) ?? '',
+            'duration' => $duration,
+            'info' => self::stringValue($timing['info'] ?? null) ?? '',
+            'level' => self::intValue($timing['level'] ?? null) ?? 0,
+            'memory' => self::intValue($timing['memory'] ?? null) ?? 0,
+            'memoryDiff' => self::intValue($timing['memoryDiff'] ?? null) ?? 0,
+            'timestamp' => $timestamp,
+            'trace' => self::normalizeTrace($timing['trace'] ?? []),
+        ];
+    }
+
+    /**
+     * @param mixed $trace Raw trace returned by Yii logger.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function normalizeTrace(mixed $trace): array
+    {
+        if (!is_array($trace)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($trace as $frame) {
+            if (!is_array($frame)) {
+                continue;
+            }
+
+            $normalizedFrame = [];
+
+            foreach ($frame as $key => $value) {
+                if (is_string($key)) {
+                    $normalizedFrame[$key] = $value;
+                }
+            }
+
+            $normalized[] = $normalizedFrame;
+        }
+
+        return $normalized;
+    }
+
+    private static function stringValue(mixed $value): string|null
+    {
+        if (is_scalar($value) || $value instanceof Stringable) {
+            return (string) $value;
+        }
+
+        return null;
     }
 }

@@ -2,103 +2,115 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\panels;
 
 use Yii;
 use yii\base\Event;
+use yii\debug\models\search\Event as EventSearch;
 use yii\debug\Panel;
+
+use function count;
+use function get_class;
+use function is_array;
+use function is_object;
+use function is_string;
 
 /**
  * Debugger panel that collects and displays information about triggered events.
  *
- * > Note: this panel requires Yii framework version >= 2.0.14 to function and will not
- *   appear at lower version.
- *
- * @author Paul Klimov <klimov.paul@gmail.com>
- * @since 2.0.14
+ * > Note: this panel requires Yii framework version >= 2.0.14 to function and will not appear at lower version.
  */
 class EventPanel extends Panel
 {
     /**
-     * @var array current request events
+     * @var array<int, array{
+     *   time: float,
+     *   name: string,
+     *   class: class-string<Event>,
+     *   isStatic: string,
+     *   senderClass: string
+     * }> Current request events
      */
-    private $_events = [];
+    private array $events = [];
 
-    public function getDetail()
+    public function getDetail(): string
     {
-        $searchModel = new \yii\debug\models\search\Event();
-        $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->data);
+        $searchModel = new EventSearch();
 
-        return Yii::$app->view->render('panels/event/detail', [
-            'panel' => $this,
-            'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel,
-        ]);
+        $dataProvider = $searchModel->search(Yii::$app->request->get(), self::normalizeEvents($this->data));
+
+        return Yii::$app->view->render(
+            'panels/event/detail',
+            [
+                'dataProvider' => $dataProvider,
+                'panel' => $this,
+                'searchModel' => $searchModel,
+            ],
+        );
     }
 
-    public function getName()
+    public function getName(): string
     {
         return 'Events';
     }
 
-    public function getSummary()
+    public function getSummary(): string
     {
-        return Yii::$app->view->render('panels/event/summary', [
-            'panel' => $this,
-            'eventCount' => count($this->data),
-        ]);
+        return Yii::$app->view->render(
+            'panels/event/summary',
+            [
+                'eventCount' => count(self::normalizeEvents($this->data)),
+                'panel' => $this,
+            ],
+        );
     }
 
-    public function getToolbarIcon()
+    public function getToolbarIcon(): string
     {
         return 'events';
     }
 
-    public function init()
+    public function init(): void
     {
         parent::init();
 
-        Event::on('*', '*', function ($event) {
-            /** @var Event $event */
-            $eventData = [
-                'time' => microtime(true),
-                'name' => $event->name,
-                'class' => get_class($event),
-                'isStatic' => is_object($event->sender) ? '0' : '1',
-                'senderClass' => is_object($event->sender) ? get_class($event->sender) : $event->sender,
-            ];
+        Event::on(
+            '*',
+            '*',
+            function (Event $event): void {
+                $eventData = [
+                    'class' => get_class($event),
+                    'isStatic' => is_object($event->sender) ? '0' : '1',
+                    'name' => $event->name,
+                    'senderClass' => is_object($event->sender) ? get_class($event->sender) : (string) $event->sender,
+                    'time' => microtime(true),
+                ];
 
-            $this->_events[] = $eventData;
-        });
+                $this->events[] = $eventData;
+            },
+        );
     }
 
-    public function isEnabled()
+    /**
+     * @return array<int, array{
+     *   time: float,
+     *   name: string,
+     *   class: class-string<Event>,
+     *   isStatic: string,
+     *   senderClass: string
+     * }>
+     */
+    public function save(): array
     {
-        $yiiVersion = Yii::getVersion();
-        if (!version_compare($yiiVersion, '2.0.14', '>=') && strpos($yiiVersion, '-dev') === false) {
-            return false;
-        }
-
-        return parent::isEnabled();
-    }
-
-    public function save()
-    {
-        return $this->_events;
+        return $this->events;
     }
 
     /**
      * @return array<int, array<string, mixed>>|null
      */
-    protected function getToolbarItems()
+    protected function getToolbarItems(): array|null
     {
-        $eventCount = is_array($this->data) ? count($this->data) : 0;
+        $eventCount = count(self::normalizeEvents($this->data));
 
         if ($eventCount === 0) {
             return null;
@@ -109,5 +121,37 @@ class EventPanel extends Panel
                 'value' => $eventCount,
             ],
         ];
+    }
+
+    /**
+     * @param mixed $events Raw event rows loaded from saved panel data.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function normalizeEvents(mixed $events): array
+    {
+        if (!is_array($events)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($events as $event) {
+            if (!is_array($event)) {
+                continue;
+            }
+
+            $row = [];
+
+            foreach ($event as $key => $value) {
+                if (is_string($key)) {
+                    $row[$key] = $value;
+                }
+            }
+
+            $normalized[] = $row;
+        }
+
+        return $normalized;
     }
 }
