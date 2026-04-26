@@ -22,7 +22,7 @@ use function strlen;
 class Panel extends Component
 {
     /**
-     * @var array<array-key, class-string|array{class: class-string, ...}> Array of actions to add to the debug modules
+     * @var array<array-key, array{class: class-string, ...}|class-string> Array of actions to add to the debug modules
      * default controller.
      *
      * This array will be merged with all other panels actions property.
