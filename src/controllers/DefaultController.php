@@ -329,44 +329,6 @@ class DefaultController extends Controller
     }
 
     /**
-     * Resolves the debug panel's theme + theme-toggle SVG glyphs and exposes them to the view layer.
-     *
-     * The resolved values are pushed into `Yii::$app->view->params['debugTheme']` so the layout can pick them up
-     * without re-reading the request, and a small associative array with the same data is returned so individual
-     * actions can pass the SVGs to the view as render params (avoiding inline filesystem reads in the templates).
-     *
-     * @return array{theme: string, sun: string, moon: string}
-     */
-    private function primeThemeContext(): array
-    {
-        $request = Yii::$app->getRequest();
-        $raw = $request->get(
-            'yii_debug_theme',
-            $request->getCookies()->getValue('yii-debug-toolbar-theme'),
-        );
-        $theme = is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
-
-        $svgRoot = dirname(__DIR__) . '/assets/svg/';
-        $readSvg = static function (string $name) use ($svgRoot): string {
-            $path = $svgRoot . $name;
-            return is_file($path) ? trim((string) file_get_contents($path)) : '';
-        };
-
-        $context = [
-            'theme' => $theme,
-            'sun' => $readSvg('sun.svg'),
-            'moon' => $readSvg('moon.svg'),
-        ];
-
-        $view = $this->view;
-        $view->params['debugTheme'] = $theme;
-        $view->params['themeIconSun'] = $context['sun'];
-        $view->params['themeIconMoon'] = $context['moon'];
-
-        return $context;
-    }
-
-    /**
      * Loads debug data for the specified tag into panels.
      *
      * @param string $tag Debug data tag.
@@ -549,6 +511,44 @@ class DefaultController extends Controller
         }
 
         return $normalized;
+    }
+
+    /**
+     * Resolves the debug panel's theme + theme-toggle SVG glyphs and exposes them to the view layer.
+     *
+     * The resolved values are pushed into `Yii::$app->view->params['debugTheme']` so the layout can pick them up
+     * without re-reading the request, and a small associative array with the same data is returned so individual
+     * actions can pass the SVGs to the view as render params (avoiding inline filesystem reads in the templates).
+     *
+     * @return array{theme: string, sun: string, moon: string}
+     */
+    private function primeThemeContext(): array
+    {
+        $request = Yii::$app->getRequest();
+        $raw = $request->get(
+            'yii_debug_theme',
+            $request->getCookies()->getValue('yii-debug-toolbar-theme'),
+        );
+        $theme = is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
+
+        $svgRoot = dirname(__DIR__) . '/assets/svg/';
+        $readSvg = static function (string $name) use ($svgRoot): string {
+            $path = $svgRoot . $name;
+            return is_file($path) ? trim((string) file_get_contents($path)) : '';
+        };
+
+        $context = [
+            'theme' => $theme,
+            'sun' => $readSvg('sun.svg'),
+            'moon' => $readSvg('moon.svg'),
+        ];
+
+        $view = $this->view;
+        $view->params['debugTheme'] = $theme;
+        $view->params['themeIconSun'] = $context['sun'];
+        $view->params['themeIconMoon'] = $context['moon'];
+
+        return $context;
     }
 
     /**

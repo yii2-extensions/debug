@@ -36,8 +36,6 @@ class FilterBanner extends Widget
     /**
      * The search model whose `formName()` defines the query-param prefix to scan
      * (e.g., `Debug`, `Log`, `Db`, `Profile`, `Event`, `Mail`, `User`).
-     *
-     * @var Model
      */
     public Model $searchModel;
 

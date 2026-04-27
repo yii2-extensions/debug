@@ -8,8 +8,8 @@ use yii\helpers\Url;
 /** @var array<string, mixed> $model */
 /** @var int $index */
 
-$asString = static fn(mixed $v): string =>
-    is_scalar($v) || $v instanceof Stringable ? (string) $v : '';
+$asString = static fn(mixed $v): string
+    => is_scalar($v) || $v instanceof Stringable ? (string) $v : '';
 
 $splitAddresses = static function (string $s): array {
     if ($s === '') {

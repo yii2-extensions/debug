@@ -78,7 +78,7 @@ if ($showCard) {
         ? $manifestKeys[$cursorIndex + 1]
         : null;
 
-    $buildUrl = static function (?string $tag) use ($snapshotPanelId): array {
+    $buildUrl = static function (string|null $tag) use ($snapshotPanelId): array {
         $url = ['view'];
         if ($tag !== null) {
             $url['tag'] = $tag;
@@ -137,11 +137,11 @@ if ($showCard) {
                 // chevron-down = step down (older), chevrons-down = jump to bottom. Tooltips
                 // (`title` + `aria-label`) keep the textual meaning available for hover and AT.
                 $iconFirst = $inlineSvg('chevrons-up.svg');
-                $iconPrev = $inlineSvg('chevron-up.svg');
-                $iconNext = $inlineSvg('chevron-down.svg');
-                $iconLatest = $inlineSvg('chevrons-down.svg');
-                $iconBtnClass = 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-icon';
-                ?>
+        $iconPrev = $inlineSvg('chevron-up.svg');
+        $iconNext = $inlineSvg('chevron-down.svg');
+        $iconLatest = $inlineSvg('chevrons-down.svg');
+        $iconBtnClass = 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-icon';
+        ?>
                 <div class="yii-debug-request-nav-row" role="group">
                     <?php if ($isCursor): ?>
                         <button type="button" class="<?= $iconBtnClass ?> is-disabled"
@@ -154,25 +154,25 @@ if ($showCard) {
                                 data-yii-debug-cursor="latest" title="Latest (bottom of list)" aria-label="Latest (bottom of list)"><?= $iconLatest ?></button>
                     <?php else: ?>
                         <?= Html::a($iconFirst, $firstUrl, [
-                            'class' => $iconBtnClass . ($onFirst ? ' is-disabled' : ''),
-                            'title' => 'First (top of list)',
-                            'aria-label' => 'First captured request',
-                        ]) ?>
+                    'class' => $iconBtnClass . ($onFirst ? ' is-disabled' : ''),
+                    'title' => 'First (top of list)',
+                    'aria-label' => 'First captured request',
+                ]) ?>
                         <?= Html::a($iconPrev, $prevTag !== null ? $prevUrl : '', [
-                            'class' => $iconBtnClass . ($prevTag === null ? ' is-disabled' : ''),
-                            'title' => 'Previous (newer)',
-                            'aria-label' => 'Previous request',
-                        ]) ?>
+                    'class' => $iconBtnClass . ($prevTag === null ? ' is-disabled' : ''),
+                    'title' => 'Previous (newer)',
+                    'aria-label' => 'Previous request',
+                ]) ?>
                         <?= Html::a($iconNext, $nextTag !== null ? $nextUrl : '', [
-                            'class' => $iconBtnClass . ($nextTag === null ? ' is-disabled' : ''),
-                            'title' => 'Next (older)',
-                            'aria-label' => 'Next request',
-                        ]) ?>
+                    'class' => $iconBtnClass . ($nextTag === null ? ' is-disabled' : ''),
+                    'title' => 'Next (older)',
+                    'aria-label' => 'Next request',
+                ]) ?>
                         <?= Html::a($iconLatest, $latestUrl, [
-                            'class' => $iconBtnClass . ($onLatest ? ' is-disabled' : ''),
-                            'title' => 'Latest (bottom of list)',
-                            'aria-label' => 'Latest captured request',
-                        ]) ?>
+                    'class' => $iconBtnClass . ($onLatest ? ' is-disabled' : ''),
+                    'title' => 'Latest (bottom of list)',
+                    'aria-label' => 'Latest captured request',
+                ]) ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -182,13 +182,13 @@ if ($showCard) {
     <nav class="yii-debug-nav yii-debug-nav-iconed" aria-label="Debug panels">
         <?php
         $historyIcon = $inlineSvg('history.svg');
-        $historyClasses = ['yii-debug-nav-link'];
-        if ($mode === 'index') {
-            $historyClasses[] = 'is-active';
-        } else {
-            $historyClasses[] = 'yii-debug-nav-link-muted';
-        }
-        ?>
+$historyClasses = ['yii-debug-nav-link'];
+if ($mode === 'index') {
+    $historyClasses[] = 'is-active';
+} else {
+    $historyClasses[] = 'yii-debug-nav-link-muted';
+}
+?>
         <a class="<?= implode(' ', $historyClasses) ?>"
            href="<?= Html::encode(\yii\helpers\Url::to(['index'])) ?>"
            title="Browse all captured requests"<?= $mode === 'index' ? ' aria-current="page"' : '' ?>>
@@ -200,11 +200,11 @@ if ($showCard) {
 
         <?php foreach ($panels as $id => $panel): ?>
             <?php
-            // Configuration is promoted to the brand bar (it's a global concern: app config /
-            // php.ini / version, not request-scoped) so we skip it here to avoid duplication.
-            if ($id === 'config') {
-                continue;
-            }
+    // Configuration is promoted to the brand bar (it's a global concern: app config /
+    // php.ini / version, not request-scoped) so we skip it here to avoid duplication.
+    if ($id === 'config') {
+        continue;
+    }
 
             $iconKey = $panel->getToolbarIcon();
             $iconSvg = is_string($iconKey) && $iconKey !== ''

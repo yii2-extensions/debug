@@ -57,11 +57,6 @@ class ConfigPanel extends Panel
         return 'Configuration';
     }
 
-    public function getToolbarIcon(): string
-    {
-        return 'config';
-    }
-
     /**
      * Returns the BODY contents of the phpinfo() output.
      */
@@ -103,6 +98,11 @@ class ConfigPanel extends Panel
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/config/summary', ['panel' => $this]);
+    }
+
+    public function getToolbarIcon(): string
+    {
+        return 'config';
     }
 
     /**

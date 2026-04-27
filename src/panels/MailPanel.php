@@ -191,6 +191,49 @@ class MailPanel extends Panel
     }
 
     /**
+     * @param array<string, mixed> $messageData
+     */
+    private function addMoreInformation(MessageInterface $message, array &$messageData): void
+    {
+        if (!$message instanceof Message) {
+            return;
+        }
+
+        /** @var Email $symfonyMessage */
+        $symfonyMessage = $message->getSymfonyEmail();
+
+        /** @var AbstractPart $part */
+        $part = $symfonyMessage->getBody();
+
+        $body = null;
+
+        if ($part instanceof TextPart && 'plain' === $part->getMediaSubtype()) {
+            $messageData['charset'] = $part->asDebugString();
+            $body = $part->getBody();
+        }
+
+        $messageData['body'] = $body;
+        $messageData['headers'] = $part->getPreparedHeaders()->toString();
+        $messageData['time'] = $symfonyMessage->getDate();
+    }
+
+    private function convertParams(mixed $attr): string
+    {
+        if (is_array($attr)) {
+            return implode(', ', array_map(
+                static fn(int|string $key): string => (string) $key,
+                array_keys($attr),
+            ));
+        }
+
+        if (is_scalar($attr) || $attr instanceof Stringable) {
+            return (string) $attr;
+        }
+
+        return '';
+    }
+
+    /**
      * Looks at the debug manifest for the request immediately preceding the current one and
      * reports its mail count when non-zero. Returns `null` when no usable previous request exists.
      *
@@ -296,49 +339,6 @@ class MailPanel extends Panel
             'shortUrl' => $shortUrl,
             'url' => $panelUrl,
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $messageData
-     */
-    private function addMoreInformation(MessageInterface $message, array &$messageData): void
-    {
-        if (!$message instanceof Message) {
-            return;
-        }
-
-        /** @var Email $symfonyMessage */
-        $symfonyMessage = $message->getSymfonyEmail();
-
-        /** @var AbstractPart $part */
-        $part = $symfonyMessage->getBody();
-
-        $body = null;
-
-        if ($part instanceof TextPart && 'plain' === $part->getMediaSubtype()) {
-            $messageData['charset'] = $part->asDebugString();
-            $body = $part->getBody();
-        }
-
-        $messageData['body'] = $body;
-        $messageData['headers'] = $part->getPreparedHeaders()->toString();
-        $messageData['time'] = $symfonyMessage->getDate();
-    }
-
-    private function convertParams(mixed $attr): string
-    {
-        if (is_array($attr)) {
-            return implode(', ', array_map(
-                static fn(int|string $key): string => (string) $key,
-                array_keys($attr),
-            ));
-        }
-
-        if (is_scalar($attr) || $attr instanceof Stringable) {
-            return (string) $attr;
-        }
-
-        return '';
     }
 
     /**
