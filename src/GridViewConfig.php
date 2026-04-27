@@ -43,11 +43,10 @@ final class GridViewConfig
             'options' => ['class' => 'yii-debug-grid'],
             // Move the row count below the table and align it right; the panel-level
             // `<header class="yii-debug-grid-summary">` already carries the meaningful
-            // summary above the table, so the GridView's own count is just a footer hint
-            // alongside an inline page-size selector.
-            'layout' => "{items}\n<div class=\"yii-debug-grid-footer\">"
-                . self::pageSizeSelectorHtml()
-                . "{summary}\n{pager}\n</div>",
+            // summary above the table — and the page-size selector now lives inside that
+            // header (rendered via `pageSizeSelectorHtml()` from each panel view), so the
+            // footer is just a row-count hint plus the pager.
+            'layout' => "{items}\n<div class=\"yii-debug-grid-footer\">{summary}\n{pager}\n</div>",
             'summaryOptions' => ['class' => 'summary yii-debug-grid-count'],
             'pager' => [
                 'options' => ['class' => 'yii-debug-pager'],

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use yii\debug\GridViewConfig;
+use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
 
 /** @var yii\debug\panels\EventPanel $panel */
@@ -12,7 +13,9 @@ use yii\grid\GridView;
 <h1 class="yii-debug-sr-only">Events</h1>
 <header class="yii-debug-grid-summary">
     <span><strong><?= $dataProvider->getTotalCount() ?></strong> events captured</span>
+    <?= GridViewConfig::pageSizeSelectorHtml() ?>
 </header>
+<?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $dataProvider,
     'id' => 'log-panel-detailed-event',

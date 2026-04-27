@@ -103,9 +103,7 @@ class Debug extends Base
             'sort' => [
                 'attributes' => ['method', 'ip', 'tag', 'time', 'statusCode', 'sqlCount', 'mailCount', 'processingTime', 'peakMemory'],
             ],
-            'pagination' => [
-                'pageSize' => 50,
-            ],
+            'pagination' => \yii\debug\GridViewConfig::paginationFromRequest(50),
         ]);
 
         if (!($this->load($params) && $this->validate())) {

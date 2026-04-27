@@ -57,6 +57,11 @@ class ConfigPanel extends Panel
         return 'Configuration';
     }
 
+    public function getToolbarIcon(): string
+    {
+        return 'config';
+    }
+
     /**
      * Returns the BODY contents of the phpinfo() output.
      */

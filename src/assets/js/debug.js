@@ -396,4 +396,118 @@
       row.hidden = row.textContent.toLowerCase().indexOf(query) === -1;
     }
   });
+
+  // GridView filter row → URL bridge. The 22.0 shell ships without jQuery / yii.gridView.js,
+  // so each filter input drives URL params by hand. The regex matches any Yii form name
+  // pattern `<FormName>[<attr>]`, which means the bridge works for the index page (Debug[…])
+  // and every panel (Db[…], Log[…], Profile[…], Event[…], Mail[…], User[…], …) without
+  // per-page wiring. <select> filters apply on change, text inputs apply on Enter
+  // (immediate), on blur (when the dev tabs out), and after a 400 ms idle while typing.
+  // Each apply rebuilds the URL keeping every other query param intact and drops the page
+  // param so we always land on page 1.
+  (function () {
+    var IDLE_MS = 400;
+    var FORM_INPUT = /^[A-Za-z][A-Za-z0-9_]*\[[^\]]+\]$/;
+    var pending = null;
+
+    function nameMatchesFilter(input) {
+      return !!input && !!input.name && FORM_INPUT.test(input.name);
+    }
+
+    function apply(input) {
+      if (!nameMatchesFilter(input)) {
+        return;
+      }
+
+      var url = new URL(window.location.href);
+
+      if (input.value === "" || input.value === null) {
+        url.searchParams.delete(input.name);
+      } else {
+        url.searchParams.set(input.name, input.value);
+      }
+
+      url.searchParams.delete("page");
+
+      if (url.toString() === window.location.href) {
+        return;
+      }
+
+      window.location.href = url.toString();
+    }
+
+    function scheduleApply(input) {
+      if (pending) {
+        clearTimeout(pending.timeout);
+      }
+      pending = {
+        input: input,
+        timeout: setTimeout(function () {
+          var current = pending;
+          pending = null;
+          apply(current.input);
+        }, IDLE_MS),
+      };
+    }
+
+    function flushPending() {
+      if (!pending) {
+        return false;
+      }
+      clearTimeout(pending.timeout);
+      var input = pending.input;
+      pending = null;
+      apply(input);
+      return true;
+    }
+
+    document.addEventListener("change", function (event) {
+      if (
+        event.target.tagName === "SELECT" &&
+        nameMatchesFilter(event.target)
+      ) {
+        apply(event.target);
+      }
+    });
+
+    document.addEventListener("input", function (event) {
+      if (event.target.tagName !== "INPUT" || event.target.type === "submit") {
+        return;
+      }
+      if (!nameMatchesFilter(event.target)) {
+        return;
+      }
+      scheduleApply(event.target);
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") {
+        return;
+      }
+      if (event.target.tagName !== "INPUT" || event.target.type === "submit") {
+        return;
+      }
+      if (!nameMatchesFilter(event.target)) {
+        return;
+      }
+      event.preventDefault();
+      if (!flushPending()) {
+        apply(event.target);
+      }
+    });
+
+    document.addEventListener("focusout", function (event) {
+      if (event.target.tagName !== "INPUT" || event.target.type === "submit") {
+        return;
+      }
+      if (!nameMatchesFilter(event.target)) {
+        return;
+      }
+      // If the dev tabs out before the debounce fires, flush immediately so the
+      // URL reflects whatever they typed.
+      if (pending && pending.input === event.target) {
+        flushPending();
+      }
+    });
+  })();
 })();

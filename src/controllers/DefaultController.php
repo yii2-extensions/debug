@@ -94,7 +94,7 @@ class DefaultController extends Controller
 
         $this->loadData($tag);
 
-        $this->primeThemeContext();
+        $themeContext = $this->primeThemeContext();
 
         return $this->render(
             'index',
@@ -103,6 +103,9 @@ class DefaultController extends Controller
                 'manifest' => $this->getManifest(),
                 'panels' => $this->module->panels,
                 'searchModel' => $searchModel,
+                'debugTheme' => $themeContext['theme'],
+                'themeIconSun' => $themeContext['sun'],
+                'themeIconMoon' => $themeContext['moon'],
             ],
         );
     }

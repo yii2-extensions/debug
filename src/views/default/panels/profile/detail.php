@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use yii\debug\GridViewConfig;
+use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
 use yii\helpers\Html;
 
@@ -26,8 +27,10 @@ $hasProfileBlocks = $dataProvider->getTotalCount() > 0;
                 'panel' => 'timeline',
                 'tag' => $panel->tag,
             ]) ?>
+            <?= GridViewConfig::pageSizeSelectorHtml() ?>
         <?php endif; ?>
     </header>
+    <?= $hasProfileBlocks ? FilterBanner::widget(['searchModel' => $searchModel]) : '' ?>
 <?php if (!$hasProfileBlocks): ?>
     <div class="yii-debug-empty-state">
         <h2>No profile blocks captured</h2>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use yii\debug\DbAsset;
 use yii\debug\GridViewConfig;
 use yii\debug\panels\DbPanel;
+use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\web\View;
@@ -29,7 +30,9 @@ $totalMs = number_format(array_sum(array_column($timings, 'duration')) * 1000, 3
             <strong><?= $sumDuplicates ?></strong> duplicated
         </span>
     <?php endif; ?>
+    <?= GridViewConfig::pageSizeSelectorHtml() ?>
 </header>
+<?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?php
 
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [

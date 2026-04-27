@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use yii\debug\GridViewConfig;
+use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
 use yii\helpers\Html;
 
@@ -13,7 +14,9 @@ use yii\helpers\Html;
     <h1 class="yii-debug-sr-only">Dump</h1>
     <header class="yii-debug-grid-summary">
         <span><strong><?= $dataProvider->getTotalCount() ?></strong> dumps captured</span>
+        <?= GridViewConfig::pageSizeSelectorHtml() ?>
     </header>
+    <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?php
 
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [

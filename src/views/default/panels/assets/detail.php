@@ -7,6 +7,24 @@ use yii\helpers\Inflector;
 
 /** @var yii\debug\panels\AssetPanel $panel */
 
+// Helper to inline SVG glyphs from src/assets/svg/. Read once per file via the cache, so the
+// 4 icons rendered in the stats strip + N bundle headers don't trigger N+4 file_get_contents.
+// __DIR__ here is src/views/default/panels/assets, so we walk up 4 levels to reach src/.
+$svgRoot = dirname(__DIR__, 4) . '/assets/svg/';
+$svgCache = [];
+$inlineSvg = static function (string $name) use ($svgRoot, &$svgCache): string {
+    if (!isset($svgCache[$name])) {
+        $path = $svgRoot . $name;
+        $svgCache[$name] = is_file($path) ? trim((string) file_get_contents($path)) : '';
+    }
+    return $svgCache[$name];
+};
+
+$cubeIcon = $inlineSvg('asset.svg');
+$cssIcon = $inlineSvg('brand-css3.svg');
+$boltIcon = $inlineSvg('bolt.svg');
+$linkIcon = $inlineSvg('link.svg');
+
 $bundles = is_array($panel->data) ? $panel->data : [];
 $totalBundles = count($bundles);
 
@@ -51,47 +69,22 @@ $fileLabel = static function (mixed $item): string {
 <?php else: ?>
     <header class="yii-debug-asset-stats">
         <div class="yii-debug-asset-stat" data-kind="bundles">
-            <span class="yii-debug-asset-stat-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/>
-                    <path d="M12 12 4 7.5"/>
-                    <path d="m12 12 8-4.5"/>
-                    <path d="M12 12v9"/>
-                </svg>
-            </span>
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= $cubeIcon ?></span>
             <strong class="yii-debug-asset-stat-value"><?= $totalBundles ?></strong>
             <span class="yii-debug-asset-stat-label">bundle<?= $totalBundles === 1 ? '' : 's' ?></span>
         </div>
         <div class="yii-debug-asset-stat" data-kind="css">
-            <span class="yii-debug-asset-stat-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 4h16l-1.5 16-6.5 2-6.5-2z"/>
-                    <path d="M8 8h8l-.4 4-3.6 1.1-3.6-1.1L8.2 10"/>
-                </svg>
-            </span>
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= $cssIcon ?></span>
             <strong class="yii-debug-asset-stat-value"><?= $totalCss ?></strong>
             <span class="yii-debug-asset-stat-label">css</span>
         </div>
         <div class="yii-debug-asset-stat" data-kind="js">
-            <span class="yii-debug-asset-stat-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M13 2 4 14h7l-2 8 9-12h-7z"/>
-                </svg>
-            </span>
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= $boltIcon ?></span>
             <strong class="yii-debug-asset-stat-value"><?= $totalJs ?></strong>
             <span class="yii-debug-asset-stat-label">js</span>
         </div>
         <div class="yii-debug-asset-stat" data-kind="deps">
-            <span class="yii-debug-asset-stat-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/>
-                    <path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>
-                </svg>
-            </span>
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= $linkIcon ?></span>
             <strong class="yii-debug-asset-stat-value"><?= $totalDeps ?></strong>
             <span class="yii-debug-asset-stat-label">link<?= $totalDeps === 1 ? '' : 's' ?></span>
         </div>
@@ -122,15 +115,7 @@ $fileLabel = static function (mixed $item): string {
             <li class="yii-debug-asset-list-item">
                 <article class="yii-debug-asset-card" id="<?= Html::encode($id) ?>">
                     <header class="yii-debug-asset-card-head">
-                        <span class="yii-debug-asset-card-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/>
-                                <path d="M12 12 4 7.5"/>
-                                <path d="m12 12 8-4.5"/>
-                                <path d="M12 12v9"/>
-                            </svg>
-                        </span>
+                        <span class="yii-debug-asset-card-icon" aria-hidden="true"><?= $cubeIcon ?></span>
                         <div class="yii-debug-asset-card-title">
                             <h2 class="yii-debug-asset-card-name"><?= Html::encode($shortBundleName) ?></h2>
                             <?php if ($bundleNamespace !== ''): ?>

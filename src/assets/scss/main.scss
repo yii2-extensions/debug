@@ -351,18 +351,33 @@
     }
   }
 
-  // Prev/Next live side-by-side; the rest of the actions stack vertically below.
+  // First / Prev / Next / Latest navigator — single row of equal-width icon
+  // buttons (chevrons matching the cursor direction in the GridView). Icon-only
+  // means the four buttons fit comfortably in one row even at narrow sidebar
+  // widths.
   .yii-debug-request-nav-row {
-    display: flex;
-    gap: var(--yii-debug-space-2);
-
-    > * {
-      flex: 1 1 0;
-    }
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
+    margin-top: var(--yii-debug-space-2);
   }
 
-  .yii-debug-request-nav-action {
-    align-self: stretch;
+  // Icon-only navigator button — square-ish slot, just enough padding to give
+  // the chevron breathing room without forcing a tall button. Inherits ghost
+  // styling from `.yii-debug-btn-ghost`.
+  .yii-debug-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    font-size: 16px;
+    line-height: 1;
+
+    svg {
+      width: 1em;
+      height: 1em;
+    }
   }
 
   // Buttons inside the sidebar request-nav fill their slot (no compact pill width).
@@ -461,6 +476,76 @@
     margin-left: auto;
   }
 
+  // Configuration chip — sits between the Memory and the Theme toggle. It's
+  // promoted to the brand bar because the panel surfaces global concerns
+  // (app config, php.ini, framework version), not request-scoped data.
+  // Mirrors the theme chip's interactive treatment so the row reads as a
+  // pair of "global controls".
+  .yii-debug-brand-chip-config {
+    border: var(--yii-debug-border);
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-muted);
+    text-decoration: none;
+    transition:
+      transform 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease,
+      background-color 140ms ease;
+
+    .yii-debug-brand-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      transition: transform 240ms ease;
+    }
+
+    .yii-debug-brand-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    &:hover,
+    &:focus-visible {
+      border-color: color-mix(
+        in srgb,
+        var(--yii-debug-panel-primary),
+        transparent 50%
+      );
+      color: var(--yii-debug-panel-primary-strong);
+      transform: translateY(-1px);
+      text-decoration: none;
+      outline: none;
+    }
+
+    &:hover .yii-debug-brand-icon,
+    &:focus-visible .yii-debug-brand-icon {
+      transform: rotate(45deg);
+    }
+
+    &.is-disabled {
+      opacity: 0.5;
+      cursor: default;
+      pointer-events: none;
+    }
+  }
+
+  // The Config chip is the "anchor" of the right-hand cluster (Config + Theme).
+  // It always absorbs the free space so the trailing chips stay glued to the
+  // right edge regardless of whether the Memory chip is present.
+  .yii-debug-brand-chip-config {
+    margin-left: auto;
+  }
+
+  // When Memory is present (view mode) it already absorbs the free space, so
+  // we hand the auto back from Config; the right-hand cluster reads as
+  // `Memory · Config · Theme`, glued together on the right.
+  .yii-debug-brand-bar:has(.yii-debug-brand-chip-mem)
+    .yii-debug-brand-chip-config {
+    margin-left: 0;
+  }
+
   // Theme toggle chip in the panel header — sits next to the Memory chip and
   // flips the panel theme inline (no reload). Sun glyph means "switch to
   // light" (panel is currently dark) and moon means "switch to dark"; CSS
@@ -509,19 +594,13 @@
   }
 
 
-  // Identity card for the currently inspected snapshot — sits between the section title
-  // and the navigation buttons. Truncates long URLs while keeping the full value reachable
-  // via the parent's `title` attribute.
-  .yii-debug-snapshot {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: var(--yii-debug-space-2) 0;
-    border-bottom: 1px dashed var(--yii-debug-panel-border);
-  }
-
+  // The snapshot-line / snapshot-meta blocks render the active request's
+  // identity inside the shared `.yii-debug-history-card`. The card itself
+  // owns the padding and the dashed border; we only style the inline text
+  // here. Long URLs ellipsis-truncate via `.yii-debug-snapshot-url`.
   .yii-debug-snapshot-line {
     display: flex;
+    align-items: baseline;
     gap: 6px;
     min-width: 0;
     font-family: var(--yii-debug-font-mono);
@@ -535,7 +614,7 @@
   }
 
   .yii-debug-snapshot-url {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     color: var(--yii-debug-panel-text);
@@ -1956,13 +2035,147 @@
     color: var(--yii-debug-panel-success);
   }
 
-  // Footer slot below the GridView table — pairs the row-count summary with
-  // the page-size selector and (when paginated) the pager.
+  .yii-debug-grid-summary-stat-info strong {
+    color: var(--yii-debug-panel-info);
+  }
+
+  // Pill variant — when the stat is also a clickable filter (`<a>` element),
+  // wrap it in a rounded badge with a tinted background that matches its
+  // variant. Used by the index page's status-code distribution to deep-link
+  // the GridView. Inline spans (`<span class="yii-debug-grid-summary-stat-…">`)
+  // — used by panels like Log/DB for warning/error counts — are left alone and
+  // only get the colored `<strong>` from the rules above.
+  a.yii-debug-grid-summary-stat-success,
+  a.yii-debug-grid-summary-stat-info,
+  a.yii-debug-grid-summary-stat-warn,
+  a.yii-debug-grid-summary-stat-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: var(--yii-debug-radius-pill);
+    text-decoration: none;
+    transition:
+      transform 140ms ease,
+      background-color 140ms ease;
+
+    strong {
+      color: inherit;
+      margin-right: 0;
+    }
+
+    &:hover,
+    &:focus-visible {
+      transform: translateY(-1px);
+      text-decoration: none;
+    }
+  }
+
+  a.yii-debug-grid-summary-stat-success {
+    color: var(--yii-debug-panel-success);
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-success), transparent 65%);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-success),
+      transparent 90%
+    );
+
+    &:hover,
+    &:focus-visible {
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-success),
+        transparent 80%
+      );
+    }
+  }
+
+  a.yii-debug-grid-summary-stat-info {
+    color: var(--yii-debug-panel-info);
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-info), transparent 65%);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-info),
+      transparent 90%
+    );
+
+    &:hover,
+    &:focus-visible {
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-info),
+        transparent 80%
+      );
+    }
+  }
+
+  a.yii-debug-grid-summary-stat-warn {
+    color: var(--yii-debug-panel-warning);
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-warning), transparent 65%);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-warning),
+      transparent 90%
+    );
+
+    &:hover,
+    &:focus-visible {
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-warning),
+        transparent 80%
+      );
+    }
+  }
+
+  a.yii-debug-grid-summary-stat-danger {
+    color: var(--yii-debug-panel-danger);
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-danger), transparent 65%);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-danger),
+      transparent 90%
+    );
+
+    &:hover,
+    &:focus-visible {
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-danger),
+        transparent 80%
+      );
+    }
+  }
+
+  // Trailing CTA inside the summary strip (e.g. "Latest →" on the index).
+  // Sits to the right of the bucket pills; visually a small primary link.
+  .yii-debug-grid-summary-action {
+    margin-left: auto;
+    color: var(--yii-debug-panel-primary-strong);
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--yii-debug-panel-link-hover);
+      text-decoration: underline;
+    }
+  }
+
+  // Footer slot below the GridView table — `Showing N-M of T items.` summary
+  // pinned to the left, pager pinned to the right, both vertically centered on
+  // the same line. Wraps to two lines on very narrow viewports.
   .yii-debug-grid-footer {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: var(--yii-debug-space-3);
     margin-top: var(--yii-debug-space-2);
     color: var(--yii-debug-panel-muted);
@@ -1974,11 +2187,14 @@
     margin: 0;
   }
 
+  // Page-size selector lives inside `.yii-debug-grid-summary` (the strip above each
+  // GridView) and is pushed to the right with `margin-left: auto`, so the summary stats
+  // sit on the left and the row-control sits on the right.
   .yii-debug-grid-pagesize {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-right: auto;
+    margin-left: auto;
   }
 
   .yii-debug-grid-pagesize-label {
@@ -1994,7 +2210,12 @@
     border-radius: var(--yii-debug-radius-sm);
     background: var(--yii-debug-panel-surface);
     color: var(--yii-debug-panel-text);
-    font: inherit;
+    font-family: var(--yii-debug-font-sans);
+    font-size: var(--yii-debug-fs-sm);
+    // The summary strip styles its children with `letter-spacing: 0.06em; text-transform:
+    // uppercase;`. Override those here so the dropdown options render naturally.
+    letter-spacing: 0;
+    text-transform: none;
     cursor: pointer;
 
     &:focus {
@@ -3174,6 +3395,362 @@
       justify-content: flex-start;
       max-width: 100%;
     }
+  }
+
+  // -------------------------------------------------------------------
+  // Snapshot card — shown in the sidebar of view.php as the "Current
+  // request" summary (method + URL + status + time + Prev/Next/Latest).
+  // The index page no longer renders this card; its overview lives in
+  // the top summary strip (see `.yii-debug-grid-summary` above) so the
+  // sidebar can stay focused on navigation.
+  // -------------------------------------------------------------------
+  .yii-debug-history-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-2);
+    padding: var(--yii-debug-space-3);
+    border: 1px dashed
+      color-mix(in srgb, var(--yii-debug-panel-border) 70%, transparent);
+    border-radius: var(--yii-debug-radius-md);
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%),
+        transparent 60%
+      ),
+      color-mix(
+        in srgb,
+        var(--yii-debug-panel-surface-muted),
+        transparent 40%
+      );
+  }
+
+  // Iconed nav variant — applied via `.yii-debug-nav-iconed` on the
+  // sidebar's <nav>. Each link gains a small SVG slot at the left so the
+  // index nav reads as a polished pictograph list rather than a flat italic
+  // text column. view.php's nav (no `.yii-debug-nav-iconed` modifier) keeps
+  // its existing layout untouched.
+  //
+  // We pin the icon + label as the leading group and let the parent's
+  // existing `::after` chevron sit at the trailing edge thanks to
+  // `justify-content: space-between` from `.yii-debug-nav-link`. The label
+  // ellipses inside its allotted column so long panel names don't blow up
+  // the row.
+  .yii-debug-nav-iconed .yii-debug-nav-link {
+    align-items: center;
+
+    .yii-debug-nav-link-label {
+      margin-right: auto;
+    }
+  }
+
+  .yii-debug-nav-link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+    flex: none;
+    color: var(--yii-debug-panel-primary);
+    transition:
+      color 140ms ease,
+      transform 140ms ease;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  // When the link is the active panel, the gradient background is the same
+  // primary cyan as the icon — they'd vanish into each other. Force the icon
+  // to inherit `currentColor` (white in this state) so it stays readable.
+  .yii-debug-nav-link.is-active .yii-debug-nav-link-icon {
+    color: currentColor;
+  }
+
+  .yii-debug-nav-link-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--yii-debug-font-sans);
+    font-size: var(--yii-debug-fs-sm);
+    font-weight: 600;
+    letter-spacing: 0.005em;
+  }
+
+  // Muted nav link — used on the index where no request is active. We
+  // tone the link down with a muted *color* (kept full opacity so the
+  // glyph anti-aliasing stays crisp) and hand the icon a softer accent.
+  // Hover restores both to full intensity and nudges the icon one px
+  // right so the row clearly reads as interactive.
+  .yii-debug-nav-link-muted {
+    color: var(--yii-debug-panel-muted);
+
+    .yii-debug-nav-link-icon {
+      color: color-mix(
+        in srgb,
+        var(--yii-debug-panel-primary),
+        transparent 35%
+      );
+    }
+
+    &::after {
+      color: color-mix(
+        in srgb,
+        var(--yii-debug-panel-muted),
+        transparent 40%
+      );
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--yii-debug-panel-text);
+      background: var(--yii-debug-panel-surface-hover);
+
+      .yii-debug-nav-link-icon {
+        color: var(--yii-debug-panel-primary);
+        transform: translateX(1px);
+      }
+
+      &::after {
+        color: var(--yii-debug-panel-muted);
+      }
+    }
+  }
+
+  // Tag link in the request table — this is the primary action of the
+  // whole index, so it gets the most weight: mono, bold, slightly larger,
+  // and never wraps so the SHA stays scannable on a single line.
+  .yii-debug-tag-link {
+    display: inline-block;
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-base);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--yii-debug-panel-primary-strong);
+    text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 1px dotted
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 60%);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--yii-debug-panel-primary);
+      border-bottom-color: var(--yii-debug-panel-primary);
+      text-decoration: none;
+    }
+  }
+
+  // Truncate long URLs so the table doesn't blow up horizontally; the
+  // full value remains reachable via the cell's `title` attribute.
+  .yii-debug-url-cell {
+    display: inline-block;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  // Each request row in the index is a giant click target — the JS
+  // handler navigates to the corresponding view when the click does
+  // NOT land on an interactive element. The cursor + hover background
+  // tell the developer the whole row is reachable.
+  .yii-debug-row-link {
+    cursor: pointer;
+    transition: background-color 120ms ease;
+
+    &:hover {
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-primary),
+        transparent 92%
+      );
+    }
+  }
+
+  // History-cursor highlight — the row currently mirrored by the sidebar
+  // snapshot card on the index page. Subtle tinted background plus a left
+  // accent bar so the link between "this row" and "the card on the left"
+  // reads at a glance. Hover still works on top thanks to specificity.
+  .yii-debug-table tbody tr.is-cursor {
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-primary),
+      transparent 86%
+    );
+    box-shadow: inset 3px 0 0 var(--yii-debug-panel-primary);
+  }
+
+  .yii-debug-table tbody tr.is-cursor:hover {
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-primary),
+      transparent 78%
+    );
+  }
+
+  // Active-filter banner — shown above the GridView when the URL has
+  // any `Debug[*]` query params. Each pill is a one-click "remove this
+  // filter" link; the trailing "Clear all" wipes them in one go.
+  .yii-debug-active-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: var(--yii-debug-space-3);
+    padding: 8px var(--yii-debug-space-3);
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-info), transparent 60%);
+    border-radius: var(--yii-debug-radius-md);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-info),
+      transparent 92%
+    );
+  }
+
+  .yii-debug-active-filters-label {
+    color: var(--yii-debug-panel-info);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .yii-debug-active-filters-list {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .yii-debug-active-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px 2px 8px;
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-info), transparent 50%);
+    border-radius: var(--yii-debug-radius-pill);
+    background: var(--yii-debug-panel-surface);
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-mono);
+    font-size: 11px;
+    text-decoration: none;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease;
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--yii-debug-panel-danger);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-danger),
+        transparent 88%
+      );
+      color: var(--yii-debug-panel-danger);
+      text-decoration: none;
+    }
+  }
+
+  .yii-debug-active-filter-attr {
+    color: var(--yii-debug-panel-muted);
+    text-transform: lowercase;
+  }
+
+  .yii-debug-active-filter-sep {
+    color: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-active-filter-value {
+    color: var(--yii-debug-panel-text);
+    font-weight: 700;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .yii-debug-active-filter-x {
+    margin-left: 2px;
+    color: var(--yii-debug-panel-muted);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .yii-debug-active-filter-pill:hover .yii-debug-active-filter-x,
+  .yii-debug-active-filter-pill:focus-visible .yii-debug-active-filter-x {
+    color: var(--yii-debug-panel-danger);
+  }
+
+  .yii-debug-active-filters-clear {
+    margin-left: auto;
+    padding: 3px 10px;
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-danger), transparent 60%);
+    border-radius: var(--yii-debug-radius-pill);
+    background: var(--yii-debug-panel-surface);
+    color: var(--yii-debug-panel-danger);
+    font-family: var(--yii-debug-font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      transform 120ms ease;
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--yii-debug-panel-danger);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-danger),
+        transparent 86%
+      );
+      color: var(--yii-debug-panel-danger);
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+  }
+
+  // The ID column carries the tag SHA — give it enough room so the
+  // 13-character hex never wraps even when its filter input is open.
+  .yii-debug-col-id {
+    min-width: 170px;
+    white-space: nowrap;
+  }
+
+  // Numeric counters (Query / Mail) only ever hold a single number, so
+  // they get a tight, center-aligned column to reclaim horizontal space
+  // for the URL/method/status columns that actually need width.
+  th.yii-debug-col-num,
+  td.yii-debug-col-num {
+    width: 1%;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  td.yii-debug-col-num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Filter input row inside a numeric column should match the cell width
+  // so the dropdown/textbox doesn't blow past it.
+  td.yii-debug-col-num input,
+  td.yii-debug-col-num select {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
   }
 
   .yii-debug-explain-scroll {

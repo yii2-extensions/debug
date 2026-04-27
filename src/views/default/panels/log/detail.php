@@ -7,6 +7,7 @@ declare(strict_types=1);
 /** @var yii\data\ArrayDataProvider $dataProvider */
 
 use yii\debug\GridViewConfig;
+use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\VarDumper;
@@ -46,7 +47,9 @@ foreach ((array) ($panel->data['messages'] ?? []) as $entry) {
             <span class="yii-debug-grid-summary-sep">·</span>
             <span><strong><?= $counts['info'] ?></strong> info</span>
         <?php endif; ?>
+        <?= GridViewConfig::pageSizeSelectorHtml() ?>
     </header>
+    <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?php
 echo GridView::widget(array_merge(GridViewConfig::defaults(), [
     'dataProvider' => $dataProvider,

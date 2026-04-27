@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use yii\debug\GridViewConfig;
 use yii\debug\UserswitchAsset;
+use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
@@ -60,10 +61,12 @@ if (!$panel->userSwitch->isMainUser()) {
 
 <?php
 if ($panel->canSearchUsers()) {
+    $usersFilterModel = $panel->getUsersFilterModel();
     echo Html::beginTag('div', ['id' => 'debug-userswitch__filter']);
+    echo FilterBanner::widget(['searchModel' => $usersFilterModel]);
     echo GridView::widget(array_merge(GridViewConfig::defaults(), [
         'dataProvider' => $panel->getUserDataProvider(),
-        'filterModel' => $panel->getUsersFilterModel(),
+        'filterModel' => $usersFilterModel,
         'tableOptions' => [
             'class' => 'yii-debug-table yii-debug-table-pointer',
         ],
