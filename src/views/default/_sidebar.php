@@ -26,6 +26,10 @@ use yii\helpers\Html;
  * @var \yii\debug\Panel|null $activePanel Active panel (used for highlight + history dropdown URL).
  * @var string|null $tag Active request tag.
  * @var array|null $summary Active request summary (method/url/status/time/ajax).
+ *
+ * `'index'`-only inputs:
+ * @var string $cursorInit Initial tag for the cursor JS — preserves context when arriving from
+ *      a panel view's "History" link (`?cursor=<tag>`). Empty string falls back to the latest.
  */
 
 $mode = $mode ?? 'view';
@@ -109,8 +113,17 @@ if ($showCard) {
         // move a highlight through the GridView rows and restamp the card from each row's
         // `data-yii-debug-*` payload, no navigation. The marker attribute is what the inline
         // script in `index.php` looks for to wire the bridge.
+        // `data-yii-debug-cursor-init` carries the optional tag the JS should land on (passed
+        // via `?cursor=<tag>` from a panel view's "History" link, so the developer doesn't
+        // lose the request they were inspecting).
         $isCursor = $mode === 'index';
         $cursorAttr = $isCursor ? ' data-yii-debug-history-cursor' : '';
+        $cursorInitTag = $isCursor && isset($cursorInit) && is_string($cursorInit) && $cursorInit !== ''
+            ? $cursorInit
+            : '';
+        if ($cursorInitTag !== '') {
+            $cursorAttr .= ' data-yii-debug-cursor-init="' . Html::encode($cursorInitTag) . '"';
+        }
         ?>
         <section class="yii-debug-side-section yii-debug-request-nav"
                  aria-label="<?= Html::encode($sectionAriaLabel) ?>"<?= $cursorAttr ?>>
@@ -188,9 +201,16 @@ if ($mode === 'index') {
 } else {
     $historyClasses[] = 'yii-debug-nav-link-muted';
 }
+// Preserve the active tag when jumping to History from a panel view — the
+// index reads the `cursor` query param to position its JS cursor on that
+// row instead of snapping back to the latest capture.
+$historyParams = ['index'];
+if ($mode === 'view' && is_string($tag ?? null) && $tag !== '') {
+    $historyParams['cursor'] = $tag;
+}
 ?>
         <a class="<?= implode(' ', $historyClasses) ?>"
-           href="<?= Html::encode(\yii\helpers\Url::to(['index'])) ?>"
+           href="<?= Html::encode(\yii\helpers\Url::to($historyParams)) ?>"
            title="Browse all captured requests"<?= $mode === 'index' ? ' aria-current="page"' : '' ?>>
             <?php if ($historyIcon !== ''): ?>
                 <span class="yii-debug-nav-link-icon" aria-hidden="true"><?= $historyIcon ?></span>

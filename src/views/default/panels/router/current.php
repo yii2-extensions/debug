@@ -18,8 +18,20 @@ use yii\helpers\Html;
 </h3>
 
 <?php if ($currentRoute->message !== null): ?>
-    <div class="yii-debug-callout yii-debug-callout-info">
-        <?= Html::encode($currentRoute->message) ?>
+    <div class="yii-debug-callout yii-debug-callout-info yii-debug-router-callout">
+        <p class="yii-debug-router-callout-message"><?= Html::encode($currentRoute->message) ?></p>
+        <?php if (!$currentRoute->hasMatch && ($currentRoute->route !== '' || $currentRoute->action !== '')): ?>
+            <dl class="yii-debug-router-callout-resolved">
+                <?php if ($currentRoute->route !== ''): ?>
+                    <dt>Resolved route</dt>
+                    <dd><code><?= Html::encode($currentRoute->route) ?></code></dd>
+                <?php endif; ?>
+                <?php if ($currentRoute->action !== ''): ?>
+                    <dt>Dispatched action</dt>
+                    <dd><code><?= Html::encode($currentRoute->action) ?></code></dd>
+                <?php endif; ?>
+            </dl>
+        <?php endif; ?>
     </div>
 <?php endif; ?>
 <?php if (count($currentRoute->logs)): ?>

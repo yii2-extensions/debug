@@ -998,6 +998,47 @@
     border-left-color: var(--yii-debug-panel-danger);
   }
 
+  // Router-specific callout — when no rule matched, surface the route Yii's
+  // default parsing fell back to (and the dispatched action) so the developer
+  // sees where the request actually landed instead of just "no match".
+  .yii-debug-router-callout {
+    flex-direction: column;
+  }
+
+  .yii-debug-router-callout-message {
+    margin: 0;
+  }
+
+  .yii-debug-router-callout-resolved {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px var(--yii-debug-space-3);
+    margin: var(--yii-debug-space-2) 0 0;
+    font-size: var(--yii-debug-fs-sm);
+
+    dt {
+      color: var(--yii-debug-panel-muted);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: var(--yii-debug-fs-xs);
+      align-self: center;
+    }
+
+    dd {
+      margin: 0;
+    }
+
+    code {
+      padding: 1px 8px;
+      border-radius: var(--yii-debug-radius-sm);
+      background: var(--yii-debug-panel-surface);
+      color: var(--yii-debug-panel-text);
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-sm);
+    }
+  }
+
   // -------------------------------------------------------------------
   // Tables + GridView integration.
   // -------------------------------------------------------------------
@@ -2895,6 +2936,148 @@
 
     .yii-debug-mail-recipient-label {
       text-align: left;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Dump panel — `Yii::debug()` snapshots rendered as a GridView (category
+  // + message). The message column wraps each value in a small "card" head
+  // (#index, type badge, time, trace) plus a body that hosts PHP's
+  // `highlight_string()` output. Dark-mode pastel overrides soften the
+  // hardcoded inline-style hexes that PHP emits per token.
+  //
+  // Light theme keeps the original highlight palette untouched (the user
+  // confirmed it reads fine on white surfaces); only dark theme gets the
+  // pastel overrides because the saturated hexes burn the eyes on dark.
+  // -------------------------------------------------------------------
+  .yii-debug-dump {
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    overflow: hidden;
+  }
+
+  .yii-debug-dump-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--yii-debug-space-2);
+    padding: 6px var(--yii-debug-space-3);
+    border-bottom: var(--yii-debug-border);
+    background: var(--yii-debug-panel-surface-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    color: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-dump-index {
+    color: var(--yii-debug-panel-primary-strong);
+    font-weight: 700;
+  }
+
+  .yii-debug-dump-type {
+    display: inline-flex;
+    padding: 1px 8px;
+    border-radius: var(--yii-debug-radius-pill);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%);
+    color: var(--yii-debug-panel-primary-strong);
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 65%);
+
+    &[data-type="array"] {
+      background: color-mix(in srgb, var(--yii-debug-panel-info), transparent 86%);
+      color: var(--yii-debug-panel-info);
+      border-color: color-mix(in srgb, var(--yii-debug-panel-info), transparent 65%);
+    }
+
+    &[data-type="object"] {
+      background: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%);
+      color: var(--yii-debug-panel-primary-strong);
+      border-color: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 65%);
+    }
+
+    &[data-type="string"] {
+      background: color-mix(in srgb, var(--yii-debug-panel-success), transparent 86%);
+      color: var(--yii-debug-panel-success);
+      border-color: color-mix(in srgb, var(--yii-debug-panel-success), transparent 65%);
+    }
+
+    &[data-type="number"] {
+      background: color-mix(in srgb, var(--yii-debug-panel-warning), transparent 86%);
+      color: var(--yii-debug-panel-warning);
+      border-color: color-mix(in srgb, var(--yii-debug-panel-warning), transparent 65%);
+    }
+
+    &[data-type="bool"],
+    &[data-type="null"] {
+      background: var(--yii-debug-panel-surface);
+      color: var(--yii-debug-panel-muted);
+      border-color: var(--yii-debug-panel-border);
+    }
+  }
+
+  .yii-debug-dump-meta {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--yii-debug-space-2);
+  }
+
+  .yii-debug-dump-time {
+    color: var(--yii-debug-panel-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .yii-debug-dump-trace {
+    color: var(--yii-debug-panel-link);
+  }
+
+  .yii-debug-dump-body {
+    padding: var(--yii-debug-space-3);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+    line-height: 1.5;
+    overflow-x: auto;
+
+    code {
+      display: block;
+      padding: 0;
+      background: transparent;
+      white-space: pre;
+    }
+  }
+
+  // The data-attribute lives on `<html>`, which is an *ancestor* of `.yii-debug`,
+  // so we use `[…] &` to compile to `[data-yii-debug-theme="dark"] .yii-debug …`
+  // (selector reads outside-in, matching the actual DOM).
+  [data-yii-debug-theme="dark"] & .yii-debug-dump-body {
+    span[style*="color: #DD0000"],
+    span[style*="color:#DD0000"] {
+      color: #fca5a5 !important; // strings → pastel red
+    }
+
+    span[style*="color: #0000BB"],
+    span[style*="color:#0000BB"] {
+      color: #93c5fd !important; // default → pastel blue
+    }
+
+    span[style*="color: #007700"],
+    span[style*="color:#007700"] {
+      color: #86efac !important; // keywords → pastel green
+    }
+
+    span[style*="color: #FF8000"],
+    span[style*="color:#FF8000"] {
+      color: #fdba74 !important; // comments → pastel orange
+    }
+
+    span[style*="color: #000000"],
+    span[style*="color:#000000"] {
+      color: var(--yii-debug-panel-text) !important; // black text → panel text
     }
   }
 

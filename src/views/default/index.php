@@ -29,9 +29,15 @@ $this->params['shellData'] = [
     'debugTheme' => $debugTheme,
     'themeIconSun' => $themeIconSun,
     'themeIconMoon' => $themeIconMoon,
+    'cursorInit' => (string) (Yii::$app->getRequest()->get('cursor') ?? ''),
 ];
 
 $totalRequests = count($manifest);
+
+// `cursor` query param lets a panel-view's "History" link preserve the active
+// tag — the inline JS reads `data-yii-debug-cursor-init` and lands the cursor
+// on that row instead of snapping back to the latest capture.
+$cursorInit = (string) (Yii::$app->getRequest()->get('cursor') ?? '');
 
 $hasDbPanel = isset($panels['db']);
 $hasMailPanel = isset($panels['mail']);
@@ -306,7 +312,20 @@ $bucketVariant = [
         }
 
         var STATUS_VARIANTS = ['success', 'warning', 'danger', 'muted'];
+
+        // Honour `data-yii-debug-cursor-init` so the cursor lands on the tag the user was
+        // inspecting when they clicked "History" from a panel view. Falls back to row 0
+        // (latest capture) when the attribute is missing or the tag isn't on this page.
+        var initTag = section.getAttribute('data-yii-debug-cursor-init') || '';
         var cursor = 0;
+        if (initTag !== '') {
+            for (var ri = 0; ri < rows.length; ri++) {
+                if (rows[ri].getAttribute('data-yii-debug-tag') === initTag) {
+                    cursor = ri;
+                    break;
+                }
+            }
+        }
 
         function snapshotFromRow(row) {
             var status = parseInt(row.getAttribute('data-yii-debug-status') || '0', 10);
@@ -417,5 +436,11 @@ $bucketVariant = [
         });
 
         update();
+        // If we landed on a non-default cursor (came in via `?cursor=<tag>`), scroll
+        // the highlighted row into view so the developer immediately sees the row that
+        // matches the snapshot card.
+        if (cursor !== 0) {
+            ensureVerticallyVisible(rows[cursor]);
+        }
     }());
 </script>

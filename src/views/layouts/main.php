@@ -122,6 +122,7 @@ if ($useShell) {
                 'activePanel' => $shellData['activePanel'] ?? null,
                 'tag' => $shellData['tag'] ?? null,
                 'summary' => $shellSummary,
+                'cursorInit' => is_string($shellData['cursorInit'] ?? null) ? $shellData['cursorInit'] : '',
             ]) ?>
 
             <main class="yii-debug-main yii-debug-card">
