@@ -28,7 +28,7 @@ use function is_string;
 class DefaultController extends Controller
 {
     /**
-     * @var string|false|null Layout name for rendering views.
+     * @var false|string|null Layout name for rendering views.
      */
     public $layout = 'main';
     /**
@@ -126,7 +126,7 @@ class DefaultController extends Controller
     }
 
     /**
-     * @return array<array-key, class-string|array{class: class-string, ...}> List of external action classes or
+     * @return array<array-key, array{class: class-string, ...}|class-string> List of external action classes or
      * configurations.
      */
     public function actions(): array
