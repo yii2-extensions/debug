@@ -8,8 +8,6 @@
         "debugger"
     ],
     "license": "BSD-3-Clause",
-    "minimum-stability": "dev",
-    "prefer-stable": true,
     "require": {
         "php": ">=8.3",
         "ext-mbstring": "*",
@@ -17,7 +15,7 @@
         "composer-runtime-api": "^2.0",
         "symfony/mime": "^6.3",
         "yiisoft/yii2": "^22.0@dev",
-        "yiisoft/yii2-symfonymailer": "^4.0"
+        "yiisoft/yii2-symfonymailer": "^22.0@dev"
     },
     "require-dev": {
         "infection/infection": "^0.32",
