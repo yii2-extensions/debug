@@ -1,3 +1,9 @@
 {
-    "symbol-whitelist": ["YII_DEBUG", "YII_ENV"]
+    "symbol-whitelist": [
+        "YII_BEGIN_TIME",
+        "YII_DEBUG",
+        "YII_ENV",
+        "posix_getpwuid",
+        "posix_getuid"
+    ]
 }

@@ -13,3 +13,6 @@ tests/runtime/**
 
 # License texts ship verbatim — never auto-formatted.
 **/LICENSE*
+
+# Tool configs maintained by hand to keep their array order meaningful.
+composer-require-checker.json
