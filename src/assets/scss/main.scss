@@ -4532,33 +4532,705 @@
     font-weight: 700;
   }
 
-  // phpinfo rendering.
+  // -- phpinfo shell — left TOC + search + sectioned content -------------
+  // Two-column grid (sticky TOC | main column with search and per-module
+  // sections). Search filters whole sections client-side; the TOC is wired
+  // to scroll-spy so the dev can see at a glance which module they're in.
+  .yii-debug-phpinfo-shell {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: var(--yii-debug-space-4);
+    align-items: start;
+  }
+
+  .yii-debug-phpinfo-toc {
+    position: sticky;
+    top: var(--yii-debug-space-3);
+    align-self: start;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    padding: var(--yii-debug-space-3);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    box-shadow: var(--yii-debug-shadow-sm);
+    scrollbar-width: thin;
+  }
+
+  .yii-debug-phpinfo-toc-title {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin: 0 0 var(--yii-debug-space-2);
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    span:first-child {
+      color: var(--yii-debug-panel-primary-strong);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .yii-debug-phpinfo-toc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .yii-debug-phpinfo-toc-link {
+    display: block;
+    padding: 5px 10px 5px 12px;
+    border-left: 2px solid transparent;
+    border-radius: 0 var(--yii-debug-radius-sm) var(--yii-debug-radius-sm) 0;
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+    text-decoration: none;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease,
+      border-color 120ms ease;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--yii-debug-panel-surface-hover);
+      color: var(--yii-debug-panel-text);
+      text-decoration: none;
+    }
+
+    &.is-active {
+      border-left-color: var(--yii-debug-panel-primary);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-primary),
+        transparent 90%
+      );
+      color: var(--yii-debug-panel-primary-strong);
+      font-weight: 700;
+    }
+  }
+
+  .yii-debug-phpinfo-main {
+    min-width: 0;
+  }
+
+  .yii-debug-phpinfo-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--yii-debug-space-3);
+  }
+
+  .yii-debug-phpinfo-search-icon {
+    position: absolute;
+    left: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: var(--yii-debug-panel-muted);
+    pointer-events: none;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .yii-debug-phpinfo-search-input {
+    flex: 1;
+    padding: 9px 12px 9px 36px;
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-sm);
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease;
+
+    &::placeholder {
+      color: var(--yii-debug-panel-muted);
+    }
+
+    &:focus {
+      outline: 0;
+      border-color: var(--yii-debug-panel-primary);
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--yii-debug-panel-primary), transparent 80%);
+    }
+  }
+
+  .yii-debug-phpinfo-search-empty {
+    position: absolute;
+    right: 12px;
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    pointer-events: none;
+  }
+
+  .yii-debug-phpinfo-section {
+    scroll-margin-top: var(--yii-debug-space-3);
+
+    & + & {
+      margin-top: var(--yii-debug-space-4);
+    }
+  }
+
+  // The HTML `[hidden]` attribute defaults to `display: none`, but our
+  // explicit `display: block` on TOC links and the implicit `display: block`
+  // on `<section>` win on specificity. Re-assert the hide here so the live
+  // search filter actually trims the TOC + sections instead of just toggling
+  // an attribute the eye never sees.
+  .yii-debug-phpinfo-toc-link[hidden],
+  .yii-debug-phpinfo-section[hidden] {
+    display: none;
+  }
+
+  // Compact TOC into a horizontal scroller above the content on narrow
+  // viewports so the layout doesn't collapse to a tiny side column.
+  @media (width <= 900px) {
+    .yii-debug-phpinfo-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .yii-debug-phpinfo-toc {
+      position: static;
+      max-height: none;
+    }
+
+    .yii-debug-phpinfo-toc-list {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .yii-debug-phpinfo-toc-link {
+      padding: 4px 10px;
+      border-left: 0;
+      border-radius: var(--yii-debug-radius-pill);
+      background: var(--yii-debug-panel-surface-muted);
+
+      &.is-active {
+        border-left: 0;
+        background: color-mix(
+          in srgb,
+          var(--yii-debug-panel-primary),
+          transparent 80%
+        );
+      }
+    }
+  }
+
+  // -- phpinfo Overview hero + info cards --------------------------------
+  // Replaces the dense pre-h2 phpinfo table with a hero block (PHP version
+  // headline) and a responsive grid of info cards (Server / Build / Config /
+  // Capabilities). Long values like the Configure Command live in collapsed
+  // `<details>` so the section never dwarfs the modules below it.
+
+  .yii-debug-phpinfo-overview-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-3);
+    margin-bottom: var(--yii-debug-space-3);
+    padding: var(--yii-debug-space-4);
+    border: 1px dashed
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 60%);
+    border-radius: var(--yii-debug-radius-md);
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, var(--yii-debug-panel-primary), transparent 84%),
+        transparent 60%
+      ),
+      var(--yii-debug-panel-surface);
+  }
+
+  .yii-debug-phpinfo-overview-hero-headline {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--yii-debug-space-3);
+  }
+
+  .yii-debug-phpinfo-overview-hero-version {
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-display, var(--yii-debug-font-mono));
+    font-size: clamp(1.6rem, 2.4vw + 1rem, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .yii-debug-phpinfo-overview-hero-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 64px;
+    padding: 6px 14px;
+    border-radius: var(--yii-debug-radius-pill);
+    background: linear-gradient(
+      135deg,
+      var(--yii-debug-panel-primary-strong),
+      var(--yii-debug-panel-primary)
+    );
+    color: #fff;
+    font-family: var(--yii-debug-font-display, var(--yii-debug-font-mono));
+    font-size: var(--yii-debug-fs-lg);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: lowercase;
+  }
+
+  // Metric strip inside the hero — replaces the old Server card. Each tile is
+  // a label-above-value mini block, threaded by a 2-px cyan accent like the
+  // card rows so the visual language stays consistent. Auto-fit grid keeps
+  // tiles wide enough to hold an OS string but reflow naturally on narrow
+  // viewports. Top divider is owned by the block-head above; this dl is
+  // padding-only.
+  .yii-debug-phpinfo-overview-hero-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--yii-debug-space-2) var(--yii-debug-space-4);
+    margin: 0;
+  }
+
+  // Sub-section inside the hero — the hero now hosts both the PHP-version
+  // tile group and the Build tile group inside the same dashed-bordered
+  // shell, separated by a section header (eyebrow + dashed underline). No
+  // own border/padding — the outer hero container owns the chrome.
+  .yii-debug-phpinfo-overview-hero-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-3);
+  }
+
+  .yii-debug-phpinfo-overview-block-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 70%);
+  }
+
+  .yii-debug-phpinfo-overview-block-eyebrow {
+    color: var(--yii-debug-panel-primary-strong);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .yii-debug-phpinfo-overview-hero-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-left: 10px;
+    border-left: 2px solid
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 82%);
+    transition: border-color 140ms ease;
+
+    &:hover {
+      border-left-color: var(--yii-debug-panel-primary);
+    }
+
+    dt {
+      margin: 0;
+      color: var(--yii-debug-panel-muted);
+      font-family: var(--yii-debug-font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    dd {
+      margin: 0;
+      min-width: 0;
+      word-break: break-word;
+      color: var(--yii-debug-panel-text);
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-sm);
+      line-height: 1.4;
+
+      code {
+        padding: 0;
+        background: transparent;
+        color: inherit;
+      }
+    }
+  }
+
+  // Vertical stack of full-width strips. Each `<details>` row spans the
+  // entire content column; the `dl` inside flows its key/value pairs into a
+  // multi-column auto-fit grid so the body packs horizontally on wide
+  // viewports instead of stranding values in a narrow lane.
+  .yii-debug-phpinfo-overview-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-2);
+    margin-bottom: var(--yii-debug-space-3);
+  }
+
+  // Cards inside the Overview grid — neutralize the standalone `<details>`
+  // bottom margin (the flex gap already separates them) and let the card's
+  // body inherit the same padding the Configure Command pre/Streams dl use.
+  .yii-debug-phpinfo-overview-grid > .yii-debug-phpinfo-overview-details {
+    margin-bottom: 0;
+  }
+
+  .yii-debug-phpinfo-overview-details > .yii-debug-phpinfo-overview-card-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: var(--yii-debug-space-3) var(--yii-debug-space-5);
+    margin: 0;
+    padding: var(--yii-debug-space-3) var(--yii-debug-space-4);
+  }
+
+  .yii-debug-phpinfo-overview-card-label {
+    color: var(--yii-debug-panel-primary-strong);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .yii-debug-phpinfo-overview-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+  }
+
+  // Each row reads as a mini info-block: tiny uppercase eyebrow label, value
+  // beneath with full-width breathing room. The 2-px left bar threads the
+  // panel's cyan accent through the rows, intensifying on hover so the row
+  // the dev is hovering is unambiguously focused. Replaces the previous
+  // `dt | dd` grid where the label hogged half the cell and the value got
+  // squeezed into a narrow lane.
+  .yii-debug-phpinfo-overview-card-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 2px 0 2px 10px;
+    border-left: 2px solid
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 82%);
+    transition:
+      border-color 140ms ease,
+      transform 140ms ease;
+
+    &:hover {
+      border-left-color: var(--yii-debug-panel-primary);
+      transform: translateX(1px);
+    }
+
+    dt {
+      margin: 0;
+      color: var(--yii-debug-panel-muted);
+      font-family: var(--yii-debug-font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    dd {
+      margin: 0;
+      min-width: 0;
+      // `word-break: break-word` only splits at word boundaries when needed
+      // (vs `anywhere`, which fragments mid-word — e.g. `/p hp/` — even when
+      // a clean break is possible). Combined with `hyphens: none` so paths
+      // never grow phantom hyphens at the wrap point.
+      word-break: break-word;
+      hyphens: none;
+      color: var(--yii-debug-panel-text);
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-sm);
+      line-height: 1.45;
+
+      code {
+        padding: 0;
+        background: transparent;
+        color: inherit;
+      }
+    }
+  }
+
+  .yii-debug-phpinfo-overview-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1px 10px;
+    border-radius: var(--yii-debug-radius-pill);
+    border: 1px solid transparent;
+    font-family: var(--yii-debug-font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+
+    &[data-variant="success"] {
+      color: var(--yii-debug-panel-success);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-success),
+        transparent 86%
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--yii-debug-panel-success),
+        transparent 65%
+      );
+    }
+
+    &[data-variant="muted"] {
+      color: var(--yii-debug-panel-muted);
+      background: var(--yii-debug-panel-surface-muted);
+      border-color: var(--yii-debug-panel-border);
+    }
+  }
+
+  .yii-debug-phpinfo-overview-details {
+    margin-bottom: var(--yii-debug-space-3);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    box-shadow: var(--yii-debug-shadow-sm);
+    overflow: hidden;
+
+    summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--yii-debug-space-2);
+      padding: 10px var(--yii-debug-space-3);
+      list-style: none;
+      cursor: pointer;
+      color: var(--yii-debug-panel-text);
+      transition: background-color 120ms ease;
+
+      &::-webkit-details-marker {
+        display: none;
+      }
+
+      &:hover {
+        background: var(--yii-debug-panel-surface-hover);
+      }
+    }
+
+    &[open] summary {
+      border-bottom: var(--yii-debug-border);
+    }
+  }
+
+  .yii-debug-phpinfo-overview-details-label {
+    color: var(--yii-debug-panel-primary-strong);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .yii-debug-phpinfo-overview-details-hint {
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .yii-debug-phpinfo-overview-details-body {
+    margin: 0;
+    padding: var(--yii-debug-space-3);
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .yii-debug-phpinfo-overview-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-3);
+    margin: 0;
+    padding: var(--yii-debug-space-3);
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    dt {
+      margin: 0;
+      color: var(--yii-debug-panel-muted);
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-xs);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    dd {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin: 0;
+    }
+  }
+
+  .yii-debug-phpinfo-overview-token {
+    padding: 1px 8px;
+    border: 1px solid var(--yii-debug-panel-border);
+    border-radius: var(--yii-debug-radius-sm);
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-mono);
+    font-size: 11px;
+  }
+
+  // Wrap-flow container for path lists ("Additional .ini files parsed", etc.).
+  // Each entry collapses to its basename via a `<code class="…-token">`; full
+  // path lives in the title tooltip so the dev can see the resolved location
+  // on hover without the row turning into a wall of repeated prefixes.
+  .yii-debug-phpinfo-overview-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+
+    .yii-debug-phpinfo-overview-token {
+      cursor: help;
+      transition: border-color 120ms ease, background-color 120ms ease;
+
+      &:hover {
+        border-color: color-mix(
+          in srgb,
+          var(--yii-debug-panel-primary),
+          transparent 40%
+        );
+        background: color-mix(
+          in srgb,
+          var(--yii-debug-panel-primary),
+          transparent 88%
+        );
+      }
+    }
+  }
+
+  // -- phpinfo module card -----------------------------------------------
+  // Each module is wrapped as a single card (matches the Database panel's
+  // GridView card chrome): rounded border + surface bg + soft shadow, with
+  // a header strip on top (dot + title + cyan border-bottom) and the table
+  // flowing directly underneath without a gap.
+
+  .yii-debug-phpinfo-module {
+    margin-top: var(--yii-debug-space-4);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    box-shadow: var(--yii-debug-shadow-sm);
+    overflow: hidden;
+
+    // Multiple tables in one module (e.g. APCu's main table + Directives)
+    // separated by a thin divider rather than a margin gap.
+    .yii-debug-table-wrap + .yii-debug-table-wrap {
+      border-top: var(--yii-debug-border);
+    }
+
+    // The wrap inside the card strips its own border/radius — the card
+    // already provides that chrome.
+    .yii-debug-table-wrap {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+  }
+
+  .yii-debug-phpinfo-module-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 10px var(--yii-debug-space-3);
+    background: var(--yii-debug-panel-surface-muted);
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 60%);
+
+    // Title reads as a hero-style eyebrow — cyan, uppercase, monospace,
+    // wide letter-spacing — so module heads and the hero sub-section
+    // eyebrows (PHP VERSION / BUILD / CONFIGURATION / …) share the same
+    // visual language across the whole panel.
+    h2 {
+      margin: 0;
+      padding: 0;
+      background: none;
+      color: var(--yii-debug-panel-primary-strong);
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-xs);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: left;
+    }
+  }
+
+  .yii-debug-phpinfo-module-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(
+      135deg,
+      var(--yii-debug-panel-primary),
+      var(--yii-debug-panel-primary-strong)
+    );
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%);
+  }
+
+  // phpinfo rendering — tables inherit shell colours; remove the loud
+  // cyan headers carried over from PHP's phpinfo() output.
   .yii-debug-phpinfo {
     h1,
     h2 {
       padding: 8px 12px;
       border-radius: var(--yii-debug-radius-md);
-      background: linear-gradient(
-        135deg,
-        var(--yii-debug-panel-primary-strong),
-        var(--yii-debug-panel-primary)
-      );
-      color: #fff;
-      text-align: center;
+      background: var(--yii-debug-panel-surface-muted);
+      color: var(--yii-debug-panel-text);
+      text-align: left;
     }
 
-    .yii-debug-table tr.h:nth-of-type(odd) td {
+    .yii-debug-table tr.h td {
       background: color-mix(
         in srgb,
         var(--yii-debug-panel-primary),
-        var(--yii-debug-panel-surface) 80%
+        var(--yii-debug-panel-surface) 86%
       );
-      color: var(--yii-debug-panel-text);
+      color: var(--yii-debug-panel-primary-strong);
       font-weight: 700;
     }
 
     .yii-debug-table tr:not(.h, .v) td:first-child {
       background: var(--yii-debug-panel-surface-muted);
+      color: var(--yii-debug-panel-muted);
       font-weight: 600;
     }
   }
