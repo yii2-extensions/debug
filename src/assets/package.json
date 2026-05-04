@@ -6,16 +6,18 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
+    "format": "prettier --write 'src/**/*.js' 'vite.config.js' 'package.json'",
+    "format:check": "prettier --check 'src/**/*.js' 'vite.config.js' 'package.json'",
     "lint:css": "stylelint --config ../../.github/linters/.stylelintrc.json --config-basedir . 'src/styles/*.css'",
     "lint:css:fix": "stylelint --config ../../.github/linters/.stylelintrc.json --config-basedir . --fix 'src/styles/*.css'",
-    "lint:js": "eslint --no-eslintrc --config ../../.github/linters/.eslintrc.json src",
-    "lint:js:fix": "eslint --no-eslintrc --config ../../.github/linters/.eslintrc.json --fix src"
+    "lint:js": "eslint --config ../../.github/linters/eslint.config.mjs src",
+    "lint:js:fix": "eslint --config ../../.github/linters/eslint.config.mjs --fix src"
   },
   "engines": {
     "node": ">=20.10"
   },
   "devDependencies": {
-    "eslint": "^8.57.1",
+    "eslint": "^9.39.4",
     "prettier": "^3.8.3",
     "stylelint": "^17.10.0",
     "stylelint-config-standard-scss": "^17.0.0",
