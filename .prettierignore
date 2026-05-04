@@ -1,2 +1,7 @@
 **/*.min.css
 **/*.min.js
+
+# Vite-built bundles (committed dist/) and lockfiles.
+**/dist/**
+**/node_modules/**
+**/package-lock.json

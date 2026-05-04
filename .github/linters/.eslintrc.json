@@ -1,0 +1,23 @@
+{
+    "root": true,
+    "env": {
+        "browser": true,
+        "es2022": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+    },
+    "ignorePatterns": [
+        "**/dist/**",
+        "**/node_modules/**"
+    ],
+    "rules": {
+        "no-empty": ["error", { "allowEmptyCatch": true }],
+        "no-unused-vars": ["error", {
+            "argsIgnorePattern": "^_",
+            "caughtErrorsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_"
+        }]
+    }
+}
