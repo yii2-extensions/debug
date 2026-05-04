@@ -525,10 +525,26 @@ class DefaultController extends Controller
     private function primeThemeContext(): array
     {
         $request = Yii::$app->getRequest();
-        $raw = $request->get(
-            'yii_debug_theme',
-            $request->getCookies()->getValue('yii-debug-toolbar-theme'),
-        );
+        $raw = $request->get('yii_debug_theme');
+
+        if ($raw === null) {
+            // Yii validates cookies with HMAC by default, so the unsigned cookie
+            // written from JS (`document.cookie = 'yii-debug-toolbar-theme=…'`)
+            // gets rejected by `getCookies()`. Fall back to `$_COOKIE` so the
+            // theme survives toolbar-driven navigations and JS toggles. The
+            // value is only ever accepted as `'dark'` or `'light'` below, so
+            // reading it raw is safe — it can't be used as an injection vector.
+            $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
+
+            if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
+                $candidate = $_COOKIE['yii-debug-toolbar-theme'];
+
+                if (is_string($candidate)) {
+                    $raw = $candidate;
+                }
+            }
+        }
+
         $theme = is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
 
         $svgRoot = dirname(__DIR__) . '/assets/svg/';

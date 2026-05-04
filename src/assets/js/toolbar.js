@@ -227,10 +227,48 @@
     }
   }
 
+  // Persist the theme as a same-origin cookie so the backend (`primeThemeContext`)
+  // serves panel pages with the matching theme even when the URL doesn't carry the
+  // `?yii_debug_theme=` query — e.g. when the host writes `localStorage.theme` and
+  // the toolbar follows. Mirror writes from every theme mutation point (toolbar
+  // toggle, host observer, postMessage from inside the panel) so the cookie is
+  // always the latest authority.
+  function writeThemeCookie(theme) {
+    if (!theme) {
+      return;
+    }
+    try {
+      document.cookie =
+        themeStorageKey +
+        "=" +
+        encodeURIComponent(theme) +
+        ";path=/;max-age=31536000;SameSite=Lax";
+    } catch (_e) {
+      // Cookie writes can be blocked (CSP, sandboxed iframe) — ignore silently.
+    }
+  }
+
   function addThemeToUrl(url, theme) {
     var parsed = absoluteUrl(url);
+    var routeParam;
 
     if (!parsed || !theme) {
+      return url;
+    }
+
+    if (parsed.origin && parsed.origin !== window.location.origin) {
+      return url;
+    }
+
+    // Only stamp debug routes — covers both URL conventions:
+    //   - Pretty URLs:  `/debug/default/...`            → pathname.
+    //   - Default Yii:  `/index.php?r=debug%2Fdefault…` → `r` query param.
+    routeParam = parsed.searchParams.get("r") || "";
+    if (
+      parsed.pathname.indexOf("/debug/") === -1 &&
+      routeParam.indexOf("debug/") !== 0 &&
+      routeParam.indexOf("debug%2F") !== 0
+    ) {
       return url;
     }
 
@@ -514,11 +552,16 @@
         ? normalizeTheme(localStorage.getItem(themeStorageKey))
         : null;
 
+    // The current DOM state (`<html>`/`<body>` class or `data-theme` attr) is the
+    // most authoritative signal — if the page IS rendering with a Tailwind `dark`
+    // class then any stale `localStorage[yii-debug-toolbar-theme]` from a previous
+    // session must lose. We still keep `ownStored` and `getStorageTheme()` as
+    // fallbacks for standalone pages where the document hasn't been classed yet.
     return (
       normalizeTheme(this.getAttribute("data-yii-debug-theme")) ||
-      ownStored ||
       getElementTheme(document.documentElement) ||
       getElementTheme(document.body) ||
+      ownStored ||
       getStorageTheme() ||
       getComputedTheme() ||
       (window.matchMedia &&
@@ -539,6 +582,10 @@
         localStorage.setItem(themeStorageKey, next);
       } catch (_e) {}
     }
+
+    // Cookie is the backend's source of truth — write it so the next panel
+    // navigation renders the matching theme even when the URL is bare.
+    writeThemeCookie(next);
 
     // Fan the change out to the surrounding page — covers Tailwind's `dark`
     // class on <html>, `data-theme`/`data-bs-theme` (Pico/Bootstrap), and the
@@ -603,6 +650,11 @@
     if (window.localStorage) {
       localStorage.setItem(themeStorageKey, theme);
     }
+
+    // Cookie is what the backend reads on the next debug request, so the panel
+    // page renders with the correct theme even when the toolbar followed a host
+    // change via the MutationObserver and the URL didn't carry `yii_debug_theme`.
+    writeThemeCookie(theme);
 
     if (previousTheme && this.data) {
       this.render();
@@ -673,6 +725,10 @@
             localStorage.setItem(themeStorageKey, nextTheme);
           } catch (_e) {}
         }
+
+        // The flip originated inside the panel iframe; carry it to the cookie so
+        // a fresh panel navigation (or a hard reload) lands on the same theme.
+        writeThemeCookie(nextTheme);
 
         self.propagateThemeToHost(nextTheme);
 

@@ -370,7 +370,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         echo $view->renderDynamic('return Yii::$app->getModule("' . $this->getUniqueId() . '")->getToolbarHtml();');
 
-        if (self::$_toolbarScript === null) {
+        // Cache the inline toolbar script per request only (`YII_DEBUG` short-circuits the
+        // static cache so dev workflows pick up edits without a server restart). In production
+        // the static cache amortises the file read across requests handled by the same worker.
+        if (self::$_toolbarScript === null || YII_DEBUG) {
             $contents = file_get_contents(__DIR__ . '/assets/js/toolbar.js');
             self::$_toolbarScript = $contents === false ? '' : $contents;
         }

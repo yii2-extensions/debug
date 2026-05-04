@@ -61,6 +61,37 @@
     return normalizeTheme(localStorage.getItem(themeStorageKey));
   }
 
+  // Read the theme from the same-origin cookie that every theme mutation
+  // writes (toolbar toggle, debug.js applyTheme, _shell_header IIFE). This is
+  // the last write the client made and is therefore authoritative — it lets
+  // the page survive a backend that hasn't been restarted (so it still serves
+  // the wrong `data-yii-debug-theme` attribute), or a host stack that doesn't
+  // use the same theme conventions Yii expects (Tailwind class, Bootstrap
+  // data-bs-theme, Vue/Inertia, etc.).
+  function getCookieTheme() {
+    var raw = (document.cookie || "")
+      .split(";")
+      .map(function (chunk) {
+        return chunk.trim();
+      })
+      .find(function (chunk) {
+        return chunk.indexOf(themeStorageKey + "=") === 0;
+      });
+
+    if (!raw) {
+      return null;
+    }
+
+    var value = raw.substring(themeStorageKey.length + 1);
+    try {
+      value = decodeURIComponent(value);
+    } catch (_e) {
+      // Malformed cookie — ignore.
+    }
+
+    return normalizeTheme(value);
+  }
+
   function getUrlTheme() {
     try {
       return normalizeTheme(
@@ -73,6 +104,7 @@
 
   function addThemeToUrl(url, theme) {
     var parsed;
+    var routeParam;
 
     if (!theme) {
       return url;
@@ -84,9 +116,18 @@
       return url;
     }
 
+    if (parsed.origin !== window.location.origin) {
+      return url;
+    }
+
+    // Only target debug routes, but support both URL conventions:
+    //   - Pretty URLs:  `/debug/default/view?...`        → pathname matches.
+    //   - Default Yii:  `/index.php?r=debug%2Fdefault%2Fview&...` → r param.
+    routeParam = parsed.searchParams.get("r") || "";
     if (
-      parsed.origin !== window.location.origin ||
-      parsed.pathname.indexOf("/debug/") === -1
+      parsed.pathname.indexOf("/debug/") === -1 &&
+      routeParam.indexOf("debug/") !== 0 &&
+      routeParam.indexOf("debug%2F") !== 0
     ) {
       return url;
     }
@@ -97,13 +138,23 @@
   }
 
   function applyTheme() {
+    // Priority is "what the client most recently chose, regardless of stack":
+    //   1. Explicit `?yii_debug_theme=` query (panel deep-links).
+    //   2. Cookie (last write — survives reloads + backend staleness).
+    //   3. localStorage fallback (cookie may be blocked in some sandboxes).
+    //   4. Parent toolbar theme (when this page is in the drawer iframe).
+    //   5. Server-rendered `data-yii-debug-theme` attribute (host's theme,
+    //      already settled by the time we run, but trumped by client-set
+    //      values above so a stale backend can't override our pick).
+    //   6. `prefers-color-scheme` media query as the very last resort.
     var theme =
       getUrlTheme() ||
+      getCookieTheme() ||
+      getStoredTheme() ||
+      getParentToolbarTheme() ||
       normalizeTheme(
         document.documentElement.getAttribute("data-yii-debug-theme"),
       ) ||
-      getParentToolbarTheme() ||
-      getStoredTheme() ||
       (window.matchMedia &&
       window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
@@ -115,11 +166,14 @@
       localStorage.setItem(themeStorageKey, theme);
     }
 
+    // Persistent cookie (1 year) so the backend's `primeThemeContext` keeps the
+    // theme across hard reloads, new tabs, and toolbar-driven navigations even
+    // when the URL doesn't carry the `?yii_debug_theme=` query.
     document.cookie =
       themeStorageKey +
       "=" +
       encodeURIComponent(theme) +
-      "; path=/; SameSite=Lax";
+      "; path=/; max-age=31536000; SameSite=Lax";
 
     return theme;
   }
