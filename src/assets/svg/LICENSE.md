@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD060 -->
+
 # Icon licenses
 
 The SVG glyphs shipped in this directory are sourced from third-party open-source icon packs.

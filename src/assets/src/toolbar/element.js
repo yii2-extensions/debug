@@ -777,7 +777,7 @@ YiiDebugToolbar.prototype.renderControls = function () {
   var themeLabel = "Switch to " + nextTheme + " theme";
   /**
    * Show the icon that represents the *next* theme — click moves you toward
-   * what you see. Re-uses the same `mask-image` pipeline as the panel chips
+   * what you see. Reuses the same `mask-image` pipeline as the panel chips
    * so the glyph picks up `currentColor`.
    */
   var themeIcon = this.iconHtml(

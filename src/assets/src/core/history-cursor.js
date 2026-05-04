@@ -66,7 +66,7 @@
    * Strip scheme/host/port from a captured URL so the snapshot card shows
    * just the request path — matches the CURRENT REQUEST card and saves
    * horizontal space on long URLs (issue #23). Console invocations
-   * (`php yii ...`) and unparseable values are returned verbatim.
+   * (`php yii ...`) and unparsable values are returned verbatim.
    */
   function urlToPath(url) {
     if (!url || url.indexOf("php yii ") === 0) {
