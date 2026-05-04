@@ -327,12 +327,30 @@ $bucketVariant = [
             }
         }
 
+        // Strip scheme/host/port from a captured URL so the snapshot card shows just
+        // the request path — matches the CURRENT REQUEST card and saves horizontal
+        // space on long URLs (issue #23). Console invocations (`php yii ...`) and
+        // unparseable values are returned verbatim.
+        function urlToPath(url) {
+            if (!url || url.indexOf('php yii ') === 0) {
+                return url;
+            }
+            try {
+                var parsed = new URL(url);
+                return (parsed.pathname || '/') + parsed.search + parsed.hash;
+            } catch (_e) {
+                return url;
+            }
+        }
+
         function snapshotFromRow(row) {
             var status = parseInt(row.getAttribute('data-yii-debug-status') || '0', 10);
+            var rawUrl = row.getAttribute('data-yii-debug-url') || '';
             return {
                 tag: row.getAttribute('data-yii-debug-tag') || '',
                 method: row.getAttribute('data-yii-debug-method') || '',
-                url: row.getAttribute('data-yii-debug-url') || '',
+                url: urlToPath(rawUrl),
+                fullUrl: rawUrl,
                 status: status,
                 // Pre-formatted on the server side (`H:i:s` in server timezone) so the snapshot
                 // card matches what the GridView TIME column shows — JS-side reformatting would
@@ -364,6 +382,11 @@ $bucketVariant = [
                     el.textContent = snap.method;
                 } else if (field === 'url') {
                     el.textContent = snap.url;
+                    // Tooltip carries the full absolute URL for when the truncated
+                    // path doesn't tell the developer enough.
+                    if (snap.fullUrl) {
+                        el.setAttribute('title', snap.fullUrl);
+                    }
                 } else if (field === 'status') {
                     el.textContent = snap.status ? String(snap.status) : '–';
                     STATUS_VARIANTS.forEach(function (v) {
@@ -380,7 +403,9 @@ $bucketVariant = [
 
             var card = section.querySelector('.yii-debug-history-card');
             if (card) {
-                card.setAttribute('title', (snap.method + ' ' + snap.url).trim());
+                // Card-level tooltip keeps the absolute URL so dev can see scheme/host
+                // even though the visible line trimmed it down to the path.
+                card.setAttribute('title', (snap.method + ' ' + (snap.fullUrl || snap.url)).trim());
             }
 
             // Button labels read positionally: First = top of the list (cursor 0, newest);

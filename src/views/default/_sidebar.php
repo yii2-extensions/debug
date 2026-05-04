@@ -124,6 +124,26 @@ if ($showCard) {
         if ($cursorInitTag !== '') {
             $cursorAttr .= ' data-yii-debug-cursor-init="' . Html::encode($cursorInitTag) . '"';
         }
+
+        // Helper that strips the scheme/host/port from a captured URL — the snapshot
+        // card only has room for the meaningful part (path + query). The host part
+        // is rarely useful in dev anyway and the LATEST/CURRENT request cards stay
+        // visually consistent (issue #23). `php yii ...` console invocations are
+        // passed through verbatim because they don't have a host portion.
+        $toPath = static function (string $url): string {
+            if ($url === '' || str_starts_with($url, 'php yii ')) {
+                return $url;
+            }
+            $parsed = parse_url($url);
+            if ($parsed === false) {
+                return $url;
+            }
+            $path = (string) ($parsed['path'] ?? '/');
+            $query = isset($parsed['query']) && $parsed['query'] !== '' ? '?' . $parsed['query'] : '';
+            $fragment = isset($parsed['fragment']) && $parsed['fragment'] !== '' ? '#' . $parsed['fragment'] : '';
+            return $path . $query . $fragment;
+        };
+        $snapshotPath = $toPath((string) ($snapshotSummary['url'] ?? ''));
         ?>
         <section class="yii-debug-side-section yii-debug-request-nav"
                  aria-label="<?= Html::encode($sectionAriaLabel) ?>"<?= $cursorAttr ?>>
@@ -132,7 +152,7 @@ if ($showCard) {
             <div class="yii-debug-history-card" title="<?= Html::encode(($snapshotSummary['method'] ?? '') . ' ' . ($snapshotSummary['url'] ?? '')) ?>">
                 <div class="yii-debug-snapshot-line">
                     <span class="yii-debug-snapshot-method" data-snapshot-field="method"><?= Html::encode($snapshotSummary['method'] ?? '') ?></span>
-                    <span class="yii-debug-snapshot-url" data-snapshot-field="url"><?= Html::encode($snapshotSummary['url'] ?? '') ?></span>
+                    <span class="yii-debug-snapshot-url" data-snapshot-field="url" title="<?= Html::encode((string) ($snapshotSummary['url'] ?? '')) ?>"><?= Html::encode($snapshotPath) ?></span>
                 </div>
                 <div class="yii-debug-snapshot-meta">
                     <span class="yii-debug-snapshot-status yii-debug-snapshot-status-<?= $statusVariant ?>"
