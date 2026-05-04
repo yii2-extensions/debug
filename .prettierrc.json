@@ -28,6 +28,12 @@
                 "embeddedLanguageFormatting": "off",
                 "tabWidth": 2
             }
+        },
+        {
+            "files": ["package.json", "package-lock.json"],
+            "options": {
+                "tabWidth": 2
+            }
         }
     ]
 }

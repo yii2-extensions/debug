@@ -152,8 +152,7 @@ function trackFetch() {
       promise
         .then(function (response) {
           item.duration =
-            response.headers.get("X-Debug-Duration") ||
-            new Date() - item.start;
+            response.headers.get("X-Debug-Duration") || new Date() - item.start;
           item.loading = false;
           item.statusCode = response.status;
           item.error = response.status < 200 || response.status >= 400;

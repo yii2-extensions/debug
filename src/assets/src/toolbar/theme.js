@@ -162,7 +162,7 @@ export function getComputedTheme() {
 export function hostHasThemeControl() {
   var labelPattern = /\b(theme|mode|dark|light|night|day)\b/i;
   var nodes = document.querySelectorAll(
-    'button, a, [role="switch"], [role="button"], [data-theme-toggle], [data-bs-theme-toggle]'
+    'button, a, [role="switch"], [role="button"], [data-theme-toggle], [data-bs-theme-toggle]',
   );
   var i;
   var node;

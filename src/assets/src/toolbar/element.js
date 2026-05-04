@@ -253,10 +253,7 @@ YiiDebugToolbar.prototype.watchTheme = function () {
   if (window.matchMedia && !this.systemThemeQuery) {
     this.systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
     if (this.systemThemeQuery.addEventListener) {
-      this.systemThemeQuery.addEventListener(
-        "change",
-        this.boundThemeRefresh,
-      );
+      this.systemThemeQuery.addEventListener("change", this.boundThemeRefresh);
     } else if (this.systemThemeQuery.addListener) {
       this.systemThemeQuery.addListener(this.boundThemeRefresh);
     }
@@ -716,9 +713,7 @@ YiiDebugToolbar.prototype.renderPanel = function (panel) {
     typeof panel.title === "string" ? panel.title : panel.id || "Panel";
   var hasTitle = rawTitle !== "";
   var attrTitle = hasTitle ? rawTitle : panel.id || "Panel";
-  var url = panel.url
-    ? ' data-debug-url="' + escapeHtml(panel.url) + '"'
-    : "";
+  var url = panel.url ? ' data-debug-url="' + escapeHtml(panel.url) + '"' : "";
   var panelClass = this.isPanelActive(panel) ? " panel-active" : "";
   var self = this;
 
@@ -727,9 +722,7 @@ YiiDebugToolbar.prototype.renderPanel = function (panel) {
     var itemUrl = item.url
       ? ' data-debug-url="' + escapeHtml(item.url) + '"'
       : "";
-    var itemTitle = item.title
-      ? ' title="' + escapeHtml(item.title) + '"'
-      : "";
+    var itemTitle = item.title ? ' title="' + escapeHtml(item.title) + '"' : "";
     var metricClass =
       item.url && sameUrl(item.url, this.activeUrl) ? " metric-active" : "";
 
@@ -789,7 +782,7 @@ YiiDebugToolbar.prototype.renderControls = function () {
    */
   var themeIcon = this.iconHtml(
     this.theme === "dark" ? "sun" : "moon",
-    "control-icon"
+    "control-icon",
   );
   var themeControl =
     '<button type="button" class="control toggle-theme" title="' +
@@ -900,11 +893,7 @@ YiiDebugToolbar.prototype.bindEvents = function () {
       function (event) {
         self.resizing = true;
         event.preventDefault();
-        document.addEventListener(
-          "pointermove",
-          self.boundPointerMove,
-          false,
-        );
+        document.addEventListener("pointermove", self.boundPointerMove, false);
         document.addEventListener("pointerup", self.boundPointerUp, false);
       },
       false,

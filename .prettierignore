@@ -5,3 +5,11 @@
 **/dist/**
 **/node_modules/**
 **/package-lock.json
+
+# Yii AssetManager publishes a hashed copy of src/assets/ under tests/runtime/
+# whenever phpunit runs; the tree is regenerated on every test run, never
+# authored, and ignored by git already.
+tests/runtime/**
+
+# License texts ship verbatim — never auto-formatted.
+**/LICENSE*
