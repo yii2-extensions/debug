@@ -1801,8 +1801,7 @@
 
     &::before {
       animation: yii-debug-user-pulse 2.4s ease-in-out infinite;
-      box-shadow:
-        0 0 0 0
+      box-shadow: 0 0 0 0
         color-mix(in srgb, var(--yii-debug-panel-success), transparent 30%);
     }
   }
@@ -1917,11 +1916,7 @@
   }
 
   .yii-debug-user-empty {
-    color: color-mix(
-      in srgb,
-      var(--yii-debug-panel-muted),
-      transparent 35%
-    );
+    color: color-mix(in srgb, var(--yii-debug-panel-muted), transparent 35%);
     font-family: var(--yii-debug-font-mono);
   }
 
@@ -3055,33 +3050,69 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    background: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-primary),
+      transparent 86%
+    );
     color: var(--yii-debug-panel-primary-strong);
     border: 1px solid
       color-mix(in srgb, var(--yii-debug-panel-primary), transparent 65%);
 
     &[data-type="array"] {
-      background: color-mix(in srgb, var(--yii-debug-panel-info), transparent 86%);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-info),
+        transparent 86%
+      );
       color: var(--yii-debug-panel-info);
-      border-color: color-mix(in srgb, var(--yii-debug-panel-info), transparent 65%);
+      border-color: color-mix(
+        in srgb,
+        var(--yii-debug-panel-info),
+        transparent 65%
+      );
     }
 
     &[data-type="object"] {
-      background: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-primary),
+        transparent 86%
+      );
       color: var(--yii-debug-panel-primary-strong);
-      border-color: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 65%);
+      border-color: color-mix(
+        in srgb,
+        var(--yii-debug-panel-primary),
+        transparent 65%
+      );
     }
 
     &[data-type="string"] {
-      background: color-mix(in srgb, var(--yii-debug-panel-success), transparent 86%);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-success),
+        transparent 86%
+      );
       color: var(--yii-debug-panel-success);
-      border-color: color-mix(in srgb, var(--yii-debug-panel-success), transparent 65%);
+      border-color: color-mix(
+        in srgb,
+        var(--yii-debug-panel-success),
+        transparent 65%
+      );
     }
 
     &[data-type="number"] {
-      background: color-mix(in srgb, var(--yii-debug-panel-warning), transparent 86%);
+      background: color-mix(
+        in srgb,
+        var(--yii-debug-panel-warning),
+        transparent 86%
+      );
       color: var(--yii-debug-panel-warning);
-      border-color: color-mix(in srgb, var(--yii-debug-panel-warning), transparent 65%);
+      border-color: color-mix(
+        in srgb,
+        var(--yii-debug-panel-warning),
+        transparent 65%
+      );
     }
 
     &[data-type="bool"],
@@ -3151,7 +3182,9 @@
 
     span[style*="color: #000000"],
     span[style*="color:#000000"] {
-      color: var(--yii-debug-panel-text) !important; /* black text → panel text */
+      color: var(
+        --yii-debug-panel-text
+      ) !important; /* black text → panel text */
     }
   }
 
@@ -3679,11 +3712,7 @@
         color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%),
         transparent 60%
       ),
-      color-mix(
-        in srgb,
-        var(--yii-debug-panel-surface-muted),
-        transparent 40%
-      );
+      color-mix(in srgb, var(--yii-debug-panel-surface-muted), transparent 40%);
   }
 
   /**
@@ -3765,11 +3794,7 @@
     }
 
     &::after {
-      color: color-mix(
-        in srgb,
-        var(--yii-debug-panel-muted),
-        transparent 40%
-      );
+      color: color-mix(in srgb, var(--yii-debug-panel-muted), transparent 40%);
     }
 
     &:hover,
@@ -4205,12 +4230,24 @@
       box-shadow: var(--yii-debug-shadow-md);
     }
 
-    &:nth-child(1) { animation-delay: 0.04s; }
-    &:nth-child(2) { animation-delay: 0.08s; }
-    &:nth-child(3) { animation-delay: 0.12s; }
-    &:nth-child(4) { animation-delay: 0.16s; }
-    &:nth-child(5) { animation-delay: 0.20s; }
-    &:nth-child(6) { animation-delay: 0.24s; }
+    &:nth-child(1) {
+      animation-delay: 0.04s;
+    }
+    &:nth-child(2) {
+      animation-delay: 0.08s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.12s;
+    }
+    &:nth-child(4) {
+      animation-delay: 0.16s;
+    }
+    &:nth-child(5) {
+      animation-delay: 0.2s;
+    }
+    &:nth-child(6) {
+      animation-delay: 0.24s;
+    }
   }
 
   /* Four L-shaped corner ticks per card, like gun sights on a schematic. */
@@ -5215,7 +5252,9 @@
 
     .yii-debug-phpinfo-overview-token {
       cursor: help;
-      transition: border-color 120ms ease, background-color 120ms ease;
+      transition:
+        border-color 120ms ease,
+        background-color 120ms ease;
 
       &:hover {
         border-color: color-mix(
