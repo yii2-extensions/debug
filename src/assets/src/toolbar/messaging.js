@@ -10,7 +10,7 @@ import {
   toolbars,
 } from "./state.js";
 
-/*
+/**
  * AJAX request tracking — installs replacements for `XMLHttpRequest.open` and
  * `window.fetch` that record matching debug-eligible requests into the shared
  * `requestStack`, then forwards each to the captured original primitives.
@@ -55,7 +55,7 @@ function notifyAjaxChange() {
     toolbar.setAjaxRequests(requestStack);
   });
 
-  /*
+  /**
    * Follow the most recent AJAX request that carries an X-Debug-Tag header so
    * the chips reflect what just happened on the server (e.g. login that hit
    * the database) instead of staying frozen on the initial page-load tag.

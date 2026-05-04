@@ -1,4 +1,4 @@
-/*
+/**
  * Floating debug toolbar entry point. Wires the Web Component class and the
  * AJAX tracker together; the heavy logic lives in the sibling modules:
  *
@@ -12,7 +12,7 @@ import { YiiDebugToolbar } from "./element.js";
 import { trackRequests } from "./messaging.js";
 import { tagName } from "./state.js";
 
-/*
+/**
  * Guard against duplicate registration when the toolbar script ends up in
  * the page more than once (e.g. multi-frame layouts that include both the
  * mini-bar and a panel iframe). The custom element name is the canonical

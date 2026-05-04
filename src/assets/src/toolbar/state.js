@@ -1,4 +1,4 @@
-/*
+/**
  * Module-level state shared across the toolbar sub-modules.
  *
  * The original IIFE held all of these in a single closure; once the file was

@@ -1,6 +1,6 @@
 import { absoluteUrl, themeParam, themeStorageKey } from "./state.js";
 
-/*
+/**
  * Theme detection and propagation helpers.
  *
  * Theme resolution order (most authoritative first):
@@ -40,7 +40,7 @@ export function normalizeTheme(value) {
     return "light";
   }
 
-  /*
+  /**
    * Token-based match — used for class lists. We must NOT use a substring
    * search here, because frameworks like Tailwind emit modifier classes such
    * as `dark:bg-gray-900` even in light mode; the modifier prefix means the
@@ -147,7 +147,7 @@ export function getComputedTheme() {
   return normalizeTheme(colorScheme);
 }
 
-/*
+/**
  * Best-effort heuristic that decides whether the host application already
  * exposes its own theme switcher. If it does we stay passive and follow
  * whatever the host sets; if it does not we surface our own toggle inside
@@ -181,7 +181,7 @@ export function hostHasThemeControl() {
       continue;
     }
 
-    /*
+    /**
      * Treat the candidate as real only if it's actually rendered. This
      * skips off-DOM templates and `display: none` panels that some apps
      * ship for non-active states.
@@ -194,7 +194,7 @@ export function hostHasThemeControl() {
   return false;
 }
 
-/*
+/**
  * Persist the theme as a same-origin cookie so the backend (`primeThemeContext`)
  * serves panel pages with the matching theme even when the URL doesn't carry
  * the `?yii_debug_theme=` query — e.g. when the host writes `localStorage.theme`
@@ -229,7 +229,7 @@ export function addThemeToUrl(url, theme) {
     return url;
   }
 
-  /*
+  /**
    * Only stamp debug routes — covers both URL conventions:
    *   - Pretty URLs:  `/debug/default/...`            → pathname.
    *   - Default Yii:  `/index.php?r=debug%2Fdefault…` → `r` query param.

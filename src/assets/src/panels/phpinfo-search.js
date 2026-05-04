@@ -1,4 +1,4 @@
-/*
+/**
  * PhpInfo panel client behavior:
  *   - Search: filters whole modules by title or directive content.
  *   - TOC sync: IntersectionObserver keeps the entry of the section currently
@@ -57,7 +57,7 @@
             }
         });
 
-        /*
+        /**
          * Prefer scroll-targeting a section whose title matches — content
          * matches catch incidental hits (Overview's Configure Command lists
          * every `--with-X` flag, so any extension name appears there) which

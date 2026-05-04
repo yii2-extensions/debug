@@ -18,7 +18,7 @@ import {
   writeThemeCookie,
 } from "./theme.js";
 
-/*
+/**
  * Inline styles injected into the toolbar's open shadow DOM. Kept as a single
  * pre-minified string so the Web Component remains self-contained and stays
  * isolated from the host page's CSS.
@@ -107,7 +107,7 @@ YiiDebugToolbar.prototype.detectTheme = function () {
       ? normalizeTheme(localStorage.getItem(themeStorageKey))
       : null;
 
-  /*
+  /**
    * The current DOM state (`<html>`/`<body>` class or `data-theme` attr) is
    * the most authoritative signal — if the page IS rendering with a Tailwind
    * `dark` class then any stale `localStorage[yii-debug-toolbar-theme]` from
@@ -141,13 +141,13 @@ YiiDebugToolbar.prototype.toggleTheme = function () {
     } catch (_e) {}
   }
 
-  /*
+  /**
    * Cookie is the backend's source of truth — write it so the next panel
    * navigation renders the matching theme even when the URL is bare.
    */
   writeThemeCookie(next);
 
-  /*
+  /**
    * Fan the change out to the surrounding page — covers Tailwind's `dark`
    * class on <html>, `data-theme`/`data-bs-theme` (Pico/Bootstrap), and the
    * common storage keys host apps read on boot. Even when the host has its
@@ -157,7 +157,7 @@ YiiDebugToolbar.prototype.toggleTheme = function () {
   this.render();
 };
 
-/*
+/**
  * When the dev flips the theme via our own toggle (i.e. the host app does
  * NOT ship a switcher of its own) we best-effort fan the change out to the
  * signals most front-end stacks read so the surrounding page also flips.
@@ -177,7 +177,7 @@ YiiDebugToolbar.prototype.propagateThemeToHost = function (theme) {
   var i;
 
   if (html) {
-    /*
+    /**
      * Tailwind-style modifier class (`<html class="dark">`) is the most
      * common convention; we keep `light`/`dark` mutually exclusive.
      */
@@ -217,7 +217,7 @@ YiiDebugToolbar.prototype.refreshTheme = function () {
     localStorage.setItem(themeStorageKey, theme);
   }
 
-  /*
+  /**
    * Cookie is what the backend reads on the next debug request, so the panel
    * page renders with the correct theme even when the toolbar followed a
    * host change via the MutationObserver and the URL didn't carry
@@ -264,7 +264,7 @@ YiiDebugToolbar.prototype.watchTheme = function () {
 
   window.addEventListener("storage", this.boundThemeRefresh, false);
 
-  /*
+  /**
    * Receive theme flips from inside the panel iframe (the chip in the panel
    * header postMessages us) and apply them on the host instantly, without
    * waiting for the storage event.
@@ -297,7 +297,7 @@ YiiDebugToolbar.prototype.watchTheme = function () {
         } catch (_e) {}
       }
 
-      /*
+      /**
        * The flip originated inside the panel iframe; carry it to the cookie
        * so a fresh panel navigation (or a hard reload) lands on the same
        * theme.
@@ -342,7 +342,7 @@ YiiDebugToolbar.prototype.followTag = function (tag) {
       return;
     }
 
-    /*
+    /**
      * The tag we tried to follow was rejected (404 — rotated out of history,
      * 500, etc.). Roll back so the toolbar keeps showing the last good data
      * instead of leaving the user with a broken state.
@@ -377,21 +377,21 @@ YiiDebugToolbar.prototype.load = function (done) {
     }
 
     if (xhr.status !== 200) {
-      /*
+      /**
        * Don't render an error for stale-tag fetches that the caller is ready
        * to recover from; just signal failure.
        */
       if (typeof done !== "function") {
         var message;
         if (xhr.status === 404) {
-          /*
+          /**
            * Request was profiled but its tag has rotated out of the debug
            * history (or never made it to the manifest). Don't dump the raw
            * JSON body at the user.
            */
           message = "Debug data is no longer available for this request.";
         } else {
-          /*
+          /**
            * Try to read a structured `{error: "..."}` payload first, then
            * fall back to a generic message instead of leaking raw HTML/JSON.
            */
@@ -782,7 +782,7 @@ YiiDebugToolbar.prototype.renderControls = function () {
 
   var nextTheme = this.theme === "dark" ? "light" : "dark";
   var themeLabel = "Switch to " + nextTheme + " theme";
-  /*
+  /**
    * Show the icon that represents the *next* theme — click moves you toward
    * what you see. Re-uses the same `mask-image` pipeline as the panel chips
    * so the glyph picks up `currentColor`.

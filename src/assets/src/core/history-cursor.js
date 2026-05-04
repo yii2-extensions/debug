@@ -1,4 +1,4 @@
-/*
+/**
  * Index-page client behavior:
  *   1. Row-click delegation — any click on a `.yii-debug-row-link` <tr>
  *      jumps to that request's view, except when the click started inside an
@@ -45,7 +45,7 @@
 
     var STATUS_VARIANTS = ['success', 'warning', 'danger', 'muted'];
 
-    /*
+    /**
      * Honour `data-yii-debug-cursor-init` so the cursor lands on the tag the
      * user was inspecting when they clicked "History" from a panel view. Falls
      * back to row 0 (latest capture) when the attribute is missing or the tag
@@ -62,7 +62,7 @@
         }
     }
 
-    /*
+    /**
      * Strip scheme/host/port from a captured URL so the snapshot card shows
      * just the request path — matches the CURRENT REQUEST card and saves
      * horizontal space on long URLs (issue #23). Console invocations
@@ -150,7 +150,7 @@
     }
 
     function ensureVerticallyVisible(row) {
-        /*
+        /**
          * Avoid `scrollIntoView` — it also scrolls inline (horizontally), and
          * the GridView is usually wider than the viewport, so it would yank
          * the page sideways. We only need vertical visibility.
