@@ -55,9 +55,16 @@ final class ModuleTest extends TestCase
         $app = Yii::$app;
         $app->setModule('debug', $module);
         $module->bootstrap($app);
+
+        $assetBasePath = Yii::getAlias('@yiiunit/debug/runtime/assets');
+
+        if (!is_dir($assetBasePath) && !mkdir($assetBasePath, 0o755, true) && !is_dir($assetBasePath)) {
+            self::fail("Could not create asset base path: {$assetBasePath}");
+        }
+
         $app->set('assetManager', [
             'class' => \yii\web\AssetManager::class,
-            'basePath' => '@yiiunit/debug/runtime/assets',
+            'basePath' => $assetBasePath,
             'baseUrl' => '/assets',
         ]);
 
@@ -90,7 +97,15 @@ final class ModuleTest extends TestCase
     {
         $asset = new DebugAsset();
 
-        self::assertSame(['js/debug.js'], $asset->js, 'DebugAsset must ship only the local debug.js script file.');
+        self::assertSame(
+            [
+                'dist/js/debug.js',
+                'dist/js/theme-toggle.js',
+                'dist/js/history-cursor.js',
+            ],
+            $asset->js,
+            'DebugAsset must ship the local core scripts: debug + theme-toggle + history-cursor.',
+        );
     }
 
     public function testDefaultVersionFallsBackToInstalledExtensionVersion(): void

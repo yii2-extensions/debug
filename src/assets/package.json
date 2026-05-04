@@ -1,0 +1,16 @@
+{
+  "name": "@yii2-extensions/debug-assets",
+  "private": true,
+  "type": "module",
+  "description": "Build pipeline for the yii2-extensions/debug client-side assets.",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "engines": {
+    "node": ">=20.10"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}

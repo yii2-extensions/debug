@@ -1,0 +1,50 @@
+---
+on:
+  pull_request: &ignore-paths
+    paths-ignore:
+      - ".gitattributes"
+      - ".gitignore"
+      - "CHANGELOG.md"
+      - "docs/**"
+      - "README.md"
+
+  push: *ignore-paths
+
+name: assets
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Verify Vite build reproduces dist.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/assets
+    steps:
+      - name: Checkout.
+        uses: actions/checkout@v6
+
+      - name: Install node.js.
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: src/assets/.nvmrc
+          cache: npm
+          cache-dependency-path: src/assets/package-lock.json
+
+      - name: Install dependencies.
+        run: npm ci
+
+      - name: Build assets.
+        run: npm run build
+
+      # Surface drift between src/ edits and the committed dist/ as a warning while the pipeline stabilises. Promote to a hard failure
+      # (drop continue-on-error) once a full release cycle confirms reproducibility.
+      - name: Detect dist drift.
+        continue-on-error: true
+        run: |
+          if ! git diff --exit-code dist/; then
+            echo "::warning::dist/ output differs from committed bundle. Run 'npm run build' inside src/assets/ and commit the result."
+            exit 1
+          fi

@@ -7,18 +7,15 @@ namespace yii\debug;
 use yii\web\AssetBundle;
 
 /**
- * Timeline asset bundle
+ * PhpInfo panel asset bundle.
  */
-class TimelineAsset extends AssetBundle
+class PhpInfoAsset extends AssetBundle
 {
-    public $css = [
-        'dist/css/timeline.min.css',
-    ];
     public $depends = [
         'yii\debug\DebugAsset',
     ];
     public $js = [
-        'dist/js/timeline.js',
+        'dist/js/phpinfo-search.js',
     ];
     public $sourcePath = '@yii/debug/assets';
 }

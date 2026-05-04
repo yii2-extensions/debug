@@ -187,25 +187,25 @@ if ($showCard) {
                                 data-yii-debug-cursor="latest" title="Latest (bottom of list)" aria-label="Latest (bottom of list)"><?= $iconLatest ?></button>
                     <?php else: ?>
                         <?= Html::a($iconFirst, $firstUrl, [
-                    'class' => $iconBtnClass . ($onFirst ? ' is-disabled' : ''),
-                    'title' => 'First (top of list)',
-                    'aria-label' => 'First captured request',
-                ]) ?>
+                            'class' => $iconBtnClass . ($onFirst ? ' is-disabled' : ''),
+                            'title' => 'First (top of list)',
+                            'aria-label' => 'First captured request',
+                        ]) ?>
                         <?= Html::a($iconPrev, $prevTag !== null ? $prevUrl : '', [
-                    'class' => $iconBtnClass . ($prevTag === null ? ' is-disabled' : ''),
-                    'title' => 'Previous (newer)',
-                    'aria-label' => 'Previous request',
-                ]) ?>
+                            'class' => $iconBtnClass . ($prevTag === null ? ' is-disabled' : ''),
+                            'title' => 'Previous (newer)',
+                            'aria-label' => 'Previous request',
+                        ]) ?>
                         <?= Html::a($iconNext, $nextTag !== null ? $nextUrl : '', [
-                    'class' => $iconBtnClass . ($nextTag === null ? ' is-disabled' : ''),
-                    'title' => 'Next (older)',
-                    'aria-label' => 'Next request',
-                ]) ?>
+                            'class' => $iconBtnClass . ($nextTag === null ? ' is-disabled' : ''),
+                            'title' => 'Next (older)',
+                            'aria-label' => 'Next request',
+                        ]) ?>
                         <?= Html::a($iconLatest, $latestUrl, [
-                    'class' => $iconBtnClass . ($onLatest ? ' is-disabled' : ''),
-                    'title' => 'Latest (bottom of list)',
-                    'aria-label' => 'Latest captured request',
-                ]) ?>
+                            'class' => $iconBtnClass . ($onLatest ? ' is-disabled' : ''),
+                            'title' => 'Latest (bottom of list)',
+                            'aria-label' => 'Latest captured request',
+                        ]) ?>
                     <?php endif; ?>
                 </div>
             </div>

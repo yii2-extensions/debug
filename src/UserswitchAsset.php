@@ -12,7 +12,7 @@ use yii\web\AssetBundle;
 class UserswitchAsset extends AssetBundle
 {
     public $js = [
-        'js/userswitch.js',
+        'dist/js/userswitch.js',
     ];
     public $sourcePath = '@yii/debug/assets';
 }

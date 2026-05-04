@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use yii\debug\PhpInfoAsset;
 use yii\helpers\Html;
 
 /** @var \yii\web\View $this */
+
+PhpInfoAsset::register($this);
 
 $this->title = 'PHP Info';
 
@@ -61,14 +64,14 @@ $home = '';
 foreach (['HOME', 'USERPROFILE'] as $envKey) {
     $candidate = $_SERVER[$envKey] ?? getenv($envKey);
     if (is_string($candidate) && $candidate !== '') {
-        $home = rtrim($candidate, "/\\");
+        $home = rtrim($candidate, '/\\');
         break;
     }
 }
 if ($home === '' && function_exists('posix_getpwuid') && function_exists('posix_getuid')) {
     $info = @posix_getpwuid(@posix_getuid() ?: 0);
     if (is_array($info) && is_string($info['dir'] ?? null) && $info['dir'] !== '') {
-        $home = rtrim($info['dir'], "/\\");
+        $home = rtrim($info['dir'], '/\\');
     }
 }
 $shortenPath = static function (string $path) use ($home): string {
@@ -274,7 +277,7 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
                 // Helper that renders one sub-section (eyebrow + tile grid) so the
                 // hero shell hosts PHP version + Build + Configuration with one
                 // shared template.
-                $renderSection = static function (string $eyebrow, array $tiles, ?string $headline = null) use ($renderTileValue, $phpVersion): string {
+                $renderSection = static function (string $eyebrow, array $tiles, string|null $headline = null) use ($renderTileValue, $phpVersion): string {
                     $hasContent = false;
                     foreach ($tiles as $v) {
                         if (trim((string) $v) !== '') {
@@ -313,7 +316,7 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
 
                     return $html;
                 };
-                ?>
+?>
 
                 <div class="yii-debug-phpinfo-overview-hero">
                     <?= $renderSection('PHP version', $heroMetrics, $phpVersion) ?>
@@ -326,7 +329,7 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
                 <div class="yii-debug-phpinfo-overview-grid">
                     <?php foreach ($overviewCards as $card): ?>
                         <?php
-                        $hasContent = false;
+        $hasContent = false;
                         foreach ($card['rows'] as $value) {
                             if (trim((string) $value) !== '') {
                                 $hasContent = true;
@@ -412,108 +415,3 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
     </div>
 </div>
 
-<script>
-    (function () {
-        var search = document.querySelector('[data-yii-debug-phpinfo-search]');
-        var empty = document.querySelector('[data-yii-debug-phpinfo-empty]');
-        var sections = Array.prototype.slice.call(
-            document.querySelectorAll('.yii-debug-phpinfo-section'),
-        );
-        var tocLinks = Array.prototype.slice.call(
-            document.querySelectorAll('.yii-debug-phpinfo-toc-link'),
-        );
-
-        if (!sections.length) {
-            return;
-        }
-
-        function setHidden(el, hide) {
-            if (!el) return;
-            el.hidden = hide;
-            if (el.parentElement && el.parentElement.tagName === 'LI') {
-                el.parentElement.hidden = hide;
-            }
-        }
-
-        function applyFilter() {
-            var query = (search ? search.value : '').trim().toLowerCase();
-
-            if (!query) {
-                sections.forEach(function (s) { s.hidden = false; });
-                tocLinks.forEach(function (l) { setHidden(l, false); });
-                if (empty) empty.hidden = true;
-                return;
-            }
-
-            var matches = 0;
-            var visible = Object.create(null);
-            var firstTitleHit = null;
-            var firstContentHit = null;
-
-            sections.forEach(function (section) {
-                var title = (section.getAttribute('data-section') || '').toLowerCase();
-                var content = section.textContent.toLowerCase();
-                var titleMatch = title.indexOf(query) !== -1;
-                var hit = titleMatch || content.indexOf(query) !== -1;
-                section.hidden = !hit;
-                if (hit) {
-                    visible[section.id] = true;
-                    matches++;
-                    if (titleMatch && !firstTitleHit) firstTitleHit = section;
-                    else if (!firstContentHit) firstContentHit = section;
-                }
-            });
-
-            // Prefer scroll-targeting a section whose title matches — content
-            // matches catch incidental hits (Overview's Configure Command lists
-            // every `--with-X` flag, so any extension name appears there) which
-            // would otherwise always scroll the dev to Overview first.
-            var firstVisible = firstTitleHit || firstContentHit;
-
-            tocLinks.forEach(function (link) {
-                var target = link.getAttribute('data-toc-target') || '';
-                setHidden(link, !visible[target]);
-            });
-
-            if (empty) empty.hidden = matches !== 0;
-
-            // Auto-scroll to the first match so the dev sees the actual hit
-            // even when the Overview section is wider than the viewport.
-            if (firstVisible) {
-                firstVisible.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
-        if (search) {
-            search.addEventListener('input', applyFilter);
-        }
-
-        if ('IntersectionObserver' in window) {
-            var observer = new IntersectionObserver(function (entries) {
-                entries.forEach(function (entry) {
-                    if (!entry.isIntersecting) return;
-                    var id = entry.target.id;
-                    tocLinks.forEach(function (link) {
-                        link.classList.toggle('is-active', link.getAttribute('data-toc-target') === id);
-                    });
-                });
-            }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
-
-            sections.forEach(function (section) { observer.observe(section); });
-        }
-
-        tocLinks.forEach(function (link) {
-            link.addEventListener('click', function (event) {
-                var hash = link.getAttribute('href') || '';
-                var id = hash.charAt(0) === '#' ? hash.slice(1) : hash;
-                var target = document.getElementById(id);
-                if (!target) return;
-                event.preventDefault();
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                if (history.replaceState) {
-                    history.replaceState(null, '', '#' + id);
-                }
-            });
-        });
-    }());
-</script>

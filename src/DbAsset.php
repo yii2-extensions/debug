@@ -12,7 +12,7 @@ use yii\web\AssetBundle;
 class DbAsset extends AssetBundle
 {
     public $js = [
-        'js/db.js',
+        'dist/js/db.js',
     ];
     public $sourcePath = '@yii/debug/assets';
 }

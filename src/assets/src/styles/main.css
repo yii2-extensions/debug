@@ -1,17 +1,17 @@
-// Yii Debug Panel UI — Pico-inspired, scoped under `.yii-debug`.
+/* Yii Debug Panel UI — Pico-inspired, scoped under `.yii-debug`. */
 
-// Isolation strategy:
-// 1. Wrapper class `.yii-debug` on <body>.
-// 2. Namespace prefix `.yii-debug-*` on every component class.
-// 3. Authored rules wrapped in `@layer yii-debug {}` so host CSS (unlayered) wins
-//    by default and nothing bleeds either way.
+/* Isolation strategy: */
+/* 1. Wrapper class `.yii-debug` on <body>. */
+/* 2. Namespace prefix `.yii-debug-*` on every component class. */
+/* 3. Authored rules wrapped in `@layer yii-debug {}` so host CSS (unlayered) wins */
+/*    by default and nothing bleeds either way. */
 
-// ---------------------------------------------------------------------------
-// Theme tokens.
-// Kept at :root scope (not inside the layer) so the toolbar shadow-DOM element
-// can still inherit `--yii-debug-panel-*` via `:host` cascade.
-// Token names preserved for backward compatibility.
-// ---------------------------------------------------------------------------
+/* --------------------------------------------------------------------------- */
+/* Theme tokens. */
+/* Kept at :root scope (not inside the layer) so the toolbar shadow-DOM element */
+/* can still inherit `--yii-debug-panel-*` via `:host` cascade. */
+/* Token names preserved for backward compatibility. */
+/* --------------------------------------------------------------------------- */
 
 :root {
   color-scheme: light dark;
@@ -109,19 +109,19 @@
   --yii-debug-panel-shadow: 0 22px 60px rgb(0 0 0 / 38%);
 }
 
-// ---------------------------------------------------------------------------
-// Scoped styles.
+/* --------------------------------------------------------------------------- */
+/* Scoped styles. */
 
-// The `.yii-debug` wrapper class + `.yii-debug-*` prefix give every selector
-// at least class+class+tag specificity, which beats common host framework
-// resets (Bootstrap's `.btn`, Tailwind preflight `a { ... }`, Pico's element
-// selectors). A `@layer` wrapper was considered but would invert the outcome:
-// layered rules lose to any unlayered host rule regardless of specificity,
-// which is the opposite of what we need.
-// ---------------------------------------------------------------------------
+/* The `.yii-debug` wrapper class + `.yii-debug-*` prefix give every selector */
+/* at least class+class+tag specificity, which beats common host framework */
+/* resets (Bootstrap's `.btn`, Tailwind preflight `a { ... }`, Pico's element */
+/* selectors). A `@layer` wrapper was considered but would invert the outcome: */
+/* layered rules lose to any unlayered host rule regardless of specificity, */
+/* which is the opposite of what we need. */
+/* --------------------------------------------------------------------------- */
 
 .yii-debug {
-  // Layout-level design tokens (scoped so they do not leak).
+  /* Layout-level design tokens (scoped so they do not leak). */
   --yii-debug-space-1: 4px;
   --yii-debug-space-2: 8px;
   --yii-debug-space-3: 12px;
@@ -166,9 +166,9 @@
   font-size: var(--yii-debug-fs-base);
   line-height: 1.5;
 
-  // -------------------------------------------------------------------
-  // Scoped reset.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Scoped reset. */
+  /* ------------------------------------------------------------------- */
 
   *,
   *::before,
@@ -176,9 +176,9 @@
     box-sizing: border-box;
   }
 
-  // -------------------------------------------------------------------
-  // Typography.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Typography. */
+  /* ------------------------------------------------------------------- */
 
   h1,
   h2,
@@ -275,9 +275,9 @@
     outline-offset: 2px;
   }
 
-  // -------------------------------------------------------------------
-  // Layout primitives.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Layout primitives. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-page {
     max-width: 1680px;
@@ -317,8 +317,8 @@
     margin-bottom: var(--yii-debug-space-4);
   }
 
-  // Sidebar section used to host the request history nav (Prev/Next/Latest/Last 10/All).
-  // Sits directly above the panel list and shares its visual weight.
+  /* Sidebar section used to host the request history nav (Prev/Next/Latest/Last 10/All). */
+  /* Sits directly above the panel list and shares its visual weight. */
   .yii-debug-side-section {
     display: flex;
     flex-direction: column;
@@ -351,10 +351,10 @@
     }
   }
 
-  // First / Prev / Next / Latest navigator — single row of equal-width icon
-  // buttons (chevrons matching the cursor direction in the GridView). Icon-only
-  // means the four buttons fit comfortably in one row even at narrow sidebar
-  // widths.
+  /* First / Prev / Next / Latest navigator — single row of equal-width icon */
+  /* buttons (chevrons matching the cursor direction in the GridView). Icon-only */
+  /* means the four buttons fit comfortably in one row even at narrow sidebar */
+  /* widths. */
   .yii-debug-request-nav-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -363,9 +363,9 @@
     margin-top: var(--yii-debug-space-2);
   }
 
-  // Icon-only navigator button — square-ish slot, just enough padding to give
-  // the chevron breathing room without forcing a tall button. Inherits ghost
-  // styling from `.yii-debug-btn-ghost`.
+  /* Icon-only navigator button — square-ish slot, just enough padding to give */
+  /* the chevron breathing room without forcing a tall button. Inherits ghost */
+  /* styling from `.yii-debug-btn-ghost`. */
   .yii-debug-btn-icon {
     display: inline-flex;
     align-items: center;
@@ -380,16 +380,16 @@
     }
   }
 
-  // Buttons inside the sidebar request-nav fill their slot (no compact pill width).
+  /* Buttons inside the sidebar request-nav fill their slot (no compact pill width). */
   .yii-debug-request-nav .yii-debug-btn {
     width: 100%;
     justify-content: center;
   }
 
-  // Brand strip pinned at the top of the panel page. Replaces the legacy
-  // mini-toolbar — keeps only info that the sidebar does NOT show: Yii + PHP
-  // versions and peak memory. No status/route/db chips here (those duplicate
-  // the sidebar HISTORY card and the panel hero).
+  /* Brand strip pinned at the top of the panel page. Replaces the legacy */
+  /* mini-toolbar — keeps only info that the sidebar does NOT show: Yii + PHP */
+  /* versions and peak memory. No status/route/db chips here (those duplicate */
+  /* the sidebar HISTORY card and the panel hero). */
   .yii-debug-brand-bar {
     display: flex;
     flex-wrap: wrap;
@@ -476,11 +476,11 @@
     margin-left: auto;
   }
 
-  // Configuration chip — sits between the Memory and the Theme toggle. It's
-  // promoted to the brand bar because the panel surfaces global concerns
-  // (app config, php.ini, framework version), not request-scoped data.
-  // Mirrors the theme chip's interactive treatment so the row reads as a
-  // pair of "global controls".
+  /* Configuration chip — sits between the Memory and the Theme toggle. It's */
+  /* promoted to the brand bar because the panel surfaces global concerns */
+  /* (app config, php.ini, framework version), not request-scoped data. */
+  /* Mirrors the theme chip's interactive treatment so the row reads as a */
+  /* pair of "global controls". */
   .yii-debug-brand-chip-config {
     border: var(--yii-debug-border);
     background: var(--yii-debug-panel-surface-muted);
@@ -531,25 +531,25 @@
     }
   }
 
-  // The Config chip is the "anchor" of the right-hand cluster (Config + Theme).
-  // It always absorbs the free space so the trailing chips stay glued to the
-  // right edge regardless of whether the Memory chip is present.
+  /* The Config chip is the "anchor" of the right-hand cluster (Config + Theme). */
+  /* It always absorbs the free space so the trailing chips stay glued to the */
+  /* right edge regardless of whether the Memory chip is present. */
   .yii-debug-brand-chip-config {
     margin-left: auto;
   }
 
-  // When Memory is present (view mode) it already absorbs the free space, so
-  // we hand the auto back from Config; the right-hand cluster reads as
-  // `Memory · Config · Theme`, glued together on the right.
+  /* When Memory is present (view mode) it already absorbs the free space, so */
+  /* we hand the auto back from Config; the right-hand cluster reads as */
+  /* `Memory · Config · Theme`, glued together on the right. */
   .yii-debug-brand-bar:has(.yii-debug-brand-chip-mem)
     .yii-debug-brand-chip-config {
     margin-left: 0;
   }
 
-  // Theme toggle chip in the panel header — sits next to the Memory chip and
-  // flips the panel theme inline (no reload). Sun glyph means "switch to
-  // light" (panel is currently dark) and moon means "switch to dark"; CSS
-  // hides whichever icon is not relevant for the active theme.
+  /* Theme toggle chip in the panel header — sits next to the Memory chip and */
+  /* flips the panel theme inline (no reload). Sun glyph means "switch to */
+  /* light" (panel is currently dark) and moon means "switch to dark"; CSS */
+  /* hides whichever icon is not relevant for the active theme. */
   .yii-debug-brand-chip-theme {
     padding: 6px 10px;
     border: var(--yii-debug-border);
@@ -593,11 +593,10 @@
     }
   }
 
-
-  // The snapshot-line / snapshot-meta blocks render the active request's
-  // identity inside the shared `.yii-debug-history-card`. The card itself
-  // owns the padding and the dashed border; we only style the inline text
-  // here. Long URLs ellipsis-truncate via `.yii-debug-snapshot-url`.
+  /* The snapshot-line / snapshot-meta blocks render the active request's */
+  /* identity inside the shared `.yii-debug-history-card`. The card itself */
+  /* owns the padding and the dashed border; we only style the inline text */
+  /* here. Long URLs ellipsis-truncate via `.yii-debug-snapshot-url`. */
   .yii-debug-snapshot-line {
     display: flex;
     align-items: baseline;
@@ -663,8 +662,8 @@
     border-radius: var(--yii-debug-radius-pill);
   }
 
-  // Hero block at the top of the Request panel — verb + URL + status + meta line.
-  // Reuses the snapshot status pill so colors stay consistent with the sidebar card.
+  /* Hero block at the top of the Request panel — verb + URL + status + meta line. */
+  /* Reuses the snapshot status pill so colors stay consistent with the sidebar card. */
   .yii-debug-request-hero {
     margin-bottom: var(--yii-debug-space-4);
     padding: var(--yii-debug-space-3) var(--yii-debug-space-4);
@@ -711,8 +710,8 @@
     font-size: var(--yii-debug-fs-xs);
   }
 
-  // Inline section header used by tabular blocks; pairs the title with an
-  // optional filter input on the right.
+  /* Inline section header used by tabular blocks; pairs the title with an */
+  /* optional filter input on the right. */
   .yii-debug-section-header {
     display: flex;
     align-items: center;
@@ -750,16 +749,16 @@
     margin-top: var(--yii-debug-space-4);
   }
 
-  // Two-column responsive form layout (used by mail switch etc.)
+  /* Two-column responsive form layout (used by mail switch etc.) */
   .yii-debug-grid-2 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--yii-debug-space-4);
   }
 
-  // -------------------------------------------------------------------
-  // Card.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Card. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-card {
     padding: var(--yii-debug-space-4);
@@ -769,9 +768,9 @@
     box-shadow: var(--yii-debug-shadow-md);
   }
 
-  // -------------------------------------------------------------------
-  // Sidebar navigation.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Sidebar navigation. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-nav {
     display: flex;
@@ -828,9 +827,9 @@
     }
   }
 
-  // -------------------------------------------------------------------
-  // Buttons.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Buttons. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-btn {
     display: inline-flex;
@@ -923,9 +922,9 @@
     gap: var(--yii-debug-space-1);
   }
 
-  // -------------------------------------------------------------------
-  // Badges.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Badges. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-badge {
     display: inline-flex;
@@ -965,9 +964,9 @@
     color: var(--yii-debug-panel-muted);
   }
 
-  // -------------------------------------------------------------------
-  // Callouts.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Callouts. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-callout {
     display: flex;
@@ -998,9 +997,9 @@
     border-left-color: var(--yii-debug-panel-danger);
   }
 
-  // Router-specific callout — when no rule matched, surface the route Yii's
-  // default parsing fell back to (and the dispatched action) so the developer
-  // sees where the request actually landed instead of just "no match".
+  /* Router-specific callout — when no rule matched, surface the route Yii's */
+  /* default parsing fell back to (and the dispatched action) so the developer */
+  /* sees where the request actually landed instead of just "no match". */
   .yii-debug-router-callout {
     flex-direction: column;
   }
@@ -1039,9 +1038,9 @@
     }
   }
 
-  // -------------------------------------------------------------------
-  // Tables + GridView integration.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Tables + GridView integration. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-table-wrap {
     overflow-x: auto;
@@ -1164,7 +1163,7 @@
     ) !important;
   }
 
-  // GridView widget markup wiring.
+  /* GridView widget markup wiring. */
   .yii-debug-grid {
     margin-bottom: var(--yii-debug-space-4);
 
@@ -1188,7 +1187,7 @@
     }
   }
 
-  // Sort-icons rendered by GridView sort links.
+  /* Sort-icons rendered by GridView sort links. */
   a.asc::after,
   a.desc::after {
     margin-left: 4px;
@@ -1201,9 +1200,9 @@
     content: "↓";
   }
 
-  // -------------------------------------------------------------------
-  // Pager.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Pager. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-pager {
     display: flex;
@@ -1268,9 +1267,9 @@
     pointer-events: none;
   }
 
-  // -------------------------------------------------------------------
-  // Forms.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Forms. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-field {
     display: flex;
@@ -1334,7 +1333,7 @@
     resize: vertical;
   }
 
-  // GridView filter-row inputs.
+  /* GridView filter-row inputs. */
   .yii-debug-grid .filters td {
     padding: 6px 12px;
     border-bottom: var(--yii-debug-border);
@@ -1366,9 +1365,9 @@
     }
   }
 
-  // -------------------------------------------------------------------
-  // Tabs.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Tabs. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-tabs {
     display: flex;
@@ -1410,7 +1409,7 @@
     color: var(--yii-debug-panel-text);
   }
 
-  // Informational badge "tabs" (non-clickable status indicators).
+  /* Informational badge "tabs" (non-clickable status indicators). */
   .yii-debug-tab-link-badge {
     border-bottom-color: transparent;
     padding: 6px 8px;
@@ -1432,7 +1431,7 @@
     display: block;
   }
 
-  // Collapsible section (used by mail panel filter form).
+  /* Collapsible section (used by mail panel filter form). */
   .yii-debug-collapsible {
     display: none;
     margin-top: var(--yii-debug-space-3);
@@ -1442,9 +1441,9 @@
     }
   }
 
-  // -------------------------------------------------------------------
-  // Dropdown.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Dropdown. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-dropdown {
     position: relative;
@@ -1487,11 +1486,11 @@
     }
   }
 
-  // -------------------------------------------------------------------
-  // Panel-specific helpers.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Panel-specific helpers. */
+  /* ------------------------------------------------------------------- */
 
-  // "Since previous" navigation buttons in Log panel.
+  /* "Since previous" navigation buttons in Log panel. */
   .yii-debug-since-previous {
     display: inline-flex;
     align-items: center;
@@ -1515,14 +1514,14 @@
     }
   }
 
-  // ------------------------------------------------------------------
-  // "Quiet Console" key/value table — used by Request, Session, $_SERVER
-  // panels. Reads like a typeset man-page entry: muted-uppercase keys, full
-  // monospace values, sticky header, hairline row separators, accent bar on
-  // hover. No internal cell borders — the card carries the only outline.
-  // ------------------------------------------------------------------
+  /* ------------------------------------------------------------------ */
+  /* "Quiet Console" key/value table — used by Request, Session, $_SERVER */
+  /* panels. Reads like a typeset man-page entry: muted-uppercase keys, full */
+  /* monospace values, sticky header, hairline row separators, accent bar on */
+  /* hover. No internal cell borders — the card carries the only outline. */
+  /* ------------------------------------------------------------------ */
   .yii-debug-table-mono {
-    min-width: 0; // override the GridView-friendly min-width: 640px
+    min-width: 0; /* override the GridView-friendly min-width: 640px */
 
     thead th {
       position: sticky;
@@ -1544,8 +1543,8 @@
       transition: background-color 0.14s ease;
     }
 
-    // Accent bar on hover — appears on the left edge of the row without
-    // shifting layout. The 3-pixel inset shadow doubles as a focus indicator.
+    /* Accent bar on hover — appears on the left edge of the row without */
+    /* shifting layout. The 3-pixel inset shadow doubles as a focus indicator. */
     tbody tr:hover td,
     tbody tr:hover th {
       background: var(--yii-debug-panel-surface-hover);
@@ -1556,8 +1555,8 @@
       color: var(--yii-debug-panel-text);
     }
 
-    // Use the same monospace font + size on both columns so the row reads as a
-    // single line of typeset code. Hierarchy comes from color/weight, not size.
+    /* Use the same monospace font + size on both columns so the row reads as a */
+    /* single line of typeset code. Hierarchy comes from color/weight, not size. */
     tbody th,
     tbody td {
       padding: 12px 16px;
@@ -1567,7 +1566,7 @@
     }
 
     tbody th {
-      width: 1%; // collapse to content; min-width below sets the floor.
+      width: 1%; /* collapse to content; min-width below sets the floor. */
       min-width: 120px;
       max-width: 220px;
       color: var(--yii-debug-panel-muted);
@@ -1587,14 +1586,14 @@
       overflow-wrap: anywhere;
     }
 
-    // Hairline row separators only — no borders around individual cells.
+    /* Hairline row separators only — no borders around individual cells. */
     tbody tr + tr td,
     tbody tr + tr th {
       border-top: 1px solid
         color-mix(in srgb, var(--yii-debug-panel-border) 55%, transparent);
     }
 
-    // Soften the existing zebra so the hover lift reads more clearly.
+    /* Soften the existing zebra so the hover lift reads more clearly. */
     tbody tr:nth-child(even) td,
     tbody tr:nth-child(even) th {
       background: color-mix(
@@ -1605,7 +1604,7 @@
     }
   }
 
-  // Tables wrapped with .yii-debug-table-mono get a refined card frame.
+  /* Tables wrapped with .yii-debug-table-mono get a refined card frame. */
   .yii-debug-table-wrap:has(.yii-debug-table-mono) {
     overflow: auto;
     max-height: 70vh;
@@ -1616,7 +1615,7 @@
         color-mix(in srgb, var(--yii-debug-panel-border) 60%, transparent);
   }
 
-  // Small total-duration line shown at the top of the Timeline panel.
+  /* Small total-duration line shown at the top of the Timeline panel. */
   .yii-debug-timeline-duration {
     margin: 0 0 var(--yii-debug-space-3);
     color: var(--yii-debug-panel-muted);
@@ -1625,11 +1624,11 @@
     letter-spacing: 0.04em;
   }
 
-  // ────────────────────────────────────────────────────────────────────
-  // User panel — "Personnel Dossier"
-  // Identity card with monogram avatar, status pill, and semantic sections.
-  // Sensitive values masked behind a click-to-reveal pill.
-  // ────────────────────────────────────────────────────────────────────
+  /* ──────────────────────────────────────────────────────────────────── */
+  /* User panel — "Personnel Dossier" */
+  /* Identity card with monogram avatar, status pill, and semantic sections. */
+  /* Sensitive values masked behind a click-to-reveal pill. */
+  /* ──────────────────────────────────────────────────────────────────── */
   .yii-debug-user {
     display: flex;
     flex-direction: column;
@@ -1771,19 +1770,6 @@
     color: var(--yii-debug-panel-muted);
   }
 
-  @keyframes yii-debug-user-pulse {
-    0%,
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    50% {
-      opacity: 0.55;
-      transform: scale(0.85);
-    }
-  }
-
   .yii-debug-user-pill {
     display: inline-flex;
     align-items: center;
@@ -1897,8 +1883,8 @@
     }
   }
 
-  // Click-to-reveal pill for sensitive fields. Native button so the keyboard
-  // toggles it for free; CSS swaps mask/value via `.is-revealed`.
+  /* Click-to-reveal pill for sensitive fields. Native button so the keyboard */
+  /* toggles it for free; CSS swaps mask/value via `.is-revealed`. */
   .yii-debug-user-reveal {
     display: inline-flex;
     align-items: center;
@@ -1984,9 +1970,9 @@
     }
   }
 
-  // Visually hide an element while keeping it in the accessibility tree —
-  // used on per-panel <h1>s that are visually redundant (the active sidebar
-  // item already says which panel you're on) but useful for screen readers.
+  /* Visually hide an element while keeping it in the accessibility tree — */
+  /* used on per-panel <h1>s that are visually redundant (the active sidebar */
+  /* item already says which panel you're on) but useful for screen readers. */
   .yii-debug-sr-only {
     position: absolute;
     width: 1px;
@@ -1999,8 +1985,8 @@
     border: 0;
   }
 
-  // Empty-state placeholder used in place of a "<p>Empty.</p>" paragraph.
-  // Reads as an intentional dashed-stroke card rather than orphan text.
+  /* Empty-state placeholder used in place of a "<p>Empty.</p>" paragraph. */
+  /* Reads as an intentional dashed-stroke card rather than orphan text. */
   .yii-debug-table-empty {
     display: flex;
     align-items: center;
@@ -2032,10 +2018,10 @@
     }
   }
 
-  // Generic stat-bar above any GridView. Displays per-panel counters in a
-  // uniform, compact card. Each `<span>` child is one stat; separators are
-  // their own muted spans. Variant classes (`...-stat-warn`, `...-stat-danger`,
-  // `...-stat-success`) recolor `<strong>` content for level-aware metrics.
+  /* Generic stat-bar above any GridView. Displays per-panel counters in a */
+  /* uniform, compact card. Each `<span>` child is one stat; separators are */
+  /* their own muted spans. Variant classes (`...-stat-warn`, `...-stat-danger`, */
+  /* `...-stat-success`) recolor `<strong>` content for level-aware metrics. */
   .yii-debug-grid-summary {
     display: flex;
     flex-wrap: wrap;
@@ -2080,12 +2066,12 @@
     color: var(--yii-debug-panel-info);
   }
 
-  // Pill variant — when the stat is also a clickable filter (`<a>` element),
-  // wrap it in a rounded badge with a tinted background that matches its
-  // variant. Used by the index page's status-code distribution to deep-link
-  // the GridView. Inline spans (`<span class="yii-debug-grid-summary-stat-…">`)
-  // — used by panels like Log/DB for warning/error counts — are left alone and
-  // only get the colored `<strong>` from the rules above.
+  /* Pill variant — when the stat is also a clickable filter (`<a>` element), */
+  /* wrap it in a rounded badge with a tinted background that matches its */
+  /* variant. Used by the index page's status-code distribution to deep-link */
+  /* the GridView. Inline spans (`<span class="yii-debug-grid-summary-stat-…">`) */
+  /* — used by panels like Log/DB for warning/error counts — are left alone and */
+  /* only get the colored `<strong>` from the rules above. */
   a.yii-debug-grid-summary-stat-success,
   a.yii-debug-grid-summary-stat-info,
   a.yii-debug-grid-summary-stat-warn,
@@ -2192,8 +2178,8 @@
     }
   }
 
-  // Trailing CTA inside the summary strip (e.g. "Latest →" on the index).
-  // Sits to the right of the bucket pills; visually a small primary link.
+  /* Trailing CTA inside the summary strip (e.g. "Latest →" on the index). */
+  /* Sits to the right of the bucket pills; visually a small primary link. */
   .yii-debug-grid-summary-action {
     margin-left: auto;
     color: var(--yii-debug-panel-primary-strong);
@@ -2209,9 +2195,9 @@
     }
   }
 
-  // Footer slot below the GridView table — `Showing N-M of T items.` summary
-  // pinned to the left, pager pinned to the right, both vertically centered on
-  // the same line. Wraps to two lines on very narrow viewports.
+  /* Footer slot below the GridView table — `Showing N-M of T items.` summary */
+  /* pinned to the left, pager pinned to the right, both vertically centered on */
+  /* the same line. Wraps to two lines on very narrow viewports. */
   .yii-debug-grid-footer {
     display: flex;
     flex-wrap: wrap;
@@ -2223,14 +2209,14 @@
     font-size: var(--yii-debug-fs-xs);
   }
 
-  // Row-count summary lives inside the footer; align with the rest of the row.
+  /* Row-count summary lives inside the footer; align with the rest of the row. */
   .yii-debug-grid-count {
     margin: 0;
   }
 
-  // Page-size selector lives inside `.yii-debug-grid-summary` (the strip above each
-  // GridView) and is pushed to the right with `margin-left: auto`, so the summary stats
-  // sit on the left and the row-control sits on the right.
+  /* Page-size selector lives inside `.yii-debug-grid-summary` (the strip above each */
+  /* GridView) and is pushed to the right with `margin-left: auto`, so the summary stats */
+  /* sit on the left and the row-control sits on the right. */
   .yii-debug-grid-pagesize {
     display: inline-flex;
     align-items: center;
@@ -2253,8 +2239,8 @@
     color: var(--yii-debug-panel-text);
     font-family: var(--yii-debug-font-sans);
     font-size: var(--yii-debug-fs-sm);
-    // The summary strip styles its children with `letter-spacing: 0.06em; text-transform:
-    // uppercase;`. Override those here so the dropdown options render naturally.
+    /* The summary strip styles its children with `letter-spacing: 0.06em; text-transform: */
+    /* uppercase;`. Override those here so the dropdown options render naturally. */
     letter-spacing: 0;
     text-transform: none;
     cursor: pointer;
@@ -2361,8 +2347,8 @@
     display: block;
   }
 
-  // EXPLAIN output: table can be very wide; wrap in a scroll container so it
-  // never breaks out of the panel.
+  /* EXPLAIN output: table can be very wide; wrap in a scroll container so it */
+  /* never breaks out of the panel. */
   .yii-debug-explain {
     margin-top: var(--yii-debug-space-3);
   }
@@ -2389,9 +2375,9 @@
     font-style: italic;
   }
 
-  // Empty-state used inside panel detail views when the underlying capture is empty
-  // (e.g. profiling with no Yii::beginProfile/endProfile blocks). Reads as a contextual
-  // help card rather than a broken table.
+  /* Empty-state used inside panel detail views when the underlying capture is empty */
+  /* (e.g. profiling with no Yii::beginProfile/endProfile blocks). Reads as a contextual */
+  /* help card rather than a broken table. */
   .yii-debug-empty-state {
     margin: var(--yii-debug-space-4) 0 0;
     padding: var(--yii-debug-space-5) var(--yii-debug-space-5);
@@ -2443,16 +2429,16 @@
     overflow-wrap: break-word;
   }
 
-  // -------------------------------------------------------------------
-  // Mail panel — developer inbox.
-  //
-  // Each ListView item is a self-contained "email card" with a 3-zone
-  // header (avatar / sender+subject+preview / status+time+download), a
-  // recipient pill row, a paper-card body, and a collapsible
-  // raw-headers <details> block. Avatars use a deterministic HSL hue
-  // derived from `crc32(email)` so the same sender always renders the
-  // same color.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Mail panel — developer inbox. */
+  /* */
+  /* Each ListView item is a self-contained "email card" with a 3-zone */
+  /* header (avatar / sender+subject+preview / status+time+download), a */
+  /* recipient pill row, a paper-card body, and a collapsible */
+  /* raw-headers <details> block. Avatars use a deterministic HSL hue */
+  /* derived from `crc32(email)` so the same sender always renders the */
+  /* same color. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-mail-header {
     display: flex;
@@ -2916,7 +2902,7 @@
     overflow-x: auto;
   }
 
-  // Compact the head row when the panel iframe gets narrow.
+  /* Compact the head row when the panel iframe gets narrow. */
   @media (width <= 640px) {
     .yii-debug-mail-card-head {
       grid-template-columns: auto 1fr;
@@ -2939,17 +2925,17 @@
     }
   }
 
-  // -------------------------------------------------------------------
-  // Dump panel — `Yii::debug()` snapshots rendered as a GridView (category
-  // + message). The message column wraps each value in a small "card" head
-  // (#index, type badge, time, trace) plus a body that hosts PHP's
-  // `highlight_string()` output. Dark-mode pastel overrides soften the
-  // hardcoded inline-style hexes that PHP emits per token.
-  //
-  // Light theme keeps the original highlight palette untouched (the user
-  // confirmed it reads fine on white surfaces); only dark theme gets the
-  // pastel overrides because the saturated hexes burn the eyes on dark.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Dump panel — `Yii::debug()` snapshots rendered as a GridView (category */
+  /* + message). The message column wraps each value in a small "card" head */
+  /* (#index, type badge, time, trace) plus a body that hosts PHP's */
+  /* `highlight_string()` output. Dark-mode pastel overrides soften the */
+  /* hardcoded inline-style hexes that PHP emits per token. */
+  /* */
+  /* Light theme keeps the original highlight palette untouched (the user */
+  /* confirmed it reads fine on white surfaces); only dark theme gets the */
+  /* pastel overrides because the saturated hexes burn the eyes on dark. */
+  /* ------------------------------------------------------------------- */
   .yii-debug-dump {
     border: var(--yii-debug-border);
     border-radius: var(--yii-debug-radius-md);
@@ -3051,48 +3037,48 @@
     }
   }
 
-  // The data-attribute lives on `<html>`, which is an *ancestor* of `.yii-debug`,
-  // so we use `[…] &` to compile to `[data-yii-debug-theme="dark"] .yii-debug …`
-  // (selector reads outside-in, matching the actual DOM).
+  /* The data-attribute lives on `<html>`, which is an *ancestor* of `.yii-debug`, */
+  /* so we use `[…] &` to compile to `[data-yii-debug-theme="dark"] .yii-debug …` */
+  /* (selector reads outside-in, matching the actual DOM). */
   [data-yii-debug-theme="dark"] & .yii-debug-dump-body {
     span[style*="color: #DD0000"],
     span[style*="color:#DD0000"] {
-      color: #fca5a5 !important; // strings → pastel red
+      color: #fca5a5 !important; /* strings → pastel red */
     }
 
     span[style*="color: #0000BB"],
     span[style*="color:#0000BB"] {
-      color: #93c5fd !important; // default → pastel blue
+      color: #93c5fd !important; /* default → pastel blue */
     }
 
     span[style*="color: #007700"],
     span[style*="color:#007700"] {
-      color: #86efac !important; // keywords → pastel green
+      color: #86efac !important; /* keywords → pastel green */
     }
 
     span[style*="color: #FF8000"],
     span[style*="color:#FF8000"] {
-      color: #fdba74 !important; // comments → pastel orange
+      color: #fdba74 !important; /* comments → pastel orange */
     }
 
     span[style*="color: #000000"],
     span[style*="color:#000000"] {
-      color: var(--yii-debug-panel-text) !important; // black text → panel text
+      color: var(--yii-debug-panel-text) !important; /* black text → panel text */
     }
   }
 
-  // -------------------------------------------------------------------
-  // Asset Bundles panel — dependency graph + asset inventory.
-  //
-  // Top "stats strip" gives a build-summary feel (bundles / css / js /
-  // depend-edges). Each bundle renders as a card with a 3-zone header
-  // (icon / short class + FQCN suffix / count chips) and a 2-column
-  // body splitting into "Files" (CSS + JS rows tagged by filetype) and
-  // "Wiring" (sourcePath / basePath / baseUrl + a `Depends on N` block
-  // whose pills are real anchors that jump to the dependency's card).
-  // The card uses :target to flag the bundle that the user just jumped
-  // to via a depend pill.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Asset Bundles panel — dependency graph + asset inventory. */
+  /* */
+  /* Top "stats strip" gives a build-summary feel (bundles / css / js / */
+  /* depend-edges). Each bundle renders as a card with a 3-zone header */
+  /* (icon / short class + FQCN suffix / count chips) and a 2-column */
+  /* body splitting into "Files" (CSS + JS rows tagged by filetype) and */
+  /* "Wiring" (sourcePath / basePath / baseUrl + a `Depends on N` block */
+  /* whose pills are real anchors that jump to the dependency's card). */
+  /* The card uses :target to flag the bundle that the user just jumped */
+  /* to via a depend pill. */
+  /* ------------------------------------------------------------------- */
 
   .yii-debug-asset-stats {
     display: grid;
@@ -3580,13 +3566,13 @@
     }
   }
 
-  // -------------------------------------------------------------------
-  // Snapshot card — shown in the sidebar of view.php as the "Current
-  // request" summary (method + URL + status + time + Prev/Next/Latest).
-  // The index page no longer renders this card; its overview lives in
-  // the top summary strip (see `.yii-debug-grid-summary` above) so the
-  // sidebar can stay focused on navigation.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Snapshot card — shown in the sidebar of view.php as the "Current */
+  /* request" summary (method + URL + status + time + Prev/Next/Latest). */
+  /* The index page no longer renders this card; its overview lives in */
+  /* the top summary strip (see `.yii-debug-grid-summary` above) so the */
+  /* sidebar can stay focused on navigation. */
+  /* ------------------------------------------------------------------- */
   .yii-debug-history-card {
     position: relative;
     display: flex;
@@ -3609,17 +3595,17 @@
       );
   }
 
-  // Iconed nav variant — applied via `.yii-debug-nav-iconed` on the
-  // sidebar's <nav>. Each link gains a small SVG slot at the left so the
-  // index nav reads as a polished pictograph list rather than a flat italic
-  // text column. view.php's nav (no `.yii-debug-nav-iconed` modifier) keeps
-  // its existing layout untouched.
-  //
-  // We pin the icon + label as the leading group and let the parent's
-  // existing `::after` chevron sit at the trailing edge thanks to
-  // `justify-content: space-between` from `.yii-debug-nav-link`. The label
-  // ellipses inside its allotted column so long panel names don't blow up
-  // the row.
+  /* Iconed nav variant — applied via `.yii-debug-nav-iconed` on the */
+  /* sidebar's <nav>. Each link gains a small SVG slot at the left so the */
+  /* index nav reads as a polished pictograph list rather than a flat italic */
+  /* text column. view.php's nav (no `.yii-debug-nav-iconed` modifier) keeps */
+  /* its existing layout untouched. */
+  /* */
+  /* We pin the icon + label as the leading group and let the parent's */
+  /* existing `::after` chevron sit at the trailing edge thanks to */
+  /* `justify-content: space-between` from `.yii-debug-nav-link`. The label */
+  /* ellipses inside its allotted column so long panel names don't blow up */
+  /* the row. */
   .yii-debug-nav-iconed .yii-debug-nav-link {
     align-items: center;
 
@@ -3647,9 +3633,9 @@
     }
   }
 
-  // When the link is the active panel, the gradient background is the same
-  // primary cyan as the icon — they'd vanish into each other. Force the icon
-  // to inherit `currentColor` (white in this state) so it stays readable.
+  /* When the link is the active panel, the gradient background is the same */
+  /* primary cyan as the icon — they'd vanish into each other. Force the icon */
+  /* to inherit `currentColor` (white in this state) so it stays readable. */
   .yii-debug-nav-link.is-active .yii-debug-nav-link-icon {
     color: currentColor;
   }
@@ -3666,11 +3652,11 @@
     letter-spacing: 0.005em;
   }
 
-  // Muted nav link — used on the index where no request is active. We
-  // tone the link down with a muted *color* (kept full opacity so the
-  // glyph anti-aliasing stays crisp) and hand the icon a softer accent.
-  // Hover restores both to full intensity and nudges the icon one px
-  // right so the row clearly reads as interactive.
+  /* Muted nav link — used on the index where no request is active. We */
+  /* tone the link down with a muted *color* (kept full opacity so the */
+  /* glyph anti-aliasing stays crisp) and hand the icon a softer accent. */
+  /* Hover restores both to full intensity and nudges the icon one px */
+  /* right so the row clearly reads as interactive. */
   .yii-debug-nav-link-muted {
     color: var(--yii-debug-panel-muted);
 
@@ -3706,9 +3692,9 @@
     }
   }
 
-  // Tag link in the request table — this is the primary action of the
-  // whole index, so it gets the most weight: mono, bold, slightly larger,
-  // and never wraps so the SHA stays scannable on a single line.
+  /* Tag link in the request table — this is the primary action of the */
+  /* whole index, so it gets the most weight: mono, bold, slightly larger, */
+  /* and never wraps so the SHA stays scannable on a single line. */
   .yii-debug-tag-link {
     display: inline-block;
     font-family: var(--yii-debug-font-mono);
@@ -3729,8 +3715,8 @@
     }
   }
 
-  // Truncate long URLs so the table doesn't blow up horizontally; the
-  // full value remains reachable via the cell's `title` attribute.
+  /* Truncate long URLs so the table doesn't blow up horizontally; the */
+  /* full value remains reachable via the cell's `title` attribute. */
   .yii-debug-url-cell {
     display: inline-block;
     max-width: 320px;
@@ -3740,10 +3726,10 @@
     vertical-align: middle;
   }
 
-  // Each request row in the index is a giant click target — the JS
-  // handler navigates to the corresponding view when the click does
-  // NOT land on an interactive element. The cursor + hover background
-  // tell the developer the whole row is reachable.
+  /* Each request row in the index is a giant click target — the JS */
+  /* handler navigates to the corresponding view when the click does */
+  /* NOT land on an interactive element. The cursor + hover background */
+  /* tell the developer the whole row is reachable. */
   .yii-debug-row-link {
     cursor: pointer;
     transition: background-color 120ms ease;
@@ -3757,10 +3743,10 @@
     }
   }
 
-  // History-cursor highlight — the row currently mirrored by the sidebar
-  // snapshot card on the index page. Subtle tinted background plus a left
-  // accent bar so the link between "this row" and "the card on the left"
-  // reads at a glance. Hover still works on top thanks to specificity.
+  /* History-cursor highlight — the row currently mirrored by the sidebar */
+  /* snapshot card on the index page. Subtle tinted background plus a left */
+  /* accent bar so the link between "this row" and "the card on the left" */
+  /* reads at a glance. Hover still works on top thanks to specificity. */
   .yii-debug-table tbody tr.is-cursor {
     background: color-mix(
       in srgb,
@@ -3778,9 +3764,9 @@
     );
   }
 
-  // Active-filter banner — shown above the GridView when the URL has
-  // any `Debug[*]` query params. Each pill is a one-click "remove this
-  // filter" link; the trailing "Clear all" wipes them in one go.
+  /* Active-filter banner — shown above the GridView when the URL has */
+  /* any `Debug[*]` query params. Each pill is a one-click "remove this */
+  /* filter" link; the trailing "Clear all" wipes them in one go. */
   .yii-debug-active-filters {
     display: flex;
     align-items: center;
@@ -3906,16 +3892,16 @@
     }
   }
 
-  // The ID column carries the tag SHA — give it enough room so the
-  // 13-character hex never wraps even when its filter input is open.
+  /* The ID column carries the tag SHA — give it enough room so the */
+  /* 13-character hex never wraps even when its filter input is open. */
   .yii-debug-col-id {
     min-width: 170px;
     white-space: nowrap;
   }
 
-  // Numeric counters (Query / Mail) only ever hold a single number, so
-  // they get a tight, center-aligned column to reclaim horizontal space
-  // for the URL/method/status columns that actually need width.
+  /* Numeric counters (Query / Mail) only ever hold a single number, so */
+  /* they get a tight, center-aligned column to reclaim horizontal space */
+  /* for the URL/method/status columns that actually need width. */
   th.yii-debug-col-num,
   td.yii-debug-col-num {
     width: 1%;
@@ -3927,8 +3913,8 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // Filter input row inside a numeric column should match the cell width
-  // so the dropdown/textbox doesn't blow past it.
+  /* Filter input row inside a numeric column should match the cell width */
+  /* so the dropdown/textbox doesn't blow past it. */
   td.yii-debug-col-num input,
   td.yii-debug-col-num select {
     width: 100%;
@@ -3954,7 +3940,7 @@
     }
   }
 
-  // Trace lists.
+  /* Trace lists. */
   ul.yii-debug-trace {
     margin: 2px 0 0;
     padding: 0;
@@ -3964,7 +3950,7 @@
     white-space: normal;
   }
 
-  // Inline helper utilities.
+  /* Inline helper utilities. */
   .yii-debug-muted {
     color: var(--yii-debug-panel-muted);
   }
@@ -3977,21 +3963,21 @@
     word-break: break-all;
   }
 
-  // "Not set" marker used in some views.
+  /* "Not set" marker used in some views. */
   .yii-debug-not-set {
     color: var(--yii-debug-panel-danger);
     font-style: italic;
   }
 
-  // ===================================================================
-  // Configuration + PhpInfo panel — "terminal schematic" design system.
-  // Mono-forward dashboard readouts with corner-tick cards, LED-pulsing
-  // status pills, and a typewriter-flavored package manifest. Commits
-  // to JetBrains Mono for data and Major Mono Display for the hero
-  // title. Fonts are loaded via <link> in the layout head.
-  // ===================================================================
+  /* =================================================================== */
+  /* Configuration + PhpInfo panel — "terminal schematic" design system. */
+  /* Mono-forward dashboard readouts with corner-tick cards, LED-pulsing */
+  /* status pills, and a typewriter-flavored package manifest. Commits */
+  /* to JetBrains Mono for data and Major Mono Display for the hero */
+  /* title. Fonts are loaded via <link> in the layout head. */
+  /* =================================================================== */
 
-  // -- Section scaffolding --------------------------------------------
+  /* -- Section scaffolding -------------------------------------------- */
 
   .yii-debug-section {
     margin-bottom: var(--yii-debug-space-6);
@@ -4035,7 +4021,7 @@
     font-weight: 700;
   }
 
-  // Dedicated H1 for the modernized panels only (overrides base h1).
+  /* Dedicated H1 for the modernized panels only (overrides base h1). */
   h1.yii-debug-hero-title {
     margin: 0 0 var(--yii-debug-space-5);
     color: var(--yii-debug-panel-text);
@@ -4058,7 +4044,7 @@
     vertical-align: 2px;
   }
 
-  // -- Readout card grid (hero stats) ---------------------------------
+  /* -- Readout card grid (hero stats) --------------------------------- */
 
   .yii-debug-readout {
     display: grid;
@@ -4106,26 +4092,15 @@
       box-shadow: var(--yii-debug-shadow-md);
     }
 
-    @for $i from 1 through 6 {
-      &:nth-child(#{$i}) {
-        animation-delay: #{0.04 * $i}s;
-      }
-    }
+    &:nth-child(1) { animation-delay: 0.04s; }
+    &:nth-child(2) { animation-delay: 0.08s; }
+    &:nth-child(3) { animation-delay: 0.12s; }
+    &:nth-child(4) { animation-delay: 0.16s; }
+    &:nth-child(5) { animation-delay: 0.20s; }
+    &:nth-child(6) { animation-delay: 0.24s; }
   }
 
-  @keyframes yii-debug-readout-in {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  // Four L-shaped corner ticks per card, like gun sights on a schematic.
+  /* Four L-shaped corner ticks per card, like gun sights on a schematic. */
   .yii-debug-readout-corner {
     position: absolute;
     width: 9px;
@@ -4236,7 +4211,7 @@
     color: var(--yii-debug-panel-muted);
   }
 
-  // -- Extension status strip -----------------------------------------
+  /* -- Extension status strip ----------------------------------------- */
 
   .yii-debug-ext-strip {
     display: flex;
@@ -4326,20 +4301,7 @@
     opacity: 0.55;
   }
 
-  @keyframes yii-debug-led-pulse {
-    0%,
-    100% {
-      box-shadow: 0 0 0 3px
-        color-mix(in srgb, var(--yii-debug-panel-success), transparent 75%);
-    }
-
-    50% {
-      box-shadow: 0 0 0 6px
-        color-mix(in srgb, var(--yii-debug-panel-success), transparent 90%);
-    }
-  }
-
-  // -- Definition list (application details) --------------------------
+  /* -- Definition list (application details) -------------------------- */
 
   .yii-debug-dl {
     margin: 0;
@@ -4381,7 +4343,7 @@
     }
   }
 
-  // -- Package manifest (installed extensions) ------------------------
+  /* -- Package manifest (installed extensions) ------------------------ */
 
   .yii-debug-packages {
     display: grid;
@@ -4449,7 +4411,7 @@
     white-space: nowrap;
   }
 
-  // -- Terminal-prompt CTA --------------------------------------------
+  /* -- Terminal-prompt CTA -------------------------------------------- */
 
   .yii-debug-cta {
     display: inline-flex;
@@ -4498,7 +4460,7 @@
     font-size: 0.875rem;
   }
 
-  // -- PhpInfo panel header + container -------------------------------
+  /* -- PhpInfo panel header + container ------------------------------- */
 
   .yii-debug-phpinfo-meta {
     display: flex;
@@ -4532,10 +4494,10 @@
     font-weight: 700;
   }
 
-  // -- phpinfo shell — left TOC + search + sectioned content -------------
-  // Two-column grid (sticky TOC | main column with search and per-module
-  // sections). Search filters whole sections client-side; the TOC is wired
-  // to scroll-spy so the dev can see at a glance which module they're in.
+  /* -- phpinfo shell — left TOC + search + sectioned content ------------- */
+  /* Two-column grid (sticky TOC | main column with search and per-module */
+  /* sections). Search filters whole sections client-side; the TOC is wired */
+  /* to scroll-spy so the dev can see at a glance which module they're in. */
   .yii-debug-phpinfo-shell {
     display: grid;
     grid-template-columns: 240px minmax(0, 1fr);
@@ -4687,18 +4649,18 @@
     }
   }
 
-  // The HTML `[hidden]` attribute defaults to `display: none`, but our
-  // explicit `display: block` on TOC links and the implicit `display: block`
-  // on `<section>` win on specificity. Re-assert the hide here so the live
-  // search filter actually trims the TOC + sections instead of just toggling
-  // an attribute the eye never sees.
+  /* The HTML `[hidden]` attribute defaults to `display: none`, but our */
+  /* explicit `display: block` on TOC links and the implicit `display: block` */
+  /* on `<section>` win on specificity. Re-assert the hide here so the live */
+  /* search filter actually trims the TOC + sections instead of just toggling */
+  /* an attribute the eye never sees. */
   .yii-debug-phpinfo-toc-link[hidden],
   .yii-debug-phpinfo-section[hidden] {
     display: none;
   }
 
-  // Compact TOC into a horizontal scroller above the content on narrow
-  // viewports so the layout doesn't collapse to a tiny side column.
+  /* Compact TOC into a horizontal scroller above the content on narrow */
+  /* viewports so the layout doesn't collapse to a tiny side column. */
   @media (width <= 900px) {
     .yii-debug-phpinfo-shell {
       grid-template-columns: 1fr;
@@ -4732,11 +4694,11 @@
     }
   }
 
-  // -- phpinfo Overview hero + info cards --------------------------------
-  // Replaces the dense pre-h2 phpinfo table with a hero block (PHP version
-  // headline) and a responsive grid of info cards (Server / Build / Config /
-  // Capabilities). Long values like the Configure Command live in collapsed
-  // `<details>` so the section never dwarfs the modules below it.
+  /* -- phpinfo Overview hero + info cards -------------------------------- */
+  /* Replaces the dense pre-h2 phpinfo table with a hero block (PHP version */
+  /* headline) and a responsive grid of info cards (Server / Build / Config / */
+  /* Capabilities). Long values like the Configure Command live in collapsed */
+  /* `<details>` so the section never dwarfs the modules below it. */
 
   .yii-debug-phpinfo-overview-hero {
     display: flex;
@@ -4792,12 +4754,12 @@
     text-transform: lowercase;
   }
 
-  // Metric strip inside the hero — replaces the old Server card. Each tile is
-  // a label-above-value mini block, threaded by a 2-px cyan accent like the
-  // card rows so the visual language stays consistent. Auto-fit grid keeps
-  // tiles wide enough to hold an OS string but reflow naturally on narrow
-  // viewports. Top divider is owned by the block-head above; this dl is
-  // padding-only.
+  /* Metric strip inside the hero — replaces the old Server card. Each tile is */
+  /* a label-above-value mini block, threaded by a 2-px cyan accent like the */
+  /* card rows so the visual language stays consistent. Auto-fit grid keeps */
+  /* tiles wide enough to hold an OS string but reflow naturally on narrow */
+  /* viewports. Top divider is owned by the block-head above; this dl is */
+  /* padding-only. */
   .yii-debug-phpinfo-overview-hero-metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -4805,10 +4767,10 @@
     margin: 0;
   }
 
-  // Sub-section inside the hero — the hero now hosts both the PHP-version
-  // tile group and the Build tile group inside the same dashed-bordered
-  // shell, separated by a section header (eyebrow + dashed underline). No
-  // own border/padding — the outer hero container owns the chrome.
+  /* Sub-section inside the hero — the hero now hosts both the PHP-version */
+  /* tile group and the Build tile group inside the same dashed-bordered */
+  /* shell, separated by a section header (eyebrow + dashed underline). No */
+  /* own border/padding — the outer hero container owns the chrome. */
   .yii-debug-phpinfo-overview-hero-section {
     display: flex;
     flex-direction: column;
@@ -4874,10 +4836,10 @@
     }
   }
 
-  // Vertical stack of full-width strips. Each `<details>` row spans the
-  // entire content column; the `dl` inside flows its key/value pairs into a
-  // multi-column auto-fit grid so the body packs horizontally on wide
-  // viewports instead of stranding values in a narrow lane.
+  /* Vertical stack of full-width strips. Each `<details>` row spans the */
+  /* entire content column; the `dl` inside flows its key/value pairs into a */
+  /* multi-column auto-fit grid so the body packs horizontally on wide */
+  /* viewports instead of stranding values in a narrow lane. */
   .yii-debug-phpinfo-overview-grid {
     display: flex;
     flex-direction: column;
@@ -4885,9 +4847,9 @@
     margin-bottom: var(--yii-debug-space-3);
   }
 
-  // Cards inside the Overview grid — neutralize the standalone `<details>`
-  // bottom margin (the flex gap already separates them) and let the card's
-  // body inherit the same padding the Configure Command pre/Streams dl use.
+  /* Cards inside the Overview grid — neutralize the standalone `<details>` */
+  /* bottom margin (the flex gap already separates them) and let the card's */
+  /* body inherit the same padding the Configure Command pre/Streams dl use. */
   .yii-debug-phpinfo-overview-grid > .yii-debug-phpinfo-overview-details {
     margin-bottom: 0;
   }
@@ -4916,12 +4878,12 @@
     margin: 0;
   }
 
-  // Each row reads as a mini info-block: tiny uppercase eyebrow label, value
-  // beneath with full-width breathing room. The 2-px left bar threads the
-  // panel's cyan accent through the rows, intensifying on hover so the row
-  // the dev is hovering is unambiguously focused. Replaces the previous
-  // `dt | dd` grid where the label hogged half the cell and the value got
-  // squeezed into a narrow lane.
+  /* Each row reads as a mini info-block: tiny uppercase eyebrow label, value */
+  /* beneath with full-width breathing room. The 2-px left bar threads the */
+  /* panel's cyan accent through the rows, intensifying on hover so the row */
+  /* the dev is hovering is unambiguously focused. Replaces the previous */
+  /* `dt | dd` grid where the label hogged half the cell and the value got */
+  /* squeezed into a narrow lane. */
   .yii-debug-phpinfo-overview-card-row {
     display: flex;
     flex-direction: column;
@@ -4952,10 +4914,10 @@
     dd {
       margin: 0;
       min-width: 0;
-      // `word-break: break-word` only splits at word boundaries when needed
-      // (vs `anywhere`, which fragments mid-word — e.g. `/p hp/` — even when
-      // a clean break is possible). Combined with `hyphens: none` so paths
-      // never grow phantom hyphens at the wrap point.
+      /* `word-break: break-word` only splits at word boundaries when needed */
+      /* (vs `anywhere`, which fragments mid-word — e.g. `/p hp/` — even when */
+      /* a clean break is possible). Combined with `hyphens: none` so paths */
+      /* never grow phantom hyphens at the wrap point. */
       word-break: break-word;
       hyphens: none;
       color: var(--yii-debug-panel-text);
@@ -5107,10 +5069,10 @@
     font-size: 11px;
   }
 
-  // Wrap-flow container for path lists ("Additional .ini files parsed", etc.).
-  // Each entry collapses to its basename via a `<code class="…-token">`; full
-  // path lives in the title tooltip so the dev can see the resolved location
-  // on hover without the row turning into a wall of repeated prefixes.
+  /* Wrap-flow container for path lists ("Additional .ini files parsed", etc.). */
+  /* Each entry collapses to its basename via a `<code class="…-token">`; full */
+  /* path lives in the title tooltip so the dev can see the resolved location */
+  /* on hover without the row turning into a wall of repeated prefixes. */
   .yii-debug-phpinfo-overview-files {
     display: flex;
     flex-wrap: wrap;
@@ -5135,11 +5097,11 @@
     }
   }
 
-  // -- phpinfo module card -----------------------------------------------
-  // Each module is wrapped as a single card (matches the Database panel's
-  // GridView card chrome): rounded border + surface bg + soft shadow, with
-  // a header strip on top (dot + title + cyan border-bottom) and the table
-  // flowing directly underneath without a gap.
+  /* -- phpinfo module card ----------------------------------------------- */
+  /* Each module is wrapped as a single card (matches the Database panel's */
+  /* GridView card chrome): rounded border + surface bg + soft shadow, with */
+  /* a header strip on top (dot + title + cyan border-bottom) and the table */
+  /* flowing directly underneath without a gap. */
 
   .yii-debug-phpinfo-module {
     margin-top: var(--yii-debug-space-4);
@@ -5149,14 +5111,14 @@
     box-shadow: var(--yii-debug-shadow-sm);
     overflow: hidden;
 
-    // Multiple tables in one module (e.g. APCu's main table + Directives)
-    // separated by a thin divider rather than a margin gap.
+    /* Multiple tables in one module (e.g. APCu's main table + Directives) */
+    /* separated by a thin divider rather than a margin gap. */
     .yii-debug-table-wrap + .yii-debug-table-wrap {
       border-top: var(--yii-debug-border);
     }
 
-    // The wrap inside the card strips its own border/radius — the card
-    // already provides that chrome.
+    /* The wrap inside the card strips its own border/radius — the card */
+    /* already provides that chrome. */
     .yii-debug-table-wrap {
       border: 0;
       border-radius: 0;
@@ -5174,10 +5136,10 @@
     border-bottom: 1px solid
       color-mix(in srgb, var(--yii-debug-panel-primary), transparent 60%);
 
-    // Title reads as a hero-style eyebrow — cyan, uppercase, monospace,
-    // wide letter-spacing — so module heads and the hero sub-section
-    // eyebrows (PHP VERSION / BUILD / CONFIGURATION / …) share the same
-    // visual language across the whole panel.
+    /* Title reads as a hero-style eyebrow — cyan, uppercase, monospace, */
+    /* wide letter-spacing — so module heads and the hero sub-section */
+    /* eyebrows (PHP VERSION / BUILD / CONFIGURATION / …) share the same */
+    /* visual language across the whole panel. */
     h2 {
       margin: 0;
       padding: 0;
@@ -5206,8 +5168,8 @@
       color-mix(in srgb, var(--yii-debug-panel-primary), transparent 86%);
   }
 
-  // phpinfo rendering — tables inherit shell colours; remove the loud
-  // cyan headers carried over from PHP's phpinfo() output.
+  /* phpinfo rendering — tables inherit shell colours; remove the loud */
+  /* cyan headers carried over from PHP's phpinfo() output. */
   .yii-debug-phpinfo {
     h1,
     h2 {
@@ -5235,9 +5197,9 @@
     }
   }
 
-  // -------------------------------------------------------------------
-  // Responsive tweaks.
-  // -------------------------------------------------------------------
+  /* ------------------------------------------------------------------- */
+  /* Responsive tweaks. */
+  /* ------------------------------------------------------------------- */
 
   @media (width <= 767px) {
     .yii-debug-page {
@@ -5247,5 +5209,43 @@
     .yii-debug-card {
       padding: var(--yii-debug-space-3);
     }
+  }
+}
+
+@keyframes yii-debug-user-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes yii-debug-readout-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes yii-debug-led-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--yii-debug-panel-success), transparent 75%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px
+      color-mix(in srgb, var(--yii-debug-panel-success), transparent 90%);
   }
 }

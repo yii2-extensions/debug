@@ -374,7 +374,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
         // static cache so dev workflows pick up edits without a server restart). In production
         // the static cache amortises the file read across requests handled by the same worker.
         if (self::$_toolbarScript === null || YII_DEBUG) {
-            $contents = file_get_contents(__DIR__ . '/assets/js/toolbar.js');
+            $contents = file_get_contents(__DIR__ . '/assets/dist/js/toolbar.js');
             self::$_toolbarScript = $contents === false ? '' : $contents;
         }
 
