@@ -45,16 +45,16 @@ $configIcon = $inlineSvg('config.svg');
     <?php endif; ?>
     <?php if ($configUrl !== null): ?>
         <a class="yii-debug-brand-chip yii-debug-brand-chip-config"
-           href="<?= Html::encode($configUrl) ?>"
-           title="Open the Configuration panel"
-           aria-label="Open the Configuration panel">
+            href="<?= Html::encode($configUrl) ?>"
+            title="Open the Configuration panel"
+            aria-label="Open the Configuration panel">
             <span class="yii-debug-brand-icon" aria-hidden="true"><?= $configIcon ?></span>
             <span class="yii-debug-brand-label">Config</span>
         </a>
     <?php else: ?>
         <span class="yii-debug-brand-chip yii-debug-brand-chip-config is-disabled"
-              title="No requests captured yet"
-              aria-disabled="true">
+            title="No requests captured yet"
+            aria-disabled="true">
             <span class="yii-debug-brand-icon" aria-hidden="true"><?= $configIcon ?></span>
             <span class="yii-debug-brand-label">Config</span>
         </span>

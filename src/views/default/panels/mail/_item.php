@@ -152,7 +152,7 @@ foreach ($recipientGroups as $g) {
                     aria-label="Download .eml"
                 >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 4v12"/>
                         <path d="M7 11l5 5 5-5"/>
                         <path d="M5 20h14"/>
@@ -197,7 +197,7 @@ foreach ($recipientGroups as $g) {
             <summary>
                 <span class="yii-debug-mail-tech-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 6L4 12l5 6"/>
                         <path d="M15 6l5 6-5 6"/>
                     </svg>
@@ -210,7 +210,7 @@ foreach ($recipientGroups as $g) {
                 <?php endif; ?>
                 <span class="yii-debug-mail-tech-chevron" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M6 9l6 6 6-6"/>
                     </svg>
                 </span>

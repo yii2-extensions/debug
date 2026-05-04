@@ -207,8 +207,8 @@ $fileLabel = static function (mixed $item): string {
                                                     $depShort = $shortName($depName);
                                                     ?>
                                                     <a class="yii-debug-asset-depend"
-                                                       href="#<?= Html::encode(Inflector::camel2id($depName)) ?>"
-                                                       title="<?= Html::encode($depName) ?>">
+                                                        href="#<?= Html::encode(Inflector::camel2id($depName)) ?>"
+                                                        title="<?= Html::encode($depName) ?>">
                                                         <span class="yii-debug-asset-depend-icon" aria-hidden="true">↳</span>
                                                         <span class="yii-debug-asset-depend-name"><?= Html::encode($depShort) ?></span>
                                                     </a>

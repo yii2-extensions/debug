@@ -146,7 +146,7 @@ if ($showCard) {
         $snapshotPath = $toPath((string) ($snapshotSummary['url'] ?? ''));
         ?>
         <section class="yii-debug-side-section yii-debug-request-nav"
-                 aria-label="<?= Html::encode($sectionAriaLabel) ?>"<?= $cursorAttr ?>>
+            aria-label="<?= Html::encode($sectionAriaLabel) ?>"<?= $cursorAttr ?>>
             <header class="yii-debug-side-section-title"><?= Html::encode($sectionTitle) ?></header>
 
             <div class="yii-debug-history-card" title="<?= Html::encode(($snapshotSummary['method'] ?? '') . ' ' . ($snapshotSummary['url'] ?? '')) ?>">
@@ -156,7 +156,7 @@ if ($showCard) {
                 </div>
                 <div class="yii-debug-snapshot-meta">
                     <span class="yii-debug-snapshot-status yii-debug-snapshot-status-<?= $statusVariant ?>"
-                          data-snapshot-field="status"><?= $currentStatus ?: '–' ?></span>
+                        data-snapshot-field="status"><?= $currentStatus ?: '–' ?></span>
                     <span class="yii-debug-snapshot-time" data-snapshot-field="time"<?= empty($snapshotSummary['time']) ? ' hidden' : '' ?>>
                         <?= !empty($snapshotSummary['time']) ? date('H:i:s', (int) $snapshotSummary['time']) : '' ?>
                     </span>
@@ -230,8 +230,8 @@ if ($mode === 'view' && is_string($tag ?? null) && $tag !== '') {
 }
 ?>
         <a class="<?= implode(' ', $historyClasses) ?>"
-           href="<?= Html::encode(\yii\helpers\Url::to($historyParams)) ?>"
-           title="Browse all captured requests"<?= $mode === 'index' ? ' aria-current="page"' : '' ?>>
+            href="<?= Html::encode(\yii\helpers\Url::to($historyParams)) ?>"
+            title="Browse all captured requests"<?= $mode === 'index' ? ' aria-current="page"' : '' ?>>
             <?php if ($historyIcon !== ''): ?>
                 <span class="yii-debug-nav-link-icon" aria-hidden="true"><?= $historyIcon ?></span>
             <?php endif; ?>
@@ -272,8 +272,8 @@ if ($mode === 'view' && is_string($tag ?? null) && $tag !== '') {
             }
             ?>
             <a class="<?= implode(' ', $linkClasses) ?>"
-               href="<?= Html::encode(\yii\helpers\Url::to($url)) ?>"
-               title="<?= Html::encode($tooltip) ?>"<?= $isActive ? ' aria-current="page"' : '' ?>>
+                href="<?= Html::encode(\yii\helpers\Url::to($url)) ?>"
+                title="<?= Html::encode($tooltip) ?>"<?= $isActive ? ' aria-current="page"' : '' ?>>
                 <?php if ($iconSvg !== ''): ?>
                     <span class="yii-debug-nav-link-icon" aria-hidden="true"><?= $iconSvg ?></span>
                 <?php endif; ?>

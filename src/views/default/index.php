@@ -89,8 +89,8 @@ $bucketVariant = [
             } ?>
             <span class="yii-debug-grid-summary-sep">·</span>
             <a class="yii-debug-grid-summary-stat-<?= $bucketVariant[$bucket] ?>"
-               href="<?= Html::encode(Url::to(['index', 'Debug[statusCode]' => $bucketSample[$bucket]])) ?>"
-               title="Filter to <?= Html::encode($bucket) ?> responses (sample <?= Html::encode((string) $bucketSample[$bucket]) ?>)">
+                href="<?= Html::encode(Url::to(['index', 'Debug[statusCode]' => $bucketSample[$bucket]])) ?>"
+                title="Filter to <?= Html::encode($bucket) ?> responses (sample <?= Html::encode((string) $bucketSample[$bucket]) ?>)">
                 <strong><?= (int) $count ?></strong> <?= Html::encode($bucket) ?>
             </a>
         <?php endforeach; ?>

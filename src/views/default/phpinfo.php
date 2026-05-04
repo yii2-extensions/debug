@@ -243,8 +243,8 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
                 <?php foreach ($sections as $section): ?>
                     <li>
                         <a class="yii-debug-phpinfo-toc-link"
-                           href="#<?= Html::encode($section['slug']) ?>"
-                           data-toc-target="<?= Html::encode($section['slug']) ?>">
+                            href="#<?= Html::encode($section['slug']) ?>"
+                            data-toc-target="<?= Html::encode($section['slug']) ?>">
                             <?= Html::encode($section['title']) ?>
                         </a>
                     </li>
@@ -256,17 +256,17 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
             <div class="yii-debug-phpinfo-search">
                 <span class="yii-debug-phpinfo-search-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="7"/>
                         <path d="m21 21-4.3-4.3"/>
                     </svg>
                 </span>
                 <input type="search"
-                       class="yii-debug-phpinfo-search-input"
-                       placeholder="Filter modules + directives…"
-                       autocomplete="off"
-                       spellcheck="false"
-                       data-yii-debug-phpinfo-search>
+                    class="yii-debug-phpinfo-search-input"
+                    placeholder="Filter modules + directives…"
+                    autocomplete="off"
+                    spellcheck="false"
+                    data-yii-debug-phpinfo-search>
                 <span class="yii-debug-phpinfo-search-empty" data-yii-debug-phpinfo-empty hidden>
                     No modules match this query.
                 </span>
@@ -378,7 +378,7 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
                                                 <span class="yii-debug-phpinfo-overview-files">
                                                     <?php foreach (array_filter(array_map('trim', explode(',', $value))) as $file): ?>
                                                         <code class="yii-debug-phpinfo-overview-token"
-                                                              title="<?= Html::encode($file) ?>">
+                                                            title="<?= Html::encode($file) ?>">
                                                             <?= Html::encode(basename($file)) ?>
                                                         </code>
                                                     <?php endforeach; ?>
