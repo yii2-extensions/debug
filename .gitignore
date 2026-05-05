@@ -1,3 +1,9 @@
+# AI agents (if present)
+.codex
+.claude
+!src/assets/package-lock.json
+phpunit.xml
+
 # codecoverage (if present)
 code_coverage
 

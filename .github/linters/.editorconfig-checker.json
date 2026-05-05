@@ -5,6 +5,7 @@
         "\\.min\\.css$",
         "\\.min\\.js$",
         "^vendor/",
-        "^runtime/"
+        "^runtime/",
+        "scaffold-lock\\.json$"
     ]
 }

@@ -1,0 +1,104 @@
+{
+    "providers": {
+        "php-forge/baseline": {
+            "version": "dev-main",
+            "path": "vendor/php-forge/baseline"
+        },
+        "php-forge/coding-standard": {
+            "version": "dev-main",
+            "path": "vendor/php-forge/coding-standard"
+        }
+    },
+    "files": {
+        ".editorconfig": {
+            "hash": "sha256:f3e03a7cde4938b880367b7122f8d66a19ec67dbf31309cff4da8719e99eefae",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.editorconfig",
+            "mode": "append"
+        },
+        ".gitattributes": {
+            "hash": "sha256:88b62c371df01eac6e0298625a03baee372bd4048a6452cc2a1aeee0d49eba10",
+            "provider": "php-forge/baseline",
+            "source": "metadata/gitattributes",
+            "mode": "replace"
+        },
+        ".gitignore": {
+            "hash": "sha256:e035225d0508153381143438852e14ed17d7e7d716b364e01149acaf0cd9004f",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.gitignore",
+            "mode": "append"
+        },
+        ".styleci.yml": {
+            "hash": "sha256:825f8c744ffbd2bc2369712e7192b8694129a8ecbc3fd91dc9300fccecf827bd",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.styleci.yml",
+            "mode": "replace"
+        },
+        ".prettierignore": {
+            "hash": "sha256:d12c54d82c23d562342765ceda6897ca26b73eba0c700c127408c0a9bc17d595",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.prettierignore",
+            "mode": "replace"
+        },
+        ".prettierrc.json": {
+            "hash": "sha256:4bf1ad096981736c7bd00136026e046f4b23fcefa1f8db84dcd0bacac19e97a2",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.prettierrc.json",
+            "mode": "replace"
+        },
+        ".stylelintignore": {
+            "hash": "sha256:12186f0a5c42b4f894f7bdda1b1ca5ebc69f92d906aa9075a459d4d08fe4edc1",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.stylelintignore",
+            "mode": "replace"
+        },
+        "composer-require-checker.json": {
+            "hash": "sha256:f83b8b4d60c6f9dd2bb1053f769a863c26da82c11e511e524e4ca51694622b18",
+            "provider": "php-forge/baseline",
+            "source": "metadata/composer-require-checker.json",
+            "mode": "preserve"
+        },
+        ".github/linters/.codespellrc": {
+            "hash": "sha256:a9afcf57f68542d7cc308af4ca923ef6bde18de7a606b99190b8a15bdef612ef",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.github/linters/.codespellrc",
+            "mode": "replace"
+        },
+        ".github/linters/.editorconfig-checker.json": {
+            "hash": "sha256:8227fada934c245fc98e67d691a9c8bee48b86adbbac9fbb6282057ca321d9b5",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.github/linters/.editorconfig-checker.json",
+            "mode": "replace"
+        },
+        ".github/linters/.gitleaks.toml": {
+            "hash": "sha256:c500506cb29afadfd898384f12bcabdf5b494f6f2da982217e0a6e33b10f6ec6",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.github/linters/.gitleaks.toml",
+            "mode": "replace"
+        },
+        ".github/linters/.markdown-lint.yml": {
+            "hash": "sha256:5d41c7471e15fea1b307a39791436179c5db6ae7c7daf00042d21750117bead4",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.github/linters/.markdown-lint.yml",
+            "mode": "replace"
+        },
+        ".github/linters/actionlint.yml": {
+            "hash": "sha256:5c4071e2aa711e7d2e6bbb9c06d82399feab06ef5ff8feae4f9b6a61b383852f",
+            "provider": "php-forge/baseline",
+            "source": "metadata/.github/linters/actionlint.yml",
+            "mode": "replace"
+        },
+        "ecs.php": {
+            "hash": "sha256:7c054b397506c1a4d4ab2d1197e9536b44f114e2721a0e9f8c46f362efcc7bae",
+            "provider": "php-forge/coding-standard",
+            "source": "src/config/ecs.php",
+            "mode": "preserve"
+        },
+        "rector.php": {
+            "hash": "sha256:5d55b6ca3154c904e8c6f35206dc90aad77112266dc7b5eb084f8c2f6765a3c5",
+            "provider": "php-forge/coding-standard",
+            "source": "src/config/rector.php",
+            "mode": "preserve"
+        }
+    }
+}
