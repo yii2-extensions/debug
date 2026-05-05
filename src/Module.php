@@ -84,7 +84,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * but read-only for other users.
      * @since 2.0.6
      */
-    public $dirMode = 0775;
+    public $dirMode = 0o775;
     /**
      * @var bool whether to disable access callback restriction warning triggered by checkAccess function
      * @since 2.1.0

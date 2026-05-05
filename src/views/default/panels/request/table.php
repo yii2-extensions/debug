@@ -9,7 +9,7 @@ use yii\helpers\VarDumper;
 /** @var array<int|string, mixed> $values */
 /** @var bool $filterable */
 
-$filterable = $filterable ?? false;
+$filterable ??= false;
 $rowCount = count($values);
 ?>
 <header class="yii-debug-section-header">

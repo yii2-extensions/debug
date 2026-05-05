@@ -32,7 +32,7 @@ use yii\helpers\Html;
  *      a panel view's "History" link (`?cursor=<tag>`). Empty string falls back to the latest.
  */
 
-$mode = $mode ?? 'view';
+$mode ??= 'view';
 
 $latestTag = $manifest === [] ? null : array_key_first($manifest);
 

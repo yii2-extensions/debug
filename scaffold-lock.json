@@ -59,7 +59,7 @@
             "mode": "preserve"
         },
         ".github/linters/.codespellrc": {
-            "hash": "sha256:a9afcf57f68542d7cc308af4ca923ef6bde18de7a606b99190b8a15bdef612ef",
+            "hash": "sha256:c89a5fae6e0bba775cede6add224570db555ebd607f2737c8efc15ba9a32fe92",
             "provider": "php-forge/baseline",
             "source": "metadata/.github/linters/.codespellrc",
             "mode": "replace"
