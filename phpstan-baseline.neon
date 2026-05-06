@@ -1,0 +1,4903 @@
+parameters:
+	ignoreErrors:
+		-
+			rawMessage: Cannot access offset 'args' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: Cannot access offset 'class' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/FlattenException.php
+
+		-
+			rawMessage: Cannot access offset 'file' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: Cannot access offset 'function' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: Cannot access offset 'line' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: Cannot access offset 'type' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 2
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::flattenArgs() has parameter $args with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::flattenArgs() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::getPrevious() should return yii\debug\FlattenException but returns yii\debug\FlattenException|null.'
+			identifier: return.type
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::getTrace() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setClass() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setCode() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setFile() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setLine() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setMessage() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setPrevious() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setToString() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setTrace() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Method yii\debug\FlattenException::setTrace() has parameter $trace with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Parameter #1 $args of method yii\debug\FlattenException::flattenArgs() expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: 'Parameter #2 $string of function explode expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: Property yii\debug\FlattenException::$_trace type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/FlattenException.php
+
+		-
+			rawMessage: Instanceof between yii\web\Application and yii\web\Application will always evaluate to true.
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/GridViewConfig.php
+
+		-
+			rawMessage: 'Static property yii\BaseYii<yii\web\IdentityInterface>::$app (yii\web\Application) on left side of ?? is not nullable.'
+			identifier: nullCoalesce.property
+			count: 1
+			path: src/GridViewConfig.php
+
+		-
+			rawMessage: Access to an undefined property yii\debug\Panel::$mailPath.
+			identifier: property.notFound
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
+			identifier: foreach.nonIterable
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Call to an undefined method yii\debug\Panel::getMessagesFileName().'
+			identifier: method.notFound
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Call to an undefined method yii\debug\Panel::getProfileLogs().'
+			identifier: method.notFound
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Cannot access offset 'exceptions' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Cannot access offset 'mailFiles' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Cannot access offset 'memory' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Cannot access offset 'time' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Cannot access offset (int|string) on mixed.'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Cannot access offset string on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Instanceof between yii\web\Request and yii\console\Request will always evaluate to false.
+			identifier: instanceof.alwaysFalse
+			count: 4
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Instanceof between yii\web\Response and yii\console\Response will always evaluate to false.
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::__construct() has parameter $config with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::collect() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::collect() has parameter $messages with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::collectSummary() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::export() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::gc() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::gc() has parameter $manifest with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::getSqlTotalCount() should return int but returns float|int<0, max>.'
+			identifier: return.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::loadManifest() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::loadTagToPanels() has parameter $tag with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::loadTagToPanels() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::loadTagToPanels() should return array but returns mixed.'
+			identifier: return.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::removeStaleDataFiles() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::removeStaleDataFiles() has parameter $manifest with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::updateIndexFile() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Method yii\debug\LogTarget::updateIndexFile() has parameter $summary with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Offset 'REQUEST_TIME_FLOAT' might not exist on array<mixed>.
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: Offset 'mail' might not exist on array<yii\debug\Panel>.
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $alias of static method yii\BaseYii<yii\web\IdentityInterface>::getAlias() expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $array of function array_reverse expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $config of method yii\base\BaseObject::__construct() expects array<string, mixed>, array given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $data of function unserialize expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $data of function unserialize expects string, string|false given.'
+			identifier: argument.type
+			count: 2
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $error of method yii\debug\Panel::setError() expects yii\debug\FlattenException, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $manifest of method yii\debug\LogTarget::gc() expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $path of function pathinfo expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function count expects array|Countable, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #2 $array of function implode expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Parameter #2 $length of function fread expects int<1, max>, int<0, max>|false given.'
+			identifier: argument.type
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Part $mailFile (mixed) of encapsed string cannot be cast to string.'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Part $tag (mixed) of encapsed string cannot be cast to string.'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Property yii\debug\Panel::$tag (string) does not accept mixed.'
+			identifier: assign.propertyType
+			count: 1
+			path: src/LogTarget.php
+
+		-
+			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
+			identifier: foreach.nonIterable
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Binary operation "-" between float and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Call to function array_filter() requires parameter #2 to be passed to avoid loose comparison semantics.'
+			identifier: arrayFilter.strict
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Cannot access offset 'id' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Cannot access offset 'module' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Cannot access property $enabled on mixed.
+			identifier: property.nonObject
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Cannot access property $tag on array|string|yii\debug\LogTarget.
+			identifier: property.nonObject
+			count: 3
+			path: src/Module.php
+
+		-
+			rawMessage: Cannot access property $targets on mixed.
+			identifier: property.nonObject
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Cannot call method getHeaders() on object|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Cannot call method set() on mixed.'
+			identifier: method.nonObject
+			count: 3
+			path: src/Module.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 2
+			path: src/Module.php
+
+		-
+			rawMessage: If condition is always true.
+			identifier: if.alwaysTrue
+			count: 3
+			path: src/Module.php
+
+		-
+			rawMessage: Instanceof between yii\web\Application and yii\web\Application will always evaluate to true.
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::bootstrap() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::corePanels() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::getToolbarHtml() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::htmlTitle() should return string but returns mixed.'
+			identifier: return.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::init() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::initPanels() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::renderToolbar() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::resetGlobalSettings() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::setDebugHeaders() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Method yii\debug\Module::setYiiLogo() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Offset 'REQUEST_TIME_FLOAT' might not exist on array<mixed>.
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Only booleans are allowed in a negated boolean, int<-1, 1> given.'
+			identifier: booleanNot.exprNotBoolean
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #1 $haystack of function strpos expects string, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #1 $hostname of function gethostbyname expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #1 $string1 of function strncmp expects string, string|null given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #1 $subnet of static method yii\helpers\BaseIpHelper::inRange() expects string, string|null given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #1 $type of static method yii\BaseYii<yii\web\IdentityInterface>::createObject() expects array{class?: class-string<mixed>, __class?: class-string<mixed>}|(callable(): mixed)|class-string<mixed>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #1 $type of static method yii\BaseYii<yii\web\IdentityInterface>::createObject() expects array{class?: class-string<mixed>, __class?: class-string<mixed>}|(callable(): mixed)|class-string<mixed>, non-empty-array given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #1 $type of static method yii\BaseYii<yii\web\IdentityInterface>::createObject() expects array{class?: class-string<mixed>, __class?: class-string<mixed>}|(callable(): mixed)|class-string<mixed>, string given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #1 $url of static method yii\helpers\BaseUrl::to() expects array|string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #2 $range of static method yii\helpers\BaseIpHelper::inRange() expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Parameter #2 $string2 of function strncmp expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Property yii\debug\Module::$allowedHosts type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Property yii\debug\Module::$allowedIPs type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Property yii\debug\Module::$authManager type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Property yii\debug\Module::$checkAccessCallback type has no signature specified for callable.
+			identifier: missingType.callable
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Property yii\debug\Module::$logTarget (array|string|yii\debug\LogTarget) does not accept mixed.'
+			identifier: assign.propertyType
+			count: 2
+			path: src/Module.php
+
+		-
+			rawMessage: Property yii\debug\Module::$logTarget type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Property yii\debug\Module::$pageTitle type has no signature specified for callable.
+			identifier: missingType.callable
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Property yii\debug\Module::$panels (array<yii\debug\Panel>) does not accept array.'
+			identifier: assign.propertyType
+			count: 2
+			path: src/Module.php
+
+		-
+			rawMessage: 'Property yii\debug\Module::$panels (array<yii\debug\Panel>) does not accept array<mixed>.'
+			identifier: assign.propertyType
+			count: 2
+			path: src/Module.php
+
+		-
+			rawMessage: Property yii\debug\Module::$skipAjaxRequestUrl type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: Property yii\debug\Module::$tracePathMappings type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Property yii\log\Dispatcher::$targets (array<yii\log\Target>) does not accept array<mixed>.'
+			identifier: assign.propertyType
+			count: 1
+			path: src/Module.php
+
+		-
+			rawMessage: 'Unable to resolve the template type T in call to static method yii\BaseYii<yii\web\IdentityInterface>::createObject()'
+			identifier: argument.templateType
+			count: 3
+			path: src/Module.php
+
+		-
+			rawMessage: 'Call to function is_string() with string will always evaluate to true.'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/actions/db/ExplainAction.php
+
+		-
+			rawMessage: 'Offset ''info'' on array{info: string, category: string, timestamp: float, trace: array<int, array<string, mixed>>, level: int, duration: float, memory: int, memoryDiff: int, ...} on left side of ?? always exists and is not nullable.'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/actions/db/ExplainAction.php
+
+		-
+			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
+			identifier: foreach.nonIterable
+			count: 3
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access an offset on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int|string on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset mixed on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $key on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $value on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $keys with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $assoc with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $json with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $key with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method FlattedString::__construct() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $json of function json_decode expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $object of class ReflectionObject constructor expects object, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function count expects array|Countable, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function intval expects array|bool|float|GMP|int|resource|SimpleXMLElement|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $array of function array_map expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $associative of function json_decode expects bool|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $flags of function json_encode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function array_search expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function in_array expects array, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_decode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_encode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #4 $flags of function json_decode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Property FlattedString::$value has no type specified.
+			identifier: missingType.property
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for mixed must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 5
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for stdClass must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::asString() is unused.'
+			identifier: method.unused
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::wrap() is unused.'
+			identifier: method.unused
+			count: 1
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Variable property access on mixed.
+			identifier: property.dynamicName
+			count: 5
+			path: src/assets/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $identity on yii\web\User|null.
+			identifier: property.nonObject
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: Cannot access property $identityClass on yii\web\User|null.
+			identifier: property.nonObject
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Cannot call method getId() on yii\web\User|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Cannot call method getIsGuest() on yii\web\User|null.'
+			identifier: method.nonObject
+			count: 2
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Cannot call method switchIdentity() on yii\web\User|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: Cannot clone non-object variable $currentUser of type yii\web\User|null.
+			identifier: clone.nonObject
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: Cannot clone yii\web\User|null.
+			identifier: clone.nonObject
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Method yii\debug\models\UserSwitch::getUser() should return yii\web\User|null but returns mixed.'
+			identifier: return.type
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Method yii\debug\models\UserSwitch::reset() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Method yii\debug\models\UserSwitch::setUser() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Method yii\debug\models\UserSwitch::setUserByIdentity() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Parameter #1 $id of callable passed to call_user_func() expects int|string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Property yii\debug\models\UserSwitch::$_user (yii\web\User) does not accept mixed.'
+			identifier: assign.propertyType
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: Variable $user in PHPDoc tag @var does not exist.
+			identifier: varTag.variableNotFound
+			count: 1
+			path: src/models/UserSwitch.php
+
+		-
+			rawMessage: 'Strict comparison using !== between class-string<yii\web\IdentityInterface> and null will always evaluate to true.'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/models/search/User.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$colors.
+			identifier: property.private
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$duration.
+			identifier: property.private
+			count: 4
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$memory.
+			identifier: property.private
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$start.
+			identifier: property.private
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Binary operation "*=" between mixed and 1000 results in an error.'
+			identifier: assignOp.invalid
+			count: 2
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Binary operation "+" between mixed and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 2
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Binary operation "-" between mixed and float results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Binary operation "/" between mixed and (float|int) results in an error.'
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Binary operation "/" between mixed and 1048576 results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Binary operation "/" between mixed and float results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Cannot access offset 'child' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Cannot access offset 'color' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Cannot access offset 'css' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Cannot access offset 'duration' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Cannot access offset 'left' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Cannot access offset 'timestamp' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Cannot access offset 'width' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Cannot use ++ on mixed.
+			identifier: preInc.type
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Class yii\debug\models\timeline\DataProvider has PHPDoc tag @property for property $rulers with no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Invalid array key type float.
+			identifier: offsetAccess.invalidOffset
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::__construct() has parameter $config with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::getColor() has parameter $model with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::getCssClass() has parameter $model with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::getLeft() has parameter $model with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::getMemory() has parameter $model with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::getMemory() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::getRulers() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::getTime() has parameter $model with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::getWidth() has parameter $model with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\DataProvider::prepareModels() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Offset 'css' might not exist on array.
+			identifier: offsetAccess.notFound
+			count: 3
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Offset 'duration' might not exist on array.
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Offset 'timestamp' might not exist on array.
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Offset (int|string) might not exist on array.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Parameter #1 $config of method yii\base\BaseObject::__construct() expects array<string, mixed>, array given.'
+			identifier: argument.type
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Parameter #1 $model of method yii\debug\models\timeline\DataProvider::getColor() expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Parameter #1 $model of method yii\debug\models\timeline\DataProvider::getLeft() expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Parameter #1 $model of method yii\debug\models\timeline\DataProvider::getWidth() expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: 'Strict comparison using === between array and null will always evaluate to false.'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: src/models/timeline/DataProvider.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$duration.
+			identifier: property.private
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$memory.
+			identifier: property.private
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$start.
+			identifier: property.private
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Binary operation "*" between mixed and 1000 results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Binary operation "." between non-falsy-string and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: 'Binary operation "/" between mixed and (float|int) results in an error.'
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Cannot access offset 'messages' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Cannot access offset 0 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Cannot access offset 3 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Cannot access offset 5 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Cannot use array destructuring on mixed.
+			identifier: offsetAccess.nonArray
+			count: 2
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Foreach overwrites $panel with its value variable.
+			identifier: foreach.valueOverwrite
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: 'Method yii\debug\models\timeline\Svg::addPoints() has parameter $messages with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: 'Only booleans are allowed in &&, int<0, max> given on the right side.'
+			identifier: booleanAnd.rightNotBoolean
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: 'Parameter #1 $messages of method yii\debug\models\timeline\Svg::addPoints() expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: 'Part $x (mixed) of encapsed string cannot be cast to string.'
+			identifier: encapsedStringPart.nonString
+			count: 2
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: 'Part $y (mixed) of encapsed string cannot be cast to string.'
+			identifier: encapsedStringPart.nonString
+			count: 4
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Possibly invalid array key type mixed.
+			identifier: offsetAccess.invalidOffset
+			count: 2
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Property yii\debug\models\timeline\Svg::$gradient type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Property yii\debug\models\timeline\Svg::$listenMessages type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Property yii\debug\models\timeline\Svg::$points type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: Variable $y might not be defined.
+			identifier: variable.undefined
+			count: 2
+			path: src/models/timeline/Svg.php
+
+		-
+			rawMessage: 'Call to function is_array() with array will always evaluate to true.'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/panels/MailPanel.php
+
+		-
+			rawMessage: Cannot access property $dataPath on yii\debug\Module|null.
+			identifier: property.nonObject
+			count: 1
+			path: src/panels/MailPanel.php
+
+		-
+			rawMessage: Cannot access property $logTarget on yii\debug\Module|null.
+			identifier: property.nonObject
+			count: 1
+			path: src/panels/MailPanel.php
+
+		-
+			rawMessage: 'Cannot call method getUniqueId() on yii\debug\Module|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/panels/MailPanel.php
+
+		-
+			rawMessage: Casting to string something that's already string.
+			identifier: cast.useless
+			count: 3
+			path: src/panels/MailPanel.php
+
+		-
+			rawMessage: Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.
+			identifier: ternary.shortNotAllowed
+			count: 1
+			path: src/panels/MailPanel.php
+
+		-
+			rawMessage: 'Strict comparison using === between (int|string) and null will always evaluate to false.'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: src/panels/MailPanel.php
+
+		-
+			rawMessage: 'Parameter #1 $object of function get_class expects object, yii\base\Controller|null given.'
+			identifier: argument.type
+			count: 1
+			path: src/panels/RequestPanel.php
+
+		-
+			rawMessage: 'Parameter #1 $object of function get_class expects object, yii\base\Controller|null given.'
+			identifier: argument.type
+			count: 1
+			path: src/panels/RouterPanel.php
+
+		-
+			rawMessage: Binary operation "." between mixed and ' ' results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: Binary operation "." between non-falsy-string and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Call to function is_array() with array<yii\debug\Panel> will always evaluate to true.'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Call to function is_string() with string will always evaluate to true.'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: Cannot cast mixed to int.
+			identifier: cast.int
+			count: 2
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 2
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: Casting to string something that's already string.
+			identifier: cast.useless
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 3
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Offset int<0, max> might not exist on non-empty-list<(int|string)>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Offset int<1, max> might not exist on non-empty-list<(int|string)>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: PHPDoc tag @var for variable $manifest has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: PHPDoc tag @var for variable $summary has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 2
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Parameter #1 $content of static method yii\helpers\BaseHtml::encode() expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Parameter #1 $tag of closure expects string|null, int|string given.'
+			identifier: argument.type
+			count: 2
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Parameter #1 $tag of closure expects string|null, int|string|null given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.
+			identifier: ternary.shortNotAllowed
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Variable $cursorInit in isset() always exists and is not nullable.'
+			identifier: isset.variable
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: 'Variable $mode on left side of ??= always exists and is not nullable.'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/views/default/_sidebar.php
+
+		-
+			rawMessage: Access to an undefined property yii\base\ViewContextInterface::$module.
+			identifier: property.notFound
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Binary operation "*" between mixed and 1000 results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Binary operation "." between ''|' &#10;' and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Binary operation "." between mixed and ' yii-debug-row-link' results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Binary operation "/" between mixed and 1048576 results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'ajax' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'db' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'excessiveCallersCount' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'method' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'peakMemory' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'processingTime' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'sqlCount' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'statusCode' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'tag' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'time' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access offset 'url' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot access property $panels on mixed.
+			identifier: property.nonObject
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot cast mixed to int.
+			identifier: cast.int
+			count: 3
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 8
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Casting to int something that''s already int<1, max>.'
+			identifier: cast.useless
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 4
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Offset ''2xx''|''3xx''|''4xx''|''5xx'' might not exist on array{}|array{''5xx''?: int, ''4xx''?: int, ''3xx''?: int, ''2xx''?: int}.'
+			identifier: offsetAccess.notFound
+			count: 2
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Only booleans are allowed in a ternary operator condition, string given.'
+			identifier: ternary.condNotBoolean
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Parameter #1 $array of function array_unique expects an array of values castable to float, list<mixed> given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Parameter #1 $code of method yii\debug\models\search\Debug::isCodeCritical() expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Parameter #1 $count of method yii\debug\panels\DbPanel::isQueryCountCritical() expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Parameter #1 $keys of function array_combine expects an array of values castable to string, array<int, mixed> given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Parameter #1 $keys of function array_combine expects array<int|string>, array<int, mixed> given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Parameter #1 $value of method yii\i18n\Formatter::asDatetime() expects DateTimeInterface|int|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Parameter #1 $value of method yii\i18n\Formatter::asTime() expects DateTimeInterface|int|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Part $data[''sqlCount''] (mixed) of encapsed string cannot be cast to string.'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: 'Part $statusCode (mixed) of encapsed string cannot be cast to string.'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: src/views/default/index.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 1
+			path: src/views/default/panels/assets/detail.php
+
+		-
+			rawMessage: 'Binary operation "." between mixed and '' ('' results in an error.'
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: 'Call to function array_filter() requires parameter #2 to be passed to avoid loose comparison semantics.'
+			identifier: arrayFilter.strict
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'apc' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'application' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'charset' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'debug' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'env' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'language' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'memcache' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'memcached' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'name' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'php' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'sourceLanguage' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'version' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'xdebug' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Cannot access offset 'yii' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 6
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: 'Only booleans are allowed in an if condition, mixed given.'
+			identifier: if.condNotBoolean
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $content of static method yii\helpers\BaseHtml::encode() expects string, mixed given.'
+			identifier: argument.type
+			count: 8
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $locale of static method Locale::getDisplayLanguage() expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $locale of static method Locale::getDisplayRegion() expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.
+			identifier: ternary.shortNotAllowed
+			count: 4
+			path: src/views/default/panels/config/detail.php
+
+		-
+			rawMessage: Binary operation "." between mixed and ' ' results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Binary operation "/" between mixed and 1000 results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access offset 'duration' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access offset 'query' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access offset 'rows' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access offset 'seq' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access offset 'tag' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access offset 'timestamp' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access offset 'trace' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access offset 'type' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot access property $summary on yii\web\Controller|null.
+			identifier: property.nonObject
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: 'Parameter #1 $content of static method yii\helpers\BaseHtml::encode() expects string, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: 'Parameter #1 $items of static method yii\helpers\BaseHtml::ul() expects array|Traversable, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: 'Parameter #1 $options of method yii\debug\Panel::getTraceLine() expects array<string, mixed>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: 'Parameter #1 $type of static method yii\debug\panels\DbPanel::canBeExplained() expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: 'Parameter #2 ...$values of function sprintf expects bool|float|int|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: 'Strict comparison using === between mixed and null will always evaluate to false.'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: src/views/default/panels/db/queries.php
+
+		-
+			rawMessage: 'Only booleans are allowed in a ternary operator condition, int|null given.'
+			identifier: ternary.condNotBoolean
+			count: 2
+			path: src/views/default/panels/dump/detail.php
+
+		-
+			rawMessage: 'Only booleans are allowed in an elseif condition, int|false given.'
+			identifier: elseif.condNotBoolean
+			count: 2
+			path: src/views/default/panels/dump/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $options of method yii\debug\Panel::getTraceLine() expects array<string, mixed>, array<mixed> given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/dump/detail.php
+
+		-
+			rawMessage: Binary operation "-" between mixed and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Binary operation "." between '#log-' and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 2
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Binary operation "." between 'log-' and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Binary operation "/" between mixed and 1000 results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'id' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'id_of_next' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'id_of_previous' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'level' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'message' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'messages' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'time' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'time_of_previous' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 'trace' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot access offset 1 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Cannot cast mixed to int.
+			identifier: cast.int
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $items of static method yii\helpers\BaseHtml::ul() expects array|Traversable, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $level of static method yii\log\Logger::getLevelName() expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $options of method yii\debug\Panel::getTraceLine() expects array<string, mixed>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: Possibly invalid array key type mixed.
+			identifier: offsetAccess.invalidOffset
+			count: 1
+			path: src/views/default/panels/log/detail.php
+
+		-
+			rawMessage: 'Offset ''errors'' might not exist on array{all: string, errors?: string, warnings?: string}.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/panels/log/summary.php
+
+		-
+			rawMessage: Offset 0 on non-empty-list<string> on left side of ?? always exists and is not nullable.
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/views/default/panels/mail/_item.php
+
+		-
+			rawMessage: Casting to int something that's already int.
+			identifier: cast.useless
+			count: 1
+			path: src/views/default/panels/mail/detail.php
+
+		-
+			rawMessage: 'Cannot call method getUniqueId() on yii\debug\Module|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/views/default/panels/profile/detail.php
+
+		-
+			rawMessage: Access to an undefined property yii\web\Controller::$summary.
+			identifier: property.notFound
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Binary operation "." between mixed and mixed results in an error.
+			identifier: binaryOp.invalid
+			count: 2
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: 'Binary operation ".=" between '''' and mixed results in an error.'
+			identifier: assignOp.invalid
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: 'Binary operation ".=" between string and mixed results in an error.'
+			identifier: assignOp.invalid
+			count: 5
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: 'Call to function array_filter() requires parameter #2 to be passed to avoid loose comparison semantics.'
+			identifier: arrayFilter.strict
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'COOKIE' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'FILES' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'GET' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'POST' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'SERVER' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'SESSION' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'action' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'actionParams' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'flashes' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'general' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'isAjax'|'isFlash'|'isPjax'|'isSecureConnection' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'method' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'requestBody' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'requestHeaders' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'responseHeaders' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'route' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot access offset 'statusCode' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: 'Cannot call method render() on mixed.'
+			identifier: method.nonObject
+			count: 11
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot cast mixed to float.
+			identifier: cast.double
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot cast mixed to int.
+			identifier: cast.int
+			count: 2
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 3
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 2
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: 'Parameter #2 $content of static method yii\helpers\BaseHtml::tag() expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: Variable $this might not be defined.
+			identifier: variable.undefined
+			count: 11
+			path: src/views/default/panels/request/detail.php
+
+		-
+			rawMessage: 'Variable $filterable on left side of ??= always exists and is not nullable.'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/views/default/panels/request/table.php
+
+		-
+			rawMessage: 'Only booleans are allowed in an if condition, int<0, max> given.'
+			identifier: if.condNotBoolean
+			count: 1
+			path: src/views/default/panels/router/current.php
+
+		-
+			rawMessage: 'Offset ''mode'' might not exist on non-empty-array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/panels/router/rules.php
+
+		-
+			rawMessage: 'Offset ''name'' might not exist on array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/panels/router/rules.php
+
+		-
+			rawMessage: 'Offset ''route'' might not exist on array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/panels/router/rules.php
+
+		-
+			rawMessage: 'Offset ''suffix'' might not exist on non-empty-array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/panels/router/rules.php
+
+		-
+			rawMessage: 'Offset ''type'' might not exist on non-empty-array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/panels/router/rules.php
+
+		-
+			rawMessage: 'Offset ''verb'' might not exist on array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/views/default/panels/router/rules.php
+
+		-
+			rawMessage: 'Parameter #1 $content of static method yii\helpers\BaseHtml::encode() expects string, mixed given.'
+			identifier: argument.type
+			count: 5
+			path: src/views/default/panels/router/rules.php
+
+		-
+			rawMessage: 'Parameter #1 (mixed) of echo cannot be converted to string.'
+			identifier: echo.nonString
+			count: 1
+			path: src/views/default/panels/router/rules.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$memory.
+			identifier: property.private
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$svg.
+			identifier: property.private
+			count: 3
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Binary operation "/" between mixed and 1048576 results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'category' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'child' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'css' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'duration' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'info' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'left' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'memory' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'memoryDiff' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access offset 'width' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot access property $y on yii\debug\models\timeline\Svg|null.
+			identifier: property.nonObject
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Cannot call method getUniqueId() on yii\debug\Module|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Cannot call method hasPoints() on yii\debug\models\timeline\Svg|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot cast mixed to float.
+			identifier: cast.double
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot cast mixed to int.
+			identifier: cast.int
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 2
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Casting to float something that's already float.
+			identifier: cast.useless
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Casting to string something that's already string.
+			identifier: cast.useless
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Construct empty() is not allowed. Use more strict comparison.'
+			identifier: empty.notAllowed
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Negated boolean expression is always true.
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $num of function abs expects float|int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $value of static method yii\helpers\BaseStringHelper::normalizeNumber() expects float|int|string, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Parameter #1 $view of static method yii\web\AssetBundle::register() expects yii\web\View, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Parameter #2 ...$values of function sprintf expects bool|float|int|string|null, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Parameter #2 of function sprintf is expected to be float by placeholder #1 ("%%.1f"), int|string given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Parameter #3 ...$values of function sprintf expects bool|float|int|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Property yii\debug\Panel::$tag (string) on left side of ?? is not nullable.'
+			identifier: nullCoalesce.property
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Property yii\debug\models\timeline\Search::$category (string) on left side of ?? is not nullable.'
+			identifier: nullCoalesce.property
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Property yii\debug\models\timeline\Search::$duration (int) on left side of ?? is not nullable.'
+			identifier: nullCoalesce.property
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Ternary operator condition is always false.
+			identifier: ternary.alwaysFalse
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: Variable $this might not be defined.
+			identifier: variable.undefined
+			count: 1
+			path: src/views/default/panels/timeline/detail.php
+
+		-
+			rawMessage: 'Cannot call method isMainUser() on yii\debug\models\UserSwitch|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/views/default/panels/user/summary.php
+
+		-
+			rawMessage: 'Cannot call method getMainUser() on yii\debug\models\UserSwitch|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/views/default/panels/user/switch.php
+
+		-
+			rawMessage: 'Cannot call method isMainUser() on yii\debug\models\UserSwitch|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/views/default/panels/user/switch.php
+
+		-
+			rawMessage: 'Parameter #1 $model of method yii\widgets\ActiveForm::field() expects yii\base\Model, yii\debug\models\UserSwitch|null given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/panels/user/switch.php
+
+		-
+			rawMessage: Anonymous function has an unused use $phpVersion.
+			identifier: closure.unusedUse
+			count: 1
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: Anonymous function should return string but returns mixed.
+			identifier: return.type
+			count: 1
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
+			identifier: foreach.nonIterable
+			count: 2
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Call to function array_filter() requires parameter #2 to be passed to avoid loose comparison semantics.'
+			identifier: arrayFilter.strict
+			count: 3
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Call to function is_string() with string will always evaluate to true.'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 4
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: Empty array passed to foreach.
+			identifier: foreach.emptyArray
+			count: 1
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Offset ''dir'' on array{name: string, passwd: string, uid: int, gid: int, gecos: string, dir: string, shell: string} on left side of ?? always exists and is not nullable.'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Only booleans are allowed in an if condition, int<0, max>|false given.'
+			identifier: if.condNotBoolean
+			count: 2
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Only booleans are allowed in ||, int|false given on the right side.'
+			identifier: booleanOr.rightNotBoolean
+			count: 1
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Parameter #1 $content of static method yii\helpers\BaseHtml::encode() expects string, (int|string) given.'
+			identifier: argument.type
+			count: 1
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Parameter #1 $content of static method yii\helpers\BaseHtml::encode() expects string, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.
+			identifier: ternary.shortNotAllowed
+			count: 1
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Strict comparison using !== between non-empty-string and '''' will always evaluate to true.'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: 'Strict comparison using === between non-falsy-string and '''' will always evaluate to false.'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: src/views/default/phpinfo.php
+
+		-
+			rawMessage: Binary operation "/" between mixed and 1024 results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/views/layouts/main.php
+
+		-
+			rawMessage: Cannot access offset 'application' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/layouts/main.php
+
+		-
+			rawMessage: Cannot access offset 'php' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/layouts/main.php
+
+		-
+			rawMessage: Cannot access offset 'version' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/layouts/main.php
+
+		-
+			rawMessage: Cannot access offset 'yii' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/views/layouts/main.php
+
+		-
+			rawMessage: Cannot access property $data on mixed.
+			identifier: property.nonObject
+			count: 1
+			path: src/views/layouts/main.php
+
+		-
+			rawMessage: 'Cannot call method getUniqueId() on yii\base\Module|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/views/layouts/main.php
+
+		-
+			rawMessage: Cannot cast mixed to string.
+			identifier: cast.string
+			count: 5
+			path: src/views/layouts/main.php
+
+		-
+			rawMessage: 'Cannot call method getRoute() on yii\web\Controller|null.'
+			identifier: method.nonObject
+			count: 1
+			path: src/widgets/FilterBanner.php
+
+		-
+			rawMessage: Class yii\debug\widgets\FilterBanner has an uninitialized property $searchModel. Give it default value or assign it in the constructor.
+			identifier: property.uninitialized
+			count: 1
+			path: src/widgets/FilterBanner.php
+
+		-
+			rawMessage: 'Method yii\debug\widgets\FilterBanner::buildUrl() has parameter $without with no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/widgets/FilterBanner.php
+
+		-
+			rawMessage: Possibly invalid array key type mixed.
+			identifier: offsetAccess.invalidOffset
+			count: 1
+			path: src/widgets/FilterBanner.php
+
+		-
+			rawMessage: 'Method yii\debug\widgets\NavigationButton::getRoute() return type has no value type specified in iterable type array.'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: 'Method yii\debug\widgets\NavigationButton::run() should return string|void but returns mixed.'
+			identifier: return.type
+			count: 1
+			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: 'Offset int might not exist on list<(int|string)>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: 'Property yii\debug\widgets\NavigationButton::$currentTagIndex (int) does not accept int<0, max>|false.'
+			identifier: assign.propertyType
+			count: 1
+			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: 'Property yii\debug\widgets\NavigationButton::$firstTag (string) does not accept int|string|false.'
+			identifier: assign.propertyType
+			count: 1
+			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: 'Property yii\debug\widgets\NavigationButton::$lastTag (string) does not accept int|string|false.'
+			identifier: assign.propertyType
+			count: 1
+			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: Property yii\debug\widgets\NavigationButton::$manifest type has no value type specified in iterable type array.
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: 'Variable method call on $this(yii\debug\widgets\NavigationButton).'
+			identifier: method.dynamicName
+			count: 1
+			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with arguments ''object'', ''resource'' and ''Closures must be…'' will always evaluate to false.'
+			identifier: staticMethod.impossibleType
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 'args' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 'class' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 'function' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 'namespace' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 'short_class' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 0 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 4
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 1 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 16 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 6 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Offset 0 might not exist on array.
+			identifier: offsetAccess.notFound
+			count: 6
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: 'Parameter #1 $dir_handle of function closedir expects resource|null, resource|false given.'
+			identifier: argument.type
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: 'Parameter #1 $object_or_class of function is_subclass_of expects object|string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: 'Parameter #1 $stream of function fclose expects resource, (resource|false) given.'
+			identifier: argument.type
+			count: 1
+			path: tests/FlattenExceptionTest.php
+
+		-
+			rawMessage: Cannot access offset 'activePageCssClass' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: Cannot access offset 'disabledListItemSubTagOptions' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: Cannot access offset 'disabledPageCssClass' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: Cannot access offset 'linkContainerOptions' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: Cannot access offset 'linkOptions' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: Cannot access offset 'options' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: 'Offset ''options'' might not exist on array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: 'Offset ''pager'' might not exist on array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: 'Offset ''tableOptions'' might not exist on array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/GridViewConfigTest.php
+
+		-
+			rawMessage: Binary operation "." between mixed and 'cbResult' results in an error.
+			identifier: binaryOp.invalid
+			count: 1
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: Cannot access offset 'tag' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: Cannot access offset 'time' on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: Cannot access offset 0 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: Cannot access offset 1 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: Cannot access offset 2 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 2
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: 'Cannot call method loadManifest() on array|string|yii\debug\LogTarget.'
+			identifier: method.nonObject
+			count: 1
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: 'Cannot call method loadTagToPanels() on array|string|yii\debug\LogTarget.'
+			identifier: method.nonObject
+			count: 1
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: Offset 'REQUEST_TIME_FLOAT' might not exist on array<mixed>.
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: Offset 'log' might not exist on array<yii\debug\Panel>.
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: 'Parameter #2 $array of static method PHPUnit\Framework\Assert::assertArrayHasKey() expects array<mixed>|ArrayAccess<(int|string), mixed>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of static method PHPUnit\Framework\Assert::assertStringContainsString() expects string, mixed given.'
+			identifier: argument.type
+			count: 3
+			path: tests/LogTargetTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with arguments ''yii\\debug\\LogTarget'', yii\debug\LogTarget and ''Object-typed…'' will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with arguments ''yii\\web\\Application'', yii\web\Application and ''Test bootstrap must…'' will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertIsString() with string and ''actionPhpInfo must…'' will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: Cannot access offset 0 on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: Cannot access property $tag on array|string|yii\debug\LogTarget.
+			identifier: property.nonObject
+			count: 2
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Cannot call method loadManifest() on array|string|yii\debug\LogTarget.'
+			identifier: method.nonObject
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Offset ''items'' might not exist on non-empty-array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Offset ''position'' might not exist on non-empty-array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Offset ''tag'' might not exist on non-empty-array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Offset ''title'' might not exist on array<string, mixed>.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Parameter #2 $array of static method PHPUnit\Framework\Assert::assertArrayHasKey() expects array<mixed>|ArrayAccess<(int|string), mixed>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of static method PHPUnit\Framework\Assert::assertStringContainsString() expects string, mixed given.'
+			identifier: argument.type
+			count: 4
+			path: tests/ModuleTest.php
+
+		-
+			rawMessage: Cannot access property $traceLine on yii\debug\Module|null.
+			identifier: property.nonObject
+			count: 4
+			path: tests/PanelTest.php
+
+		-
+			rawMessage: Cannot access property $tracePathMappings on yii\debug\Module|null.
+			identifier: property.nonObject
+			count: 2
+			path: tests/PanelTest.php
+
+		-
+			rawMessage: 'Return type (array<string, mixed>) of method yiiunit\debug\router\controllers\BadController::actions() should be covariant with return type (array<array{class: class-string}|class-string>) of method yii\base\Controller<yii\base\Module>::actions()'
+			identifier: method.childReturnType
+			count: 1
+			path: tests/router/controllers/BadController.php
+
+		-
+			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
+			identifier: foreach.nonIterable
+			count: 3
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access an offset on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int|string on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset mixed on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $key on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $value on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $keys with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $assoc with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $json with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $key with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method FlattedString::__construct() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $json of function json_decode expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $object of class ReflectionObject constructor expects object, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function count expects array|Countable, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function intval expects array|bool|float|GMP|int|resource|SimpleXMLElement|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $array of function array_map expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $associative of function json_decode expects bool|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $flags of function json_encode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function array_search expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function in_array expects array, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_decode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_encode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #4 $flags of function json_decode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Property FlattedString::$value has no type specified.
+			identifier: missingType.property
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for mixed must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 5
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for stdClass must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::asString() is unused.'
+			identifier: method.unused
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::wrap() is unused.'
+			identifier: method.unused
+			count: 1
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Variable property access on mixed.
+			identifier: property.dynamicName
+			count: 5
+			path: tests/runtime/assets/1188319d/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
+			identifier: foreach.nonIterable
+			count: 3
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access an offset on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int|string on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset mixed on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $key on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $value on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $keys with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $assoc with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $json with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $key with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method FlattedString::__construct() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $json of function json_decode expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $object of class ReflectionObject constructor expects object, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function count expects array|Countable, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function intval expects array|bool|float|GMP|int|resource|SimpleXMLElement|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $array of function array_map expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $associative of function json_decode expects bool|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $flags of function json_encode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function array_search expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function in_array expects array, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_decode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_encode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #4 $flags of function json_decode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Property FlattedString::$value has no type specified.
+			identifier: missingType.property
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for mixed must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 5
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for stdClass must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::asString() is unused.'
+			identifier: method.unused
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::wrap() is unused.'
+			identifier: method.unused
+			count: 1
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Variable property access on mixed.
+			identifier: property.dynamicName
+			count: 5
+			path: tests/runtime/assets/422b4107/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
+			identifier: foreach.nonIterable
+			count: 3
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access an offset on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int|string on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset mixed on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $key on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $value on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $keys with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $assoc with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $json with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $key with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method FlattedString::__construct() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $json of function json_decode expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $object of class ReflectionObject constructor expects object, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function count expects array|Countable, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function intval expects array|bool|float|GMP|int|resource|SimpleXMLElement|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $array of function array_map expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $associative of function json_decode expects bool|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $flags of function json_encode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function array_search expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function in_array expects array, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_decode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_encode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #4 $flags of function json_decode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Property FlattedString::$value has no type specified.
+			identifier: missingType.property
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for mixed must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 5
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for stdClass must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::asString() is unused.'
+			identifier: method.unused
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::wrap() is unused.'
+			identifier: method.unused
+			count: 1
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Variable property access on mixed.
+			identifier: property.dynamicName
+			count: 5
+			path: tests/runtime/assets/5649c624/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
+			identifier: foreach.nonIterable
+			count: 3
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access an offset on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 5
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset int|string on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access offset mixed on mixed.
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 3
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $key on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Cannot access property $value on mixed.
+			identifier: property.nonObject
+			count: 2
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::asString() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::index() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::keys() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $keys with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::loop() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $assoc with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $json with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::parse() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $key with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $obj with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $output with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $set with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::ref() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::relate() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $depth with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $options with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::stringify() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $input with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $known with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::transform() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has no return type specified.'
+			identifier: missingType.return
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method Flatted::wrap() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Method FlattedString::__construct() has parameter $value with no type specified.'
+			identifier: missingType.parameter
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $json of function json_decode expects string, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $object of class ReflectionObject constructor expects object, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function count expects array|Countable, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #1 $value of function intval expects array|bool|float|GMP|int|resource|SimpleXMLElement|string|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $array of function array_map expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $associative of function json_decode expects bool|null, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $flags of function json_encode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function array_search expects array, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #2 $haystack of function in_array expects array, mixed given.'
+			identifier: argument.type
+			count: 2
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_decode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #3 $depth of function json_encode expects int<1, max>, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Parameter #4 $flags of function json_decode expects int, mixed given.'
+			identifier: argument.type
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Property FlattedString::$value has no type specified.
+			identifier: missingType.property
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for mixed must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 5
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Property name for stdClass must be a string, but mixed was given.'
+			identifier: property.nameNotString
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::asString() is unused.'
+			identifier: method.unused
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: 'Static method Flatted::wrap() is unused.'
+			identifier: method.unused
+			count: 1
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php
+
+		-
+			rawMessage: Variable property access on mixed.
+			identifier: property.dynamicName
+			count: 5
+			path: tests/runtime/assets/997416c0/node_modules/flatted/php/flatted.php

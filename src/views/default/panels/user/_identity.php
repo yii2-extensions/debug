@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\helpers\Icon;
 use yii\helpers\Html;
 
 /** @var \yii\web\View $this */
@@ -138,19 +139,19 @@ foreach (['id', 'username', 'name', 'email'] as $key) {
     $sections = [
         'identity' => [
             'label' => 'Identity',
-            'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg>',
+            'icon' => Icon::render('identity'),
         ],
         'security' => [
             'label' => 'Security',
-            'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9.5 12l2 2 3.5-4"/></svg>',
+            'icon' => Icon::render('security'),
         ],
         'timestamps' => [
             'label' => 'Timestamps',
-            'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+            'icon' => Icon::render('clock'),
         ],
         'other' => [
             'label' => 'Other attributes',
-            'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>',
+            'icon' => Icon::render('dots'),
         ],
     ];
 ?>

@@ -42,16 +42,6 @@ $shellData = (array) ($this->params['shellData'] ?? []);
 $useShell = in_array($shellMode, ['view', 'index'], true);
 
 if ($useShell) {
-    $svgRoot = dirname(__DIR__) . '/../assets/svg/';
-    $svgCache = [];
-    $inlineSvg = static function (string $name) use ($svgRoot, &$svgCache): string {
-        if (!isset($svgCache[$name])) {
-            $path = $svgRoot . $name;
-            $svgCache[$name] = is_file($path) ? trim((string) file_get_contents($path)) : '';
-        }
-        return $svgCache[$name];
-    };
-
     $shellPanels = is_array($shellData['panels'] ?? null) ? $shellData['panels'] : [];
     $configData = isset($shellPanels['config']) ? ($shellPanels['config']->data ?? []) : [];
     $yiiVersion = (string) ($configData['application']['yii'] ?? Yii::getVersion());
@@ -103,7 +93,6 @@ if ($useShell) {
 <?php if ($useShell): ?>
     <div class="yii-debug-page default-<?= Html::encode($shellMode) ?>">
         <?= $this->render('../default/_shell_header', [
-            'inlineSvg' => $inlineSvg,
             'debugTheme' => $resolvedTheme,
             'themeIconSun' => $themeIconSun,
             'themeIconMoon' => $themeIconMoon,
@@ -118,7 +107,6 @@ if ($useShell) {
                 'mode' => $shellMode,
                 'panels' => $shellPanels,
                 'manifest' => is_array($shellData['manifest'] ?? null) ? $shellData['manifest'] : [],
-                'inlineSvg' => $inlineSvg,
                 'activePanel' => $shellData['activePanel'] ?? null,
                 'tag' => $shellData['tag'] ?? null,
                 'summary' => $shellSummary,

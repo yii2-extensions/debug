@@ -2,28 +2,16 @@
 
 declare(strict_types=1);
 
+use yii\debug\helpers\Icon;
 use yii\helpers\Html;
 use yii\helpers\Inflector;
 
 /** @var yii\debug\panels\AssetPanel $panel */
 
-// Helper to inline SVG glyphs from src/assets/svg/. Read once per file via the cache, so the
-// 4 icons rendered in the stats strip + N bundle headers don't trigger N+4 file_get_contents.
-// __DIR__ here is src/views/default/panels/assets, so we walk up 4 levels to reach src/.
-$svgRoot = dirname(__DIR__, 4) . '/assets/svg/';
-$svgCache = [];
-$inlineSvg = static function (string $name) use ($svgRoot, &$svgCache): string {
-    if (!isset($svgCache[$name])) {
-        $path = $svgRoot . $name;
-        $svgCache[$name] = is_file($path) ? trim((string) file_get_contents($path)) : '';
-    }
-    return $svgCache[$name];
-};
-
-$cubeIcon = $inlineSvg('asset.svg');
-$cssIcon = $inlineSvg('brand-css3.svg');
-$boltIcon = $inlineSvg('bolt.svg');
-$linkIcon = $inlineSvg('link.svg');
+$cubeIcon = Icon::render('asset');
+$cssIcon = Icon::render('brand-css3');
+$boltIcon = Icon::render('bolt');
+$linkIcon = Icon::render('link');
 
 $bundles = is_array($panel->data) ? $panel->data : [];
 $totalBundles = count($bundles);

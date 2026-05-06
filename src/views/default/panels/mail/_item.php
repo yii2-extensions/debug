@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\helpers\Icon;
 use yii\helpers\Html;
 use yii\helpers\Url;
 
@@ -151,12 +152,7 @@ foreach ($recipientGroups as $g) {
                     title="Download .eml"
                     aria-label="Download .eml"
                 >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 4v12"/>
-                        <path d="M7 11l5 5 5-5"/>
-                        <path d="M5 20h14"/>
-                    </svg>
+                    <?= Icon::render('download') ?>
                 </a>
             <?php endif; ?>
         </div>
@@ -195,25 +191,14 @@ foreach ($recipientGroups as $g) {
     <?php if ($headers !== '' || $charset !== ''): ?>
         <details class="yii-debug-mail-tech">
             <summary>
-                <span class="yii-debug-mail-tech-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 6L4 12l5 6"/>
-                        <path d="M15 6l5 6-5 6"/>
-                    </svg>
-                </span>
+                <span class="yii-debug-mail-tech-icon" aria-hidden="true"><?= Icon::render('code') ?></span>
                 <span class="yii-debug-mail-tech-label">Raw headers</span>
                 <?php if ($charset !== ''): ?>
                     <span class="yii-debug-mail-tech-charset" title="Charset">
                         <?= Html::encode($charset) ?>
                     </span>
                 <?php endif; ?>
-                <span class="yii-debug-mail-tech-chevron" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 9l6 6 6-6"/>
-                    </svg>
-                </span>
+                <span class="yii-debug-mail-tech-chevron" aria-hidden="true"><?= Icon::render('chevron-down-thin') ?></span>
             </summary>
             <pre class="yii-debug-mail-headers"><?= Html::encode($headers) ?></pre>
         </details>

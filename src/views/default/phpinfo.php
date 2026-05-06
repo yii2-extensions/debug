@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\helpers\Icon;
 use yii\debug\PhpInfoAsset;
 use yii\helpers\Html;
 
@@ -254,13 +255,7 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
 
         <div class="yii-debug-phpinfo-main">
             <div class="yii-debug-phpinfo-search">
-                <span class="yii-debug-phpinfo-search-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="7"/>
-                        <path d="m21 21-4.3-4.3"/>
-                    </svg>
-                </span>
+                <span class="yii-debug-phpinfo-search-icon" aria-hidden="true"><?= Icon::render('search') ?></span>
                 <input type="search"
                     class="yii-debug-phpinfo-search-input"
                     placeholder="Filter modules + directives…"

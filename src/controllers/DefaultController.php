@@ -9,6 +9,7 @@ use UnexpectedValueException;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
 use yii\debug\{FlattenException, LogTarget};
+use yii\debug\helpers\Icon;
 use yii\debug\models\search\Debug;
 use yii\debug\Panel;
 use yii\debug\panels\{ConfigPanel, MailPanel};
@@ -547,16 +548,10 @@ class DefaultController extends Controller
 
         $theme = is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
 
-        $svgRoot = dirname(__DIR__) . '/assets/svg/';
-        $readSvg = static function (string $name) use ($svgRoot): string {
-            $path = $svgRoot . $name;
-            return is_file($path) ? trim((string) file_get_contents($path)) : '';
-        };
-
         $context = [
             'theme' => $theme,
-            'sun' => $readSvg('sun.svg'),
-            'moon' => $readSvg('moon.svg'),
+            'sun' => Icon::render('sun'),
+            'moon' => Icon::render('moon'),
         ];
 
         $view = $this->view;

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\helpers\Icon;
 use yii\debug\widgets\NavigationButton;
 use yii\helpers\Html;
 
@@ -169,10 +170,10 @@ if ($showCard) {
                 // oldest at bottom): chevrons-up = jump to top, chevron-up = step up (newer),
                 // chevron-down = step down (older), chevrons-down = jump to bottom. Tooltips
                 // (`title` + `aria-label`) keep the textual meaning available for hover and AT.
-                $iconFirst = $inlineSvg('chevrons-up.svg');
-        $iconPrev = $inlineSvg('chevron-up.svg');
-        $iconNext = $inlineSvg('chevron-down.svg');
-        $iconLatest = $inlineSvg('chevrons-down.svg');
+                $iconFirst = Icon::render('chevrons-up');
+        $iconPrev = Icon::render('chevron-up');
+        $iconNext = Icon::render('chevron-down');
+        $iconLatest = Icon::render('chevrons-down');
         $iconBtnClass = 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-icon';
         ?>
                 <div class="yii-debug-request-nav-row" role="group">
@@ -214,7 +215,7 @@ if ($showCard) {
 
     <nav class="yii-debug-nav yii-debug-nav-iconed" aria-label="Debug panels">
         <?php
-        $historyIcon = $inlineSvg('history.svg');
+        $historyIcon = Icon::render('history');
 $historyClasses = ['yii-debug-nav-link'];
 if ($mode === 'index') {
     $historyClasses[] = 'is-active';
@@ -248,7 +249,7 @@ if ($mode === 'view' && is_string($tag ?? null) && $tag !== '') {
 
             $iconKey = $panel->getToolbarIcon();
             $iconSvg = is_string($iconKey) && $iconKey !== ''
-                ? $inlineSvg($iconKey . '.svg')
+                ? Icon::render($iconKey)
                 : '';
 
             $isActive = $mode === 'view' && $panel === $activePanel;

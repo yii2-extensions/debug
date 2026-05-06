@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\helpers\Icon;
 use yii\helpers\Html;
 use yii\helpers\Url;
 
@@ -11,8 +12,6 @@ use yii\helpers\Url;
  * to the top-of-page chrome happens in one file.
  *
  * @var \yii\web\View $this
- * @var Closure(string): string $inlineSvg Closure that resolves an SVG glyph by filename and
- *      returns its inline markup (or '' when missing).
  * @var string $debugTheme Resolved theme key, `'light'` or `'dark'`.
  * @var string $themeIconSun Pre-loaded sun glyph from the controller.
  * @var string $themeIconMoon Pre-loaded moon glyph.
@@ -25,16 +24,16 @@ use yii\helpers\Url;
  */
 
 $themeChipIcon = $debugTheme === 'dark' ? $themeIconSun : $themeIconMoon;
-$configIcon = $inlineSvg('config.svg');
+$configIcon = Icon::render('config');
 ?>
 <header class="yii-debug-brand-bar">
     <a class="yii-debug-brand-chip yii-debug-brand-chip-yii" href="<?= Url::to(['index']) ?>">
-        <span class="yii-debug-brand-icon"><?= $inlineSvg('yii.svg') ?></span>
+        <span class="yii-debug-brand-icon"><?= Icon::render('yii') ?></span>
         <span class="yii-debug-brand-label">Yii</span>
         <span class="yii-debug-brand-value"><?= Html::encode($yiiVersion) ?></span>
     </a>
     <div class="yii-debug-brand-chip yii-debug-brand-chip-php">
-        <span class="yii-debug-brand-icon"><?= $inlineSvg('php-alt.svg') ?></span>
+        <span class="yii-debug-brand-icon"><?= Icon::render('php-alt') ?></span>
         <span class="yii-debug-brand-value"><?= Html::encode($phpVersion) ?></span>
     </div>
     <?php if ($peakMemory !== null): ?>
