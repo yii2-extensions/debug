@@ -12,6 +12,10 @@ parameters:
         - src
         - tests
 
+    excludePaths:
+        - */node_modules/*
+        - tests/runtime/*
+
     tmpDir: %currentWorkingDirectory%/runtime
 
     # Enable strict advanced checks
