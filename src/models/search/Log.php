@@ -12,28 +12,25 @@ namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
+use yii\debug\GridViewConfig;
 
 /**
  * Search model for current request log.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- * @author Mark Jebri <mark.github@yandex.ru>
- * @since 2.0
  */
 class Log extends Base
 {
     /**
-     * @var string method attribute input search value
+     * Category attribute input search value.
      */
-    public $category;
+    public string $category = '';
     /**
-     * @var string ip attribute input search value
+     * Level attribute input search value.
      */
-    public $level;
+    public string $level = '';
     /**
-     * @var int message attribute input search value
+     * Message attribute input search value.
      */
-    public $message;
+    public string $message = '';
 
     public function attributeLabels()
     {
@@ -55,38 +52,38 @@ class Log extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array<int|string, mixed> $params an array of parameter values indexed by parameter names
-     * @param array<int, array<string, mixed>> $models data to return provider for
+     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names.
+     * @param array<int, array<string, mixed>> $models Data to return provider for.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
-        $dataProvider = new ArrayDataProvider([
-            'allModels' => $models,
-            'pagination' => \yii\debug\GridViewConfig::paginationFromRequest(50),
-            'sort' => [
-                'attributes' => [
-                    'time',
-                    'time_since_previous' => [
-                        'default' => SORT_DESC,
+        $dataProvider = new ArrayDataProvider(
+            [
+                'allModels' => $models,
+                'pagination' => GridViewConfig::paginationFromRequest(50),
+                'sort' => [
+                    'attributes' => [
+                        'time',
+                        'time_since_previous' => ['default' => SORT_DESC],
+                        'level',
+                        'category',
+                        'message',
                     ],
-                    'level',
-                    'category',
-                    'message',
-                ],
-                'defaultOrder' => [
-                    'time' => SORT_ASC,
+                    'defaultOrder' => ['time' => SORT_ASC],
                 ],
             ],
-        ]);
+        );
 
         if (!($this->load($params) && $this->validate())) {
             return $dataProvider;
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'level');
         $this->addCondition($filter, 'category', true);
         $this->addCondition($filter, 'message', true);
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

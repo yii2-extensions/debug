@@ -13,28 +13,24 @@ namespace yii\debug\models\search;
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 
-/**
- * @author Paul Klimov <klimov.paul@gmail.com>
- * @since 2.0.14
- */
 class Event extends Base
 {
     /**
-     * @var string|null event class attribute input search value
+     * Event class attribute input search value.
      */
-    public $class;
+    public string $class = '';
     /**
-     * @var bool|null whether event is static or not.
+     * Static-event filter input search value (`'1'`, `'0'`, or empty for no filter).
      */
-    public $isStatic;
+    public string $isStatic = '';
     /**
-     * @var string|null event name attribute input search value
+     * Event name attribute input search value.
      */
-    public $name;
+    public string $name = '';
     /**
-     * @var string|null sender class attribute input search value
+     * Sender class attribute input search value.
      */
-    public $senderClass;
+    public string $senderClass = '';
 
     public function attributeLabels()
     {
@@ -59,31 +55,38 @@ class Event extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array<int|string, mixed> $params an array of parameter values indexed by parameter names
-     * @param array<int, array<string, mixed>> $models data to return provider for
+     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names.
+     * @param array<int, array<string, mixed>> $models Data to return provider for.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
-        $dataProvider = new ArrayDataProvider([
-            'allModels' => $models,
-            'pagination' => \yii\debug\GridViewConfig::paginationFromRequest(50),
-            'sort' => [
-                'attributes' => ['time', 'level', 'category', 'message'],
-                'defaultOrder' => [
-                    'time' => SORT_ASC,
+        $dataProvider = new ArrayDataProvider(
+            [
+                'allModels' => $models,
+                'pagination' => \yii\debug\GridViewConfig::paginationFromRequest(50),
+                'sort' => [
+                    'attributes' => [
+                        'time',
+                        'level',
+                        'category',
+                        'message',
+                    ],
+                    'defaultOrder' => ['time' => SORT_ASC],
                 ],
             ],
-        ]);
+        );
 
         if (!($this->load($params) && $this->validate())) {
             return $dataProvider;
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'isStatic');
         $this->addCondition($filter, 'name', true);
         $this->addCondition($filter, 'class', true);
         $this->addCondition($filter, 'senderClass', true);
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

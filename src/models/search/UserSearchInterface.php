@@ -14,11 +14,8 @@ use yii\data\DataProviderInterface;
 use yii\web\IdentityInterface;
 
 /**
- * UserSearchInterface is the interface that should be implemented by a class
- * providing identity information and search method.
- *
- * @author Semen Dubina <yii2debug@sam002.net>
- * @since 2.0.10
+ * UserSearchInterface is the interface that should be implemented by a class providing identity information and search
+ * method.
  */
 interface UserSearchInterface extends IdentityInterface
 {

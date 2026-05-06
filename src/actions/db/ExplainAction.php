@@ -26,7 +26,7 @@ class ExplainAction extends Action
      * @param string $seq Sequence number of the log message to explain.
      * @param string $tag Tag of the log message to explain.
      *
-     * @throws HttpException if the controller is not an instance of DefaultController, or if the log message is not
+     * @throws HttpException if the controller is not an instance of DefaultController, or if the log message is not.
      * found.
      *
      * @return string Rendered view with the EXPLAIN results.

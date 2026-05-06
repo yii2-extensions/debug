@@ -44,15 +44,15 @@ class DefaultController extends Controller
     /**
      * @var array<string, array<string, mixed>>|null Manifest of available debug data.
      */
-    private $manifest = null;
+    private array|null $manifest = null;
 
     /**
      * Download mail file action.
      *
      * @throws NotFoundHttpException if the mail file is not found or invalid.
      *
-     * @return Response Response containing the mail file for download, or a console response if run in a
-     * console application.
+     * @return Response Response containing the mail file for download, or a console response if run in a console
+     * application.
      */
     public function actionDownloadMail(string $file): Response
     {
@@ -272,7 +272,8 @@ class DefaultController extends Controller
      *
      * @throws NotFoundHttpException if debug data not found.
      *
-     * @return string Response from the panel's view or the rendered view if the panel does not provide its own response.
+     * @return string Response from the panel's view or the rendered view if the panel does not provide its own
+     * response.
      *
      * @see \yii\debug\Panel
      */

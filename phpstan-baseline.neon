@@ -793,12 +793,6 @@ parameters:
 			path: src/models/UserSwitch.php
 
 		-
-			rawMessage: 'Strict comparison using !== between class-string<yii\web\IdentityInterface> and null will always evaluate to true.'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: src/models/search/User.php
-
-		-
 			rawMessage: Access to private property yii\debug\panels\TimelinePanel::$colors.
 			identifier: property.private
 			count: 1

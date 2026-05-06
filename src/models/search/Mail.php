@@ -15,52 +15,49 @@ use yii\debug\components\search\Filter;
 
 /**
  * Mail represents the model behind the search form about current send emails.
- *
- * @author Mark Jebri <mark.github@yandex.ru>
- * @since 2.0
  */
 class Mail extends Base
 {
     /**
-     * @var string bcc attribute input search value
+     * BCC attribute input search value.
      */
-    public $bcc;
+    public string $bcc = '';
     /**
-     * @var string body attribute input search value
+     * Body attribute input search value.
      */
-    public $body;
+    public string $body = '';
     /**
-     * @var string cc attribute input search value
+     * CC attribute input search value.
      */
-    public $cc;
+    public string $cc = '';
     /**
-     * @var string charset attribute input search value
+     * Charset attribute input search value.
      */
-    public $charset;
+    public string $charset = '';
     /**
-     * @var string file attribute input search value
+     * File attribute input search value.
      */
-    public $file;
+    public string $file = '';
     /**
-     * @var string from attribute input search value
+     * From attribute input search value.
      */
-    public $from;
+    public string $from = '';
     /**
-     * @var string headers attribute input search value
+     * Headers attribute input search value.
      */
-    public $headers;
+    public string $headers = '';
     /**
-     * @var string reply attribute input search value
+     * Reply attribute input search value.
      */
-    public $reply;
+    public string $reply = '';
     /**
-     * @var string subject attribute input search value
+     * Subject attribute input search value.
      */
-    public $subject;
+    public string $subject = '';
     /**
-     * @var string to attribute input search value
+     * To attribute input search value.
      */
-    public $to;
+    public string $to = '';
 
     public function attributeLabels()
     {
@@ -90,21 +87,31 @@ class Mail extends Base
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
-        $dataProvider = new ArrayDataProvider([
-            'allModels' => $models,
-            'pagination' => [
-                'pageSize' => 20,
+        $dataProvider = new ArrayDataProvider(
+            [
+                'allModels' => $models,
+                'pagination' => ['pageSize' => 20],
+                'sort' => [
+                    'attributes' => [
+                        'from',
+                        'to',
+                        'reply',
+                        'cc',
+                        'bcc',
+                        'subject',
+                        'body',
+                        'charset',
+                    ],
+                ],
             ],
-            'sort' => [
-                'attributes' => ['from', 'to', 'reply', 'cc', 'bcc', 'subject', 'body', 'charset'],
-            ],
-        ]);
+        );
 
         if (!($this->load($params) && $this->validate())) {
             return $dataProvider;
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'from', true);
         $this->addCondition($filter, 'to', true);
         $this->addCondition($filter, 'reply', true);
@@ -113,6 +120,7 @@ class Mail extends Base
         $this->addCondition($filter, 'subject', true);
         $this->addCondition($filter, 'body', true);
         $this->addCondition($filter, 'charset', true);
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

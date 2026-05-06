@@ -10,28 +10,28 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+use Yii;
+use yii\base\InvalidConfigException;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use yii\db\ActiveRecord;
 
 /**
  * Search model for implementation of IdentityInterface
- *
- * @author Semen Dubina <yii2debug@sam002.net>
- * @since 2.0.10
  */
 class User extends Model
 {
     /**
-     * @var Model|null implementation of IdentityInterface
+     * Implementation of `IdentityInterface` resolved from the configured user component.
      */
-    public $identityImplement = null;
+    public Model|null $identityImplement = null;
 
     public function __get($name)
     {
         if ($this->identityImplement === null) {
             return null;
         }
+
         return $this->identityImplement->__get($name);
     }
 
@@ -40,6 +40,7 @@ class User extends Model
         if ($this->identityImplement === null) {
             return;
         }
+
         $this->identityImplement->__set($name, $value);
     }
 
@@ -48,21 +49,22 @@ class User extends Model
         if ($this->identityImplement === null) {
             return [];
         }
+
         return $this->identityImplement->attributes();
     }
 
     public function init(): void
     {
-        $user = \Yii::$app->user ?? null;
+        $user = Yii::$app->user ?? null;
+
         if ($user !== null) {
-            $identityClass = $user->identityClass;
-            if ($identityClass !== null) {
-                $identityImplementation = new $identityClass();
-                if ($identityImplementation instanceof Model) {
-                    $this->identityImplement = $identityImplementation;
-                }
+            $identityImplementation = new ($user->identityClass)();
+
+            if ($identityImplementation instanceof Model) {
+                $this->identityImplement = $identityImplementation;
             }
         }
+
         parent::init();
     }
 
@@ -71,13 +73,15 @@ class User extends Model
         if ($this->identityImplement === null) {
             return [];
         }
+
         return [[array_keys($this->identityImplement->getAttributes()), 'safe']];
     }
 
     /**
      * @param array<int|string, mixed> $params
      *
-     * @throws \yii\base\InvalidConfigException
+     * @throws InvalidConfigException if the user component is not properly configured or the identity class does not
+     * implement ActiveRecord.
      */
     public function search(array $params): ActiveDataProvider|null
     {
@@ -93,15 +97,14 @@ class User extends Model
      *
      * @param array<int|string, mixed> $params the data array to load model.
      *
-     * @throws \yii\base\InvalidConfigException
+     * @throws InvalidConfigException if the user component is not properly configured or the identity class does not
+     * implement ActiveRecord.
      */
     private function searchActiveDataProvider(array $params, ActiveRecord $model): ActiveDataProvider
     {
         $query = $model::find();
 
-        $dataProvider = new ActiveDataProvider([
-            'query' => $query,
-        ]);
+        $dataProvider = new ActiveDataProvider(['query' => $query]);
 
         if (!($this->load($params) && $this->validate())) {
             return $dataProvider;
@@ -109,6 +112,7 @@ class User extends Model
 
         foreach ($model::getTableSchema()->columns as $attribute => $column) {
             $name = (string) $attribute;
+
             if ($column->phpType === 'string') {
                 $query->andFilterWhere(['like', $name, $model->getAttribute($name)]);
             } else {

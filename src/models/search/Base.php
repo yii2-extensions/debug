@@ -14,20 +14,19 @@ use yii\base\Model;
 use yii\debug\components\search\Filter;
 use yii\debug\components\search\matchers;
 
+use function is_scalar;
+
 /**
- * Base search model
- *
- * @author Mark Jebri <mark.github@yandex.ru>
- * @since 2.0
+ * Base search model.
  */
 class Base extends Model
 {
     /**
      * Adds filtering condition for a given attribute.
      *
-     * @param Filter $filter filter instance
-     * @param string $attribute attribute to filter
-     * @param bool $partial if partial match should be used
+     * @param Filter $filter Filter instance.
+     * @param string $attribute Attribute to filter.
+     * @param bool $partial If partial match should be used.
      */
     public function addCondition(Filter $filter, string $attribute, bool $partial = false): void
     {
@@ -36,9 +35,11 @@ class Base extends Model
 
         if (mb_strpos($value, '>') !== false) {
             $value = (int) str_replace('>', '', $value);
+
             $filter->addMatcher($attribute, new matchers\GreaterThan(['value' => $value]));
         } elseif (mb_strpos($value, '<') !== false) {
             $value = (int) str_replace('<', '', $value);
+
             $filter->addMatcher($attribute, new matchers\LowerThan(['value' => $value]));
         } else {
             $filter->addMatcher($attribute, new matchers\SameAs(['value' => $value, 'partial' => $partial]));

@@ -12,52 +12,51 @@ namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
+use yii\debug\GridViewConfig;
 
 /**
  * Search model for requests manifest data.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- * @author Mark Jebri <mark.github@yandex.ru>
- * @since 2.0
  */
 class Debug extends Base
 {
     /**
-     * @var int ajax attribute input search value
+     * Ajax attribute input search value.
      */
-    public $ajax;
+    public string $ajax = '';
     /**
-     * @var array<int, int> critical codes, used to determine grid row options.
+     * Critical status codes used to flag grid rows as severe.
+     *
+     * @var list<int>
      */
-    public $criticalCodes = [400, 404, 500];
+    public array $criticalCodes = [400, 404, 500];
     /**
-     * @var string ip attribute input search value
+     * IP attribute input search value.
      */
-    public $ip;
+    public string $ip = '';
     /**
-     * @var int total mail count attribute input search value
+     * Mail count attribute input search value.
      */
-    public $mailCount;
+    public string $mailCount = '';
     /**
-     * @var string method attribute input search value
+     * Method attribute input search value.
      */
-    public $method;
+    public string $method = '';
     /**
-     * @var int sql count attribute input search value
+     * SQL count attribute input search value.
      */
-    public $sqlCount;
+    public string $sqlCount = '';
     /**
-     * @var string status code attribute input search value
+     * Status code attribute input search value.
      */
-    public $statusCode;
+    public string $statusCode = '';
     /**
-     * @var string tag attribute input search value
+     * Tag attribute input search value.
      */
-    public $tag;
+    public string $tag = '';
     /**
-     * @var string url attribute input search value
+     * URL attribute input search value.
      */
-    public $url;
+    public string $url = '';
 
     public function attributeLabels()
     {
@@ -93,24 +92,37 @@ class Debug extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array<int|string, mixed> $params an array of parameter values indexed by parameter names
-     * @param array<int, array<string, mixed>> $models data to return provider for
+     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names
+     * @param array<int, array<string, mixed>> $models Sata to return provider for
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
-        $dataProvider = new ArrayDataProvider([
-            'allModels' => $models,
-            'sort' => [
-                'attributes' => ['method', 'ip', 'tag', 'time', 'statusCode', 'sqlCount', 'mailCount', 'processingTime', 'peakMemory'],
+        $dataProvider = new ArrayDataProvider(
+            [
+                'allModels' => $models,
+                'sort' => [
+                    'attributes' => [
+                        'method',
+                        'ip',
+                        'tag',
+                        'time',
+                        'statusCode',
+                        'sqlCount',
+                        'mailCount',
+                        'processingTime',
+                        'peakMemory',
+                    ],
+                ],
+                'pagination' => GridViewConfig::paginationFromRequest(50),
             ],
-            'pagination' => \yii\debug\GridViewConfig::paginationFromRequest(50),
-        ]);
+        );
 
         if (!($this->load($params) && $this->validate())) {
             return $dataProvider;
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'tag', true);
         $this->addCondition($filter, 'ip', true);
         $this->addCondition($filter, 'method');
@@ -119,6 +131,7 @@ class Debug extends Base
         $this->addCondition($filter, 'statusCode');
         $this->addCondition($filter, 'sqlCount');
         $this->addCondition($filter, 'mailCount');
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;

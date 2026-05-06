@@ -34,9 +34,9 @@ class Filter extends Component
     /**
      * Applies filter on a given array and returns filtered data.
      *
-     * @param array<int, array<string, mixed>> $data data to filter
+     * @param array<int, array<string, mixed>> $data Data to filter.
      *
-     * @return array<int, array<string, mixed>> filtered data
+     * @return array<int, array<string, mixed>> Filtered data.
      */
     public function filter(array $data): array
     {
@@ -54,7 +54,7 @@ class Filter extends Component
     /**
      * Checks if the given data satisfies filters.
      *
-     * @param array<string, mixed> $row data
+     * @param array<string, mixed> $row Data to check.
      */
     private function passesFilter(array $row): bool
     {

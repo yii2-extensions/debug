@@ -37,7 +37,8 @@ class CurrentRoute extends Model
      */
     public string|null $message = null;
     /**
-     * @var array<int, array{0: mixed, 1: int, 2?: string, 3?: float, 4?: array<int, array<string, mixed>>}> logged messages.
+     * @var array<int, array{0: mixed, 1: int, 2?: string, 3?: float, 4?: array<int, array<string, mixed>>}> logged
+     * messages.
      */
     public array $messages = [];
     /**
