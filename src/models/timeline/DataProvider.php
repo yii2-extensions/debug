@@ -10,155 +10,233 @@ declare(strict_types=1);
 
 namespace yii\debug\models\timeline;
 
+use RuntimeException;
 use yii\data\ArrayDataProvider;
 use yii\debug\panels\TimelinePanel;
 
+use function is_array;
+use function is_numeric;
+use function sprintf;
+
 /**
  * DataProvider implements a data provider based on a data array.
- *
- * @property array $rulers
- *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- * @since 2.0.8
  */
 class DataProvider extends ArrayDataProvider
 {
-    /**
-     * @var TimelinePanel
-     */
-    protected $panel;
+    protected TimelinePanel|null $panel = null;
 
     /**
-     * @param array $config
+     * @param array<string, mixed> $config
      */
-    public function __construct(TimelinePanel $panel, $config = [])
+    public function __construct(TimelinePanel $panel, array $config = [])
     {
         $this->panel = $panel;
+
         parent::__construct($config);
     }
 
     /**
-     * Getting HEX color based on model duration
-     * @param array $model
-     * @return string
+     * Returns the HEX color associated with the model duration bucket.
+     *
+     * @param array<array-key, mixed> $model
      */
-    public function getColor($model)
+    public function getColor(array $model): string
     {
-        $width = $model['css']['width'] ?? $this->getWidth($model);
-        foreach ($this->panel->colors as $percent => $color) {
-            if ($width >= $percent) {
+        $width = self::cssNumber($model, 'width') ?? $this->getWidth($model);
+
+        foreach ($this->panel()->getColors() as $percent => $color) {
+            if ($width >= (float) $percent) {
                 return $color;
             }
         }
+
         return '#d6e685';
     }
 
     /**
-     * Returns item, css class
-     * @param array $model
-     * @return string
+     * Returns the CSS class describing the item's left/right alignment within its row.
+     *
+     * @param array<array-key, mixed> $model
      */
-    public function getCssClass($model)
+    public function getCssClass(array $model): string
     {
-        $class = 'time';
-        $class .= (($model['css']['left'] > 15) && ($model['css']['left'] + $model['css']['width'] > 50)) ? ' right' : ' left';
-        return $class;
+        $left = self::cssNumber($model, 'left') ?? 0.0;
+        $width = self::cssNumber($model, 'width') ?? 0.0;
+
+        return 'time' . (($left > 15) && ($left + $width > 50) ? ' right' : ' left');
     }
 
     /**
-     * Returns the offset left item, percentage of the total width
-     * @param array $model
-     * @return float
+     * Returns the offset left of the item, expressed as a percentage of the total width.
+     *
+     * @param array<array-key, mixed> $model
      */
-    public function getLeft($model)
+    public function getLeft(array $model): float
     {
-        return $this->getTime($model) / ($this->panel->duration / 100);
+        return $this->getTime($model) / ($this->panel()->getDuration() / 100);
     }
 
     /**
-     * ```php
-     * [
-     *   0 => string, memory usage (MB)
-     *   1 => float, Y position (percent)
-     * ]
-     * @param array $model
-     * @return array|null
+     * Returns memory usage as `[formatted_mb, y_position_percent]`, or `null` when no memory entry exists.
+     *
+     * @param array<array-key, mixed> $model
+     *
+     * @return array{0: string, 1: float}|null
      */
-    public function getMemory($model)
+    public function getMemory(array $model): array|null
     {
-        if (empty($model['memory'])) {
+        $memory = $model['memory'] ?? null;
+
+        if (!is_numeric($memory)) {
+            return null;
+        }
+
+        $memoryFloat = (float) $memory;
+
+        if ($memoryFloat <= 0.0) {
             return null;
         }
 
         return [
-            sprintf('%.2f MB', $model['memory'] / 1048576),
-            $model['memory'] / ($this->panel->memory / 100),
+            sprintf('%.2f MB', $memoryFloat / 1048576),
+            $memoryFloat / ($this->panel()->getMemory() / 100),
         ];
     }
 
     /**
-     * ruler items, key milliseconds, value offset left
-     * @param int $line number of columns
-     * @return array
+     * Returns ruler tick positions keyed by milliseconds with their offset-left percentage as the value.
+     *
+     * @return array<int, float>
      */
-    public function getRulers($line = 10)
+    public function getRulers(int $line = 10): array
     {
         if ($line === 0) {
             return [];
         }
-        $data = [0];
-        $percent = ($this->panel->duration / 100);
-        $row = $this->panel->duration / $line;
+
+        $duration = $this->panel()->getDuration();
+
+        $percent = $duration / 100;
+        $row = $duration / $line;
         $precision = $row > 100 ? -2 : -1;
+        $data = [0 => 0.0];
+
         for ($i = 1; $i < $line; $i++) {
-            $ms = round($i * $row, $precision);
+            $ms = (int) round($i * $row, $precision);
+
             $data[$ms] = $ms / $percent;
         }
+
         return $data;
     }
 
     /**
-     * Returns item duration, milliseconds
-     * @param array $model
-     * @return float
+     * Returns the item's elapsed time relative to the request start, in milliseconds.
+     *
+     * @param array<array-key, mixed> $model
      */
-    public function getTime($model)
+    public function getTime(array $model): float
     {
-        return $model['timestamp'] - $this->panel->start;
+        $timestamp = $model['timestamp'] ?? 0;
+
+        return (is_numeric($timestamp) ? (float) $timestamp : 0.0) - $this->panel()->getStart();
     }
 
     /**
-     * Returns item width percent of the total width
-     * @param array $model
-     * @return float
+     * Returns the item's width as a percentage of the total request duration.
+     *
+     * @param array<array-key, mixed> $model
      */
-    public function getWidth($model)
+    public function getWidth(array $model): float
     {
-        return $model['duration'] / ($this->panel->duration / 100);
+        $duration = $model['duration'] ?? 0;
+
+        return (is_numeric($duration) ? (float) $duration : 0.0) / ($this->panel()->getDuration() / 100);
     }
 
-    protected function prepareModels()
+    /**
+     * @return list<array<array-key, mixed>>
+     */
+    protected function prepareModels(): array
     {
-        if (($models = $this->allModels) === null) {
+        $rawModels = $this->allModels;
+
+        if ($rawModels === []) {
             return [];
         }
+
+        /** @var array<int|string, array<string, mixed>> $models */
+        $models = [];
+
+        foreach ($rawModels as $key => $rawModel) {
+            if (is_array($rawModel)) {
+                $models[$key] = $rawModel;
+            }
+        }
+
         $child = [];
+
         foreach ($models as $key => &$model) {
-            $model['timestamp'] *= 1000;
-            $model['duration'] *= 1000;
+            $rawTimestamp = $model['timestamp'] ?? 0;
+            $rawDuration = $model['duration'] ?? 0;
+
+            $timestamp = (is_numeric($rawTimestamp) ? (float) $rawTimestamp : 0.0) * 1000;
+            $duration = (is_numeric($rawDuration) ? (float) $rawDuration : 0.0) * 1000;
+
+            $model['timestamp'] = $timestamp;
+            $model['duration'] = $duration;
             $model['child'] = 0;
-            $model['css']['width'] = $this->getWidth($model);
-            $model['css']['left'] = $this->getLeft($model);
-            $model['css']['color'] = $this->getColor($model);
-            foreach ($child as $id => $timestamp) {
-                if ($timestamp > $model['timestamp']) {
-                    ++$models[$id]['child'];
+            $model['css'] = [
+                'width' => $this->getWidth($model),
+                'left' => $this->getLeft($model),
+                'color' => $this->getColor($model),
+            ];
+
+            foreach ($child as $id => $closesAt) {
+                if ($closesAt > $timestamp) {
+                    $existing = $models[$id]['child'] ?? 0;
+
+                    $models[$id]['child'] = (is_numeric($existing) ? (int) $existing : 0) + 1;
                 } else {
                     unset($child[$id]);
                 }
             }
-            $child[$key] = $model['timestamp'] + $model['duration'];
+
+            $child[$key] = $timestamp + $duration;
         }
-        return $models;
+
+        unset($model);
+
+        return array_values($models);
+    }
+
+    /**
+     * Returns a numeric value from `$model['css'][$key]`, or `null` when the entry is missing or non-numeric.
+     *
+     * @param array<array-key, mixed> $model
+     */
+    private static function cssNumber(array $model, string $key): float|null
+    {
+        $css = $model['css'] ?? null;
+
+        if (!is_array($css)) {
+            return null;
+        }
+
+        $value = $css[$key] ?? null;
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
+    /**
+     * Returns the bound {@see TimelinePanel}, asserting that it has been set by the constructor.
+     */
+    private function panel(): TimelinePanel
+    {
+        if ($this->panel === null) {
+            throw new RuntimeException('TimelinePanel has not been set on the data provider.');
+        }
+
+        return $this->panel;
     }
 }

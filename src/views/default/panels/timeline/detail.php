@@ -16,7 +16,7 @@ TimelineAsset::register($this);
 $totalDuration = (float) $panel->getDuration();
 $models = $dataProvider->models;
 $hasData = $models !== [];
-$peakMemoryMB = sprintf('%.2f MB', (float) $panel->memory / 1048576);
+$peakMemoryMB = sprintf('%.2f MB', (float) $panel->getMemory() / 1048576);
 
 // Category → color variant: deterministic mapping so the same span keeps the same hue
 // across renders, while still using design-system tokens (no hardcoded greens).
@@ -161,11 +161,12 @@ $showEmptyHint = !$hasData;
         <?php endforeach; ?>
     </div>
 
-    <?php if ($panel->svg->hasPoints()): ?>
+    <?php $svg = $panel->getSvg(); ?>
+    <?php if ($svg->hasPoints()): ?>
         <footer class="yii-debug-tl-memory">
             <span class="yii-debug-tl-memory-label">Memory</span>
-            <div class="yii-debug-tl-memory-track" style="height: <?= StringHelper::normalizeNumber($panel->svg->y) ?>px;">
-                <?= $panel->svg ?>
+            <div class="yii-debug-tl-memory-track" style="height: <?= StringHelper::normalizeNumber($svg->y) ?>px;">
+                <?= $svg ?>
             </div>
             <span class="yii-debug-tl-memory-peak"><?= Html::encode($peakMemoryMB) ?></span>
         </footer>

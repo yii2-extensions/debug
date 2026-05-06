@@ -17,29 +17,32 @@ use yii\debug\panels\TimelinePanel;
 
 /**
  * Search model for timeline data.
- *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- * @since 2.0.8
  */
 class Search extends Base
 {
     /**
-     * @var string attribute search
+     * Category attribute input search value.
      */
-    public $category;
+    public string $category = '';
     /**
-     * @var int attribute search
+     * Minimum duration filter value (milliseconds), as submitted by the form.
      */
-    public $duration = 0;
+    public string $duration = '';
 
-    public function attributeLabels()
+    /**
+     * @return array<string, string>
+     */
+    public function attributeLabels(): array
     {
         return [
             'duration' => 'Duration ≥',
         ];
     }
 
-    public function rules()
+    /**
+     * @return array<int, array<int|string, mixed>>
+     */
+    public function rules(): array
     {
         return [
             [['category', 'duration'], 'safe'],
@@ -49,27 +52,38 @@ class Search extends Base
     /**
      * Returns data provider with filled models. Filter applied if needed.
      *
-     * @param array<int|string, mixed> $params an array of parameter values indexed by parameter names
+     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names.
      */
     public function search(array $params, TimelinePanel $panel): DataProvider
     {
         $models = $panel->getModels();
-        $dataProvider = new DataProvider($panel, [
-            'allModels' => $models,
-            'sort' => [
-                'attributes' => ['category', 'timestamp'],
+        $dataProvider = new DataProvider(
+            $panel,
+            [
+                'allModels' => $models,
+                'sort' => [
+                    'attributes' => [
+                        'category',
+                        'timestamp',
+                    ],
+                ],
             ],
-        ]);
+        );
 
         if (!($this->load($params) && $this->validate())) {
             return $dataProvider;
         }
 
         $filter = new Filter();
+
         $this->addCondition($filter, 'category', true);
-        if ($this->duration > 0) {
-            $filter->addMatcher('duration', new GreaterThanOrEqual(['value' => $this->duration / 1000]));
+
+        $duration = (float) $this->duration;
+
+        if ($duration > 0) {
+            $filter->addMatcher('duration', new GreaterThanOrEqual(['value' => $duration / 1000]));
         }
+
         $dataProvider->allModels = $filter->filter($models);
 
         return $dataProvider;
