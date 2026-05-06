@@ -36,7 +36,7 @@ jobs:
       - name: Build assets.
         run: npm run build
 
-      # Surface drift between assets/src/ edits and the committed dist/ as a warning while the pipeline stabilises.
+      # Surface drift between resources/src/ edits and the committed dist/ as a warning while the pipeline stabilises.
       # Promote to a hard failure (drop continue-on-error) once a full release cycle confirms reproducibility.
       - name: Detect dist drift.
         continue-on-error: true

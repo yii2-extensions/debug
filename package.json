@@ -6,12 +6,12 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "format": "prettier --write 'assets/src/**/*.js' 'vite.config.js' 'package.json'",
-    "format:check": "prettier --check 'assets/src/**/*.js' 'vite.config.js' 'package.json'",
-    "lint:css": "stylelint --config .github/linters/.stylelintrc.json --config-basedir . 'assets/src/styles/*.css'",
-    "lint:css:fix": "stylelint --config .github/linters/.stylelintrc.json --config-basedir . --fix 'assets/src/styles/*.css'",
-    "lint:js": "eslint --config .github/linters/eslint.config.mjs assets/src",
-    "lint:js:fix": "eslint --config .github/linters/eslint.config.mjs --fix assets/src"
+    "format": "prettier --write 'resources/src/**/*.js' 'vite.config.js' 'package.json'",
+    "format:check": "prettier --check 'resources/src/**/*.js' 'vite.config.js' 'package.json'",
+    "lint:css": "stylelint --config .github/linters/.stylelintrc.json --config-basedir . 'resources/src/styles/*.css'",
+    "lint:css:fix": "stylelint --config .github/linters/.stylelintrc.json --config-basedir . --fix 'resources/src/styles/*.css'",
+    "lint:js": "eslint --config .github/linters/eslint.config.mjs resources/src",
+    "lint:js:fix": "eslint --config .github/linters/eslint.config.mjs --fix resources/src"
   },
   "engines": {
     "node": ">=20.10"

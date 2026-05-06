@@ -10,8 +10,6 @@ use yii\debug\controllers\DefaultController;
 use yii\debug\panels\DbPanel;
 use yii\web\HttpException;
 
-use function is_string;
-
 /**
  * ExplainAction provides EXPLAIN information for SQL queries
  */
@@ -28,8 +26,8 @@ class ExplainAction extends Action
      * @param string $seq Sequence number of the log message to explain.
      * @param string $tag Tag of the log message to explain.
      *
-     * @throws HttpException if the controller is not an instance of DefaultController, if the log message is not found,
-     * or if the stored query is not a string.
+     * @throws HttpException if the controller is not an instance of DefaultController, or if the log message is not
+     * found.
      *
      * @return string Rendered view with the EXPLAIN results.
      */
@@ -61,11 +59,7 @@ class ExplainAction extends Action
             throw new HttpException(404, 'Log message not found.');
         }
 
-        $query = $timings[$seqKey]['info'] ?? '';
-
-        if (!is_string($query)) {
-            throw new HttpException(500, 'Stored query is not a string.');
-        }
+        $query = $timings[$seqKey]['info'];
 
         $db = $this->panel->getDb();
 
@@ -75,7 +69,7 @@ class ExplainAction extends Action
          * MySQL/PostgreSQL already return a usable plan from plain `EXPLAIN`.
          */
         $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';
-        $results = $db->createCommand($explainPrefix . $query)->queryAll();
+        $results = $db->createCommand("{$explainPrefix}{$query}")->queryAll();
 
         $params = ['query' => $query, 'results' => $results];
 

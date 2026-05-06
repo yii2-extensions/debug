@@ -709,18 +709,6 @@ parameters:
 			path: src/Module.php
 
 		-
-			rawMessage: 'Call to function is_string() with string will always evaluate to true.'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: src/actions/db/ExplainAction.php
-
-		-
-			rawMessage: 'Offset ''info'' on array{info: string, category: string, timestamp: float, trace: array<int, array<string, mixed>>, level: int, duration: float, memory: int, memoryDiff: int, ...} on left side of ?? always exists and is not nullable.'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: src/actions/db/ExplainAction.php
-
-		-
 			rawMessage: Cannot access property $identity on yii\web\User|null.
 			identifier: property.nonObject
 			count: 1
