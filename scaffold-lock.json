@@ -1,11 +1,11 @@
 {
     "providers": {
         "php-forge/baseline": {
-            "version": "dev-main",
+            "version": "0.1.1",
             "path": "vendor/php-forge/baseline"
         },
         "php-forge/coding-standard": {
-            "version": "dev-main",
+            "version": "0.3.1",
             "path": "vendor/php-forge/coding-standard"
         }
     },
@@ -71,7 +71,7 @@
             "mode": "replace"
         },
         ".github/linters/.gitleaks.toml": {
-            "hash": "sha256:c500506cb29afadfd898384f12bcabdf5b494f6f2da982217e0a6e33b10f6ec6",
+            "hash": "sha256:33589aa4b1b2bd29dc30603b2e590d75a83f59da3fcd8e0b7a148c59726efb85",
             "provider": "php-forge/baseline",
             "source": "metadata/.github/linters/.gitleaks.toml",
             "mode": "replace"
