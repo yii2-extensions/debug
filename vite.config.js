@@ -11,23 +11,23 @@ const cssShimEntries = ["css-main", "css-toolbar", "css-timeline"];
 export default defineConfig({
   root: here,
   build: {
-    outDir: "dist",
+    outDir: "src/assets/dist",
     emptyOutDir: true,
     cssCodeSplit: true,
     minify: "oxc",
     rollupOptions: {
       input: {
-        debug: r("src/core/debug.js"),
-        "theme-toggle": r("src/core/theme-toggle.js"),
-        "history-cursor": r("src/core/history-cursor.js"),
-        db: r("src/panels/db.js"),
-        timeline: r("src/panels/timeline.js"),
-        userswitch: r("src/panels/userswitch.js"),
-        "phpinfo-search": r("src/panels/phpinfo-search.js"),
-        toolbar: r("src/toolbar/index.js"),
-        "css-main": r("src/styles/main.entry.js"),
-        "css-toolbar": r("src/styles/toolbar.entry.js"),
-        "css-timeline": r("src/styles/timeline.entry.js"),
+        debug: r("assets/src/core/debug.js"),
+        "theme-toggle": r("assets/src/core/theme-toggle.js"),
+        "history-cursor": r("assets/src/core/history-cursor.js"),
+        db: r("assets/src/panels/db.js"),
+        timeline: r("assets/src/panels/timeline.js"),
+        userswitch: r("assets/src/panels/userswitch.js"),
+        "phpinfo-search": r("assets/src/panels/phpinfo-search.js"),
+        toolbar: r("assets/src/toolbar/index.js"),
+        "css-main": r("assets/src/styles/main.entry.js"),
+        "css-toolbar": r("assets/src/styles/toolbar.entry.js"),
+        "css-timeline": r("assets/src/styles/timeline.entry.js"),
       },
       output: {
         entryFileNames: "js/[name].js",
@@ -50,7 +50,7 @@ export default defineConfig({
       closeBundle() {
         cssShimEntries.forEach((n) => {
           try {
-            rmSync(r(`dist/js/${n}.js`));
+            rmSync(r(`src/assets/dist/js/${n}.js`));
           } catch {
             // shim js was already pruned.
           }

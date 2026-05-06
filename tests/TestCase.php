@@ -52,7 +52,8 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     {
         new $appClass(ArrayHelper::merge([
             'id' => 'testapp',
-            'basePath' => __DIR__,
+            'basePath' => dirname(__DIR__),
+            'runtimePath' => dirname(__DIR__) . '/runtime',
             'vendorPath' => dirname(__DIR__) . '/vendor',
         ], $config));
     }
@@ -67,7 +68,8 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     {
         new $appClass(ArrayHelper::merge([
             'id' => 'testapp',
-            'basePath' => __DIR__,
+            'basePath' => dirname(__DIR__),
+            'runtimePath' => dirname(__DIR__) . '/runtime',
             'vendorPath' => dirname(__DIR__) . '/vendor',
             'components' => [
                 'request' => [

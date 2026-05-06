@@ -56,7 +56,7 @@ final class ModuleTest extends TestCase
         $app->setModule('debug', $module);
         $module->bootstrap($app);
 
-        $assetBasePath = Yii::getAlias('@yiiunit/debug/runtime/assets');
+        $assetBasePath = Yii::getAlias('@runtime/assets');
 
         if (!is_dir($assetBasePath) && !mkdir($assetBasePath, 0o755, true) && !is_dir($assetBasePath)) {
             self::fail("Could not create asset base path: {$assetBasePath}");
@@ -180,7 +180,7 @@ final class ModuleTest extends TestCase
         $module->bootstrap(Yii::$app);
         $this->silenceLogger();
 
-        Yii::$app->set('cache', new FileCache(['cachePath' => '@yiiunit/debug/runtime/cache']));
+        Yii::$app->set('cache', new FileCache(['cachePath' => '@runtime/cache']));
 
         $view = Yii::$app->view;
         $output = ['', ''];
@@ -200,7 +200,7 @@ final class ModuleTest extends TestCase
 
     public function testToolbarDataActionExposesNewBrandKeys(): void
     {
-        $module = new Module('debug', null, ['dataPath' => '@yiiunit/debug/runtime/debug']);
+        $module = new Module('debug', null, ['dataPath' => '@runtime/debug']);
         $module->allowedIPs = ['*'];
 
         $app = Yii::$app;
