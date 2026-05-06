@@ -206,6 +206,18 @@ class Svg extends BaseObject
     }
 
     /**
+     * Returns the bound {@see TimelinePanel}, asserting that it has been set by the constructor.
+     */
+    private function panel(): TimelinePanel
+    {
+        if ($this->panel === null) {
+            throw new RuntimeException('TimelinePanel has not been set on the SVG renderer.');
+        }
+
+        return $this->panel;
+    }
+
+    /**
      * Returns the value for the polygon's `points` attribute.
      */
     private function polygonPoints(): string
@@ -239,17 +251,5 @@ class Svg extends BaseObject
         $str .= "{$this->x} {$y}";
 
         return StringHelper::normalizeNumber($str);
-    }
-
-    /**
-     * Returns the bound {@see TimelinePanel}, asserting that it has been set by the constructor.
-     */
-    private function panel(): TimelinePanel
-    {
-        if ($this->panel === null) {
-            throw new RuntimeException('TimelinePanel has not been set on the SVG renderer.');
-        }
-
-        return $this->panel;
     }
 }
