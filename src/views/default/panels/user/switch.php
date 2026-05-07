@@ -68,9 +68,14 @@ if ($panel->canSearchUsers()) {
         'dataProvider' => $panel->getUserDataProvider(),
         'filterModel' => $usersFilterModel,
         'tableOptions' => [
-            'class' => 'yii-debug-table yii-debug-table-pointer',
+            'class' => 'yii-debug-table yii-debug-table-pointer yii-debug-table-userswitch',
         ],
         'columns' => $panel->filterColumns,
+        // Wrap only the `<table>` (`{items}`) in a horizontally-scrollable container so
+        // wide content can be reached by scrolling; the row-count summary and pager
+        // stay outside the wrap and align with the panel width like the other grids.
+        'layout' => "<div class=\"yii-debug-table-wrap\">{items}</div>\n"
+            . "<div class=\"yii-debug-grid-footer\">{summary}\n{pager}\n</div>",
     ]));
     echo Html::endTag('div');
 }

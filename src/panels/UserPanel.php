@@ -39,11 +39,48 @@ class UserPanel extends Panel
      */
     public string $displayName = 'User';
     /**
-     * @var array<int|string, mixed> Allowed columns for GridView.
+     * @var array<int|string, mixed> GridView column definitions for the user-switch table.
+     *
+     * Defaults to a curated set tailored to the standard Yii2 user schema (`id`, `username`, `email`, `status`,
+     * `created_at`, `updated_at`). Sensitive fields (`auth_key`, `password_hash`, `password_reset_token`,
+     * `verification_token`) are intentionally excluded — clicking a row switches to that user and the User panel
+     * already exposes those values behind a `Reveal` button. Override this property in your debug config to fit a
+     * different user model.
      *
      * @see https://www.yiiframework.com/doc-2.0/yii-grid-gridview.html#$columns-detail
      */
-    public array $filterColumns = [];
+    public array $filterColumns = [
+        [
+            'attribute' => 'id',
+            'headerOptions' => ['class' => 'yii-debug-col-userswitch-id'],
+            'contentOptions' => ['class' => 'yii-debug-col-userswitch-id'],
+        ],
+        [
+            'attribute' => 'username',
+            'headerOptions' => ['class' => 'yii-debug-col-userswitch-username'],
+        ],
+        [
+            'attribute' => 'email',
+            'headerOptions' => ['class' => 'yii-debug-col-userswitch-email'],
+        ],
+        [
+            'attribute' => 'status',
+            'headerOptions' => ['class' => 'yii-debug-col-userswitch-status'],
+            'contentOptions' => ['class' => 'yii-debug-col-userswitch-status'],
+        ],
+        [
+            'attribute' => 'created_at',
+            'format' => ['datetime', 'php:Y-m-d H:i'],
+            'headerOptions' => ['class' => 'yii-debug-col-userswitch-timestamp'],
+            'contentOptions' => ['class' => 'yii-debug-col-userswitch-timestamp'],
+        ],
+        [
+            'attribute' => 'updated_at',
+            'format' => ['datetime', 'php:Y-m-d H:i'],
+            'headerOptions' => ['class' => 'yii-debug-col-userswitch-timestamp'],
+            'contentOptions' => ['class' => 'yii-debug-col-userswitch-timestamp'],
+        ],
+    ];
     /**
      * User filter model class name or instance with a search method.
      */

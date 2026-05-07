@@ -1673,6 +1673,76 @@
         color-mix(in srgb, var(--yii-debug-panel-border) 60%, transparent);
   }
 
+  /**
+   * User-switch grid — single-line cells with semantic per-column widths
+   * and horizontal scroll on overflow.
+   *
+   * Column widths are driven by per-column classes (`.yii-debug-col-userswitch-*`)
+   * applied via `UserPanel::$filterColumns` instead of fragile `nth-child`
+   * selectors. `nowrap` keeps every row one row tall; if the sum of columns
+   * exceeds the panel width the wrapping `.yii-debug-table-wrap` provides
+   * `overflow-x: auto` so wider content stays reachable.
+   */
+  .yii-debug-table-userswitch {
+    width: auto;
+    min-width: 100%;
+
+    thead th,
+    tbody td,
+    tbody th {
+      overflow-wrap: normal;
+      white-space: nowrap;
+    }
+
+    /* Filter inputs grow with their cell instead of clinging to a fixed width. */
+    tbody tr.filters td input {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  /* ID column — 10 digits + tabular numerals so IDs stay aligned. */
+  .yii-debug-col-userswitch-id {
+    min-width: 10ch;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Username — short identifier, room for typical handles. */
+  .yii-debug-col-userswitch-username {
+    min-width: 14ch;
+  }
+
+  /* Email — fits a full address without ellipsis. */
+  .yii-debug-col-userswitch-email {
+    min-width: 24ch;
+  }
+
+  /* Status flag — narrow numeric column, centered for scannability. */
+  .yii-debug-col-userswitch-status {
+    min-width: 8ch;
+    text-align: center;
+  }
+
+  /* Timestamps formatted as `YYYY-MM-DD HH:MM`. */
+  .yii-debug-col-userswitch-timestamp {
+    min-width: 18ch;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Pointer affordance for click-to-switch rows in the user-switch grid. */
+  .yii-debug-table-pointer tbody tr {
+    cursor: pointer;
+    transition: background-color 120ms ease;
+  }
+
+  .yii-debug-table-pointer tbody tr:hover {
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-primary),
+      transparent 86%
+    );
+  }
+
   /* Small total-duration line shown at the top of the Timeline panel. */
   .yii-debug-timeline-duration {
     margin: 0 0 var(--yii-debug-space-3);
