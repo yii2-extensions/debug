@@ -126,7 +126,7 @@ class DbPanel extends Panel
 
             // parse aliases.
             $ignoredPathsInBacktrace = array_map(
-                static fn(string $path): string => Yii::getAlias($path),
+                Yii::getAlias(...),
                 $this->ignoredPathsInBacktrace,
             );
 
@@ -298,9 +298,7 @@ class DbPanel extends Panel
 
         return array_filter(
             $this->countCallerCals(),
-            function (int $count): bool {
-                return $count >= $this->excessiveCallerThreshold;
-            },
+            fn(int $count): bool => $count >= $this->excessiveCallerThreshold,
         );
     }
 
@@ -337,8 +335,8 @@ class DbPanel extends Panel
         $timings = $this->calculateTimings();
 
         $queryCount = count($timings);
-
         $queryTime = number_format($this->getTotalQueryTime($timings) * 1000) . ' ms';
+
         $excessiveCallerCount = $this->getExcessiveCallersCount();
 
         return Yii::$app->view->render(

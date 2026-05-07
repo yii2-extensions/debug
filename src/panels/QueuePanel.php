@@ -17,11 +17,8 @@ use yii\debug\Panel;
  * Placeholder Queue panel — surfaces a chip on the toolbar so the host application can spot queue
  * activity at a glance even when no queue component is wired up yet.
  *
- * The proper implementation lives in the `yiisoft/yii2-queue` package
- * ({@see \yii\queue\debug\Panel}); this placeholder is replaced automatically when that panel is
- * registered.
- *
- * @since 2.1.30
+ * The proper implementation lives in the `yiisoft/yii2-queue` package ({@see \yii\queue\debug\Panel}); this placeholder
+ * is replaced automatically when that panel is registered.
  */
 class QueuePanel extends Panel
 {
@@ -43,9 +40,9 @@ class QueuePanel extends Panel
     /**
      * {@inheritdoc}
      *
-     * Disabled by default — the proper implementation lives in {@see \yii\queue\debug\Panel} and
-     * is registered automatically when the `yiisoft/yii2-queue` package is installed. Subclasses
-     * (or that package's bootstrapper) override this to opt in.
+     * Disabled by default — the proper implementation lives in {@see \yii\queue\debug\Panel} and is registered
+     * automatically when the `yiisoft/yii2-queue` package is installed. Subclasses (or that package's bootstrapper)
+     * override this to opt in.
      */
     public function isEnabled(): bool
     {

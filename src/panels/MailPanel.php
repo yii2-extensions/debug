@@ -18,6 +18,7 @@ use yii\symfonymailer\Message;
 
 use function count;
 use function is_array;
+use function is_scalar;
 use function is_string;
 
 /**
@@ -220,10 +221,13 @@ class MailPanel extends Panel
     private function convertParams(mixed $attr): string
     {
         if (is_array($attr)) {
-            return implode(', ', array_map(
-                static fn(int|string $key): string => (string) $key,
-                array_keys($attr),
-            ));
+            return implode(
+                ', ',
+                array_map(
+                    static fn(int|string $key): string => (string) $key,
+                    array_keys($attr),
+                ),
+            );
         }
 
         if (is_scalar($attr) || $attr instanceof Stringable) {
@@ -241,7 +245,13 @@ class MailPanel extends Panel
      */
     private function findPreviousRequestWithMail(): array|null
     {
-        $logTarget = $this->module->logTarget;
+        $module = $this->module;
+
+        if ($module === null) {
+            return null;
+        }
+
+        $logTarget = $module->logTarget;
 
         if (!$logTarget instanceof LogTarget) {
             return null;
@@ -253,11 +263,12 @@ class MailPanel extends Panel
             return null;
         }
 
-        if (!is_array($manifest) || $manifest === []) {
+        if ($manifest === []) {
             return null;
         }
 
         $currentTag = $this->tag;
+
         $previousTag = null;
         $found = false;
 
@@ -267,31 +278,28 @@ class MailPanel extends Panel
                 break;
             }
 
-            if ((string) $tag === (string) $currentTag) {
+            if ((string) $tag === $currentTag) {
                 $found = true;
             }
         }
 
-        // If the current tag is not in the manifest yet (race during the very first response of a
-        // session), fall back to the most-recent entry — that's "previous" from the toolbar's POV.
+        // If the current tag is not in the manifest yet (race during the very first response of a session), fall back
+        // to the most-recent entry — that's "previous" from the toolbar's POV.
         if ($previousTag === null) {
             $firstKey = array_key_first($manifest);
 
-            if ($firstKey === null) {
-                return null;
-            }
-
             $previousTag = (string) $firstKey;
 
-            if ($previousTag === (string) $currentTag) {
+            if ($previousTag === $currentTag) {
                 return null;
             }
         }
 
         $summary = $manifest[$previousTag] ?? [];
+
         $summary = is_array($summary) ? $summary : [];
 
-        $dataFile = $this->module->dataPath . '/' . $previousTag . '.data';
+        $dataFile = "{$module->dataPath}/{$previousTag}.data";
 
         if (!is_file($dataFile)) {
             return null;
@@ -325,13 +333,16 @@ class MailPanel extends Panel
 
         $method = is_string($summary['method'] ?? null) ? $summary['method'] : '';
         $url = is_string($summary['url'] ?? null) ? $summary['url'] : '';
-        $shortUrl = $url === '' ? '' : (string) (parse_url($url, PHP_URL_PATH) ?: $url);
+        $shortUrlPath = $url === '' ? null : parse_url($url, PHP_URL_PATH);
+        $shortUrl = is_string($shortUrlPath) && $shortUrlPath !== '' ? $shortUrlPath : $url;
 
-        $panelUrl = \yii\helpers\Url::toRoute([
-            '/' . $this->module->getUniqueId() . '/default/view',
-            'panel' => $this->id,
-            'tag' => $previousTag,
-        ]);
+        $panelUrl = \yii\helpers\Url::toRoute(
+            [
+                '/' . $module->getUniqueId() . '/default/view',
+                'panel' => $this->id,
+                'tag' => $previousTag,
+            ],
+        );
 
         return [
             'count' => $count,

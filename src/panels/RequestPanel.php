@@ -116,14 +116,12 @@ class RequestPanel extends Panel
 
         $requestedAction = Yii::$app->requestedAction;
 
-        if ($requestedAction !== null) {
-            if ($requestedAction instanceof InlineAction) {
-                $action = get_class($requestedAction->controller) . '::' . $requestedAction->actionMethod . '()';
-            } else {
-                $action = get_class($requestedAction) . '::run()';
-            }
-        } else {
+        if ($requestedAction === null) {
             $action = null;
+        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
+            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
+        } else {
+            $action = $requestedAction::class . '::run()';
         }
 
         $data = [
@@ -142,7 +140,6 @@ class RequestPanel extends Panel
                 'Decoded' => Yii::$app->getRequest()->getBodyParams(),
                 'Raw' => Yii::$app->getRequest()->getRawBody(),
             ],
-
             'requestHeaders' => $requestHeaders,
             'responseHeaders' => $responseHeaders,
             'route' => $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
@@ -209,6 +206,7 @@ class RequestPanel extends Panel
                 $flashes[$key] = $sessionData[$key];
             }
         }
+
         return $flashes;
     }
 

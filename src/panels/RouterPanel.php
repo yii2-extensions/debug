@@ -11,7 +11,6 @@ use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
 use yii\debug\Panel;
 use yii\log\Logger;
 
-use function get_class;
 use function is_array;
 use function is_scalar;
 use function is_string;
@@ -78,14 +77,12 @@ class RouterPanel extends Panel
     {
         $requestedAction = Yii::$app->requestedAction;
 
-        if ($requestedAction !== null) {
-            if ($requestedAction instanceof InlineAction) {
-                $action = get_class($requestedAction->controller) . '::' . $requestedAction->actionMethod . '()';
-            } else {
-                $action = get_class($requestedAction) . '::run()';
-            }
-        } else {
+        if ($requestedAction === null) {
             $action = null;
+        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
+            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
+        } else {
+            $action = $requestedAction::class . '::run()';
         }
 
         return [

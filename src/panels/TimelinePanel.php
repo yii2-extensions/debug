@@ -210,7 +210,9 @@ class TimelinePanel extends Panel
     public function load(mixed $data): void
     {
         if (!is_array($data)) {
-            throw new \RuntimeException('Unable to load timeline data');
+            throw new RuntimeException(
+                'Unable to load timeline data',
+            );
         }
 
         $start = self::floatValue($data['start'] ?? null);

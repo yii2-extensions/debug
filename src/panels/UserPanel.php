@@ -123,7 +123,9 @@ class UserPanel extends Panel
     public function canSwitchUser(): bool
     {
         $module = $this->module;
+
         $user = $this->getUser();
+
         $userSwitch = $this->userSwitch;
 
         if ($module === null || $user === null || $user->isGuest || $userSwitch === null) {
@@ -335,8 +337,11 @@ class UserPanel extends Panel
     protected function getToolbarItems(): array
     {
         $user = $this->getUser();
+
         $data = is_array($this->data) ? $this->data : [];
+
         $id = $data['id'] ?? null;
+
         $idLabel = is_scalar($id) ? (string) $id : VarDumper::dumpAsString($id);
 
         if ($id === null) {
