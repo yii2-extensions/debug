@@ -12,7 +12,6 @@ use yii\web\{Response, Session};
 
 use function array_key_exists;
 use function count;
-use function get_class;
 use function in_array;
 use function is_array;
 use function is_int;
