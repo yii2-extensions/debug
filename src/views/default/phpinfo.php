@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\List\{Dd, Dl, Dt};
+use UIAwesome\Html\Phrasing\{Code, Span, Strong};
+use UIAwesome\Html\Root\Header;
+use UIAwesome\Html\Sectioning\Section;
 use yii\debug\helpers\Icon;
 use yii\debug\PhpInfoAsset;
 use yii\helpers\Html;
@@ -87,24 +92,44 @@ $shortenPath = static function (string $path) use ($home): string {
 // plain values. Centralized so all hero sub-sections render identically.
 $renderTileValue = static function (string $value) use ($shortenPath): string {
     $value = trim($value);
+
     if ($value === '') {
         return '';
     }
+
     $lower = strtolower($value);
+
     if (in_array($lower, ['enabled', 'yes'], true)) {
-        return '<span class="yii-debug-phpinfo-overview-pill" data-variant="success">' . Html::encode($value) . '</span>';
+        return Span::tag()
+            ->class('yii-debug-phpinfo-overview-pill')
+            ->addDataAttribute('variant', 'success')
+            ->content($value)
+            ->render();
     }
+
     if (in_array($lower, ['disabled', 'no'], true)) {
-        return '<span class="yii-debug-phpinfo-overview-pill" data-variant="muted">' . Html::encode($value) . '</span>';
+        return Span::tag()
+            ->class('yii-debug-phpinfo-overview-pill')
+            ->addDataAttribute('variant', 'muted')
+            ->content($value)
+            ->render();
     }
+
     $isPathList = str_contains($value, ',') && (str_starts_with($value, '/') || str_starts_with($value, 'C:'));
+
     if ($isPathList) {
-        $html = '<span class="yii-debug-phpinfo-overview-files">';
-        foreach (array_filter(array_map('trim', explode(',', $value))) as $f) {
-            $html .= '<code class="yii-debug-phpinfo-overview-token" title="' . Html::encode($f) . '">'
-                . Html::encode(basename($f)) . '</code>';
-        }
-        return $html . '</span>';
+        $tokens = array_map(
+            static fn(string $f): Code => Code::tag()
+                ->class('yii-debug-phpinfo-overview-token')
+                ->title($f)
+                ->content(basename($f)),
+            array_values(array_filter(array_map('trim', explode(',', $value)))),
+        );
+
+        return Span::tag()
+            ->class('yii-debug-phpinfo-overview-files')
+            ->html(...$tokens)
+            ->render();
     }
 
     // Short-token comma list — extension names, stream transports, filters, etc.
@@ -115,26 +140,36 @@ $renderTileValue = static function (string $value) use ($shortenPath): string {
     if (str_contains($value, ',')) {
         $tokens = array_values(array_filter(array_map('trim', explode(',', $value))));
         $isTokenList = count($tokens) > 1;
+
         foreach ($tokens as $t) {
             if ($t === '' || preg_match('/\s/', $t) || mb_strlen($t) > 32) {
                 $isTokenList = false;
                 break;
             }
         }
+
         if ($isTokenList) {
-            $html = '<span class="yii-debug-phpinfo-overview-files">';
-            foreach ($tokens as $t) {
-                $html .= '<code class="yii-debug-phpinfo-overview-token">' . Html::encode($t) . '</code>';
-            }
-            return $html . '</span>';
+            $codes = array_map(
+                static fn(string $t): Code => Code::tag()
+                    ->class('yii-debug-phpinfo-overview-token')
+                    ->content($t),
+                $tokens,
+            );
+
+            return Span::tag()
+                ->class('yii-debug-phpinfo-overview-files')
+                ->html(...$codes)
+                ->render();
         }
     }
 
     $isPath = str_starts_with($value, '/') || str_starts_with($value, 'C:');
+
     if ($isPath) {
-        return '<code title="' . Html::encode($value) . '">' . Html::encode($shortenPath($value)) . '</code>';
+        return Code::tag()->title($value)->content($shortenPath($value))->render();
     }
-    return '<code>' . Html::encode($value) . '</code>';
+
+    return Code::tag()->content($value)->render();
 };
 
 $memoryLimit = ini_get('memory_limit');
@@ -272,44 +307,70 @@ $modulesSrc = preg_replace('%^\s*</section>%', '', $modulesSrc) ?? $modulesSrc;
                 // Helper that renders one sub-section (eyebrow + tile grid) so the
                 // hero shell hosts PHP version + Build + Configuration with one
                 // shared template.
-                $renderSection = static function (string $eyebrow, array $tiles, string|null $headline = null) use ($renderTileValue, $phpVersion): string {
+                $renderSection = static function (string $eyebrow, array $tiles, string|null $headline = null) use ($renderTileValue): string {
                     $hasContent = false;
+
                     foreach ($tiles as $v) {
                         if (trim((string) $v) !== '') {
                             $hasContent = true;
                             break;
                         }
                     }
+
                     if (!$hasContent && $headline === null) {
                         return '';
                     }
 
-                    $html = '<section class="yii-debug-phpinfo-overview-hero-section" aria-label="' . Html::encode($eyebrow) . '">'
-                        . '<header class="yii-debug-phpinfo-overview-block-head">'
-                        . '<span class="yii-debug-phpinfo-overview-block-eyebrow">' . Html::encode($eyebrow) . '</span>'
-                        . '</header>';
+                    $blocks = [
+                        Header::tag()
+                            ->class('yii-debug-phpinfo-overview-block-head')
+                            ->html(
+                                Span::tag()
+                                    ->class('yii-debug-phpinfo-overview-block-eyebrow')
+                                    ->content($eyebrow),
+                            ),
+                    ];
 
                     if ($headline !== null) {
-                        $html .= '<div class="yii-debug-phpinfo-overview-hero-headline">'
-                            . '<strong class="yii-debug-phpinfo-overview-hero-version">' . Html::encode($headline) . '</strong>'
-                            . '<span class="yii-debug-phpinfo-overview-hero-mark" aria-hidden="true">php</span>'
-                            . '</div>';
+                        $blocks[] = Div::tag()
+                            ->class('yii-debug-phpinfo-overview-hero-headline')
+                            ->html(
+                                Strong::tag()
+                                    ->class('yii-debug-phpinfo-overview-hero-version')
+                                    ->content($headline),
+                                Span::tag()
+                                    ->class('yii-debug-phpinfo-overview-hero-mark')
+                                    ->addAriaAttribute('hidden', 'true')
+                                    ->content('php'),
+                            );
                     }
 
-                    $html .= '<dl class="yii-debug-phpinfo-overview-hero-metrics">';
+                    $rows = [];
+
                     foreach ($tiles as $label => $value) {
                         $value = trim((string) $value);
+
                         if ($value === '') {
                             continue;
                         }
-                        $html .= '<div class="yii-debug-phpinfo-overview-hero-metric">'
-                            . '<dt>' . Html::encode($label) . '</dt>'
-                            . '<dd>' . $renderTileValue($value) . '</dd>'
-                            . '</div>';
-                    }
-                    $html .= '</dl></section>';
 
-                    return $html;
+                        $rows[] = Div::tag()
+                            ->class('yii-debug-phpinfo-overview-hero-metric')
+                            ->html(
+                                Dt::tag()->content((string) $label),
+                                Dd::tag()->html($renderTileValue($value)),
+                            );
+                    }
+
+                    $blocks[] = Dl::tag()
+                        ->class('yii-debug-phpinfo-overview-hero-metrics')
+                        ->html(...$rows);
+
+                    return Section::tag()
+                        ->class('yii-debug-phpinfo-overview-hero-section')
+                        ->addAriaAttribute('label', $eyebrow)
+                        ->html(...$blocks)
+                        ->render();
                 };
 ?>
 

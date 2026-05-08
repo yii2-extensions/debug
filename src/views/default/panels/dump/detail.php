@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Phrasing\Span;
+use UIAwesome\Html\Root\Header;
 use yii\debug\GridViewConfig;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -75,23 +78,46 @@ echo GridView::widget(array_merge(GridViewConfig::defaults(), [
                     ? date('H:i:s', (int) $time) . '.' . sprintf('%03d', (int) (($time - floor($time)) * 1000))
                     : '';
 
-                $head = '<header class="yii-debug-dump-card-head">'
-                    . '<span class="yii-debug-dump-index" aria-hidden="true">#' . ($index + 1) . '</span>'
-                    . ($typeLabel !== ''
-                        ? '<span class="yii-debug-dump-type" data-type="' . Html::encode($typeKey) . '">'
-                            . Html::encode($typeLabel) . '</span>'
-                        : '')
-                    . '<span class="yii-debug-dump-meta">'
-                    . ($timeStr !== '' ? '<time class="yii-debug-dump-time">' . Html::encode($timeStr) . '</time>' : '')
-                    . ($file !== ''
-                        ? '<span class="yii-debug-dump-trace" title="' . Html::encode($file . ($line ? ':' . $line : '')) . '">'
-                            . Html::encode(basename($file)) . ($line ? ':' . $line : '')
-                            . '</span>'
-                        : '')
-                    . '</span>'
-                    . '</header>';
+                $headChildren = [
+                    Span::tag()
+                        ->class('yii-debug-dump-index')
+                        ->addAriaAttribute('hidden', 'true')
+                        ->content('#' . ($index + 1)),
+                ];
+
+                if ($typeLabel !== '') {
+                    $headChildren[] = Span::tag()
+                        ->class('yii-debug-dump-type')
+                        ->addDataAttribute('type', $typeKey)
+                        ->content($typeLabel);
+                }
+
+                $metaChildren = [];
+
+                if ($timeStr !== '') {
+                    $metaChildren[] = Span::tag()
+                        ->class('yii-debug-dump-time')
+                        ->content($timeStr);
+                }
+
+                if ($file !== '') {
+                    $traceLabel = basename($file) . ($line !== null && $line > 0 ? ':' . $line : '');
+                    $metaChildren[] = Span::tag()
+                        ->class('yii-debug-dump-trace')
+                        ->title($file . ($line !== null && $line > 0 ? ':' . $line : ''))
+                        ->content($traceLabel);
+                }
+
+                $headChildren[] = Span::tag()
+                    ->class('yii-debug-dump-meta')
+                    ->html(...$metaChildren);
+
+                $head = Header::tag()
+                    ->class('yii-debug-dump-card-head')
+                    ->html(...$headChildren);
 
                 $traceList = '';
+
                 if (is_array($trace) && $trace !== []) {
                     $traceList = Html::ul($trace, [
                         'class' => 'yii-debug-trace',
@@ -101,10 +127,15 @@ echo GridView::widget(array_merge(GridViewConfig::defaults(), [
                     ]);
                 }
 
-                return '<div class="yii-debug-dump">'
-                    . $head
-                    . '<div class="yii-debug-dump-body">' . $message . $traceList . '</div>'
-                    . '</div>';
+                return Div::tag()
+                    ->class('yii-debug-dump')
+                    ->html(
+                        $head,
+                        Div::tag()
+                            ->class('yii-debug-dump-body')
+                            ->html($message . $traceList),
+                    )
+                    ->render();
             },
             'format' => 'raw',
             'options' => [

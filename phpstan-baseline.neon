@@ -1261,12 +1261,6 @@ parameters:
 			path: src/views/default/panels/db/queries.php
 
 		-
-			rawMessage: 'Only booleans are allowed in a ternary operator condition, int|null given.'
-			identifier: ternary.condNotBoolean
-			count: 2
-			path: src/views/default/panels/dump/detail.php
-
-		-
 			rawMessage: 'Only booleans are allowed in an elseif condition, int|false given.'
 			identifier: elseif.condNotBoolean
 			count: 2
@@ -1849,12 +1843,6 @@ parameters:
 			path: src/views/default/panels/user/switch.php
 
 		-
-			rawMessage: Anonymous function has an unused use $phpVersion.
-			identifier: closure.unusedUse
-			count: 1
-			path: src/views/default/phpinfo.php
-
-		-
 			rawMessage: Anonymous function should return string but returns mixed.
 			identifier: return.type
 			count: 1
@@ -1905,12 +1893,6 @@ parameters:
 		-
 			rawMessage: 'Only booleans are allowed in ||, int|false given on the right side.'
 			identifier: booleanOr.rightNotBoolean
-			count: 1
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Parameter #1 $content of static method yii\helpers\BaseHtml::encode() expects string, (int|string) given.'
-			identifier: argument.type
 			count: 1
 			path: src/views/default/phpinfo.php
 
