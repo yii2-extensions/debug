@@ -9,6 +9,7 @@ use Stringable;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\Panel;
+use yii\debug\panels\asset\AssetBundleNormalizer;
 use yii\helpers\Html;
 use yii\web\{AssetBundle, AssetManager};
 
@@ -19,12 +20,17 @@ use function is_string;
 
 /**
  * Debugger panel that collects and displays asset bundles data.
+ *
+ * @copyright Copyright (C) 2026 Terabytesoftw.
+ * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 class AssetPanel extends Panel
 {
     public function getDetail(): string
     {
-        return Yii::$app->view->render('panels/assets/detail', ['panel' => $this]);
+        $summary = (new AssetBundleNormalizer())->normalize($this->data);
+
+        return Yii::$app->view->render('panels/assets/detail', ['summary' => $summary]);
     }
 
     public function getName(): string

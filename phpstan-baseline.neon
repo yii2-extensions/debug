@@ -1009,12 +1009,6 @@ parameters:
 			path: src/views/default/index.php
 
 		-
-			rawMessage: Cannot cast mixed to string.
-			identifier: cast.string
-			count: 1
-			path: src/views/default/panels/assets/detail.php
-
-		-
 			rawMessage: 'Binary operation "." between mixed and '' ('' results in an error.'
 			identifier: binaryOp.invalid
 			count: 1
