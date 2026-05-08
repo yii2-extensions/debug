@@ -46,4 +46,4 @@ use yii\debug\panels\asset\{AssetCardRenderer, AssetSummary};
             <li class="yii-debug-asset-list-item"><?= AssetCardRenderer::renderCard($bundle, $summary) ?></li>
         <?php endforeach; ?>
     </ol>
-<?php endif; ?>
+<?php endif;

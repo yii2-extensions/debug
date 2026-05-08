@@ -8,6 +8,7 @@ use ReflectionClass;
 use Yii;
 use yii\base\Application;
 use yii\debug\{Panel, VersionResolver};
+use yii\debug\panels\config\ConfigDataNormalizer;
 
 use function is_array;
 use function is_object;
@@ -21,7 +22,9 @@ class ConfigPanel extends Panel
 {
     public function getDetail(): string
     {
-        return Yii::$app->view->render('panels/config/detail', ['panel' => $this]);
+        $summary = (new ConfigDataNormalizer())->normalize($this->data, $this->getExtensions());
+
+        return Yii::$app->view->render('panels/config/detail', ['summary' => $summary]);
     }
 
     /**
@@ -122,7 +125,7 @@ class ConfigPanel extends Panel
      *     php: array{
      *         version: string,
      *         xdebug: bool,
-     *         apc: bool,
+     *         apcu: bool,
      *         memcache: bool,
      *         memcached: bool
      *     },
@@ -164,7 +167,7 @@ class ConfigPanel extends Panel
             'php' => [
                 'version' => PHP_VERSION,
                 'xdebug' => extension_loaded('xdebug'),
-                'apc' => extension_loaded('apc'),
+                'apcu' => extension_loaded('apcu'),
                 'memcache' => extension_loaded('memcache'),
                 'memcached' => extension_loaded('memcached'),
             ],

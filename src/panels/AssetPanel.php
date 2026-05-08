@@ -20,9 +20,6 @@ use function is_string;
 
 /**
  * Debugger panel that collects and displays asset bundles data.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 class AssetPanel extends Panel
 {
