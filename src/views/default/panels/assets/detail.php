@@ -30,7 +30,7 @@ use yii\debug\panels\asset\{AssetCardRenderer, AssetSummary};
             <span class="yii-debug-asset-stat-label">css</span>
         </div>
         <div class="yii-debug-asset-stat" data-kind="js">
-            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= Icon::render('bolt') ?></span>
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= Icon::render('brand-javascript') ?></span>
             <strong class="yii-debug-asset-stat-value"><?= $summary->totalJs ?></strong>
             <span class="yii-debug-asset-stat-label">js</span>
         </div>
