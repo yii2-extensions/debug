@@ -120,7 +120,7 @@ final class MailMessageNormalizerTest extends TestCase
     {
         self::assertSame(
             1_700_000_000,
-            MailMessageNormalizer::from(['time' => 1_700_000_000]),
+            MailMessageNormalizer::from(['time' => 1_700_000_000])->time,
             'Int time must round-trip unchanged.',
         );
     }
