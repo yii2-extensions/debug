@@ -48,7 +48,7 @@ final readonly class QueryRow
          * Number of times the exact same query was emitted in this request (`>= 1`).
          */
         public int $duplicate,
-        /*+
+        /**
          * Number of rows returned/affected, or `null` when the driver did not report it.
          */
         public int|null $rows,
