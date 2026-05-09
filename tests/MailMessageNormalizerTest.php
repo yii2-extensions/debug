@@ -176,6 +176,7 @@ final class MailMessageNormalizerTest extends TestCase
             'Parseable string must coerce via `strtotime`.',
         );
     }
+
     public function testFromReturnsAllEmptyDefaultsWhenInputIsNotArray(): void
     {
         $message = MailMessageNormalizer::from(
