@@ -154,6 +154,7 @@ final class LogRowNormalizerTest extends TestCase
             "Explicit 'null' 'idOfNext' must remain 'null'.",
         );
     }
+
     public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
     {
         $row = LogRowNormalizer::from(
