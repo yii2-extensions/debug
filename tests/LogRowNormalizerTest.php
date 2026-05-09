@@ -132,7 +132,7 @@ final class LogRowNormalizerTest extends TestCase
         );
         $invalid = LogRowNormalizer::from(
             ['id_of_previous' => 'abc',
-            'id_of_next' => null],
+                'id_of_next' => null],
         );
 
         self::assertNull(
@@ -152,6 +152,7 @@ final class LogRowNormalizerTest extends TestCase
             "Explicit 'null' 'idOfNext' must remain 'null'.",
         );
     }
+
     public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
     {
         $row = LogRowNormalizer::from(

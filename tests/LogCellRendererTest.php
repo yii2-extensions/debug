@@ -35,7 +35,7 @@ final class LogCellRendererTest extends TestCase
         self::assertSame(
             'yii-debug-row--danger',
             $options['class'] ?? null,
-            "Error level must carry the danger class.",
+            'Error level must carry the danger class.',
         );
     }
 
