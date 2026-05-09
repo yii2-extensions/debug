@@ -397,6 +397,7 @@ final class MailCardRendererTest extends TestCase
             'Head wrapper class must be present.',
         );
     }
+
     protected function setUp(): void
     {
         parent::setUp();
