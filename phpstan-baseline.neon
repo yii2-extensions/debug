@@ -1009,18 +1009,6 @@ parameters:
 			path: src/views/default/index.php
 
 		-
-			rawMessage: 'Only booleans are allowed in an elseif condition, int|false given.'
-			identifier: elseif.condNotBoolean
-			count: 2
-			path: src/views/default/panels/dump/detail.php
-
-		-
-			rawMessage: 'Parameter #1 $options of method yii\debug\Panel::getTraceLine() expects array<string, mixed>, array<mixed> given.'
-			identifier: argument.type
-			count: 1
-			path: src/views/default/panels/dump/detail.php
-
-		-
 			rawMessage: Binary operation "-" between mixed and mixed results in an error.
 			identifier: binaryOp.invalid
 			count: 1

@@ -13,6 +13,7 @@ use yii\helpers\Html;
 use yii\helpers\VarDumper;
 use yii\log\Logger;
 
+use function array_key_exists;
 use function count;
 use function is_array;
 use function is_float;
@@ -100,7 +101,7 @@ class DumpPanel extends Panel
         $messages = $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories, $except);
 
         foreach ($messages as &$message) {
-            if (!isset($message[0])) {
+            if (array_key_exists(0, $message) === false) {
                 continue;
             }
 
