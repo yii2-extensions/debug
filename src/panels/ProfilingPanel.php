@@ -8,6 +8,7 @@ use Stringable;
 use Yii;
 use yii\debug\models\search\Profile;
 use yii\debug\Panel;
+use yii\helpers\Url;
 use yii\log\Logger;
 
 use function is_array;
@@ -42,6 +43,13 @@ class ProfilingPanel extends Panel
 
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
 
+        $module = $this->module;
+        $timelineUrl = $module === null
+            ? '#'
+            : Url::to(
+                ['/' . $module->getUniqueId() . '/default/view', 'panel' => 'timeline', 'tag' => $this->tag],
+            );
+
         return Yii::$app->view->render(
             'panels/profile/detail',
             [
@@ -50,6 +58,7 @@ class ProfilingPanel extends Panel
                 'panel' => $this,
                 'searchModel' => $searchModel,
                 'time' => number_format($profileData['time'] * 1000) . ' ms',
+                'timelineUrl' => $timelineUrl,
             ],
         );
     }

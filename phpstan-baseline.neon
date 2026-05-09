@@ -1015,12 +1015,6 @@ parameters:
 			path: src/views/default/panels/log/summary.php
 
 		-
-			rawMessage: 'Cannot call method getUniqueId() on yii\debug\Module|null.'
-			identifier: method.nonObject
-			count: 1
-			path: src/views/default/panels/profile/detail.php
-
-		-
 			rawMessage: Access to an undefined property yii\web\Controller::$summary.
 			identifier: property.notFound
 			count: 1
