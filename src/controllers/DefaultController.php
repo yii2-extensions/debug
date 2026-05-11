@@ -238,8 +238,8 @@ class DefaultController extends Controller
             }
         } catch (\Throwable $e) {
             /**
-             * Asset manager not configured (e.g. unit test environment) keep empty so the toolbar JS falls back to the
-             * bundled PNG logo and skips chip icons.
+             * Asset manager not configured (for example, unit test environment) keep empty so the toolbar JS falls back
+             * to the bundled PNG logo and skips chip icons.
              */
         }
 
@@ -331,6 +331,27 @@ class DefaultController extends Controller
     }
 
     /**
+     * Returns the debug data manifest, optionally forcing a reload from the log target.
+     *
+     * @param bool $forceReload Whether to force reload the manifest from the log target, bypassing any cached version.
+     *
+     * @return array<string, array<string, mixed>> Debug data manifest, indexed by tag, containing metadata about
+     * available debug entries.
+     */
+    public function getManifest(bool $forceReload = false): array
+    {
+        if ($this->manifest === null || $forceReload) {
+            if ($forceReload) {
+                clearstatcache();
+            }
+
+            $this->manifest = self::normalizeManifest($this->getLogTarget()->loadManifest());
+        }
+
+        return $this->manifest;
+    }
+
+    /**
      * Loads debug data for the specified tag into panels.
      *
      * @param string $tag Debug data tag.
@@ -372,24 +393,51 @@ class DefaultController extends Controller
     }
 
     /**
-     * Returns the debug data manifest, optionally forcing a reload from the log target.
+     * Resolves the debug panel's theme + theme-toggle SVG glyphs and exposes them to the view layer.
      *
-     * @param bool $forceReload Whether to force reload the manifest from the log target, bypassing any cached version.
+     * The resolved values are pushed into `Yii::$app->view->params['debugTheme']` so the layout can pick them up
+     * without re-reading the request, and a small associative array with the same data is returned so individual
+     * actions can pass the SVGs to the view as render params (avoiding inline filesystem reads in the templates).
      *
-     * @return array<string, array<string, mixed>> Debug data manifest, indexed by tag, containing metadata about
-     * available debug entries.
+     * @return array{theme: string, sun: string, moon: string}
      */
-    protected function getManifest(bool $forceReload = false): array
+    public function primeThemeContext(): array
     {
-        if ($this->manifest === null || $forceReload) {
-            if ($forceReload) {
-                clearstatcache();
-            }
+        $request = Yii::$app->getRequest();
 
-            $this->manifest = self::normalizeManifest($this->getLogTarget()->loadManifest());
+        $raw = $request->get('yii_debug_theme');
+
+        if ($raw === null) {
+            // Yii validates cookies with HMAC by default, so the unsigned cookie written from JS
+            // (`document.cookie = 'yii-debug-toolbar-theme=…'`) gets rejected by `getCookies()`. Fall back to
+            // `$_COOKIE` so the theme survives toolbar-driven navigations and JS toggles. The value is only ever
+            // accepted as `'dark'` or `'light'` below, so reading it raw is safe; it can't be used as an injection
+            // vector.
+            $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
+
+            if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
+                $candidate = $_COOKIE['yii-debug-toolbar-theme'];
+
+                if (is_string($candidate)) {
+                    $raw = $candidate;
+                }
+            }
         }
 
-        return $this->manifest;
+        $theme = is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
+
+        $context = [
+            'theme' => $theme,
+            'sun' => Icon::render('sun'),
+            'moon' => Icon::render('moon'),
+        ];
+
+        $view = $this->view;
+        $view->params['debugTheme'] = $theme;
+        $view->params['themeIconSun'] = $context['sun'];
+        $view->params['themeIconMoon'] = $context['moon'];
+
+        return $context;
     }
 
     /**
@@ -513,54 +561,6 @@ class DefaultController extends Controller
         }
 
         return $normalized;
-    }
-
-    /**
-     * Resolves the debug panel's theme + theme-toggle SVG glyphs and exposes them to the view layer.
-     *
-     * The resolved values are pushed into `Yii::$app->view->params['debugTheme']` so the layout can pick them up
-     * without re-reading the request, and a small associative array with the same data is returned so individual
-     * actions can pass the SVGs to the view as render params (avoiding inline filesystem reads in the templates).
-     *
-     * @return array{theme: string, sun: string, moon: string}
-     */
-    private function primeThemeContext(): array
-    {
-        $request = Yii::$app->getRequest();
-        $raw = $request->get('yii_debug_theme');
-
-        if ($raw === null) {
-            // Yii validates cookies with HMAC by default, so the unsigned cookie
-            // written from JS (`document.cookie = 'yii-debug-toolbar-theme=…'`)
-            // gets rejected by `getCookies()`. Fall back to `$_COOKIE` so the
-            // theme survives toolbar-driven navigations and JS toggles. The
-            // value is only ever accepted as `'dark'` or `'light'` below, so
-            // reading it raw is safe — it can't be used as an injection vector.
-            $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
-
-            if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
-                $candidate = $_COOKIE['yii-debug-toolbar-theme'];
-
-                if (is_string($candidate)) {
-                    $raw = $candidate;
-                }
-            }
-        }
-
-        $theme = is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
-
-        $context = [
-            'theme' => $theme,
-            'sun' => Icon::render('sun'),
-            'moon' => Icon::render('moon'),
-        ];
-
-        $view = $this->view;
-        $view->params['debugTheme'] = $theme;
-        $view->params['themeIconSun'] = $context['sun'];
-        $view->params['themeIconMoon'] = $context['moon'];
-
-        return $context;
     }
 
     /**

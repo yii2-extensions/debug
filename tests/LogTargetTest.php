@@ -45,6 +45,10 @@ final class LogTargetTest extends TestCase
         $module->bootstrap(Yii::$app);
         $logTarget = $module->logTarget;
 
+        // Bootstrap or coverage runners may emit ambient warnings into the logger before this test sends its own
+        // messages. Drop them so the assertions below address `messages[0..2]` against `qwe`/`asd`/closure only.
+        Yii::$app->log->getLogger()->messages = [];
+
         Yii::debug('qwe');
         Yii::warning('asd');
         Yii::info(['test_callback' => function ($cbArg) {

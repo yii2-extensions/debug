@@ -3077,6 +3077,441 @@
 
   /**
    * -------------------------------------------------------------------
+   * Queue panel — request-scoped roster of `Yii::$app->queue->push()` /
+   * exec / error events. The default view is a paginated GridView with
+   * filter row (status, driver, component, job class, job id); each row
+   * is a one-click jump to a dedicated detail page that renders the full
+   * payload tree, error block, schedule chips, and a live lifecycle pill
+   * (waiting / reserved / done) queried once against the originating
+   * queue component. Card markup (`.yii-debug-queue-card*`) lives further
+   * below and powers the detail page only.
+   * -------------------------------------------------------------------
+   */
+  .yii-debug-queue-grid-job {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.2;
+  }
+
+  .yii-debug-queue-grid-job-link {
+    color: var(--yii-debug-text-strong);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .yii-debug-queue-grid-job-link:hover {
+    text-decoration: underline;
+  }
+
+  .yii-debug-queue-grid-job-namespace {
+    color: var(--yii-debug-text-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .yii-debug-grid-queue td.yii-debug-cell-nowrap,
+  .yii-debug-grid-queue td.yii-debug-cell-numeric,
+  .yii-debug-grid-queue td.yii-debug-cell-pill {
+    white-space: nowrap;
+  }
+
+  .yii-debug-grid-queue td.yii-debug-cell-mono {
+    font-family: var(--yii-debug-font-mono);
+  }
+
+  .yii-debug-grid-queue td.yii-debug-cell-numeric {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .yii-debug-grid-queue input.yii-debug-col-queue-id-input {
+    box-sizing: content-box;
+    width: 10ch;
+  }
+
+  .yii-debug-grid-queue .yii-debug-queue-status,
+  .yii-debug-grid-queue .yii-debug-queue-driver {
+    white-space: nowrap;
+  }
+
+  .yii-debug-queue-job-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-3);
+  }
+
+  .yii-debug-queue-job-head {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--yii-debug-space-2);
+  }
+
+  .yii-debug-queue-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-2);
+    padding: var(--yii-debug-space-4);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+  }
+
+  .yii-debug-queue-card-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--yii-debug-space-3);
+    align-items: flex-start;
+  }
+
+  .yii-debug-queue-avatar {
+    --queue-hue: 210;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: var(--yii-debug-radius-md);
+    background: linear-gradient(
+      135deg,
+      hsl(var(--queue-hue) 72% 52%),
+      hsl(calc(var(--queue-hue) + 28) 65% 40%)
+    );
+    box-shadow:
+      0 2px 10px hsl(var(--queue-hue) 60% 40% / 32%),
+      inset 0 1px 0 rgb(255 255 255 / 22%);
+    color: #fff;
+    font-family: var(--yii-debug-font-mono);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .yii-debug-queue-headline {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .yii-debug-queue-class {
+    margin: 0;
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-sans);
+    font-size: var(--yii-debug-fs-lg);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    word-break: break-all;
+  }
+
+  .yii-debug-queue-namespace {
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    letter-spacing: 0.02em;
+  }
+
+  .yii-debug-queue-meta-pills {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex: none;
+  }
+
+  .yii-debug-queue-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: var(--yii-debug-radius-pill);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .yii-debug-queue-status-queued {
+    color: var(--yii-debug-panel-info);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-info),
+      transparent 86%
+    );
+  }
+
+  .yii-debug-queue-status-done {
+    color: var(--yii-debug-panel-success);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-success),
+      transparent 86%
+    );
+  }
+
+  .yii-debug-queue-status-failed {
+    color: var(--yii-debug-panel-danger);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-danger),
+      transparent 86%
+    );
+  }
+
+  .yii-debug-queue-driver {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: var(--yii-debug-radius-pill);
+    border: var(--yii-debug-border);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1;
+    cursor: help;
+  }
+
+  .yii-debug-queue-driver-is-sync {
+    color: var(--yii-debug-panel-success);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-success),
+      transparent 92%
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--yii-debug-panel-success),
+      transparent 70%
+    );
+  }
+
+  .yii-debug-queue-driver-is-async {
+    color: var(--yii-debug-panel-warning, #d97706);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-warning, #d97706),
+      transparent 92%
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--yii-debug-panel-warning, #d97706),
+      transparent 70%
+    );
+  }
+
+  .yii-debug-queue-hint {
+    margin: var(--yii-debug-space-3) 0;
+    padding: var(--yii-debug-space-3) var(--yii-debug-space-4);
+    border-radius: var(--yii-debug-radius-md);
+    border-left: 3px solid var(--yii-debug-panel-warning, #d97706);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-warning, #d97706),
+      transparent 94%
+    );
+    color: var(--yii-debug-panel-text);
+    font-size: var(--yii-debug-fs-sm);
+    line-height: 1.5;
+  }
+
+  .yii-debug-queue-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--yii-debug-space-3);
+    border-radius: var(--yii-debug-radius-sm);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-text),
+      transparent 96%
+    );
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    line-height: 1.6;
+  }
+
+  .yii-debug-queue-tree-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .yii-debug-queue-tree-key {
+    color: var(--yii-debug-panel-text);
+    font-weight: 700;
+  }
+
+  .yii-debug-queue-tree-key::after {
+    content: ":";
+    margin-left: 1px;
+    color: var(--yii-debug-panel-muted);
+    font-weight: 400;
+  }
+
+  .yii-debug-queue-tree-type {
+    color: var(--yii-debug-panel-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-text),
+      transparent 92%
+    );
+  }
+
+  .yii-debug-queue-tree-class {
+    color: var(--yii-debug-panel-info);
+    font-weight: 600;
+    cursor: help;
+  }
+
+  .yii-debug-queue-tree-meta {
+    color: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-queue-tree-truncated {
+    color: var(--yii-debug-panel-warning, #d97706);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-warning, #d97706),
+      transparent 86%
+    );
+  }
+
+  .yii-debug-queue-tree-value {
+    word-break: break-all;
+  }
+
+  .yii-debug-queue-tree-value-string {
+    color: var(--yii-debug-panel-success);
+  }
+
+  .yii-debug-queue-tree-value-number {
+    color: var(--yii-debug-panel-info);
+  }
+
+  .yii-debug-queue-tree-value-bool {
+    color: var(--yii-debug-panel-warning, #d97706);
+    font-weight: 600;
+  }
+
+  .yii-debug-queue-tree-value-null {
+    color: var(--yii-debug-panel-muted);
+    font-style: italic;
+  }
+
+  .yii-debug-queue-tree-collapse {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .yii-debug-queue-tree-summary {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    cursor: pointer;
+    list-style: revert;
+    padding: 2px 0;
+  }
+
+  .yii-debug-queue-tree-summary::-webkit-details-marker {
+    color: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-queue-tree-children {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-left: var(--yii-debug-space-4);
+    padding-left: var(--yii-debug-space-3);
+    border-left: 1px dashed
+      color-mix(in srgb, var(--yii-debug-panel-text), transparent 80%);
+  }
+
+  .yii-debug-queue-time {
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    letter-spacing: 0.02em;
+  }
+
+  .yii-debug-queue-payload {
+    margin: 0;
+  }
+
+  .yii-debug-queue-error {
+    padding: var(--yii-debug-space-3);
+    border-radius: var(--yii-debug-radius-sm);
+    border-left: 3px solid var(--yii-debug-panel-danger);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-danger),
+      transparent 92%
+    );
+    color: var(--yii-debug-panel-danger);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    line-height: 1.5;
+  }
+
+  .yii-debug-queue-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--yii-debug-space-2);
+    padding-top: var(--yii-debug-space-2);
+    border-top: var(--yii-debug-border);
+  }
+
+  .yii-debug-queue-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: var(--yii-debug-radius-pill);
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-panel-text),
+      transparent 94%
+    );
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    line-height: 1.4;
+  }
+
+  .yii-debug-queue-meta-label {
+    color: var(--yii-debug-panel-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 10px;
+  }
+
+  .yii-debug-queue-meta-value {
+    color: var(--yii-debug-panel-text);
+    font-weight: 600;
+  }
+
+  /**
+   * -------------------------------------------------------------------
    * Dump panel — `Yii::debug()` snapshots rendered as a GridView (category
    * + message). The message column wraps each value in a small "card" head
    * (#index, type badge, time, trace) plus a body that hosts PHP's
