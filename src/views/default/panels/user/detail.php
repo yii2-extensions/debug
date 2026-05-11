@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use yii\debug\panels\UserPanel;
 use yii\helpers\Html;
+use yii\web\View;
 
-/** @var \yii\web\View $this */
-/** @var yii\debug\panels\UserPanel $panel */
+/**
+ * @var UserPanel $panel
+ * @var View $this
+ */
 
 $encodedName = Html::encode($panel->getName());
 ?>
@@ -41,16 +45,18 @@ if ($identity !== null) {
         foreach ($items['nav'] as $k => $item) {
             echo Html::tag(
                 'li',
-                Html::a($item, '#u-tab-' . $k, [
-                    'class' => $k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link',
-                    'data-yii-debug-toggle' => 'tab',
-                    'role' => 'tab',
-                    'aria-controls' => 'u-tab-' . $k,
-                    'aria-selected' => $k === 0 ? 'true' : 'false',
-                ]),
-                [
-                    'class' => 'yii-debug-tab',
-                ],
+                Html::a(
+                    $item,
+                    "#u-tab-{$k}",
+                    [
+                        'class' => $k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link',
+                        'data-yii-debug-toggle' => 'tab',
+                        'role' => 'tab',
+                        'aria-controls' => "u-tab-{$k}",
+                        'aria-selected' => $k === 0 ? 'true' : 'false',
+                    ],
+                ),
+                ['class' => 'yii-debug-tab'],
             );
         }
     ?>
@@ -58,10 +64,14 @@ if ($identity !== null) {
     <div class="yii-debug-tab-content">
         <?php
     foreach ($items['content'] as $k => $item) {
-        echo Html::tag('div', $item, [
-            'class' => $k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel',
-            'id' => 'u-tab-' . $k,
-        ]);
+        echo Html::tag(
+            'div',
+            $item,
+            [
+                'class' => $k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel',
+                'id' => "u-tab-{$k}",
+            ],
+        );
     }
     ?>
     </div>

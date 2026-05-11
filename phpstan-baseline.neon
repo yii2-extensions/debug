@@ -1015,30 +1015,6 @@ parameters:
 			path: src/views/default/panels/log/summary.php
 
 		-
-			rawMessage: 'Cannot call method isMainUser() on yii\debug\models\UserSwitch|null.'
-			identifier: method.nonObject
-			count: 1
-			path: src/views/default/panels/user/summary.php
-
-		-
-			rawMessage: 'Cannot call method getMainUser() on yii\debug\models\UserSwitch|null.'
-			identifier: method.nonObject
-			count: 1
-			path: src/views/default/panels/user/switch.php
-
-		-
-			rawMessage: 'Cannot call method isMainUser() on yii\debug\models\UserSwitch|null.'
-			identifier: method.nonObject
-			count: 1
-			path: src/views/default/panels/user/switch.php
-
-		-
-			rawMessage: 'Parameter #1 $model of method yii\widgets\ActiveForm::field() expects yii\base\Model, yii\debug\models\UserSwitch|null given.'
-			identifier: argument.type
-			count: 1
-			path: src/views/default/panels/user/switch.php
-
-		-
 			rawMessage: Anonymous function should return string but returns mixed.
 			identifier: return.type
 			count: 1

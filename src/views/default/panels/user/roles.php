@@ -17,23 +17,28 @@ $columns = [
 ];
 
 $data = is_array($panel->data) ? $panel->data : [];
+
 $rolesProvider = $data['rolesProvider'] ?? null;
 $permissionsProvider = $data['permissionsProvider'] ?? null;
 
 if ($rolesProvider !== null) {
     echo '<h2>Roles</h2>';
-
-    echo GridView::widget(array_merge(GridViewConfig::defaults(), [
-        'dataProvider' => $rolesProvider,
-        'columns' => $columns,
-    ]));
+    echo GridView::widget(
+        [
+            ...GridViewConfig::defaults(),
+            'dataProvider' => $rolesProvider,
+            'columns' => $columns,
+        ],
+    );
 }
 
 if ($permissionsProvider !== null) {
     echo '<h2>Permissions</h2>';
-
-    echo GridView::widget(array_merge(GridViewConfig::defaults(), [
-        'dataProvider' => $permissionsProvider,
-        'columns' => $columns,
-    ]));
+    echo GridView::widget(
+        [
+            ...GridViewConfig::defaults(),
+            'dataProvider' => $permissionsProvider,
+            'columns' => $columns,
+        ],
+    );
 }

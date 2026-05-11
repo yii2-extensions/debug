@@ -2,23 +2,28 @@
 
 declare(strict_types=1);
 
+use yii\debug\panels\UserPanel;
 use yii\helpers\Html;
+use yii\web\View;
 
-/** @var \yii\web\View $this */
-/** @var yii\debug\panels\UserPanel $panel */
+/**
+ * @var UserPanel $panel
+ * @var View $this
+ */
 
 $data = is_array($panel->data) ? $panel->data : [];
 $id = $data['id'] ?? null;
 $idLabel = is_scalar($id) ? (string) $id : '';
 $user = $panel->getUser();
 $isGuest = $user === null || $user->isGuest;
+$isMainUser = $panel->userSwitch === null || $panel->userSwitch->isMainUser();
 ?>
 <div class="yii-debug-toolbar-block">
     <a href="<?= $panel->getUrl() ?>">
         <?php if ($id === null): ?>
             <span class="yii-debug-toolbar-label">Guest</span>
         <?php else: ?>
-            <?php if ($isGuest || $panel->userSwitch->isMainUser()): ?>
+            <?php if ($isGuest || $isMainUser): ?>
                 <?= Html::encode($panel->getName()) ?> <span
                     class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= Html::encode($idLabel) ?></span>
             <?php else: ?>
