@@ -1861,12 +1861,6 @@ parameters:
 			path: tests/ModuleTest.php
 
 		-
-			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertIsString() with string and ''actionPhpInfo must…'' will always evaluate to true.'
-			identifier: staticMethod.alreadyNarrowedType
-			count: 1
-			path: tests/ModuleTest.php
-
-		-
 			rawMessage: Cannot access offset 0 on mixed.
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1

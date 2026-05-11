@@ -4,26 +4,24 @@ declare(strict_types=1);
 
 namespace yiiunit\debug;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProvider, Group};
 use Yii;
 use yii\base\Event;
 use yii\caching\FileCache;
 use yii\debug\controllers\DefaultController;
-use yii\debug\DebugAsset;
-use yii\debug\LogTarget;
-use yii\debug\Module;
+use yii\debug\{DebugAsset, LogTarget, Module};
 use yii\web\Application as WebApplication;
+use yii\web\AssetManager;
 use yii\web\Response;
 
 /**
- * Unit tests for {@see Module} covering IP-based access control, toolbar HTML/JSON rendering, the
- * `php-info` standalone action wiring, debug-asset registration, and request-cache behavior.
+ * Unit tests for {@see Module} covering IP-based access control, toolbar HTML/JSON rendering, the `php-info` standalone
+ * action wiring, debug-asset registration, and request-cache behavior.
  *
  * {@see ModuleTest::checkAccessProvider} for IP-filter test case data providers.
  *
- * @author Wilmer Arambula <terabytesoftw@gmail.com>
- * @since 2.1.29
+ * @copyright Copyright (C) 2026 Terabytesoftw.
+ * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 #[Group('module')]
 final class ModuleTest extends TestCase
@@ -50,9 +48,11 @@ final class ModuleTest extends TestCase
     public function testActionPhpInfoIsCallableStandalone(): void
     {
         $module = new Module('debug');
+
         $module->allowedIPs = ['*'];
 
         $app = Yii::$app;
+
         $app->setModule('debug', $module);
         $module->bootstrap($app);
 
@@ -62,28 +62,41 @@ final class ModuleTest extends TestCase
             self::fail("Could not create asset base path: {$assetBasePath}");
         }
 
-        $app->set('assetManager', [
-            'class' => \yii\web\AssetManager::class,
-            'basePath' => $assetBasePath,
-            'baseUrl' => '/assets',
-        ]);
+        $app->set(
+            'assetManager',
+            [
+                'class' => AssetManager::class,
+                'basePath' => $assetBasePath,
+                'baseUrl' => '/assets',
+            ],
+        );
 
         $controller = new DefaultController('default', $module);
+
         $controller->layout = false;
+
         $output = $controller->actionPhpInfo();
 
-        self::assertIsString($output, 'actionPhpInfo must return rendered HTML.');
-        self::assertStringContainsString('phpinfo', $output, 'phpinfo view must include the heading literal.');
+        self::assertStringContainsString(
+            'phpinfo',
+            $output,
+            "'phpinfo' view must include the heading literal.",
+        );
     }
 
     /**
      * @param array<int, string> $allowedIPs
      */
     #[DataProvider('checkAccessProvider')]
-    public function testCheckAccessHonorsAllowedIpAndCidrFilters(array $allowedIPs, string $userIp, bool $expectedResult): void
-    {
+    public function testCheckAccessHonorsAllowedIpAndCidrFilters(
+        array $allowedIPs,
+        string $userIp,
+        bool $expectedResult,
+    ): void {
         $module = new Module('debug');
+
         $module->allowedIPs = $allowedIPs;
+
         $_SERVER['REMOTE_ADDR'] = $userIp;
 
         self::assertSame(
@@ -117,44 +130,72 @@ final class ModuleTest extends TestCase
 
         $module = new Module('debug');
 
-        self::assertSame('0.1.0', $module->getVersion(), 'Module version must read from the registered extension entry.');
+        self::assertSame(
+            '0.1.0',
+            $module->getVersion(),
+            'Module version must read from the registered extension entry.',
+        );
     }
 
     public function testGetToolbarHtmlEmitsCustomElementWithDataUrlAndDefaults(): void
     {
         $module = new Module('debug');
+
         $module->bootstrap(Yii::$app);
+
         $this->silenceLogger();
 
         $html = $module->getToolbarHtml();
 
-        self::assertStringContainsString('<yii-debug-toolbar', $html, 'Toolbar must render the custom element marker.');
+        self::assertStringContainsString(
+            '<yii-debug-toolbar',
+            $html,
+            'Toolbar must render the custom element marker.',
+        );
         self::assertStringContainsString(
             'data-url="/index.php?r=debug%2Fdefault%2Ftoolbar-data&amp;tag=' . $module->logTarget->tag . '"',
             $html,
             'Toolbar must point its data-url to the toolbar-data action with the current tag.',
         );
-        self::assertStringContainsString('data-position="bottom"', $html, 'Default position must be bottom.');
-        self::assertStringContainsString('data-height="50"', $html, 'Default height percentage must be 50.');
+        self::assertStringContainsString(
+            'data-position="bottom"',
+            $html,
+            'Default position must be bottom.',
+        );
+        self::assertStringContainsString(
+            'data-height="50"',
+            $html,
+            "Default height percentage must be '50'.",
+        );
     }
 
     public function testLogTargetObjectIsAcceptedAsConfig(): void
     {
         $module = new Module('debug');
+
         $module->logTarget = new LogTarget($module);
+
         $module->bootstrap(Yii::$app);
 
-        self::assertInstanceOf(LogTarget::class, $module->logTarget, 'Object-typed logTarget must be retained verbatim.');
+        self::assertInstanceOf(
+            LogTarget::class,
+            $module->logTarget,
+            'Object-typed logTarget must be retained verbatim.',
+        );
     }
 
     public function testRenderToolbarHonorsCustomModuleId(): void
     {
         $moduleId = 'my_debug';
+
         $module = new Module($moduleId);
+
         $module->allowedIPs = ['*'];
 
         Yii::$app->setModule($moduleId, $module);
+
         $module->bootstrap(Yii::$app);
+
         $this->silenceLogger();
 
         ob_start();
@@ -174,62 +215,137 @@ final class ModuleTest extends TestCase
     public function testRenderToolbarMarkupVariesByTagAcrossCachedRequests(): void
     {
         $module = new Module('debug');
+
         $module->allowedIPs = ['*'];
 
         Yii::$app->setModule('debug', $module);
         $module->bootstrap(Yii::$app);
+
         $this->silenceLogger();
 
-        Yii::$app->set('cache', new FileCache(['cachePath' => '@runtime/cache']));
+        Yii::$app->set(
+            'cache',
+            new FileCache(['cachePath' => '@runtime/cache']),
+        );
 
         $view = Yii::$app->view;
+
         $output = ['', ''];
 
         for ($i = 0; $i <= 1; $i++) {
             ob_start();
-            $module->logTarget->tag = 'tag' . $i;
+
+            $module->logTarget->tag = "tag{$i}";
+
             if ($view->beginCache(__FUNCTION__, ['duration' => 3])) {
                 $module->renderToolbar(new Event(['sender' => $view]));
                 $view->endCache();
             }
+
             $output[$i] = (string) ob_get_clean();
         }
 
-        self::assertNotSame($output[0], $output[1], 'Toolbar render must reflect the current tag despite ViewCache wrapping.');
+        self::assertNotSame(
+            $output[0],
+            $output[1],
+            'Toolbar render must reflect the current tag despite ViewCache wrapping.',
+        );
     }
 
     public function testToolbarDataActionExposesNewBrandKeys(): void
     {
         $module = new Module('debug', null, ['dataPath' => '@runtime/debug']);
-        $module->allowedIPs = ['*'];
 
+        $module->allowedIPs = ['*'];
         $app = Yii::$app;
 
-        self::assertInstanceOf(WebApplication::class, $app, 'Test bootstrap must yield a web application.');
+        self::assertInstanceOf(
+            WebApplication::class,
+            $app,
+            'Test bootstrap must yield a web application.',
+        );
 
         $app->setModule('debug', $module);
         $module->bootstrap($app);
 
+        // Force a single capture cycle so the manifest has at least one entry to read back. Without this the test
+        // relies on leftover state in `@runtime/debug` from earlier tests — flaky under random test ordering.
+        Yii::$app->log->getLogger()->messages = [];
+        Yii::debug('manifest-bootstrap');
+        Yii::$app->log->getLogger()->flush(true);
+
         $manifest = $module->logTarget->loadManifest();
+
         $tag = array_key_first($manifest);
 
-        self::assertIsString($tag, 'Manifest must expose at least one captured request tag.');
+        self::assertIsString(
+            $tag,
+            'Manifest must expose at least one captured request tag.',
+        );
 
         $controller = new DefaultController('default', $module);
+
         $data = $controller->actionToolbarData($tag);
 
-        self::assertSame(Response::FORMAT_JSON, $app->getResponse()->format, 'toolbar-data must respond as JSON.');
-        self::assertSame('Yii Debugger', $data['title'], 'Title must always identify the toolbar.');
-        self::assertSame($tag, $data['tag'], 'Returned tag must match the requested tag.');
-        self::assertSame('bottom', $data['position'], 'Default position must be bottom.');
-        self::assertNotEmpty($data['items'], 'Toolbar payload must include at least one panel item.');
-        self::assertArrayHasKey('id', $data['items'][0], 'Each panel item must carry its registered id.');
-        self::assertArrayHasKey('url', $data['items'][0], 'Each panel item must carry a navigable url.');
-        self::assertArrayHasKey('phpInfoUrl', $data, 'New brand chip data must include phpInfoUrl.');
-        self::assertArrayHasKey('configUrl', $data, 'New brand chip data must include configUrl.');
-        self::assertArrayHasKey('yiiVersion', $data, 'Brand chip must include yiiVersion.');
-        self::assertArrayHasKey('phpVersion', $data, 'Brand chip must include phpVersion.');
-        self::assertArrayHasKey('iconBaseUrl', $data, 'Toolbar icons must resolve from iconBaseUrl.');
+        self::assertSame(
+            Response::FORMAT_JSON,
+            $app->getResponse()->format,
+            'toolbar-data must respond as JSON.',
+        );
+        self::assertSame(
+            'Yii Debugger',
+            $data['title'],
+            'Title must always identify the toolbar.',
+        );
+        self::assertSame(
+            $tag,
+            $data['tag'],
+            'Returned tag must match the requested tag.',
+        );
+        self::assertSame(
+            'bottom',
+            $data['position'],
+            'Default position must be bottom.',
+        );
+        self::assertNotEmpty(
+            $data['items'],
+            'Toolbar payload must include at least one panel item.',
+        );
+        self::assertArrayHasKey(
+            'id',
+            $data['items'][0],
+            'Each panel item must carry its registered id.',
+        );
+        self::assertArrayHasKey(
+            'url',
+            $data['items'][0],
+            'Each panel item must carry a navigable url.',
+        );
+        self::assertArrayHasKey(
+            'phpInfoUrl',
+            $data,
+            "New brand chip data must include 'phpInfoUrl'.",
+        );
+        self::assertArrayHasKey(
+            'configUrl',
+            $data,
+            "New brand chip data must include 'configUrl'.",
+        );
+        self::assertArrayHasKey(
+            'yiiVersion',
+            $data,
+            "Brand chip must include 'yiiVersion'.",
+        );
+        self::assertArrayHasKey(
+            'phpVersion',
+            $data,
+            "Brand chip must include 'phpVersion'.",
+        );
+        self::assertArrayHasKey(
+            'iconBaseUrl',
+            $data,
+            "Toolbar icons must resolve from 'iconBaseUrl'.",
+        );
     }
 
     protected function setUp(): void
