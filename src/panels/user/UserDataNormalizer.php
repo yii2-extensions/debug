@@ -74,8 +74,8 @@ final class UserDataNormalizer
     }
 
     /**
-     * @param array<string, string> $labels
      * @param array<string, string> $bucket
+     * @param array<string, string> $labels
      *
      * @return list<UserAttribute>
      */
