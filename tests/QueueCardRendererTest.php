@@ -66,6 +66,7 @@ final class QueueCardRendererTest extends TestCase
             'All-sync summary must omit the hint banner.',
         );
     }
+
     public function testRenderItemEmitsCardWithClassAndStatusPill(): void
     {
         $record = self::makeRecord(jobClass: 'app\\jobs\\HelloJob', eventType: 'push');

@@ -145,6 +145,7 @@ final class QueueSummaryNormalizerTest extends TestCase
             "Unknown component must yield '[]'.",
         );
     }
+
     public function testFromPanelDataReturnsEmptySummaryWhenInputIsNotArray(): void
     {
         $summary = QueueSummaryNormalizer::fromPanelData(
