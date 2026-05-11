@@ -159,6 +159,7 @@ final class JobRecordNormalizerTest extends TestCase
             "Missing duration must remain 'null'.",
         );
     }
+
     public function testFromReturnsAllEmptyDefaultsWhenInputIsNotArray(): void
     {
         $record = JobRecordNormalizer::from('not an array');

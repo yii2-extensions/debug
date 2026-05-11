@@ -40,6 +40,7 @@ final class QueueGridRendererTest extends TestCase
             "Zero attempt must yield '—'.",
         );
     }
+
     public function testRenderComponentCellReturnsRawComponentId(): void
     {
         self::assertSame(
