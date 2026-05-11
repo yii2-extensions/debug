@@ -6,7 +6,9 @@ namespace yii\debug\panels;
 
 use Yii;
 use yii\base\InlineAction;
+use yii\debug\controllers\DefaultController;
 use yii\debug\Panel;
+use yii\debug\panels\request\RequestDataNormalizer;
 use yii\helpers\ArrayHelper;
 use yii\web\{Response, Session};
 
@@ -46,7 +48,13 @@ class RequestPanel extends Panel
 
     public function getDetail(): string
     {
-        return Yii::$app->view->render('panels/request/detail', ['panel' => $this]);
+        $controller = Yii::$app->controller;
+
+        $summary = $controller instanceof DefaultController ? $controller->summary : [];
+
+        $view = RequestDataNormalizer::fromPanelData($this->data, $summary);
+
+        return Yii::$app->view->render('panels/request/detail', ['view' => $view]);
     }
 
     public function getName(): string
