@@ -57,7 +57,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * RBAC access checker — component id or fully configured manager.
      *
-     * @var BaseManager|array<string, mixed>|string
+     * @var array<string, mixed>|BaseManager|string
      */
     public BaseManager|array|string $authManager = 'authManager';
     /**
@@ -107,7 +107,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * LogTarget instance, configuration array, or class name. Always coerced to a {@see LogTarget} by {@see bootstrap()}.
      *
-     * @var LogTarget|array<string, mixed>|string
+     * @var array<string, mixed>|LogTarget|string
      */
     public LogTarget|array|string $logTarget = 'yii\debug\LogTarget';
     /**
@@ -137,7 +137,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Trace-line template — placeholder string ({file}, {line}, {text}), callable returning the rendered line, or
      * `false` to disable trace-line rendering entirely.
      *
-     * @var (callable(array<string, mixed>, Panel): string)|string|false
+     * @var (callable(array<string, mixed>, Panel): string)|false|string
      */
     public mixed $traceLine = self::DEFAULT_IDE_TRACELINE;
     /**
@@ -484,7 +484,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * @param Panel|array<string, mixed>|string $config
+     * @param array<string, mixed>|Panel|string $config
      *
      * @throws InvalidConfigException
      */

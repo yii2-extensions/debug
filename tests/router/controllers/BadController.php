@@ -17,7 +17,7 @@ class BadController extends Controller
      * The router never reaches this body — {@see init()} throws first — so the returned payload is irrelevant to the
      * scenario under test. Kept type-compliant with the parent contract.
      *
-     * @return array<array-key, class-string|array{class: class-string, ...}>
+     * @return array<array-key, array{class: class-string, ...}|class-string>
      */
     public function actions(): array
     {

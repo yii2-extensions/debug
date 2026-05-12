@@ -228,7 +228,7 @@ class FlattenException
     }
 
     /**
-     * @param list<array<string, mixed>>|array<int, mixed> $trace
+     * @param array<int, mixed>|list<array<string, mixed>> $trace
      */
     protected function setTrace(array $trace): void
     {
