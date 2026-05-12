@@ -146,6 +146,11 @@ final class SidebarDataNormalizerTest extends TestCase
             ],
         );
 
+        self::assertArrayHasKey(
+            0,
+            $view->navItems,
+            'History must include at least one navigation item.',
+        );
         self::assertContains(
             'tag-1',
             $view->navItems[0]->url,
