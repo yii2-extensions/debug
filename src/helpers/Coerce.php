@@ -66,6 +66,7 @@ final class Coerce
 
         return $normalized;
     }
+
     /**
      * Returns the value as a string when it is scalar or {@see Stringable}, `null` otherwise.
      */

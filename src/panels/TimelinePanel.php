@@ -390,5 +390,4 @@ class TimelinePanel extends Panel
             'trace' => Coerce::traceFrames($timing['trace'] ?? []),
         ];
     }
-
 }

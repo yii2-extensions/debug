@@ -164,5 +164,4 @@ final class QueueGridRenderer
 
         return "{$record->ttr}s";
     }
-
 }

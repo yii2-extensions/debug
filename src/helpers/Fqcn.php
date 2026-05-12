@@ -28,6 +28,7 @@ final class Fqcn
 
         return $position === false ? '' : substr($fqcn, 0, $position);
     }
+
     /**
      * Returns the segment after the last `\` separator, or the full `$fqcn` when no separator is present.
      */

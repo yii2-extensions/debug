@@ -177,5 +177,4 @@ final class AssetBundleNormalizer
 
         return $out;
     }
-
 }

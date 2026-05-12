@@ -387,5 +387,4 @@ class Panel extends Component
     {
         return [];
     }
-
 }

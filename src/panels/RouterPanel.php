@@ -174,5 +174,4 @@ class RouterPanel extends Panel
 
         return $normalized;
     }
-
 }

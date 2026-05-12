@@ -447,5 +447,4 @@ final class QueueCardRenderer
                     ->content('"' . $preview . '"'),
             );
     }
-
 }

@@ -45,6 +45,7 @@ final class AssetBundleNormalizerTest extends TestCase
             "Files + wiring must produce a '2-column' layout.",
         ];
     }
+
     public function testNormalizeAggregatesTotalsAcrossBundles(): void
     {
         $summary = (new AssetBundleNormalizer())->normalize(
