@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Closure;
-use Stringable;
 use Yii;
+use yii\debug\helpers\Coerce;
 use yii\debug\models\search\Log;
 use yii\debug\Panel;
 use yii\helpers\Html;
@@ -16,9 +16,6 @@ use yii\log\Logger;
 use function array_key_exists;
 use function count;
 use function is_array;
-use function is_float;
-use function is_int;
-use function is_scalar;
 use function is_string;
 
 /**
@@ -184,36 +181,6 @@ class DumpPanel extends Panel
         ];
     }
 
-    private static function floatValue(mixed $value): float|null
-    {
-        if (is_int($value) || is_float($value)) {
-            return (float) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (float) $value;
-        }
-
-        return null;
-    }
-
-    private static function intValue(mixed $value): int|null
-    {
-        if (is_int($value)) {
-            return $value;
-        }
-
-        if (is_float($value)) {
-            return (int) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (int) $value;
-        }
-
-        return null;
-    }
-
     /**
      * @param mixed $message Raw log message from saved panel data.
      *
@@ -232,11 +199,11 @@ class DumpPanel extends Panel
         }
 
         return [
-            'message' => self::stringValue($message[0] ?? null) ?? '',
-            'level' => self::intValue($message[1] ?? null) ?? 0,
-            'category' => self::stringValue($message[2] ?? null) ?? '',
-            'time' => (self::floatValue($message[3] ?? null) ?? 0.0) * 1000,
-            'trace' => self::normalizeTrace($message[4] ?? []),
+            'message' => Coerce::stringOrNull($message[0] ?? null) ?? '',
+            'level' => Coerce::intOrNull($message[1] ?? null) ?? 0,
+            'category' => Coerce::stringOrNull($message[2] ?? null) ?? '',
+            'time' => (Coerce::floatOrNull($message[3] ?? null) ?? 0.0) * 1000,
+            'trace' => Coerce::traceFrames($message[4] ?? []),
         ];
     }
 
@@ -260,46 +227,5 @@ class DumpPanel extends Panel
         }
 
         return $normalized;
-    }
-
-    /**
-     * @param mixed $trace Raw trace from a log message.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private static function normalizeTrace(mixed $trace): array
-    {
-        if (!is_array($trace)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($trace as $frame) {
-            if (!is_array($frame)) {
-                continue;
-            }
-
-            $normalizedFrame = [];
-
-            foreach ($frame as $key => $value) {
-                if (is_string($key)) {
-                    $normalizedFrame[$key] = $value;
-                }
-            }
-
-            $normalized[] = $normalizedFrame;
-        }
-
-        return $normalized;
-    }
-
-    private static function stringValue(mixed $value): string|null
-    {
-        if (is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        return null;
     }
 }

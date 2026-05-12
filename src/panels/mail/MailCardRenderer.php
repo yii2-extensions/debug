@@ -11,12 +11,10 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\Article;
-use yii\debug\helpers\Icon;
+use yii\debug\helpers\{Avatar, Icon};
 use yii\helpers\Html;
 
-use function abs;
 use function array_map;
-use function crc32;
 use function date;
 use function explode;
 use function floor;
@@ -24,7 +22,6 @@ use function mb_strlen;
 use function mb_strtoupper;
 use function mb_substr;
 use function preg_replace;
-use function strtolower;
 use function time;
 
 /**
@@ -145,18 +142,6 @@ final class MailCardRenderer
     }
 
     /**
-     * Picks a deterministic hue (0-359) for the avatar so the same sender always renders with the same color.
-     */
-    private static function hueFor(string $email): int
-    {
-        if ($email === '') {
-            return 210;
-        }
-
-        return abs(crc32(strtolower($email))) % 360;
-    }
-
-    /**
      * Returns the uppercased first letter of the local part of the address, falling back to `?` when empty.
      */
     private static function initialsFor(string $email): string
@@ -195,7 +180,7 @@ final class MailCardRenderer
         return Span::tag()
             ->class('yii-debug-mail-avatar')
             ->addAriaAttribute('hidden', 'true')
-            ->addAttribute('style', '--mail-hue: ' . self::hueFor($message->from))
+            ->addAttribute('style', '--mail-hue: ' . Avatar::hueFor($message->from))
             ->content(self::initialsFor($message->from));
     }
 

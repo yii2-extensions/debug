@@ -9,6 +9,7 @@ use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use Yii;
 use yii\debug\GridViewConfig;
+use yii\debug\helpers\Format;
 use yii\debug\models\search\Debug as DebugSearch;
 use yii\debug\panels\DbPanel;
 use yii\helpers\Url;
@@ -16,7 +17,6 @@ use yii\helpers\Url;
 use function implode;
 use function is_string;
 use function number_format;
-use function sprintf;
 use function trim;
 
 /**
@@ -31,8 +31,6 @@ use function trim;
  */
 final class HistoryRowRenderer
 {
-    private const BYTES_PER_MB = 1048576;
-
     /**
      * Builds the `rowOptions` attribute map for one captured-request row — `class` carries the critical-status
      * highlight + the JS row-link hook, and the `data-*` attributes feed the sidebar's history-cursor JS.
@@ -94,7 +92,7 @@ final class HistoryRowRenderer
                 ->render();
         }
 
-        return sprintf('%.3f MB', $row->peakMemory / self::BYTES_PER_MB);
+        return Format::bytesToMb($row->peakMemory, 3);
     }
 
     /**

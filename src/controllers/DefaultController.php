@@ -17,7 +17,6 @@ use yii\helpers\Url;
 use yii\web\{Controller, NotFoundHttpException};
 
 use function is_array;
-use function is_scalar;
 use function is_string;
 
 /**
@@ -84,7 +83,6 @@ class DefaultController extends Controller
 
         $dataProvider = $searchModel->search($_GET, array_values($manifest));
 
-        // load latest request
         if ($manifest === []) {
             throw new Exception(
                 'No debug data have been collected yet, try browsing the website first.',
@@ -232,14 +230,8 @@ class DefaultController extends Controller
 
         $configPanel = $this->module->panels['config'] ?? null;
 
-        $yiiVersion = null;
-        $phpVersion = null;
-
-        if ($configPanel instanceof ConfigPanel && is_array($configPanel->data)) {
-            $configData = self::normalizeStringKeyArray($configPanel->data);
-            $yiiVersion = self::readNestedScalarAsString($configData, 'application', 'yii');
-            $phpVersion = self::readNestedScalarAsString($configData, 'php', 'version');
-        }
+        $yiiVersion = $configPanel instanceof ConfigPanel ? $configPanel->getYiiVersion() : null;
+        $phpVersion = $configPanel instanceof ConfigPanel ? $configPanel->getPhpVersion() : null;
 
         $iconBaseUrl = '';
 
@@ -517,7 +509,7 @@ class DefaultController extends Controller
      */
     private function handlePanelError(FlattenException $error): void
     {
-        /*+
+        /**
          * Yii PHPDoc narrows this legacy entry point to Throwable, but the native method remains untyped and the debug
          * module stores panel errors as FlattenException instances.
          */
@@ -575,31 +567,5 @@ class DefaultController extends Controller
         }
 
         return $normalized;
-    }
-
-    /**
-     * Reads a nested scalar value from an array and returns it as a string, or null if the value is not a scalar or the
-     * specified keys do not exist.
-     *
-     * @param array<string, mixed> $data Array to read from, typically containing normalized summary or configuration
-     * data from a debug panel.
-     * @param string $section Top-level key to access in the array.
-     * @param string $key Nested key to access within the specified section.
-     *
-     * @return string|null Scalar value at the specified nested location as a `string`, or `null` if the value is not a
-     * scalar or the keys do not exist, allowing for safe retrieval of metadata without risking type errors in views or
-     * JSON responses.
-     */
-    private static function readNestedScalarAsString(array $data, string $section, string $key): string|null
-    {
-        $sectionData = $data[$section] ?? null;
-
-        if (!is_array($sectionData)) {
-            return null;
-        }
-
-        $value = $sectionData[$key] ?? null;
-
-        return is_scalar($value) ? (string) $value : null;
     }
 }

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\queue;
 
+use yii\debug\helpers\Coerce;
+use yii\debug\helpers\RowField;
+
 use function in_array;
 use function is_array;
-use function is_int;
-use function is_numeric;
 use function is_string;
 
 /**
@@ -26,8 +27,6 @@ use function is_string;
  */
 final class JobRecordNormalizer
 {
-    private const array EVENT_TYPES = ['push', 'exec', 'error'];
-
     /**
      * Builds a {@see JobRecord} from an arbitrary value, falling back to defensible defaults for any field that is
      * missing or has the wrong type. The `eventType` is normalised to one of `'push'` / `'exec'` / `'error'`;
@@ -39,20 +38,20 @@ final class JobRecordNormalizer
 
         return new JobRecord(
             eventType: self::eventTypeField($row),
-            componentId: self::stringField($row, 'componentId'),
-            driverName: self::stringField($row, 'driverName'),
-            driverClass: self::stringField($row, 'driverClass'),
+            componentId: RowField::stringField($row, 'componentId'),
+            driverName: RowField::stringField($row, 'driverName'),
+            driverClass: RowField::stringField($row, 'driverClass'),
             isAsync: ($row['isAsync'] ?? false) === true,
-            jobClass: self::stringField($row, 'jobClass'),
+            jobClass: RowField::stringField($row, 'jobClass'),
             payloadFields: self::payloadFields($row),
-            time: self::floatField($row, 'time'),
-            jobId: self::stringField($row, 'jobId'),
-            ttr: self::nullableIntField($row, 'ttr'),
-            delay: self::nullableIntField($row, 'delay'),
-            priority: self::nullableIntField($row, 'priority'),
-            attempt: self::nullableIntField($row, 'attempt'),
-            duration: self::nullableFloatField($row, 'duration'),
-            error: self::stringField($row, 'error'),
+            time: RowField::floatField($row, 'time'),
+            jobId: RowField::stringField($row, 'jobId'),
+            ttr: RowField::nullableIntField($row, 'ttr'),
+            delay: RowField::nullableIntField($row, 'delay'),
+            priority: RowField::nullableIntField($row, 'priority'),
+            attempt: RowField::nullableIntField($row, 'attempt'),
+            duration: RowField::nullableFloatField($row, 'duration'),
+            error: RowField::stringField($row, 'error'),
         );
     }
 
@@ -63,41 +62,7 @@ final class JobRecordNormalizer
     {
         $value = $row['eventType'] ?? null;
 
-        return is_string($value) && in_array($value, self::EVENT_TYPES, true) ? $value : 'push';
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function floatField(array $row, string $key): float
-    {
-        $value = $row[$key] ?? null;
-
-        return is_numeric($value) ? (float) $value : 0.0;
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function nullableFloatField(array $row, string $key): float|null
-    {
-        $value = $row[$key] ?? null;
-
-        return is_numeric($value) ? (float) $value : null;
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function nullableIntField(array $row, string $key): int|null
-    {
-        $value = $row[$key] ?? null;
-
-        if (is_int($value)) {
-            return $value;
-        }
-
-        return is_numeric($value) ? (int) $value : null;
+        return is_string($value) && in_array($value, JobRecord::EVENT_TYPES, true) ? $value : JobRecord::TYPE_PUSH;
     }
 
     /**
@@ -113,28 +78,6 @@ final class JobRecordNormalizer
     {
         $value = $row['payloadFields'] ?? null;
 
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $out = [];
-
-        foreach ($value as $key => $field) {
-            if (is_string($key)) {
-                $out[$key] = $field;
-            }
-        }
-
-        return $out;
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function stringField(array $row, string $key): string
-    {
-        $value = $row[$key] ?? null;
-
-        return is_string($value) ? $value : '';
+        return is_array($value) ? Coerce::stringKeyedArray($value) : [];
     }
 }

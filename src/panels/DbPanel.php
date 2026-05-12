@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
-use Stringable;
 use Yii;
 use yii\base\{Event, InvalidConfigException};
 use yii\data\Sort;
 use yii\db\Connection;
 use yii\debug\db\DebugPdoStatement;
+use yii\debug\helpers\Coerce;
 use yii\debug\models\search\Db;
 use yii\debug\Panel;
 use yii\log\Logger;
@@ -17,9 +17,7 @@ use yii\log\Logger;
 use function count;
 use function in_array;
 use function is_array;
-use function is_float;
 use function is_int;
-use function is_scalar;
 use function is_string;
 
 /**
@@ -101,6 +99,7 @@ class DbPanel extends Panel
      * }>|null Current database request timings
      */
     private array|null $timings = null;
+    private static string|null $traceHashAlgo = null;
 
     /**
      * Calculates given request profile timings.
@@ -124,14 +123,12 @@ class DbPanel extends Panel
 
             $rawTimings = Yii::getLogger()->calculateTimings($this->getMessagesForTimings());
 
-            // parse aliases.
             $ignoredPathsInBacktrace = array_map(
                 Yii::getAlias(...),
                 $this->ignoredPathsInBacktrace,
             );
 
-            // generate hash for caller.
-            $hashAlgo = in_array('xxh3', hash_algos(), true) ? 'xxh3' : 'crc32';
+            $hashAlgo = self::traceHashAlgo();
 
             foreach ($rawTimings as $rawTiming) {
                 $timing = self::normalizeTiming($rawTiming);
@@ -657,22 +654,6 @@ class DbPanel extends Panel
     }
 
     /**
-     * Converts numeric values to floats.
-     */
-    private static function floatValue(mixed $value): float|null
-    {
-        if (is_int($value) || is_float($value)) {
-            return (float) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (float) $value;
-        }
-
-        return null;
-    }
-
-    /**
      * Returns the saved profile messages for timing calculation.
      *
      * @return array<int, array<int|string, mixed>>
@@ -717,26 +698,6 @@ class DbPanel extends Panel
     }
 
     /**
-     * Converts numeric values to integers.
-     */
-    private static function intValue(mixed $value): int|null
-    {
-        if (is_int($value)) {
-            return $value;
-        }
-
-        if (is_float($value)) {
-            return (int) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (int) $value;
-        }
-
-        return null;
-    }
-
-    /**
      * @param array<int|string, mixed> $messages
      *
      * @return array<int, array<int|string, mixed>>
@@ -775,9 +736,9 @@ class DbPanel extends Panel
             return null;
         }
 
-        $info = self::stringValue($rawTiming['info'] ?? null);
-        $timestamp = self::floatValue($rawTiming['timestamp'] ?? null);
-        $duration = self::floatValue($rawTiming['duration'] ?? null);
+        $info = Coerce::stringOrNull($rawTiming['info'] ?? null);
+        $timestamp = Coerce::floatOrNull($rawTiming['timestamp'] ?? null);
+        $duration = Coerce::floatOrNull($rawTiming['duration'] ?? null);
 
         if ($info === null || $timestamp === null || $duration === null) {
             return null;
@@ -785,58 +746,27 @@ class DbPanel extends Panel
 
         return [
             'info' => $info,
-            'category' => self::stringValue($rawTiming['category'] ?? null) ?? '',
+            'category' => Coerce::stringOrNull($rawTiming['category'] ?? null) ?? '',
             'timestamp' => $timestamp,
-            'trace' => self::normalizeTrace($rawTiming['trace'] ?? []),
-            'level' => self::intValue($rawTiming['level'] ?? null) ?? 0,
+            'trace' => Coerce::traceFrames($rawTiming['trace'] ?? []),
+            'level' => Coerce::intOrNull($rawTiming['level'] ?? null) ?? 0,
             'duration' => $duration,
-            'memory' => self::intValue($rawTiming['memory'] ?? null) ?? 0,
-            'memoryDiff' => self::intValue($rawTiming['memoryDiff'] ?? null) ?? 0,
-            'traceHash' => self::stringValue($rawTiming['traceHash'] ?? null) ?? '',
+            'memory' => Coerce::intOrNull($rawTiming['memory'] ?? null) ?? 0,
+            'memoryDiff' => Coerce::intOrNull($rawTiming['memoryDiff'] ?? null) ?? 0,
+            'traceHash' => Coerce::stringOrNull($rawTiming['traceHash'] ?? null) ?? '',
         ];
     }
 
     /**
-     * @param mixed $trace Raw trace returned by Yii logger.
-     *
-     * @return array<int, array<string, mixed>>
+     * Returns the hash algorithm used to fingerprint backtraces, falling back to `crc32` on hosts whose PHP
+     * installation does not expose xxh3 (`hash_algos()` is process-stable, so we compute the answer once).
      */
-    private static function normalizeTrace(mixed $trace): array
+    private static function traceHashAlgo(): string
     {
-        if (!is_array($trace)) {
-            return [];
+        if (self::$traceHashAlgo === null) {
+            self::$traceHashAlgo = in_array('xxh3', hash_algos(), true) ? 'xxh3' : 'crc32';
         }
 
-        $normalized = [];
-
-        foreach ($trace as $frame) {
-            if (!is_array($frame)) {
-                continue;
-            }
-
-            $normalizedFrame = [];
-
-            foreach ($frame as $key => $value) {
-                if (is_string($key)) {
-                    $normalizedFrame[$key] = $value;
-                }
-            }
-
-            $normalized[] = $normalizedFrame;
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Converts scalar and stringable values to strings.
-     */
-    private static function stringValue(mixed $value): string|null
-    {
-        if (is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        return null;
+        return self::$traceHashAlgo;
     }
 }

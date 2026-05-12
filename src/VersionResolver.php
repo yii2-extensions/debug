@@ -18,17 +18,8 @@ use function substr;
  * Replaces Composer's synthetic dev placeholders (`22.0.9999999.9999999-dev`, `dev-master`) with the package alias plus
  * the short Git reference, producing strings like `22.x-dev @a1b2c3d` or `2.0.45`.
  *
- * Usage example:
- * ```php
- * use yii\debug\VersionResolver;
- *
- * $yii = VersionResolver::yii();                              // "22.0.x-dev @4c15f88"
- * $pkg = VersionResolver::forPackage('yiisoft/yii2-debug');   // "22.x-dev @abcdef0" or null
- * $list = VersionResolver::forExtensions(Yii::$app->extensions);
- * ```
- *
- * @author Wilmer Arambula <terabytesoftw@gmail.com>
- * @since 22.0
+ * @copyright Copyright (C) 2026 Terabytesoftw.
+ * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class VersionResolver
 {

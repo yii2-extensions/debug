@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\profile;
 
+use yii\debug\helpers\RowField;
+
 use function is_array;
-use function is_int;
-use function is_numeric;
-use function is_string;
 use function max;
 
 /**
@@ -36,46 +35,12 @@ final class ProfileRowNormalizer
         $row = is_array($data) ? $data : [];
 
         return new ProfileRow(
-            timestamp: self::floatField($row, 'timestamp'),
-            duration: self::floatField($row, 'duration'),
-            category: self::stringField($row, 'category'),
-            info: self::stringField($row, 'info'),
-            level: max(0, self::intField($row, 'level')),
-            seq: self::intField($row, 'seq'),
+            timestamp: RowField::floatField($row, 'timestamp'),
+            duration: RowField::floatField($row, 'duration'),
+            category: RowField::stringField($row, 'category'),
+            info: RowField::stringField($row, 'info'),
+            level: max(0, RowField::intField($row, 'level')),
+            seq: RowField::intField($row, 'seq'),
         );
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function floatField(array $row, string $key): float
-    {
-        $value = $row[$key] ?? null;
-
-        return is_numeric($value) ? (float) $value : 0.0;
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function intField(array $row, string $key): int
-    {
-        $value = $row[$key] ?? null;
-
-        if (is_int($value)) {
-            return $value;
-        }
-
-        return is_numeric($value) ? (int) $value : 0;
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function stringField(array $row, string $key): string
-    {
-        $value = $row[$key] ?? null;
-
-        return is_string($value) ? $value : '';
     }
 }

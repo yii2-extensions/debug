@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\event;
 
+use yii\debug\helpers\RowField;
+
 use function in_array;
 use function is_array;
-use function is_numeric;
-use function is_string;
 
 /**
  * Narrows the loose `mixed` argument GridView passes to event-column callbacks into a typed {@see EventRow}.
@@ -35,22 +35,12 @@ final class EventRowNormalizer
         $row = is_array($data) ? $data : [];
 
         return new EventRow(
-            time: self::floatField($row, 'time'),
-            name: self::stringField($row, 'name'),
-            class: self::stringField($row, 'class'),
+            time: RowField::floatField($row, 'time'),
+            name: RowField::stringField($row, 'name'),
+            class: RowField::stringField($row, 'class'),
             isStatic: self::isStaticField($row),
-            senderClass: self::stringField($row, 'senderClass'),
+            senderClass: RowField::stringField($row, 'senderClass'),
         );
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function floatField(array $row, string $key): float
-    {
-        $value = $row[$key] ?? null;
-
-        return is_numeric($value) ? (float) $value : 0.0;
     }
 
     /**
@@ -65,15 +55,5 @@ final class EventRowNormalizer
         $value = $row['isStatic'] ?? null;
 
         return in_array($value, ['1', 1, true], true) ? '1' : '0';
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function stringField(array $row, string $key): string
-    {
-        $value = $row[$key] ?? null;
-
-        return is_string($value) ? $value : '';
     }
 }

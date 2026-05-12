@@ -15,6 +15,31 @@ namespace yii\debug\panels\queue;
  */
 final readonly class JobRecord
 {
+    /**
+     * Allowed event-type strings, in canonical order. The renderers and the search filter dropdown iterate this list.
+     *
+     * @var list<string>
+     */
+    public const array EVENT_TYPES = [self::TYPE_PUSH, self::TYPE_EXEC, self::TYPE_ERROR];
+
+    /**
+     * Maps each event type to the CSS modifier and human label used by the status pill in both card and grid views.
+     *
+     * @var array<string, array{variant: string, label: string}>
+     */
+    public const array EVENT_VARIANTS = [
+        self::TYPE_PUSH => ['variant' => 'queued', 'label' => 'Queued'],
+        self::TYPE_EXEC => ['variant' => 'done', 'label' => 'Done'],
+        self::TYPE_ERROR => ['variant' => 'failed', 'label' => 'Failed'],
+    ];
+    public const string TYPE_ERROR = 'error';
+    public const string TYPE_EXEC = 'exec';
+    /**
+     * Captured lifecycle phase emitted by Yii Queue: `'push'` (job enqueued), `'exec'` (job finished successfully)
+     * or `'error'` (job threw).
+     */
+    public const string TYPE_PUSH = 'push';
+
     public function __construct(
         /**
          * Lifecycle phase: `'push'` (job enqueued), `'exec'` (job finished successfully) or `'error'` (job threw).

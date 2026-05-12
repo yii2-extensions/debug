@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yiiunit\debug;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\asset\{AssetBundleNormalizer, AssetBundleView, AssetSummary};
 
@@ -18,6 +19,32 @@ use yii\debug\panels\asset\{AssetBundleNormalizer, AssetBundleView, AssetSummary
 #[Group('asset')]
 final class AssetBundleNormalizerTest extends TestCase
 {
+    /**
+     * @return iterable<string, array{0: array<string, mixed>, 1: int, 2: string}>
+     */
+    public static function bodyColsCases(): iterable
+    {
+        yield 'only files' => [
+            ['css' => ['a.css']],
+            1,
+            'Files-only bundles must use a 1-column layout.',
+        ];
+        yield 'only wiring' => [
+            ['baseUrl' => '/assets'],
+            1,
+            'Wiring-only bundles must use a 1-column layout.',
+        ];
+        yield 'files + depends' => [
+            ['js' => ['a.js'], 'depends' => ['app\\B']],
+            2,
+            "Files + depends must produce a '2-column' layout.",
+        ];
+        yield 'files + wiring' => [
+            ['css' => ['a.css'], 'sourcePath' => '@app/assets'],
+            2,
+            "Files + wiring must produce a '2-column' layout.",
+        ];
+    }
     public function testNormalizeAggregatesTotalsAcrossBundles(): void
     {
         $summary = (new AssetBundleNormalizer())->normalize(
@@ -67,64 +94,15 @@ final class AssetBundleNormalizerTest extends TestCase
         );
     }
 
-    public function testNormalizeComputesBodyColsAsOneWhenOnlyFilesPresent(): void
+    /**
+     * @param array<string, mixed> $bundle
+     */
+    #[DataProvider('bodyColsCases')]
+    public function testNormalizeComputesBodyCols(array $bundle, int $expected, string $message): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => ['css' => ['a.css']],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())->normalize(['app\\AppAsset' => $bundle]);
 
-        self::assertSame(
-            1,
-            $this->firstBundle($summary)->bodyCols,
-            'Files-only bundles must use a 1-column layout.',
-        );
-    }
-
-    public function testNormalizeComputesBodyColsAsOneWhenOnlyWiringPresent(): void
-    {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => ['baseUrl' => '/assets'],
-            ],
-        );
-
-        self::assertSame(
-            1,
-            $this->firstBundle($summary)->bodyCols,
-            'Wiring-only bundles must use a 1-column layout.',
-        );
-    }
-
-    public function testNormalizeComputesBodyColsAsTwoWhenFilesAndDependsPresent(): void
-    {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => ['js' => ['a.js'], 'depends' => ['app\\B']],
-            ],
-        );
-
-        self::assertSame(
-            2,
-            $this->firstBundle($summary)->bodyCols,
-            "Files + depends must produce a '2-column' layout.",
-        );
-    }
-
-    public function testNormalizeComputesBodyColsAsTwoWhenFilesAndWiringPresent(): void
-    {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => ['css' => ['a.css'], 'sourcePath' => '@app/assets'],
-            ],
-        );
-
-        self::assertSame(
-            2,
-            $this->firstBundle($summary)->bodyCols,
-            "Files + wiring must produce a '2-column' layout.",
-        );
+        self::assertSame($expected, $this->firstBundle($summary)->bodyCols, $message);
     }
 
     public function testNormalizeDropsNonStringDependEntries(): void

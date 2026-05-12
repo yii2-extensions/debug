@@ -12,11 +12,11 @@ namespace yii\debug\models\timeline;
 
 use RuntimeException;
 use yii\data\ArrayDataProvider;
+use yii\debug\helpers\Format;
 use yii\debug\panels\TimelinePanel;
 
 use function is_array;
 use function is_numeric;
-use function sprintf;
 
 /**
  * DataProvider implements a data provider based on a data array.
@@ -98,7 +98,7 @@ class DataProvider extends ArrayDataProvider
         }
 
         return [
-            sprintf('%.2f MB', $memoryFloat / 1048576),
+            Format::bytesToMb($memoryFloat),
             $memoryFloat / ($this->panel()->getMemory() / 100),
         ];
     }

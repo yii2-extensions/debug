@@ -9,7 +9,7 @@ use Yii;
 use yii\base\Event;
 use yii\debug\models\search\Queue as QueueSearch;
 use yii\debug\Panel;
-use yii\debug\panels\queue\{JobPayloadInspector, QueueDriverDetector};
+use yii\debug\panels\queue\{JobPayloadInspector, JobRecord, QueueDriverDetector};
 
 use function array_values;
 use function class_exists;
@@ -166,7 +166,7 @@ class QueuePanel extends Panel
         $errors = 0;
 
         foreach ($records as $record) {
-            if (is_array($record) && ($record['eventType'] ?? null) === 'error') {
+            if (is_array($record) && ($record['eventType'] ?? null) === JobRecord::TYPE_ERROR) {
                 $errors++;
             }
         }
@@ -222,6 +222,18 @@ class QueuePanel extends Panel
         return $out;
     }
 
+    /**
+     * Releases the per-job `$execStarts` slot on long-running workers so the map cannot grow indefinitely.
+     */
+    private function clearExecStart(Event $event): void
+    {
+        $job = $this->jobOf($event);
+
+        if ($job !== null) {
+            unset($this->execStarts[spl_object_id($job)]);
+        }
+    }
+
     private function componentIdOf(Event $event): string
     {
         $sender = $event->sender;
@@ -236,11 +248,9 @@ class QueuePanel extends Panel
             return $this->componentIdCache[$key];
         }
 
-        foreach (Yii::$app->getComponents(false) as $rawId => $config) {
-            $id = (string) $rawId;
-
-            if (Yii::$app->has($id, true) && Yii::$app->get($id) === $sender) {
-                return $this->componentIdCache[$key] = $id;
+        foreach (Yii::$app->getComponents(false) as $rawId => $component) {
+            if ($component === $sender) {
+                return $this->componentIdCache[$key] = (string) $rawId;
             }
         }
 
@@ -354,7 +364,7 @@ class QueuePanel extends Panel
 
         $duration = null;
 
-        if ($job !== null && ($eventType === 'exec' || $eventType === 'error')) {
+        if ($job !== null && ($eventType === JobRecord::TYPE_EXEC || $eventType === JobRecord::TYPE_ERROR)) {
             $start = $this->execStarts[spl_object_id($job)] ?? null;
 
             if ($start !== null) {
@@ -377,18 +387,20 @@ class QueuePanel extends Panel
             'priority' => $this->valueToNullableInt($props['priority'] ?? null),
             'attempt' => $this->valueToNullableInt($props['attempt'] ?? null),
             'duration' => $duration,
-            'error' => $eventType === 'error' ? $this->errorMessageOf($props['error'] ?? null) : '',
+            'error' => $eventType === JobRecord::TYPE_ERROR ? $this->errorMessageOf($props['error'] ?? null) : '',
         ];
     }
 
     private function onAfterError(Event $event): void
     {
-        $this->records[] = $this->makeRecord('error', $event);
+        $this->records[] = $this->makeRecord(JobRecord::TYPE_ERROR, $event);
+        $this->clearExecStart($event);
     }
 
     private function onAfterExec(Event $event): void
     {
-        $this->records[] = $this->makeRecord('exec', $event);
+        $this->records[] = $this->makeRecord(JobRecord::TYPE_EXEC, $event);
+        $this->clearExecStart($event);
     }
 
     private function onBeforeExec(Event $event): void
@@ -402,7 +414,7 @@ class QueuePanel extends Panel
 
     private function onPush(Event $event): void
     {
-        $this->records[] = $this->makeRecord('push', $event);
+        $this->records[] = $this->makeRecord(JobRecord::TYPE_PUSH, $event);
     }
 
     /**

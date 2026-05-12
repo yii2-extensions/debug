@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
-use Stringable;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
+use yii\debug\helpers\Coerce;
 use yii\helpers\{ArrayHelper, StringHelper, Url, VarDumper};
 
 use function array_key_exists;
 use function is_array;
-use function is_scalar;
 use function is_string;
 use function strlen;
 
@@ -166,8 +165,8 @@ class Panel extends Component
          * be available.
          * @see https://www.php.net/manual/en/function.debug-backtrace.php#59713
          */
-        $file = $this->stringValue($options['file'] ?? null);
-        $line = $this->stringValue($options['line'] ?? null);
+        $file = Coerce::stringOrNull($options['file'] ?? null);
+        $line = Coerce::stringOrNull($options['line'] ?? null);
 
         if ($file === null || $line === null) {
             return VarDumper::dumpAsString($options);
@@ -176,7 +175,7 @@ class Panel extends Component
         if (!isset($options['text'])) {
             $text = "{$file}:{$line}";
         } else {
-            $text = $this->stringValue($options['text']) ?? VarDumper::dumpAsString($options['text']);
+            $text = Coerce::stringOrNull($options['text']) ?? VarDumper::dumpAsString($options['text']);
         }
 
         $traceLine = $this->module?->traceLine;
@@ -188,8 +187,8 @@ class Panel extends Component
         $file = str_replace('\\', '/', $file);
 
         foreach ($this->module->tracePathMappings as $old => $new) {
-            $old = $this->stringValue($old);
-            $new = $this->stringValue($new);
+            $old = Coerce::stringOrNull($old);
+            $new = Coerce::stringOrNull($new);
 
             if ($old === null || $new === null) {
                 continue;
@@ -210,7 +209,7 @@ class Panel extends Component
         $options['text'] = $text;
 
         $rawLink = $traceLine instanceof \Closure ? $traceLine($options, $this) : $traceLine;
-        $rawLinkString = $this->stringValue($rawLink);
+        $rawLinkString = Coerce::stringOrNull($rawLink);
 
         if ($rawLinkString === null) {
             return VarDumper::dumpAsString($rawLink);
@@ -389,19 +388,4 @@ class Panel extends Component
         return [];
     }
 
-    /**
-     * Converts a value to string if it is scalar or Stringable, otherwise returns null.
-     *
-     * @param mixed $value Value to convert.
-     *
-     * @return string|null String representation of the value, or `null` if it cannot be converted to string.
-     */
-    private function stringValue($value): string|null
-    {
-        if (is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        return null;
-    }
 }

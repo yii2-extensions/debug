@@ -56,14 +56,26 @@ final class QueueDriverDetector
     private const array SYNC_DRIVERS = ['sync'];
 
     /**
+     * Per-FQCN cache. Detection only depends on the FQCN, so the same queue component hitting the event listener
+     * thousands of times during a worker loop pays the lookup cost once.
+     *
+     * @var array<string, array{0: string, 1: bool}>
+     */
+    private static array $cache = [];
+
+    /**
      * Detects the friendly driver label and the async flag from a queue class FQCN.
      *
      * @return array{0: string, 1: bool} `[displayName, isAsync]`
      */
     public static function detect(string $fqcn): array
     {
+        if (isset(self::$cache[$fqcn])) {
+            return self::$cache[$fqcn];
+        }
+
         if ($fqcn === '') {
-            return ['Unknown', true];
+            return self::$cache[$fqcn] = ['Unknown', true];
         }
 
         $token = self::extractDriverToken($fqcn);
@@ -72,7 +84,7 @@ final class QueueDriverDetector
             ? self::DRIVER_LABELS[$token]
             : self::titleCase($token);
 
-        return [$name, in_array($token, self::SYNC_DRIVERS, true) === false];
+        return self::$cache[$fqcn] = [$name, in_array($token, self::SYNC_DRIVERS, true) === false];
     }
 
     /**

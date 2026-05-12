@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\log;
 
+use yii\debug\helpers\Coerce;
+use yii\debug\helpers\RowField;
 use yii\helpers\VarDumper;
 
 use function is_array;
-use function is_int;
-use function is_numeric;
 use function is_string;
 
 /**
@@ -37,40 +37,16 @@ final class LogRowNormalizer
         $row = is_array($data) ? $data : [];
 
         return new LogRow(
-            id: self::intField($row, 'id'),
+            id: RowField::intField($row, 'id'),
             message: self::messageField($row),
-            level: self::intField($row, 'level'),
-            category: self::stringField($row, 'category'),
-            time: self::floatField($row, 'time'),
-            timeOfPrevious: self::floatField($row, 'time_of_previous'),
-            idOfPrevious: self::nullableIntField($row, 'id_of_previous'),
-            idOfNext: self::nullableIntField($row, 'id_of_next'),
-            trace: self::traceField($row),
+            level: RowField::intField($row, 'level'),
+            category: RowField::stringField($row, 'category'),
+            time: RowField::floatField($row, 'time'),
+            timeOfPrevious: RowField::floatField($row, 'time_of_previous'),
+            idOfPrevious: RowField::nullableIntField($row, 'id_of_previous'),
+            idOfNext: RowField::nullableIntField($row, 'id_of_next'),
+            trace: Coerce::traceFrames($row['trace'] ?? null),
         );
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function floatField(array $row, string $key): float
-    {
-        $value = $row[$key] ?? null;
-
-        return is_numeric($value) ? (float) $value : 0.0;
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function intField(array $row, string $key): int
-    {
-        $value = $row[$key] ?? null;
-
-        if (is_int($value)) {
-            return $value;
-        }
-
-        return is_numeric($value) ? (int) $value : 0;
     }
 
     /**
@@ -84,65 +60,5 @@ final class LogRowNormalizer
         $value = $row['message'] ?? null;
 
         return is_string($value) ? $value : VarDumper::export($value);
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function nullableIntField(array $row, string $key): int|null
-    {
-        $value = $row[$key] ?? null;
-
-        if (is_int($value)) {
-            return $value;
-        }
-
-        return is_numeric($value) ? (int) $value : null;
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function stringField(array $row, string $key): string
-    {
-        $value = $row[$key] ?? null;
-
-        return is_string($value) ? $value : '';
-    }
-
-    /**
-     * Narrows the trace field to `list<array<string, mixed>>` so the renderer can iterate frames safely.
-     *
-     * @param array<array-key, mixed> $row
-     *
-     * @return list<array<string, mixed>>
-     */
-    private static function traceField(array $row): array
-    {
-        $value = $row['trace'] ?? null;
-
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $frames = [];
-
-        foreach ($value as $frame) {
-            if (!is_array($frame)) {
-                continue;
-            }
-
-            $normalized = [];
-
-            foreach ($frame as $key => $entry) {
-                if (is_string($key)) {
-                    $normalized[$key] = $entry;
-                }
-            }
-
-            $frames[] = $normalized;
-        }
-
-        return $frames;
     }
 }

@@ -10,14 +10,11 @@ use UIAwesome\Html\Interactive\{Details, Summary};
 use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\Article;
+use yii\debug\helpers\{Avatar, Fqcn};
 
-use function abs;
 use function array_is_list;
 use function count;
-use function crc32;
 use function date;
-use function explode;
-use function implode;
 use function in_array;
 use function is_array;
 use function is_bool;
@@ -28,7 +25,6 @@ use function mb_strlen;
 use function mb_strtoupper;
 use function mb_substr;
 use function sprintf;
-use function strtolower;
 
 /**
  * Renders the typed Queue panel detail view on top of `ui-awesome/html` builders.
@@ -48,16 +44,6 @@ use function strtolower;
  */
 final class QueueCardRenderer
 {
-    /**
-     * Maps each event type to a CSS modifier and a human label used by the status pill.
-     *
-     * @var array<string, array{variant: string, label: string}>
-     */
-    private const array EVENT_VARIANTS = [
-        'push' => ['variant' => 'queued', 'label' => 'Queued'],
-        'exec' => ['variant' => 'done', 'label' => 'Done'],
-        'error' => ['variant' => 'failed', 'label' => 'Failed'],
-    ];
     /**
      * Maximum number of characters shown for inline string values before they get truncated with an ellipsis. The
      * full value is preserved in a `title` tooltip so the developer can hover to read it.
@@ -166,23 +152,11 @@ final class QueueCardRenderer
     }
 
     /**
-     * Picks a deterministic hue (0-359) for the avatar so the same job class always renders with the same color.
-     */
-    private static function hueFor(string $jobClass): int
-    {
-        if ($jobClass === '') {
-            return 210;
-        }
-
-        return abs(crc32(strtolower($jobClass))) % 360;
-    }
-
-    /**
      * Returns the uppercased first letter of the short class name, falling back to `?` when empty.
      */
     private static function initialFor(string $jobClass): string
     {
-        $shortName = self::shortName($jobClass);
+        $shortName = Fqcn::shortName($jobClass);
 
         if ($shortName === '') {
             return '?';
@@ -203,22 +177,6 @@ final class QueueCardRenderer
     }
 
     /**
-     * Returns the namespace prefix (without trailing backslash), or empty string when the name has no namespace.
-     */
-    private static function namespacePart(string $fqcn): string
-    {
-        $parts = explode('\\', $fqcn);
-
-        if (count($parts) <= 1) {
-            return '';
-        }
-
-        unset($parts[count($parts) - 1]);
-
-        return implode('\\', $parts);
-    }
-
-    /**
      * Renders an array or object value as a collapsible block. Objects carry a `__class` key that promotes the FQCN
      * into the summary header (`HelloJob {…}`); regular arrays show their length (`array(3)`). The block is collapsed
      * by default, with the `open` attribute toggled on for objects whose first child is itself a leaf; heuristic that
@@ -234,8 +192,8 @@ final class QueueCardRenderer
         $children = [];
 
         if ($isObject) {
-            $className = self::shortName($value['__class']);
-            $namespace = self::namespacePart($value['__class']);
+            $className = Fqcn::shortName($value['__class']);
+            $namespace = Fqcn::namespacePart($value['__class']);
             $summaryHtml = Span::tag()
                 ->class('yii-debug-queue-tree-key')
                 ->content($key)
@@ -295,7 +253,7 @@ final class QueueCardRenderer
     {
         return Span::tag()
             ->addAriaAttribute('hidden', 'true')
-            ->addAttribute('style', '--queue-hue: ' . self::hueFor($record->jobClass))
+            ->addAttribute('style', '--queue-hue: ' . Avatar::hueFor($record->jobClass))
             ->class('yii-debug-queue-avatar')
             ->content(self::initialFor($record->jobClass));
     }
@@ -351,8 +309,8 @@ final class QueueCardRenderer
      */
     private static function renderHead(JobRecord $record): Header
     {
-        $shortName = self::shortName($record->jobClass);
-        $namespace = self::namespacePart($record->jobClass);
+        $shortName = Fqcn::shortName($record->jobClass);
+        $namespace = Fqcn::namespacePart($record->jobClass);
 
         $title = [
             H2::tag()
@@ -460,8 +418,8 @@ final class QueueCardRenderer
      */
     private static function renderStatusPill(JobRecord $record): Span
     {
-        $variant = self::EVENT_VARIANTS[$record->eventType]['variant'] ?? 'queued';
-        $label = self::EVENT_VARIANTS[$record->eventType]['label'] ?? 'Queued';
+        $variant = JobRecord::EVENT_VARIANTS[$record->eventType]['variant'] ?? 'queued';
+        $label = JobRecord::EVENT_VARIANTS[$record->eventType]['label'] ?? 'Queued';
 
         return Span::tag()
             ->class("yii-debug-queue-status yii-debug-queue-status-{$variant}")
@@ -490,14 +448,4 @@ final class QueueCardRenderer
             );
     }
 
-    /**
-     * Returns the last segment of a fully qualified class name, or the input unchanged when there is no namespace
-     * separator.
-     */
-    private static function shortName(string $fqcn): string
-    {
-        $parts = explode('\\', $fqcn);
-
-        return $parts[count($parts) - 1] ?? $fqcn;
-    }
 }

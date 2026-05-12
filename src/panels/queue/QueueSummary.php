@@ -72,7 +72,7 @@ final readonly class QueueSummary
 
     public function totalErrors(): int
     {
-        return $this->countBy('error');
+        return $this->countBy(JobRecord::TYPE_ERROR);
     }
 
     public function totalEvents(): int
@@ -82,12 +82,12 @@ final readonly class QueueSummary
 
     public function totalExecuted(): int
     {
-        return $this->countBy('exec');
+        return $this->countBy(JobRecord::TYPE_EXEC);
     }
 
     public function totalPushed(): int
     {
-        return $this->countBy('push');
+        return $this->countBy(JobRecord::TYPE_PUSH);
     }
 
     private function countBy(string $eventType): int

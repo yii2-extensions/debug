@@ -7,12 +7,10 @@ namespace yii\debug\panels\queue;
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
+use yii\debug\helpers\Fqcn;
 
 use function abs;
-use function count;
 use function date;
-use function explode;
-use function implode;
 use function number_format;
 use function sprintf;
 
@@ -32,17 +30,6 @@ use function sprintf;
  */
 final class QueueGridRenderer
 {
-    /**
-     * Maps each event type to a CSS modifier and a human label used by the status pill.
-     *
-     * @var array<string, array{variant: string, label: string}>
-     */
-    private const array EVENT_VARIANTS = [
-        'push' => ['variant' => 'queued', 'label' => 'Queued'],
-        'exec' => ['variant' => 'done', 'label' => 'Done'],
-        'error' => ['variant' => 'failed', 'label' => 'Failed'],
-    ];
-
     /**
      * Renders the attempt cell as `#N` for non-zero attempts, `—` otherwise.
      */
@@ -121,8 +108,8 @@ final class QueueGridRenderer
      */
     public static function renderJobCell(JobRecord $record, string $href): string
     {
-        $shortName = self::shortName($record->jobClass);
-        $namespace = self::namespacePart($record->jobClass);
+        $shortName = Fqcn::shortName($record->jobClass);
+        $namespace = Fqcn::namespacePart($record->jobClass);
 
         return Div::tag()
             ->class('yii-debug-queue-grid-job')
@@ -146,8 +133,8 @@ final class QueueGridRenderer
      */
     public static function renderStatusCell(JobRecord $record): string
     {
-        $variant = self::EVENT_VARIANTS[$record->eventType]['variant'] ?? 'queued';
-        $label = self::EVENT_VARIANTS[$record->eventType]['label'] ?? 'Queued';
+        $variant = JobRecord::EVENT_VARIANTS[$record->eventType]['variant'] ?? 'queued';
+        $label = JobRecord::EVENT_VARIANTS[$record->eventType]['label'] ?? 'Queued';
 
         return Span::tag()
             ->class("yii-debug-queue-status yii-debug-queue-status-{$variant}")
@@ -178,37 +165,4 @@ final class QueueGridRenderer
         return "{$record->ttr}s";
     }
 
-    /**
-     * Returns the namespace prefix (without trailing backslash), or empty string when the FQCN has no namespace.
-     */
-    private static function namespacePart(string $fqcn): string
-    {
-        if ($fqcn === '') {
-            return '';
-        }
-
-        $parts = explode('\\', $fqcn);
-
-        if (count($parts) <= 1) {
-            return '';
-        }
-
-        unset($parts[count($parts) - 1]);
-
-        return implode('\\', $parts);
-    }
-
-    /**
-     * Returns the trailing class name (without namespace), or empty string when the FQCN itself is empty.
-     */
-    private static function shortName(string $fqcn): string
-    {
-        if ($fqcn === '') {
-            return '';
-        }
-
-        $parts = explode('\\', $fqcn);
-
-        return $parts[count($parts) - 1] ?? '';
-    }
 }

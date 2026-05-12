@@ -98,6 +98,14 @@ class ConfigPanel extends Panel
         );
     }
 
+    /**
+     * Returns the saved PHP version (`php.version`), or `null` when the snapshot is missing.
+     */
+    public function getPhpVersion(): string|null
+    {
+        return self::nestedScalar($this->data, 'php', 'version');
+    }
+
     public function getSummary(): string
     {
         return Yii::$app->view->render('panels/config/summary', ['panel' => $this]);
@@ -106,6 +114,14 @@ class ConfigPanel extends Panel
     public function getToolbarIcon(): string
     {
         return 'config';
+    }
+
+    /**
+     * Returns the saved Yii framework version (`application.yii`), or `null` when the snapshot is missing.
+     */
+    public function getYiiVersion(): string|null
+    {
+        return self::nestedScalar($this->data, 'application', 'yii');
     }
 
     /**
@@ -192,6 +208,27 @@ class ConfigPanel extends Panel
     protected function getToolbarItems(): array|null
     {
         return null;
+    }
+
+    /**
+     * Reads a `$data[$outerKey][$innerKey]` scalar as a string, returning `null` when any segment is missing or the
+     * value is not scalar.
+     */
+    private static function nestedScalar(mixed $data, string $outerKey, string $innerKey): string|null
+    {
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $outer = $data[$outerKey] ?? null;
+
+        if (!is_array($outer)) {
+            return null;
+        }
+
+        $value = $outer[$innerKey] ?? null;
+
+        return is_scalar($value) ? (string) $value : null;
     }
 
     /**

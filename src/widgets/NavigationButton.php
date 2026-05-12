@@ -22,8 +22,6 @@ use function reset;
 
 /**
  * Render button for navigation to previous or next request in debug panel.
- *
- * @since 2.0.11
  */
 class NavigationButton extends Widget
 {

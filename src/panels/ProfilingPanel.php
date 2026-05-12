@@ -4,19 +4,14 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
-use Stringable;
 use Yii;
+use yii\debug\helpers\{Coerce, Format};
 use yii\debug\models\search\Profile;
 use yii\debug\Panel;
 use yii\helpers\Url;
 use yii\log\Logger;
 
 use function is_array;
-use function is_float;
-use function is_int;
-use function is_scalar;
-use function is_string;
-use function sprintf;
 
 /**
  * Debugger panel that collects and displays performance profiling info.
@@ -54,7 +49,7 @@ class ProfilingPanel extends Panel
             'panels/profile/detail',
             [
                 'dataProvider' => $dataProvider,
-                'memory' => sprintf('%.3f MB', $profileData['memory'] / 1048576),
+                'memory' => Format::bytesToMb($profileData['memory'], 3),
                 'panel' => $this,
                 'searchModel' => $searchModel,
                 'time' => number_format($profileData['time'] * 1000) . ' ms',
@@ -75,7 +70,7 @@ class ProfilingPanel extends Panel
         return Yii::$app->view->render(
             'panels/profile/summary',
             [
-                'memory' => sprintf('%.3f MB', $profileData['memory'] / 1048576),
+                'memory' => Format::bytesToMb($profileData['memory'], 3),
                 'panel' => $this,
                 'time' => number_format($profileData['time'] * 1000) . ' ms',
             ],
@@ -113,7 +108,7 @@ class ProfilingPanel extends Panel
     {
         $messages = $this->getLogMessages(Logger::LEVEL_PROFILE);
 
-        $requestStart = self::floatValue($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? YII_BEGIN_TIME;
+        $requestStart = Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? YII_BEGIN_TIME;
 
         return [
             'memory' => memory_get_peak_usage(),
@@ -169,22 +164,9 @@ class ProfilingPanel extends Panel
             [
                 'status' => 'info',
                 'title' => 'Peak memory',
-                'value' => sprintf('%.3f MB', $profileData['memory'] / 1048576),
+                'value' => Format::bytesToMb($profileData['memory'], 3),
             ],
         ];
-    }
-
-    private static function floatValue(mixed $value): float|null
-    {
-        if (is_int($value) || is_float($value)) {
-            return (float) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (float) $value;
-        }
-
-        return null;
     }
 
     /**
@@ -195,27 +177,10 @@ class ProfilingPanel extends Panel
         $data = is_array($this->data) ? $this->data : [];
 
         return [
-            'memory' => self::intValue($data['memory'] ?? null) ?? 0,
-            'time' => self::floatValue($data['time'] ?? null) ?? 0.0,
+            'memory' => Coerce::intOrNull($data['memory'] ?? null) ?? 0,
+            'time' => Coerce::floatOrNull($data['time'] ?? null) ?? 0.0,
             'messages' => self::normalizeMessages($data['messages'] ?? []),
         ];
-    }
-
-    private static function intValue(mixed $value): int|null
-    {
-        if (is_int($value)) {
-            return $value;
-        }
-
-        if (is_float($value)) {
-            return (int) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (int) $value;
-        }
-
-        return null;
     }
 
     /**
@@ -258,29 +223,20 @@ class ProfilingPanel extends Panel
             return null;
         }
 
-        $duration = self::floatValue($timing['duration'] ?? null);
-        $timestamp = self::floatValue($timing['timestamp'] ?? null);
+        $duration = Coerce::floatOrNull($timing['duration'] ?? null);
+        $timestamp = Coerce::floatOrNull($timing['timestamp'] ?? null);
 
         if ($duration === null || $timestamp === null) {
             return null;
         }
 
         return [
-            'duration' => $duration * 1000, // in milliseconds
-            'category' => self::stringValue($timing['category'] ?? null) ?? '',
-            'info' => self::stringValue($timing['info'] ?? null) ?? '',
-            'level' => self::intValue($timing['level'] ?? null) ?? 0,
-            'timestamp' => $timestamp * 1000, // in milliseconds
+            'duration' => $duration * 1000,
+            'category' => Coerce::stringOrNull($timing['category'] ?? null) ?? '',
+            'info' => Coerce::stringOrNull($timing['info'] ?? null) ?? '',
+            'level' => Coerce::intOrNull($timing['level'] ?? null) ?? 0,
+            'timestamp' => $timestamp * 1000,
             'seq' => $seq,
         ];
-    }
-
-    private static function stringValue(mixed $value): string|null
-    {
-        if (is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        return null;
     }
 }

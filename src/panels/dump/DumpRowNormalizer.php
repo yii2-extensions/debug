@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\dump;
 
+use yii\debug\helpers\Coerce;
+use yii\debug\helpers\RowField;
+
 use function is_array;
-use function is_numeric;
-use function is_string;
 
 /**
  * Narrows the loose `mixed` argument GridView passes to dump-column callbacks into a typed {@see DumpRow}.
@@ -37,66 +38,10 @@ final class DumpRowNormalizer
         $row = is_array($data) ? $data : [];
 
         return new DumpRow(
-            message: self::stringField($row, 'message'),
-            category: self::stringField($row, 'category'),
-            time: self::floatField($row, 'time'),
-            trace: self::traceField($row),
+            message: RowField::stringField($row, 'message'),
+            category: RowField::stringField($row, 'category'),
+            time: RowField::floatField($row, 'time'),
+            trace: Coerce::traceFrames($row['trace'] ?? null),
         );
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function floatField(array $row, string $key): float
-    {
-        $value = $row[$key] ?? null;
-
-        return is_numeric($value) ? (float) $value : 0.0;
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function stringField(array $row, string $key): string
-    {
-        $value = $row[$key] ?? null;
-
-        return is_string($value) ? $value : '';
-    }
-
-    /**
-     * Narrows the trace field to `list<array<string, mixed>>` so cell renderers can iterate frames safely.
-     *
-     * @param array<array-key, mixed> $row
-     *
-     * @return list<array<string, mixed>>
-     */
-    private static function traceField(array $row): array
-    {
-        $value = $row['trace'] ?? null;
-
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $frames = [];
-
-        foreach ($value as $frame) {
-            if (!is_array($frame)) {
-                continue;
-            }
-
-            $normalized = [];
-
-            foreach ($frame as $key => $entry) {
-                if (is_string($key)) {
-                    $normalized[$key] = $entry;
-                }
-            }
-
-            $frames[] = $normalized;
-        }
-
-        return $frames;
     }
 }

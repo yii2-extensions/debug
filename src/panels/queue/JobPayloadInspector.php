@@ -48,6 +48,15 @@ final class JobPayloadInspector
     private const int MAX_DEPTH = 6;
 
     /**
+     * Per-class cache of public-property reflections. The public-property list is class-stable, so reflecting the
+     * same job class on every queue event would do redundant work; this map amortises the cost to one reflection
+     * per class for the lifetime of the worker.
+     *
+     * @var array<class-string, list<ReflectionProperty>>
+     */
+    private static array $publicPropertiesByClass = [];
+
+    /**
      * Extracts the public properties of an object as a recursively normalised array. The synthetic `__class` key is
      * NOT included on the top-level extraction (the renderer already knows the job class via `JobRecord::$jobClass`)
      * but IS added when nested objects are expanded so each sub-tree carries its own type label.
@@ -64,11 +73,9 @@ final class JobPayloadInspector
      */
     private static function extractPublicProperties(object $value, int $depth): array
     {
-        $reflection = new ReflectionClass($value);
-
         $fields = [];
 
-        foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+        foreach (self::publicPropertiesOf($value) as $property) {
             $name = $property->getName();
 
             try {
@@ -138,5 +145,20 @@ final class JobPayloadInspector
         }
 
         return '(unsupported)';
+    }
+
+    /**
+     * @return list<ReflectionProperty>
+     */
+    private static function publicPropertiesOf(object $value): array
+    {
+        $class = get_class($value);
+
+        if (!isset(self::$publicPropertiesByClass[$class])) {
+            $reflection = new ReflectionClass($value);
+            self::$publicPropertiesByClass[$class] = $reflection->getProperties(ReflectionProperty::IS_PUBLIC);
+        }
+
+        return self::$publicPropertiesByClass[$class];
     }
 }

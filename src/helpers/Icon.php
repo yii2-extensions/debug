@@ -16,16 +16,8 @@ use function is_file;
  * in-memory for the request, so repeated lookups (panel icons, chevrons, etc.) do not re-read the file or re-run the
  * libxml-based sanitization that `ui-awesome/html-svg` performs on every `filePath()` render.
  *
- * Usage example:
- *
- * ```php
- * use yii\debug\helpers\Icon;
- *
- * echo Icon::render('chevron-down');
- * ```
- *
- * @author Wilmer Arambula <terabytesoftw@gmail.com>
- * @since 0.1.0
+ * @copyright Copyright (C) 2026 Terabytesoftw.
+ * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class Icon
 {

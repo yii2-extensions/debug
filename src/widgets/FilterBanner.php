@@ -25,23 +25,18 @@ use function is_string;
 /**
  * Renders the active-filter banner above a panel's GridView.
  *
- * The banner surfaces every `<FormName>[<attr>]` query param currently applied to the page as
- * a removable pill, plus a "Clear all" action. Removal links rebuild the current URL minus the
- * targeted param(s) — every other query param (sort, page, theme, etc.) is preserved so the
- * developer keeps their context.
+ * The banner surfaces every `<FormName>[<attr>]` query param currently applied to the page as a removable pill, plus a
+ * "Clear all" action. Removal links rebuild the current URL minus the targeted param(s); every other query param (sort,
+ * page, theme, etc.) is preserved so the developer keeps their context.
  *
- * Usage example:
- * ```php
- * <?= \yii\debug\widgets\FilterBanner::widget(['searchModel' => $searchModel]) ?>
- * ```
- *
- * @since 2.2
+ * @copyright Copyright (C) 2026 Terabytesoftw.
+ * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 class FilterBanner extends Widget
 {
     /**
-     * The search model whose `formName()` defines the query-param prefix to scan
-     * (e.g., `Debug`, `Log`, `Db`, `Profile`, `Event`, `Mail`, `User`).
+     * The search model whose {@see Model::formName()} defines the query-param prefix to scan (for example, 'Debug',
+     * 'Log', 'Db', 'Profile', 'Event', 'Mail', 'User').
      */
     public Model|null $searchModel = null;
 

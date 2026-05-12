@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
-use Stringable;
 use Yii;
 use yii\base\InlineAction;
+use yii\debug\helpers\Coerce;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
 use yii\debug\Panel;
 use yii\log\Logger;
 
 use function is_array;
-use function is_scalar;
 use function is_string;
 
 /**
@@ -130,9 +129,9 @@ class RouterPanel extends Panel
         $data = is_array($this->data) ? $this->data : [];
 
         return [
-            'action' => self::stringValue($data['action'] ?? null),
+            'action' => Coerce::stringOrNull($data['action'] ?? null),
             'messages' => self::normalizeMessages($data['messages'] ?? []),
-            'route' => self::stringValue($data['route'] ?? null) ?? '',
+            'route' => Coerce::stringOrNull($data['route'] ?? null) ?? '',
         ];
     }
 
@@ -176,12 +175,4 @@ class RouterPanel extends Panel
         return $normalized;
     }
 
-    private static function stringValue(mixed $value): string|null
-    {
-        if (is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        return null;
-    }
 }

@@ -6,6 +6,7 @@ namespace yii\debug\widgets\shell;
 
 use Yii;
 use yii\base\Module as BaseModule;
+use yii\debug\helpers\Format;
 use yii\debug\Module as DebugModule;
 use yii\debug\Panel;
 use yii\helpers\Url;
@@ -14,7 +15,6 @@ use function array_key_first;
 use function in_array;
 use function is_array;
 use function is_string;
-use function sprintf;
 use function strtolower;
 
 /**
@@ -29,8 +29,6 @@ use function strtolower;
  */
 final class ShellDataNormalizer
 {
-    private const BYTES_PER_MB = 1024 * 1024;
-
     /**
      * Builds the typed shell context.
      */
@@ -174,7 +172,7 @@ final class ShellDataNormalizer
             return null;
         }
 
-        return sprintf('%.2f MB', (float) $summary['peakMemory'] / self::BYTES_PER_MB);
+        return Format::bytesToMb((float) $summary['peakMemory']);
     }
 
     /**

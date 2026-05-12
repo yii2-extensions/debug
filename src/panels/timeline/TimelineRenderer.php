@@ -10,6 +10,7 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Em, Label, Span, Strong};
 use UIAwesome\Html\Root\{Footer, Header};
 use UIAwesome\Html\Sectioning\Section;
+use yii\debug\helpers\Format;
 use yii\debug\models\timeline\{DataProvider, Search, Svg};
 use yii\debug\panels\TimelinePanel;
 use yii\helpers\Url;
@@ -40,8 +41,6 @@ use function sprintf;
  */
 final class TimelineRenderer
 {
-    private const BYTES_PER_MB = 1048576;
-
     /**
      * Renders the timeline chart (ruler axis + per-span rows + optional memory footer); returns empty string when the
      * data provider has no spans so the empty hint can take over without duplicate markup.
@@ -168,7 +167,7 @@ final class TimelineRenderer
     {
         $totalDuration = $panel->getDuration();
 
-        $peakMemoryMB = self::bytesToMb($panel->getMemory());
+        $peakMemoryMB = Format::bytesToMb($panel->getMemory());
 
         return Header::tag()
             ->class('yii-debug-grid-summary')
@@ -180,14 +179,6 @@ final class TimelineRenderer
                 Span::tag()->html(Strong::tag()->content((string) count($dataProvider->models)), ' spans'),
             )
             ->render();
-    }
-
-    /**
-     * Formats a byte count as `"X.XX MB"` with two-decimal precision.
-     */
-    private static function bytesToMb(float|int $bytes): string
-    {
-        return sprintf('%.2f MB', $bytes / self::BYTES_PER_MB);
     }
 
     private static function percent(float|int|string $value): string
@@ -225,7 +216,7 @@ final class TimelineRenderer
      */
     private static function renderMemoryFooter(TimelinePanel $panel, Svg $svg): Footer
     {
-        $peakMemoryMB = self::bytesToMb((float) $panel->getMemory());
+        $peakMemoryMB = Format::bytesToMb((float) $panel->getMemory());
 
         return Footer::tag()
             ->class('yii-debug-tl-memory')

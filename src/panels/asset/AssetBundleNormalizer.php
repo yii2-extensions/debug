@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\asset;
 
+use yii\debug\helpers\Fqcn;
 use yii\helpers\Inflector;
 
 use function count;
 use function is_array;
 use function is_string;
 use function reset;
-use function strrpos;
-use function substr;
 
 /**
  * Normalizes the `mixed` payload of {@see \yii\debug\panels\AssetPanel} into a typed {@see AssetSummary} tree.
@@ -72,8 +71,8 @@ final class AssetBundleNormalizer
 
             $bundles[] = new AssetBundleView(
                 name: $name,
-                shortName: $this->shortName($name),
-                namespace: $this->namespacePart($name),
+                shortName: Fqcn::shortName($name),
+                namespace: Fqcn::namespacePart($name),
                 id: Inflector::camel2id($name),
                 sourcePath: $sourcePath,
                 basePath: $basePath,
@@ -179,25 +178,4 @@ final class AssetBundleNormalizer
         return $out;
     }
 
-    /**
-     * Returns the namespace prefix of a fully qualified class name without the trailing backslash, or `''` when there
-     * is no namespace separator.
-     */
-    private function namespacePart(string $fqcn): string
-    {
-        $pos = strrpos($fqcn, '\\');
-
-        return $pos === false ? '' : substr($fqcn, 0, $pos);
-    }
-
-    /**
-     * Returns the last segment of a fully qualified class name, or the input unchanged when there is no namespace
-     * separator.
-     */
-    private function shortName(string $fqcn): string
-    {
-        $pos = strrpos($fqcn, '\\');
-
-        return $pos === false ? $fqcn : substr($fqcn, $pos + 1);
-    }
 }

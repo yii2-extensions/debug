@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
-use Stringable;
 use Yii;
+use yii\debug\helpers\Coerce;
 use yii\debug\models\search\Log;
 use yii\debug\Panel;
 use yii\log\{Logger, Target};
 
 use function count;
 use function is_array;
-use function is_float;
-use function is_int;
-use function is_scalar;
 use function is_string;
 
 /**
@@ -133,7 +130,7 @@ class LogPanel extends Panel
             foreach ($messages as $index => $message) {
                 $id = $index + 1;
 
-                $timestamp = self::floatValue($message[3] ?? null) ?? 0.0;
+                $timestamp = Coerce::floatOrNull($message[3] ?? null) ?? 0.0;
 
                 if (null === $previousTime) {
                     $previousTime = $timestamp;
@@ -142,14 +139,14 @@ class LogPanel extends Panel
                 $models[$id] = [
                     'id' => $id,
                     'message' => $message[0] ?? null,
-                    'level' => self::intValue($message[1] ?? null) ?? 0,
-                    'category' => self::stringValue($message[2] ?? null) ?? '',
+                    'level' => Coerce::intOrNull($message[1] ?? null) ?? 0,
+                    'category' => Coerce::stringOrNull($message[2] ?? null) ?? '',
                     'time' => $timestamp * 1000, // time in milliseconds
                     'time_of_previous' => $previousTime * 1000, // time in milliseconds
                     'time_since_previous' => $timestamp - $previousTime,
                     'id_of_previous' => $previousId,
                     'id_of_next' => $id < $messageCount ? $id + 1 : null,
-                    'trace' => self::normalizeTrace($message[4] ?? []),
+                    'trace' => Coerce::traceFrames($message[4] ?? []),
                 ];
                 $previousId = $id;
                 $previousTime = $timestamp;
@@ -199,19 +196,6 @@ class LogPanel extends Panel
         return $items;
     }
 
-    private static function floatValue(mixed $value): float|null
-    {
-        if (is_int($value) || is_float($value)) {
-            return (float) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (float) $value;
-        }
-
-        return null;
-    }
-
     /**
      * @return array<int, array<int|string, mixed>>
      */
@@ -236,23 +220,6 @@ class LogPanel extends Panel
         return $normalized;
     }
 
-    private static function intValue(mixed $value): int|null
-    {
-        if (is_int($value)) {
-            return $value;
-        }
-
-        if (is_float($value)) {
-            return (int) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (int) $value;
-        }
-
-        return null;
-    }
-
     /**
      * @param mixed $values Raw category list.
      *
@@ -273,46 +240,5 @@ class LogPanel extends Panel
         }
 
         return $normalized;
-    }
-
-    /**
-     * @param mixed $trace Raw trace from a log message.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private static function normalizeTrace(mixed $trace): array
-    {
-        if (!is_array($trace)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($trace as $frame) {
-            if (!is_array($frame)) {
-                continue;
-            }
-
-            $normalizedFrame = [];
-
-            foreach ($frame as $key => $value) {
-                if (is_string($key)) {
-                    $normalizedFrame[$key] = $value;
-                }
-            }
-
-            $normalized[] = $normalizedFrame;
-        }
-
-        return $normalized;
-    }
-
-    private static function stringValue(mixed $value): string|null
-    {
-        if (is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        return null;
     }
 }

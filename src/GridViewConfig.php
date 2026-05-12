@@ -69,8 +69,6 @@ final class GridViewConfig
      * The dropdown lets the user switch between 25 / 50 / 100 / All rows per page. JavaScript wired in `debug.js`
      * picks up the change event, rewrites the `per-page` query param and reloads the panel — keeping every other
      * filter/sort param intact.
-     *
-     * @since 2.1.30
      */
     public static function pageSizeSelectorHtml(): string
     {

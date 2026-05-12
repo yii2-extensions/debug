@@ -6,6 +6,7 @@ namespace yii\debug;
 
 use Yii;
 use yii\base\{Exception, InvalidConfigException};
+use yii\debug\helpers\Coerce;
 use yii\debug\panels\{DbPanel, MailPanel};
 use yii\helpers\FileHelper;
 use yii\log\Target;
@@ -150,23 +151,7 @@ class LogTarget extends Target
             return [];
         }
 
-        $normalized = [];
-
-        foreach ($manifest as $tag => $summary) {
-            if (is_string($tag) && is_array($summary)) {
-                $stringKeyed = [];
-
-                foreach ($summary as $key => $value) {
-                    if (is_string($key)) {
-                        $stringKeyed[$key] = $value;
-                    }
-                }
-
-                $normalized[$tag] = $stringKeyed;
-            }
-        }
-
-        return array_reverse($normalized, true);
+        return array_reverse(self::narrowManifestEntries($manifest), true);
     }
 
     /**
@@ -336,6 +321,30 @@ class LogTarget extends Target
     }
 
     /**
+     * Narrows a raw deserialized manifest into `array<string, array<string, mixed>>`.
+     *
+     * Drops entries whose tag or inner key is non-string; returns `[]` when the input is not an array.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private static function narrowManifestEntries(mixed $manifest): array
+    {
+        if (!is_array($manifest)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($manifest as $tag => $entry) {
+            if (is_string($tag) && is_array($entry)) {
+                $normalized[$tag] = Coerce::stringKeyedArray($entry);
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
      * Updates index file with summary log data.
      *
      * @param string $indexFile Path to index file.
@@ -360,23 +369,7 @@ class LogTarget extends Target
         $manifest = [];
 
         if (feof($fp) && $serialized !== '') {
-            $decoded = @unserialize($serialized);
-
-            if (is_array($decoded)) {
-                foreach ($decoded as $tag => $entry) {
-                    if (is_string($tag) && is_array($entry)) {
-                        $stringKeyed = [];
-
-                        foreach ($entry as $key => $value) {
-                            if (is_string($key)) {
-                                $stringKeyed[$key] = $value;
-                            }
-                        }
-
-                        $manifest[$tag] = $stringKeyed;
-                    }
-                }
-            }
+            $manifest = self::narrowManifestEntries(@unserialize($serialized));
         }
 
         $manifest[$this->tag] = $summary;

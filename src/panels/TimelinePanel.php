@@ -5,16 +5,13 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use RuntimeException;
-use Stringable;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\debug\helpers\Coerce;
 use yii\debug\models\timeline\{Search, Svg};
 use yii\debug\Panel;
 
 use function is_array;
-use function is_float;
-use function is_int;
-use function is_scalar;
 use function is_string;
 
 /**
@@ -149,14 +146,13 @@ class TimelinePanel extends Panel
 
     /**
      * @throws InvalidConfigException
-     * @since 2.0.8
      */
     public function getSvg(): Svg
     {
         $svg = $this->svg;
 
         if ($svg === null) {
-            $class = self::stringValue($this->svgOptions['class'] ?? null) ?? Svg::class;
+            $class = Coerce::stringOrNull($this->svgOptions['class'] ?? null) ?? Svg::class;
 
             if (!is_a($class, Svg::class, true)) {
                 throw new InvalidConfigException('Timeline SVG class must extend ' . Svg::class . '.');
@@ -215,7 +211,7 @@ class TimelinePanel extends Panel
             );
         }
 
-        $start = self::floatValue($data['start'] ?? null);
+        $start = Coerce::floatOrNull($data['start'] ?? null);
 
         if ($start === null || $start <= 0) {
             throw new RuntimeException(
@@ -225,7 +221,7 @@ class TimelinePanel extends Panel
 
         $this->start = $start * 1000;
 
-        $end = self::floatValue($data['end'] ?? null);
+        $end = Coerce::floatOrNull($data['end'] ?? null);
 
         if ($end === null || $end <= 0) {
             throw new RuntimeException(
@@ -249,7 +245,7 @@ class TimelinePanel extends Panel
             );
         }
 
-        $memory = self::intValue($data['memory'] ?? null);
+        $memory = Coerce::intOrNull($data['memory'] ?? null);
 
         if ($memory === null || $memory <= 0) {
             throw new RuntimeException(
@@ -266,7 +262,7 @@ class TimelinePanel extends Panel
     public function save(): array
     {
         return [
-            'start' => self::floatValue($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? YII_BEGIN_TIME,
+            'start' => Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? YII_BEGIN_TIME,
             'end' => microtime(true),
             'memory' => memory_get_peak_usage(),
         ];
@@ -298,19 +294,6 @@ class TimelinePanel extends Panel
         ];
     }
 
-    private static function floatValue(mixed $value): float|null
-    {
-        if (is_int($value) || is_float($value)) {
-            return (float) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (float) $value;
-        }
-
-        return null;
-    }
-
     /**
      * @return array<int, array<int|string, mixed>>
      */
@@ -333,24 +316,7 @@ class TimelinePanel extends Panel
             return null;
         }
 
-        return self::floatValue($profilingPanel->data['time'] ?? null);
-    }
-
-    private static function intValue(mixed $value): int|null
-    {
-        if (is_int($value)) {
-            return $value;
-        }
-
-        if (is_float($value)) {
-            return (int) $value;
-        }
-
-        if (is_string($value) && is_numeric($value)) {
-            return (int) $value;
-        }
-
-        return null;
+        return Coerce::floatOrNull($profilingPanel->data['time'] ?? null);
     }
 
     /**
@@ -406,63 +372,23 @@ class TimelinePanel extends Panel
             return null;
         }
 
-        $timestamp = self::floatValue($timing['timestamp'] ?? null);
-        $duration = self::floatValue($timing['duration'] ?? null);
+        $timestamp = Coerce::floatOrNull($timing['timestamp'] ?? null);
+        $duration = Coerce::floatOrNull($timing['duration'] ?? null);
 
         if ($timestamp === null || $duration === null) {
             return null;
         }
 
         return [
-            'category' => self::stringValue($timing['category'] ?? null) ?? '',
+            'category' => Coerce::stringOrNull($timing['category'] ?? null) ?? '',
             'duration' => $duration,
-            'info' => self::stringValue($timing['info'] ?? null) ?? '',
-            'level' => self::intValue($timing['level'] ?? null) ?? 0,
-            'memory' => self::intValue($timing['memory'] ?? null) ?? 0,
-            'memoryDiff' => self::intValue($timing['memoryDiff'] ?? null) ?? 0,
+            'info' => Coerce::stringOrNull($timing['info'] ?? null) ?? '',
+            'level' => Coerce::intOrNull($timing['level'] ?? null) ?? 0,
+            'memory' => Coerce::intOrNull($timing['memory'] ?? null) ?? 0,
+            'memoryDiff' => Coerce::intOrNull($timing['memoryDiff'] ?? null) ?? 0,
             'timestamp' => $timestamp,
-            'trace' => self::normalizeTrace($timing['trace'] ?? []),
+            'trace' => Coerce::traceFrames($timing['trace'] ?? []),
         ];
     }
 
-    /**
-     * @param mixed $trace Raw trace returned by Yii logger.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private static function normalizeTrace(mixed $trace): array
-    {
-        if (!is_array($trace)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($trace as $frame) {
-            if (!is_array($frame)) {
-                continue;
-            }
-
-            $normalizedFrame = [];
-
-            foreach ($frame as $key => $value) {
-                if (is_string($key)) {
-                    $normalizedFrame[$key] = $value;
-                }
-            }
-
-            $normalized[] = $normalizedFrame;
-        }
-
-        return $normalized;
-    }
-
-    private static function stringValue(mixed $value): string|null
-    {
-        if (is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        return null;
-    }
 }

@@ -6,13 +6,11 @@ namespace yii\debug;
 
 use __PHP_Incomplete_Class;
 use Exception;
+use yii\debug\helpers\Fqcn;
 
-use function array_pop;
-use function explode;
 use function get_class;
 use function get_object_vars;
 use function get_resource_type;
-use function implode;
 use function is_array;
 use function is_bool;
 use function is_float;
@@ -240,18 +238,10 @@ class FlattenException
             }
 
             $rawClass = is_string($entry['class'] ?? null) ? $entry['class'] : '';
-            $class = '';
-            $namespace = '';
-
-            if ($rawClass !== '') {
-                $parts = explode('\\', $rawClass);
-                $class = array_pop($parts);
-                $namespace = implode('\\', $parts);
-            }
 
             $this->_trace[] = [
-                'namespace' => $namespace,
-                'short_class' => $class,
+                'namespace' => Fqcn::namespacePart($rawClass),
+                'short_class' => Fqcn::shortName($rawClass),
                 'class' => $rawClass,
                 'type' => is_string($entry['type'] ?? null) ? $entry['type'] : '',
                 'function' => is_string($entry['function'] ?? null) ? $entry['function'] : null,

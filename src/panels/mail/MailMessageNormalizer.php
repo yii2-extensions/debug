@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\panels\mail;
 
 use DateTimeInterface;
-use Stringable;
+use yii\debug\helpers\Coerce;
+use yii\debug\helpers\RowField;
 
 use function array_filter;
 use function array_map;
@@ -13,7 +14,6 @@ use function array_values;
 use function explode;
 use function is_array;
 use function is_int;
-use function is_scalar;
 use function is_string;
 use function strtotime;
 
@@ -43,31 +43,32 @@ final class MailMessageNormalizer
         $row = is_array($data) ? $data : [];
 
         return new MailMessage(
-            from: self::stringField($row, 'from'),
-            to: self::splitAddresses(self::stringField($row, 'to')),
-            cc: self::splitAddresses(self::stringField($row, 'cc')),
-            bcc: self::splitAddresses(self::stringField($row, 'bcc')),
-            replyTo: self::splitAddresses(self::stringField($row, 'reply')),
-            subject: self::stringField($row, 'subject'),
-            body: self::stringField($row, 'body'),
-            headers: self::stringField($row, 'headers'),
-            charset: self::stringField($row, 'charset'),
-            file: self::fileField($row),
+            from: self::scalarOrEmpty($row, 'from'),
+            to: self::splitAddresses(self::scalarOrEmpty($row, 'to')),
+            cc: self::splitAddresses(self::scalarOrEmpty($row, 'cc')),
+            bcc: self::splitAddresses(self::scalarOrEmpty($row, 'bcc')),
+            replyTo: self::splitAddresses(self::scalarOrEmpty($row, 'reply')),
+            subject: self::scalarOrEmpty($row, 'subject'),
+            body: self::scalarOrEmpty($row, 'body'),
+            headers: self::scalarOrEmpty($row, 'headers'),
+            charset: self::scalarOrEmpty($row, 'charset'),
+            file: RowField::stringField($row, 'file'),
             isSuccessful: ($row['isSuccessful'] ?? false) === true,
             time: self::timeField($row['time'] ?? null),
         );
     }
 
     /**
-     * `file` must be a real string path to be useful — non-strings collapse to empty.
+     * Reads `$row[$key]` as a string when it is scalar or {@see \Stringable}, falling back to `''` otherwise.
+     *
+     * Mail headers and bodies come from third-party mailer libraries that frequently expose `Stringable` payloads
+     * (e.g. SwiftMime / Symfony Mailer address objects), so a plain `is_string` narrow would drop legitimate values.
      *
      * @param array<array-key, mixed> $row
      */
-    private static function fileField(array $row): string
+    private static function scalarOrEmpty(array $row, string $key): string
     {
-        $value = $row['file'] ?? null;
-
-        return is_string($value) ? $value : '';
+        return Coerce::stringOrNull($row[$key] ?? null) ?? '';
     }
 
     /**
@@ -85,20 +86,6 @@ final class MailMessageNormalizer
         $parts = array_map('trim', explode(',', $raw));
 
         return array_values(array_filter($parts, static fn(string $address): bool => $address !== ''));
-    }
-
-    /**
-     * @param array<array-key, mixed> $row
-     */
-    private static function stringField(array $row, string $key): string
-    {
-        $value = $row[$key] ?? null;
-
-        if (is_scalar($value) || $value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        return '';
     }
 
     /**
