@@ -709,80 +709,8 @@ parameters:
 			path: src/Module.php
 
 		-
-			rawMessage: Anonymous function should return string but returns mixed.
-			identifier: return.type
-			count: 1
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.'
-			identifier: foreach.nonIterable
-			count: 2
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Call to function array_filter() requires parameter #2 to be passed to avoid loose comparison semantics.'
-			identifier: arrayFilter.strict
-			count: 3
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Call to function is_string() with string will always evaluate to true.'
-			identifier: function.alreadyNarrowedType
-			count: 2
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: Cannot cast mixed to string.
-			identifier: cast.string
-			count: 4
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: Empty array passed to foreach.
-			identifier: foreach.emptyArray
-			count: 1
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Offset ''dir'' on array{name: string, passwd: string, uid: int, gid: int, gecos: string, dir: string, shell: string} on left side of ?? always exists and is not nullable.'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Only booleans are allowed in an if condition, int<0, max>|false given.'
-			identifier: if.condNotBoolean
-			count: 2
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Only booleans are allowed in ||, int|false given on the right side.'
-			identifier: booleanOr.rightNotBoolean
-			count: 1
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Parameter #1 $content of static method yii\helpers\BaseHtml::encode() expects string, mixed given.'
-			identifier: argument.type
-			count: 2
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.
-			identifier: ternary.shortNotAllowed
-			count: 1
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Strict comparison using !== between non-empty-string and '''' will always evaluate to true.'
-			identifier: notIdentical.alwaysTrue
-			count: 2
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: 'Strict comparison using === between non-falsy-string and '''' will always evaluate to false.'
-			identifier: identical.alwaysFalse
+			rawMessage: Casting to string something that's already string.
+			identifier: cast.useless
 			count: 1
 			path: src/views/default/phpinfo.php
 
@@ -1193,6 +1121,12 @@ parameters:
 			identifier: property.nonObject
 			count: 2
 			path: tests/PanelTest.php
+
+		-
+			rawMessage: Offset 0 might not exist on list<yii\debug\widgets\phpinfo\PhpInfoSection>.
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/PhpInfoDataNormalizerTest.php
 
 		-
 			rawMessage: 'Return type (array<string, mixed>) of method yiiunit\debug\router\controllers\BadController::actions() should be covariant with return type (array<array{class: class-string}|class-string>) of method yii\base\Controller<yii\base\Module>::actions()'
