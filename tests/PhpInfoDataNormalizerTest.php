@@ -232,6 +232,8 @@ final class PhpInfoDataNormalizerTest extends TestCase
             ''
         );
 
+        self::assertNotSame([], $view->sections, 'Normalized output must expose at least one hero section.');
+
         $heroLabels = [];
 
         foreach ($view->sections[0]->tiles as $tile) {

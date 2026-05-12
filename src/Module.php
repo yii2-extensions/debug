@@ -15,202 +15,159 @@ use yii\helpers\Html;
 use yii\helpers\IpHelper;
 use yii\helpers\Json;
 use yii\helpers\Url;
+use yii\log\Dispatcher;
+use yii\rbac\BaseManager;
 use yii\web\ForbiddenHttpException;
 use yii\web\Response;
 use yii\web\View;
 
+use function array_merge;
+use function file_get_contents;
+use function gethostbyname;
+use function in_array;
+use function is_array;
+use function is_callable;
+use function is_numeric;
 use function is_string;
+use function microtime;
+use function number_format;
+use function strncmp;
+use function strpos;
 
 /**
- * Debug Module provides the debug toolbar and debugger
- *
- * @property \yii\base\Event $debugHeaders
+ * Debug Module provides the debug toolbar and debugger.
  */
 class Module extends \yii\base\Module implements BootstrapInterface
 {
     public const string DEFAULT_IDE_TRACELINE = '<a href="ide://open?url=file://{file}&line={line}">{text}</a>';
     public const string VERSION = '0.1.0';
-    /**
-     * @var array The list of hosts that are allowed to access this module.
-     * Each array element is a hostname that will be resolved to an IP address that is compared with the IP address of
-     * the user. A use case is to use a dynamic DNS (DDNS) to allow access.
-     * The default value is `[]`.
-     */
-    public $allowedHosts = [];
 
     /**
-     * @var array The list of IPs that are allowed to access this module.
-     * Each array element represents a single IP filter which can be either:
-     * - an IP address (for example, 1.2.3.4).
-     * - an address with wildcard (for example, 192.168.0.*) to represent a network segment.
-     * - a CIDR range (for example, 172.16.0.0/12) (available since version 2.1.18).
-     *   The default value is `['127.0.0.1', '::1']`, which means the module can only be accessed by localhost.
-     */
-    public $allowedIPs = ['127.0.0.1', '::1'];
-    /**
-     * @var array|string|\yii\rbac\BaseManager the RBAC access checker [[BaseManager]] object or the application
-     * component ID of the AuthManager [[BaseManager]].
-     */
-    public $authManager = 'authManager';
-    /**
-     * @var callable A valid PHP callback that returns true if user is allowed to use web shell and false otherwise
+     * Hosts allowed to access this module. Each entry is resolved to an IP at runtime; useful for dynamic DNS.
      *
-     * The signature is the following:
-     *
-     * function (Action|null $action) The action can be null when called from a non action context (like set debug
-     * header)
+     * @var list<string>
      */
-    public $checkAccessCallback;
+    public array $allowedHosts = [];
+    /**
+     * IPs allowed to access this module. Entries may be exact, wildcard (`192.168.0.*`) or CIDR (`172.16.0.0/12`).
+     *
+     * @var list<string>
+     */
+    public array $allowedIPs = ['127.0.0.1', '::1'];
+    /**
+     * RBAC access checker — component id or fully configured manager.
+     *
+     * @var BaseManager|array<string, mixed>|string
+     */
+    public BaseManager|array|string $authManager = 'authManager';
+    /**
+     * Callback evaluated by {@see checkAccess()}. Receives the current {@see Action} (or `null`) and must return `true`
+     * to grant access.
+     *
+     * @var (callable(Action|null): bool)|null
+     */
+    public mixed $checkAccessCallback = null;
     public $controllerNamespace = 'yii\debug\controllers';
     /**
-     * @var string the directory storing the debugger data files. This can be specified using a path alias.
+     * Directory storing the debugger data files (path alias accepted).
      */
-    public $dataPath = '@runtime/debug';
+    public string $dataPath = '@runtime/debug';
     /**
-     * @var int the debug bar default height, as a percentage of the total screen height
-     * @since 2.1.1
+     * Debug bar default height, as a percentage of the total screen height.
      */
-    public $defaultHeight = 50;
+    public int $defaultHeight = 50;
     /**
-     * @var string the name of the panel that should be visible when opening the debug panel.
-     * The default value is 'log'.
-     * @since 2.0.7
+     * Name of the panel that should be visible when opening the debug panel.
      */
-    public $defaultPanel = 'log';
+    public string $defaultPanel = 'log';
     /**
-     * @var int the permission to be set for newly created directories.
-     * This value will be used by PHP [[chmod()]] function. No umask will be applied.
-     * Defaults to 0775, meaning the directory is read-writable by owner and group,
-     * but read-only for other users.
-     * @since 2.0.6
+     * Permission applied to newly created debugger directories (used by {@see chmod()}); no umask is applied.
      */
-    public $dirMode = 0o775;
+    public int $dirMode = 0o775;
     /**
-     * @var bool whether to disable access callback restriction warning triggered by checkAccess function
-     * @since 2.1.0
+     * Whether to disable the access-callback restriction warning emitted by {@see checkAccess()}.
      */
-    public $disableCallbackRestrictionWarning = false;
+    public bool $disableCallbackRestrictionWarning = false;
     /**
-     * @var bool whether to disable IP address restriction warning triggered by checkAccess function
-     * @since 2.0.14
+     * Whether to disable the IP restriction warning emitted by {@see checkAccess()}.
      */
-    public $disableIpRestrictionWarning = false;
+    public bool $disableIpRestrictionWarning = false;
     /**
-     * @var bool whether to enable message logging for the requests about debug module actions.
-     * You normally do not want to keep these logs because they may distract you from the logs about your applications.
-     * You may want to enable the debug logs if you want to investigate how the debug module itself works.
+     * Whether to keep log messages emitted by debug-module requests. Enable only when debugging the module itself.
      */
-    public $enableDebugLogs = false;
+    public bool $enableDebugLogs = false;
     /**
-     * @var int the permission to be set for newly created debugger data files.
-     * This value will be used by PHP [[chmod()]] function. No umask will be applied.
-     * If not set, the permission will be determined by the current environment.
-     * @since 2.0.6
+     * Permission applied to newly created debugger data files (used by {@see chmod()}); `null` keeps the env default.
      */
-    public $fileMode;
+    public int|null $fileMode = null;
     /**
-     * @var int the maximum number of debug data files to keep. If there are more files generated,
-     * the oldest ones will be removed.
+     * Maximum number of debug data files to keep; older snapshots beyond this count are pruned.
      */
-    public $historySize = 50;
+    public int $historySize = 50;
     /**
-     * @var array|LogTarget|string the logTarget object, or the configuration for creating the logTarget object.
-     */
-    public $logTarget = 'yii\debug\LogTarget';
-    /**
-     * @var callable|string Page title could be a string or a callable function
+     * LogTarget instance, configuration array, or class name. Always coerced to a {@see LogTarget} by {@see bootstrap()}.
      *
-     * ```php
-     * ...
-     * 'pageTitle' => 'Custom Debug Title',
-     * ...
-     * // OR
-     * 'pageTitle' => function($url) {
-     *     $domain = getDomain($url);
-     *     return $domain . ' debugger';
-     * }
-     * ```
-     *
-     * @since 2.1.1
+     * @var LogTarget|array<string, mixed>|string
      */
-    public $pageTitle;
+    public LogTarget|array|string $logTarget = 'yii\debug\LogTarget';
     /**
-     * @var array|Panel[] list of debug panels. The array keys are the panel IDs, and values are the corresponding
-     * panel class names or configuration arrays. This will be merged with [[corePanels()]].
-     * You may reconfigure a core panel via this property by using the same panel ID.
-     * You may also disable a core panel by setting it to be false in this property.
+     * Page title — literal string or a callable receiving the base URL and returning a string.
+     *
+     * @var (callable(string): string)|string|null
      */
-    public $panels = [];
+    public mixed $pageTitle = null;
+    /**
+     * Debug panels indexed by panel id. May be populated with config arrays / class names before {@see initPanels()}
+     * runs, but after initialization the array holds only {@see Panel} instances.
+     *
+     * @var array<string, Panel>
+     */
+    public array $panels = [];
+    /**
+     * Routes whose AJAX hits should NOT appear in the toolbar history (e.g. polling endpoints).
+     *
+     * @var array<int|string, mixed>
+     */
+    public array $skipAjaxRequestUrl = [];
+    /**
+     * Toolbar position on the page (`'bottom'` or `'upper'`).
+     */
+    public string $toolbarPosition = 'bottom';
+    /**
+     * Trace-line template — placeholder string ({file}, {line}, {text}), callable returning the rendered line, or
+     * `false` to disable trace-line rendering entirely.
+     *
+     * @var (callable(array<string, mixed>, Panel): string)|string|false
+     */
+    public mixed $traceLine = self::DEFAULT_IDE_TRACELINE;
+    /**
+     * Maps containerized/remote paths to local paths for the {file} portion of {@see $traceLine}; only the first match
+     * is applied.
+     *
+     * @var array<string, string>
+     */
+    public array $tracePathMappings = [];
+    /**
+     * Class name of the {@see UrlRule} used for rules generated by this module.
+     */
+    public string $urlRuleClass = 'yii\web\UrlRule';
+
+    private static string|null $_toolbarScript = null;
+    private static string $_yiiLogo = 'data:image/png;base64,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';
 
     /**
-     * @var array routes of AJAX requests to skip from being displayed in toolbar
-     */
-    public $skipAjaxRequestUrl = [];
-    /**
-     * @var string toolbar position on web page. Use 'bottom' or 'upper'.
-     * You may add custom value via .yii-debug-toolbar-position-{yourValue} css.
-     */
-    public $toolbarPosition = 'bottom';
-    /**
-     * @var mixed the string with placeholders to be be substituted or an anonymous function that returns the trace line string.
-     * The placeholders are {file}, {line} and {text} and the string should be as follows:
-     *
-     * `File: {file} - Line: {line} - Text: {text}`
-     *
-     * The signature of the anonymous function should be as follows:
-     *
-     * ```php
-     * function($trace, $panel) {
-     *     // compute line string
-     *     return $line;
-     * }
-     * ```
-     */
-    public $traceLine = self::DEFAULT_IDE_TRACELINE;
-    /**
-     * @var array used when the virtual, containerized, or remote debug trace paths don't correspond to the developers
-     * local paths. Acts on the {file} portion for the `$traceLine` property.
-     *
-     * The array key is the environment's path, while the value is the local desired path.
-     *
-     * It will only map the first matched matched key.
-     *
-     * Example:
-     *
-     * ```php
-     * [
-     *     '/app' => '/home/user/project/app',
-     * ]
-     * ```
-     *
-     * Note that this will not change the displayed text, only the link url.
-     *
-     * @since 2.1.6
-     */
-    public $tracePathMappings = [];
-    /**
-     * @var string The [[UrlRule]] class to use for rules generated by this module.
-     * @since 2.1.1
-     */
-    public $urlRuleClass = 'yii\web\UrlRule';
-    /**
-     * @var string|null Cached toolbar JavaScript payload.
-     */
-    private static $_toolbarScript;
-    /**
-     * @var string Yii logo URL
-     */
-    private static $_yiiLogo = 'data:image/png;base64,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';
-
-    /**
-     * @throws \yii\base\InvalidConfigException
+     * @throws InvalidConfigException
      * @throws ForbiddenHttpException
      */
-    public function beforeAction($action)
+    public function beforeAction($action): bool
     {
         if (!$this->enableDebugLogs) {
-            foreach ($this->get('log')->targets as $target) {
-                $target->enabled = false;
+            $log = $this->get('log');
+
+            if ($log instanceof Dispatcher) {
+                foreach ($log->targets as $target) {
+                    $target->enabled = false;
+                }
             }
         }
 
@@ -218,46 +175,38 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return false;
         }
 
-        // do not display debug toolbar when in debug view mode
         Yii::$app->getView()->off(View::EVENT_END_BODY, [$this, 'renderToolbar']);
         Yii::$app->getResponse()->off(Response::EVENT_AFTER_PREPARE, [$this, 'setDebugHeaders']);
 
         if ($this->checkAccess($action)) {
             $this->resetGlobalSettings();
+
             return true;
         }
 
         if (in_array($action->id, ['toolbar', 'toolbar-data'], true)) {
-            // Accessing toolbar remotely is normal. Do not throw exception.
+            // Accessing the toolbar remotely is normal — do not throw.
             return false;
         }
 
         throw new ForbiddenHttpException('You are not allowed to access this page.');
     }
 
-    public function bootstrap($app)
+    public function bootstrap($app): void
     {
-        if (is_array($this->logTarget)) {
-            if (!isset($this->logTarget['class'])) {
-                $this->logTarget['class'] = 'yii\debug\LogTarget';
-            }
-            $this->logTarget = Yii::createObject($this->logTarget, [$this]);
-        } elseif (is_string($this->logTarget)) {
-            $this->logTarget = Yii::createObject($this->logTarget, [$this]);
-        }
+        $this->logTarget = $this->resolveLogTarget();
 
-        /** @var \yii\base\Application $app */
         $app->getLog()->targets['debug'] = $this->logTarget;
-        // delay attaching event handler to the view component after it is fully configured
+
         $app->on(
             Application::EVENT_BEFORE_REQUEST,
-            function () use ($app) {
+            function () use ($app): void {
                 $app->getResponse()->on(Response::EVENT_AFTER_PREPARE, [$this, 'setDebugHeaders']);
             },
         );
         $app->on(
             Application::EVENT_BEFORE_ACTION,
-            function () use ($app) {
+            function () use ($app): void {
                 $app->getView()->on(View::EVENT_END_BODY, [$this, 'renderToolbar']);
             },
         );
@@ -283,21 +232,25 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Gets toolbar HTML
+     * Returns the toolbar HTML — a `<yii-debug-toolbar>` custom element wired with data attributes the bundled JS reads.
      */
-    public function getToolbarHtml()
+    public function getToolbarHtml(): string
     {
+        $logTarget = $this->logTargetOrFail();
+
         $url = Url::toRoute(
             [
                 '/' . $this->getUniqueId() . '/default/toolbar-data',
-                'tag' => $this->logTarget->tag,
+                'tag' => $logTarget->tag,
             ],
         );
 
         $skipAjaxRequestUrl = [];
 
         foreach ($this->skipAjaxRequestUrl as $key => $route) {
-            $skipAjaxRequestUrl[$key] = Url::to($route);
+            if (is_string($route) || is_array($route)) {
+                $skipAjaxRequestUrl[$key] = Url::to($route);
+            }
         }
 
         return Html::tag(
@@ -315,22 +268,19 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Returns the logo URL to be used in `<img src="`
-     *
-     * @return string the logo URL
+     * Returns the logo URL to be used in `<img src="`.
      */
-    public static function getYiiLogo()
+    public static function getYiiLogo(): string
     {
         return self::$_yiiLogo;
     }
 
     /**
-     * @return string page title to be used in HTML
-     * @since 2.1.1
+     * Returns the page title to be used in HTML.
      */
-    public function htmlTitle()
+    public function htmlTitle(): string
     {
-        if (is_string($this->pageTitle) && !empty($this->pageTitle)) {
+        if (is_string($this->pageTitle) && $this->pageTitle !== '') {
             return $this->pageTitle;
         }
 
@@ -344,35 +294,38 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * @throws InvalidConfigException
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
 
-        $this->dataPath = Yii::getAlias($this->dataPath);
+        $alias = Yii::getAlias($this->dataPath);
+        $this->dataPath = $alias;
 
         $this->initPanels();
     }
 
     /**
-     * Renders mini-toolbar at the end of page body.
+     * Renders the mini-toolbar at the end of the page body.
      *
-     * @param Event $event
      * @throws Throwable
      */
-    public function renderToolbar($event)
+    public function renderToolbar(Event $event): void
     {
         if (!$this->checkAccess() || Yii::$app->getRequest()->getIsAjax()) {
             return;
         }
 
-        /** @var View $view */
         $view = $event->sender;
+
+        if (!$view instanceof View) {
+            return;
+        }
 
         echo $view->renderDynamic('return Yii::$app->getModule("' . $this->getUniqueId() . '")->getToolbarHtml();');
 
-        // Cache the inline toolbar script per request only (`YII_DEBUG` short-circuits the
-        // static cache so dev workflows pick up edits without a server restart). In production
-        // the static cache amortises the file read across requests handled by the same worker.
+        // Cache the inline toolbar script per request only (`YII_DEBUG` short-circuits the static cache so dev workflows
+        // pick up edits without a server restart). In production the static cache amortises the file read across
+        // requests handled by the same worker.
         if (self::$_toolbarScript === null || YII_DEBUG) {
             $contents = file_get_contents(__DIR__ . '/assets/dist/js/toolbar.js');
             self::$_toolbarScript = $contents === false ? '' : $contents;
@@ -383,79 +336,55 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Setting headers to transfer debug data in AJAX requests without interfering with the request itself.
-     *
-     * @param Event $event
+     * Sets headers carrying debug data on AJAX responses so the toolbar can resolve the captured tag and link back to
+     * the full view.
      */
-    public function setDebugHeaders($event)
+    public function setDebugHeaders(Event $event): void
     {
         if (!$this->checkAccess()) {
             return;
         }
 
+        $logTarget = $this->logTargetOrFail();
+
         $url = Url::toRoute(
             [
                 '/' . $this->getUniqueId() . '/default/view',
-                'tag' => $this->logTarget->tag,
+                'tag' => $logTarget->tag,
             ],
         );
-        $event->sender->getHeaders()
-            ->set('X-Debug-Tag', $this->logTarget->tag)
-            ->set('X-Debug-Duration', number_format((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000 + 1))
+
+        $sender = $event->sender;
+
+        if (!$sender instanceof Response) {
+            return;
+        }
+
+        $rawStart = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
+        $requestStart = is_numeric($rawStart) ? (float) $rawStart : microtime(true);
+
+        $sender->getHeaders()
+            ->set('X-Debug-Tag', $logTarget->tag)
+            ->set('X-Debug-Duration', number_format((microtime(true) - $requestStart) * 1000 + 1))
             ->set('X-Debug-Link', $url);
     }
 
     /**
-     * Sets the logo URL to be used in `<img src="`
-     *
-     * @param string $logo the logo URL
+     * Sets the logo URL to be used in `<img src="`.
      */
-    public static function setYiiLogo($logo)
+    public static function setYiiLogo(string $logo): void
     {
         self::$_yiiLogo = $logo;
     }
 
     /**
-     * Checks if current user is allowed to access the module
-     *
-     * @param Action|null $action the action to be executed. May be `null` when called from
-     * a non action context.
-     *
-     * @return bool if access is granted
+     * Checks if the current user is allowed to access the module.
      */
-    protected function checkAccess($action = null)
+    protected function checkAccess(Action|null $action = null): bool
     {
-        $allowed = false;
+        $ip = Yii::$app->getRequest()->getUserIP() ?? '';
 
-        $ip = Yii::$app->getRequest()->getUserIP();
-
-        foreach ($this->allowedIPs as $filter) {
-            if (
-                $filter === '*'
-                || $filter === $ip
-                || (
-                    ($pos = strpos($filter, '*')) !== false
-                    && !strncmp($ip, $filter, $pos)
-                )
-                || (
-                    strpos($filter, '/') !== false
-                    && IpHelper::inRange($ip, $filter)
-                )
-            ) {
-                $allowed = true;
-                break;
-            }
-        }
-
-        if ($allowed === false) {
-            foreach ($this->allowedHosts as $hostname) {
-                $filter = gethostbyname($hostname);
-                if ($filter === $ip) {
-                    $allowed = true;
-                    break;
-                }
-            }
-        }
+        $allowed = $this->matchesAllowedIp($ip) || $this->matchesAllowedHost($ip);
 
         if ($allowed === false) {
             if (!$this->disableIpRestrictionWarning) {
@@ -470,10 +399,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         if ($this->checkAccessCallback !== null && ($this->checkAccessCallback)($action) !== true) {
             if (!$this->disableCallbackRestrictionWarning) {
-                Yii::warning(
-                    'Access to debugger is denied due to checkAccessCallback.',
-                    __METHOD__,
-                );
+                Yii::warning('Access to debugger is denied due to checkAccessCallback.', __METHOD__);
             }
 
             return false;
@@ -483,83 +409,67 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * @return array default set of panels
+     * @return array<string, array<string, mixed>>
      */
-    protected function corePanels()
+    protected function corePanels(): array
     {
         // Ordered by importance for the typical request-debugging workflow:
         // identity (config) → current request → routing → logs → DB → perf → events →
         //   auth → side-effects (mail/queue) → dev-time helpers (dump) → infrastructure (assets).
-        $isWeb = Yii::$app instanceof \yii\web\Application;
-
-        $corePanels = ['config' => ['class' => 'yii\debug\panels\ConfigPanel']];
-
-        if ($isWeb) {
-            $corePanels['request'] = ['class' => 'yii\debug\panels\RequestPanel'];
-            $corePanels['router'] = ['class' => 'yii\debug\panels\RouterPanel'];
-        }
-
-        $corePanels['log'] = ['class' => 'yii\debug\panels\LogPanel'];
-        $corePanels['db'] = ['class' => 'yii\debug\panels\DbPanel'];
-        $corePanels['profiling'] = ['class' => 'yii\debug\panels\ProfilingPanel'];
-        $corePanels['timeline'] = ['class' => 'yii\debug\panels\TimelinePanel'];
-        $corePanels['event'] = ['class' => 'yii\debug\panels\EventPanel'];
-
-        if ($isWeb) {
-            $corePanels['user'] = ['class' => 'yii\debug\panels\UserPanel'];
-        }
-
-        $corePanels['mail'] = ['class' => 'yii\debug\panels\MailPanel'];
-        $corePanels['queue'] = ['class' => 'yii\debug\panels\QueuePanel'];
-        $corePanels['dump'] = ['class' => 'yii\debug\panels\DumpPanel'];
-
-        if ($isWeb) {
-            $corePanels['asset'] = ['class' => 'yii\debug\panels\AssetPanel'];
-        }
-
-        return $corePanels;
+        return [
+            'config' => ['class' => 'yii\debug\panels\ConfigPanel'],
+            'request' => ['class' => 'yii\debug\panels\RequestPanel'],
+            'router' => ['class' => 'yii\debug\panels\RouterPanel'],
+            'log' => ['class' => 'yii\debug\panels\LogPanel'],
+            'db' => ['class' => 'yii\debug\panels\DbPanel'],
+            'profiling' => ['class' => 'yii\debug\panels\ProfilingPanel'],
+            'timeline' => ['class' => 'yii\debug\panels\TimelinePanel'],
+            'event' => ['class' => 'yii\debug\panels\EventPanel'],
+            'user' => ['class' => 'yii\debug\panels\UserPanel'],
+            'mail' => ['class' => 'yii\debug\panels\MailPanel'],
+            'queue' => ['class' => 'yii\debug\panels\QueuePanel'],
+            'dump' => ['class' => 'yii\debug\panels\DumpPanel'],
+            'asset' => ['class' => 'yii\debug\panels\AssetPanel'],
+        ];
     }
 
-    /**
-     * @since 2.0.7
-     */
-    protected function defaultVersion()
+    protected function defaultVersion(): string
     {
         return self::VERSION;
     }
 
     /**
-     * Initializes panels.
-     *
      * @throws InvalidConfigException
      */
-    protected function initPanels()
+    protected function initPanels(): void
     {
         // merge custom panels and core panels so that they are ordered mainly by custom panels
-        if (empty($this->panels)) {
-            $this->panels = $this->corePanels();
+        if ($this->panels === []) {
+            $merged = $this->corePanels();
         } else {
             $corePanels = $this->corePanels();
+
             foreach ($corePanels as $id => $config) {
                 if (isset($this->panels[$id])) {
                     unset($corePanels[$id]);
                 }
             }
-            $this->panels = array_filter(array_merge($corePanels, $this->panels));
+
+            $merged = array_merge($corePanels, $this->panels);
         }
 
-        foreach ($this->panels as $id => $config) {
-            if (is_string($config)) {
-                $config = ['class' => $config];
+        $this->panels = [];
+
+        foreach ($merged as $id => $config) {
+            $panel = $this->buildPanel($id, $config);
+
+            if ($panel === null) {
+                continue;
             }
 
-            $config['module'] = $this;
+            $this->panels[$id] = $panel;
 
-            $config['id'] = $id;
-
-            $this->panels[$id] = Yii::createObject($config);
-
-            if ($this->panels[$id] instanceof Panel && !$this->panels[$id]->isEnabled()) {
+            if (!$panel->isEnabled()) {
                 unset($this->panels[$id]);
             }
         }
@@ -568,8 +478,121 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Resets potentially incompatible global settings done in app config.
      */
-    protected function resetGlobalSettings()
+    protected function resetGlobalSettings(): void
     {
         Yii::$app->assetManager->bundles = [];
+    }
+
+    /**
+     * @param Panel|array<string, mixed>|string $config
+     *
+     * @throws InvalidConfigException
+     */
+    private function buildPanel(string $id, Panel|array|string $config): Panel|null
+    {
+        if ($config instanceof Panel) {
+            $config->id = $id;
+            $config->module = $this;
+
+            return $config;
+        }
+
+        if (is_string($config)) {
+            $class = $config;
+            $properties = [];
+        } else {
+            $class = $config['class'] ?? null;
+
+            if (!is_string($class) || !class_exists($class)) {
+                return null;
+            }
+
+            $properties = $config;
+            unset($properties['class']);
+        }
+
+        $properties['module'] = $this;
+        $properties['id'] = $id;
+
+        $object = Yii::$container->get($class, [], $properties);
+
+        return $object instanceof Panel ? $object : null;
+    }
+
+    private function logTargetOrFail(): LogTarget
+    {
+        if (!$this->logTarget instanceof LogTarget) {
+            throw new InvalidConfigException(
+                'Debug module logTarget has not been bootstrapped — call Module::bootstrap() first.',
+            );
+        }
+
+        return $this->logTarget;
+    }
+
+    private function matchesAllowedHost(string $ip): bool
+    {
+        foreach ($this->allowedHosts as $hostname) {
+            if (gethostbyname($hostname) === $ip) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function matchesAllowedIp(string $ip): bool
+    {
+        foreach ($this->allowedIPs as $filter) {
+            if ($filter === '*' || $filter === $ip) {
+                return true;
+            }
+
+            $wildcardPos = strpos($filter, '*');
+
+            if ($wildcardPos !== false && strncmp($ip, $filter, $wildcardPos) === 0) {
+                return true;
+            }
+
+            if (strpos($filter, '/') !== false && IpHelper::inRange($ip, $filter)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @throws InvalidConfigException
+     */
+    private function resolveLogTarget(): LogTarget
+    {
+        if ($this->logTarget instanceof LogTarget) {
+            return $this->logTarget;
+        }
+
+        if (is_string($this->logTarget)) {
+            $class = $this->logTarget;
+            $properties = [];
+        } else {
+            $class = $this->logTarget['class'] ?? LogTarget::class;
+
+            if (!is_string($class) || !class_exists($class)) {
+                throw new InvalidConfigException(
+                    'Debug module logTarget configuration must declare a valid class name.',
+                );
+            }
+
+            $properties = $this->logTarget;
+            unset($properties['class']);
+        }
+
+        $target = Yii::$container->get($class, [$this], $properties);
+
+        if (!$target instanceof LogTarget) {
+            throw new InvalidConfigException('Debug module logTarget must resolve to a yii\\debug\\LogTarget instance.');
+        }
+
+        return $target;
     }
 }

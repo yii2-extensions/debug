@@ -5,55 +5,63 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use Yii;
-use yii\base\Exception;
-use yii\base\InvalidConfigException;
-use yii\console\Request;
-use yii\console\Response;
-use yii\debug\panels\DbPanel;
+use yii\base\{Exception, InvalidConfigException};
+use yii\debug\panels\{DbPanel, MailPanel};
 use yii\helpers\FileHelper;
 use yii\log\Target;
 
+use function array_diff;
+use function array_keys;
+use function array_merge;
+use function array_reverse;
+use function chmod;
 use function count;
+use function fclose;
+use function feof;
+use function fgets;
+use function file_get_contents;
+use function file_put_contents;
+use function filesize;
+use function flock;
+use function fopen;
+use function fread;
+use function ftruncate;
+use function fwrite;
+use function is_array;
+use function is_string;
+use function microtime;
+use function pathinfo;
+use function rewind;
+use function serialize;
+use function touch;
+use function uniqid;
+use function unlink;
+use function unserialize;
 
 /**
- * Debug LogTarget is used to store logs for later use in the debugger tool.
+ * Captures the per-request snapshot consumed by the debug toolbar: collects panel data, serializes it to disk and
+ * maintains the rolling `index.data` manifest.
  */
 class LogTarget extends Target
 {
-    /**
-     * @var Module
-     */
-    public $module;
-    /**
-     * @var string
-     */
-    public $tag;
+    public Module $module;
+    public string $tag = '';
 
     /**
-     * @param \yii\debug\Module $module
-     * @param array $config
+     * @param array<string, mixed> $config
      */
-    public function __construct($module, $config = [])
+    public function __construct(Module $module, array $config = [])
     {
         parent::__construct($config);
+
         $this->module = $module;
         $this->tag = uniqid();
     }
 
     /**
-     * Processes the given log messages.
-     *
-     * This method will filter the given messages with [[levels]] and [[categories]].
-     *
-     * And if requested, it will also export the filtering result to specific medium (for example, email).
-     *
-     * @param array $messages log messages to be processed. See [[\yii\log\Logger::messages]] for the structure of each
-     * message.
-     * @param bool $final Whether this method is called at the end of the current application
-     *
-     * @throws Exception
+     * @param array<array-key, mixed> $messages
      */
-    public function collect($messages, $final)
+    public function collect($messages, $final): void
     {
         $this->messages = array_merge($this->messages, $messages);
 
@@ -63,20 +71,16 @@ class LogTarget extends Target
     }
 
     /**
-     * Exports log messages to a specific destination.
-     *
-     * Child classes must implement this method.
-     *
      * @throws Exception
      */
-    public function export()
+    public function export(): void
     {
         $path = $this->module->dataPath;
 
         FileHelper::createDirectory($path, $this->module->dirMode);
 
         $summary = $this->collectSummary();
-        $dataFile = "$path/{$this->tag}.data";
+        $dataFile = "{$path}/{$this->tag}.data";
 
         $data = [];
         $exceptions = [];
@@ -84,10 +88,12 @@ class LogTarget extends Target
         foreach ($this->module->panels as $id => $panel) {
             try {
                 $panelData = $panel->save();
-                if ($id === 'profiling') {
-                    $summary['peakMemory'] = $panelData['memory'];
-                    $summary['processingTime'] = $panelData['time'];
+
+                if ($id === 'profiling' && is_array($panelData)) {
+                    $summary['peakMemory'] = $panelData['memory'] ?? 0;
+                    $summary['processingTime'] = $panelData['time'] ?? 0.0;
                 }
+
                 $data[$id] = serialize($panelData);
             } catch (Exception $exception) {
                 $exceptions[$id] = new FlattenException($exception);
@@ -103,7 +109,7 @@ class LogTarget extends Target
             @chmod($dataFile, $this->module->fileMode);
         }
 
-        $indexFile = "$path/index.data";
+        $indexFile = "{$path}/index.data";
 
         $this->updateIndexFile($indexFile, $summary);
     }
@@ -111,9 +117,9 @@ class LogTarget extends Target
     /**
      * @see DefaultController
      *
-     * @return array
+     * @return array<string, array<string, mixed>>
      */
-    public function loadManifest()
+    public function loadManifest(): array
     {
         $indexFile = $this->module->dataPath . '/index.data';
 
@@ -123,87 +129,119 @@ class LogTarget extends Target
 
         if ($fp !== false) {
             @flock($fp, LOCK_SH);
-            $content = fread($fp, filesize($indexFile));
+            $size = filesize($indexFile);
+
+            if ($size > 0) {
+                $read = fread($fp, $size);
+                $content = $read === false ? '' : $read;
+            }
+
             @flock($fp, LOCK_UN);
             fclose($fp);
         }
 
-        if ($content !== '') {
-            return array_reverse(unserialize($content), true);
+        if ($content === '') {
+            return [];
         }
 
-        return [];
+        $manifest = @unserialize($content);
+
+        if (!is_array($manifest)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($manifest as $tag => $summary) {
+            if (is_string($tag) && is_array($summary)) {
+                $stringKeyed = [];
+
+                foreach ($summary as $key => $value) {
+                    if (is_string($key)) {
+                        $stringKeyed[$key] = $value;
+                    }
+                }
+
+                $normalized[$tag] = $stringKeyed;
+            }
+        }
+
+        return array_reverse($normalized, true);
     }
 
     /**
      * @see DefaultController
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function loadTagToPanels($tag)
+    public function loadTagToPanels(string $tag): array
     {
-        $dataFile = $this->module->dataPath . "/$tag.data";
+        $dataFile = $this->module->dataPath . "/{$tag}.data";
 
-        $data = unserialize(file_get_contents($dataFile));
+        $raw = @file_get_contents($dataFile);
+        $data = $raw === false ? [] : @unserialize($raw);
 
-        $exceptions = $data['exceptions'];
+        if (!is_array($data)) {
+            $data = [];
+        }
+
+        $exceptions = is_array($data['exceptions'] ?? null) ? $data['exceptions'] : [];
+
+        $normalized = [];
+
+        foreach ($data as $key => $value) {
+            if (is_string($key)) {
+                $normalized[$key] = $value;
+            }
+        }
 
         foreach ($this->module->panels as $id => $panel) {
-            if (isset($data[$id])) {
+            if (isset($normalized[$id]) && is_string($normalized[$id])) {
                 $panel->tag = $tag;
-                $panel->load(unserialize($data[$id]));
+                $panel->load(@unserialize($normalized[$id]));
             } else {
                 unset($this->module->panels[$id]);
             }
-            if (isset($exceptions[$id])) {
+
+            if (isset($exceptions[$id]) && $exceptions[$id] instanceof FlattenException) {
                 $panel->setError($exceptions[$id]);
             }
         }
 
-        return $data;
+        return $normalized;
     }
 
     /**
      * Collects summary data of current request.
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    protected function collectSummary()
+    protected function collectSummary(): array
     {
-        if (Yii::$app === null) {
-            return [];
-        }
-
         $request = Yii::$app->getRequest();
         $response = Yii::$app->getResponse();
 
+        $requestTime = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
+        $userIP = $request->getUserIP();
+
         $summary = [
             'tag' => $this->tag,
-            'url' => $request instanceof Request
-                ? 'php yii ' . implode(' ', $request->getParams())
-                : $request->getAbsoluteUrl(),
-            'ajax' => $request instanceof Request
-                ? 0
-                : (int) $request->getIsAjax(),
-            'method' => $request instanceof Request
-                ? 'COMMAND'
-                : $request->getMethod(),
-            'ip' => $request instanceof Request
-                ? exec('whoami')
-                : $request->getUserIP(),
-            'time' => $_SERVER['REQUEST_TIME_FLOAT'],
-            'statusCode' => $response instanceof Response
-                ? $response->exitStatus
-                : $response->statusCode,
+            'url' => $request->getAbsoluteUrl(),
+            'ajax' => (int) $request->getIsAjax(),
+            'method' => $request->getMethod(),
+            'ip' => $userIP === null ? '' : $userIP,
+            'time' => $requestTime,
+            'statusCode' => $response->statusCode,
             'sqlCount' => $this->getSqlTotalCount(),
             'excessiveCallersCount' => $this->getExcessiveDbCallersCount(),
         ];
 
-        if (isset($this->module->panels['mail'])) {
-            $mailFiles = $this->module->panels['mail']->getMessagesFileName();
+        $mailPanel = $this->module->panels['mail'] ?? null;
+
+        if ($mailPanel instanceof MailPanel) {
+            $mailFiles = $mailPanel->getMessagesFileName();
 
             $summary['mailCount'] = count($mailFiles);
-
             $summary['mailFiles'] = $mailFiles;
         }
 
@@ -211,87 +249,89 @@ class LogTarget extends Target
     }
 
     /**
-     * Removes obsolete data files
-     * @param array $manifest
+     * Removes obsolete data files.
+     *
+     * @param array<string, array<string, mixed>> $manifest
      */
-    protected function gc(&$manifest)
+    protected function gc(array &$manifest): void
     {
-        if (count($manifest) > $this->module->historySize + 10) {
-            $n = count($manifest) - $this->module->historySize;
+        if (count($manifest) <= $this->module->historySize + 10) {
+            return;
+        }
 
-            foreach (array_keys($manifest) as $tag) {
-                $file = $this->module->dataPath . "/$tag.data";
+        $n = count($manifest) - $this->module->historySize;
+        $mailPanel = $this->module->panels['mail'] ?? null;
+        $mailPath = $mailPanel instanceof MailPanel ? Yii::getAlias($mailPanel->mailPath) : '';
 
-                @unlink($file);
+        foreach (array_keys($manifest) as $tag) {
+            $file = $this->module->dataPath . "/{$tag}.data";
 
-                if (isset($manifest[$tag]['mailFiles'])) {
-                    foreach ($manifest[$tag]['mailFiles'] as $mailFile) {
-                        @unlink(Yii::getAlias($this->module->panels['mail']->mailPath) . "/$mailFile");
+            @unlink($file);
+
+            $mailFiles = $manifest[$tag]['mailFiles'] ?? null;
+
+            if (is_array($mailFiles) && $mailPath !== '') {
+                foreach ($mailFiles as $mailFile) {
+                    if (is_string($mailFile)) {
+                        @unlink("{$mailPath}/{$mailFile}");
                     }
-                }
-
-                unset($manifest[$tag]);
-
-                if (--$n <= 0) {
-                    break;
                 }
             }
 
-            $this->removeStaleDataFiles($manifest);
+            unset($manifest[$tag]);
+
+            if (--$n <= 0) {
+                break;
+            }
         }
+
+        $this->removeStaleDataFiles($manifest);
     }
 
     /**
-     * Get the number of excessive Database caller(s).
-     *
-     * @return int
+     * Returns the number of excessive Database caller(s).
      */
-    protected function getExcessiveDbCallersCount()
+    protected function getExcessiveDbCallersCount(): int
     {
-        if (!isset($this->module->panels['db'])) {
-            return 0;
-        }
+        $panel = $this->module->panels['db'] ?? null;
 
-        /** @var DbPanel $dbPanel */
-        $dbPanel = $this->module->panels['db'];
-
-        return $dbPanel->getExcessiveCallersCount();
+        return $panel instanceof DbPanel ? $panel->getExcessiveCallersCount() : 0;
     }
 
     /**
-     * Returns total sql count executed in current request. If database panel is not configured returns 0.
-     *
-     * @return int
+     * Returns total sql count executed in current request; `0` when the database panel is not configured.
      */
-    protected function getSqlTotalCount()
+    protected function getSqlTotalCount(): int
     {
-        if (!isset($this->module->panels['db'])) {
+        $panel = $this->module->panels['db'] ?? null;
+
+        if (!$panel instanceof DbPanel) {
             return 0;
         }
-
-        $profileLogs = $this->module->panels['db']->getProfileLogs();
 
         // / 2 because messages are in couple (begin/end)
-        return count($profileLogs) / 2;
+        return (int) (count($panel->getProfileLogs()) / 2);
     }
 
     /**
-     * Remove staled data files i.e. files that are not in the current index file (may happen because of corrupted or
-     * rotated index file)
+     * Removes stale data files (files not in the current index file — can happen due to a corrupted or rotated index).
      *
-     * @param array $manifest
+     * @param array<string, array<string, mixed>> $manifest
      */
-    protected function removeStaleDataFiles($manifest)
+    protected function removeStaleDataFiles(array $manifest): void
     {
-        $storageTags = array_map(
-            static fn($file) => pathinfo($file, PATHINFO_FILENAME),
-            FileHelper::findFiles($this->module->dataPath, ['except' => ['index.data']]),
-        );
+        $storageTags = [];
+
+        foreach (FileHelper::findFiles($this->module->dataPath, ['except' => ['index.data']]) as $file) {
+            if (is_string($file)) {
+                $storageTags[] = pathinfo($file, PATHINFO_FILENAME);
+            }
+        }
 
         $staledTags = array_diff($storageTags, array_keys($manifest));
 
         foreach ($staledTags as $tag) {
-            @unlink($this->module->dataPath . "/$tag.data");
+            @unlink($this->module->dataPath . "/{$tag}.data");
         }
     }
 
@@ -299,29 +339,44 @@ class LogTarget extends Target
      * Updates index file with summary log data.
      *
      * @param string $indexFile Path to index file.
-     * @param array $summary Summary log data.
+     * @param array<string, mixed> $summary Summary log data.
      *
      * @throws InvalidConfigException
      */
-    private function updateIndexFile($indexFile, $summary)
+    private function updateIndexFile(string $indexFile, array $summary): void
     {
         if (!@touch($indexFile) || ($fp = @fopen($indexFile, 'r+')) === false) {
-            throw new InvalidConfigException("Unable to open debug data index file: $indexFile");
+            throw new InvalidConfigException("Unable to open debug data index file: {$indexFile}");
         }
 
         @flock($fp, LOCK_EX);
 
-        $manifest = '';
+        $serialized = '';
 
         while (($buffer = fgets($fp)) !== false) {
-            $manifest .= $buffer;
+            $serialized .= $buffer;
         }
 
-        if (!feof($fp) || empty($manifest)) {
-            // error while reading index data, ignore and create new
-            $manifest = [];
-        } else {
-            $manifest = unserialize($manifest);
+        $manifest = [];
+
+        if (feof($fp) && $serialized !== '') {
+            $decoded = @unserialize($serialized);
+
+            if (is_array($decoded)) {
+                foreach ($decoded as $tag => $entry) {
+                    if (is_string($tag) && is_array($entry)) {
+                        $stringKeyed = [];
+
+                        foreach ($entry as $key => $value) {
+                            if (is_string($key)) {
+                                $stringKeyed[$key] = $value;
+                            }
+                        }
+
+                        $manifest[$tag] = $stringKeyed;
+                    }
+                }
+            }
         }
 
         $manifest[$this->tag] = $summary;

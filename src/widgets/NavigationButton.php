@@ -14,76 +14,103 @@ use yii\base\Widget;
 use yii\debug\Panel;
 use yii\helpers\Html;
 
+use function array_keys;
+use function array_search;
+use function end;
+use function is_int;
+use function reset;
+
 /**
- * Render button for navigation to previous or next request in debug panel
+ * Render button for navigation to previous or next request in debug panel.
+ *
  * @since 2.0.11
  */
 class NavigationButton extends Widget
 {
-    /**
-     * @var string
-     */
-    public $button;
-    /**
-     * @var array
-     */
-    public $manifest;
-    /**
-     * @var Panel
-     */
-    public $panel;
-    /**
-     * @var string
-     */
-    public $tag;
-    /**
-     * @var int
-     */
-    private $currentTagIndex;
+    public const string BUTTON_NEXT = 'Next';
+    public const string BUTTON_PREV = 'Prev';
 
     /**
-     * @var string
+     * Button label and behavior selector (`'Prev'` / `'Next'`).
      */
-    private $firstTag;
+    public string $button = '';
     /**
-     * @var string
+     * Manifest of captured requests (newest first); tag => summary.
+     *
+     * @var array<string, mixed>
      */
-    private $lastTag;
+    public array $manifest = [];
+    /**
+     * Active panel, used to compose the target URL.
+     */
+    public Panel|null $panel = null;
+    /**
+     * Active request tag.
+     */
+    public string $tag = '';
+    /**
+     * Zero-based index of `$tag` inside `array_keys($manifest)`; `-1` when the tag isn't present.
+     */
+    private int $currentTagIndex = -1;
+    /**
+     * First manifest tag (newest captured); empty when the manifest is empty.
+     */
+    private string $firstTag = '';
+    /**
+     * Last manifest tag (oldest captured); empty when the manifest is empty.
+     */
+    private string $lastTag = '';
 
-    public function beforeRun()
+    public function beforeRun(): bool
     {
         $manifestKeys = array_keys($this->manifest);
-        $this->firstTag = reset($manifestKeys);
-        $this->lastTag = end($manifestKeys);
-        $this->currentTagIndex = array_search($this->tag, $manifestKeys, true);
+        $first = reset($manifestKeys);
+
+        $this->firstTag = $first === false ? '' : $first;
+
+        $last = end($manifestKeys);
+
+        $this->lastTag = $last === false ? '' : $last;
+
+        $cursorIndex = array_search($this->tag, $manifestKeys, true);
+        $this->currentTagIndex = is_int($cursorIndex) ? $cursorIndex : -1;
 
         return parent::beforeRun();
     }
 
-    public function run()
+    public function run(): string
     {
-        $method = "render{$this->button}Button";
-
-        return $this->$method();
+        return match ($this->button) {
+            self::BUTTON_NEXT => $this->renderNextButton(),
+            self::BUTTON_PREV => $this->renderPrevButton(),
+            default => '',
+        };
     }
 
     /**
-     * @param int $inc Direction
-     * @return array
+     * @return array<int|string, string>|string Empty string when there is no neighbour at the requested direction.
      */
-    private function getRoute($inc)
+    private function getRoute(int $inc): array|string
     {
+        if ($this->panel === null || $this->currentTagIndex < 0) {
+            return '';
+        }
+
+        $manifestKeys = array_keys($this->manifest);
+        $targetIndex = $this->currentTagIndex + $inc;
+
+        if (!isset($manifestKeys[$targetIndex])) {
+            return '';
+        }
+
         return [
             'view',
             'panel' => $this->panel->id,
-            'tag' => array_keys($this->manifest)[$this->currentTagIndex + $inc],
+            'tag' => $manifestKeys[$targetIndex],
         ];
     }
 
-    /**
-     * @return string
-     */
-    private function renderNextButton()
+    private function renderNextButton(): string
     {
         $needLink = $this->tag !== $this->lastTag;
 
@@ -94,10 +121,7 @@ class NavigationButton extends Widget
         );
     }
 
-    /**
-     * @return string
-     */
-    private function renderPrevButton()
+    private function renderPrevButton(): string
     {
         $needLink = $this->tag !== $this->firstTag;
 

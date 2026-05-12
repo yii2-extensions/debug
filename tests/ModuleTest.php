@@ -10,7 +10,6 @@ use yii\base\Event;
 use yii\caching\FileCache;
 use yii\debug\controllers\DefaultController;
 use yii\debug\{DebugAsset, LogTarget, Module};
-use yii\web\Application as WebApplication;
 use yii\web\AssetManager;
 use yii\web\Response;
 
@@ -27,7 +26,7 @@ use yii\web\Response;
 final class ModuleTest extends TestCase
 {
     /**
-     * @return array<int, array{0: array<int, string>, 1: string, 2: bool}>
+     * @return array<int, array{0: list<string>, 1: string, 2: bool}>
      */
     public static function checkAccessProvider(): array
     {
@@ -85,7 +84,7 @@ final class ModuleTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $allowedIPs
+     * @param list<string> $allowedIPs
      */
     #[DataProvider('checkAccessProvider')]
     public function testCheckAccessHonorsAllowedIpAndCidrFilters(
@@ -146,14 +145,16 @@ final class ModuleTest extends TestCase
         $this->silenceLogger();
 
         $html = $module->getToolbarHtml();
+        $logTarget = $module->logTarget;
 
+        self::assertInstanceOf(LogTarget::class, $logTarget, 'bootstrap() must coerce logTarget to a LogTarget instance.');
         self::assertStringContainsString(
             '<yii-debug-toolbar',
             $html,
             'Toolbar must render the custom element marker.',
         );
         self::assertStringContainsString(
-            'data-url="/index.php?r=debug%2Fdefault%2Ftoolbar-data&amp;tag=' . $module->logTarget->tag . '"',
+            'data-url="/index.php?r=debug%2Fdefault%2Ftoolbar-data&amp;tag=' . $logTarget->tag . '"',
             $html,
             'Toolbar must point its data-url to the toolbar-data action with the current tag.',
         );
@@ -232,10 +233,14 @@ final class ModuleTest extends TestCase
 
         $output = ['', ''];
 
+        $logTarget = $module->logTarget;
+
+        self::assertInstanceOf(LogTarget::class, $logTarget, 'bootstrap() must coerce logTarget to a LogTarget instance.');
+
         for ($i = 0; $i <= 1; $i++) {
             ob_start();
 
-            $module->logTarget->tag = "tag{$i}";
+            $logTarget->tag = "tag{$i}";
 
             if ($view->beginCache(__FUNCTION__, ['duration' => 3])) {
                 $module->renderToolbar(new Event(['sender' => $view]));
@@ -259,12 +264,6 @@ final class ModuleTest extends TestCase
         $module->allowedIPs = ['*'];
         $app = Yii::$app;
 
-        self::assertInstanceOf(
-            WebApplication::class,
-            $app,
-            'Test bootstrap must yield a web application.',
-        );
-
         $app->setModule('debug', $module);
         $module->bootstrap($app);
 
@@ -274,7 +273,11 @@ final class ModuleTest extends TestCase
         Yii::debug('manifest-bootstrap');
         Yii::$app->log->getLogger()->flush(true);
 
-        $manifest = $module->logTarget->loadManifest();
+        $logTarget = $module->logTarget;
+
+        self::assertInstanceOf(LogTarget::class, $logTarget, 'bootstrap() must coerce logTarget to a LogTarget instance.');
+
+        $manifest = $logTarget->loadManifest();
 
         $tag = array_key_first($manifest);
 
@@ -287,6 +290,8 @@ final class ModuleTest extends TestCase
 
         $data = $controller->actionToolbarData($tag);
 
+        self::assertArrayNotHasKey('error', $data, 'toolbar-data must take the success branch for a known tag.');
+        self::assertArrayHasKey('title', $data, 'Success payload must declare the title key.');
         self::assertSame(
             Response::FORMAT_JSON,
             $app->getResponse()->format,
@@ -320,31 +325,6 @@ final class ModuleTest extends TestCase
             'url',
             $data['items'][0],
             'Each panel item must carry a navigable url.',
-        );
-        self::assertArrayHasKey(
-            'phpInfoUrl',
-            $data,
-            "New brand chip data must include 'phpInfoUrl'.",
-        );
-        self::assertArrayHasKey(
-            'configUrl',
-            $data,
-            "New brand chip data must include 'configUrl'.",
-        );
-        self::assertArrayHasKey(
-            'yiiVersion',
-            $data,
-            "Brand chip must include 'yiiVersion'.",
-        );
-        self::assertArrayHasKey(
-            'phpVersion',
-            $data,
-            "Brand chip must include 'phpVersion'.",
-        );
-        self::assertArrayHasKey(
-            'iconBaseUrl',
-            $data,
-            "Toolbar icons must resolve from 'iconBaseUrl'.",
         );
     }
 

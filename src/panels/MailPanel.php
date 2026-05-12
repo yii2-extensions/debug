@@ -274,11 +274,11 @@ class MailPanel extends Panel
 
         foreach ($manifest as $tag => $_summary) {
             if ($found) {
-                $previousTag = (string) $tag;
+                $previousTag = $tag;
                 break;
             }
 
-            if ((string) $tag === $currentTag) {
+            if ($tag === $currentTag) {
                 $found = true;
             }
         }
@@ -286,9 +286,7 @@ class MailPanel extends Panel
         // If the current tag is not in the manifest yet (race during the very first response of a session), fall back
         // to the most-recent entry — that's "previous" from the toolbar's POV.
         if ($previousTag === null) {
-            $firstKey = array_key_first($manifest);
-
-            $previousTag = (string) $firstKey;
+            $previousTag = array_key_first($manifest);
 
             if ($previousTag === $currentTag) {
                 return null;
@@ -296,8 +294,6 @@ class MailPanel extends Panel
         }
 
         $summary = $manifest[$previousTag] ?? [];
-
-        $summary = is_array($summary) ? $summary : [];
 
         $dataFile = "{$module->dataPath}/{$previousTag}.data";
 

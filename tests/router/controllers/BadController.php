@@ -14,14 +14,14 @@ class BadController extends Controller
     }
 
     /**
-     * Intentionally returns malformed entries to exercise the debug router's resilience to bad
-     * action configs.
+     * The router never reaches this body — {@see init()} throws first — so the returned payload is irrelevant to the
+     * scenario under test. Kept type-compliant with the parent contract.
      *
-     * @return array<string, mixed>
+     * @return array<array-key, class-string|array{class: class-string, ...}>
      */
     public function actions(): array
     {
-        return ['test' => 'Something not important'];
+        return [];
     }
 
     public function init(): void

@@ -25,7 +25,7 @@ $controller = Yii::$app->controller;
 
 $shellContext = ShellDataNormalizer::fromParams(
     $this->params['shellMode'] ?? 'bare',
-    (array) ($this->params['shellData'] ?? []),
+    $this->params['shellData'] ?? null,
     $debugTheme,
     $controller !== null ? $controller->module : null,
 );

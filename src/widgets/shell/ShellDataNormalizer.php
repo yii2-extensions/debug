@@ -33,12 +33,10 @@ final class ShellDataNormalizer
 
     /**
      * Builds the typed shell context.
-     *
-     * @param array<string, mixed> $shellData
      */
     public static function fromParams(
         mixed $shellMode,
-        array $shellData,
+        mixed $shellData,
         string $debugTheme,
         BaseModule|null $module,
     ): ShellContext {
@@ -55,10 +53,10 @@ final class ShellDataNormalizer
             return self::buildBareContext($mode, $title, $debugThemeAttributes);
         }
 
+        $shellData = self::narrowShellData($shellData);
         $shellPanels = self::narrowPanels($shellData['panels'] ?? null);
         $shellManifest = self::narrowManifest($shellData['manifest'] ?? null);
-
-        $shellSummary = is_array($shellData['summary'] ?? null) ? $shellData['summary'] : null;
+        $shellSummary = self::narrowSummary($shellData['summary'] ?? null);
 
         $configPanel = $shellPanels['config'] ?? null;
 
@@ -223,6 +221,46 @@ final class ShellDataNormalizer
         foreach ($panels as $id => $panel) {
             if (is_string($id) && $panel instanceof Panel) {
                 $out[$id] = $panel;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function narrowShellData(mixed $shellData): array
+    {
+        if (!is_array($shellData)) {
+            return [];
+        }
+
+        $out = [];
+
+        foreach ($shellData as $key => $value) {
+            if (is_string($key)) {
+                $out[$key] = $value;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function narrowSummary(mixed $summary): array|null
+    {
+        if (!is_array($summary)) {
+            return null;
+        }
+
+        $out = [];
+
+        foreach ($summary as $key => $value) {
+            if (is_string($key)) {
+                $out[$key] = $value;
             }
         }
 

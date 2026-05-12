@@ -119,8 +119,8 @@ final class PanelTest extends TestCase
 
     public function testGetTraceLineAcceptsClosureTemplate(): void
     {
-        $panel = $this->createPanel();
-        $panel->module->traceLine = static fn(): string => 'http://my.custom.link';
+        [$panel, $module] = $this->createPanelWithModule();
+        $module->traceLine = static fn(): string => 'http://my.custom.link';
 
         self::assertSame(
             'http://my.custom.link',
@@ -131,8 +131,8 @@ final class PanelTest extends TestCase
 
     public function testGetTraceLineAcceptsClosureTemplateWithCustomText(): void
     {
-        $panel = $this->createPanel();
-        $panel->module->traceLine = static fn(): string => '<a href="ide://open?url={file}&line={line}">{text}</a>';
+        [$panel, $module] = $this->createPanelWithModule();
+        $module->traceLine = static fn(): string => '<a href="ide://open?url={file}&line={line}">{text}</a>';
 
         self::assertSame(
             '<a href="ide://open?url=file.php&line=10">custom text</a>',
@@ -143,8 +143,8 @@ final class PanelTest extends TestCase
 
     public function testGetTraceLineAcceptsStringTemplate(): void
     {
-        $panel = $this->createPanel();
-        $panel->module->traceLine = '<a href="phpstorm://open?url=file://{file}&line={line}">my custom phpstorm protocol</a>';
+        [$panel, $module] = $this->createPanelWithModule();
+        $module->traceLine = '<a href="phpstorm://open?url=file://{file}&line={line}">my custom phpstorm protocol</a>';
 
         self::assertStringContainsString(
             'phpstorm://open',
@@ -155,8 +155,8 @@ final class PanelTest extends TestCase
 
     public function testGetTraceLineFallsBackToPlainTextWhenTraceLineDisabled(): void
     {
-        $panel = $this->createPanel();
-        $panel->module->traceLine = false;
+        [$panel, $module] = $this->createPanelWithModule();
+        $module->traceLine = false;
 
         self::assertSame(
             'file.php:10',
@@ -179,8 +179,8 @@ final class PanelTest extends TestCase
 
     public function testGetTraceLineRewritesPathViaTracePathMappings(): void
     {
-        $panel = $this->createPanel();
-        $panel->module->tracePathMappings = ['/app' => '/newpath/'];
+        [$panel, $module] = $this->createPanelWithModule();
+        $module->tracePathMappings = ['/app' => '/newpath/'];
 
         self::assertSame(
             '<a href="ide://open?url=file:///newpath/file.php&line=10">/app/file.php:10</a>',
@@ -207,8 +207,8 @@ final class PanelTest extends TestCase
 
     public function testGetTraceLineUsesFirstMatchingPathMapping(): void
     {
-        $panel = $this->createPanel();
-        $panel->module->tracePathMappings = [
+        [$panel, $module] = $this->createPanelWithModule();
+        $module->tracePathMappings = [
             '/app/data' => '/app/localdata',
             '/app' => '/newpath',
         ];
@@ -233,6 +233,16 @@ final class PanelTest extends TestCase
 
     private function createPanel(): Panel
     {
-        return new Panel(['module' => new Module('debug')]);
+        return $this->createPanelWithModule()[0];
+    }
+
+    /**
+     * @return array{0: Panel, 1: Module}
+     */
+    private function createPanelWithModule(): array
+    {
+        $module = new Module('debug');
+
+        return [new Panel(['module' => $module]), $module];
     }
 }

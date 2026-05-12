@@ -174,7 +174,21 @@ class DefaultController extends Controller
      *
      * @throws NotFoundHttpException if debug data for the specified tag is not found.
      *
-     * @return array<string, mixed> Metadata about the debug entry and panels for the toolbar JS app.
+     * @return array{error: string, tag: string}|array{
+     *     configUrl: string|null,
+     *     defaultHeight: int,
+     *     iconBaseUrl: string,
+     *     indexUrl: string,
+     *     items: list<array<string, mixed>>,
+     *     logo: string,
+     *     logoFallback: string,
+     *     phpInfoUrl: string,
+     *     phpVersion: string|null,
+     *     position: string,
+     *     tag: string,
+     *     title: string,
+     *     yiiVersion: string|null,
+     * } Metadata about the debug entry and panels for the toolbar JS app.
      */
     public function actionToolbarData(string $tag): array
     {

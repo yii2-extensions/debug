@@ -4,37 +4,38 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use Yii;
+
 use function in_array;
+use function is_float;
+use function is_int;
+use function is_string;
 
 /**
  * Shared default configuration for GridView widgets rendered inside the debug panel UI.
  *
  * Centralizes the pager markup, table classes, and row-status helpers so every `GridView::widget(...)` call in the
  * debug views emits consistent, namespaced, framework-agnostic markup.
- *
- * Usage example:
- *
- * ```php
- * echo GridView::widget(
- *     array_merge(
- *         GridViewConfig::defaults(),
- *         [
- *             'dataProvider' => $dataProvider,
- *             'columns' => [...],
- *             'rowOptions' => function ($model) {
- *                 return GridViewConfig::rowClassFor($model['level'] ?? null);
- *             },
- *         ],
- *     ),
- * );
  */
 final class GridViewConfig
 {
     /**
      * Returns the default GridView options for the debug UI.
      *
-     * @return array<string, mixed> Merge-friendly options keyed by `tableOptions`, `options`, `pager`, `layout`,
-     * `summary`, and `emptyText`.
+     * @return array{
+     *     tableOptions: array{class: string},
+     *     options: array{class: string},
+     *     layout: string,
+     *     summaryOptions: array{class: string},
+     *     pager: array{
+     *         options: array{class: string},
+     *         linkContainerOptions: array{class: string},
+     *         linkOptions: array{class: string},
+     *         disabledListItemSubTagOptions: array{tag: string, class: string},
+     *         activePageCssClass: string,
+     *         disabledPageCssClass: string,
+     *     },
+     * }
      */
     public static function defaults(): array
     {
@@ -157,11 +158,7 @@ final class GridViewConfig
      */
     private static function queryParamString(string $name): string|null
     {
-        $app = \Yii::$app ?? null;
-
-        if (!$app instanceof \yii\web\Application) {
-            return null;
-        }
+        $app = Yii::$app;
 
         $value = $app->getRequest()->getQueryParam($name);
 

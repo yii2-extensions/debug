@@ -35,6 +35,10 @@ final class FlattenExceptionTest extends TestCase
     {
         $dh = opendir(__DIR__);
         $fh = tmpfile();
+
+        self::assertIsResource($dh, 'opendir() must hand back an iterable directory stream for the fixture path.');
+        self::assertIsResource($fh, 'tmpfile() must hand back a usable temporary stream.');
+
         $incomplete = unserialize('O:14:"BogusTestClass":0:{}');
 
         $exception = $this->createException([
@@ -58,38 +62,50 @@ final class FlattenExceptionTest extends TestCase
         ]);
 
         $flattened = new FlattenException($exception);
-        $array = $flattened->getTrace()[0]['args'][0][1];
+        $argsList = $this->extractArgsList($flattened);
 
         closedir($dh);
         fclose($fh);
 
-        $i = 0;
-        self::assertSame(['object', 'stdClass'], $array[$i++], 'stdClass instances must be tagged `object`.');
-        self::assertSame(['object', 'yii\web\NotFoundHttpException'], $array[$i++], 'Yii exception type name must be retained.');
-        self::assertSame(['incomplete-object', 'BogusTestClass'], $array[$i++], '__PHP_Incomplete_Class must be tagged separately.');
-        self::assertSame(['resource', 'stream'], $array[$i++], 'Stream resources must be tagged with their type name.');
-        self::assertSame(['resource', 'stream'], $array[$i++], 'Temporary file streams must be tagged the same as opendir streams.');
+        $get = static function (int $position) use ($argsList): array {
+            self::assertArrayHasKey($position, $argsList, "Argument list must expose slot {$position}.");
 
-        $closureArgs = $array[$i++];
+            return $argsList[$position];
+        };
+
+        self::assertSame(['object', 'stdClass'], $get(0), 'stdClass instances must be tagged `object`.');
+        self::assertSame(['object', 'yii\web\NotFoundHttpException'], $get(1), 'Yii exception type name must be retained.');
+        self::assertSame(['incomplete-object', 'BogusTestClass'], $get(2), '__PHP_Incomplete_Class must be tagged separately.');
+        self::assertSame(['resource', 'stream'], $get(3), 'Stream resources must be tagged with their type name.');
+        self::assertSame(['resource', 'stream'], $get(4), 'Temporary file streams must be tagged the same as opendir streams.');
+
+        $closureArgs = $get(5);
+
         self::assertSame('object', $closureArgs[0], 'Closures must be tagged `object`.');
+
+        $closureClass = $closureArgs[1];
+
+        self::assertIsString($closureClass, 'Closure tag payload must surface as the class name string.');
         self::assertTrue(
-            $closureArgs[1] === 'Closure' || is_subclass_of($closureArgs[1], 'Closure'),
+            $closureClass === 'Closure' || is_subclass_of($closureClass, 'Closure'),
             'Closure tag must be Closure or a subclass thereof.',
         );
 
-        self::assertSame(['array', [['integer', 1], ['integer', 2]]], $array[$i++], 'Numeric arrays must keep value tags per element.');
-        self::assertSame(['array', ['foo' => ['integer', 123]]], $array[$i++], 'Associative arrays must preserve string keys.');
-        self::assertSame(['null', null], $array[$i++], 'Null must be tagged with a null payload.');
-        self::assertSame(['boolean', true], $array[$i++], 'True must be tagged `boolean`.');
-        self::assertSame(['boolean', false], $array[$i++], 'False must be tagged `boolean`.');
-        self::assertSame(['integer', 0], $array[$i++], 'Integer 0 must be preserved as integer.');
-        self::assertSame(['float', 0.0], $array[$i++], 'Float 0.0 must be preserved as float.');
-        self::assertSame(['string', '0'], $array[$i++], 'String "0" must be preserved as string.');
-        self::assertSame(['string', ''], $array[$i++], 'Empty string must be preserved as string.');
-        self::assertSame(['float', INF], $array[$i++], 'Infinity must round-trip as float.');
+        self::assertSame(['array', [['integer', 1], ['integer', 2]]], $get(6), 'Numeric arrays must keep value tags per element.');
+        self::assertSame(['array', ['foo' => ['integer', 123]]], $get(7), 'Associative arrays must preserve string keys.');
+        self::assertSame(['null', null], $get(8), 'Null must be tagged with a null payload.');
+        self::assertSame(['boolean', true], $get(9), 'True must be tagged `boolean`.');
+        self::assertSame(['boolean', false], $get(10), 'False must be tagged `boolean`.');
+        self::assertSame(['integer', 0], $get(11), 'Integer 0 must be preserved as integer.');
+        self::assertSame(['float', 0.0], $get(12), 'Float 0.0 must be preserved as float.');
+        self::assertSame(['string', '0'], $get(13), 'String "0" must be preserved as string.');
+        self::assertSame(['string', ''], $get(14), 'Empty string must be preserved as string.');
+        self::assertSame(['float', INF], $get(15), 'Infinity must round-trip as float.');
 
-        self::assertSame('float', $array[$i][0], 'NaN must still be tagged float.');
-        self::assertNan($array[$i++][1], 'NaN payload must remain a NaN value.');
+        $nanEntry = $get(16);
+
+        self::assertSame('float', $nanEntry[0], 'NaN must still be tagged float.');
+        self::assertNan($nanEntry[1], 'NaN payload must remain a NaN value.');
     }
 
     public function testGetClassExposesOriginalClassName(): void
@@ -136,9 +152,12 @@ final class FlattenExceptionTest extends TestCase
         $flattened = new FlattenException($exception);
         $flattened2 = new FlattenException($exception2);
 
+        $previous = $flattened->getPrevious();
+
+        self::assertInstanceOf(FlattenException::class, $previous, 'getPrevious must yield a flattened chain link.');
         self::assertSame(
             $flattened2->getTrace(),
-            $flattened->getPrevious()->getTrace(),
+            $previous->getTrace(),
             'Previous chain must mirror the trace of the wrapped exception.',
         );
     }
@@ -161,10 +180,14 @@ final class FlattenExceptionTest extends TestCase
 
         $trace = $flattened->getTrace();
 
-        self::assertSame(__NAMESPACE__, $trace[0]['namespace'], 'Trace frame must carry the throw-site namespace.');
-        self::assertSame(__CLASS__, $trace[0]['class'], 'Trace frame must carry the FQCN of the throw site.');
-        self::assertSame('FlattenExceptionTest', $trace[0]['short_class'], 'Short class name must drop the namespace.');
-        self::assertSame(__FUNCTION__, $trace[0]['function'], 'Trace frame must carry the throw-site method name.');
+        self::assertNotEmpty($trace, 'Flattened trace must include the throw-site frame.');
+
+        $frame = $trace[0];
+
+        self::assertSame(__NAMESPACE__, $frame['namespace'], 'Trace frame must carry the throw-site namespace.');
+        self::assertSame(__CLASS__, $frame['class'], 'Trace frame must carry the FQCN of the throw site.');
+        self::assertSame('FlattenExceptionTest', $frame['short_class'], 'Short class name must drop the namespace.');
+        self::assertSame(__FUNCTION__, $frame['function'], 'Trace frame must carry the throw-site method name.');
     }
 
     public function testOversizedArgumentArraysAreTruncated(): void
@@ -184,6 +207,8 @@ final class FlattenExceptionTest extends TestCase
         $flattened = new FlattenException($exception);
         $trace = $flattened->getTrace();
 
+        self::assertNotEmpty($trace, 'Flattened trace must include the throw-site frame.');
+        self::assertArrayHasKey(0, $trace[0]['args'], 'First flattened argument must be present.');
         self::assertSame(
             ['array', ['array', '*SKIPPED over 10000 entries*']],
             $trace[0]['args'][0],
@@ -244,5 +269,46 @@ final class FlattenExceptionTest extends TestCase
     private function createException(mixed $foo): Exception
     {
         return new Exception();
+    }
+
+    /**
+     * Pulls the inner tagged-tuple list out of the first trace frame, asserting structural invariants along the way.
+     *
+     * @return array<int, array{0: string, 1: mixed}>
+     */
+    private function extractArgsList(FlattenException $flattened): array
+    {
+        $trace = $flattened->getTrace();
+
+        self::assertNotEmpty($trace, 'FlattenException must capture at least one stack frame.');
+
+        $args = $trace[0]['args'];
+
+        self::assertArrayHasKey(0, $args, 'Outer tuple list must expose the first argument slot.');
+
+        $outer = $args[0];
+
+        self::assertIsArray($outer, 'Outer tuple slot must be a tagged tuple, not the SKIPPED sentinel.');
+
+        $payload = $outer[1];
+
+        self::assertIsArray($payload, 'Tagged array payload must be a list of tagged tuples.');
+
+        $tuples = [];
+
+        foreach ($payload as $index => $entry) {
+            self::assertIsInt($index, 'Inner argument list must be numerically indexed.');
+            self::assertIsArray($entry, 'Each inner argument must be a tagged tuple.');
+            self::assertArrayHasKey(0, $entry, 'Tagged tuple must declare a `type` slot.');
+            self::assertArrayHasKey(1, $entry, 'Tagged tuple must declare a `payload` slot.');
+
+            $type = $entry[0];
+
+            self::assertIsString($type, 'Tagged tuple `type` slot must be a string discriminator.');
+
+            $tuples[$index] = [$type, $entry[1]];
+        }
+
+        return $tuples;
     }
 }
