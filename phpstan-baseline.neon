@@ -709,57 +709,9 @@ parameters:
 			path: src/Module.php
 
 		-
-			rawMessage: Casting to string something that's already string.
-			identifier: cast.useless
+			rawMessage: 'Parameter #2 $shellData of static method yii\debug\widgets\shell\ShellDataNormalizer::fromParams() expects array<string, mixed>, array given.'
+			identifier: argument.type
 			count: 1
-			path: src/views/default/phpinfo.php
-
-		-
-			rawMessage: Binary operation "/" between mixed and 1024 results in an error.
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/views/layouts/main.php
-
-		-
-			rawMessage: Cannot access offset 'application' on mixed.
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/views/layouts/main.php
-
-		-
-			rawMessage: Cannot access offset 'php' on mixed.
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/views/layouts/main.php
-
-		-
-			rawMessage: Cannot access offset 'version' on mixed.
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/views/layouts/main.php
-
-		-
-			rawMessage: Cannot access offset 'yii' on mixed.
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/views/layouts/main.php
-
-		-
-			rawMessage: Cannot access property $data on mixed.
-			identifier: property.nonObject
-			count: 1
-			path: src/views/layouts/main.php
-
-		-
-			rawMessage: 'Cannot call method getUniqueId() on yii\base\Module|null.'
-			identifier: method.nonObject
-			count: 1
-			path: src/views/layouts/main.php
-
-		-
-			rawMessage: Cannot cast mixed to string.
-			identifier: cast.string
-			count: 5
 			path: src/views/layouts/main.php
 
 		-
@@ -833,6 +785,18 @@ parameters:
 			identifier: method.dynamicName
 			count: 1
 			path: src/widgets/NavigationButton.php
+
+		-
+			rawMessage: 'Parameter #1 $summary of static method yii\debug\widgets\shell\ShellDataNormalizer::formatPeakMemory() expects array<string, mixed>|null, array<mixed, mixed>|null given.'
+			identifier: argument.type
+			count: 1
+			path: src/widgets/shell/ShellDataNormalizer.php
+
+		-
+			rawMessage: 'Parameter $shellSummary of class yii\debug\widgets\shell\ShellContext constructor expects array<string, mixed>|null, array<mixed, mixed>|null given.'
+			identifier: argument.type
+			count: 1
+			path: src/widgets/shell/ShellDataNormalizer.php
 
 		-
 			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with arguments ''object'', ''resource'' and ''Closures must be…'' will always evaluate to false.'

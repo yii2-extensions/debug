@@ -23,7 +23,7 @@ $view = PhpInfoDataNormalizer::fromOutput(
     phpVersion: PHP_VERSION,
     sapi: PHP_SAPI,
     os: php_uname('s') . ' ' . php_uname('r'),
-    memoryLimit: (string) ini_get('memory_limit'),
+    memoryLimit: ini_get('memory_limit'),
 );
 ?>
 <div class="yii-debug-page">
