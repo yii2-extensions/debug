@@ -12,8 +12,8 @@ use function is_string;
 /**
  * Typed view-model for one captured-request row in the History GridView.
  *
- * Encapsulates the loose `array<string, mixed>` entry produced by {@see \yii\debug\models\search\Debug::search()} into
- * a `final readonly` shape so the GridView column closures stay free of {@see is_array()} / {@see is_numeric()}
+ * Narrows the loose `array<string, mixed>` entry produced by {@see \yii\debug\models\search\DebugSearch::search()}
+ * into typed properties, so the GridView column closures stay free of {@see is_array()} / {@see is_numeric()}
  * narrowing on every cell access.
  *
  * @copyright Copyright (C) 2026 Terabytesoftw.

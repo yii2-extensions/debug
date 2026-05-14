@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Helper\Encode;
 use yii\debug\helpers\Icon;
-use yii\helpers\Html;
 use yii\helpers\Url;
 
 /**
@@ -30,21 +30,21 @@ $configIcon = Icon::render('config');
     <a class="yii-debug-brand-chip yii-debug-brand-chip-yii" href="<?= Url::to(['index']) ?>">
         <span class="yii-debug-brand-icon"><?= Icon::render('yii') ?></span>
         <span class="yii-debug-brand-label">Yii</span>
-        <span class="yii-debug-brand-value"><?= Html::encode($yiiVersion) ?></span>
+        <span class="yii-debug-brand-value"><?= Encode::content($yiiVersion) ?></span>
     </a>
     <div class="yii-debug-brand-chip yii-debug-brand-chip-php">
         <span class="yii-debug-brand-icon"><?= Icon::render('php-alt') ?></span>
-        <span class="yii-debug-brand-value"><?= Html::encode($phpVersion) ?></span>
+        <span class="yii-debug-brand-value"><?= Encode::content($phpVersion) ?></span>
     </div>
     <?php if ($peakMemory !== null): ?>
         <div class="yii-debug-brand-chip yii-debug-brand-chip-mem">
             <span class="yii-debug-brand-label">Memory</span>
-            <span class="yii-debug-brand-value"><?= Html::encode($peakMemory) ?></span>
+            <span class="yii-debug-brand-value"><?= Encode::content($peakMemory) ?></span>
         </div>
     <?php endif; ?>
     <?php if ($configUrl !== null): ?>
         <a class="yii-debug-brand-chip yii-debug-brand-chip-config"
-            href="<?= Html::encode($configUrl) ?>"
+            href="<?= Encode::value($configUrl) ?>"
             title="Open the Configuration panel"
             aria-label="Open the Configuration panel">
             <span class="yii-debug-brand-icon" aria-hidden="true"><?= $configIcon ?></span>
@@ -62,9 +62,9 @@ $configIcon = Icon::render('config');
         type="button"
         class="yii-debug-brand-chip yii-debug-brand-chip-theme"
         data-yii-debug-theme-toggle
-        data-current-theme="<?= Html::encode($debugTheme) ?>"
-        data-icon-sun="<?= Html::encode($themeIconSun) ?>"
-        data-icon-moon="<?= Html::encode($themeIconMoon) ?>"
+        data-current-theme="<?= Encode::value($debugTheme) ?>"
+        data-icon-sun="<?= Encode::value($themeIconSun) ?>"
+        data-icon-moon="<?= Encode::value($themeIconMoon) ?>"
         aria-label="Toggle debug panel theme"
         title="Toggle debug panel theme"
     >

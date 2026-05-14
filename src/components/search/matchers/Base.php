@@ -7,19 +7,24 @@ namespace yii\debug\components\search\matchers;
 use yii\base\Component;
 
 /**
- * Base class for matchers that are used in a filter.
+ * Abstract base for {@see \yii\debug\components\search\Filter} matchers providing the shared base-value contract.
+ *
+ * Concrete subclasses only need to implement {@see MatcherInterface::match()}; the base value plumbing and the
+ * empty-base-value semantics consumed by {@see \yii\debug\components\search\Filter::addMatcher()} live here.
  */
 abstract class Base extends Component implements MatcherInterface
 {
     /**
-     * Base value to check
+     * Reference value subsequent {@see MatcherInterface::match()} calls compare against.
      */
     protected mixed $baseValue = null;
 
     /**
-     * Checks if the base value is set and not empty.
+     * Returns whether the base value is set and not considered empty.
      *
-     * @return bool `true` if the base value is set and not empty, `false` otherwise.
+     * Treats `null`, `''`, `false`, `0`, `0.0`, and `[]` as empty.
+     *
+     * @return bool `true` when the base value is meaningful, `false` otherwise.
      */
     public function hasValue(): bool
     {
@@ -35,9 +40,9 @@ abstract class Base extends Component implements MatcherInterface
     }
 
     /**
-     * Sets the base value to check.
+     * Sets the base value to match against.
      *
-     * @param mixed $value Value to set as the base value.
+     * @param mixed $value Reference value for subsequent {@see MatcherInterface::match()} calls.
      */
     public function setValue(mixed $value): void
     {

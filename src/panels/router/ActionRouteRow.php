@@ -11,37 +11,35 @@ use function is_string;
 /**
  * Typed view-model for one row in the Action Routes table.
  *
- * Encapsulates the loosely-typed `array<string, mixed>` produced by {@see \yii\debug\models\router\ActionRoutes} into a
- * `final readonly` shape so the detail view stays free of {@see is_array()} / {@see is_string()} narrowing.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Narrows the loosely-typed `array<string, mixed>` produced by {@see \yii\debug\models\router\ActionRoutes} into typed
+ * properties, so the detail view stays free of {@see is_array()} / {@see is_string()} narrowing.
  */
 final readonly class ActionRouteRow
 {
     public function __construct(
         /**
-         * Action FQCN as the table key ('app\\controllers\\SiteController::actionIndex').
+         * Action FQCN used as the table key (for example, `app\controllers\SiteController::actionIndex`).
          */
         public string $action,
         /**
-         * Route that resolves to the action ('site/index').
+         * Route that resolves to the action (for example, `site/index`).
          */
         public string $route,
         /**
-         * First rule that matched the route, if any; empty when no rule was tested or none matched.
+         * First rule that matched the route, or `''` when no rule was tested or none matched.
          */
         public string $rule,
         /**
-         * Number of rules tested before the match. '0' when no rule was tested.
+         * Number of rules tested before the match, or `0` when no rule was tested.
          */
         public int $count,
     ) {}
 
     /**
-     * Narrows the loose array shape ('$actionRoutes->routes[$action]') into a typed row.
+     * Narrows the loose array shape (`$actionRoutes->routes[$action]`) into a typed row.
      *
-     * @param array<string, mixed> $row
+     * @param string $action Action FQCN used as the row key.
+     * @param array<string, mixed> $row Source row.
      */
     public static function from(string $action, array $row): self
     {
@@ -53,6 +51,9 @@ final readonly class ActionRouteRow
         );
     }
 
+    /**
+     * Coerces the value to an int, falling back to `0` when it is neither an int nor a numeric string.
+     */
     private static function asInt(mixed $value): int
     {
         if (is_int($value)) {
@@ -62,6 +63,9 @@ final readonly class ActionRouteRow
         return is_numeric($value) ? (int) $value : 0;
     }
 
+    /**
+     * Returns the value when it is already a string, falling back to `''` otherwise.
+     */
     private static function asString(mixed $value): string
     {
         return is_string($value) ? $value : '';

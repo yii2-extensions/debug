@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Helper\Encode;
 use yii\debug\panels\UserPanel;
-use yii\helpers\Html;
 use yii\web\View;
 
 /**
@@ -24,11 +24,11 @@ $isMainUser = $panel->userSwitch === null || $panel->userSwitch->isMainUser();
             <span class="yii-debug-toolbar-label">Guest</span>
         <?php else: ?>
             <?php if ($isGuest || $isMainUser): ?>
-                <?= Html::encode($panel->getName()) ?> <span
-                    class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= Html::encode($idLabel) ?></span>
+                <?= Encode::content($panel->getName()) ?> <span
+                    class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= Encode::content($idLabel) ?></span>
             <?php else: ?>
-                <?= Html::encode($panel->getName()) ?> switching <span
-                    class="yii-debug-toolbar-label yii-debug-toolbar-label-warning"><?= Html::encode($idLabel) ?></span>
+                <?= Encode::content($panel->getName()) ?> switching <span
+                    class="yii-debug-toolbar-label yii-debug-toolbar-label-warning"><?= Encode::content($idLabel) ?></span>
             <?php endif; ?>
             <?php if ($panel->canSwitchUser()): ?>
                 <span class="yii-debug-toolbar-switch-icon yii-debug-toolbar-userswitch"

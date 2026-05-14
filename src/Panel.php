@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
-use yii\base\Component;
-use yii\base\InvalidConfigException;
+use Throwable;
+use yii\base\{Component, InvalidConfigException};
 use yii\debug\helpers\Coerce;
 use yii\helpers\{ArrayHelper, StringHelper, Url, VarDumper};
 
@@ -15,81 +15,92 @@ use function is_string;
 use function strlen;
 
 /**
- * Panel is a base class for debugger panel classes. It defines how data should be collected, what should be displayed
- * at debug toolbar and on debugger details view.
+ * Base class for debug toolbar panels.
+ *
+ * Defines the contract every panel implements: how request data is captured on `save()`, rehydrated on `load()`, and
+ * surfaced on the toolbar and detail views. The container {@see Module} wires {@see $id}, {@see $module}, and
+ * {@see $tag} automatically on registration.
  */
 class Panel extends Component
 {
     /**
-     * @var array<array-key, array{class: class-string, ...}|class-string> Array of actions to add to the debug modules
-     * default controller.
-     *
-     * This array will be merged with all other panels actions property.
-     * {@see \yii\base\Controller::actions()} for the format.
+     * @var array<array-key, array{class: class-string, ...}|class-string> Extra actions merged into the debug module's
+     * default controller. See {@see \yii\base\Controller::actions()} for the accepted shape.
      */
     public array $actions = [];
     /**
-     * Data associated with panel
+     * Captured panel payload as produced by {@see save()} and rehydrated by {@see load()}.
      */
     public mixed $data = null;
     /**
-     * Panel unique identifier, it is set automatically by the container module.
+     * Panel unique identifier, assigned by the container module on registration.
      */
     public string $id = '';
     /**
-     * Module that this panel belongs to. It is set automatically by the container module.
+     * Debug module owning this panel.
      */
     public Module|null $module = null;
     /**
-     * Request data set identifier.
+     * Tag of the request whose data this panel currently exposes.
      */
     public string $tag = '';
 
     /**
-     * Error while saving the panel.
+     * Exception captured during {@see save()}, when the panel failed to produce its payload.
      */
     protected FlattenException|null $error = null;
 
     /**
-     * @return string content that is displayed in debugger detail view
+     * Returns the detail view markup rendered when the user opens the panel.
+     *
+     * @return string Detail view markup; `''` when the panel does not expose a detail view.
      */
-    public function getDetail()
+    public function getDetail(): string
     {
         return '';
     }
 
     /**
-     * @return FlattenException|null
+     * Returns the exception captured while collecting the panel payload, if any.
      */
-    public function getError()
+    public function getError(): FlattenException|null
     {
         return $this->error;
     }
 
     /**
-     * @return string Name of the panel.
+     * Returns the panel display name shown on the toolbar and the detail navigation.
+     *
+     * @return string Display name; `''` for the base class.
      */
-    public function getName()
+    public function getName(): string
     {
         return '';
     }
 
     /**
-     * @return string Content that is displayed at debug toolbar.
+     * Returns the legacy HTML summary rendered on the toolbar when {@see getToolbarItems()} yields `[]`.
+     *
+     * @return string Summary markup; `''` when the panel does not contribute a summary.
      */
-    public function getSummary()
+    public function getSummary(): string
     {
         return '';
     }
 
     /**
-     * @return array<string, mixed> Structured data that is displayed at debug toolbar.
+     * Returns the toolbar envelope wrapping the panel's icon, items, and URL.
+     *
+     * Renders the error envelope when {@see getError()} is non-`null`, the structured-items path when
+     * {@see getToolbarItems()} returns a non-empty list, and the legacy HTML summary fallback otherwise.
+     *
+     * @return array<string, mixed> Toolbar envelope; `[]` to skip the panel.
      */
     public function getToolbarData(): array
     {
-        if ($this->hasError()) {
-            $error = $this->getError();
+        $error = $this->getError();
 
+        if ($error !== null) {
             return [
                 'title' => $this->getName(),
                 'url' => $this->getUrl(),
@@ -97,7 +108,7 @@ class Panel extends Component
                     [
                         'label' => $this->getName(),
                         'status' => 'danger',
-                        'title' => $error === null ? 'Panel error' : $error->getMessage(),
+                        'title' => $error->getMessage(),
                         'value' => 'error',
                     ],
                 ],
@@ -123,6 +134,7 @@ class Panel extends Component
 
         if ($items !== []) {
             $envelope['items'] = $items;
+
             return $envelope;
         }
 
@@ -151,20 +163,19 @@ class Panel extends Component
     }
 
     /**
-     * Returns a trace line
+     * Builds a trace line for the toolbar, applying {@see Module::$tracePathMappings} and the configured
+     * {@see Module::$traceLine} template (or callable).
      *
-     * @param array<string, mixed> $options Array with trace.
+     * Falls back to dumping the input when `file` or `line` is missing — internal PHP functions such as
+     * {@see call_user_func()} may produce frames without those keys, see
+     * {@link https://www.php.net/manual/en/function.debug-backtrace.php#59713}.
      *
-     * @return string Trace line to be displayed in the toolbar. If the 'text' key is not set, it will be generated as
-     * "file:line". If the 'file' or 'line' keys are not set, the whole $options array will be dumped as a string.
+     * @param array<string, mixed> $options Trace frame; consumes `file`, `line`, and optional `text`.
+     *
+     * @return string Trace line ready for inclusion on the toolbar.
      */
     public function getTraceLine(array $options): string
     {
-        /**
-         * If an internal PHP function, such as `call_user_func`, is in the backtrace, the 'file' and 'line' may not
-         * be available.
-         * @see https://www.php.net/manual/en/function.debug-backtrace.php#59713
-         */
         $file = Coerce::stringOrNull($options['file'] ?? null);
         $line = Coerce::stringOrNull($options['line'] ?? null);
 
@@ -219,11 +230,13 @@ class Panel extends Component
     }
 
     /**
-     * @param array<string, mixed>|null $additionalParams Optional additional parameters to add to the route.
+     * Returns the URL pointing to this panel's detail view for the current request tag.
      *
-     * @return string URL pointing to panel detail view.
+     * @param array<string, mixed>|null $additionalParams Extra query parameters merged into the route.
+     *
+     * @return string Absolute URL to the panel detail view.
      */
-    public function getUrl($additionalParams = null): string
+    public function getUrl(array|null $additionalParams = null): string
     {
         $route = [
             '/' . $this->module?->getUniqueId() . '/default/view',
@@ -231,7 +244,7 @@ class Panel extends Component
             'tag' => $this->tag,
         ];
 
-        if (is_array($additionalParams)) {
+        if ($additionalParams !== null) {
             $route = ArrayHelper::merge($route, $additionalParams);
         }
 
@@ -239,22 +252,18 @@ class Panel extends Component
     }
 
     /**
-     * @return bool
+     * Returns `true` when {@see setError()} captured a {@see FlattenException} during {@see save()}.
      */
-    public function hasError()
+    public function hasError(): bool
     {
         return $this->error !== null;
     }
 
     /**
-     * Whether the detail page for this panel should show the Prev/Next/All/Latest/Last-10 navigation between captured
-     * requests.
+     * Indicates whether the detail view exposes the Prev/Next/All/Latest/Last-10 navigation across captured requests.
      *
      * Returns `true` by default. Override to `false` on panels whose data is request-agnostic (for example,
      * configuration snapshots), where stepping between request tags does not change what the user sees.
-     *
-     * @return bool whether the detail page for this panel should show the Prev/Next/All/Latest/Last-10 navigation
-     * between captured requests.
      */
     public function hasRequestNavigation(): bool
     {
@@ -262,9 +271,7 @@ class Panel extends Component
     }
 
     /**
-     * Checks whether this panel is enabled.
-     *
-     * @return bool whether this panel is enabled.
+     * Indicates whether this panel is enabled and should be registered by the module.
      */
     public function isEnabled(): bool
     {
@@ -272,11 +279,11 @@ class Panel extends Component
     }
 
     /**
-     * Loads data into the panel to be later used in debugger detail view. This method is called on every page where
-     * debugger is enabled.
+     * Hydrates the panel from the payload previously produced by {@see save()}.
      *
-     * @param mixed $data Data to be loaded into the panel. The content and format of this data is determined by the
-     * caller, but it is
+     * Invoked by {@see LogTarget::loadTagToPanels()} when the user opens a captured request.
+     *
+     * @param mixed $data Payload returned by {@see save()}; format is panel-specific.
      */
     public function load(mixed $data): void
     {
@@ -284,39 +291,50 @@ class Panel extends Component
     }
 
     /**
-     * Saves data to be later used in debugger detail view.
+     * Captures the panel payload for the current request.
      *
-     * This method is called on every page where debugger is enabled.
+     * Invoked by {@see LogTarget::export()} at request end; the return value is serialized into the `<tag>.data` file
+     * and rehydrated by {@see load()} on read-back.
      *
-     * @return mixed Data to be saved
+     * @return mixed Payload to persist; `null` when the panel records nothing.
      */
     public function save(): mixed
     {
         return null;
     }
 
+    /**
+     * Records an exception thrown by {@see save()} so {@see LogTarget} can surface it on the toolbar and detail view.
+     */
     public function setError(FlattenException $error): void
     {
         $this->error = $error;
     }
 
     /**
-     * Gets messages from log target and filters according to their categories and levels.
+     * Returns the log messages captured by the debug log target, filtered by levels and categories.
      *
-     * @param int $levels the message levels to filter by. This is a bitmap of level values. Value 0 means allowing all
-     * levels.
-     * @param array<int, string> $categories the message categories to filter by. If empty, all categories are allowed.
-     * @param array<int, string> $except the message categories to exclude. If empty, all categories are allowed.
-     * @param bool $stringify Convert non-string (such as closures) to strings
+     * When `$stringify` is `true`, non-string first elements are exported via {@see VarDumper::export()}, with
+     * {@see Throwable} instances cast to their string form — closures captured in exception traces are not directly
+     * serializable, so the cast guards the manifest from breaking on read-back.
      *
-     * @throws InvalidConfigException if the debug log target is not initialized.
+     * @param int $levels Bitmap of {@see \yii\log\Logger} level constants; `0` allows every level.
+     * @param array<int, string> $categories Allowed category names; `[]` allows every category.
+     * @param array<int, string> $except Category names to exclude; `[]` excludes none.
+     * @param bool $stringify `true` to convert non-string first elements (closures, exceptions) into strings.
      *
-     * @return array<int, array<int|string, mixed>> the filtered messages.
+     * @throws InvalidConfigException When the debug log target is not initialized.
+     *
+     * @return array<int, array<int|string, mixed>> Filtered messages in capture order.
      *
      * @see \yii\log\Target::filterMessages()
      */
-    protected function getLogMessages($levels = 0, $categories = [], $except = [], $stringify = false): array
-    {
+    protected function getLogMessages(
+        int $levels = 0,
+        array $categories = [],
+        array $except = [],
+        bool $stringify = false,
+    ): array {
         $target = $this->getLogTarget();
 
         $filteredMessages = LogTarget::filterMessages($target->messages, $levels, $categories, $except);
@@ -338,8 +356,7 @@ class Panel extends Component
                 continue;
             }
 
-            // exceptions may not be serializable if in the call stack somewhere is a Closure
-            if ($message[0] instanceof \Throwable) {
+            if ($message[0] instanceof Throwable) {
                 $messages[$key][0] = (string) $message[0];
             } else {
                 $messages[$key][0] = VarDumper::export($message[0]);
@@ -350,11 +367,9 @@ class Panel extends Component
     }
 
     /**
-     * Returns the debug log target instance.
+     * Returns the debug log target wired to the owning module.
      *
-     * @throws InvalidConfigException if the debug log target is not initialized.
-     *
-     * @return LogTarget Debug log target instance.
+     * @throws InvalidConfigException When the debug module has not initialized its log target.
      */
     protected function getLogTarget(): LogTarget
     {
@@ -370,20 +385,19 @@ class Panel extends Component
     }
 
     /**
-     * Returns the structured items to be rendered on the debug toolbar for this panel.
+     * Returns the structured items rendered on the debug toolbar for this panel.
      *
-     * Subclasses override this instead of [[getToolbarData()]]. The base implementation in {@see getToolbarData()}
-     * handles the error envelope, the title/url/items wrapping, and the legacy HTML summary fallback.
+     * Subclasses override this instead of {@see getToolbarData()}, which handles the error envelope, the
+     * title/url/items wrapping, and the legacy HTML summary fallback.
      *
      * Return value semantics:
-     * - a non-empty array of item descriptors: rendered as structured metrics on the toolbar,
-     * - an empty array (`[]`, the default): falls back to the legacy [[getSummary()]] HTML,
+     * - a non-empty list of item descriptors: rendered as structured metrics on the toolbar,
+     * - `[]` (the default): falls back to the legacy {@see getSummary()} HTML,
      * - `null`: the panel is skipped entirely on the toolbar.
      *
-     * @return array<int, array<string, mixed>>|null Structured items to be rendered on the debug toolbar for this
-     * panel, or `null` to skip the panel entirely on the toolbar.
+     * @return array<int, array<string, mixed>>|null Structured items, or `null` to skip the panel.
      */
-    protected function getToolbarItems()
+    protected function getToolbarItems(): array|null
     {
         return [];
     }

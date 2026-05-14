@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Helper\Encode;
 use yii\debug\Panel;
 use yii\debug\panels\queue\{JobRecord, QueueCardRenderer};
 use yii\debug\panels\QueuePanel;
-use yii\helpers\{Html, Url};
+use yii\helpers\Url;
 
 /**
  * @var Panel $activePanel
@@ -41,7 +42,7 @@ $backUrl = Url::to(['view', 'tag' => $tag, 'panel' => 'queue']);
 ?>
 <div class="yii-debug-queue-job-page">
     <header class="yii-debug-queue-job-head">
-        <a class="yii-debug-btn yii-debug-btn-ghost" href="<?= Html::encode($backUrl) ?>">← Back to grid</a>
+        <a class="yii-debug-btn yii-debug-btn-ghost" href="<?= Encode::value($backUrl) ?>">← Back to grid</a>
     </header>
 
     <?= QueueCardRenderer::renderItem($record) ?>

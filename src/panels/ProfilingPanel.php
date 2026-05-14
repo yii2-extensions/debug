@@ -6,15 +6,21 @@ namespace yii\debug\panels;
 
 use Yii;
 use yii\debug\helpers\{Coerce, Format};
-use yii\debug\models\search\Profile;
+use yii\debug\models\search\ProfileSearch;
 use yii\debug\Panel;
 use yii\helpers\Url;
 use yii\log\Logger;
 
+use function count;
 use function is_array;
+use function is_int;
 
 /**
- * Debugger panel that collects and displays performance profiling info.
+ * Captures profile-level log messages emitted by `Yii::beginProfile()` and renders the per-block timings in the
+ * Profiling panel.
+ *
+ * Records the request peak memory and total processing time alongside the profile messages, so the detail view can
+ * surface the totals next to the sortable per-block grid and link to the Timeline panel.
  */
 class ProfilingPanel extends Panel
 {
@@ -26,15 +32,18 @@ class ProfilingPanel extends Panel
      *   level: int,
      *   timestamp: float,
      *   seq: int
-     * }>|null Current request profile timings
+     * }>|null Cached typed profile rows consumed by the profile grid.
      */
     private array|null $models = null;
 
+    /**
+     * Renders the detail view with the profile grid, total time, peak memory, and the Timeline panel cross-link.
+     */
     public function getDetail(): string
     {
         $profileData = $this->getProfileData();
 
-        $searchModel = new Profile();
+        $searchModel = new ProfileSearch();
 
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
 
@@ -42,7 +51,11 @@ class ProfilingPanel extends Panel
         $timelineUrl = $module === null
             ? '#'
             : Url::to(
-                ['/' . $module->getUniqueId() . '/default/view', 'panel' => 'timeline', 'tag' => $this->tag],
+                [
+                    '/' . $module->getUniqueId() . '/default/view',
+                    'panel' => 'timeline',
+                    'tag' => $this->tag,
+                ],
             );
 
         return Yii::$app->view->render(
@@ -58,11 +71,17 @@ class ProfilingPanel extends Panel
         );
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Profiling';
     }
 
+    /**
+     * Renders the toolbar summary chip with the total processing time and peak memory.
+     */
     public function getSummary(): string
     {
         $profileData = $this->getProfileData();
@@ -78,12 +97,9 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * {@inheritdoc}
+     * Hides the "Profiling" title from the toolbar; the gauge icon plus the time/memory metrics are self-explanatory.
      *
-     * Hides the "Profiling" panel-title from the toolbar — the gauge icon plus the time/memory metrics are
-     * self-explanatory.
-     *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Toolbar payload with the title blanked on success.
      */
     public function getToolbarData(): array
     {
@@ -96,19 +112,25 @@ class ProfilingPanel extends Panel
         return $data;
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'profiling';
     }
 
     /**
-     * @return array{memory: int, time: float, messages: array<int, array<int|string, mixed>>}
+     * Snapshots the captured profile messages, the peak memory usage, and the total request time.
+     *
+     * @return array{memory: int, time: float, messages: array<int, array<int|string, mixed>>} Captured payload, with
+     * `time` in seconds and `memory` in bytes.
      */
     public function save(): array
     {
         $messages = $this->getLogMessages(Logger::LEVEL_PROFILE);
 
-        $requestStart = Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? YII_BEGIN_TIME;
+        $requestStart = Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? microtime(true);
 
         return [
             'memory' => memory_get_peak_usage(),
@@ -118,7 +140,9 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * Returns array of profiling models that can be used in a data provider.
+     * Builds and caches the typed profile rows consumed by the profile grid.
+     *
+     * Suitable for {@see \yii\data\ArrayDataProvider}.
      *
      * @return array<int, array{
      *   duration: float,
@@ -127,7 +151,7 @@ class ProfilingPanel extends Panel
      *   level: int,
      *   timestamp: float,
      *   seq: int
-     * }>
+     * }> Profile rows in capture order, with `duration` and `timestamp` in milliseconds.
      */
     protected function getModels(): array
     {
@@ -149,7 +173,9 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Builds the toolbar items: the total processing time and the peak memory usage.
+     *
+     * @return array<int, array<string, mixed>> Toolbar items in display order.
      */
     protected function getToolbarItems(): array
     {
@@ -170,7 +196,10 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * @return array{memory: int, time: float, messages: array<int, array<int|string, mixed>>}
+     * Narrows the saved panel data into the typed `memory` / `time` / `messages` shape consumed by the renderers.
+     *
+     * @return array{memory: int, time: float, messages: array<int, array<int|string, mixed>>} Normalized payload with
+     * defensible defaults (`0` / `0.0` / `[]`) for missing fields.
      */
     private function getProfileData(): array
     {
@@ -184,9 +213,11 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * @param array<int|string, mixed>|mixed $messages
+     * Filters the raw saved messages to keep only array entries.
      *
-     * @return array<int, array<int|string, mixed>>
+     * @param array<int|string, mixed>|mixed $messages Raw saved messages.
+     *
+     * @return array<int, array<int|string, mixed>> Reindexed list of message arrays.
      */
     private static function normalizeMessages(mixed $messages): array
     {
@@ -206,7 +237,11 @@ class ProfilingPanel extends Panel
     }
 
     /**
+     * Narrows a raw timing returned by the Yii logger into the typed profile-row shape, returning `null` when either
+     * `duration` or `timestamp` is missing or non-numeric.
+     *
      * @param mixed $timing Raw timing returned by Yii logger.
+     * @param int $seq Sequence index to assign to the resulting row.
      *
      * @return array{
      *   duration: float,
@@ -215,7 +250,8 @@ class ProfilingPanel extends Panel
      *   level: int,
      *   timestamp: float,
      *   seq: int
-     * }|null
+     * }|null Typed profile row with `duration` and `timestamp` in milliseconds, or `null` when the input was
+     * incomplete.
      */
     private static function normalizeTiming(mixed $timing, int $seq): array|null
     {

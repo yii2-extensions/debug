@@ -6,7 +6,7 @@ namespace yii\debug\panels;
 
 use Yii;
 use yii\base\Event;
-use yii\debug\models\search\Event as EventSearch;
+use yii\debug\models\search\EventSearch;
 use yii\debug\Panel;
 
 use function count;
@@ -16,9 +16,10 @@ use function is_object;
 use function is_string;
 
 /**
- * Debugger panel that collects and displays information about triggered events.
+ * Captures every framework event triggered during the request and renders them in the Events panel.
  *
- * > Note: this panel requires Yii framework version >= 2.0.14 to function and will not appear at lower version.
+ * Subscribes to the wildcard `Event::on('*', '*', …)` listener at {@see init()} time and records each fired event's
+ * name, class, sender, and capture timestamp.
  */
 class EventPanel extends Panel
 {
@@ -29,10 +30,13 @@ class EventPanel extends Panel
      *   class: class-string<Event>,
      *   isStatic: string,
      *   senderClass: string
-     * }> Current request events
+     * }> Events captured for the current request, in fire order.
      */
     private array $events = [];
 
+    /**
+     * Renders the detail view with the events grid.
+     */
     public function getDetail(): string
     {
         $searchModel = new EventSearch();
@@ -49,11 +53,17 @@ class EventPanel extends Panel
         );
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Events';
     }
 
+    /**
+     * Renders the toolbar summary chip with the total event count.
+     */
     public function getSummary(): string
     {
         return Yii::$app->view->render(
@@ -65,11 +75,17 @@ class EventPanel extends Panel
         );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'events';
     }
 
+    /**
+     * Registers the wildcard event listener that records every fired event into {@see $events}.
+     */
     public function init(): void
     {
         parent::init();
@@ -92,13 +108,15 @@ class EventPanel extends Panel
     }
 
     /**
+     * Snapshots the captured events into the panel-data shape consumed by the detail view.
+     *
      * @return array<int, array{
      *   time: float,
      *   name: string,
      *   class: class-string<Event>,
      *   isStatic: string,
      *   senderClass: string
-     * }>
+     * }> Event records in fire order.
      */
     public function save(): array
     {
@@ -106,7 +124,9 @@ class EventPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
+     * Returns the toolbar item showing the total event count, or `null` when none were captured.
+     *
+     * @return array<int, array<string, mixed>>|null Single-element list with the count, or `null`.
      */
     protected function getToolbarItems(): array|null
     {
@@ -116,17 +136,16 @@ class EventPanel extends Panel
             return null;
         }
 
-        return [
-            [
-                'value' => $eventCount,
-            ],
-        ];
+        return [['value' => $eventCount]];
     }
 
     /**
+     * Narrows the saved event rows into a string-keyed list, dropping non-array entries and non-string keys inside
+     * each entry.
+     *
      * @param mixed $events Raw event rows loaded from saved panel data.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> Sanitized event records in original order.
      */
     private static function normalizeEvents(mixed $events): array
     {

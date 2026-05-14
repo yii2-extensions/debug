@@ -6,7 +6,7 @@ namespace yii\debug\panels;
 
 use Yii;
 use yii\debug\helpers\Coerce;
-use yii\debug\models\search\Log;
+use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
 use yii\log\{Logger, Target};
 
@@ -15,7 +15,11 @@ use function is_array;
 use function is_string;
 
 /**
- * Debugger panel that collects and displays logs.
+ * Captures error, warning, info, and trace log messages emitted during the request and renders them in the Logs panel.
+ *
+ * Skips categories owned by the Router panel (to avoid duplicate rows in the routing trace) and decorates each row
+ * with the previous/next message ids and the time-since-previous delta, so the detail view can render the navigation
+ * buttons on each row.
  */
 class LogPanel extends Panel
 {
@@ -31,13 +35,16 @@ class LogPanel extends Panel
      *   id_of_previous: int|null,
      *   id_of_next: int|null,
      *   trace: array<int, array<string, mixed>>
-     * }>|null Log messages extracted to array as models, to use with data provider.
+     * }>|null Cached typed log rows consumed by the logs grid.
      */
     private array|null $models = null;
 
+    /**
+     * Renders the detail view with the logs grid.
+     */
     public function getDetail(): string
     {
-        $searchModel = new Log();
+        $searchModel = new LogSearch();
 
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
 
@@ -51,11 +58,17 @@ class LogPanel extends Panel
         );
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Logs';
     }
 
+    /**
+     * Renders the toolbar summary chip with the per-level counts (error / warning / info).
+     */
     public function getSummary(): string
     {
         return Yii::$app->view->render(
@@ -67,13 +80,19 @@ class LogPanel extends Panel
         );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'logs';
     }
 
     /**
-     * @return array{messages: array<int, array<int|string, mixed>>}
+     * Captures every error/warning/info/trace log message, excluding the categories owned by the Router panel.
+     *
+     * @return array{messages: array<int, array<int|string, mixed>>} Saved payload consumed by {@see getSavedMessages()}
+     * on read-back.
      */
     public function save(): array
     {
@@ -96,11 +115,12 @@ class LogPanel extends Panel
     }
 
     /**
-     * Returns an array of models that represents logs of the current request.
+     * Builds and caches the typed log rows consumed by the logs grid.
      *
-     * Can be used with data providers, such as {@see \yii\data\ArrayDataProvider}.
+     * Decorates each row with `id`, the previous/next row ids, and the time delta since the previous row. Suitable for
+     * {@see \yii\data\ArrayDataProvider}.
      *
-     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @param bool $refresh `true` to rebuild the cache from the saved messages.
      *
      * @return array<int, array{
      *   id: int,
@@ -113,7 +133,7 @@ class LogPanel extends Panel
      *   id_of_previous: int|null,
      *   id_of_next: int|null,
      *   trace: array<int, array<string, mixed>>
-     * }>
+     * }> Log rows indexed by `id`, with `time` and `time_of_previous` in milliseconds.
      */
     protected function getModels(bool $refresh = false): array
     {
@@ -159,7 +179,10 @@ class LogPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Builds the toolbar items: the total message count plus per-level chips (errors in `danger`, warnings in
+     * `warning`) when those levels surfaced at least one message.
+     *
+     * @return array<int, array<string, mixed>> Toolbar items in display order.
      */
     protected function getToolbarItems(): array
     {
@@ -170,9 +193,7 @@ class LogPanel extends Panel
         $warningCount = count(Target::filterMessages($messages, Logger::LEVEL_WARNING));
 
         $items = [
-            [
-                'value' => $messageCount,
-            ],
+            ['value' => $messageCount],
         ];
 
         if ($errorCount > 0) {
@@ -197,7 +218,9 @@ class LogPanel extends Panel
     }
 
     /**
-     * @return array<int, array<int|string, mixed>>
+     * Returns the saved log messages, dropping any non-array entries.
+     *
+     * @return array<int, array<int|string, mixed>> Saved messages in capture order.
      */
     private function getSavedMessages(): array
     {
@@ -221,9 +244,11 @@ class LogPanel extends Panel
     }
 
     /**
+     * Narrows a mixed payload into a list of strings, dropping non-string entries.
+     *
      * @param mixed $values Raw category list.
      *
-     * @return array<int, string>
+     * @return array<int, string> String entries in original order, possibly empty.
      */
     private static function normalizeStringList(mixed $values): array
     {

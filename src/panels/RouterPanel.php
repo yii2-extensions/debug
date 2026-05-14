@@ -15,12 +15,17 @@ use function is_array;
 use function is_string;
 
 /**
- * RouterPanel provides a panel which displays information about routing process.
+ * Captures the routing trace of the request and renders it in the Router panel.
+ *
+ * Records the URL-rule resolution log emitted by the URL manager (and any REST / Composite / per-rule subclasses), the
+ * resolved route, and the dispatched action, so the detail view can show the rules-tested table, the URL-rules table,
+ * and the action-routes table side by side.
  */
 class RouterPanel extends Panel
 {
     /**
-     * @var array<int, string>
+     * @var array<int, string> Log categories scanned for routing trace messages; consumed by the Logs and Dump panels
+     * to exclude the routing chatter from their captures.
      */
     private array $categories = [
         'yii\rest\UrlRule::parseRequest',
@@ -30,15 +35,18 @@ class RouterPanel extends Panel
     ];
 
     /**
-     * Listens categories of the messages.
+     * Returns the log categories scanned for routing trace messages.
      *
-     * @return array<int, string>
+     * @return array<int, string> Category names in declaration order.
      */
     public function getCategories(): array
     {
         return $this->categories;
     }
 
+    /**
+     * Renders the detail view with the Current Route, Router Rules, and Action Routes tabs.
+     */
     public function getDetail(): string
     {
         return Yii::$app->view->render(
@@ -51,11 +59,17 @@ class RouterPanel extends Panel
         );
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Router';
     }
 
+    /**
+     * Renders the toolbar summary chip.
+     */
     public function getSummary(): string
     {
         return Yii::$app->view->render(
@@ -64,13 +78,19 @@ class RouterPanel extends Panel
         );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'router';
     }
 
     /**
-     * @return array{messages: array<int, array<int|string, mixed>>, route: string, action: string|null}
+     * Snapshots the routing trace, the resolved route, and the dispatched action.
+     *
+     * @return array{messages: array<int, array<int|string, mixed>>, route: string, action: string|null} Captured
+     * payload consumed by {@see getRouteData()} on read-back.
      */
     public function save(): array
     {
@@ -92,7 +112,9 @@ class RouterPanel extends Panel
     }
 
     /**
-     * @param array<int, string>|string $values
+     * Appends one or more log categories to {@see $categories}.
+     *
+     * @param array<int, string>|string $values Single category, or list of categories.
      */
     public function setCategories(array|string $values): void
     {
@@ -107,7 +129,9 @@ class RouterPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Builds the toolbar item with the resolved route as the value and the dispatched action in the tooltip.
+     *
+     * @return array<int, array<string, mixed>> Single-element list with the route chip.
      */
     protected function getToolbarItems(): array
     {
@@ -122,7 +146,10 @@ class RouterPanel extends Panel
     }
 
     /**
-     * @return array{messages: array<int, array<int|string, mixed>>, route: string, action: string|null}
+     * Narrows the saved panel data into the typed `messages` / `route` / `action` shape consumed by the renderers.
+     *
+     * @return array{messages: array<int, array<int|string, mixed>>, route: string, action: string|null} Normalized
+     * payload with defensible defaults (`''` / `null` / `[]`) for missing fields.
      */
     private function getRouteData(): array
     {
@@ -136,9 +163,11 @@ class RouterPanel extends Panel
     }
 
     /**
+     * Filters the raw saved messages to keep only array entries.
+     *
      * @param mixed $messages Raw saved route log messages.
      *
-     * @return array<int, array<int|string, mixed>>
+     * @return array<int, array<int|string, mixed>> Reindexed list of message arrays.
      */
     private static function normalizeMessages(mixed $messages): array
     {
@@ -158,9 +187,11 @@ class RouterPanel extends Panel
     }
 
     /**
-     * @param array<int|string, mixed> $values
+     * Filters the input list to keep only string entries.
      *
-     * @return array<int, string>
+     * @param array<int|string, mixed> $values Raw category list.
+     *
+     * @return array<int, string> String entries in original order, possibly empty.
      */
     private static function normalizeStringList(array $values): array
     {

@@ -2,37 +2,35 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
+use yii\debug\GridViewConfig;
 
-class Event extends Base
+/**
+ * Backs the filter form above the Event panel grid of captured framework events.
+ */
+class EventSearch extends Base
 {
     /**
-     * Event class attribute input search value.
+     * Submitted value for the event-class filter (substring match against the listener class FQCN).
      */
     public string $class = '';
     /**
-     * Static-event filter input search value (`'1'`, `'0'`, or empty for no filter).
+     * Submitted value for the static-event filter: `'1'`, `'0'`, or `''` (no filter).
      */
     public string $isStatic = '';
     /**
-     * Event name attribute input search value.
+     * Submitted value for the `name` filter (substring match against the event name).
      */
     public string $name = '';
     /**
-     * Sender class attribute input search value.
+     * Submitted value for the sender-class filter (substring match against the sender FQCN).
      */
     public string $senderClass = '';
 
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'name' => 'Name',
@@ -42,28 +40,27 @@ class Event extends Base
         ];
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
             [['name', 'class', 'senderClass'], 'string'],
             [['isStatic'], 'boolean'],
-            //[['isStatic'], 'filter', 'filter' => function ($value) {return strlen($value) > 0 ? (bool)$value : $value;}],
             [$this->attributes(), 'safe'],
         ];
     }
 
     /**
-     * Returns data provider with filled models. Filter applied if needed.
+     * Returns an {@see ArrayDataProvider} over the captured events, applying the loaded filter values.
      *
-     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names.
-     * @param array<int, array<string, mixed>> $models Data to return provider for.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param array<int, array<string, mixed>> $models Captured event records to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
         $dataProvider = new ArrayDataProvider(
             [
                 'allModels' => $models,
-                'pagination' => \yii\debug\GridViewConfig::paginationFromRequest(50),
+                'pagination' => GridViewConfig::paginationFromRequest(50),
                 'sort' => [
                     'attributes' => [
                         'time',

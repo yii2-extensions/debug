@@ -10,9 +10,11 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets;
 
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Span;
 use Yii;
 use yii\base\{InvalidConfigException, Model, Widget};
-use yii\helpers\Html;
 use yii\helpers\Url;
 
 use function array_keys;
@@ -73,30 +75,43 @@ class FilterBanner extends Widget
         $count = count($activeFilters);
         $pills = '';
         foreach ($activeFilters as $attr => $val) {
-            $pills .= Html::a(
-                Html::tag('span', Html::encode($attr), ['class' => 'yii-debug-active-filter-attr'])
-                . Html::tag('span', ':', ['class' => 'yii-debug-active-filter-sep'])
-                . Html::tag('span', Html::encode($val), ['class' => 'yii-debug-active-filter-value'])
-                . Html::tag('span', '×', ['class' => 'yii-debug-active-filter-x', 'aria-hidden' => 'true']),
-                $this->buildUrl($formName, [$attr]),
-                ['class' => 'yii-debug-active-filter-pill', 'title' => 'Remove this filter'],
-            );
+            $pillContent = Span::tag()->class('yii-debug-active-filter-attr')->content($attr)->render()
+                . Span::tag()->class('yii-debug-active-filter-sep')->content(':')->render()
+                . Span::tag()->class('yii-debug-active-filter-value')->content($val)->render()
+                . Span::tag()
+                    ->class('yii-debug-active-filter-x')
+                    ->addAttribute('aria-hidden', 'true')
+                    ->content('×')
+                    ->render();
+
+            $pills .= A::tag()
+                ->class('yii-debug-active-filter-pill')
+                ->addAttribute('title', 'Remove this filter')
+                ->href($this->buildUrl($formName, [$attr]))
+                ->html($pillContent)
+                ->render();
         }
 
-        return Html::tag(
-            'div',
-            Html::tag(
-                'span',
-                $count . ' filter' . ($count === 1 ? '' : 's') . ' active',
-                ['class' => 'yii-debug-active-filters-label'],
-            )
-            . Html::tag('span', $pills, ['class' => 'yii-debug-active-filters-list'])
-            . Html::a('Clear all', $this->buildUrl($formName, array_keys($activeFilters)), [
-                'class' => 'yii-debug-active-filters-clear',
-                'title' => 'Clear all filters and show every row',
-            ]),
-            ['class' => 'yii-debug-active-filters', 'role' => 'group', 'aria-label' => 'Active filters'],
-        );
+        $label = Span::tag()
+            ->class('yii-debug-active-filters-label')
+            ->content($count . ' filter' . ($count === 1 ? '' : 's') . ' active')
+            ->render();
+
+        $list = Span::tag()->class('yii-debug-active-filters-list')->html($pills)->render();
+
+        $clearAll = A::tag()
+            ->class('yii-debug-active-filters-clear')
+            ->addAttribute('title', 'Clear all filters and show every row')
+            ->href($this->buildUrl($formName, array_keys($activeFilters)))
+            ->content('Clear all')
+            ->render();
+
+        return Div::tag()
+            ->class('yii-debug-active-filters')
+            ->addAttribute('role', 'group')
+            ->addAriaAttribute('label', 'Active filters')
+            ->html($label . $list . $clearAll)
+            ->render();
     }
 
     /**

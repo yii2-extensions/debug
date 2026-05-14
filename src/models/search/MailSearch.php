@@ -2,64 +2,58 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 
 /**
- * Mail represents the model behind the search form about current send emails.
+ * Backs the filter form above the Mail panel grid of messages dispatched during the request.
  */
-class Mail extends Base
+class MailSearch extends Base
 {
     /**
-     * BCC attribute input search value.
+     * Submitted value for the `bcc` filter (substring match).
      */
     public string $bcc = '';
     /**
-     * Body attribute input search value.
+     * Submitted value for the `body` filter (substring match).
      */
     public string $body = '';
     /**
-     * CC attribute input search value.
+     * Submitted value for the `cc` filter (substring match).
      */
     public string $cc = '';
     /**
-     * Charset attribute input search value.
+     * Submitted value for the `charset` filter (substring match).
      */
     public string $charset = '';
     /**
-     * File attribute input search value.
+     * Submitted value for the captured file name filter (substring match).
      */
     public string $file = '';
     /**
-     * From attribute input search value.
+     * Submitted value for the `from` filter (substring match).
      */
     public string $from = '';
     /**
-     * Headers attribute input search value.
+     * Submitted value for the `headers` filter (substring match).
      */
     public string $headers = '';
     /**
-     * Reply attribute input search value.
+     * Submitted value for the `reply` filter (substring match).
      */
     public string $reply = '';
     /**
-     * Subject attribute input search value.
+     * Submitted value for the `subject` filter (substring match).
      */
     public string $subject = '';
     /**
-     * To attribute input search value.
+     * Submitted value for the `to` filter (substring match).
      */
     public string $to = '';
 
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'from' => 'From',
@@ -72,7 +66,7 @@ class Mail extends Base
         ];
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
             [['from', 'to', 'reply', 'cc', 'bcc', 'subject', 'body', 'charset'], 'safe'],
@@ -80,10 +74,10 @@ class Mail extends Base
     }
 
     /**
-     * Returns data provider with filled models. Filter applied if needed.
+     * Returns an {@see ArrayDataProvider} over the captured mail messages, applying the loaded filter values.
      *
-     * @param array<int|string, mixed> $params
-     * @param array<int, array<string, mixed>> $models
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param array<int, array<string, mixed>> $models Captured mail records to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

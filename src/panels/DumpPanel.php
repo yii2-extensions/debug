@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Closure;
+use UIAwesome\Html\Helper\Encode;
 use Yii;
 use yii\debug\helpers\Coerce;
-use yii\debug\models\search\Log;
+use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
-use yii\helpers\Html;
 use yii\helpers\VarDumper;
 use yii\log\Logger;
 
@@ -19,24 +19,27 @@ use function is_array;
 use function is_string;
 
 /**
- * Dump panel that collects and displays debug messages (Logger::LEVEL_TRACE).
+ * Captures trace-level log messages emitted by `Yii::debug()` and renders them as dump cards.
+ *
+ * Filters the trace log by {@see $categories} (and skips categories owned by the Router panel) and stringifies each
+ * captured value through {@see varDump()}, so the detail view can render the result without re-serializing.
  */
 class DumpPanel extends Panel
 {
     /**
-     * @var array<int, string> Message categories to filter by. If empty array, it means all categories are allowed
+     * @var array<int, string> Message categories to capture; an empty list captures every category.
      */
     public array $categories = ['application'];
     /**
-     * Maximum depth that the dumper should go into the variable
+     * Maximum recursion depth applied by the dumper.
      */
     public int $depth = 10;
     /**
-     * Whether the result should be syntax-highlighted
+     * Whether the rendered dump should be syntax-highlighted.
      */
     public bool $highlight = true;
     /**
-     * @var Closure(mixed, self): string|null Callback that replaces the built-in var dumper.
+     * @var Closure(mixed, self): string|null Callback that replaces the built-in {@see VarDumper} rendering when set.
      */
     public Closure|null $varDumpCallback = null;
 
@@ -47,13 +50,16 @@ class DumpPanel extends Panel
      *   category: string,
      *   time: float,
      *   trace: array<int, array<string, mixed>>
-     * }>|null Log messages extracted to array as models, to use with data provider.
+     * }>|null Cached typed rows consumed by the dumps grid.
      */
     private array|null $models = null;
 
+    /**
+     * Renders the detail view with the dump grid powered by the Log search model.
+     */
     public function getDetail(): string
     {
-        $searchModel = new Log();
+        $searchModel = new LogSearch();
 
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
 
@@ -67,23 +73,38 @@ class DumpPanel extends Panel
         );
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Dump';
     }
 
+    /**
+     * Renders the toolbar summary chip.
+     */
     public function getSummary(): string
     {
-        return Yii::$app->view->render('panels/dump/summary', ['panel' => $this]);
+        return Yii::$app->view->render(
+            'panels/dump/summary',
+            ['panel' => $this],
+        );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'dump';
     }
 
     /**
-     * @return array<int, array<int|string, mixed>>
+     * Captures the trace-level messages allowed by {@see $categories}, excluding the categories owned by the Router
+     * panel, and pre-renders each captured value through {@see varDump()}.
+     *
+     * @return array<int, array<int|string, mixed>> Raw log tuples with the first element pre-rendered as a string.
      */
     public function save(): array
     {
@@ -109,7 +130,11 @@ class DumpPanel extends Panel
     }
 
     /**
-     * Called by `save()` to format the dumped variable.
+     * Renders a captured value as a display string.
+     *
+     * Delegates to {@see $varDumpCallback} when set; otherwise falls back to {@see VarDumper::dumpAsString()} with
+     * {@see $depth} and {@see $highlight} applied. Non-highlighted output is HTML-escaped, while highlighted output
+     * is passed through unchanged because the highlighter already emits safe markup.
      */
     public function varDump(mixed $var): string
     {
@@ -119,20 +144,19 @@ class DumpPanel extends Panel
 
         $message = VarDumper::dumpAsString($var, $this->depth, $this->highlight);
 
-        //don't encode highlighted variables
         if (!$this->highlight) {
-            $message = Html::encode($message);
+            $message = Encode::content($message);
         }
 
         return $message;
     }
 
     /**
-     * Returns an array of models that represents logs of the current request.
+     * Builds and caches the typed dump rows consumed by the dumps grid.
      *
-     * Can be used with data providers, such as {@see \yii\data\ArrayDataProvider}.
+     * Suitable for {@see \yii\data\ArrayDataProvider}.
      *
-     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @param bool $refresh `true` to rebuild the cache from the saved messages.
      *
      * @return array<int, array{
      *   message: string,
@@ -140,7 +164,7 @@ class DumpPanel extends Panel
      *   category: string,
      *   time: float,
      *   trace: array<int, array<string, mixed>>
-     * }>
+     * }> Dump rows in capture order, with `time` in milliseconds.
      */
     protected function getModels(bool $refresh = false): array
     {
@@ -162,7 +186,9 @@ class DumpPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
+     * Returns the toolbar item showing the number of dumped variables, or `null` when none were captured.
+     *
+     * @return array<int, array<string, mixed>>|null Single-element list with the `info` chip, or `null`.
      */
     protected function getToolbarItems(): array|null
     {
@@ -182,6 +208,8 @@ class DumpPanel extends Panel
     }
 
     /**
+     * Narrows one raw saved log tuple into the typed dump-row shape, or returns `null` when the entry is not an array.
+     *
      * @param mixed $message Raw log message from saved panel data.
      *
      * @return array{
@@ -190,7 +218,7 @@ class DumpPanel extends Panel
      *   category: string,
      *   time: float,
      *   trace: array<int, array<string, mixed>>
-     * }|null
+     * }|null Typed dump row with `time` in milliseconds, or `null` when the entry was malformed.
      */
     private static function normalizeMessage(mixed $message): array|null
     {
@@ -208,9 +236,11 @@ class DumpPanel extends Panel
     }
 
     /**
+     * Narrows a mixed payload into a list of strings, dropping non-string entries.
+     *
      * @param mixed $values Raw category list.
      *
-     * @return array<int, string>
+     * @return array<int, string> String entries in original order, possibly empty.
      */
     private static function normalizeStringList(mixed $values): array
     {

@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\timeline;
 
 use RuntimeException;
@@ -19,14 +13,18 @@ use function is_array;
 use function is_numeric;
 
 /**
- * DataProvider implements a data provider based on a data array.
+ * Wraps the timeline records as a sortable provider that derives per-row CSS layout fields for the timeline view.
+ *
+ * Computes each row's left offset, width, color band, and child-count overlap relative to the bound
+ * {@see TimelinePanel} so the view can render every bar without recomputing geometry on every callback.
  */
 class DataProvider extends ArrayDataProvider
 {
     protected TimelinePanel|null $panel = null;
 
     /**
-     * @param array<string, mixed> $config
+     * @param TimelinePanel $panel Panel providing the request start time, total duration, and color buckets.
+     * @param array<string, mixed> $config Standard {@see ArrayDataProvider} configuration.
      */
     public function __construct(TimelinePanel $panel, array $config = [])
     {
@@ -36,9 +34,9 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns the HEX color associated with the model duration bucket.
+     * Returns the HEX color associated with the model's duration bucket.
      *
-     * @param array<array-key, mixed> $model
+     * @param array<array-key, mixed> $model Timeline row carrying a `css.width` percentage.
      */
     public function getColor(array $model): string
     {
@@ -54,9 +52,9 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns the CSS class describing the item's left/right alignment within its row.
+     * Returns the CSS class describing the row's left/right alignment within the timeline.
      *
-     * @param array<array-key, mixed> $model
+     * @param array<array-key, mixed> $model Timeline row carrying `css.left` and `css.width` percentages.
      */
     public function getCssClass(array $model): string
     {
@@ -67,9 +65,9 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns the offset left of the item, expressed as a percentage of the total width.
+     * Returns the row's left offset as a percentage of the total request duration.
      *
-     * @param array<array-key, mixed> $model
+     * @param array<array-key, mixed> $model Timeline row carrying a `timestamp` entry.
      */
     public function getLeft(array $model): float
     {
@@ -77,11 +75,11 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns memory usage as `[formatted_mb, y_position_percent]`, or `null` when no memory entry exists.
+     * Returns the memory usage as a `[formatted_mb, y_position_percent]` pair, or `null` when no memory entry exists.
      *
-     * @param array<array-key, mixed> $model
+     * @param array<array-key, mixed> $model Timeline row that may carry a numeric `memory` entry.
      *
-     * @return array{0: string, 1: float}|null
+     * @return array{0: string, 1: float}|null Formatted memory string and its Y position, or `null` when unavailable.
      */
     public function getMemory(array $model): array|null
     {
@@ -104,9 +102,11 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns ruler tick positions keyed by milliseconds with their offset-left percentage as the value.
+     * Returns ruler tick positions keyed by milliseconds, valued by their left-offset percentage.
      *
-     * @return array<int, float>
+     * @param int $line Number of ruler segments. `0` disables the ruler entirely.
+     *
+     * @return array<int, float> Tick positions keyed by absolute milliseconds, valued by left-offset percentage.
      */
     public function getRulers(int $line = 10): array
     {
@@ -131,9 +131,9 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns the item's elapsed time relative to the request start, in milliseconds.
+     * Returns the row's elapsed time relative to the request start, in milliseconds.
      *
-     * @param array<array-key, mixed> $model
+     * @param array<array-key, mixed> $model Timeline row carrying a numeric `timestamp` entry.
      */
     public function getTime(array $model): float
     {
@@ -143,9 +143,9 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns the item's width as a percentage of the total request duration.
+     * Returns the row's width as a percentage of the total request duration.
      *
-     * @param array<array-key, mixed> $model
+     * @param array<array-key, mixed> $model Timeline row carrying a numeric `duration` entry.
      */
     public function getWidth(array $model): float
     {
@@ -155,7 +155,10 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * @return list<array<array-key, mixed>>
+     * Normalizes the raw input rows, converts seconds to milliseconds, derives the per-row CSS layout, and tracks
+     * nested child counts so the view can shade overlapping spans.
+     *
+     * @return list<array<array-key, mixed>> Prepared rows ready for the data provider.
      */
     protected function prepareModels(): array
     {
@@ -213,7 +216,8 @@ class DataProvider extends ArrayDataProvider
     /**
      * Returns a numeric value from `$model['css'][$key]`, or `null` when the entry is missing or non-numeric.
      *
-     * @param array<array-key, mixed> $model
+     * @param array<array-key, mixed> $model Timeline row whose `css` sub-array is read.
+     * @param string $key Key inside `css` to coerce to a float.
      */
     private static function cssNumber(array $model, string $key): float|null
     {
@@ -229,7 +233,9 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns the bound {@see TimelinePanel}, asserting that it has been set by the constructor.
+     * Returns the bound {@see TimelinePanel}, asserting that the constructor wired it.
+     *
+     * @throws RuntimeException When the panel was somehow cleared after construction.
      */
     private function panel(): TimelinePanel
     {

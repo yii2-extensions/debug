@@ -111,9 +111,9 @@ final class ModuleTest extends TestCase
 
         self::assertSame(
             [
-                'dist/js/debug.js',
-                'dist/js/theme-toggle.js',
-                'dist/js/history-cursor.js',
+                'dist/js/debug.min.js',
+                'dist/js/theme-toggle.min.js',
+                'dist/js/history-cursor.min.js',
             ],
             $asset->js,
             'DebugAsset must ship the local core scripts: debug + theme-toggle + history-cursor.',

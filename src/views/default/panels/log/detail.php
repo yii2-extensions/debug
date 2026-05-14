@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\models\search\Log;
+use yii\debug\models\search\LogSearch;
 use yii\debug\panels\log\{LogCellRenderer, LogCountsNormalizer, LogRowNormalizer};
 use yii\debug\panels\LogPanel;
 use yii\debug\widgets\FilterBanner;
@@ -13,7 +13,7 @@ use yii\log\Logger;
 
 /**
  * @var ArrayDataProvider $dataProvider
- * @var Log $searchModel
+ * @var LogSearch $searchModel
  * @var LogPanel $panel
  */
 

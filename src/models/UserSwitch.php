@@ -2,26 +2,22 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models;
 
 use RuntimeException;
 use Yii;
-use yii\base\InvalidConfigException;
-use yii\base\Model;
-use yii\web\IdentityInterface;
-use yii\web\User;
+use yii\base\{InvalidConfigException, Model};
+use yii\web\{IdentityInterface, User};
 
 use function is_int;
 use function is_string;
 
 /**
- * UserSwitch model used to temporarily log in as another user.
+ * Backs the user-impersonation workflow by swapping the active session identity to another user.
+ *
+ * Preserves the original identity in the session (`main_user`) so {@see reset()} can restore it once the impersonator
+ * is done. Every accessor resolves the user component lazily through {@see getUser()} so unit tests can inject a
+ * pre-built {@see User} instance into {@see $userComponent}.
  */
 class UserSwitch extends Model
 {
@@ -31,16 +27,16 @@ class UserSwitch extends Model
     public string|User $userComponent = 'user';
 
     /**
-     * Cached main user — the user originally logged in before any identity switch.
+     * Cached main user: the identity originally logged in before any switch.
      */
-    private User|null $_mainUser = null;
+    private User|null $mainUser = null;
     /**
-     * Cached current user — the user the session is currently switched to.
+     * Cached current user: the identity the session is currently switched to.
      */
-    private User|null $_user = null;
+    private User|null $user = null;
 
     /**
-     * @return array<string, string>
+     * @return array<string, string> Form labels keyed by attribute name.
      */
     public function attributeLabels(): array
     {
@@ -53,14 +49,16 @@ class UserSwitch extends Model
     /**
      * Returns the main user; the original identity captured on the first switch.
      *
-     * @throws InvalidConfigException if the user component cannot be resolved.
+     * Reads the captured id from the session when present; otherwise treats the current identity as the main one.
+     *
+     * @throws InvalidConfigException When the user component cannot be resolved.
      */
     public function getMainUser(): User
     {
         $currentUser = $this->getUser();
 
-        if ($this->_mainUser !== null) {
-            return $this->_mainUser;
+        if ($this->mainUser !== null) {
+            return $this->mainUser;
         }
 
         if ($currentUser->getIsGuest()) {
@@ -85,22 +83,22 @@ class UserSwitch extends Model
 
         $mainUser->setIdentity($mainIdentity);
 
-        return $this->_mainUser = $mainUser;
+        return $this->mainUser = $mainUser;
     }
 
     /**
-     * Returns the current user component bound to this switch model.
+     * Returns the user component bound to this switch model, resolving it lazily on first call.
      *
-     * @throws InvalidConfigException If the user component cannot be resolved.
+     * @throws InvalidConfigException When the configured component ID does not resolve to a {@see User} instance.
      */
     public function getUser(): User
     {
-        if ($this->_user !== null) {
-            return $this->_user;
+        if ($this->user !== null) {
+            return $this->user;
         }
 
         if ($this->userComponent instanceof User) {
-            return $this->_user = $this->userComponent;
+            return $this->user = $this->userComponent;
         }
 
         $resolved = Yii::$app->get($this->userComponent, false);
@@ -111,13 +109,13 @@ class UserSwitch extends Model
             );
         }
 
-        return $this->_user = $resolved;
+        return $this->user = $resolved;
     }
 
     /**
-     * Checks whether the current user matches the main user.
+     * Returns whether the current identity is the main user (or a guest).
      *
-     * @throws InvalidConfigException
+     * @throws InvalidConfigException When the user component cannot be resolved.
      */
     public function isMainUser(): bool
     {
@@ -131,9 +129,9 @@ class UserSwitch extends Model
     }
 
     /**
-     * Resets the session back to the main user.
+     * Restores the session to the main user captured before the first switch.
      *
-     * @throws InvalidConfigException if the user component cannot be resolved.
+     * @throws InvalidConfigException When the user component cannot be resolved.
      */
     public function reset(): void
     {
@@ -141,7 +139,7 @@ class UserSwitch extends Model
     }
 
     /**
-     * @return array<int, array<int|string, mixed>>
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */
     public function rules(): array
     {
@@ -151,10 +149,10 @@ class UserSwitch extends Model
     }
 
     /**
-     * Switches the session to the given user.
+     * Switches the session to the given user and tracks the main user id when impersonating.
      *
-     * @throws InvalidConfigException if the user component cannot be resolved.
-     * @throws RuntimeException if the supplied user has no identity attached.
+     * @throws InvalidConfigException When the user component cannot be resolved.
+     * @throws RuntimeException When the supplied user has no identity attached.
      */
     public function setUser(User $user): void
     {
@@ -180,7 +178,7 @@ class UserSwitch extends Model
     /**
      * Switches the session to the user identified by `$identity`.
      *
-     * @throws InvalidConfigException
+     * @throws InvalidConfigException When the user component cannot be resolved.
      */
     public function setUserByIdentity(IdentityInterface $identity): void
     {

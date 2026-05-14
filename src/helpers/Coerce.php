@@ -13,19 +13,16 @@ use function is_scalar;
 use function is_string;
 
 /**
- * Narrows arbitrary `mixed` payloads into the typed scalars debug-panel renderers expect.
+ * Narrows arbitrary mixed payloads into the typed scalars debug-panel renderers expect.
  *
- * Snapshots and event payloads cross the `mixed` boundary repeatedly (saved files, GridView callbacks, panel `$data`
- * arrays). Every panel used to keep a private `stringValue()` helper for the same narrowing pattern; this class
- * centralises that logic so the same coercion behaves identically across panels.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Snapshots and event payloads cross the mixed boundary repeatedly (saved files, GridView callbacks, panel `$data`
+ * arrays). Every panel used to keep a private {@see self::stringOrNull()} helper for the same narrowing pattern; this
+ * class centralises that logic so the same coercion behaves identically across panels.
  */
 final class Coerce
 {
     /**
-     * Returns the value as a `float` when it is numeric, `null` otherwise.
+     * Returns the value as a float when it is numeric, `null` otherwise.
      */
     public static function floatOrNull(mixed $value): float|null
     {
@@ -33,7 +30,7 @@ final class Coerce
     }
 
     /**
-     * Returns the value as an `int` when it is an integer or numeric, `null` otherwise.
+     * Returns the value as an int when it is an integer or numeric, `null` otherwise.
      */
     public static function intOrNull(mixed $value): int|null
     {
@@ -45,14 +42,14 @@ final class Coerce
     }
 
     /**
-     * Returns only the entries of `$data` whose key is a `string`, preserving order.
+     * Returns only the entries of `$data` whose key is a string, preserving order.
      *
-     * Used when narrowing a `mixed`/`array<array-key, mixed>` snapshot down to the `array<string, mixed>` shape the
-     * downstream view-model normalizers expect.
+     * Narrows a mixed/`array<array-key, mixed>` snapshot down to the `array<string, mixed>` shape downstream view-model
+     * normalizers expect.
      *
-     * @param array<array-key, mixed> $data
+     * @param array<array-key, mixed> $data Source array with arbitrary keys.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Entries whose key was already a string, in original order.
      */
     public static function stringKeyedArray(array $data): array
     {
@@ -83,9 +80,9 @@ final class Coerce
      * Narrows a raw trace value (as captured by Yii's logger) into the `list<array<string, mixed>>` shape every panel
      * renderer consumes.
      *
-     * Each frame keeps only its `string`-keyed entries; non-array frames are dropped.
+     * Each frame keeps only its string-keyed entries; non-array frames are dropped.
      *
-     * @return list<array<string, mixed>>
+     * @return list<array<string, mixed>> Trace frames normalized to string-keyed maps.
      */
     public static function traceFrames(mixed $value): array
     {

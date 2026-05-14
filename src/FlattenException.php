@@ -52,31 +52,31 @@ class FlattenException
     /**
      * FQCN of the original exception class.
      */
-    private string $_class = '';
+    private string $class = '';
     /**
      * Previous flattened exception, when the original carried a `getPrevious()` chain.
      */
-    private FlattenException|null $_previous = null;
+    private FlattenException|null $previous = null;
     /**
      * Cached `__toString()` of the original exception (preserves the native trace formatting).
      */
-    private string $_toString = '';
+    private string $toString = '';
     /**
      * Flattened stack trace where each entry is a `{namespace, short_class, class, type, function, file, line, args}`
      * shape, with `args` recursively flattened via {@see flattenArgs()}.
      *
      * @var list<array{
-     *     namespace: string,
-     *     short_class: string,
-     *     class: string,
-     *     type: string,
-     *     function: string|null,
-     *     file: string|null,
-     *     line: int|null,
-     *     args: array<int|string, array{0: string, 1: mixed}>|array{0: string, 1: string},
+     *   namespace: string,
+     *   short_class: string,
+     *   class: string,
+     *   type: string,
+     *   function: string|null,
+     *   file: string|null,
+     *   line: int|null,
+     *   args: array<int|string, array{0: string, 1: mixed}>|array{0: string, 1: string},
      * }>
      */
-    private array $_trace = [];
+    private array $trace = [];
 
     public function __construct(Exception $exception)
     {
@@ -100,7 +100,7 @@ class FlattenException
      */
     public function __toString(): string
     {
-        return $this->_toString;
+        return $this->toString;
     }
 
     /**
@@ -108,7 +108,7 @@ class FlattenException
      */
     public function getClass(): string
     {
-        return $this->_class;
+        return $this->class;
     }
 
     /**
@@ -149,7 +149,7 @@ class FlattenException
      */
     public function getPrevious(): self|null
     {
-        return $this->_previous;
+        return $this->previous;
     }
 
     /**
@@ -159,19 +159,19 @@ class FlattenException
      * sentinel `['array', '*SKIPPED over 10000 entries*']` produced once the recursive walker crosses 10 000 entries.
      *
      * @return list<array{
-     *     namespace: string,
-     *     short_class: string,
-     *     class: string,
-     *     type: string,
-     *     function: string|null,
-     *     file: string|null,
-     *     line: int|null,
-     *     args: array<int|string, array{0: string, 1: mixed}>|array{0: string, 1: string},
+     *   namespace: string,
+     *   short_class: string,
+     *   class: string,
+     *   type: string,
+     *   function: string|null,
+     *   file: string|null,
+     *   line: int|null,
+     *   args: array<int|string, array{0: string, 1: mixed}>|array{0: string, 1: string},
      * }>
      */
     public function getTrace(): array
     {
-        return $this->_trace;
+        return $this->trace;
     }
 
     /**
@@ -181,18 +181,18 @@ class FlattenException
     {
         $remove = "Stack trace:\n";
 
-        $len = strpos($this->_toString, $remove);
+        $len = strpos($this->toString, $remove);
 
         if ($len === false) {
             return '';
         }
 
-        return substr($this->_toString, $len + strlen($remove));
+        return substr($this->toString, $len + strlen($remove));
     }
 
     protected function setClass(string $class): void
     {
-        $this->_class = $class;
+        $this->class = $class;
     }
 
     protected function setCode(mixed $code): void
@@ -217,12 +217,12 @@ class FlattenException
 
     protected function setPrevious(self $previous): void
     {
-        $this->_previous = $previous;
+        $this->previous = $previous;
     }
 
     protected function setToString(string $string): void
     {
-        $this->_toString = $string;
+        $this->toString = $string;
     }
 
     /**
@@ -230,7 +230,7 @@ class FlattenException
      */
     protected function setTrace(array $trace): void
     {
-        $this->_trace = [];
+        $this->trace = [];
 
         foreach ($trace as $entry) {
             if (!is_array($entry)) {
@@ -239,7 +239,7 @@ class FlattenException
 
             $rawClass = is_string($entry['class'] ?? null) ? $entry['class'] : '';
 
-            $this->_trace[] = [
+            $this->trace[] = [
                 'namespace' => Fqcn::namespacePart($rawClass),
                 'short_class' => Fqcn::shortName($rawClass),
                 'class' => $rawClass,

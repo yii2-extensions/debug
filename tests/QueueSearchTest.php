@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yiiunit\debug;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\models\search\Queue as QueueSearch;
+use yii\debug\models\search\QueueSearch;
 
 /**
  * Unit tests for {@see QueueSearch} covering filter validation, pagination metadata and the substring/exact match
@@ -47,7 +47,7 @@ final class QueueSearchTest extends TestCase
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
-            ['Queue' => ['driverName' => 'Re']],
+            ['QueueSearch' => ['driverName' => 'Re']],
             $records,
         );
 
@@ -92,7 +92,7 @@ final class QueueSearchTest extends TestCase
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
-            ['Queue' => ['jobClass' => 'Hello']],
+            ['QueueSearch' => ['jobClass' => 'Hello']],
             $records,
         );
 
@@ -135,7 +135,7 @@ final class QueueSearchTest extends TestCase
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
-            ['Queue' => ['jobId' => '20']],
+            ['QueueSearch' => ['jobId' => '20']],
             $records,
         );
 
@@ -183,7 +183,7 @@ final class QueueSearchTest extends TestCase
 
         $dataProvider = $searchModel->search(
             [
-                'Queue' => [
+                'QueueSearch' => [
                     'eventType' => 'push',
                     'componentId' => 'queue',
                 ],
@@ -244,7 +244,7 @@ final class QueueSearchTest extends TestCase
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
-            ['Queue' => ['eventType' => 'error']],
+            ['QueueSearch' => ['eventType' => 'error']],
             $records
         );
 

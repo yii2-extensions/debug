@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Helper\Encode;
 use yii\data\ArrayDataProvider;
-use yii\debug\models\search\Db;
+use yii\debug\models\search\DbSearch;
 use yii\debug\panels\DbPanel;
-use yii\helpers\Html;
 use yii\web\View;
 
 /**
  * @var ArrayDataProvider $queryDataProvider
  * @var bool $hasExplain
  * @var DbPanel $panel
- * @var Db $searchModel
+ * @var DbSearch $searchModel
  * @var int $sumDuplicates
  * @var View $this
  */
 ?>
 
-<h1 class="yii-debug-sr-only"><?= Html::encode($panel->getName()) ?></h1>
+<h1 class="yii-debug-sr-only"><?= Encode::content($panel->getName()) ?></h1>
 
 <?= $this->render(
     'queries',

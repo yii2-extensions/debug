@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\log;
 
-use yii\debug\helpers\Coerce;
-use yii\debug\helpers\RowField;
+use yii\debug\helpers\{Coerce, RowField};
 use yii\helpers\VarDumper;
 
 use function is_array;
@@ -17,20 +16,14 @@ use function is_string;
  * The log panel already produces typed rows, but the data provider erases the shape at the callback boundary. This
  * normalizer restores it once per row and pre-converts the originally-`mixed` message field into a display string, so
  * cell renderers never have to inspect the payload type.
- *
- * Usage example:
- * ```php
- * 'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeCell(LogRowNormalizer::from($data)),
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class LogRowNormalizer
 {
     /**
      * Builds a {@see LogRow} from an arbitrary value, falling back to defensible defaults for any field that is missing
      * or has the wrong type.
+     *
+     * @param mixed $data Raw row supplied by the GridView callback.
      */
     public static function from(mixed $data): LogRow
     {
@@ -50,10 +43,12 @@ final class LogRowNormalizer
     }
 
     /**
-     * Converts the originally-`mixed` log payload to a display string. Strings round-trip; non-strings are exported via
-     * {@see VarDumper} so the renderer can treat the message as opaque text.
+     * Converts the originally-`mixed` log payload to a display string.
      *
-     * @param array<array-key, mixed> $row
+     * Strings round-trip unchanged; non-strings are exported via {@see VarDumper} so the renderer can treat the message
+     * as opaque text.
+     *
+     * @param array<array-key, mixed> $row Source row.
      */
     private static function messageField(array $row): string
     {

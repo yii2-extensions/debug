@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\models\search\Queue;
+use yii\debug\models\search\QueueSearch;
 use yii\debug\panels\queue\{JobRecordNormalizer, QueueCardRenderer, QueueGridRenderer, QueueSummaryNormalizer};
 use yii\debug\panels\QueuePanel;
 use yii\debug\widgets\FilterBanner;
@@ -13,7 +13,7 @@ use yii\helpers\Url;
 
 /**
  * @var ArrayDataProvider $dataProvider
- * @var Queue $searchModel
+ * @var QueueSearch $searchModel
  * @var QueuePanel $panel
  */
 

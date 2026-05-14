@@ -7,11 +7,8 @@ namespace yii\debug\panels\asset;
 /**
  * Typed aggregate view-model for the Asset Bundles detail view.
  *
- * Bundles the per-request statistics (totals across every registered bundle) with the per-bundle view-models that the
- * detail view iterates over.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Bundles the per-request totals (across every registered bundle) with the per-bundle view-models that the detail view
+ * iterates over.
  */
 final readonly class AssetSummary
 {
@@ -21,7 +18,7 @@ final readonly class AssetSummary
          */
         public array $bundles,
         /**
-         * Number of bundles in `$bundles`.
+         * Number of bundles in {@see $bundles}.
          */
         public int $totalBundles,
         /**
@@ -38,6 +35,9 @@ final readonly class AssetSummary
         public int $totalDeps,
     ) {}
 
+    /**
+     * Returns whether the summary carries no bundles.
+     */
     public function isEmpty(): bool
     {
         return $this->bundles === [];

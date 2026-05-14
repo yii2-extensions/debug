@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
@@ -15,24 +9,24 @@ use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
 
 /**
- * Search model for current request log.
+ * Backs the filter form above the Log panel grid of the active request's log messages.
  */
-class Log extends Base
+class LogSearch extends Base
 {
     /**
-     * Category attribute input search value.
+     * Submitted value for the `category` filter (substring match).
      */
     public string $category = '';
     /**
-     * Level attribute input search value.
+     * Submitted value for the `level` filter (exact match).
      */
     public string $level = '';
     /**
-     * Message attribute input search value.
+     * Submitted value for the `message` filter (substring match).
      */
     public string $message = '';
 
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'level' => 'Level',
@@ -42,7 +36,7 @@ class Log extends Base
         ];
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
             [['level', 'message', 'category'], 'safe'],
@@ -50,10 +44,10 @@ class Log extends Base
     }
 
     /**
-     * Returns data provider with filled models. Filter applied if needed.
+     * Returns an {@see ArrayDataProvider} over the captured log messages, applying the loaded filter values.
      *
-     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names.
-     * @param array<int, array<string, mixed>> $models Data to return provider for.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param array<int, array<string, mixed>> $models Captured log entries to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

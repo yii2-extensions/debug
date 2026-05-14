@@ -11,23 +11,29 @@ use yii\debug\panels\DbPanel;
 use yii\web\HttpException;
 
 /**
- * ExplainAction provides EXPLAIN information for SQL queries
+ * Renders the EXPLAIN plan for a single captured SQL query.
+ *
+ * Maps to the `db-explain` route registered by {@see DbPanel::getActions()}; consumes `tag` (request snapshot) and
+ * `seq` (index into the panel's timings array) to locate the SQL statement and execute the driver-appropriate EXPLAIN
+ * command.
+ *
+ * SQLite uses `EXPLAIN QUERY PLAN`; MySQL and PostgreSQL use plain `EXPLAIN`.
  */
 class ExplainAction extends Action
 {
     /**
-     * Database panel instance, which will be used to retrieve the database connection and calculate timings.
+     * Database panel instance used to recover the captured query and the active DB connection.
      */
     public DbPanel|null $panel = null;
 
     /**
      * Runs the action.
      *
-     * @param string $seq Sequence number of the log message to explain.
-     * @param string $tag Tag of the log message to explain.
+     * @param string $seq Sequence number of the timing entry to explain.
+     * @param string $tag Request tag whose debug snapshot holds the query.
      *
-     * @throws HttpException if the controller is not an instance of DefaultController, or if the log message is not.
-     * found.
+     * @throws HttpException When the panel was not wired, the controller is not the debug `DefaultController`, or the
+     * timing entry cannot be found for the given `seq`.
      *
      * @return string Rendered view with the EXPLAIN results.
      */
@@ -62,12 +68,6 @@ class ExplainAction extends Action
         $query = $timings[$seqKey]['info'];
 
         $db = $this->panel->getDb();
-
-        /**
-         * SQLite bare `EXPLAIN` dumps VDBE bytecode (Init/Halt/Goto…) which is useless to application developers.
-         * `EXPLAIN QUERY PLAN` is the human-readable equivalent.
-         * MySQL/PostgreSQL already return a usable plan from plain `EXPLAIN`.
-         */
         $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';
         $results = $db->createCommand("{$explainPrefix}{$query}")->queryAll();
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use yii\helpers\Html;
+use UIAwesome\Html\Helper\Encode;
 use yii\helpers\Url;
 
 /** @var \yii\web\View $this */
@@ -43,7 +43,7 @@ use yii\helpers\Url;
                 <?php $panelError = $panel->getError(); ?>
                 <div class="yii-debug-toolbar-block">
                     <a href="<?= $panel->getUrl() ?>"
-                        title="<?= Html::encode($panelError !== null ? $panelError->getMessage() : '') ?>"><?= Html::encode($panel->getName()) ?>
+                        title="<?= Encode::value($panelError !== null ? $panelError->getMessage() : '') ?>"><?= Encode::content($panel->getName()) ?>
                         <span class="yii-debug-toolbar-label yii-debug-toolbar-label-error">error</span></a>
                 </div>
             <?php else: ?>

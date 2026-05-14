@@ -16,22 +16,17 @@ use function str_contains;
 /**
  * Typed view-model for one span row in the Timeline panel chart.
  *
- * Encapsulates the loose `array<string, mixed>` shape produced by {@see \yii\debug\models\timeline\DataProvider} into a
- * `final readonly` DTO so the renderer stays free of {@see is_array()} / {@see is_numeric()} narrowing on every cell
- * access.
+ * Narrows the loose `array<string, mixed>` shape produced by {@see \yii\debug\models\timeline\DataProvider} into typed
+ * properties, so the renderer stays free of {@see is_array()} / {@see is_numeric()} narrowing on every cell access.
  *
- * The category → CSS-variant mapping and the tooltip composition live here so the renderer ends up purely formatting.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * The category → CSS-variant mapping and the tooltip composition live here, so the renderer ends up purely formatting.
  */
 final readonly class TimelineSpanRow
 {
     public function __construct(
         /**
-         * Span category ({@see \yii\db\Command::query}, {@see \yii\base\Application::handleRequest}, ...).
-         *
-         * Empty when not captured.
+         * Span category ({@see \yii\db\Command::query}, {@see \yii\base\Application::handleRequest}, ...), or `''`
+         * when not captured.
          */
         public string $category,
         /**
@@ -43,29 +38,31 @@ final readonly class TimelineSpanRow
          */
         public int $depth,
         /**
-         * Bar 'left' offset on the chart, as a percentage string ('12.5') consumed by inline `style="left:<X>%"`.
+         * Bar `left` offset on the chart, as a percentage string (for example, `12.5`) consumed by inline
+         * `style="left:<X>%"`.
          */
         public string $cssLeft,
         /**
-         * Bar 'width' on the chart, as a percentage string with a '0.4%' floor so single-millisecond spans stay
+         * Bar `width` on the chart, as a percentage string with a `0.4%` floor so single-millisecond spans stay
          * visible.
          */
         public string $cssWidth,
         /**
-         * CSS variant token ('info' / 'success' / 'warning' / 'danger' / 'muted') derived from '$category'.
+         * CSS variant token (`info` / `success` / `warning` / `danger` / `muted`) derived from `$category`.
          */
         public string $variant,
         /**
-         * Pre-formatted `<title>` tooltip text combining category/info, duration, peak memory and memory delta.
+         * Pre-formatted `<title>` tooltip text combining category/info, duration, peak memory, and memory delta.
          */
         public string $tooltip,
     ) {}
 
     /**
-     * Narrows the loose array shape into a typed row. Computes the CSS variant, the tooltip text and clamps the bar
-     * width to the visible-floor ('0.4%').
+     * Narrows the loose array shape into a typed row.
      *
-     * @param array<string, mixed> $row
+     * Computes the CSS variant, the tooltip text, and clamps the bar width to the visible floor (`0.4%`).
+     *
+     * @param array<string, mixed> $row Source row.
      */
     public static function from(array $row): self
     {
@@ -94,24 +91,35 @@ final readonly class TimelineSpanRow
         );
     }
 
+    /**
+     * Coerces the value to a float, falling back to `0.0` when it is not numeric.
+     */
     private static function asFloat(mixed $value): float
     {
         return is_numeric($value) ? (float) $value : 0.0;
     }
 
+    /**
+     * Coerces the value to an int, falling back to `0` when it is not numeric.
+     */
     private static function asInt(mixed $value): int
     {
         return is_numeric($value) ? (int) $value : 0;
     }
 
+    /**
+     * Returns the value when it is already a string, falling back to `''` otherwise.
+     */
     private static function asString(mixed $value): string
     {
         return is_string($value) ? $value : '';
     }
 
     /**
-     * Composes the multi-line tooltip text. Memory delta is omitted when zero — matches the legacy view's
-     * `!empty($model['memoryDiff'])` guard so capture snapshots stay byte-equivalent.
+     * Composes the multi-line tooltip text.
+     *
+     * Memory delta is omitted when zero, matching the legacy view's `!empty($model['memoryDiff'])` guard so capture
+     * snapshots stay byte-equivalent.
      */
     private static function buildTooltip(string $heading, float $duration, float $memoryBytes, float $memoryDiff): string
     {
@@ -135,8 +143,8 @@ final readonly class TimelineSpanRow
     }
 
     /**
-     * Formats a numeric percentage value with a fixed three-decimal precision, dropping the trailing zeros so common
-     * round values render as '12' rather than '12.000'.
+     * Formats a numeric percentage value with three-decimal precision, dropping trailing zeros so common round values
+     * render as `12` rather than `12.000`.
      *
      * Matches the legacy {@see \yii\helpers\StringHelper::normalizeNumber()} output for the values the timeline
      * produces.
@@ -152,8 +160,10 @@ final readonly class TimelineSpanRow
     }
 
     /**
-     * Maps the span category to a CSS variant. Categories the matcher does not recognise fall back to 'muted' so
-     * unknown providers render in the neutral track styling.
+     * Maps the span category to a CSS variant.
+     *
+     * Categories the matcher does not recognize fall back to `muted`, so unknown providers render in the neutral
+     * track styling.
      */
     private static function variantOf(string $category): string
     {

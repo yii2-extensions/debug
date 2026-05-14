@@ -7,11 +7,8 @@ namespace yii\debug\panels\db;
 /**
  * Typed view-model for a single database query row consumed by the queries grid.
  *
- * Mirrors the shape produced by {@see \yii\debug\panels\DbPanel} (already typed) but exposes it through a concrete
- * class so GridView callbacks receive a fully narrowed value instead of the loose `mixed` argument PHPStan widens to.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Mirrors the shape produced by {@see \yii\debug\panels\DbPanel} after every value has been narrowed, so GridView
+ * callbacks read typed properties without further `mixed` narrowing.
  */
 final readonly class QueryRow
 {

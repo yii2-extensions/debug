@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\panels\log;
 
 /**
- * Typed view-model for the log-level totals shown in the detail view summary header.
+ * Typed view-model for the log-level totals shown in the detail view's summary header.
  *
  * Counts are computed over the raw `$panel->data['messages']` payload (positional log tuples) rather than the typed
- * grid models, because the summary spans all rows independently of the search filter.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * grid models, so the summary spans every captured row independently of the search filter.
  */
 final readonly class LogCounts
 {
@@ -34,16 +31,25 @@ final readonly class LogCounts
         public int $info,
     ) {}
 
+    /**
+     * Returns whether at least one `error`-level message was captured.
+     */
     public function hasErrors(): bool
     {
         return $this->errors > 0;
     }
 
+    /**
+     * Returns whether at least one `info`-level message was captured.
+     */
     public function hasInfo(): bool
     {
         return $this->info > 0;
     }
 
+    /**
+     * Returns whether at least one `warning`-level message was captured.
+     */
     public function hasWarnings(): bool
     {
         return $this->warnings > 0;

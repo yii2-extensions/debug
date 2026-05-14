@@ -12,9 +12,6 @@ use function substr;
  *
  * Multiple renderers (asset, queue) display the short class name next to a muted namespace prefix; this helper keeps
  * both views aligned on the same splitting rules.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class Fqcn
 {

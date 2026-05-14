@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\models\search\Log;
+use yii\debug\models\search\LogSearch;
 use yii\debug\panels\dump\{DumpCardRenderer, DumpRowNormalizer};
 use yii\debug\panels\DumpPanel;
 use yii\debug\widgets\FilterBanner;
@@ -13,7 +13,7 @@ use yii\grid\GridView;
 /**
  * @var ArrayDataProvider $dataProvider
  * @var DumpPanel $panel
- * @var Log $searchModel
+ * @var LogSearch $searchModel
  */
 ?>
     <h1 class="yii-debug-sr-only">Dump</h1>

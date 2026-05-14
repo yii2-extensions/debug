@@ -11,9 +11,6 @@ namespace yii\debug\panels\request;
  *
  * The view consumes only this DTO; every defensive {@see is_array()} / {@see is_string()} narrowing happens once in
  * {@see RequestDataNormalizer::fromPanelData()}.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class RequestView
 {
@@ -23,9 +20,8 @@ final readonly class RequestView
          */
         public RequestHero $hero,
         /**
-         * Tab view-models in display order; the first tab is rendered active by the section renderer.
-         *
-         * @var list<RequestTab>
+         * @var list<RequestTab> Tab view-models in display order; the first tab is rendered active by the section
+         * renderer.
          */
         public array $tabs,
     ) {}

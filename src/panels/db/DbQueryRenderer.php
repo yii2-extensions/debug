@@ -18,22 +18,14 @@ use function sprintf;
 /**
  * Renders the typed cells of the queries grid for the DB debug panel.
  *
- * Stateless static helpers — every method takes a typed {@see QueryRow} (and any extra context the cell needs) and
- * returns the rendered HTML. Keeps the GridView column closures in `panels/db/queries.php` short and free of `mixed`
+ * Stateless static helpers: every method takes a typed {@see QueryRow} (and any extra context the cell needs) and
+ * returns the rendered HTML, keeping the GridView column closures in `panels/db/queries.php` short and free of `mixed`
  * narrowing.
- *
- * Usage example:
- * ```php
- * 'value' => static fn(mixed $data): string => DbQueryRenderer::renderTypeCell(QueryRowNormalizer::from($data)),
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class DbQueryRenderer
 {
     /**
-     * Renders the duration formatted to one decimal millisecond.
+     * Renders the statement duration formatted as `N.N ms`.
      */
     public static function renderDurationCell(QueryRow $row): string
     {
@@ -41,12 +33,15 @@ final class DbQueryRenderer
     }
 
     /**
-     * Renders the SQL statement column with the optional trace list and EXPLAIN toggle.
+     * Renders the SQL statement column with its optional backtrace list and EXPLAIN toggle.
      *
-     * The caller resolves the EXPLAIN URL (typically via `Url::to(['db-explain', ...])`) so the renderer stays free of
-     * routing concerns and easy to test in isolation.
+     * The caller supplies an URL builder (typically `static fn(int $seq) => Url::to(['db-explain', 'seq' => $seq, ...])`)
+     * so the renderer stays free of routing concerns and easy to test in isolation.
      *
-     * @param callable(int): string $explainUrlBuilder Builds the EXPLAIN URL for the given query sequence.
+     * @param QueryRow $row Typed query record.
+     * @param DbPanel $panel Panel used to render each trace line.
+     * @param bool $hasExplain `true` when the active driver supports EXPLAIN for the row's statement type.
+     * @param callable(int): string $explainUrlBuilder Builds the EXPLAIN URL for the given query sequence index.
      */
     public static function renderQueryCell(
         QueryRow $row,
@@ -95,7 +90,7 @@ final class DbQueryRenderer
     }
 
     /**
-     * Renders the rows-affected cell. Returns an em dash when the driver did not report the count.
+     * Renders the rows-affected cell, falling back to an en dash (`–`) when the driver did not report the count.
      */
     public static function renderRowsCell(QueryRow $row): string
     {
@@ -103,11 +98,11 @@ final class DbQueryRenderer
             return '–';
         }
 
-        return $row->rows . ' ' . ($row->rows === 1 ? 'row' : 'rows');
+        return "{$row->rows} " . ($row->rows === 1 ? 'row' : 'rows');
     }
 
     /**
-     * Renders the `H:i:s.mmm` timestamp derived from the millisecond field.
+     * Renders the capture time as `H:i:s.mmm`, derived from the row's millisecond timestamp.
      */
     public static function renderTimeCell(QueryRow $row): string
     {
@@ -119,7 +114,7 @@ final class DbQueryRenderer
     }
 
     /**
-     * Renders the colored type pill (`SELECT`, `INSERT`, ...).
+     * Renders the colored statement-type pill (`SELECT`, `INSERT`, `UPDATE`, ...).
      */
     public static function renderTypeCell(QueryRow $row): string
     {

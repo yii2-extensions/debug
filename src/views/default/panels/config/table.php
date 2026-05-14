@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use yii\helpers\Html;
+use UIAwesome\Html\Helper\Encode;
 
 /** @var string $caption */
 /** @var array<int|string, mixed> $values */
@@ -25,8 +25,8 @@ use yii\helpers\Html;
             <tbody>
             <?php foreach ($values as $name => $value): ?>
                 <tr>
-                    <th style="white-space: normal"><?= Html::encode((string) $name) ?></th>
-                    <td style="overflow:auto"><?= Html::encode(is_scalar($value) ? (string) $value : '') ?></td>
+                    <th style="white-space: normal"><?= Encode::content((string) $name) ?></th>
+                    <td style="overflow:auto"><?= Encode::content(is_scalar($value) ? (string) $value : '') ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

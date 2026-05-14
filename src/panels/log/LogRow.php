@@ -9,9 +9,6 @@ namespace yii\debug\panels\log;
  *
  * Mirrors the shape produced by {@see \yii\debug\panels\LogPanel::getModels()} after every value has been narrowed,
  * including the originally-`mixed` message converted to a display string at normalize time.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class LogRow
 {
@@ -37,8 +34,8 @@ final readonly class LogRow
          */
         public float $time,
         /**
-         * Capture timestamp of the previous log row (also in milliseconds), or the same value as `$time` for the
-         * first row of the request.
+         * Capture timestamp of the previous log row (also in milliseconds), or the same value as `$time` for the first
+         * row of the request.
          */
         public float $timeOfPrevious,
         /**

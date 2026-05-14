@@ -11,7 +11,8 @@ use UIAwesome\Html\Phrasing\{Em, Label, Span, Strong};
 use UIAwesome\Html\Root\{Footer, Header};
 use UIAwesome\Html\Sectioning\Section;
 use yii\debug\helpers\Format;
-use yii\debug\models\timeline\{DataProvider, Search, Svg};
+use yii\debug\models\search\TimelineSearch;
+use yii\debug\models\timeline\{DataProvider, Svg};
 use yii\debug\panels\TimelinePanel;
 use yii\helpers\Url;
 
@@ -23,27 +24,18 @@ use function rtrim;
 use function sprintf;
 
 /**
- * Renders the Timeline panel detail view on top of `ui-awesome/html` builders.
+ * Renders the Timeline panel detail view.
  *
- * Stateless static helpers; the public entry points take the typed `TimelinePanel` plus the search model and data
- * provider and return ready-to-echo HTML strings. Concentrates summary header layout, filter-form wiring, chart row
- * iteration, ruler axis, memory footer composition and the empty/short-request hint in one testable place.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\panels\timeline\TimelineRenderer::renderSummary($panel, $dataProvider);
- * echo \yii\debug\panels\timeline\TimelineRenderer::renderFilterForm($panel, $searchModel);
- * echo \yii\debug\panels\timeline\TimelineRenderer::renderChart($panel, $dataProvider);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: the public entry points take the typed `TimelinePanel` plus the search model and data
+ * provider and return ready-to-echo HTML strings. Concentrates summary header layout, filter-form wiring, chart-row
+ * iteration, ruler axis, memory footer composition, and the empty/short-request hint in one testable place.
  */
 final class TimelineRenderer
 {
     /**
-     * Renders the timeline chart (ruler axis + per-span rows + optional memory footer); returns empty string when the
-     * data provider has no spans so the empty hint can take over without duplicate markup.
+     * Renders the timeline chart: ruler axis, per-span rows, and the optional memory footer.
+     *
+     * Returns `''` when the data provider has no spans, so the empty hint can take over without duplicate markup.
      */
     public static function renderChart(TimelinePanel $panel, DataProvider $dataProvider): string
     {
@@ -69,9 +61,10 @@ final class TimelineRenderer
     }
 
     /**
-     * Renders the empty-state hint surfaced when no spans matched the active filter. The hint points the developer at
-     * the Profiling panel which presents the same data as a sortable list. Returns empty string when the chart has data
-     * the chart already conveys the request shape.
+     * Renders the empty-state hint surfaced when no spans matched the active filter.
+     *
+     * The hint points the developer at the Profiling panel, which presents the same data as a sortable list. Returns
+     * `''` when the chart already has data, since the chart itself conveys the request shape.
      */
     public static function renderEmptyHint(TimelinePanel $panel, DataProvider $dataProvider): string
     {
@@ -107,10 +100,11 @@ final class TimelineRenderer
     }
 
     /**
-     * Renders the filter form (min-duration number + category text + apply button). Hidden inputs preserve 'r' /
-     * 'panel' / 'tag' so submitting the form lands back on the current snapshot.
+     * Renders the filter form: min-duration number, category text, and the Apply button.
+     *
+     * Hidden inputs preserve `r` / `panel` / `tag`, so submitting the form lands back on the current snapshot.
      */
-    public static function renderFilterForm(TimelinePanel $panel, Search $searchModel): string
+    public static function renderFilterForm(TimelinePanel $panel, TimelineSearch $searchModel): string
     {
         return Form::tag()
             ->action(Url::to($panel->getUrl()))
@@ -134,7 +128,7 @@ final class TimelineRenderer
                         InputNumber::tag()
                             ->id('tl-duration')
                             ->min(0)
-                            ->name('Search[duration]')
+                            ->name('TimelineSearch[duration]')
                             ->placeholder('0')
                             ->step(0.1)
                             ->value($searchModel->duration),
@@ -147,7 +141,7 @@ final class TimelineRenderer
                             ->for('tl-category'),
                         InputText::tag()
                             ->id('tl-category')
-                            ->name('Search[category]')
+                            ->name('TimelineSearch[category]')
                             ->placeholder('yii\\db\\Command::query')
                             ->value($searchModel->category),
                     ),
@@ -161,7 +155,7 @@ final class TimelineRenderer
     }
 
     /**
-     * Renders the top summary header (total ms + peak memory + span count).
+     * Renders the top summary header: total milliseconds, peak memory, and span count.
      */
     public static function renderSummary(TimelinePanel $panel, DataProvider $dataProvider): string
     {
@@ -181,6 +175,9 @@ final class TimelineRenderer
             ->render();
     }
 
+    /**
+     * Formats a numeric value as a percentage string with up to three decimals, dropping trailing zeros.
+     */
     private static function percent(float|int|string $value): string
     {
         $float = (float) $value;
@@ -193,7 +190,7 @@ final class TimelineRenderer
     }
 
     /**
-     * Renders the ruler axis (top tick strip with `Xms` labels positioned via inline `left:<pct>%`).
+     * Renders the ruler axis: the top tick strip with `Xms` labels positioned via inline `left:<pct>%`.
      */
     private static function renderAxis(DataProvider $dataProvider): Header
     {
@@ -212,7 +209,7 @@ final class TimelineRenderer
     }
 
     /**
-     * Renders the memory footer (track + SVG memory line + peak-memory chip).
+     * Renders the memory footer: track, inline SVG memory line, and the peak-memory chip.
      */
     private static function renderMemoryFooter(TimelinePanel $panel, Svg $svg): Footer
     {
@@ -235,8 +232,10 @@ final class TimelineRenderer
     }
 
     /**
-     * Renders one span row (label column with depth indent + dot + name; track column with the positioned bar and
-     * its inline duration chip).
+     * Renders one span row.
+     *
+     * The label column shows the depth indent, dot, and name; the track column shows the positioned bar with its
+     * inline duration chip.
      */
     private static function renderRow(TimelineSpanRow $row): Div
     {

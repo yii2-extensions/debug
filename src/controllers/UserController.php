@@ -7,25 +7,26 @@ namespace yii\debug\controllers;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\models\UserSwitch;
-use yii\web\BadRequestHttpException;
-use yii\web\Controller;
-use yii\web\Response;
-use yii\web\User;
+use yii\web\{BadRequestHttpException, Controller, Response, User};
 
 use function is_int;
 use function is_string;
 
 /**
- * User controller for switching user identity in debug mode.
+ * Drives the user-impersonation workflow exposed by the User Switch debug panel.
+ *
+ * Provides JSON endpoints to swap the active identity to an impersonated user (`set-identity`) and to restore the
+ * original identity captured before the swap (`reset-identity`). Every action requires an active session, enforced in
+ * {@see beforeAction()}.
  */
 class UserController extends Controller
 {
     /**
-     * Reset identity, switch to main user.
+     * Restores the original identity captured before the impersonation swap.
      *
-     * @throws InvalidConfigException if the user component is not properly configured.
+     * @throws InvalidConfigException When the user component is not properly configured.
      *
-     * @return User Current user after resetting identity.
+     * @return User User component reflecting the restored identity.
      */
     public function actionResetIdentity(): User
     {
@@ -37,12 +38,12 @@ class UserController extends Controller
     }
 
     /**
-     * Set new identity, switch user.
+     * Switches the active identity to the user resolved from the posted `user_id`.
      *
-     * @throws BadRequestHttpException if the user_id parameter is missing or invalid, or if the identity class is not
-     * properly configured, or if the identity cannot be found.
+     * @throws BadRequestHttpException When the `user_id` parameter is missing or not a scalar, the identity class is
+     * not configured, or the identity cannot be found.
      *
-     * @return User Current user after setting new identity.
+     * @return User User component reflecting the new impersonated identity.
      */
     public function actionSetIdentity(): User
     {
@@ -78,14 +79,18 @@ class UserController extends Controller
     }
 
     /**
-     * @throws BadRequestHttpException if there is no active session.
+     * Forces the response format to JSON and requires an active session before delegating to the parent guard.
+     *
+     * @throws BadRequestHttpException When the current request has no active session.
      */
     public function beforeAction($action): bool
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         if (!Yii::$app->session->hasSessionId) {
-            throw new BadRequestHttpException('Need an active session');
+            throw new BadRequestHttpException(
+                'Need an active session',
+            );
         }
 
         return parent::beforeAction($action);

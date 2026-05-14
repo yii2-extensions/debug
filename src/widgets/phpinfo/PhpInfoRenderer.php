@@ -17,12 +17,12 @@ use yii\debug\helpers\Icon;
 use function count;
 
 /**
- * Renders the phpinfo page on top of `ui-awesome/html` builders.
+ * Renders the phpinfo page.
  *
- * Stateless static helpers; the public entry point takes a typed {@see PhpInfoView} and emits the shell (TOC sidebar
- * + main column with the search input, the Overview hero, the Configure Command details disclosure and the modules
- * HTML). Per-section / per-tile rendering branches live in private helpers so the view template collapses to a single
- * `render` call.
+ * Stateless static helpers: the public entry point takes a typed {@see PhpInfoView} and emits the shell (TOC sidebar
+ * + main column with the search input, the Overview hero, the Configure Command details disclosure, and the modules
+ * HTML). Per-section / per-tile rendering branches live in private helpers, so the view template collapses to a single
+ * `render()` call.
  *
  * Usage example:
  * ```php

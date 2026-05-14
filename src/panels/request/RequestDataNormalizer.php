@@ -16,23 +16,13 @@ use function sprintf;
  * Narrows the loosely-typed `$panel->data` payload (alongside the controller summary array) into the typed
  * {@see RequestView} the detail view consumes.
  *
- * Concentrates every `is_array()` / `is_string()` / `is_int()` defensive check in one place so the view stays focused
- * on rendering and the PHPStan baseline can drop its `Cannot access offset ... on mixed` entries.
- *
- * Usage example:
- * ```php
- * $view = \yii\debug\panels\request\RequestDataNormalizer::fromPanelData($panel->data, $summary);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Concentrates every `is_array()` / `is_string()` / `is_int()` defensive check in one place, so the view stays focused
+ * on rendering.
  */
 final class RequestDataNormalizer
 {
     /**
-     * Active boolean flags surfaced as chips on the hero meta strip. The map preserves display order.
-     *
-     * @var array<string, string>
+     * @var array<string, string> Boolean flags surfaced as chips on the hero meta strip, in display order.
      */
     private const array FLAG_LABELS = [
         'isAjax' => 'AJAX',
@@ -44,7 +34,8 @@ final class RequestDataNormalizer
     /**
      * Narrows `$panel->data` plus the controller `$summary` into the typed {@see RequestView}.
      *
-     * @param array<string, mixed> $summary
+     * @param mixed $data Raw value of {@see \yii\debug\panels\RequestPanel::$data}.
+     * @param array<string, mixed> $summary Controller summary block accompanying the panel data.
      */
     public static function fromPanelData(mixed $data, array $summary): RequestView
     {
@@ -57,15 +48,18 @@ final class RequestDataNormalizer
     }
 
     /**
-     * Narrows a `mixed` saved-payload bucket into a name → value array; non-array buckets fall back to empty.
+     * Narrows a `mixed` saved-payload bucket into a name → value array, falling back to `[]` for non-array buckets.
      *
-     * @return array<int|string, mixed>
+     * @return array<int|string, mixed> Bucket entries preserving the original keys.
      */
     private static function asEntries(mixed $value): array
     {
         return is_array($value) ? $value : [];
     }
 
+    /**
+     * Coerces the value to an int, falling back to `0` when it is neither an int nor a numeric string.
+     */
     private static function asInt(mixed $value): int
     {
         if (is_int($value)) {
@@ -75,14 +69,19 @@ final class RequestDataNormalizer
         return is_numeric($value) ? (int) $value : 0;
     }
 
+    /**
+     * Returns the value when it is already a string, falling back to `''` otherwise.
+     */
     private static function asString(mixed $value): string
     {
         return is_string($value) ? $value : '';
     }
 
     /**
-     * @param array<int|string, mixed> $data
-     * @param array<string, mixed> $summary
+     * Builds the hero header view-model from the panel data and the controller summary.
+     *
+     * @param array<int|string, mixed> $data Panel data narrowed to an array.
+     * @param array<string, mixed> $summary Controller summary block.
      */
     private static function buildHero(array $data, array $summary): RequestHero
     {
@@ -127,9 +126,14 @@ final class RequestDataNormalizer
     }
 
     /**
-     * @param array<int|string, mixed> $data
+     * Builds the tab list, conditionally including the Session and Server tabs based on the captured payload.
      *
-     * @return list<RequestTab>
+     * The Session tab is only surfaced when the request actually had a session active, matching the legacy behavior
+     * where only requests that touched `$_SESSION` exposed the panel section.
+     *
+     * @param array<int|string, mixed> $data Panel data narrowed to an array.
+     *
+     * @return list<RequestTab> Tabs in display order.
      */
     private static function buildTabs(array $data): array
     {
@@ -138,8 +142,6 @@ final class RequestDataNormalizer
             new RequestTab(label: 'Headers', sections: self::headerSections($data)),
         ];
 
-        // The Session tab is only surfaced when the request actually had a session active; matches the legacy behaviour
-        // where only requests that touched `$_SESSION` exposed the panel section.
         if (array_key_exists('SESSION', $data) && array_key_exists('flashes', $data)) {
             $tabs[] = new RequestTab(
                 label: 'Session',
@@ -164,9 +166,11 @@ final class RequestDataNormalizer
     }
 
     /**
-     * @param array<int|string, mixed> $data
+     * Builds the sections rendered under the Headers tab (request + response headers).
      *
-     * @return list<RequestSection>
+     * @param array<int|string, mixed> $data Panel data narrowed to an array.
+     *
+     * @return list<RequestSection> Header sections in display order.
      */
     private static function headerSections(array $data): array
     {
@@ -185,9 +189,11 @@ final class RequestDataNormalizer
     }
 
     /**
-     * @param array<int|string, mixed> $data
+     * Builds the sections rendered under the Parameters tab (routing, GET/POST/FILES/COOKIE, request body).
      *
-     * @return list<RequestSection>
+     * @param array<int|string, mixed> $data Panel data narrowed to an array.
+     *
+     * @return list<RequestSection> Parameter sections in display order.
      */
     private static function parameterSections(array $data): array
     {
@@ -239,9 +245,11 @@ final class RequestDataNormalizer
     }
 
     /**
-     * @param array<int|string, mixed> $data
+     * Builds the sections rendered under the Session tab (session data + flashes).
      *
-     * @return list<RequestSection>
+     * @param array<int|string, mixed> $data Panel data narrowed to an array.
+     *
+     * @return list<RequestSection> Session sections in display order.
      */
     private static function sessionSections(array $data): array
     {
@@ -258,6 +266,9 @@ final class RequestDataNormalizer
         ];
     }
 
+    /**
+     * Resolves the status-pill CSS modifier (`success` / `muted` / `warning` / `danger`) for the given HTTP status.
+     */
     private static function statusVariant(int $statusCode): string
     {
         return match (true) {

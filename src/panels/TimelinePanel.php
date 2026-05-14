@@ -8,22 +8,25 @@ use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\helpers\Coerce;
-use yii\debug\models\timeline\{Search, Svg};
+use yii\debug\models\search\TimelineSearch;
+use yii\debug\models\timeline\Svg;
 use yii\debug\Panel;
 
 use function is_array;
 use function is_string;
 
 /**
- * Debugger panel that collects and displays timeline data.
+ * Captures the request's profile spans and renders them as a horizontal timeline chart.
+ *
+ * Joins the request start/end captured at `save()` time with the profile messages from {@see ProfilingPanel} to build
+ * the per-span timeline, color-codes each bar based on its share of the total duration, and exposes an inline SVG
+ * memory-usage line through {@see getSvg()}.
  */
 class TimelinePanel extends Panel
 {
     /**
-     * @var array<int, string> Color indicators item profile.
-     *
-     * - keys: percentages of time request
-     * - values: hex color
+     * @var array<int, string> Color indicators keyed by percentage threshold of total request time, valued by hex
+     * color; bars whose width is greater than or equal to the threshold render in that color.
      */
     private array $colors = [
         1 => '#8cc665',
@@ -31,50 +34,52 @@ class TimelinePanel extends Panel
         20 => '#1e6823',
     ];
     /**
-     * Request duration, milliseconds
+     * Request duration in milliseconds (resolved from the Profiling panel when available, otherwise `end - start`).
      */
     private float $duration = 0.0;
     /**
-     * End request, timestamp (obtained by microtime(true))
+     * Request end timestamp, in milliseconds since the Unix epoch.
      */
     private float $end = 0.0;
     /**
-     * Used memory in request
+     * Peak memory usage in bytes (captured via {@see memory_get_peak_usage()}).
      */
     private int $memory = 0;
     /**
-     * @var array<int, array<string, mixed>>|null Log messages extracted to array as models, to use with data provider.
+     * @var array<int, array<string, mixed>>|null Cached typed span rows consumed by the timeline chart.
      */
     private array|null $models = null;
     /**
-     * Start request, timestamp (obtained by microtime(true))
+     * Request start timestamp, in milliseconds since the Unix epoch.
      */
     private float $start = 0.0;
     /**
-     * SVG factory instance for rendering timeline graph.
+     * Memoized SVG renderer, instantiated lazily by {@see getSvg()}.
      */
     private Svg|null $svg = null;
     /**
-     * @var array<string, mixed>
+     * @var array<string, mixed> Constructor configuration merged into the SVG renderer at {@see getSvg()} time.
      */
     private array $svgOptions = [
         'class' => Svg::class,
     ];
 
     /**
-     * Color indicators item profile,
-     * key: percentages of time request, value: hex color
+     * Returns the color indicators keyed by percentage threshold and valued by hex color.
      *
-     * @return array<int, string>
+     * @return array<int, string> Color map in `percent => #hex` order.
      */
     public function getColors(): array
     {
         return $this->colors;
     }
 
+    /**
+     * Renders the detail view with the timeline chart and the filter form.
+     */
     public function getDetail(): string
     {
-        $searchModel = new Search();
+        $searchModel = new TimelineSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this);
 
         return Yii::$app->view->render(
@@ -88,7 +93,7 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Request duration, milliseconds.
+     * Returns the total request duration in milliseconds.
      */
     public function getDuration(): float
     {
@@ -96,7 +101,7 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Memory peak in request, bytes. (obtained by memory_get_peak_usage()).
+     * Returns the peak memory usage in bytes.
      */
     public function getMemory(): int
     {
@@ -104,13 +109,13 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Returns an array of models that represents logs of the current request.
+     * Builds and caches the typed span rows consumed by the timeline chart.
      *
-     * Can be used with data providers, such as {@see \yii\data\ArrayDataProvider}.
+     * Suitable for {@see \yii\data\ArrayDataProvider}.
      *
-     * @param bool $refresh if need to build models from log messages and refresh them.
+     * @param bool $refresh `true` to rebuild the cache from the profile messages.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> Span rows in capture order.
      */
     public function getModels(bool $refresh = false): array
     {
@@ -131,13 +136,16 @@ class TimelinePanel extends Panel
         return $this->models;
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Timeline';
     }
 
     /**
-     * Start request, timestamp (obtained by microtime(true))
+     * Returns the request start timestamp in milliseconds since the Unix epoch.
      */
     public function getStart(): float
     {
@@ -145,7 +153,10 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * @throws InvalidConfigException
+     * Returns the memoized SVG renderer, instantiating it lazily on first call.
+     *
+     * @throws InvalidConfigException When `svgOptions['class']` does not extend {@see Svg}, or the container produces
+     * something else.
      */
     public function getSvg(): Svg
     {
@@ -155,7 +166,9 @@ class TimelinePanel extends Panel
             $class = Coerce::stringOrNull($this->svgOptions['class'] ?? null) ?? Svg::class;
 
             if (!is_a($class, Svg::class, true)) {
-                throw new InvalidConfigException('Timeline SVG class must extend ' . Svg::class . '.');
+                throw new InvalidConfigException(
+                    'Timeline SVG class must extend ' . Svg::class . '.',
+                );
             }
 
             $config = $this->svgOptions;
@@ -179,30 +192,45 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * @return array<string, mixed>
+     * Returns the constructor configuration that will be applied to the SVG renderer.
+     *
+     * @return array<string, mixed> Configuration carrying the `class` key plus any merged options.
      */
     public function getSvgOptions(): array
     {
         return $this->svgOptions;
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'timeline';
     }
 
     /**
-     * @throws InvalidConfigException if the profiling panel is not found in the module configuration.
+     * Verifies that the {@see ProfilingPanel} is registered before delegating to the parent initializer.
+     *
+     * @throws InvalidConfigException When the profiling panel is not registered on the module.
      */
     public function init(): void
     {
         if ($this->module === null || !isset($this->module->panels['profiling'])) {
-            throw new InvalidConfigException('Unable to determine the profiling panel');
+            throw new InvalidConfigException(
+                'Unable to determine the profiling panel',
+            );
         }
 
         parent::init();
     }
 
+    /**
+     * Hydrates the panel from the saved snapshot: resolves the request start/end, computes the duration (preferring
+     * the Profiling panel's authoritative time when available), and records the peak memory.
+     *
+     * @throws RuntimeException When any of `start`, `end`, `memory`, or the derived `duration` is missing or invalid.
+     */
     public function load(mixed $data): void
     {
         if (!is_array($data)) {
@@ -257,22 +285,25 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * @return array{start: float, end: float, memory: int}
+     * Snapshots the request start (`$_SERVER['REQUEST_TIME_FLOAT']` with `microtime(true)` fallback), end, and peak
+     * memory.
+     *
+     * @return array{start: float, end: float, memory: int} Captured payload consumed by {@see load()} on read-back.
      */
     public function save(): array
     {
         return [
-            'start' => Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? YII_BEGIN_TIME,
+            'start' => Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? microtime(true),
             'end' => microtime(true),
             'memory' => memory_get_peak_usage(),
         ];
     }
 
     /**
-     * Sets color indicators.
-     * key: percentages of time request, value: hex color
+     * Sets the color indicators map (`percent => #hex`), sorted in descending percentage order on assignment so
+     * {@see getColors()} returns the most specific threshold first.
      *
-     * @param array<int|string, mixed> $colors
+     * @param array<int|string, mixed> $colors Color map to apply; non-string values are dropped.
      */
     public function setColors(array $colors): void
     {
@@ -280,7 +311,10 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $options
+     * Merges the given options into {@see $svgOptions} and resets the memoized renderer, so the next {@see getSvg()}
+     * call rebuilds it with the updated configuration.
+     *
+     * @param array<string, mixed> $options Options to merge.
      */
     public function setSvgOptions(array $options): void
     {
@@ -295,7 +329,10 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * @return array<int, array<int|string, mixed>>
+     * Returns the saved profile messages from the {@see ProfilingPanel}, used to build the timeline spans.
+     *
+     * @return array<int, array<int|string, mixed>> Profile messages in capture order, or `[]` when the panel is not
+     * registered or has no captured data.
      */
     private function getProfilingMessages(): array
     {
@@ -308,6 +345,10 @@ class TimelinePanel extends Panel
         return self::normalizeMessages($profilingPanel->data['messages'] ?? []);
     }
 
+    /**
+     * Returns the authoritative request duration captured by the {@see ProfilingPanel}, in seconds, or `null` when
+     * unavailable.
+     */
     private function getProfilingTime(): float|null
     {
         $profilingPanel = $this->module?->panels['profiling'] ?? null;
@@ -320,9 +361,12 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * @param array<int|string, mixed> $colors
+     * Narrows the input map to `int => string` entries and sorts by descending percentage so the most specific
+     * threshold sits first.
      *
-     * @return array<int, string>
+     * @param array<int|string, mixed> $colors Raw color map.
+     *
+     * @return array<int, string> Sorted color map keyed by percentage threshold.
      */
     private static function normalizeColors(array $colors): array
     {
@@ -340,9 +384,11 @@ class TimelinePanel extends Panel
     }
 
     /**
+     * Filters the raw profile messages to keep only array entries.
+     *
      * @param mixed $messages Raw profiling messages.
      *
-     * @return array<int, array<int|string, mixed>>
+     * @return array<int, array<int|string, mixed>> Reindexed list of message arrays.
      */
     private static function normalizeMessages(mixed $messages): array
     {
@@ -362,9 +408,12 @@ class TimelinePanel extends Panel
     }
 
     /**
+     * Narrows a raw timing returned by the Yii logger into the typed span-row shape, returning `null` when either
+     * `timestamp` or `duration` is missing or non-numeric.
+     *
      * @param mixed $timing Raw timing returned by Yii logger.
      *
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>|null Normalized span row, or `null` when the input was incomplete.
      */
     private static function normalizeTiming(mixed $timing): array|null
     {

@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\timeline;
 
 use RuntimeException;
@@ -20,12 +14,15 @@ use function is_array;
 use function is_numeric;
 
 /**
- * Svg renders the memory-usage graph as an inline SVG.
+ * Renders the timeline panel's memory-usage graph as an inline SVG.
+ *
+ * Plots memory samples drawn from the log and profiling panels onto a polyline/polygon pair, with a gradient fill keyed
+ * by percentage thresholds. The graph is stringified through {@see __toString()} so the view can embed it inline.
  */
 class Svg extends BaseObject
 {
     /**
-     * Color stops for the gradient fill, keyed by percentage threshold.
+     * Gradient color stops keyed by percentage threshold of total memory.
      *
      * @var array<int, string>
      */
@@ -36,35 +33,36 @@ class Svg extends BaseObject
         100 => '#1e6823',
     ];
     /**
-     * Identifiers of the panels whose log messages feed the graph.
+     * Panel IDs whose log messages feed the graph.
      *
      * @var list<string>
      */
     public array $listenMessages = ['log', 'profiling'];
     /**
-     * Stroke color for the polyline.
+     * Stroke color for the rendered polyline.
      */
     public string $stroke = '#1e6823';
     /**
-     * Maximum X coordinate of the canvas.
+     * Canvas width in user units.
      */
     public int $x = 1920;
     /**
-     * Maximum Y coordinate of the canvas.
+     * Canvas height in user units.
      */
     public int $y = 40;
 
     protected TimelinePanel|null $panel = null;
 
     /**
-     * Plotted points; each entry is a `[x, y]` coordinate pair.
+     * Plotted points, each entry an `[x, y]` coordinate pair.
      *
      * @var list<array{0: float, 1: float}>
      */
     protected array $points = [];
 
     /**
-     * @param array<string, mixed> $config
+     * @param TimelinePanel $panel Panel providing total memory, request start, and total duration.
+     * @param array<string, mixed> $config Standard {@see BaseObject} configuration.
      */
     public function __construct(TimelinePanel $panel, array $config = [])
     {
@@ -135,9 +133,12 @@ class Svg extends BaseObject
     /**
      * Appends plotted points sourced from a panel's log messages.
      *
+     * Stops at the first message whose shape is invalid (missing timestamp/memory entries), to avoid plotting
+     * partially-populated traces.
+     *
      * @param array<array-key, mixed> $messages Log messages with the structure documented in {@see Logger::messages}.
      *
-     * @return int Number of points added.
+     * @return int Number of points actually appended.
      */
     protected function addPoints(array $messages): int
     {
@@ -206,7 +207,9 @@ class Svg extends BaseObject
     }
 
     /**
-     * Returns the bound {@see TimelinePanel}, asserting that it has been set by the constructor.
+     * Returns the bound {@see TimelinePanel}, asserting that the constructor wired it.
+     *
+     * @throws RuntimeException When the panel was somehow cleared after construction.
      */
     private function panel(): TimelinePanel
     {

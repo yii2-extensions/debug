@@ -19,21 +19,11 @@ use function implode;
 use function is_string;
 
 /**
- * Renders the typed sections of the Configuration panel detail view on top of `ui-awesome/html` builders.
+ * Renders the typed sections of the Configuration panel detail view.
  *
- * Stateless static helpers; every method takes the data it needs as arguments and returns a UIAwesome component tree.
- *
- * Keeps the detail view focused on page-level scaffolding while concentrating render logic (readout cards, extension
- * pills, package list, php-info CTA) in one testable place.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\panels\config\ConfigCardRenderer::renderReadoutGrid($summary);
- * echo \yii\debug\panels\config\ConfigCardRenderer::renderPhpExtensionsSection($summary->php);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: every method takes the data it needs as arguments and returns the rendered HTML tree.
+ * Concentrates the render logic (readout cards, extension pills, package list, php-info CTA) in one testable place,
+ * keeping the detail view focused on page-level scaffolding.
  */
 final class ConfigCardRenderer
 {
@@ -71,8 +61,8 @@ final class ConfigCardRenderer
     }
 
     /**
-     * Renders the `Installed extensions` section, or returns `null` when the roster is empty so the caller can omit
-     * the wrapper entirely.
+     * Renders the Installed extensions section, or returns `null` when the roster is empty so the caller can omit the
+     * wrapper entirely.
      */
     public static function renderInstalledExtensionsSection(ConfigSummary $summary): Section|null
     {
@@ -195,8 +185,10 @@ final class ConfigCardRenderer
     }
 
     /**
-     * Adds the `Locale::getDisplayLanguage()` / `getDisplayRegion()` suffix to a BCP-47 tag when `ext-intl` is
-     * available. Falls back to the locale itself, or the em-dash placeholder when empty.
+     * Returns a BCP-47 tag annotated with its English display name when `ext-intl` is available.
+     *
+     * Falls back to the locale itself when `ext-intl` is missing, or to the em-dash placeholder when the locale is
+     * empty.
      */
     private static function formatLanguage(string $locale): string
     {
@@ -220,7 +212,9 @@ final class ConfigCardRenderer
     }
 
     /**
-     * @return list<Span>
+     * Builds the four decorative corner glyphs that frame every readout card.
+     *
+     * @return list<Span> Corner spans in `tl`, `tr`, `bl`, `br` order.
      */
     private static function renderCorners(): array
     {
@@ -233,6 +227,9 @@ final class ConfigCardRenderer
         );
     }
 
+    /**
+     * Renders one `<dt>term</dt><dd>value</dd>` row inside the application-details description list.
+     */
     private static function renderDlRow(string $term, string $value): Div
     {
         return Div::tag()
@@ -245,6 +242,9 @@ final class ConfigCardRenderer
             );
     }
 
+    /**
+     * Renders one extension pill with an on/off state and a label.
+     */
     private static function renderExtensionPill(string $name, bool $enabled): Span
     {
         return Span::tag()
@@ -262,6 +262,9 @@ final class ConfigCardRenderer
             );
     }
 
+    /**
+     * Renders one installed-package item with its name and version.
+     */
     private static function renderPackageItem(string $name, string $version): Article
     {
         return Article::tag()

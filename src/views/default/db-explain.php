@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use yii\helpers\Html;
+use UIAwesome\Html\Helper\Encode;
 
 /**
  * @var \yii\web\View $this
@@ -19,7 +19,7 @@ $columns = $resultList === [] ? [] : array_keys($resultList[0]);
     <h1 class="yii-debug-explain-title">EXPLAIN</h1>
 
     <?php if ($query !== ''): ?>
-        <pre class="yii-debug-explain-query"><?= Html::encode($query) ?></pre>
+        <pre class="yii-debug-explain-query"><?= Encode::content($query) ?></pre>
     <?php endif; ?>
 
     <?php if ($results === []): ?>
@@ -30,7 +30,7 @@ $columns = $resultList === [] ? [] : array_keys($resultList[0]);
                 <thead>
                     <tr>
                         <?php foreach ($columns as $column): ?>
-                            <th><?= Html::encode($column) ?></th>
+                            <th><?= Encode::content($column) ?></th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>
@@ -39,7 +39,7 @@ $columns = $resultList === [] ? [] : array_keys($resultList[0]);
                         <tr>
                             <?php foreach ($columns as $column): ?>
                                 <?php $value = $row[$column] ?? null; ?>
-                                <td><?= $value === null || $value === '' ? '<em>NULL</em>' : Html::encode((string) $value) ?></td>
+                                <td><?= $value === null || $value === '' ? '<em>NULL</em>' : Encode::content((string) $value) ?></td>
                             <?php endforeach; ?>
                         </tr>
                     <?php endforeach; ?>

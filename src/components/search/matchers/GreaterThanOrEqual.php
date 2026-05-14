@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace yii\debug\components\search\matchers;
 
 /**
- * Checks if the given value is greater than or equal the base one.
+ * Matches candidate values greater than or equal to the configured base value.
  */
 class GreaterThanOrEqual extends Base
 {
     /**
-     * Checks if the given value is greater than or equal the base one.
+     * Returns whether the candidate is greater than or equal to the base value.
      *
-     * @param mixed $value Value to check.
+     * @param mixed $value Candidate value to test.
      *
-     * @return bool `true` if the given value is greater than or equal the base one, `false` otherwise.
+     * @return bool `true` when `$value >= $baseValue`, `false` otherwise.
      */
     public function match(mixed $value): bool
     {

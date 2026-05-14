@@ -9,11 +9,8 @@ use function is_string;
 /**
  * Typed view-model for one row in the Current Route rules-tested log table.
  *
- * Encapsulates the `array<string, mixed>` entries inside {@see \yii\debug\models\router\CurrentRoute::$logs} so the
+ * Encapsulates the `array<string, mixed>` entries inside {@see \yii\debug\models\router\CurrentRoute::$logs}, so the
  * detail view stays free of {@see is_array()} / {@see is_string()} narrowing.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class CurrentRouteLogRow
 {
@@ -23,7 +20,7 @@ final readonly class CurrentRouteLogRow
          */
         public string $rule,
         /**
-         * Parent rule ({@see \yii\rest\UrlRule} for nested REST rules); empty when there is no parent.
+         * Parent rule ({@see \yii\rest\UrlRule} for nested REST rules), or `''` when there is no parent.
          */
         public string $parent,
         /**
@@ -35,7 +32,7 @@ final readonly class CurrentRouteLogRow
     /**
      * Narrows the loose array shape into a typed row.
      *
-     * @param array<string, mixed> $row
+     * @param array<string, mixed> $row Source row.
      */
     public static function from(array $row): self
     {
@@ -46,6 +43,9 @@ final readonly class CurrentRouteLogRow
         );
     }
 
+    /**
+     * Returns the value when it is already a string, falling back to `''` otherwise.
+     */
     private static function asString(mixed $value): string
     {
         return is_string($value) ? $value : '';

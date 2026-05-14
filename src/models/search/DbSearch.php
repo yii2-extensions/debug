@@ -2,32 +2,26 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 
 /**
- * Search model for current request database queries.
+ * Backs the filter form above the Database panel's query grid.
  */
-class Db extends Base
+class DbSearch extends Base
 {
     /**
-     * Query attribute input search value.
+     * Submitted value for the `query` filter (substring match against the SQL text).
      */
     public string $query = '';
     /**
-     * Type of the input search value.
+     * Submitted value for the `type` filter (substring match against the statement type).
      */
     public string $type = '';
 
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'type' => 'Type',
@@ -35,7 +29,7 @@ class Db extends Base
         ];
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
             [['type', 'query'], 'safe'],
@@ -43,11 +37,11 @@ class Db extends Base
     }
 
     /**
-     * Returns data provider with filled models. Filter applied if needed.
+     * Returns an {@see ArrayDataProvider} over the captured queries, applying the active filter values.
      *
-     * @param array<int, array<string, mixed>> $models Data to return provider for.
+     * @param array<int, array<string, mixed>> $models Captured query records to wrap and filter.
      *
-     * @return ArrayDataProvider Data provider with filled models.
+     * @return ArrayDataProvider Sortable provider with the filtered query rows.
      */
     public function search(array $models): ArrayDataProvider
     {

@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use yii\debug\models\timeline\{DataProvider, Search};
+use yii\debug\models\search\TimelineSearch;
+use yii\debug\models\timeline\DataProvider;
 use yii\debug\panels\timeline\TimelineRenderer;
 use yii\debug\panels\TimelinePanel;
 use yii\debug\TimelineAsset;
@@ -11,7 +12,7 @@ use yii\web\View;
 /**
  * @var View $this
  * @var TimelinePanel $panel
- * @var Search $searchModel
+ * @var TimelineSearch $searchModel
  * @var DataProvider $dataProvider
  */
 

@@ -7,12 +7,8 @@ namespace yii\debug\panels\profile;
 /**
  * Typed view-model for a single profile block consumed by the profile grid.
  *
- * Mirrors the shape produced by {@see \yii\debug\panels\ProfilingPanel} (already typed) but exposes it through a
- * concrete class so GridView callbacks receive a fully narrowed value instead of the loose `mixed` argument PHPStan
- * widens to at the data-provider boundary.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Mirrors the shape produced by {@see \yii\debug\panels\ProfilingPanel} after every value has been narrowed, so
+ * GridView callbacks read typed properties without further `mixed` narrowing at the data-provider boundary.
  */
 final readonly class ProfileRow
 {

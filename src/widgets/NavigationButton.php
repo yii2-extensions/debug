@@ -10,13 +10,16 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets;
 
+use UIAwesome\Html\Palpable\A;
 use yii\base\Widget;
 use yii\debug\Panel;
-use yii\helpers\Html;
+use yii\helpers\Url;
 
+use function array_filter;
 use function array_keys;
 use function array_search;
 use function end;
+use function implode;
 use function is_int;
 use function reset;
 
@@ -85,6 +88,14 @@ class NavigationButton extends Widget
         };
     }
 
+    private function buildClass(bool $needLink): string
+    {
+        return implode(
+            ' ',
+            array_filter(['yii-debug-btn', 'yii-debug-btn-ghost', $needLink ? '' : 'is-disabled']),
+        );
+    }
+
     /**
      * @return array<int|string, string>|string Empty string when there is no neighbour at the requested direction.
      */
@@ -112,21 +123,21 @@ class NavigationButton extends Widget
     {
         $needLink = $this->tag !== $this->lastTag;
 
-        return Html::a(
-            'Next',
-            $needLink ? $this->getRoute(1) : '',
-            ['class' => ['yii-debug-btn', 'yii-debug-btn-ghost', $needLink ? '' : 'is-disabled']],
-        );
+        return A::tag()
+            ->class($this->buildClass($needLink))
+            ->href(Url::to($needLink ? $this->getRoute(1) : ''))
+            ->content('Next')
+            ->render();
     }
 
     private function renderPrevButton(): string
     {
         $needLink = $this->tag !== $this->firstTag;
 
-        return Html::a(
-            'Prev',
-            $needLink ? $this->getRoute(-1) : '',
-            ['class' => ['yii-debug-btn', 'yii-debug-btn-ghost', $needLink ? '' : 'is-disabled']],
-        );
+        return A::tag()
+            ->class($this->buildClass($needLink))
+            ->href(Url::to($needLink ? $this->getRoute(-1) : ''))
+            ->content('Prev')
+            ->render();
     }
 }

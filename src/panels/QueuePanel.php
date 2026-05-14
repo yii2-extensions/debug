@@ -7,7 +7,8 @@ namespace yii\debug\panels;
 use Throwable;
 use Yii;
 use yii\base\Event;
-use yii\debug\models\search\Queue as QueueSearch;
+use yii\debug\actions\queue\JobAction;
+use yii\debug\models\search\QueueSearch;
 use yii\debug\Panel;
 use yii\debug\panels\queue\{JobPayloadInspector, JobRecord, QueueDriverDetector};
 
@@ -26,30 +27,19 @@ use function microtime;
 use function spl_object_id;
 
 /**
- * Debugger panel that captures every queue lifecycle event triggered during the request; `afterPush`, `afterExec`,
- * `afterError`; emitted by any class extending the `yii\queue\Queue` base from `yiisoft/yii2-queue`.
+ * Captures every queue lifecycle event (`afterPush`, `afterExec`, `afterError`) emitted by any class extending
+ * `yii\queue\Queue` from `yiisoft/yii2-queue`.
  *
- * The panel does not depend on the `yiisoft/yii2-queue` package being installed: listeners are attached via
- * `Event::on()` using the queue base class FQCN as a string, so registration is a no-op when no queue package is
- * present and the empty-state view is shown.
- *
- * Usage example:
- *
- * ```php
- * Yii::$app->queue->push(new \app\jobs\HelloJob());
- * // -> the panel records a `push` event, visible in the debug toolbar
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Listeners are attached via `Event::on()` using the queue base class FQCN as a string, so the panel registers cleanly
+ * even when the `yiisoft/yii2-queue` package is not installed; in that case the empty-state view is shown.
  */
 class QueuePanel extends Panel
 {
     /**
      * Queue base class whose events are listened on; the abstract base `yii\queue\Queue` from `yiisoft/yii2-queue`
-     * (≥ 2.0) every concrete driver extends.
+     * that every concrete driver extends.
      */
-    private const QUEUE_BASE_CLASS = 'yii\\queue\\Queue';
+    private const string QUEUE_BASE_CLASS = 'yii\queue\Queue';
 
     /**
      * Map of `spl_object_id($queueComponent) => component-id` populated lazily inside event listeners so each event's
@@ -60,10 +50,8 @@ class QueuePanel extends Panel
     private array $componentIdCache = [];
 
     /**
-     * Track exec start times keyed by `spl_object_id($job)` so the matching `afterExec` / `afterError` event can
-     * compute the elapsed duration without depending on the queue driver.
-     *
-     * @var array<int, float>
+     * @var array<int, float> Track exec start times keyed by `spl_object_id($job)` so the matching `afterExec` /
+     * `afterError` event can compute the elapsed duration without depending on the queue driver.
      */
     private array $execStarts = [];
 
@@ -84,10 +72,13 @@ class QueuePanel extends Panel
      *   attempt: int|null,
      *   duration: float|null,
      *   error: string,
-     * }>
+     * }> Queue lifecycle events captured for the current request, in fire order.
      */
     private array $records = [];
 
+    /**
+     * Renders the detail view with the queue cards list.
+     */
     public function getDetail(): string
     {
         $searchModel = new QueueSearch();
@@ -104,22 +95,32 @@ class QueuePanel extends Panel
         );
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Queue';
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'queue';
     }
 
+    /**
+     * Registers the `queue-job` action and subscribes to the four queue lifecycle events (`afterPush`, `beforeExec`,
+     * `afterExec`, `afterError`).
+     */
     public function init(): void
     {
         parent::init();
 
         $this->actions['queue-job'] = [
-            'class' => 'yii\\debug\\actions\\queue\\JobAction',
+            'class' => JobAction::class,
             'panel' => $this,
         ];
 
@@ -129,36 +130,41 @@ class QueuePanel extends Panel
         Event::on(self::QUEUE_BASE_CLASS, 'afterError', $this->onAfterError(...));
     }
 
+    /**
+     * Always returns `true`: the panel is harmless without `yiisoft/yii2-queue` installed (the empty-state view kicks
+     * in instead).
+     */
     public function isEnabled(): bool
     {
         return true;
     }
 
     /**
-     * @return array{records: list<array<string, mixed>>}
+     * Snapshots the captured queue records.
+     *
+     * @return array{records: list<array<string, mixed>>} Captured payload consumed by {@see arrayRecords()} on
+     * read-back.
      */
     public function save(): array
     {
-        return [
-            'records' => $this->records,
-        ];
+        return ['records' => $this->records];
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
+     * Builds the toolbar items.
+     *
+     * Reads from {@see resolveRecords()} so the live request render and the toolbar AJAX replay (which only sees the
+     * saved snapshot in `$this->data['records']`) report the same numbers. Hides the button entirely on apps that
+     * don't configure any queue component, and surfaces an `Errors` chip in `danger` when at least one error event was
+     * captured.
+     *
+     * @return array<int, array<string, mixed>>|null Toolbar items, or `null` when no queue component is configured and
+     * no events were captured.
      */
     protected function getToolbarItems(): array|null
     {
-        // The toolbar HTML is fetched via a separate AJAX call that recreates the panel from the saved snapshot; by
-        // then `$this->records` is empty (event listeners fire only in the original request) and the captured data
-        // lives in `$this->data['records']`. Read from whichever is populated so both call sites; live request render
-        // and the toolbar replay request — see the same numbers.
         $records = $this->resolveRecords();
 
-        // Hide the button entirely on apps that don't configure any queue component — keeps the toolbar tidy on hosts
-        // that don't use yii2-queue at all. On apps that DO configure one or more queue components, surface the button
-        // even when zero events were captured this request, mirroring how the Database / Logs / Events panels behave
-        // (always present so the developer knows the panel exists).
         if ($records === [] && $this->hasQueueComponentConfigured() === false) {
             return null;
         }
@@ -171,11 +177,7 @@ class QueuePanel extends Panel
             }
         }
 
-        $items = [
-            [
-                'value' => count($records),
-            ],
-        ];
+        $items = [['value' => count($records)]];
 
         if ($errors > 0) {
             $items[] = [
@@ -189,11 +191,12 @@ class QueuePanel extends Panel
     }
 
     /**
-     * Returns the saved records as a `list<array<string, mixed>>` ready to feed `Queue::search()`. Defends against
-     * stray non-array entries / non-string keys that might survive a malformed `$panel->data` payload; both shapes the
-     * search-model contract refuses to accept.
+     * Returns the saved records ready to feed `Queue::search()`.
      *
-     * @return list<array<string, mixed>>
+     * Defends against stray non-array entries and non-string keys that might survive a malformed `$panel->data` payload
+     * (both shapes the search-model contract refuses to accept).
+     *
+     * @return list<array<string, mixed>> Sanitized records in original order.
      */
     private function arrayRecords(): array
     {
@@ -234,6 +237,11 @@ class QueuePanel extends Panel
         }
     }
 
+    /**
+     * Resolves the registered component id for the queue object that emitted `$event`, caching the lookup per object.
+     *
+     * Returns `''` when the sender is not an object or cannot be matched against any registered component.
+     */
     private function componentIdOf(Event $event): string
     {
         $sender = $event->sender;
@@ -258,15 +266,15 @@ class QueuePanel extends Panel
     }
 
     /**
-     * Tests whether a single `Yii::$app->components` entry references one of the known queue base classes. Accepts the
-     *  three shapes Yii allows: a class-name string, a config array with a `class` key, or an already-instantiated
-     * component object.
+     * Tests whether a single `Yii::$app->components` entry references one of the known queue base classes.
+     *
+     * Accepts the three shapes Yii allows: a class-name string, a config array with a `class` key, or an
+     * already-instantiated component object. For object inputs only `is_subclass_of` matches, since the queue base
+     * class is abstract.
      */
     private static function componentMatchesQueueBase(mixed $config): bool
     {
         if (is_object($config)) {
-            // The queue base class is abstract, so concrete components can only `is_subclass_of` it; they can never
-            // literally `=== self::QUEUE_BASE_CLASS`.
             return is_subclass_of($config, self::QUEUE_BASE_CLASS);
         }
 
@@ -285,15 +293,22 @@ class QueuePanel extends Panel
         return $class === self::QUEUE_BASE_CLASS || is_subclass_of($class, self::QUEUE_BASE_CLASS);
     }
 
+    /**
+     * Returns the exception message when `$error` is a {@see Throwable}, or `''` otherwise.
+     */
     private function errorMessageOf(mixed $error): string
     {
         return $error instanceof Throwable ? $error->getMessage() : '';
     }
 
     /**
-     * Walks `Yii::$app->components` (without instantiating them) looking for any class that extends the queue base
-     * class. The toolbar uses this to keep the Queue button visible on apps that DO configure queues even when no jobs
-     * were pushed in the current request, mirroring the Database panel's behaviour.
+     * Returns whether the application registers at least one queue component.
+     *
+     * Walks `Yii::$app->components` without instantiating lazy components so the panel can keep the Queue button
+     * visible on apps that DO configure queues, even when no jobs were pushed in the current request (mirroring the
+     * Database panel's behavior). Pre-loads the abstract base via `class_exists` so the `is_subclass_of` check works
+     * when the queue package was not loaded yet; when the package is missing entirely, the check returns `false` and
+     * the panel stays hidden.
      */
     private function hasQueueComponentConfigured(): bool
     {
@@ -301,14 +316,9 @@ class QueuePanel extends Panel
             class_exists(self::QUEUE_BASE_CLASS, false) === false
             && interface_exists(self::QUEUE_BASE_CLASS, false) === false
         ) {
-            // Pre-load the abstract base via `class_exists` (autoload-aware). When the queue package is not installed
-            // at all, `is_subclass_of` returns `false` below; so the panel stays hidden.
             class_exists(self::QUEUE_BASE_CLASS);
         }
 
-        // `getComponents(true)` returns ALL component definitions (including lazy ones that haven't been instantiated
-        // yet); the alternative `false` form would only see components already touched in the request, and most apps'
-        // queue components are lazy until a controller calls `push()`.
         foreach (Yii::$app->getComponents(true) as $config) {
             if (self::componentMatchesQueueBase($config)) {
                 return true;
@@ -318,6 +328,10 @@ class QueuePanel extends Panel
         return false;
     }
 
+    /**
+     * Extracts the `job` public property from an event, returning `null` when the property is missing or not an
+     * object.
+     */
     private function jobOf(Event $event): object|null
     {
         $props = (array) $event;
@@ -326,6 +340,16 @@ class QueuePanel extends Panel
     }
 
     /**
+     * Builds one typed record from a queue lifecycle event.
+     *
+     * Reads the event's public properties (`job`, `id`, `ttr`, `delay`, `priority`, `attempt`, `error`) by casting it
+     * to an array; the base class {@see Event} doesn't declare those fields, so the cast is the simplest way to
+     * expose them without dynamic property access. Computes the exec duration by pairing the matching `beforeExec`
+     * timestamp captured in {@see $execStarts}.
+     *
+     * @param string $eventType One of `JobRecord::TYPE_*`.
+     * @param Event $event Queue lifecycle event.
+     *
      * @return array{
      *   eventType: string,
      *   componentId: string,
@@ -342,14 +366,10 @@ class QueuePanel extends Panel
      *   attempt: int|null,
      *   duration: float|null,
      *   error: string,
-     * }
+     * } Typed record ready for {@see $records}.
      */
     private function makeRecord(string $eventType, Event $event): array
     {
-        // Yii's queue events (`yii\queue\JobEvent` / `PushEvent` / `ExecEvent`) carry public properties such as `job`,
-        // `id`, `ttr`, `delay`, `priority`, `attempt`, `error`. The base class `yii\base\Event` doesn't declare them,
-        // so we cast to array — that exposes every public field as a string-keyed entry without any dynamic property
-        // access PHPStan would flag.
         $props = (array) $event;
 
         $job = is_object($props['job'] ?? null) ? $props['job'] : null;
@@ -391,18 +411,28 @@ class QueuePanel extends Panel
         ];
     }
 
+    /**
+     * Records an `error` event and releases the matching exec-start slot.
+     */
     private function onAfterError(Event $event): void
     {
         $this->records[] = $this->makeRecord(JobRecord::TYPE_ERROR, $event);
         $this->clearExecStart($event);
     }
 
+    /**
+     * Records an `exec` event and releases the matching exec-start slot.
+     */
     private function onAfterExec(Event $event): void
     {
         $this->records[] = $this->makeRecord(JobRecord::TYPE_EXEC, $event);
         $this->clearExecStart($event);
     }
 
+    /**
+     * Stamps the job's exec start timestamp in {@see $execStarts}, so `afterExec` / `afterError` can compute the
+     * duration.
+     */
     private function onBeforeExec(Event $event): void
     {
         $job = $this->jobOf($event);
@@ -412,17 +442,21 @@ class QueuePanel extends Panel
         }
     }
 
+    /**
+     * Records a `push` event.
+     */
     private function onPush(Event $event): void
     {
         $this->records[] = $this->makeRecord(JobRecord::TYPE_PUSH, $event);
     }
 
     /**
-     * Returns the captured queue records from whichever source is populated for the current request: the live
-     * `$this->records` array (during the original request, while listeners are still firing) or the saved
-     * `$this->data['records']` slice (during the toolbar AJAX replay or the detail-page render).
+     * Returns the captured records from whichever source is populated for the current request.
      *
-     * @return list<mixed>
+     * During the original request (while listeners are still firing) returns {@see $records}; during the toolbar AJAX
+     * replay or the detail-page render returns the `records` slice of `$this->data`.
+     *
+     * @return list<mixed> Captured records in capture order.
      */
     private function resolveRecords(): array
     {
@@ -437,11 +471,17 @@ class QueuePanel extends Panel
         return [];
     }
 
+    /**
+     * Stringifies the value when it is scalar, falling back to `''` otherwise.
+     */
     private function scalarToString(mixed $value): string
     {
         return is_scalar($value) ? (string) $value : '';
     }
 
+    /**
+     * Returns the value when it is already an int, falling back to `null` otherwise.
+     */
     private function valueToNullableInt(mixed $value): int|null
     {
         return is_int($value) ? $value : null;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\profile;
 
+use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Phrasing\Span;
-use yii\helpers\Html;
 
 use function date;
 use function sprintf;
@@ -14,21 +14,13 @@ use function str_repeat;
 /**
  * Renders the typed cells of the profile grid for the Profiling debug panel.
  *
- * Stateless static helpers; every method takes a typed {@see ProfileRow} and returns the rendered cell. Keeps the
+ * Stateless static helpers: every method takes a typed {@see ProfileRow} and returns the rendered cell, keeping the
  * GridView column closures in `panels/profile/detail.php` short and free of `mixed` narrowing.
- *
- * Usage example:
- * ```php
- * 'value' => static fn(mixed $data): string => ProfileCellRenderer::renderTimeCell(ProfileRowNormalizer::from($data)),
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class ProfileCellRenderer
 {
     /**
-     * Renders the duration formatted to one decimal millisecond.
+     * Renders the block duration formatted as `N.N ms`.
      */
     public static function renderDurationCell(ProfileRow $row): string
     {
@@ -40,13 +32,16 @@ final class ProfileCellRenderer
      */
     public static function renderInfoCell(ProfileRow $row): string
     {
-        $arrow = Span::tag()->class('yii-debug-indent')->content('→')->render();
+        $arrow = Span::tag()
+            ->class('yii-debug-indent')
+            ->content('→')
+            ->render();
 
-        return str_repeat($arrow, $row->level) . Html::encode($row->info);
+        return str_repeat($arrow, $row->level) . Encode::content($row->info);
     }
 
     /**
-     * Renders the `H:i:s.mmm` timestamp derived from the millisecond field.
+     * Renders the capture time as `H:i:s.mmm`, derived from the row's millisecond timestamp.
      */
     public static function renderTimeCell(ProfileRow $row): string
     {

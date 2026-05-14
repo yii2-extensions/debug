@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\queue;
 
-use yii\debug\helpers\Coerce;
-use yii\debug\helpers\RowField;
+use yii\debug\helpers\{Coerce, RowField};
 
 use function in_array;
 use function is_array;
@@ -16,21 +15,17 @@ use function is_string;
  *
  * The panel stores each captured lifecycle event as a positional array; this normalizer is the single boundary where
  * those arrays become typed objects, so the renderer never inspects raw payloads.
- *
- * Usage example:
- * ```php
- * $record = JobRecordNormalizer::from($row);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class JobRecordNormalizer
 {
     /**
      * Builds a {@see JobRecord} from an arbitrary value, falling back to defensible defaults for any field that is
-     * missing or has the wrong type. The `eventType` is normalised to one of `'push'` / `'exec'` / `'error'`;
-     * unknown values collapse to `'push'` so the renderer always has a sane default.
+     * missing or has the wrong type.
+     *
+     * The `eventType` is normalized to one of `'push'` / `'exec'` / `'error'`; unknown values collapse to `'push'`
+     * so the renderer always has a sane default.
+     *
+     * @param mixed $data Raw row from {@see \yii\debug\panels\QueuePanel::$data}.
      */
     public static function from(mixed $data): JobRecord
     {
@@ -56,7 +51,9 @@ final class JobRecordNormalizer
     }
 
     /**
-     * @param array<array-key, mixed> $row
+     * Reads `$row['eventType']` and clamps it to one of {@see JobRecord::EVENT_TYPES}, defaulting to `'push'`.
+     *
+     * @param array<array-key, mixed> $row Source row.
      */
     private static function eventTypeField(array $row): string
     {
@@ -66,13 +63,14 @@ final class JobRecordNormalizer
     }
 
     /**
-     * Narrows the saved payload fields to `array<string, mixed>` (top-level keys are property names; always strings;
-     * non-string keys are dropped). Nested values keep their original shape, so arrays with int keys inside are left
-     * untouched.
+     * Narrows the saved payload fields to `array<string, mixed>`.
      *
-     * @param array<array-key, mixed> $row
+     * Top-level keys are property names and must be strings; non-string keys are dropped. Nested values keep their
+     * original shape, so arrays with int keys inside are left untouched.
      *
-     * @return array<string, mixed>
+     * @param array<array-key, mixed> $row Source row.
+     *
+     * @return array<string, mixed> Payload map with the top-level FQCN expanded recursively in nested entries.
      */
     private static function payloadFields(array $row): array
     {

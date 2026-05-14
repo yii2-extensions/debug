@@ -8,14 +8,12 @@ use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 
 /**
- * Search model for the Queue debug panel — drives the filter form above the cards list and produces an
- * {@see ArrayDataProvider} so the panel never renders a paginated list larger than the active page size, even when a
- * single request pushes hundreds of jobs.
+ * Backs the filter form above the Queue panel's cards list of captured job events.
  *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Produces a paginated {@see ArrayDataProvider} so the panel never renders a list larger than the active page size,
+ * even when a single request pushes hundreds of jobs.
  */
-class Queue extends Base
+class QueueSearch extends Base
 {
     /**
      * Yii component id filter (`'queue'`, `'queueRedis'`, ...) — substring match.
@@ -57,11 +55,11 @@ class Queue extends Base
     }
 
     /**
-     * Returns the data provider with the captured queue records, filtered when the form was submitted with values
-     * and validated.
+     * Returns the data provider with the captured queue records, filtered when the form was submitted with values and
+     * validated.
      *
-     * @param array<int|string, mixed> $params
-     * @param array<int, array<string, mixed>> $models
+     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names.
+     * @param array<int, array<string, mixed>> $models Data to return provider for.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
@@ -70,7 +68,15 @@ class Queue extends Base
                 'allModels' => $models,
                 'pagination' => ['pageSize' => 25],
                 'sort' => [
-                    'attributes' => ['eventType', 'driverName', 'componentId', 'jobClass', 'jobId', 'time', 'duration'],
+                    'attributes' => [
+                        'eventType',
+                        'driverName',
+                        'componentId',
+                        'jobClass',
+                        'jobId',
+                        'time',
+                        'duration',
+                    ],
                     'defaultOrder' => ['time' => SORT_ASC],
                 ],
             ],
@@ -82,8 +88,6 @@ class Queue extends Base
 
         $filter = new Filter();
 
-        // `eventType` and `componentId` are exact-match dropdowns; substring matching would pollute results (`'push'`
-        // would also match `'pushed-by-worker'` if such a value ever appeared).
         $this->addCondition($filter, 'eventType', false);
         $this->addCondition($filter, 'componentId', false);
         $this->addCondition($filter, 'driverName', true);

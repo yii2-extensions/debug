@@ -9,9 +9,6 @@ namespace yii\debug\panels\dump;
  *
  * Mirrors the shape produced by {@see \yii\debug\panels\DumpPanel::save()} after every value has been narrowed to its
  * declared scalar/array type, so cell renderers can read typed properties without further `mixed` checks.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class DumpRow
 {

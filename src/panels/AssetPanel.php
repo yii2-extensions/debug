@@ -6,11 +6,12 @@ namespace yii\debug\panels;
 
 use Closure;
 use Stringable;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Strong;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\Panel;
 use yii\debug\panels\asset\AssetBundleNormalizer;
-use yii\helpers\Html;
 use yii\web\{AssetBundle, AssetManager};
 
 use function count;
@@ -19,32 +20,56 @@ use function is_scalar;
 use function is_string;
 
 /**
- * Debugger panel that collects and displays asset bundles data.
+ * Captures the asset bundles registered on the request and renders them in the Asset Bundles panel.
+ *
+ * Stores the serialized bundle map (with `Closure` callbacks turned into label markers) so the detail view can render
+ * each bundle's source path, base path, base URL, CSS/JS files, and dependency tree from a static snapshot.
  */
 class AssetPanel extends Panel
 {
+    /**
+     * Renders the detail view from the normalized bundle summary.
+     */
     public function getDetail(): string
     {
         $summary = (new AssetBundleNormalizer())->normalize($this->data);
 
-        return Yii::$app->view->render('panels/assets/detail', ['summary' => $summary]);
+        return Yii::$app->view->render(
+            'panels/assets/detail',
+            ['summary' => $summary],
+        );
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Asset Bundles';
     }
 
+    /**
+     * Renders the toolbar summary chip.
+     */
     public function getSummary(): string
     {
-        return Yii::$app->view->render('panels/assets/summary', ['panel' => $this]);
+        return Yii::$app->view->render(
+            'panels/assets/summary',
+            ['panel' => $this],
+        );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'asset';
     }
 
+    /**
+     * Returns whether the application exposes an `assetManager` component the panel can read.
+     */
     public function isEnabled(): bool
     {
         try {
@@ -55,7 +80,10 @@ class AssetPanel extends Panel
     }
 
     /**
-     * @return array<string, array<string, mixed>>
+     * Serializes every registered asset bundle into the panel-data shape consumed by the detail view.
+     *
+     * @return array<string, array<string, mixed>> Serialized bundles indexed by FQCN, or `[]` when no bundles were
+     * registered.
      */
     public function save(): array
     {
@@ -79,11 +107,11 @@ class AssetPanel extends Panel
     }
 
     /**
-     * Additional formatting for view.
+     * Wraps every CSS/JS file in an anchor pointing at the bundle's base URL, mutating the supplied bundles in place.
      *
-     * @param array<int|string, AssetBundle> $bundles Array of bundles to formatting.
+     * @param array<int|string, AssetBundle> $bundles Bundles whose `css` / `js` entries should be turned into links.
      *
-     * @return array<int|string, AssetBundle>
+     * @return array<int|string, AssetBundle> The same bundle map, returned for chaining.
      */
     protected function format(array $bundles): array
     {
@@ -92,13 +120,21 @@ class AssetPanel extends Panel
 
             foreach ($bundle->css as $key => $file) {
                 if (is_string($file)) {
-                    $bundle->css[$key] = Html::a($file, $baseUrl . '/' . $file, ['target' => '_blank']);
+                    $bundle->css[$key] = A::tag()
+                        ->href($baseUrl . '/' . $file)
+                        ->target('_blank')
+                        ->content($file)
+                        ->render();
                 }
             }
 
             foreach ($bundle->js as $key => $file) {
                 if (is_string($file)) {
-                    $bundle->js[$key] = Html::a($file, $baseUrl . '/' . $file, ['target' => '_blank']);
+                    $bundle->js[$key] = A::tag()
+                        ->href($baseUrl . '/' . $file)
+                        ->target('_blank')
+                        ->content($file)
+                        ->render();
                 }
             }
         }
@@ -107,11 +143,12 @@ class AssetPanel extends Panel
     }
 
     /**
-     * Format associative array of params to simple value.
+     * Formats an associative parameter map for display, stringifying scalar/Stringable values and replacing other
+     * types with the result of {@see get_debug_type()}.
      *
-     * @param array<string, mixed> $params Array of params to formatting.
+     * @param array<string, mixed> $params Parameter map to format.
      *
-     * @return array<string, string> Formatted array of params.
+     * @return array<string, string> Rendered `'param' => value` strings keyed by parameter name.
      */
     protected function formatOptions(array $params): array
     {
@@ -124,14 +161,19 @@ class AssetPanel extends Panel
                 $value = get_debug_type($value);
             }
 
-            $formatted[$param] = Html::tag('strong', "'{$param}' => ") . $value;
+            $formatted[$param] = Strong::tag()
+                ->content("'{$param}' => ")
+                ->render()
+                . $value;
         }
 
         return $formatted;
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
+     * Returns the toolbar item showing the count of registered bundles, or `null` when none were captured.
+     *
+     * @return array<int, array<string, mixed>>|null Single-element list with the `info` chip, or `null`.
      */
     protected function getToolbarItems(): array|null
     {
@@ -149,7 +191,9 @@ class AssetPanel extends Panel
     }
 
     /**
-     * @return array<string, mixed>
+     * Snapshots the bundle properties consumed by the detail view (paths, files, options, dependencies).
+     *
+     * @return array<string, mixed> Bundle properties keyed by name.
      */
     private function serializeBundle(AssetBundle $bundle): array
     {
@@ -167,9 +211,12 @@ class AssetPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $options
+     * Replaces `beforeCopy` / `afterCopy` closures with the literal label `\Closure`, so the panel data stays
+     * serializable.
      *
-     * @return array<string, mixed>
+     * @param array<string, mixed> $options Raw publish-options map.
+     *
+     * @return array<string, mixed> Options map with closure callbacks replaced.
      */
     private function serializeOptions(array $options): array
     {

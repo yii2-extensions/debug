@@ -27,32 +27,25 @@ use function mb_substr;
 use function sprintf;
 
 /**
- * Renders the typed Queue panel detail view on top of `ui-awesome/html` builders.
+ * Renders the typed Queue panel detail view.
  *
- * Stateless static helpers; the public entry points take a typed {@see QueueSummary} or {@see JobRecord} and return
- * UIAwesome component trees. Keeps the detail view focused on page-level scaffolding while concentrating render logic
- *  (status pills, driver badges, payload tree, component tabs, time formatting) in one testable place.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\panels\queue\QueueCardRenderer::renderSummaryHeader($summary);
- * echo \yii\debug\panels\queue\QueueCardRenderer::renderItem($record);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: the public entry points take a typed {@see QueueSummary} or {@see JobRecord} and return
+ * rendered HTML trees. Concentrates the render logic (status pills, driver badges, payload tree, component tabs,
+ * time formatting) in one testable place, keeping the detail view focused on page-level scaffolding.
  */
 final class QueueCardRenderer
 {
     /**
-     * Maximum number of characters shown for inline string values before they get truncated with an ellipsis. The
-     * full value is preserved in a `title` tooltip so the developer can hover to read it.
+     * Maximum number of characters shown for inline string values before they get truncated with an ellipsis. The full
+     * value is preserved in a `title` tooltip so the developer can hover to read it.
      */
     private const int STRING_PREVIEW_LIMIT = 80;
 
     /**
-     * Renders the async-driver hint banner shown above the cards when at least one record was emitted by a driver
-     * that runs jobs out of process. Returns `null` when every record came from a sync driver; no banner needed.
+     * Renders the async-driver hint banner shown above the cards when at least one record was emitted by a driver that
+     * runs jobs out of process.
+     *
+     * Returns `null` when every record came from a sync driver, so the caller can omit the banner entirely.
      */
     public static function renderAsyncHint(QueueSummary $summary): Div|null
     {
@@ -82,6 +75,8 @@ final class QueueCardRenderer
 
     /**
      * Renders a single job event as an `<article class="yii-debug-queue-card">` ready to drop into the detail view.
+     *
+     * @param JobRecord $record Typed queue event record.
      */
     public static function renderItem(JobRecord $record): Article
     {
@@ -108,12 +103,14 @@ final class QueueCardRenderer
             $children[] = $meta;
         }
 
-        return Article::tag()->class('yii-debug-queue-card')->html(...$children);
+        return Article::tag()
+            ->class('yii-debug-queue-card')
+            ->html(...$children);
     }
 
     /**
-     * Renders the summary header showing total events, pushed/executed/errors counts and an optional warning chip
-     * when at least one job failed.
+     * Renders the summary header with pushed/executed counts and an optional `failed` chip when at least one job
+     * failed.
      */
     public static function renderSummaryHeader(QueueSummary $summary): Div
     {
@@ -148,11 +145,13 @@ final class QueueCardRenderer
                 );
         }
 
-        return Div::tag()->class('yii-debug-grid-summary')->html(...$children);
+        return Div::tag()
+            ->class('yii-debug-grid-summary')
+            ->html(...$children);
     }
 
     /**
-     * Returns the uppercased first letter of the short class name, falling back to `?` when empty.
+     * Returns the uppercased first letter of the short class name, falling back to `'?'` when empty.
      */
     private static function initialFor(string $jobClass): string
     {
@@ -165,6 +164,9 @@ final class QueueCardRenderer
         return mb_strtoupper(mb_substr($shortName, 0, 1));
     }
 
+    /**
+     * Renders one meta-line item with its label and value.
+     */
     private static function metaItem(string $label, string $value): Span
     {
         return Span::tag()
@@ -177,12 +179,12 @@ final class QueueCardRenderer
     }
 
     /**
-     * Renders an array or object value as a collapsible block. Objects carry a `__class` key that promotes the FQCN
-     * into the summary header (`HelloJob {…}`); regular arrays show their length (`array(3)`). The block is collapsed
-     * by default, with the `open` attribute toggled on for objects whose first child is itself a leaf; heuristic that
-     * surfaces the most useful structure on first paint.
+     * Renders an array or object value as a collapsible block.
      *
-     * @param array<array-key, mixed> $value
+     * Objects carry a `__class` key that promotes the FQCN into the summary header (`HelloJob {…}`); regular arrays
+     * show their length (`array(3)`). The block is collapsed by default.
+     *
+     * @param array<array-key, mixed> $value Array or `__class`-tagged object payload.
      */
     private static function renderArrayOrObjectRow(string $key, array $value): Details
     {
@@ -247,7 +249,7 @@ final class QueueCardRenderer
     }
 
     /**
-     * Renders the colored avatar — same hue scheme as the mail panel, derived from the job class name.
+     * Renders the colored avatar, reusing the mail-panel hue scheme but derived from the job class name.
      */
     private static function renderAvatar(JobRecord $record): Span
     {
@@ -259,8 +261,10 @@ final class QueueCardRenderer
     }
 
     /**
-     * Renders the driver pill (`Sync` / `Database` / `Redis` / `AMQP` / ...). Async drivers carry a different visual
-     * tone via the `is-async` modifier so the developer can spot at a glance which jobs ran in-process.
+     * Renders the driver pill (`Sync` / `Database` / `Redis` / `AMQP` / ...).
+     *
+     * Async drivers carry a different visual tone via the `is-async` modifier, so the developer can spot at a glance
+     * which jobs ran in-process.
      */
     private static function renderDriverPill(JobRecord $record): Span
     {
@@ -273,9 +277,10 @@ final class QueueCardRenderer
     }
 
     /**
-     * Renders one tree row: scalar values render inline (key + type + value), arrays / objects collapse into a
-     * `<details>` block so the developer can drill in on demand. Returns a UIAwesome builder so the parent can mix
-     * rows freely.
+     * Renders one tree row.
+     *
+     * Scalar values render inline (key + type + value); arrays and objects collapse into a `<details>` block, so the
+     * developer can drill in on demand.
      */
     private static function renderField(string|int $key, mixed $value): Div|Details
     {
@@ -305,7 +310,7 @@ final class QueueCardRenderer
     }
 
     /**
-     * Renders the card header: avatar, job class title with namespace prefix, status + driver pills and capture time.
+     * Renders the card header: avatar, job class title with namespace prefix, status + driver pills, and capture time.
      */
     private static function renderHead(JobRecord $record): Header
     {
@@ -345,8 +350,10 @@ final class QueueCardRenderer
 
     /**
      * Renders the meta footer (queue id, ttr / delay / priority / attempt / duration), or `null` when none of the
-     * optional fields are populated. The component id is intentionally omitted — the sidebar/tab strip already surfaces
-     * it and a per-card pill would be redundant.
+     * optional fields are populated.
+     *
+     * The component id is intentionally omitted: the sidebar/tab strip already surfaces it, and a per-card pill would
+     * be redundant.
      */
     private static function renderMeta(JobRecord $record): Div|null
     {
@@ -380,14 +387,18 @@ final class QueueCardRenderer
             return null;
         }
 
-        return Div::tag()->class('yii-debug-queue-meta')->html(...$items);
+        return Div::tag()
+            ->class('yii-debug-queue-meta')
+            ->html(...$items);
     }
 
     /**
-     * Renders the recursive payload tree. Top-level entries render as flat key/type/value rows; nested arrays / objects
-     * become `<details>` blocks the developer can collapse/expand.
+     * Renders the recursive payload tree.
      *
-     * @param array<string, mixed> $fields
+     * Top-level entries render as flat key/type/value rows; nested arrays / objects become `<details>` blocks the
+     * developer can collapse or expand.
+     *
+     * @param array<string, mixed> $fields Payload map keyed by property name.
      */
     private static function renderPayloadTree(array $fields): Div
     {
@@ -402,6 +413,9 @@ final class QueueCardRenderer
             ->html(...$rows);
     }
 
+    /**
+     * Renders one scalar tree row with its key, type label, and value.
+     */
     private static function renderScalarRow(string $key, string $type, string $value, string $variant): Div
     {
         return Div::tag()
@@ -426,6 +440,10 @@ final class QueueCardRenderer
             ->content($label);
     }
 
+    /**
+     * Renders one string tree row, truncating to {@see self::STRING_PREVIEW_LIMIT} characters with the full value
+     * preserved in a `title` tooltip.
+     */
     private static function renderStringRow(string $key, string $value): Div
     {
         $preview = mb_strlen($value) > self::STRING_PREVIEW_LIMIT

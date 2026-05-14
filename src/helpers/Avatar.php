@@ -14,9 +14,6 @@ use function strtolower;
  * Two debug-panel renderers (mail and queue) display a colored circle next to each item; both used to compute the hue
  * with the same `abs(crc32(strtolower(...))) % 360` formula. This helper centralises that derivation so the colour
  * stays consistent across renderers.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class Avatar
 {

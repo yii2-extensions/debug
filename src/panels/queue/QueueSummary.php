@@ -13,9 +13,6 @@ use function count;
  *
  * Bundles the per-event records with the totals shown in the summary header (pushed / executed / failed) and the list
  * of distinct queue component ids surfaced as tabs when more than one queue was active during the request.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class QueueSummary
 {
@@ -29,7 +26,7 @@ final readonly class QueueSummary
     /**
      * Returns the distinct component ids surfaced across every captured event, in first-seen order.
      *
-     * @return list<string>
+     * @return list<string> Component ids, deduplicated while preserving order.
      */
     public function componentIds(): array
     {
@@ -42,20 +39,26 @@ final readonly class QueueSummary
         return array_values(array_unique($ids));
     }
 
+    /**
+     * Returns whether at least one captured event reported a failure.
+     */
     public function hasErrors(): bool
     {
         return $this->totalErrors() > 0;
     }
 
+    /**
+     * Returns whether the summary carries no records.
+     */
     public function isEmpty(): bool
     {
         return $this->records === [];
     }
 
     /**
-     * Filters the records down to a single component id (used by the tab UI to scope the rendered cards).
+     * Returns the records belonging to the given component id, used by the tab UI to scope the rendered cards.
      *
-     * @return list<JobRecord>
+     * @return list<JobRecord> Records whose `componentId` matches, in original order.
      */
     public function recordsForComponent(string $componentId): array
     {
@@ -70,26 +73,41 @@ final readonly class QueueSummary
         return $filtered;
     }
 
+    /**
+     * Returns the number of error events captured.
+     */
     public function totalErrors(): int
     {
         return $this->countBy(JobRecord::TYPE_ERROR);
     }
 
+    /**
+     * Returns the total number of captured events across every lifecycle phase.
+     */
     public function totalEvents(): int
     {
         return count($this->records);
     }
 
+    /**
+     * Returns the number of successfully executed events.
+     */
     public function totalExecuted(): int
     {
         return $this->countBy(JobRecord::TYPE_EXEC);
     }
 
+    /**
+     * Returns the number of push events captured.
+     */
     public function totalPushed(): int
     {
         return $this->countBy(JobRecord::TYPE_PUSH);
     }
 
+    /**
+     * Returns the number of records whose `eventType` equals `$eventType`.
+     */
     private function countBy(string $eventType): int
     {
         $count = 0;

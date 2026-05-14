@@ -14,11 +14,11 @@ use yii\debug\helpers\Icon;
 use yii\helpers\Url;
 
 /**
- * Renders the debugger sidebar partial on top of `ui-awesome/html` builders.
+ * Renders the debugger sidebar partial.
  *
- * Stateless static helpers; the public entry point takes a typed {@see SidebarView} and returns ready-to-echo HTML.
+ * Stateless static helpers: the public entry point takes a typed {@see SidebarView} and returns ready-to-echo HTML.
  *
- * The snapshot card (top section) and the panel-list nav (bottom section) are built by private helpers so the
+ * The snapshot card (top section) and the panel-list nav (bottom section) are built by private helpers, so the
  * `_sidebar.php` partial collapses to a single call.
  *
  * Usage example:

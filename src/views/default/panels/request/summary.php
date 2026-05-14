@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Helper\Encode;
 use yii\debug\panels\RequestPanel;
-use yii\helpers\Html;
 use yii\web\Response;
 
 /** @var RequestPanel $panel */
@@ -20,7 +20,7 @@ if ($statusCode >= 200 && $statusCode < 300) {
 }
 
 $httpStatusText = Response::$httpStatuses[$statusCode] ?? '';
-$statusText = Html::encode(is_string($httpStatusText) ? $httpStatusText : '');
+$statusText = Encode::value(is_string($httpStatusText) ? $httpStatusText : '');
 ?>
 <div class="yii-debug-toolbar-block">
     <a href="<?= $panel->getUrl() ?>" title="Status code: <?= $statusCode ?> <?= $statusText ?>">Status <span

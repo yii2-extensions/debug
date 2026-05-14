@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Form\Button;
+use UIAwesome\Html\Form\Values\ButtonType;
+use UIAwesome\Html\Phrasing\Span;
 use yii\debug\{GridViewConfig, UserswitchAsset};
 use yii\debug\panels\UserPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
-use yii\helpers\Html;
 use yii\web\View;
 use yii\widgets\ActiveForm;
 
@@ -42,7 +45,11 @@ $userSwitch = $panel->userSwitch;
             ->textInput(['id' => 'user_id', 'name' => 'user_id', 'class' => 'yii-debug-input'])
             ->label('Switch User', ['class' => 'yii-debug-label']);
 
-            echo Html::submitButton('Switch', ['class' => 'yii-debug-btn yii-debug-btn-primary']);
+            echo Button::tag()
+                ->type(ButtonType::SUBMIT)
+                ->class('yii-debug-btn yii-debug-btn-primary')
+                ->content('Switch')
+                ->render();
 
             ActiveForm::end();
             ?>
@@ -57,15 +64,17 @@ $userSwitch = $panel->userSwitch;
                         'options' => ['id' => 'debug-userswitch__reset-identity'],
                     ],
                 );
-                echo Html::submitButton(
-                    'Reset to <span class="yii-debug-toolbar-label yii-debug-toolbar-label-info">'
-                    . $userSwitch->getMainUser()->getId()
-                    . '</span>',
-                    [
-                        'class' => 'yii-debug-btn yii-debug-btn-ghost',
-                        'id' => 'debug-userswitch__reset-identity-button',
-                    ]
-                );
+                echo Button::tag()
+                    ->type(ButtonType::SUBMIT)
+                    ->class('yii-debug-btn yii-debug-btn-ghost')
+                    ->id('debug-userswitch__reset-identity-button')
+                    ->html(
+                        'Reset to ',
+                        Span::tag()
+                            ->class('yii-debug-toolbar-label yii-debug-toolbar-label-info')
+                            ->content((string) $userSwitch->getMainUser()->getId()),
+                    )
+                    ->render();
 
                 ActiveForm::end();
             }
@@ -78,7 +87,7 @@ $userSwitch = $panel->userSwitch;
 if ($panel->canSearchUsers()) {
     $usersFilterModel = $panel->getUsersFilterModel();
 
-    echo Html::beginTag('div', ['id' => 'debug-userswitch__filter']);
+    echo Div::tag()->id('debug-userswitch__filter')->begin();
     echo FilterBanner::widget(['searchModel' => $usersFilterModel]);
     echo GridView::widget(
         [
@@ -94,6 +103,6 @@ if ($panel->canSearchUsers()) {
                 . "<div class=\"yii-debug-grid-footer\">{summary}\n{pager}\n</div>",
         ],
     );
-    echo Html::endTag('div');
+    echo Div::end();
 }
 ?>

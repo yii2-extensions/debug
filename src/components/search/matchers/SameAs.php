@@ -10,26 +10,29 @@ use yii\helpers\VarDumper;
 use function is_scalar;
 
 /**
- * Checks if the given value is exactly or partially same as the base one.
+ * Matches candidate values exactly or partially against the configured base value.
+ *
+ * Comparison is multibyte-aware: partial mode uses case-insensitive substring search via {@see mb_stripos()}; exact
+ * mode compares uppercased forms. Non-scalar values are normalized with {@see VarDumper::export()} before comparison.
  */
 class SameAs extends Base
 {
     /**
-     * If partial match should be used.
+     * Whether partial (substring) matching is used instead of exact matching.
      */
     public bool $partial = false;
 
     /**
-     * Uppercase version of base value for case-insensitive comparison.
+     * Cached uppercase form of the base value, computed lazily for case-insensitive exact comparison.
      */
     private string|null $baseValueUpper = null;
 
     /**
-     * Checks if the value passed matches base value.
+     * Returns whether the candidate value matches the base value under the active comparison mode.
      *
-     * @param mixed $value Value to be matched.
+     * @param mixed $value Candidate value to test.
      *
-     * @return bool `true` if the value passed matches base value, `false` otherwise.
+     * @return bool `true` when the candidate satisfies the rule, `false` otherwise.
      */
     public function match(mixed $value): bool
     {

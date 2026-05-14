@@ -2,35 +2,29 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
-namespace yii\debug\models\timeline;
+namespace yii\debug\models\search;
 
 use yii\debug\components\search\Filter;
 use yii\debug\components\search\matchers\GreaterThanOrEqual;
-use yii\debug\models\search\Base;
+use yii\debug\models\timeline\DataProvider;
 use yii\debug\panels\TimelinePanel;
 
 /**
- * Search model for timeline data.
+ * Backs the filter form above the Timeline panel and produces the geometry-aware data provider.
  */
-class Search extends Base
+class TimelineSearch extends Base
 {
     /**
-     * Category attribute input search value.
+     * Submitted value for the `category` filter (substring match).
      */
     public string $category = '';
     /**
-     * Minimum duration filter value (milliseconds), as submitted by the form.
+     * Submitted minimum-duration threshold, in milliseconds.
      */
     public string $duration = '';
 
     /**
-     * @return array<string, string>
+     * @return array<string, string> Form labels keyed by attribute name.
      */
     public function attributeLabels(): array
     {
@@ -40,7 +34,7 @@ class Search extends Base
     }
 
     /**
-     * @return array<int, array<int|string, mixed>>
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */
     public function rules(): array
     {
@@ -50,9 +44,10 @@ class Search extends Base
     }
 
     /**
-     * Returns data provider with filled models. Filter applied if needed.
+     * Returns the timeline {@see DataProvider} for the active panel, applying the loaded filter values.
      *
-     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param TimelinePanel $panel Panel supplying the captured timeline rows and request geometry.
      */
     public function search(array $params, TimelinePanel $panel): DataProvider
     {

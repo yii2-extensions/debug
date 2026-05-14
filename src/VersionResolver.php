@@ -15,24 +15,21 @@ use function substr;
 /**
  * Resolves human-readable Composer package versions for the debug UI.
  *
- * Replaces Composer's synthetic dev placeholders (`22.0.9999999.9999999-dev`, `dev-master`) with the package alias plus
- * the short Git reference, producing strings like `22.x-dev @a1b2c3d` or `2.0.45`.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Replaces Composer's synthetic dev placeholders (`22.0.9999999.9999999-dev`, `dev-master`) with the package alias
+ * plus the short Git reference, producing strings such as `22.x-dev @a1b2c3d` or `2.0.45`.
  */
 final class VersionResolver
 {
     /**
-     * Replaces the `version` field of each entry with the friendly version when resolvable.
+     * Rewrites the `version` field of each entry with the friendly version, when resolvable.
      *
-     * Accepts the array shape produced by `Yii::$app->extensions` — `[$packageName => ['name' => ..., 'version' => ...]]`.
-     * Entries whose key is not a string (malformed registrations) or whose package cannot be resolved through Composer
-     * are returned unchanged.
+     * Accepts the array shape produced by `Yii::$app->extensions` — `[$packageName => ['name' => ..., 'version' =>
+     * ...]]`. Entries whose key is not a string (malformed registrations) or whose package cannot be resolved through
+     * Composer are returned unchanged.
      *
-     * @param array<int|string, array<string, mixed>> $extensions
+     * @param array<int|string, array<string, mixed>> $extensions Extension map keyed by package name.
      *
-     * @return array<int|string, array<string, mixed>>
+     * @return array<int|string, array<string, mixed>> Extension map with `version` fields rewritten in place.
      */
     public static function forExtensions(array $extensions): array
     {
@@ -54,10 +51,14 @@ final class VersionResolver
     }
 
     /**
-     * Returns a friendly version string for a Composer package, or `null` when the package is not installed.
+     * Returns a friendly version string for a Composer package.
      *
-     * For tagged releases the tag is returned verbatim. For dev branches the alias is augmented with the 7-character
-     * Git short hash so two builds of the same branch can be told apart.
+     * Tagged releases are returned verbatim. Dev branches are augmented with the 7-character Git short hash so two
+     * builds of the same branch can be told apart.
+     *
+     * @param string $package Composer package name (`vendor/package`).
+     *
+     * @return string|null Friendly version, or `null` when the package is not installed or has no pretty version.
      */
     public static function forPackage(string $package): string|null
     {
@@ -73,8 +74,9 @@ final class VersionResolver
 
         if (str_contains($pretty, 'dev')) {
             $reference = InstalledVersions::getReference($package);
+
             if ($reference !== null) {
-                return $pretty . ' @' . substr($reference, 0, 7);
+                return "{$pretty} @" . substr($reference, 0, 7);
             }
         }
 
@@ -84,14 +86,17 @@ final class VersionResolver
     /**
      * Returns a friendly version for the Yii framework, without the Git reference.
      *
-     * The framework version sits in the toolbar brand chip and is read at a glance — the short SHA is noisy
-     * there and would shift on every framework rebuild. Falls back to {@see Yii::getVersion()} when Composer
-     * runtime metadata is unavailable.
+     * The framework version sits in the toolbar brand chip and is read at a glance; the short SHA is noisy there and
+     * would shift on every framework rebuild. Falls back to {@see Yii::getVersion()} when Composer runtime metadata
+     * is unavailable.
+     *
+     * @return string Framework version string ready for display.
      */
     public static function yii(): string
     {
         if (class_exists(InstalledVersions::class) && InstalledVersions::isInstalled('yiisoft/yii2')) {
             $pretty = InstalledVersions::getPrettyVersion('yiisoft/yii2');
+
             if ($pretty !== null) {
                 return $pretty;
             }

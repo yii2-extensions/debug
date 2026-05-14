@@ -4,38 +4,38 @@ declare(strict_types=1);
 
 namespace yii\debug\db;
 
+use PDO;
 use PDOStatement;
 
 /**
- * PDOStatement subclass that records the row count of every executed query.
+ * Records the row count produced by every executed prepared statement.
  *
- * Yii profiler captures the SQL string and timing of each query but discards the {@see PDOStatement}, so the row count
- * is unrecoverable downstream. This class hooks {@see PDOStatement::execute()} to read `rowCount()` immediately after
- * execution and append it to a request-scoped list, in execution order.
+ * The Yii profiler captures each query's SQL and timing but discards the {@see PDOStatement}, so the row count is
+ * unrecoverable downstream. This subclass hooks {@see PDOStatement::execute()} to read `rowCount()` right after
+ * execution and append it to a request-scoped list in execution order.
  *
- * Used by {@see \yii\debug\panels\DbPanel} which registers it via `PDO::ATTR_STATEMENT_CLASS` on the panel-bound DB
- * connection so every prepared statement returned by the underlying PDO instance is one of these.
+ * Registered by {@see \yii\debug\panels\DbPanel} via {@see PDO::ATTR_STATEMENT_CLASS} on the panel-bound DB connection,
+ * so every prepared statement returned by the underlying PDO instance is one of these.
  */
 class DebugPdoStatement extends PDOStatement
 {
     /**
-     * @var array<int, int> Row count per executed query, pushed in execution order.
+     * @var array<int, int> Row count per executed statement, appended in execution order.
      */
     public static array $rowCounts = [];
 
     /**
-     * Required by PHP {@see PDO::ATTR_STATEMENT_CLASS} demands the constructor be `protected` (or `private`) so callers
-     * cannot instantiate the class outside of the PDO factory.
+     * Visibility is `protected` because {@see PDO::ATTR_STATEMENT_CLASS} requires it; callers must not instantiate the
+     * class outside of the PDO factory.
      */
     protected function __construct() {}
 
     /**
-     * Overrides the parent method to capture the row count immediately after execution and append it to the static
-     * list.
+     * Executes the prepared statement and records its row count in {@see self::$rowCounts}.
      *
-     * @param array<int|string, mixed>|null $params Parameters to bind to the query, if any.
+     * @param array<int|string, mixed>|null $params Values bound to the statement placeholders, if any.
      *
-     * @return bool `true` on success or `false` on failure.
+     * @return bool `true` on success, `false` on failure.
      */
     public function execute(array|null $params = null): bool
     {

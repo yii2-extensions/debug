@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Helper\Encode;
+use UIAwesome\Html\List\Li;
+use UIAwesome\Html\Palpable\A;
 use yii\debug\panels\UserPanel;
-use yii\helpers\Html;
 use yii\web\View;
 
 /**
@@ -11,7 +14,7 @@ use yii\web\View;
  * @var View $this
  */
 
-$encodedName = Html::encode($panel->getName());
+$encodedName = Encode::content($panel->getName());
 ?>
 
 <h1 class="yii-debug-sr-only"><?= $encodedName ?></h1>
@@ -43,35 +46,28 @@ if ($identity !== null) {
     <ul class="yii-debug-tabs">
         <?php
         foreach ($items['nav'] as $k => $item) {
-            echo Html::tag(
-                'li',
-                Html::a(
-                    $item,
-                    "#u-tab-{$k}",
-                    [
-                        'class' => $k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link',
-                        'data-yii-debug-toggle' => 'tab',
-                        'role' => 'tab',
-                        'aria-controls' => "u-tab-{$k}",
-                        'aria-selected' => $k === 0 ? 'true' : 'false',
-                    ],
-                ),
-                ['class' => 'yii-debug-tab'],
-            );
+            $link = A::tag()
+                ->class($k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link')
+                ->href("#u-tab-{$k}")
+                ->addAttribute('data-yii-debug-toggle', 'tab')
+                ->addAttribute('role', 'tab')
+                ->addAriaAttribute('controls', "u-tab-{$k}")
+                ->addAriaAttribute('selected', $k === 0 ? 'true' : 'false')
+                ->html($item)
+                ->render();
+
+            echo Li::tag()->class('yii-debug-tab')->html($link)->render();
         }
     ?>
     </ul>
     <div class="yii-debug-tab-content">
         <?php
     foreach ($items['content'] as $k => $item) {
-        echo Html::tag(
-            'div',
-            $item,
-            [
-                'class' => $k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel',
-                'id' => "u-tab-{$k}",
-            ],
-        );
+        echo Div::tag()
+            ->class($k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel')
+            ->id("u-tab-{$k}")
+            ->html($item)
+            ->render();
     }
     ?>
     </div>

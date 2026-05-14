@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\panels\log;
 
 use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use yii\debug\panels\LogPanel;
-use yii\helpers\Html;
 use yii\log\Logger;
 
 use function array_map;
@@ -20,16 +20,8 @@ use function sprintf;
 /**
  * Renders the typed cells of the logs grid for the Log debug panel.
  *
- * Stateless static helpers; every method takes a typed {@see LogRow} and returns the rendered cell. Keeps the GridView
- * column closures in `panels/log/detail.php` short and free of `mixed` narrowing.
- *
- * Usage example:
- * ```php
- * 'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeCell(LogRowNormalizer::from($data)),
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: every method takes a typed {@see LogRow} and returns the rendered cell, keeping the
+ * GridView column closures in `panels/log/detail.php` short and free of `mixed` narrowing.
  */
 final class LogCellRenderer
 {
@@ -45,7 +37,7 @@ final class LogCellRenderer
     /**
      * Builds the GridView `rowOptions` array for the row: anchor id (`log-{N}`) and severity-driven CSS class.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Attribute map with `id` and (optionally) `class` keys.
      */
     public static function buildRowOptions(LogRow $row): array
     {
@@ -63,7 +55,7 @@ final class LogCellRenderer
     }
 
     /**
-     * Renders the human-readable level name (`error`, `warning`, etc.).
+     * Renders the human-readable level name (`error`, `warning`, `info`, ...).
      */
     public static function renderLevelCell(LogRow $row): string
     {
@@ -71,12 +63,17 @@ final class LogCellRenderer
     }
 
     /**
-     * Renders the message cell with the optional trace list. The DTO holds the message as a display string (already
-     * exported when the source was non-string) so the renderer just escapes it once.
+     * Renders the message cell, followed by the optional trace list.
+     *
+     * The row holds the message as a display string (already exported when the source was non-string), so the renderer
+     * just escapes it once.
+     *
+     * @param LogRow $row Typed log record.
+     * @param LogPanel $panel Panel used to render each trace line.
      */
     public static function renderMessageCell(LogRow $row, LogPanel $panel): string
     {
-        $body = Html::encode($row->message);
+        $body = Encode::content($row->message);
 
         if ($row->trace === []) {
             return $body;
@@ -91,7 +88,7 @@ final class LogCellRenderer
     }
 
     /**
-     * Renders the `H:i:s.mmm` timestamp derived from the millisecond field.
+     * Renders the capture time as `H:i:s.mmm`, derived from the row's millisecond timestamp.
      */
     public static function renderTimeCell(LogRow $row): string
     {
@@ -103,8 +100,9 @@ final class LogCellRenderer
     }
 
     /**
-     * Renders the time-since-previous cell with the prev/next anchor navigation buttons. Disabled buttons replace the
-     * anchors when the row is the first or the last of the request.
+     * Renders the time-since-previous cell with the prev/next anchor navigation buttons.
+     *
+     * Disabled buttons replace the anchors when the row is the first or the last of the request.
      */
     public static function renderTimeSincePreviousCell(LogRow $row): string
     {
@@ -146,8 +144,8 @@ final class LogCellRenderer
     }
 
     /**
-     * Renders one nav arrow as either a disabled `<span>` (when `$targetId` is `null`) or an `<a>` linking to
-     * `#log-{targetId}`.
+     * Renders one nav arrow as either a disabled `<span>` when `$targetId` is `null`, or an `<a>` linking to
+     * `#log-{targetId}` otherwise.
      */
     private static function renderNavButton(string $glyph, int|null $targetId): A|Span
     {

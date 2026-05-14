@@ -11,8 +11,7 @@ use yii\base\Model;
 use yii\data\{ArrayDataProvider, DataProviderInterface};
 use yii\db\ActiveRecord;
 use yii\debug\controllers\UserController;
-use yii\debug\models\search\User as UserSearch;
-use yii\debug\models\search\UserSearchInterface;
+use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
 use yii\debug\Panel;
 use yii\di\Instance;
@@ -30,12 +29,17 @@ use function is_string;
 use function method_exists;
 
 /**
- * Debugger panel that collects and displays user data.
+ * Captures the authenticated identity and renders it in the User panel, optionally allowing the developer to switch
+ * to another user.
+ *
+ * Captures the identity's attributes, RBAC roles, and permissions; surfaces them through the detail view with `Reveal`
+ * buttons on sensitive fields; and (when the configured access rule allows) lists candidate identities in a GridView so
+ * the developer can impersonate one with a single click.
  */
 class UserPanel extends Panel
 {
     /**
-     * Display Name of the debug panel.
+     * Display name shown in the panel header and the toolbar chip.
      */
     public string $displayName = 'User';
     /**
@@ -43,7 +47,7 @@ class UserPanel extends Panel
      *
      * Defaults to a curated set tailored to the standard Yii2 user schema (`id`, `username`, `email`, `status`,
      * `created_at`, `updated_at`). Sensitive fields (`auth_key`, `password_hash`, `password_reset_token`,
-     * `verification_token`) are intentionally excluded — clicking a row switches to that user and the User panel
+     * `verification_token`) are intentionally excluded: clicking a row switches to that user and the User panel
      * already exposes those values behind a `Reveal` button. Override this property in your debug config to fit a
      * different user model.
      *
@@ -82,32 +86,33 @@ class UserPanel extends Panel
         ],
     ];
     /**
-     * User filter model class name or instance with a search method.
+     * Filter model that powers the user-switch GridView; can be a class-name string, a model instance, or `null` to
+     * disable the search affordance.
      */
     public string|Model|null $filterModel = null;
     /**
-     * @var array<string, mixed> The rule that defines who is allowed to switch user identity.
+     * @var array<string, mixed> Access-rule definition that decides who can switch user identity.
      *
-     * Access Control Filter single rule. Ignore: actions, controllers, verbs.
-     * Settable: allow, roles, ips, matchCallback, denyCallback.
-     * By default deny for everyone. Recommendation: can allow for administrator or developer (if implement) role:
-     * ['allow' => true, 'roles' => ['admin']]
+     * Single {@see \yii\filters\AccessRule} rule applied to the user-switch endpoint; `actions`, `controllers`, and
+     * `verbs` are managed internally, the rest (`allow`, `roles`, `ips`, `matchCallback`, `denyCallback`) is open for
+     * configuration. Defaults to deny for everyone; a typical override is `['allow' => true, 'roles' => ['admin']]`.
+     *
      * @see https://www.yiiframework.com/doc-2.0/guide-security-authorization.html
      */
     public array $ruleUserSwitch = [
         'allow' => false,
     ];
     /**
-     * ID of the user component or a user object
+     * Component id of the user component, or a {@see User} instance to operate on directly.
      */
     public string|User $userComponent = 'user';
     /**
-     * User-switching model.
+     * User-switching model bound on {@see init()} once the panel resolves a non-guest identity.
      */
     public UserSwitch|null $userSwitch = null;
 
     /**
-     * Checks whether user search is available.
+     * Returns whether the user-switch search affordance is available (the filter model exposes a `search()` method).
      */
     public function canSearchUsers(): bool
     {
@@ -115,10 +120,9 @@ class UserPanel extends Panel
     }
 
     /**
-     * Check can main user switch identity.
+     * Returns whether the main (pre-switch) user is allowed to switch identities under {@see $ruleUserSwitch}.
      *
-     * @throws InvalidConfigException if the debug module is not configured properly or the user component is not
-     * available.
+     * @throws InvalidConfigException When the debug module or the user component cannot be resolved.
      */
     public function canSwitchUser(): bool
     {
@@ -149,16 +153,28 @@ class UserPanel extends Panel
         return $rule->allows($action, $userSwitch->getMainUser(), Yii::$app->request) === true;
     }
 
+    /**
+     * Renders the detail view with the identity card and the user-switch GridView.
+     */
     public function getDetail(): string
     {
-        return Yii::$app->view->render('panels/user/detail', ['panel' => $this]);
+        return Yii::$app->view->render(
+            'panels/user/detail',
+            ['panel' => $this],
+        );
     }
 
+    /**
+     * Returns the panel display name (configurable via {@see $displayName}).
+     */
     public function getName(): string
     {
         return $this->displayName;
     }
 
+    /**
+     * Renders the toolbar summary chip.
+     */
     public function getSummary(): string
     {
         return Yii::$app->view->render(
@@ -167,13 +183,19 @@ class UserPanel extends Panel
         );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'user';
     }
 
     /**
-     * @throws InvalidConfigException if the user component is not available or does not return a valid user object.
+     * Returns the user component bound to this panel, or `null` when the configured component id does not resolve to
+     * a {@see User} instance.
+     *
+     * @throws InvalidConfigException When the configured component cannot be retrieved from the application.
      */
     public function getUser(): User|null
     {
@@ -187,23 +209,27 @@ class UserPanel extends Panel
     }
 
     /**
-     * Get model for GridView -> DataProvider
+     * Returns the data provider that backs the user-switch GridView.
      *
-     * @throws InvalidConfigException if the filter model is missing or returns an invalid data provider.
+     * @throws InvalidConfigException When the filter model is missing or its `search()` method does not return a
+     * data provider.
      */
     public function getUserDataProvider(): DataProviderInterface
     {
         $filterModel = $this->getSearchableFilterModel();
 
         if ($filterModel === null) {
-            throw new InvalidConfigException('User filter model must be a model with a search method.');
+            throw new InvalidConfigException(
+                'User filter model must be a model with a search method.',
+            );
         }
 
         return $this->searchUsers($filterModel, Yii::$app->request->getQueryParams());
     }
 
     /**
-     * Get model for GridView -> FilterModel
+     * Returns the filter model instance for the GridView, or `null` when the filter model is not configured as an
+     * instance.
      */
     public function getUsersFilterModel(): Model|null
     {
@@ -211,8 +237,11 @@ class UserPanel extends Panel
     }
 
     /**
-     * @throws InvalidConfigException if the user component is not available or does not return a valid user object, or
-     * if the filter model cannot be initialized properly.
+     * Wires the user-switch model, the access rules, and the filter model when the user component resolves to a
+     * non-guest identity.
+     *
+     * @throws InvalidConfigException When the user component cannot be resolved or the filter model cannot be
+     * created.
      */
     public function init(): void
     {
@@ -232,6 +261,9 @@ class UserPanel extends Panel
         $this->initFilterModel($user);
     }
 
+    /**
+     * Returns whether the user component is resolvable; the panel is harmless on apps with no user component.
+     */
     public function isEnabled(): bool
     {
         try {
@@ -242,13 +274,17 @@ class UserPanel extends Panel
     }
 
     /**
+     * Snapshots the identity attributes, the RBAC roles, and the permissions for the active user.
+     *
+     * Returns `null` when there is no resolvable identity, so the detail view falls back to its empty state.
+     *
      * @return array{
      *   id: int|string|null,
      *   identity: array<string, string>,
      *   attributes: array<int, array{attribute: string, label: string}>|null,
      *   rolesProvider: ArrayDataProvider|null,
      *   permissionsProvider: ArrayDataProvider|null
-     * }|null
+     * }|null Captured payload consumed by the detail view, or `null` when no identity is bound.
      */
     public function save(): array|null
     {
@@ -320,7 +356,7 @@ class UserPanel extends Panel
     }
 
     /**
-     * Converts mixed data to string
+     * Returns the value when it is already a string, otherwise renders it with {@see VarDumper::export()}.
      */
     protected function dataToString(mixed $data): string
     {
@@ -332,7 +368,10 @@ class UserPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Builds the toolbar item with the active identity id, switching the chip to a `warning` tone when impersonation
+     * is active.
+     *
+     * @return array<int, array<string, mixed>> Single-element list with the user chip.
      */
     protected function getToolbarItems(): array
     {
@@ -367,12 +406,14 @@ class UserPanel extends Panel
     }
 
     /**
-     * Returns the array that should be set on {qsee \yii\widgets\DetailView::model}.
+     * Returns the identity attributes as a string-keyed map suitable for {@see \yii\widgets\DetailView::$model}.
      *
-     * @param IdentityInterface $identity if the identity is a model, its attributes will be used to determine the
-     * labels for the detail view. Otherwise,
+     * Reads {@see Model::getAttributes()} when the identity is a {@see Model}; otherwise falls back to
+     * {@see get_object_vars()} on the identity object.
      *
-     * @return array<string, mixed>
+     * @param IdentityInterface $identity Active identity object.
+     *
+     * @return array<string, mixed> Attribute map ready to feed the detail view.
      */
     protected function identityData(IdentityInterface $identity): array
     {
@@ -384,11 +425,13 @@ class UserPanel extends Panel
     }
 
     /**
-     * Add ACF rule. AccessControl attach to debug module.
-     * Access rule for main user.
+     * Attaches the {@see AccessControl} behavior to the debug module, scoped to the user-switch controller and the
+     * debug default controller.
      *
-     * @throws InvalidConfigException if the debug module is not configured properly or the user component is not
-     * available.
+     * The behavior evaluates the rule against the main user (the identity captured before any switch), so a switched
+     * impersonator never accidentally grants itself further access.
+     *
+     * @throws InvalidConfigException When the debug module or the user-switch model is not configured.
      */
     private function addAccessRules(): void
     {
@@ -409,15 +452,20 @@ class UserPanel extends Panel
             'access_debug',
             [
                 'class' => AccessControl::class,
-                'only' => [$userControllerRoute, $module->getUniqueId() . '/default'],
-                'user' => $userSwitch->getMainUser(),
-                'rules' => [
-                    $this->ruleUserSwitch,
+                'only' => [
+                    $userControllerRoute,
+                    $module->getUniqueId() . '/default',
                 ],
+                'user' => $userSwitch->getMainUser(),
+                'rules' => [$this->ruleUserSwitch],
             ],
         );
     }
 
+    /**
+     * Returns the filter model when it exposes a `search()` method (either via {@see UserSearchInterface} or by
+     * convention), or `null` otherwise.
+     */
     private function getSearchableFilterModel(): Model|null
     {
         $filterModel = $this->filterModel;
@@ -434,9 +482,14 @@ class UserPanel extends Panel
     }
 
     /**
-     * @param User $user Current web user component.
+     * Resolves {@see $filterModel} to a usable {@see Model} instance.
      *
-     * @throws InvalidConfigException if the configured filter model cannot be created as a model.
+     * Instantiates the configured class name when given a string; leaves an already-instantiated model alone;
+     * otherwise, falls back to {@see UserSearch} when the application identity is an {@see ActiveRecord}.
+     *
+     * @param User $user Resolved user component.
+     *
+     * @throws InvalidConfigException When the configured filter-model class does not extend {@see Model}.
      */
     private function initFilterModel(User $user): void
     {
@@ -446,7 +499,9 @@ class UserPanel extends Panel
             $model = Yii::createObject($filterModel);
 
             if (!$model instanceof Model) {
-                throw new InvalidConfigException('User filter model must extend ' . Model::class . '.');
+                throw new InvalidConfigException(
+                    'User filter model must extend ' . Model::class . '.',
+                );
             }
 
             $this->filterModel = $model;
@@ -466,6 +521,8 @@ class UserPanel extends Panel
     }
 
     /**
+     * Narrows the RBAC items returned by the auth manager into typed rows suitable for an {@see ArrayDataProvider}.
+     *
      * @param array<int|string, Item> $items RBAC items indexed by item name.
      *
      * @return array<int, array{
@@ -475,7 +532,7 @@ class UserPanel extends Panel
      *   data: string,
      *   createdAt: int,
      *   updatedAt: int
-     * }>
+     * }> Rows in iteration order.
      */
     private function normalizeRbacItems(array $items): array
     {
@@ -496,9 +553,11 @@ class UserPanel extends Panel
     }
 
     /**
+     * Stringifies every key of the input array, so the detail view sees a `string => mixed` map.
+     *
      * @param array<int|string, mixed> $data Raw identity data.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Same entries with their keys coerced to strings.
      */
     private static function normalizeStringKeyArray(array $data): array
     {
@@ -512,9 +571,14 @@ class UserPanel extends Panel
     }
 
     /**
+     * Invokes the filter model's `search()` method and verifies it returns a {@see DataProviderInterface}.
+     *
+     * @param Model $filterModel Filter model that exposes a `search()` method (either via {@see UserSearchInterface}
+     * or by convention).
      * @param array<int|string, mixed> $params Request query parameters.
      *
-     * @throws InvalidConfigException if the filter model returns an invalid data provider.
+     * @throws InvalidConfigException When the filter model lacks `search()` or it returns something other than a
+     * data provider.
      */
     private function searchUsers(Model $filterModel, array $params): DataProviderInterface
     {

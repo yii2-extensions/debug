@@ -20,22 +20,26 @@ use function is_int;
 use function is_string;
 
 /**
- * Debugger panel that collects and displays request data.
+ * Captures the HTTP request and response state and renders them in the Request panel.
+ *
+ * Snapshots the routing target, request/response headers, status code, body, flash messages, and the configured PHP
+ * superglobals, with optional value censoring for sensitive keys.
  */
 class RequestPanel extends Panel
 {
     /**
-     * @var array<int, string> List of variable names which values should be censored in the output.
+     * @var array<int, string> Variable names whose values should be replaced with `$censorString` in the captured
+     * snapshot.
      */
     public array $censoredVariableNames = [];
     /**
-     * Value to display instead of the variable value if the name is on the censor list
+     * Replacement value emitted for variables listed in {@see $censoredVariableNames}.
      */
     public string $censorString = '****';
     /**
-     * @var array<int, string> List of the PHP predefined variables that are allowed to be displayed in the request
-     * panel.
-     * Note that a variable must be accessible via `$GLOBALS`. Otherwise it won't be displayed.
+     * @var array<int, string> PHP predefined variables that the panel may surface.
+     *
+     * Each variable must be accessible via `$GLOBALS`; otherwise it is silently skipped.
      */
     public array $displayVars = [
         '_COOKIE',
@@ -46,6 +50,9 @@ class RequestPanel extends Panel
         '_SESSION',
     ];
 
+    /**
+     * Renders the detail view with the request hero header and the per-tab sections.
+     */
     public function getDetail(): string
     {
         $controller = Yii::$app->controller;
@@ -54,26 +61,47 @@ class RequestPanel extends Panel
 
         $view = RequestDataNormalizer::fromPanelData($this->data, $summary);
 
-        return Yii::$app->view->render('panels/request/detail', ['view' => $view]);
+        return Yii::$app->view->render(
+            'panels/request/detail',
+            ['view' => $view],
+        );
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Request';
     }
 
+    /**
+     * Renders the toolbar summary chip.
+     */
     public function getSummary(): string
     {
-        return Yii::$app->view->render('panels/request/summary', ['panel' => $this]);
+        return Yii::$app->view->render(
+            'panels/request/summary',
+            ['panel' => $this],
+        );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'request';
     }
 
     /**
-     * @return array<string, mixed>
+     * Snapshots the request/response state: action, route, headers, body, status code, flash messages, and the
+     * configured superglobals.
+     *
+     * Header names listed in {@see $censoredVariableNames} are emitted with {@see $censorString} instead of their real
+     * value; the same masking is applied to top-level keys in the captured payload via {@see censorArray()}.
+     *
+     * @return array<string, mixed> Captured request payload consumed by the detail view.
      */
     public function save(): array
     {
@@ -161,9 +189,15 @@ class RequestPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $data
+     * Replaces the values of any {@see $censoredVariableNames} entries with {@see $censorString}, returning the
+     * sanitized top-level data.
      *
-     * @return array<string, mixed>
+     * Also masks `requestBody.Raw` whenever a `requestBody.*` key is censored, so the verbatim payload does not leak
+     * the censored field by accident.
+     *
+     * @param array<string, mixed> $data Captured request payload.
+     *
+     * @return array<string, mixed> Sanitized payload with masked values.
      */
     protected function censorArray(array $data): array
     {
@@ -187,9 +221,9 @@ class RequestPanel extends Panel
     }
 
     /**
-     * Getting flash messages without deleting them or touching deletion counters
+     * Returns the active flash messages without deleting them or touching the deletion counters.
      *
-     * @return array<int|string, mixed> Flash messages (key => message).
+     * @return array<int|string, mixed> Flash messages keyed by their session flash name.
      */
     protected function getFlashes(): array
     {
@@ -218,7 +252,10 @@ class RequestPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Builds the toolbar item with the response status code, colored by class (`success` for 2xx, `info` for 3xx,
+     * `danger` for everything else).
+     *
+     * @return array<int, array<string, mixed>> Single-element list with the status chip.
      */
     protected function getToolbarItems(): array
     {
@@ -245,6 +282,9 @@ class RequestPanel extends Panel
         ];
     }
 
+    /**
+     * Returns the saved response status code, narrowed to an int, defaulting to `200` when missing or non-numeric.
+     */
     private function getStatusCode(): int
     {
         $data = is_array($this->data) ? $this->data : [];
@@ -262,6 +302,10 @@ class RequestPanel extends Panel
         return 200;
     }
 
+    /**
+     * Collapses every "empty" superglobal value (`null`, `false`, `''`, `[]`, `0`, `'0'`) to `[]`, so the renderer
+     * always sees an iterable shape.
+     */
     private static function normalizeGlobalValue(mixed $value): mixed
     {
         if ($value === null || $value === false || $value === '' || $value === [] || $value === 0 || $value === '0') {
@@ -272,9 +316,12 @@ class RequestPanel extends Panel
     }
 
     /**
-     * @param array<int|string, mixed> $data
+     * Narrows the captured payload to string-keyed entries only, dropping any int-keyed leftovers introduced by
+     * {@see ArrayHelper::setValue()} edge cases.
      *
-     * @return array<string, mixed>
+     * @param array<int|string, mixed> $data Captured payload.
+     *
+     * @return array<string, mixed> Payload restricted to string keys.
      */
     private static function normalizeTopLevelData(array $data): array
     {

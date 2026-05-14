@@ -7,11 +7,8 @@ namespace yii\debug\panels\asset;
 /**
  * Typed view-model for a single asset bundle rendered in the Asset Bundles detail view.
  *
- * Carries every value already normalized from the panel's `mixed` payload — the consuming view iterates and reads
+ * Carries every value already normalized from the panel's mixed payload, so the consuming view iterates and reads
  * properties without further type narrowing.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class AssetBundleView
 {
@@ -25,31 +22,33 @@ final readonly class AssetBundleView
          */
         public string $shortName,
         /**
-         * Namespace prefix without the trailing backslash; empty when `$name` has no namespace.
+         * Namespace prefix without the trailing backslash, or `''` when {@see $name} has no namespace.
          */
         public string $namespace,
         /**
-         * Anchor id derived from the FQCN via `Inflector::camel2id()`.
+         * Anchor id derived from the FQCN via {@see \yii\helpers\Inflector::camel2id()}.
          */
         public string $id,
         /**
-         * Bundle `sourcePath` or empty string when missing or not a string.
+         * Bundle `sourcePath` value, or `''` when missing or non-string.
          */
         public string $sourcePath,
         /**
-         * Bundle `basePath` or empty string when missing or not a string.
+         * Bundle `basePath` value, or `''` when missing or non-string.
          */
         public string $basePath,
         /**
-         * Bundle `baseUrl` or empty string when missing or not a string.
+         * Bundle `baseUrl` value, or `''` when missing or non-string.
          */
         public string $baseUrl,
         /**
-         * @var list<string> CSS file labels array entries already unwrapped to their first element.
+         * @var list<string> CSS file labels, with single-element wrapper arrays already unwrapped to their first
+         * element.
          */
         public array $css,
         /**
-         * @var list<string> JS file labels array entries already unwrapped to their first element.
+         * @var list<string> JS file labels, with single-element wrapper arrays already unwrapped to their first
+         * element.
          */
         public array $js,
         /**
@@ -57,15 +56,15 @@ final readonly class AssetBundleView
          */
         public array $depends,
         /**
-         * Number of CSS files.
+         * Number of CSS files in {@see $css}.
          */
         public int $cssCount,
         /**
-         * Number of JS files.
+         * Number of JS files in {@see $js}.
          */
         public int $jsCount,
         /**
-         * Number of declared dependencies.
+         * Number of declared dependencies in {@see $depends}.
          */
         public int $depsCount,
         /**
@@ -73,7 +72,7 @@ final readonly class AssetBundleView
          */
         public bool $hasFiles,
         /**
-         * `true` when at least one of `sourcePath`, `basePath`, `baseUrl` is non-empty.
+         * `true` when at least one of {@see $sourcePath}, {@see $basePath}, {@see $baseUrl} is non-empty.
          */
         public bool $hasWiring,
         /**

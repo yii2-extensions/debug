@@ -28,21 +28,9 @@ use function strtolower;
 /**
  * Renders the typed dump cells of the dumps grid for the Dump debug panel.
  *
- * Stateless static helpers; every method takes a typed {@see DumpRow} (and any extra context the cell needs) and
- * returns the rendered HTML. Keeps the GridView column closure in `panels/dump/detail.php` short and free of `mixed`
+ * Stateless static helpers: every method takes a typed {@see DumpRow} (and any extra context the cell needs) and
+ * returns the rendered HTML, keeping the GridView column closure in `panels/dump/detail.php` short and free of `mixed`
  * narrowing.
- *
- * Usage example:
- * ```php
- * 'value' => static fn(mixed $data, $key, int $index): string => DumpCardRenderer::renderMessageCell(
- *     DumpRowNormalizer::from($data),
- *     $panel,
- *     $index,
- * ),
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class DumpCardRenderer
 {
@@ -50,6 +38,8 @@ final class DumpCardRenderer
      * Renders the dump card combining the head (`#index`, type badge, time, trace label) and the body (highlighted
      * payload + optional trace list).
      *
+     * @param DumpRow $row Typed dump record.
+     * @param DumpPanel $panel Panel used to render each trace line.
      * @param int $index Zero-based row index assigned by GridView.
      */
     public static function renderMessageCell(DumpRow $row, DumpPanel $panel, int $index): string
@@ -64,11 +54,12 @@ final class DumpCardRenderer
     }
 
     /**
-     * Extracts the first trace frame's `file` / `line` pair (both narrowed to `string` / `int|null`).
+     * Extracts the first trace frame's `file` / `line` pair, narrowed to `string` / `int|null`.
      *
-     * @param list<array<string, mixed>> $trace
+     * @param list<array<string, mixed>> $trace Captured backtrace frames.
      *
-     * @return array{0: string, 1: int|null}
+     * @return array{0: string, 1: int|null} `[file, line]`, with `''` and `null` when the frame is missing or
+     * malformed.
      */
     private static function firstFrame(array $trace): array
     {
@@ -85,7 +76,7 @@ final class DumpCardRenderer
     }
 
     /**
-     * Formats a Unix timestamp in seconds to `H:i:s.mmm`, or returns an empty string when no timestamp is set.
+     * Formats a Unix timestamp in seconds as `H:i:s.mmm`, falling back to `''` when no timestamp is set.
      */
     private static function formatTime(float $time): string
     {
@@ -99,7 +90,7 @@ final class DumpCardRenderer
     }
 
     /**
-     * Renders the dump card body: highlighted payload followed by the optional trace list.
+     * Renders the dump card body: the highlighted payload followed by the optional trace list.
      */
     private static function renderBody(DumpRow $row, DumpPanel $panel): Div
     {
@@ -118,7 +109,8 @@ final class DumpCardRenderer
     }
 
     /**
-     * Renders the dump card head (`#index` badge, optional type badge, meta line with time and trace label).
+     * Renders the dump card head: the `#index` badge, the optional type badge, and the meta line with time and trace
+     * label.
      */
     private static function renderHead(DumpRow $row, int $index): Header
     {
@@ -148,9 +140,9 @@ final class DumpCardRenderer
     }
 
     /**
-     * Renders the meta line span children: the formatted time and the truncated trace location, when present.
+     * Renders the meta-line span children: the formatted time and the truncated trace location, when present.
      *
-     * @return list<Span>
+     * @return list<Span> Meta children in render order; possibly empty when neither time nor trace location is known.
      */
     private static function renderMeta(DumpRow $row): array
     {
@@ -167,7 +159,8 @@ final class DumpCardRenderer
         [$file, $line] = self::firstFrame($row->trace);
 
         if ($file !== '') {
-            $suffix = ($line !== null && $line > 0) ? ':' . $line : '';
+            $suffix = ($line !== null && $line > 0) ? ":{$line}" : '';
+
             $children[] = Span::tag()
                 ->class('yii-debug-dump-trace')
                 ->content(basename($file) . $suffix)
@@ -178,12 +171,12 @@ final class DumpCardRenderer
     }
 
     /**
-     * Sniffs a dump payload type from PHP's `highlight_string()` output.
+     * Sniffs the dump payload type from PHP's `highlight_string()` output.
      *
      * Decodes HTML entities so the first payload character (`[`, `'`, `"`, digit, identifier) classifies the dumped
-     * value. A miss just hides the badge; never blocks render.
+     * value. A miss hides the badge without blocking the render.
      *
-     * @return array{0: string, 1: string} `[typeKey, typeLabel]` (both empty when the type cannot be determined).
+     * @return array{0: string, 1: string} `[typeKey, typeLabel]`, both `''` when the type cannot be determined.
      */
     private static function sniffType(string $message): array
     {

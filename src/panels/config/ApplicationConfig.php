@@ -9,9 +9,6 @@ namespace yii\debug\panels\config;
  *
  * Mirrors the `application` slice of {@see \yii\debug\panels\ConfigPanel::save()} after every value has been narrowed
  * to its declared scalar type; the consuming view reads properties without further type checks.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class ApplicationConfig
 {
@@ -21,31 +18,31 @@ final readonly class ApplicationConfig
          */
         public string $yii,
         /**
-         * Configured `Application::$name`, or empty string when the application is unavailable.
+         * Configured {@see \yii\base\Application::$name}, or empty string when the application is unavailable.
          */
         public string $name,
         /**
-         * Configured `Application::$version`, or empty string when none is set.
+         * Configured {@see \yii\base\Application::$version}, or empty string when none is set.
          */
         public string $version,
         /**
-         * Configured `Application::$language` BCP-47 tag, or empty string.
+         * Configured {@see \yii\base\Application::$language} BCP-47 tag, or empty string.
          */
         public string $language,
         /**
-         * Configured `Application::$sourceLanguage` BCP-47 tag, or empty string.
+         * Configured {@see \yii\base\Application::$sourceLanguage} BCP-47 tag, or empty string.
          */
         public string $sourceLanguage,
         /**
-         * Configured `Application::$charset`, or empty string.
+         * Configured {@see \yii\base\Application::$charset}, or empty string.
          */
         public string $charset,
         /**
-         * Active `YII_ENV` environment label.
+         * Active {@see YII_ENV} environment label.
          */
         public string $env,
         /**
-         * Active `YII_DEBUG` flag.
+         * Active {@see YII_DEBUG} flag.
          */
         public bool $debug,
     ) {}

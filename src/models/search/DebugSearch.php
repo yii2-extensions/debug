@@ -2,63 +2,57 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
 
+use function in_array;
+
 /**
- * Search model for requests manifest data.
+ * Backs the filter form on the debug index page that lists every captured request manifest entry.
  */
-class Debug extends Base
+class DebugSearch extends Base
 {
     /**
-     * Ajax attribute input search value.
+     * Submitted value for the `ajax` filter (exact match).
      */
     public string $ajax = '';
     /**
-     * Critical status codes used to flag grid rows as severe.
-     *
-     * @var list<int>
+     * @var list<int> HTTP status codes flagged as severe in the request grid.
      */
     public array $criticalCodes = [400, 404, 500];
     /**
-     * IP attribute input search value.
+     * Submitted value for the `ip` filter (substring match).
      */
     public string $ip = '';
     /**
-     * Mail count attribute input search value.
+     * Submitted value for the `mailCount` filter (operator-aware numeric match).
      */
     public string $mailCount = '';
     /**
-     * Method attribute input search value.
+     * Submitted value for the `method` filter (exact match).
      */
     public string $method = '';
     /**
-     * SQL count attribute input search value.
+     * Submitted value for the `sqlCount` filter (operator-aware numeric match).
      */
     public string $sqlCount = '';
     /**
-     * Status code attribute input search value.
+     * Submitted value for the `statusCode` filter (exact or operator-aware numeric match).
      */
     public string $statusCode = '';
     /**
-     * Tag attribute input search value.
+     * Submitted value for the `tag` filter (substring match).
      */
     public string $tag = '';
     /**
-     * URL attribute input search value.
+     * Submitted value for the `url` filter (substring match).
      */
     public string $url = '';
 
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'tag' => 'Tag',
@@ -75,14 +69,14 @@ class Debug extends Base
     }
 
     /**
-     * Checks if code is critical.
+     * Returns whether the given status code is flagged as critical in {@see $criticalCodes}.
      */
     public function isCodeCritical(int $code): bool
     {
         return in_array($code, $this->criticalCodes, true);
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
             [['tag', 'ip', 'method', 'ajax', 'url', 'statusCode', 'sqlCount', 'mailCount'], 'safe'],
@@ -90,10 +84,10 @@ class Debug extends Base
     }
 
     /**
-     * Returns data provider with filled models. Filter applied if needed.
+     * Returns an {@see ArrayDataProvider} over the manifest entries, applying the loaded filter values.
      *
-     * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names
-     * @param array<int, array<string, mixed>> $models Sata to return provider for
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param array<int, array<string, mixed>> $models Manifest entries to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

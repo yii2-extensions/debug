@@ -8,34 +8,24 @@ use function is_array;
 use function is_string;
 
 /**
- * Normalizes the `mixed` payload of {@see \yii\debug\panels\ConfigPanel} into a typed {@see ConfigSummary} tree.
+ * Normalizes the mixed payload of {@see \yii\debug\panels\ConfigPanel} into a typed {@see ConfigSummary} tree.
  *
- * Centralizes every `is_array` / `is_string` narrowing previously inlined in the detail view so the rendering layer
- * iterates typed DTOs without further runtime type checks.
- *
- * Usage example:
- * ```php
- * $summary = (new \yii\debug\panels\config\ConfigDataNormalizer())->normalize(
- *     $panel->data,
- *     $panel->getExtensions(),
- * );
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Centralizes every {@see is_array()} / {@see is_string()} narrowing, so the rendering layer iterates typed values
+ * without further runtime type checks.
  */
 final class ConfigDataNormalizer
 {
     /**
      * Converts a raw configuration-panel payload into a typed summary.
      *
-     * @param mixed $data Raw value of `\yii\debug\panels\ConfigPanel::$data`.
-     * @param array<string, string> $extensions Already-typed roster from `ConfigPanel::getExtensions()`.
+     * @param mixed $data Raw value of {@see \yii\debug\panels\ConfigPanel::$data}.
+     * @param array<string, string> $extensions Already-typed roster from {@see \yii\debug\panels\ConfigPanel::getExtensions()}.
+     *
+     * @return ConfigSummary Typed summary safe to render directly.
      */
     public function normalize(mixed $data, array $extensions): ConfigSummary
     {
         $payload = is_array($data) ? $data : [];
-
         $applicationRaw = is_array($payload['application'] ?? null) ? $payload['application'] : [];
         $phpRaw = is_array($payload['php'] ?? null) ? $payload['php'] : [];
 
@@ -47,7 +37,9 @@ final class ConfigDataNormalizer
     }
 
     /**
-     * @param array<array-key, mixed> $raw
+     * Builds the application-section view-model from the `application` slice of the raw payload.
+     *
+     * @param array<array-key, mixed> $raw Raw `application` slice.
      */
     private function buildApplication(array $raw): ApplicationConfig
     {
@@ -64,7 +56,9 @@ final class ConfigDataNormalizer
     }
 
     /**
-     * @param array<array-key, mixed> $raw
+     * Builds the PHP-runtime view-model from the `php` slice of the raw payload.
+     *
+     * @param array<array-key, mixed> $raw Raw `php` slice.
      */
     private function buildPhp(array $raw): PhpConfig
     {
@@ -78,7 +72,9 @@ final class ConfigDataNormalizer
     }
 
     /**
-     * @param array<array-key, mixed> $raw
+     * Coerces the value at `$raw[$key]` to a boolean, falling back to `false` when missing.
+     *
+     * @param array<array-key, mixed> $raw Slice to read from.
      */
     private function extractBool(array $raw, string $key): bool
     {
@@ -86,7 +82,9 @@ final class ConfigDataNormalizer
     }
 
     /**
-     * @param array<array-key, mixed> $raw
+     * Returns the value at `$raw[$key]` when it is a string, falling back to `''` otherwise.
+     *
+     * @param array<array-key, mixed> $raw Slice to read from.
      */
     private function extractString(array $raw, string $key): string
     {

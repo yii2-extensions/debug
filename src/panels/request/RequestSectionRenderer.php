@@ -21,25 +21,16 @@ use const ENT_QUOTES;
 use const ENT_SUBSTITUTE;
 
 /**
- * Renders the Request panel detail view on top of `ui-awesome/html` builders.
+ * Renders the Request panel detail view.
  *
- * Stateless static helpers; the public entry points take a typed {@see RequestHero}, {@see RequestSection} or
- * {@see RequestView} and return ready-to-echo HTML strings. Concentrates name/value table rendering, status pill
- * tinting, filter affordance wiring and tab navigation in one testable place.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\panels\request\RequestSectionRenderer::renderHero($view->hero);
- * echo \yii\debug\panels\request\RequestSectionRenderer::renderTabs($view->tabs);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: the public entry points take a typed {@see RequestHero}, {@see RequestSection}, or
+ * {@see RequestView} and return ready-to-echo HTML strings. Concentrates name/value table rendering, status-pill
+ * tinting, filter-affordance wiring, and tab navigation in one testable place.
  */
 final class RequestSectionRenderer
 {
     /**
-     * Renders the hero header (method pill + url + status pill, plus the ip/time/duration/flags meta strip).
+     * Renders the hero header: method pill, URL, status pill, and the `ip` / `time` / `durationMs` / flags meta strip.
      */
     public static function renderHero(RequestHero $hero): string
     {
@@ -87,8 +78,8 @@ final class RequestSectionRenderer
     }
 
     /**
-     * Renders a single name/value section as `<header>` + `<table>` (or an empty-state `<p>` when the section has
-     * no entries).
+     * Renders a single name/value section as `<header>` + `<table>`, or as an empty-state `<p>` when the section has
+     * no entries.
      */
     public static function renderSection(RequestSection $section): string
     {
@@ -105,9 +96,10 @@ final class RequestSectionRenderer
     }
 
     /**
-     * Renders the full tab strip plus the per-tab content panels, wrapping the sections returned by `renderSection`.
+     * Renders the full tab strip plus the per-tab content panels, wrapping the sections returned by
+     * {@see renderSection()}.
      *
-     * @param list<RequestTab> $tabs
+     * @param list<RequestTab> $tabs Tabs in display order.
      */
     public static function renderTabs(array $tabs): string
     {
@@ -115,16 +107,18 @@ final class RequestSectionRenderer
     }
 
     /**
-     * Renders one row of the section table — name in the `<th>`, value dumped via `VarDumper::dumpAsString()` in the
-     * `<td>` with the same escaping the panel has always used (single-quoted scalars, multi-line arrays, …).
+     * Renders one row of the section table: name in the `<th>`, value dumped via {@see VarDumper::dumpAsString()} in
+     * the `<td>` with `htmlspecialchars` (`ENT_QUOTES | ENT_SUBSTITUTE`) escaping.
+     *
+     * The `ENT_SUBSTITUTE` flag mirrors what the legacy view did, so the rendered DOM is identical for already-captured
+     * request snapshots.
      */
     private static function renderRow(int|string $name, mixed $value): Tr
     {
         $charset = Yii::$app->charset;
 
         $valueText = VarDumper::dumpAsString($value);
-        // `htmlspecialchars` with `ENT_SUBSTITUTE` mirrors what the legacy view did so the rendered DOM is identical
-        // for already-captured request snapshots.
+
         $escaped = htmlspecialchars($valueText, ENT_QUOTES | ENT_SUBSTITUTE, $charset, true);
 
         return Tr::tag()
@@ -189,7 +183,7 @@ final class RequestSectionRenderer
     /**
      * Renders the `<ul class="yii-debug-tabs">` strip with one `<li>`/`<a>` per tab.
      *
-     * @param list<RequestTab> $tabs
+     * @param list<RequestTab> $tabs Tabs in display order; the first tab is rendered active.
      */
     private static function renderTabNav(array $tabs): string
     {
@@ -219,10 +213,11 @@ final class RequestSectionRenderer
     }
 
     /**
-     * Renders the per-tab content panels. The first tab is marked active; the rest are hidden until the toggle JS
-     * activates them.
+     * Renders the per-tab content panels.
      *
-     * @param list<RequestTab> $tabs
+     * The first tab is marked active; the rest are hidden until the toggle JS activates them.
+     *
+     * @param list<RequestTab> $tabs Tabs in display order.
      */
     private static function renderTabPanels(array $tabs): string
     {

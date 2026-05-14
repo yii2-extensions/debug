@@ -8,9 +8,10 @@ use Yii;
 use yii\base\{Event, InvalidConfigException};
 use yii\data\Sort;
 use yii\db\Connection;
+use yii\debug\actions\db\ExplainAction;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\helpers\Coerce;
-use yii\debug\models\search\Db;
+use yii\debug\models\search\DbSearch;
 use yii\debug\Panel;
 use yii\log\Logger;
 
@@ -21,50 +22,50 @@ use function is_int;
 use function is_string;
 
 /**
- * Debugger panel that collects and displays database queries performed.
+ * Captures every database query emitted during the request and renders them in the Database panel.
+ *
+ * Hooks the panel-bound DB connection so each prepared statement records its row count, calculates per-query timings
+ * from the profile log, and exposes the EXPLAIN action that powers the queries grid's inline plan toggle.
  */
 class DbPanel extends Panel
 {
     /**
-     * Threshold for determining whether the request has involved critical number of DB queries. If the number of
-     * queries exceeds this number, the execution is considered taking critical number of DB queries.
-     *
-     * If it is `null`, this feature is disabled.
+     * Critical-query-count threshold; when the captured query count exceeds this value the toolbar item flips to a
+     * warning state. `null` disables the check.
      */
     public int|null $criticalQueryThreshold = null;
     /**
-     * Name of the database component to use for executing (explain) queries
+     * Application component id of the DB connection used to run EXPLAIN queries.
      */
     public string $db = 'db';
     /**
-     * @var array<int, string> Event names used to get profile logs.
+     * @var array<int, string> Profile log categories scanned for query timings.
      */
     public array $dbEventNames = [
         'yii\db\Command::query',
         'yii\db\Command::execute',
     ];
     /**
-     * @var array<string, mixed> Default filter to apply to the database queries. In the format of [ property => value ],
-     * for example: [ 'type' => 'SELECT' ]
+     * @var array<string, mixed> Default filter applied to the queries grid as `property => value` (for example,
+     * `['type' => 'SELECT']`).
      */
     public array $defaultFilter = [];
     /**
-     * @var array<string, int> Default ordering of the database queries. In the format of [ property => sort direction ],
-     * for example: [ 'duration' => SORT_DESC ]
+     * @var array<string, int> Default sort order applied to the queries grid as `property => SORT_*` (for example,
+     * `['duration' => SORT_DESC]`).
      */
     public array $defaultOrder = [
         'seq' => SORT_ASC,
     ];
     /**
-     * Number of DB calls the same backtrace can make before considered an "Excessive Caller". If it is `null`, this
-     * feature is disabled.
+     * Number of DB calls the same backtrace can make before being flagged as an "Excessive Caller". `null` disables
+     * the check.
      */
     public int|null $excessiveCallerThreshold = null;
     /**
-     * @var array<int, string> Files and/or paths defined here will be ignored in the determination of DB "Callers".
-     * The "Caller" is the backtrace lines that aren't included in the `$ignoredPathsInBacktrace`, Yii files are ignored
-     * by default.
-     * Hint: You can use path aliases here.
+     * @var array<int, string> Paths whose backtrace frames are skipped when determining the "Caller".
+     *
+     * Yii framework files are ignored by default. Path aliases are resolved through {@see Yii::getAlias()}.
      */
     public array $ignoredPathsInBacktrace = [];
     /**
@@ -102,7 +103,8 @@ class DbPanel extends Panel
     private static string|null $traceHashAlgo = null;
 
     /**
-     * Calculates given request profile timings.
+     * Calculates and caches the per-query timings for the request, dropping backtrace frames that match
+     * {@see $ignoredPathsInBacktrace} and tagging each timing with a stable hash of its remaining trace.
      *
      * @return array<int, array{
      *   info: string,
@@ -114,7 +116,8 @@ class DbPanel extends Panel
      *   memory: int,
      *   memoryDiff: int,
      *   traceHash: string
-     * }> timings [token, category, timestamp, traces, nesting level, elapsed time]
+     * }> Timings indexed sequentially, each carrying the SQL token, category, capture timestamp, trace, nesting
+     * level, duration, memory snapshots, and trace hash.
      */
     public function calculateTimings(): array
     {
@@ -166,17 +169,16 @@ class DbPanel extends Panel
     }
 
     /**
-     * Check if given query type can be explained.
+     * Returns whether the given query type produces a useful EXPLAIN plan.
      *
-     * @param string $type query type
+     * Only DML statements that touch tables (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `REPLACE`, `WITH`) are accepted;
+     * metadata, session-control, and transaction-control statements either error or return noise (for example,
+     * SQLite PRAGMAs compile down to a handful of VDBE opcodes), so they are filtered out.
+     *
+     * @param string $type SQL command verb (case-insensitive).
      */
     public static function canBeExplained(string $type): bool
     {
-        /**
-         * Only DML statements that touch tables produce a meaningful plan. Skip metadata, session-control and
-         * transaction-control statements where EXPLAIN either errors or returns noise (for example. SQLite PRAGMAs that
-         * compile down to a few VDBE opcodes).
-         */
         return in_array(
             mb_strtoupper($type, 'utf8'),
             ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'REPLACE', 'WITH'],
@@ -185,9 +187,9 @@ class DbPanel extends Panel
     }
 
     /**
-     * Counts the number of times the same backtrace makes a DB query.
+     * Counts how many times the same backtrace originated a DB query.
      *
-     * @return array<string, int> Number of DB calls indexed by the backtrace hash of the caller.
+     * @return array<string, int> Call counts indexed by the backtrace hash of the caller.
      */
     public function countCallerCals(): array
     {
@@ -202,8 +204,7 @@ class DbPanel extends Panel
     }
 
     /**
-     * Return associative array, where key is query string
-     * and value is number of occurrences the same query in array.
+     * Counts how many times each distinct SQL statement appears in the given timings.
      *
      * @param array<int, array{
      *   info: string,
@@ -215,9 +216,9 @@ class DbPanel extends Panel
      *   memory: int,
      *   memoryDiff: int,
      *   traceHash: string
-     * }> $timings
+     * }> $timings Timings produced by {@see calculateTimings()}.
      *
-     * @return array<string, int>
+     * @return array<string, int> Occurrence counts indexed by SQL statement.
      */
     public function countDuplicateQuery(array $timings): array
     {
@@ -232,9 +233,9 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns a reference to the DB component associated with the panel
+     * Returns the DB connection used by the panel for EXPLAIN queries.
      *
-     * @throws InvalidConfigException
+     * @throws InvalidConfigException When the configured component id does not resolve to a {@see Connection}.
      */
     public function getDb(): Connection
     {
@@ -250,11 +251,13 @@ class DbPanel extends Panel
     }
 
     /**
-     * @throws InvalidConfigException
+     * Renders the detail view with the queries grid, the EXPLAIN toggle, and the duplicate-query summary.
+     *
+     * @throws InvalidConfigException When the DB connection cannot be resolved.
      */
     public function getDetail(): string
     {
-        $searchModel = new Db();
+        $searchModel = new DbSearch();
 
         if (!$searchModel->load(Yii::$app->request->getQueryParams())) {
             $searchModel->load($this->defaultFilter, '');
@@ -283,9 +286,10 @@ class DbPanel extends Panel
     }
 
     /**
-     * Get the backtrace hashes that make excessive DB cals.
+     * Returns the call counts for backtraces that exceed {@see $excessiveCallerThreshold}.
      *
-     * @return array<string, int> Number of DB calls indexed by the backtrace hash of excessive caller(s).
+     * @return array<string, int> Call counts indexed by the backtrace hash of each excessive caller; empty when the
+     * check is disabled.
      */
     public function getExcessiveCallers(): array
     {
@@ -300,23 +304,25 @@ class DbPanel extends Panel
     }
 
     /**
-     * Get the number of excessive caller(s).
+     * Returns the number of distinct backtraces flagged as excessive callers.
      */
     public function getExcessiveCallersCount(): int
     {
         return count($this->getExcessiveCallers());
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Database';
     }
 
     /**
-     * Returns all profile logs of the current request for this panel. It includes categories specified in
-     * $this->dbEventNames property.
+     * Returns the profile log entries scanned for query timings (categories listed in {@see $dbEventNames}).
      *
-     * @return array<int, array<int|string, mixed>>
+     * @return array<int, array<int|string, mixed>> Profile log entries in capture order.
      */
     public function getProfileLogs(): array
     {
@@ -327,6 +333,9 @@ class DbPanel extends Panel
         return $this->profileLogs;
     }
 
+    /**
+     * Renders the toolbar summary chip with the query count, total query time, and excessive-caller indicator.
+     */
     public function getSummary(): string
     {
         $timings = $this->calculateTimings();
@@ -349,22 +358,25 @@ class DbPanel extends Panel
     }
 
     /**
-     * @return string short name of the panel, which will be use in summary.
+     * Returns the short panel name used in the toolbar summary chip.
      */
     public function getSummaryName(): string
     {
         return 'DB';
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'db';
     }
 
     /**
-     * Returns array query types
+     * Returns the distinct SQL statement types captured for the request, keyed and valued by the same uppercase token.
      *
-     * @return array<string, string>
+     * @return array<string, string> `type => type` map suitable for a dropdown filter.
      */
     public function getTypes(): array
     {
@@ -377,19 +389,20 @@ class DbPanel extends Panel
         return $types;
     }
 
+    /**
+     * Registers the `db-explain` action and installs the {@see DebugPdoStatement} class on the panel-bound DB
+     * connection so every prepared statement records its `rowCount()`.
+     *
+     * The hook is applied through {@see \PDO::ATTR_STATEMENT_CLASS} rather than `Connection::$commandClass`, since
+     * the latter is not exposed by every Yii 2 fork.
+     */
     public function init(): void
     {
         $this->actions['db-explain'] = [
-            'class' => 'yii\\debug\\actions\\db\\ExplainAction',
+            'class' => ExplainAction::class,
             'panel' => $this,
         ];
 
-        /**
-         * Hook the panel-bound DB component so every prepared statement records its rowCount.
-         *
-         * We swap PDOStatement subclass via the PDO attribute works across Yii 2 forks since it does not depend on
-         * {@see Connection::$commandClass} (which not every fork exposes).
-         */
         $db = Yii::$app->get($this->db, false);
 
         if (!$db instanceof Connection) {
@@ -414,6 +427,9 @@ class DbPanel extends Panel
         );
     }
 
+    /**
+     * Returns whether the panel can run: requires both a resolvable DB connection and the parent enable check.
+     */
     public function isEnabled(): bool
     {
         try {
@@ -426,9 +442,9 @@ class DbPanel extends Panel
     }
 
     /**
-     * Check if the number of calls by "Caller" is excessive according to the settings.
+     * Returns whether the given call count exceeds {@see $excessiveCallerThreshold}.
      *
-     * @param int $numCalls queries count
+     * @param int $numCalls Call count to test.
      */
     public function isNumberOfCallsExcessive(int $numCalls): bool
     {
@@ -436,9 +452,9 @@ class DbPanel extends Panel
     }
 
     /**
-     * Check if given queries count is critical according to the settings.
+     * Returns whether the given query count exceeds {@see $criticalQueryThreshold}.
      *
-     * @param int $count queries count
+     * @param int $count Query count to test.
      */
     public function isQueryCountCritical(int $count): bool
     {
@@ -446,7 +462,10 @@ class DbPanel extends Panel
     }
 
     /**
-     * @return array{messages: array<int, array<int|string, mixed>>, rowCounts: array<int, int>}
+     * Snapshots the profile messages and the row counts captured by {@see DebugPdoStatement}.
+     *
+     * @return array{messages: array<int, array<int|string, mixed>>, rowCounts: array<int, int>} Captured payload
+     * consumed by {@see getMessagesForTimings()} and {@see getSavedRowCounts()} on read-back.
      */
     public function save(): array
     {
@@ -457,7 +476,7 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns sum of all duplicated queries
+     * Returns the number of query rows whose `duplicate` count is greater than one.
      *
      * @param array<int, array{
      *   type: string,
@@ -469,7 +488,7 @@ class DbPanel extends Panel
      *   seq: int,
      *   duplicate: int,
      *   rows: int|null
-     * }> $modelData
+     * }> $modelData Query rows produced by {@see getModels()}.
      */
     public function sumDuplicateQueries(array $modelData): int
     {
@@ -485,10 +504,10 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns the badge variant for a query type.
+     * Returns the CSS badge variant for the given SQL command verb.
      *
-     * Maps SQL command verbs to a visual class so the queries grid can render a colored pill (info / success / warning /
-     * danger / muted) at a glance.
+     * Maps `SELECT`/`SHOW`/`EXPLAIN`/`DESCRIBE`/`PRAGMA` to `info`, `INSERT` to `success`, `UPDATE`/`REPLACE`/`UPSERT`
+     * to `warning`, `DELETE`/`DROP`/`TRUNCATE` to `danger`, and everything else to `muted`.
      */
     public static function typeBadgeVariant(string $type): string
     {
@@ -502,9 +521,10 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns an array of models that represents logs of the current request.
+     * Builds and caches the typed query rows consumed by the queries grid.
      *
-     * Can be used with data providers such as {@see \yii\data\ArrayDataProvider}.
+     * Joins {@see calculateTimings()}, {@see countDuplicateQuery()}, and {@see getSavedRowCounts()} into a single list
+     * suitable for {@see \yii\data\ArrayDataProvider}.
      *
      * @return array<int, array{
      *   type: string,
@@ -516,7 +536,7 @@ class DbPanel extends Panel
      *   seq: int,
      *   duplicate: int,
      *   rows: int|null
-     * }>
+     * }> Query rows in capture order, with durations and timestamps in milliseconds.
      */
     protected function getModels(): array
     {
@@ -551,11 +571,11 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns database query type.
+     * Returns the uppercase SQL command verb extracted from the leading word of the profile-log token.
      *
-     * @param string $timing Timing procedure string.
+     * @param string $timing Profile-log token (the captured SQL statement).
      *
-     * @return string Query type such as select, insert, delete, etc.
+     * @return string Uppercase command verb (`SELECT`, `INSERT`, `DELETE`, ...), or `''` when none could be extracted.
      */
     protected function getQueryType(string $timing): string
     {
@@ -567,7 +587,10 @@ class DbPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
+     * Builds the toolbar items: the query-count chip (flipped to a warning when the count is critical or callers are
+     * excessive) and the total-query-time chip.
+     *
+     * @return array<int, array<string, mixed>>|null Toolbar items, or `null` when no queries were captured.
      */
     protected function getToolbarItems(): array|null
     {
@@ -607,7 +630,7 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns total query time.
+     * Returns the sum of every captured query's duration.
      *
      * @param array<int, array{
      *   info: string,
@@ -619,9 +642,9 @@ class DbPanel extends Panel
      *   memory: int,
      *   memoryDiff: int,
      *   traceHash: string
-     * }> $timings
+     * }> $timings Timings produced by {@see calculateTimings()}.
      *
-     * @return float total time
+     * @return float Total query time, in seconds.
      */
     protected function getTotalQueryTime(array $timings): float
     {
@@ -635,9 +658,9 @@ class DbPanel extends Panel
     }
 
     /**
-     * @throws InvalidConfigException
+     * Returns whether the DB connection's driver supports the EXPLAIN action (currently `mysql`, `sqlite`, `pgsql`).
      *
-     * @return bool Whether the DB component has support for EXPLAIN queries.
+     * @throws InvalidConfigException When the DB connection cannot be resolved.
      */
     protected function hasExplain(): bool
     {
@@ -654,9 +677,10 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns the saved profile messages for timing calculation.
+     * Returns the profile messages used to calculate timings: the saved snapshot when present, otherwise the live
+     * profile logs.
      *
-     * @return array<int, array<int|string, mixed>>
+     * @return array<int, array<int|string, mixed>> Profile messages in capture order.
      */
     private function getMessagesForTimings(): array
     {
@@ -672,9 +696,10 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns the saved row counts captured by {@see DebugPdoStatement}.
+     * Returns the row counts captured by {@see DebugPdoStatement}: the saved snapshot when present, otherwise the
+     * live static list.
      *
-     * @return array<int, int>
+     * @return array<int, int> Row counts in execution order, narrowed to integers.
      */
     private function getSavedRowCounts(): array
     {
@@ -698,9 +723,11 @@ class DbPanel extends Panel
     }
 
     /**
-     * @param array<int|string, mixed> $messages
+     * Filters the raw profile message list to keep only array entries.
      *
-     * @return array<int, array<int|string, mixed>>
+     * @param array<int|string, mixed> $messages Raw saved profile messages.
+     *
+     * @return array<int, array<int|string, mixed>> Reindexed list of message arrays.
      */
     private static function normalizeMessages(array $messages): array
     {
@@ -716,6 +743,9 @@ class DbPanel extends Panel
     }
 
     /**
+     * Narrows a raw timing returned by the Yii logger into the typed shape consumed by {@see calculateTimings()},
+     * or `null` when any required field is missing.
+     *
      * @param mixed $rawTiming Raw timing returned by Yii logger.
      *
      * @return array{
@@ -728,7 +758,7 @@ class DbPanel extends Panel
      *   memory: int,
      *   memoryDiff: int,
      *   traceHash: string
-     * }|null
+     * }|null Normalized timing, or `null` when the raw payload was incomplete.
      */
     private static function normalizeTiming(mixed $rawTiming): array|null
     {
@@ -758,8 +788,10 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns the hash algorithm used to fingerprint backtraces, falling back to `crc32` on hosts whose PHP
-     * installation does not expose xxh3 (`hash_algos()` is process-stable, so we compute the answer once).
+     * Returns the hash algorithm used to fingerprint backtraces.
+     *
+     * Prefers `xxh3`, falling back to `crc32` on hosts whose PHP installation does not expose it. The answer is
+     * cached because {@see hash_algos()} is process-stable.
      */
     private static function traceHashAlgo(): string
     {

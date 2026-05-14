@@ -17,21 +17,13 @@ use function sprintf;
 /**
  * Renders the column cells for the Queue panel grid view.
  *
- * Stateless static helpers; each public method takes a typed {@see JobRecord} (and, for `renderJobCell`, a per-row
- * detail URL builder) and returns a fully-rendered HTML string suitable for a Yii GridView column `value` callback.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\panels\queue\QueueGridRenderer::renderStatusCell($record);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: each public method takes a typed {@see JobRecord} (and, for `renderJobCell`, a per-row
+ * detail URL) and returns a fully-rendered HTML string suitable for a Yii GridView column `value` callback.
  */
 final class QueueGridRenderer
 {
     /**
-     * Renders the attempt cell as `#N` for non-zero attempts, `—` otherwise.
+     * Renders the attempt cell as `#N` for non-zero attempts, falling back to an em dash (`—`) otherwise.
      */
     public static function renderAttemptCell(JobRecord $record): string
     {
@@ -43,8 +35,9 @@ final class QueueGridRenderer
     }
 
     /**
-     * Renders the component id cell (`'queue'` / `'queueRedis'` / ...). Plain text; the value is small enough that a
-     * pill would only add visual noise.
+     * Renders the component id cell (`'queue'` / `'queueRedis'` / ...) as plain text.
+     *
+     * The value is small enough that a pill would only add visual noise.
      */
     public static function renderComponentCell(JobRecord $record): string
     {
@@ -52,8 +45,9 @@ final class QueueGridRenderer
     }
 
     /**
-     * Renders the driver pill (`Sync` / `Database` / `Redis` / ...). Async drivers carry the `is-async` modifier so the
-     * developer can spot at a glance which jobs ran in-process.
+     * Renders the driver pill (`Sync` / `Database` / `Redis` / ...).
+     *
+     * Async drivers carry the `is-async` modifier, so the developer can spot at a glance which jobs ran in-process.
      */
     public static function renderDriverCell(JobRecord $record): string
     {
@@ -71,8 +65,8 @@ final class QueueGridRenderer
     }
 
     /**
-     * Renders the duration cell; `X.X ms` for executed/errored events, `—` for the push-only events that did not carry
-     * a duration.
+     * Renders the duration cell as `X.X ms` for executed/errored events, falling back to an em dash (`—`) for push
+     * events that did not carry a duration.
      */
     public static function renderDurationCell(JobRecord $record): string
     {
@@ -84,9 +78,11 @@ final class QueueGridRenderer
     }
 
     /**
-     * Renders the job-id cell. Wraps the id in a monospaced link-styled span (matches the History panel's tag column)
-     * so async-driver ids (UUIDs, hex strings, ...) read cleanly. Empty becomes `—` so the column never collapses to
-     * whitespace and the dash makes it obvious the queue did not return an id at push time.
+     * Renders the job-id cell, wrapping the id in a monospaced link-styled span (matching the History panel's tag
+     * column) so async-driver ids (UUIDs, hex strings, ...) read cleanly.
+     *
+     * An empty id renders as an em dash (`—`), so the column never collapses to whitespace and the dash makes it
+     * obvious the queue did not return an id at push time.
      */
     public static function renderIdCell(JobRecord $record): string
     {
@@ -101,10 +97,13 @@ final class QueueGridRenderer
     }
 
     /**
-     * Renders the job-class cell as a link to the dedicated detail page. The short class name shows in bold; the
-     * namespace prefix renders muted underneath. The full FQCN sits in the `title` attribute for hover inspection.
+     * Renders the job-class cell as a link to the dedicated detail page.
      *
-     * Click drills into the typed payload tree.
+     * The short class name shows in bold; the namespace prefix renders muted underneath; the full FQCN sits in the
+     * `title` attribute for hover inspection. Click drills into the typed payload tree.
+     *
+     * @param JobRecord $record Typed queue event record.
+     * @param string $href URL of the dedicated detail page for `$record`.
      */
     public static function renderJobCell(JobRecord $record, string $href): string
     {
@@ -143,7 +142,7 @@ final class QueueGridRenderer
     }
 
     /**
-     * Renders the time cell as `HH:MM:SS.mmm` derived from the captured `microtime` float.
+     * Renders the capture time as `HH:MM:SS.mmm`, derived from the captured `microtime` float.
      */
     public static function renderTimeCell(JobRecord $record): string
     {
@@ -154,7 +153,7 @@ final class QueueGridRenderer
     }
 
     /**
-     * Renders the time-to-reserve cell as `Ns` for non-zero TTRs, `—` otherwise.
+     * Renders the time-to-reserve cell as `Ns` for non-zero TTRs, falling back to an em dash (`—`) otherwise.
      */
     public static function renderTtrCell(JobRecord $record): string
     {

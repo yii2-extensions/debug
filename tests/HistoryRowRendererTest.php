@@ -7,7 +7,7 @@ namespace yiiunit\debug;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\controllers\DefaultController;
-use yii\debug\models\search\Debug;
+use yii\debug\models\search\DebugSearch;
 use yii\debug\Module;
 use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryStatusBucket, HistorySummary};
 
@@ -35,7 +35,7 @@ final class HistoryRowRendererTest extends TestCase
             ],
         );
 
-        $options = HistoryRowRenderer::buildRowOptions($row, new Debug());
+        $options = HistoryRowRenderer::buildRowOptions($row, new DebugSearch());
 
         self::assertSame(
             [
@@ -60,7 +60,7 @@ final class HistoryRowRendererTest extends TestCase
     {
         $options = HistoryRowRenderer::buildRowOptions(
             HistoryRow::from([]),
-            new Debug(),
+            new DebugSearch(),
         );
 
         self::assertArrayHasKey(

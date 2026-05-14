@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\models\search\Debug;
+use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
@@ -17,7 +17,7 @@ use yii\web\View;
  * @var ArrayDataProvider $dataProvider
  * @var string $debugTheme
  * @var array<int|string, mixed> $manifest
- * @var Debug $searchModel
+ * @var DebugSearch $searchModel
  * @var Panel[] $panels
  * @var string $themeIconMoon
  * @var string $themeIconSun

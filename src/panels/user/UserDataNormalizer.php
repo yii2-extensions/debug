@@ -27,16 +27,8 @@ use function ucwords;
  * Narrows the loose `$panel->data['identity']` payload into the typed {@see UserIdentityView}.
  *
  * Concentrates every closure that previously lived inline in `_identity.php` (display-value stripping, sensitive-key
- * detection, timestamp detection + humanization, status mapping, attribute bucketing) in one testable place so the
+ * detection, timestamp detection + humanization, status mapping, attribute bucketing) in one testable place, so the
  * view template is reduced to pure rendering.
- *
- * Usage example:
- * ```php
- * $view = \yii\debug\panels\user\UserDataNormalizer::fromIdentity($identity, $attributes);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class UserDataNormalizer
 {
@@ -48,8 +40,10 @@ final class UserDataNormalizer
     private const array HERO_KEYS = ['id', 'username', 'name', 'email', 'status'];
 
     /**
-     * Status numeric → display-label / CSS-variant map. Values not in the map fall back to the raw status with the
-     * `muted` variant (or `Unknown` / `muted` for an empty value).
+     * Status numeric → display-label / CSS-variant map.
+     *
+     * Values not in the map fall back to the raw status with the `muted` variant, or to `Unknown` / `muted` for an
+     * empty value.
      */
     private const array STATUS_MAP = [
         '10' => ['label' => 'Active', 'variant' => 'success'],
@@ -58,10 +52,11 @@ final class UserDataNormalizer
     ];
 
     /**
-     * Builds the typed identity view-model from the raw attribute map and the optional `$attributes` label map.
+     * Builds the typed identity view-model from the raw attribute map and the optional label map.
      *
-     * @param array<string, string> $identity
-     * @param array<int, array{attribute: string, label: string}>|null $attributes
+     * @param array<string, string> $identity Raw identity attribute map.
+     * @param array<int, array{attribute: string, label: string}>|null $attributes Optional label map from the user
+     * panel, or `null` when no labels were supplied.
      */
     public static function fromIdentity(array $identity, array|null $attributes): UserIdentityView
     {
@@ -74,10 +69,13 @@ final class UserDataNormalizer
     }
 
     /**
-     * @param array<string, string> $bucket
-     * @param array<string, string> $labels
+     * Builds the typed attribute rows for one section bucket, applying the kind-specific formatting.
      *
-     * @return list<UserAttribute>
+     * @param array<string, string> $bucket Attribute key/value pairs to render in the section.
+     * @param array<string, string> $labels Label lookup keyed by attribute name.
+     * @param string $kind Rendering kind to apply (one of the {@see UserAttribute} `KIND_*` constants).
+     *
+     * @return list<UserAttribute> Attribute rows in source order.
      */
     private static function buildAttributes(array $bucket, array $labels, string $kind): array
     {
@@ -85,6 +83,7 @@ final class UserDataNormalizer
 
         foreach ($bucket as $key => $value) {
             $display = self::stripQuotes($value);
+
             $isEmpty = $display === '' || $value === 'null';
 
             if ($isEmpty) {
@@ -125,7 +124,9 @@ final class UserDataNormalizer
     }
 
     /**
-     * @param array<string, string> $identity
+     * Builds the hero view-model from the identity attributes.
+     *
+     * @param array<string, string> $identity Raw identity attribute map.
      */
     private static function buildHero(array $identity): UserIdentityHero
     {
@@ -154,9 +155,11 @@ final class UserDataNormalizer
     }
 
     /**
-     * @param array<int, array{attribute: string, label: string}>|null $attributes
+     * Flattens the panel-supplied label map into a `attribute => label` lookup.
      *
-     * @return array<string, string>
+     * @param array<int, array{attribute: string, label: string}>|null $attributes Label map, or `null` when absent.
+     *
+     * @return array<string, string> Label lookup keyed by attribute name.
      */
     private static function buildLabelLookup(array|null $attributes): array
     {
@@ -174,10 +177,13 @@ final class UserDataNormalizer
     }
 
     /**
-     * @param array<string, string> $identity
-     * @param array<string, string> $labels
+     * Buckets the identity attributes into the four canonical sections (Identity, Security, Timestamps, Other) and
+     * produces the matching view-models, dropping empty buckets.
      *
-     * @return list<UserIdentitySection>
+     * @param array<string, string> $identity Raw identity attribute map.
+     * @param array<string, string> $labels Label lookup keyed by attribute name.
+     *
+     * @return list<UserIdentitySection> Non-empty sections in display order.
      */
     private static function buildSections(array $identity, array $labels): array
     {
@@ -244,7 +250,11 @@ final class UserDataNormalizer
     }
 
     /**
-     * @return array{0: string, 1: string} `[relative, absolute]` timestamp display strings.
+     * Converts a Unix-epoch string into the `[relative, absolute]` display pair shown in the timestamps section.
+     *
+     * @param string $value Unix-epoch second, optionally surrounded by `VarDumper` single quotes.
+     *
+     * @return array{0: string, 1: string} `[relative, absolute]` display strings.
      */
     private static function humanTime(string $value): array
     {
@@ -272,11 +282,18 @@ final class UserDataNormalizer
         return [$relative, $absolute];
     }
 
+    /**
+     * Returns whether the attribute name looks like a secret (auth key, password, token, secret, hash, or salt).
+     */
     private static function isSensitive(string $key): bool
     {
         return preg_match('/auth[_\-]?key|password|token|secret|hash|salt/i', $key) === 1;
     }
 
+    /**
+     * Returns whether the attribute looks like a timestamp, either by name suffix/prefix or by a 10-digit Unix-epoch
+     * value.
+     */
     private static function isTimestamp(string $key, string $value): bool
     {
         if (preg_match('/_at$|_time$|^(?:created|updated|deleted|signed_up|last_login)/i', $key) === 1) {
@@ -289,7 +306,10 @@ final class UserDataNormalizer
     }
 
     /**
-     * @param array<string, string> $labels
+     * Returns the label for `$key`: the configured one when present, otherwise a title-cased version of `$key` with
+     * underscores and dots turned into spaces.
+     *
+     * @param array<string, string> $labels Label lookup keyed by attribute name.
      */
     private static function labelFor(string $key, array $labels): string
     {
@@ -301,6 +321,8 @@ final class UserDataNormalizer
     }
 
     /**
+     * Resolves the status display label and CSS variant for the raw status value.
+     *
      * @return array{0: string, 1: string} `[label, variant]`.
      */
     private static function resolveStatus(string $value): array
@@ -315,8 +337,9 @@ final class UserDataNormalizer
     }
 
     /**
-     * Strips the single-quote wrapping that {@see \yii\helpers\VarDumper::dumpAsString()} adds around string values;
-     * collapses literal `null` to empty so the renderer can treat both forms uniformly.
+     * Strips the single-quote wrapping that {@see \yii\helpers\VarDumper::dumpAsString()} adds around string values.
+     *
+     * Collapses literal `null` to `''`, so the renderer can treat both forms uniformly.
      */
     private static function stripQuotes(string $value): string
     {

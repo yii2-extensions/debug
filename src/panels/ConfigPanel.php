@@ -16,19 +16,30 @@ use function is_scalar;
 use function is_string;
 
 /**
- * Debugger panel that collects and displays application configuration and environment.
+ * Captures the application configuration and runtime environment shown in the Configuration panel.
+ *
+ * Stores the Yii framework / PHP / application identity and the installed-extensions roster, then surfaces it through
+ * the detail view, the toolbar's `php-info` link, and the brand-chip version readouts.
  */
 class ConfigPanel extends Panel
 {
+    /**
+     * Renders the detail view from the normalized configuration summary.
+     */
     public function getDetail(): string
     {
         $summary = (new ConfigDataNormalizer())->normalize($this->data, $this->getExtensions());
 
-        return Yii::$app->view->render('panels/config/detail', ['summary' => $summary]);
+        return Yii::$app->view->render(
+            'panels/config/detail',
+            ['summary' => $summary],
+        );
     }
 
     /**
-     * @return array<string, string>
+     * Returns the installed-extensions roster as a sorted `name => version` map.
+     *
+     * @return array<string, string> Extension versions keyed by package name, sorted alphabetically.
      */
     public function getExtensions(): array
     {
@@ -55,13 +66,16 @@ class ConfigPanel extends Panel
         return $data;
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Configuration';
     }
 
     /**
-     * Returns the BODY contents of the phpinfo() output.
+     * Returns the `<body>` contents of the {@see phpinfo()} output, rewrapped so the panel's table styles apply.
      */
     public function getPhpInfo(): string
     {
@@ -106,11 +120,20 @@ class ConfigPanel extends Panel
         return self::nestedScalar($this->data, 'php', 'version');
     }
 
+    /**
+     * Renders the toolbar summary chip.
+     */
     public function getSummary(): string
     {
-        return Yii::$app->view->render('panels/config/summary', ['panel' => $this]);
+        return Yii::$app->view->render(
+            'panels/config/summary',
+            ['panel' => $this],
+        );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'config';
@@ -125,28 +148,30 @@ class ConfigPanel extends Panel
     }
 
     /**
+     * Snapshots the framework/PHP/application identity and the installed-extensions roster.
+     *
      * @return array{
-     *     phpVersion: string,
-     *     yiiVersion: string,
-     *     application: array{
-     *         yii: string,
-     *         name: string,
-     *         version: string,
-     *         language: string,
-     *         sourceLanguage: string,
-     *         charset: string,
-     *         env: string,
-     *         debug: bool
-     *     },
-     *     php: array{
-     *         version: string,
-     *         xdebug: bool,
-     *         apcu: bool,
-     *         memcache: bool,
-     *         memcached: bool
-     *     },
-     *     extensions: array<int|string, array<string, mixed>>
-     * }
+     *   phpVersion: string,
+     *   yiiVersion: string,
+     *   application: array{
+     *     yii: string,
+     *     name: string,
+     *     version: string,
+     *     language: string,
+     *     sourceLanguage: string,
+     *     charset: string,
+     *     env: string,
+     *     debug: bool
+     *   },
+     *   php: array{
+     *     version: string,
+     *     xdebug: bool,
+     *     apcu: bool,
+     *     memcache: bool,
+     *     memcached: bool
+     *   },
+     *   extensions: array<int|string, array<string, mixed>>
+     * } Captured configuration snapshot consumed by the detail view and the toolbar.
      */
     public function save(): array
     {
@@ -173,6 +198,7 @@ class ConfigPanel extends Panel
             $application['language'] = $app->language;
             $application['sourceLanguage'] = $app->sourceLanguage;
             $application['charset'] = $app->charset;
+
             $extensions = is_array($app->extensions) ? $app->extensions : [];
         }
 
@@ -191,6 +217,9 @@ class ConfigPanel extends Panel
         ];
     }
 
+    /**
+     * Returns the active application instance via reflection, or `null` when {@see Yii::$app} is unset.
+     */
     protected function getApplication(): object|null
     {
         $app = (new ReflectionClass(Yii::class))->getStaticPropertyValue('app');
@@ -199,11 +228,10 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * Configuration is surfaced on the toolbar via the Yii logo/version brand chip (the brand click target is this
-     * panel's URL) and a dedicated PHP chip linking to `php-info`. A separate "Configuration" panel chip would
-     * duplicate that information, so we suppress it.
+     * Suppresses the per-panel toolbar item: the configuration data is already surfaced through the Yii brand chip
+     * (links to this panel) and the dedicated PHP chip (links to `php-info`).
      *
-     * @return array<int, array<string, mixed>>|null
+     * @return array<int, array<string, mixed>>|null Always `null`.
      */
     protected function getToolbarItems(): array|null
     {
@@ -232,9 +260,12 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * @param array<int|string, mixed> $extensions
+     * Narrows the raw extensions list into a map of string-keyed entries, dropping non-array entries and non-string
+     * keys inside each entry.
      *
-     * @return array<int|string, array<string, mixed>>
+     * @param array<int|string, mixed> $extensions Raw `extensions` slice from {@see Application::$extensions}.
+     *
+     * @return array<int|string, array<string, mixed>> Sanitized extension entries indexed by their original key.
      */
     private static function normalizeExtensions(array $extensions): array
     {

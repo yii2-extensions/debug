@@ -19,12 +19,16 @@ use function is_array;
 use function is_string;
 
 /**
- * Collects all available controller actions and their matching routes.
+ * Discovers every controller action reachable from the running application and pairs it with its matching URL rule.
+ *
+ * Walks the module tree starting from {@see Yii::$app}, reflects each controller to enumerate its action methods, and
+ * resolves the first creation-time URL rule that matches the resulting route.
  */
 class ActionRoutes extends Model
 {
     /**
-     * @var array<string, array{route: string, rule: string|null, count: int}> Scanned actions with matching routes
+     * @var array<string, array{route: string, rule: string|null, count: int}> Discovered actions keyed by display name,
+     * each carrying its route, matched URL rule (or `null`), and the number of rules scanned.
      */
     public array $routes = [];
 
@@ -72,11 +76,12 @@ class ActionRoutes extends Model
     }
 
     /**
-     * Returns all available actions of the specified controller.
+     * Returns the action method names declared on the given controller, plus a sentinel when it overrides `actions()`.
      *
-     * @param ReflectionClass<Controller> $controller Reflection of the controller.
+     * @param ReflectionClass<Controller> $controller Reflection over the target controller class.
      *
-     * @return list<non-empty-string> All available action IDs with optional action class name (for external actions).
+     * @return list<non-empty-string> Action method names (`actionFoo`), or `__ACTIONS__` for controllers that declare
+     * external actions.
      */
     protected function getActions(ReflectionClass $controller): array
     {
@@ -98,13 +103,12 @@ class ActionRoutes extends Model
     }
 
     /**
-     * Returns all available application routes (non-console) grouped by the controller's name.
+     * Returns every web/REST controller reachable from the application, grouped by controller ID.
      *
-     * @throws ReflectionException if any controller class does not exist or is not a valid controller.
+     * @throws ReflectionException When a controller class fails to reflect.
      *
-     * @return array<string, array{class: class-string<Controller>, actions: list<non-empty-string>}> Available
-     * controllers and their actions, where the key is the controller ID and the value contains the controller class and
-     * its actions.
+     * @return array<string, array{class: class-string<Controller>, actions: list<non-empty-string>}> Controllers keyed
+     * by ID, each carrying its FQCN and the action method names it exposes.
      */
     protected function getAppRoutes(): array
     {
@@ -131,11 +135,12 @@ class ActionRoutes extends Model
     }
 
     /**
-     * Returns the first rule's name that matched given route (for creation) with number of scanned rules.
+     * Returns the first URL rule name that successfully creates a URL for the given route.
      *
-     * @param string $route Route to be checked against URL rules.
+     * @param string $route Route to test against every configured URL rule.
      *
-     * @return array{0: string|null, 1: int} Rule name (or null if not matched) and number of scanned rules.
+     * @return array{0: string|null, 1: int} Matching rule name (or `null` when no rule matches) and the number of
+     * rules actually scanned before deciding.
      */
     protected function getMatchedCreationRule(string $route): array
     {
@@ -166,13 +171,15 @@ class ActionRoutes extends Model
     }
 
     /**
-     * Returns available controllers of a specified module.
+     * Returns every controller available in the given module (and recursively its child modules).
      *
-     * @param Module $module Module instance.
+     * Scans the module's controller path for `*Controller.php` files and applies `controllerMap` overrides on top.
      *
-     * @throws ReflectionException if any controller class does not exist or is not a valid controller.
+     * @param Module $module Module to scan, including its child modules.
      *
-     * @return array<string, class-string<Controller>> Available controller IDs and their class names.
+     * @throws ReflectionException When a controller class fails to reflect.
+     *
+     * @return array<string, class-string<Controller>> Controller class names indexed by route prefix.
      */
     protected function getModuleControllers(Module $module): array
     {
@@ -228,10 +235,10 @@ class ActionRoutes extends Model
                         $controllerId = Inflector::camel2id(substr(basename($file), 0, -14), '-', true);
 
                         if ($dir !== '') {
-                            $controllerId = $dir . '/' . $controllerId;
+                            $controllerId = "{$dir}/{$controllerId}";
                         }
 
-                        $controllers[$prefix . $controllerId] = $controllerClass;
+                        $controllers["{$prefix}{$controllerId}"] = $controllerClass;
                     }
                 }
             }
@@ -264,15 +271,16 @@ class ActionRoutes extends Model
     }
 
     /**
-     * Validates if the given class is a valid web or REST controller class.
+     * Returns whether the given class is a concrete `yii\web\Controller` or `yii\rest\Controller` subclass.
      *
-     * @param string $controllerClass Fully qualified class name of the controller to validate.
+     * @param string $controllerClass Fully qualified class name to validate.
      *
-     * @throws ReflectionException if the controller class does not exist or is not a valid controller.
+     * @throws ReflectionException When reflection over the class fails.
      *
-     * @return bool `true` if the class exists and is a valid controller, `false` otherwise.
+     * @return bool `true` when the class is loadable, non-abstract, and extends a web/REST controller, `false`
+     * otherwise.
      *
-     * @phpstan-assert-if-true class-string<Controller> $controllerClass if the class exists and is a valid controller.
+     * @phpstan-assert-if-true class-string<Controller> $controllerClass
      */
     protected function validateControllerClass(string $controllerClass): bool
     {
@@ -292,13 +300,12 @@ class ActionRoutes extends Model
     }
 
     /**
-     * Returns the name of the rule if it is a `UrlRule` with successful creation status, or recursively checks subrules
-     * if it's a `GroupUrlRule`.
+     * Returns the rule name when the rule is a {@see UrlRule} with a successful creation status, recursing into the
+     * subrules of any {@see GroupUrlRule}.
      *
-     * @param UrlRuleInterface $rule URL rule to check.
+     * @param UrlRuleInterface $rule Rule to inspect.
      *
-     * @return string|null Name of the rule if it matches the criteria, or null if it doesn't match or if no matching
-     * rule is found in the group.
+     * @return string|null Matching rule name, or `null` when nothing inside the rule matches.
      */
     private function getRuleName(UrlRuleInterface $rule): string|null
     {

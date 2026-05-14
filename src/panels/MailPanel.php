@@ -7,12 +7,13 @@ namespace yii\debug\panels;
 use Stringable;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Part\{AbstractPart, TextPart};
+use Throwable;
 use Yii;
 use yii\base\Event;
-use yii\debug\LogTarget;
-use yii\debug\models\search\Mail;
-use yii\debug\Panel;
+use yii\debug\{LogTarget, Panel};
+use yii\debug\models\search\MailSearch;
 use yii\helpers\FileHelper;
+use yii\helpers\Url;
 use yii\mail\{BaseMailer, MailEvent,MessageInterface};
 use yii\symfonymailer\Message;
 
@@ -22,23 +23,30 @@ use function is_scalar;
 use function is_string;
 
 /**
- * Debugger panel that collects and displays the generated emails.
+ * Captures every mail message dispatched during the request and renders them in the Mail panel.
+ *
+ * Subscribes to `BaseMailer::EVENT_AFTER_SEND` at {@see init()} time, persists each message to disk under
+ * {@see $mailPath} as a `.eml` file, and records the metadata (sender, recipients, subject, headers, charset, time)
+ * consumed by the detail view and the toolbar.
  */
 class MailPanel extends Panel
 {
     /**
-     * Path where all emails will be saved. should be an alias.
+     * Filesystem path (Yii alias) where every captured message is persisted as a `.eml` file.
      */
     public string $mailPath = '@runtime/debug/mail';
 
     /**
-     * @var array<int, array<string, mixed>> Current request sent messages
+     * @var array<int, array<string, mixed>> Mail messages captured for the current request, in send order.
      */
     private array $messages = [];
 
+    /**
+     * Renders the detail view with the mail card list.
+     */
     public function getDetail(): string
     {
-        $searchModel = new Mail();
+        $searchModel = new MailSearch();
 
         $dataProvider = $searchModel->search(Yii::$app->request->get(), self::normalizeMessages($this->data));
 
@@ -53,9 +61,9 @@ class MailPanel extends Panel
     }
 
     /**
-     * Return array of created email files
+     * Returns the file names of the captured `.eml` files persisted under {@see $mailPath}.
      *
-     * @return array<int, string>
+     * @return array<int, string> File names in send order.
      */
     public function getMessagesFileName(): array
     {
@@ -70,11 +78,17 @@ class MailPanel extends Panel
         return $names;
     }
 
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Mail';
     }
 
+    /**
+     * Renders the toolbar summary chip with the captured message count.
+     */
     public function getSummary(): string
     {
         return Yii::$app->view->render(
@@ -86,11 +100,17 @@ class MailPanel extends Panel
         );
     }
 
+    /**
+     * Returns the toolbar icon name.
+     */
     public function getToolbarIcon(): string
     {
         return 'mail';
     }
 
+    /**
+     * Registers the mailer listener that persists each dispatched message and records its metadata.
+     */
     public function init(): void
     {
         parent::init();
@@ -121,6 +141,7 @@ class MailPanel extends Panel
                 // store message as file
                 $fileName = $event->sender->generateMessageFileName();
                 $mailPath = Yii::getAlias($this->mailPath);
+
                 FileHelper::createDirectory($mailPath);
 
                 file_put_contents("{$mailPath}/{$fileName}", $message->toString());
@@ -133,10 +154,9 @@ class MailPanel extends Panel
     }
 
     /**
-     * Save info about messages of current request. Each element is array holding message info, such as: time, reply,
-     * bc, cc, from, to and other.
+     * Snapshots the captured messages, with their metadata (time, reply, bcc, cc, from, to, subject, headers, etc.).
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> Mail records in send order.
      */
     public function save(): array
     {
@@ -144,7 +164,14 @@ class MailPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
+     * Builds the toolbar items.
+     *
+     * Returns the captured count when the current request sent at least one message; otherwise looks at the previous
+     * captured request and surfaces a `cross-request` chip pointing at its panel when it carries mail (handles the
+     * Post-Redirect-Get flow where the mail was sent by the request before the redirect).
+     *
+     * @return array<int, array<string, mixed>>|null Toolbar items, or `null` when neither the current nor the previous
+     * request captured any mail.
      */
     protected function getToolbarItems(): array|null
     {
@@ -160,17 +187,9 @@ class MailPanel extends Panel
         $mailCount = count(self::normalizeMessages($this->data));
 
         if ($mailCount > 0) {
-            return [
-                [
-                    'value' => $mailCount,
-                ],
-            ];
+            return [['value' => $mailCount]];
         }
 
-        // Current request has no mail. After a Post-Redirect-Get flow the email actually lives in
-        // the previous request, so surface a cross-request chip pointing at the panel for that tag.
-        // The toolbar JS renders this with a `badge-cross-request` modifier (a small dot underneath
-        // the chip) so the dev can tell the data belongs to the request right before this one.
         $previous = $this->findPreviousRequestWithMail();
 
         if ($previous === null) {
@@ -192,7 +211,13 @@ class MailPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $messageData
+     * Extracts the plain-text body, prepared headers, and capture time from the Symfony-backed message, mutating
+     * `$messageData` in place.
+     *
+     * No-op for messages that are not {@see Message} instances.
+     *
+     * @param MessageInterface $message Captured mail message.
+     * @param array<string, mixed> $messageData Metadata array to enrich.
      */
     private function addMoreInformation(MessageInterface $message, array &$messageData): void
     {
@@ -202,7 +227,6 @@ class MailPanel extends Panel
 
         /** @var Email $symfonyMessage */
         $symfonyMessage = $message->getSymfonyEmail();
-
         /** @var AbstractPart $part */
         $part = $symfonyMessage->getBody();
 
@@ -218,6 +242,12 @@ class MailPanel extends Panel
         $messageData['time'] = $symfonyMessage->getDate();
     }
 
+    /**
+     * Flattens an address attribute into a comma-separated string.
+     *
+     * Address arrays are joined by their keys (the address strings); scalar and {@see Stringable} values pass through
+     * unchanged; anything else collapses to `''`.
+     */
     private function convertParams(mixed $attr): string
     {
         if (is_array($attr)) {
@@ -238,10 +268,12 @@ class MailPanel extends Panel
     }
 
     /**
-     * Looks at the debug manifest for the request immediately preceding the current one and
-     * reports its mail count when non-zero. Returns `null` when no usable previous request exists.
+     * Looks at the debug manifest for the request immediately preceding the current one and returns its mail count
+     * when non-zero, falling back to the most-recent manifest entry when the current tag is not yet listed (race
+     * during the very first response of a session).
      *
-     * @return array{count: int, method: string, shortUrl: string, url: string}|null
+     * @return array{count: int, method: string, shortUrl: string, url: string}|null Cross-request chip payload, or
+     * `null` when no usable previous request exists.
      */
     private function findPreviousRequestWithMail(): array|null
     {
@@ -259,7 +291,7 @@ class MailPanel extends Panel
 
         try {
             $manifest = $logTarget->loadManifest();
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
 
@@ -283,8 +315,6 @@ class MailPanel extends Panel
             }
         }
 
-        // If the current tag is not in the manifest yet (race during the very first response of a session), fall back
-        // to the most-recent entry — that's "previous" from the toolbar's POV.
         if ($previousTag === null) {
             $previousTag = array_key_first($manifest);
 
@@ -294,7 +324,6 @@ class MailPanel extends Panel
         }
 
         $summary = $manifest[$previousTag] ?? [];
-
         $dataFile = "{$module->dataPath}/{$previousTag}.data";
 
         if (!is_file($dataFile)) {
@@ -332,7 +361,7 @@ class MailPanel extends Panel
         $shortUrlPath = $url === '' ? null : parse_url($url, PHP_URL_PATH);
         $shortUrl = is_string($shortUrlPath) && $shortUrlPath !== '' ? $shortUrlPath : $url;
 
-        $panelUrl = \yii\helpers\Url::toRoute(
+        $panelUrl = Url::toRoute(
             [
                 '/' . $module->getUniqueId() . '/default/view',
                 'panel' => $this->id,
@@ -349,7 +378,10 @@ class MailPanel extends Panel
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Narrows the saved mail rows into a string-keyed list, dropping non-array entries and non-string keys inside
+     * each entry.
+     *
+     * @return array<int, array<string, mixed>> Sanitized mail records in original order.
      */
     private static function normalizeMessages(mixed $messages): array
     {

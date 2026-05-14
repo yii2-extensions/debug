@@ -9,34 +9,35 @@ namespace yii\debug\panels\queue;
  *
  * Mirrors the relevant subset of Yii Queue `JobEvent` after every value has been narrowed, so the consuming view
  * iterates and reads typed properties without inspecting the original event object.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class JobRecord
 {
     /**
-     * Allowed event-type strings, in canonical order. The renderers and the search filter dropdown iterate this list.
+     * @var list<string> Allowed event-type strings, in canonical order.
      *
-     * @var list<string>
+     * The renderers and the search filter dropdown iterate this list.
      */
     public const array EVENT_TYPES = [self::TYPE_PUSH, self::TYPE_EXEC, self::TYPE_ERROR];
 
     /**
-     * Maps each event type to the CSS modifier and human label used by the status pill in both card and grid views.
-     *
-     * @var array<string, array{variant: string, label: string}>
+     * @var array<string, array{variant: string, label: string}> Maps each event type to the CSS modifier and human
+     * label used by the status pill in both card and grid views.
      */
     public const array EVENT_VARIANTS = [
         self::TYPE_PUSH => ['variant' => 'queued', 'label' => 'Queued'],
         self::TYPE_EXEC => ['variant' => 'done', 'label' => 'Done'],
         self::TYPE_ERROR => ['variant' => 'failed', 'label' => 'Failed'],
     ];
+    /**
+     * Lifecycle phase value used when the job threw.
+     */
     public const string TYPE_ERROR = 'error';
+    /**
+     * Lifecycle phase value used when the job finished successfully.
+     */
     public const string TYPE_EXEC = 'exec';
     /**
-     * Captured lifecycle phase emitted by Yii Queue: `'push'` (job enqueued), `'exec'` (job finished successfully)
-     * or `'error'` (job threw).
+     * Lifecycle phase value used when the job was enqueued.
      */
     public const string TYPE_PUSH = 'push';
 

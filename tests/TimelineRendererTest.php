@@ -6,7 +6,8 @@ namespace yiiunit\debug;
 
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
-use yii\debug\models\timeline\{DataProvider, Search};
+use yii\debug\models\search\TimelineSearch;
+use yii\debug\models\timeline\DataProvider;
 use yii\debug\Module;
 use yii\debug\panels\timeline\TimelineRenderer;
 use yii\debug\panels\TimelinePanel;
@@ -117,7 +118,7 @@ final class TimelineRendererTest extends TestCase
 
         $panel->tag = 'request-tag-123';
 
-        $searchModel = new Search();
+        $searchModel = new TimelineSearch();
 
         $searchModel->category = 'yii\\db';
         $searchModel->duration = '5';
@@ -140,7 +141,7 @@ final class TimelineRendererTest extends TestCase
             'Hidden tag input must carry the active tag.',
         );
         self::assertStringContainsString(
-            'name="Search[duration]"',
+            'name="TimelineSearch[duration]"',
             $html,
             'Duration input must surface in the form.',
         );

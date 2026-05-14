@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\phpinfo;
 
-use yii\helpers\Html;
+use UIAwesome\Html\Helper\Encode;
 
 use function array_filter;
 use function array_map;
@@ -420,11 +420,11 @@ final class PhpInfoDataNormalizer
                 $captured[] = new PhpInfoTocEntry(title: $title, slug: $slug);
 
                 return '</section><section class="yii-debug-phpinfo-section yii-debug-phpinfo-module" id="'
-                    . Html::encode($slug)
-                    . '" data-section="' . Html::encode($title) . '">'
+                    . Encode::value($slug)
+                    . '" data-section="' . Encode::value($title) . '">'
                     . '<header class="yii-debug-phpinfo-module-head">'
                     . '<span class="yii-debug-phpinfo-module-dot" aria-hidden="true"></span>'
-                    . '<h2>' . Html::encode($title) . '</h2>'
+                    . '<h2>' . Encode::content($title) . '</h2>'
                     . '</header>';
             },
             $modulesSrc,

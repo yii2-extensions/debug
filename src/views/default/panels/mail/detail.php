@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Form\Button;
+use UIAwesome\Html\Form\Values\ButtonType;
 use yii\data\ArrayDataProvider;
 use yii\debug\helpers\Icon;
-use yii\debug\models\search\Mail;
+use yii\debug\models\search\MailSearch;
 use yii\debug\panels\MailPanel;
-use yii\helpers\Html;
 use yii\widgets\{ActiveForm, ListView};
 
 /**
  * @var ArrayDataProvider $dataProvider
- * @var Mail $searchModel
+ * @var MailSearch $searchModel
  * @var MailPanel $panel
  */
 
@@ -29,14 +30,15 @@ $hasMessages = $totalCount > 0;
     </div>
 
     <?php if ($hasMessages): ?>
-        <?= Html::button('Filter', [
-            'class' => 'yii-debug-btn yii-debug-btn-ghost yii-debug-mail-filter-toggle',
-            'type' => 'button',
-            'data-yii-debug-toggle' => 'collapse',
-            'data-target' => '#email-form',
-            'aria-expanded' => 'false',
-            'aria-controls' => 'email-form',
-        ]) ?>
+        <?= Button::tag()
+            ->type(ButtonType::BUTTON)
+            ->class('yii-debug-btn yii-debug-btn-ghost yii-debug-mail-filter-toggle')
+            ->addAttribute('data-yii-debug-toggle', 'collapse')
+            ->addAttribute('data-target', '#email-form')
+            ->addAriaAttribute('expanded', 'false')
+            ->addAriaAttribute('controls', 'email-form')
+            ->content('Filter')
+            ->render() ?>
     <?php endif; ?>
 </header>
 
@@ -79,7 +81,11 @@ $hasMessages = $totalCount > 0;
         </div>
 
         <div>
-            <?= Html::submitButton('Apply filters', ['class' => 'yii-debug-btn yii-debug-btn-primary']) ?>
+            <?= Button::tag()
+                ->type(ButtonType::SUBMIT)
+                ->class('yii-debug-btn yii-debug-btn-primary')
+                ->content('Apply filters')
+                ->render() ?>
         </div>
         <?php ActiveForm::end(); ?>
     </div>

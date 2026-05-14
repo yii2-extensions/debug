@@ -13,25 +13,17 @@ use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Article, Section};
 
 /**
- * Renders the user-identity card (hero header + per-section attribute lists) on top of `ui-awesome/html` builders.
+ * Renders the user-identity card (hero header + per-section attribute lists).
  *
- * Stateless static helpers; the public entry point takes a typed {@see UserIdentityView} and returns a ready-to-echo
- * HTML string. Per-attribute branches ('plain' / 'security' reveal button / 'timestamp' relative+absolute) live in
- * private helpers so the public surface stays focused.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\panels\user\UserIdentityRenderer::render($view);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: the public entry point takes a typed {@see UserIdentityView} and returns a ready-to-echo
+ * HTML string. Per-attribute branches (`plain` / `security` reveal button / `timestamp` relative+absolute) live in
+ * private helpers, so the public surface stays focused.
  */
 final class UserIdentityRenderer
 {
     /**
-     * Renders the full user-identity card (`<section class="yii-debug-user">` with the hero header + every non-empty
-     * section).
+     * Renders the full user-identity card as a `<section class="yii-debug-user">` containing the hero header and every
+     * non-empty section.
      */
     public static function render(UserIdentityView $view): string
     {
@@ -47,8 +39,8 @@ final class UserIdentityRenderer
     }
 
     /**
-     * Renders one attribute row (`<div class="yii-debug-user-row">` with the `<dt>` label and the kind-specific
-     * `<dd>` value).
+     * Renders one attribute row as a `<div class="yii-debug-user-row">` carrying the `<dt>` label and the kind-specific
+     * `<dd>` value.
      */
     private static function renderAttribute(UserAttribute $attribute): Div
     {
@@ -61,7 +53,7 @@ final class UserIdentityRenderer
     }
 
     /**
-     * Renders the hero card header (avatar monogram + name + email + status pill + id pill).
+     * Renders the hero card header: avatar monogram, name, email, status pill, and id pill.
      */
     private static function renderHero(UserIdentityHero $hero): Header
     {
@@ -109,7 +101,7 @@ final class UserIdentityRenderer
     }
 
     /**
-     * Renders one section (`<article>` with header chip + `<dl>` of attribute rows).
+     * Renders one section as an `<article>` with the header chip and the `<dl>` of attribute rows.
      */
     private static function renderSection(UserIdentitySection $section): Article
     {

@@ -10,9 +10,6 @@ namespace yii\debug\panels\mail;
  * Mirrors the captured `BaseMailer::EVENT_AFTER_SEND` payload after every value has been narrowed and the recipient
  * fields split into per-address lists, so the consuming view iterates and reads typed properties without further
  * runtime checks.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class MailMessage
 {
@@ -22,8 +19,7 @@ final readonly class MailMessage
          */
         public string $from,
         /**
-         * @var list<string> Primary recipients split out of the comma-separated `to` field, with empty entries
-         * dropped.
+         * @var list<string> Primary recipients split out of the comma-separated `to` field, with empty entries dropped.
          */
         public array $to,
         /**
@@ -43,7 +39,7 @@ final readonly class MailMessage
          */
         public string $subject,
         /**
-         * Plain-text body as captured. Empty string when the message had no body.
+         * Plain-text body as captured, or `''` when the message had no body.
          */
         public string $body,
         /**
@@ -51,11 +47,11 @@ final readonly class MailMessage
          */
         public string $headers,
         /**
-         * Charset declared on the message, or empty string when none was set.
+         * Charset declared on the message, or `''` when none was set.
          */
         public string $charset,
         /**
-         * Path to the persisted `.eml` file, or empty string when the mailer does not expose one.
+         * Path to the persisted `.eml` file, or `''` when the mailer does not expose one.
          */
         public string $file,
         /**
@@ -63,7 +59,7 @@ final readonly class MailMessage
          */
         public bool $isSuccessful,
         /**
-         * Capture timestamp as a Unix epoch second, or `null` when the original payload had no parseable time.
+         * Capture timestamp as a Unix-epoch second, or `null` when the original payload had no parseable time.
          */
         public int|null $time,
     ) {}

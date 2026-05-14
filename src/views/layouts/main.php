@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Helper\{Attributes, Encode};
 use yii\debug\widgets\shell\ShellDataNormalizer;
 use yii\helpers\Html;
 use yii\web\View;
@@ -32,16 +33,16 @@ $shellContext = ShellDataNormalizer::fromParams(
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
-<html<?= Html::renderTagAttributes($shellContext->debugThemeAttributes) ?>>
+<html<?= Attributes::render($shellContext->debugThemeAttributes) ?>>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="none"/>
 
     <?= Html::csrfMetaTags() ?>
-    <title><?= Html::encode($shellContext->title) ?></title>
+    <title><?= Encode::content($shellContext->title) ?></title>
 
-    <link rel="icon" type="image/png" href="<?= \yii\debug\Module::getYiiLogo() ?>">
+    <link rel="icon" type="image/svg+xml" href="<?= \yii\debug\Module::getYiiLogo() ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Major+Mono+Display&display=swap">
@@ -51,7 +52,7 @@ $shellContext = ShellDataNormalizer::fromParams(
 <body class="yii-debug">
 <?php $this->beginBody() ?>
 <?php if ($shellContext->useShell): ?>
-    <div class="yii-debug-page default-<?= Html::encode($shellContext->mode) ?>">
+    <div class="yii-debug-page default-<?= Encode::value($shellContext->mode) ?>">
         <?= $this->render(
             '../default/_shell_header',
             [

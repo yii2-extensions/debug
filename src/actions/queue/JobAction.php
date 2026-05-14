@@ -15,18 +15,15 @@ use function array_values;
 use function is_array;
 
 /**
- * Renders the dedicated detail page for a single captured queue record (one job event).
+ * Renders the detail page for a single captured queue record.
  *
  * Maps to the `queue-job` route registered by {@see QueuePanel::init()}; consumes `tag` (request snapshot) and `seq`
  * (zero-based index into `$panel->data['records']`).
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 class JobAction extends Action
 {
     /**
-     * Queue panel instance, used to recover the captured records for the active tag.
+     * Queue panel instance used to recover the captured records for the active tag.
      */
     public QueuePanel|null $panel = null;
 
@@ -38,21 +35,28 @@ class JobAction extends Action
      *
      * @throws HttpException When the panel was not wired, the controller is not the debug `DefaultController`, or the
      * record cannot be found for the given `seq`.
+     *
+     * @return string Rendered view with the queue job details.
      */
     public function run(string $seq, string $tag): string
     {
         if ($this->panel === null) {
-            throw new HttpException(500, 'QueuePanel instance is not set for JobAction.');
+            throw new HttpException(
+                500,
+                'QueuePanel instance is not set for JobAction.',
+            );
         }
 
         $controller = $this->controller;
 
         if (!$controller instanceof DefaultController) {
-            throw new HttpException(500, 'queue-job action must run inside the debug DefaultController.');
+            throw new HttpException(
+                500,
+                'queue-job action must run inside the debug DefaultController.',
+            );
         }
 
         $controller->loadData($tag);
-
         $records = is_array($this->panel->data) && is_array($this->panel->data['records'] ?? null)
             ? array_values($this->panel->data['records'])
             : [];
@@ -60,7 +64,10 @@ class JobAction extends Action
         $seqKey = (int) $seq;
 
         if (!isset($records[$seqKey]) || !is_array($records[$seqKey])) {
-            throw new HttpException(404, 'Queue job record not found.');
+            throw new HttpException(
+                404,
+                'Queue job record not found.',
+            );
         }
 
         $record = JobRecordNormalizer::from($records[$seqKey]);

@@ -12,37 +12,41 @@ use function is_bool;
 use function is_string;
 
 /**
- * Represents the currently matched route and its related information, such as the action, logged rules, and messages.
+ * Reconstructs the URL-rule match log of the active request from the captured logger messages.
+ *
+ * Replays the raw log entries supplied via {@see $messages} during {@see init()} to expose the matched action, the
+ * resolved route, the trace of rules tried, and a derived flag indicating whether the URL manager actually matched.
  */
 class CurrentRoute extends Model
 {
     /**
-     * Logged action.
+     * Resolved action route logged for the current request.
      */
     public string $action = '';
     /**
-     * Count, before match.
+     * Number of URL rules inspected before a match (or until the trace ended).
      */
     public int $count = 0;
     /**
-     * Whether a match has been found.
+     * Whether any inspected rule reported a successful match.
      */
     public bool $hasMatch = false;
     /**
-     * @var list<array{rule: string, match: bool, parent?: string}> logged rules.
+     * @var list<array{rule: string, match: bool, parent?: string}> Normalized trace of URL rules inspected during
+     * routing, in inspection order.
      */
     public array $logs = [];
     /**
-     * Info message.
+     * Trace-level info message captured for the routing pass, when present.
      */
     public string|null $message = null;
     /**
-     * @var array<int, array{0: mixed, 1: int, 2?: string, 3?: float, 4?: array<int, array<string, mixed>>}> logged
-     * messages.
+     * @var array<int, array{0: mixed, 1: int, 2?: string, 3?: float, 4?: array<int, array<string, mixed>>}> Raw logger
+     * messages captured for the routing pass, consumed by {@see init()}.
      */
     public array $messages = [];
     /**
-     * Logged route.
+     * Resolved request route logged for the current request.
      */
     public string $route = '';
 
@@ -68,6 +72,7 @@ class CurrentRoute extends Model
                 }
 
                 $this->logs[] = $log;
+
                 ++$this->count;
 
                 if ($log['match']) {
@@ -80,12 +85,12 @@ class CurrentRoute extends Model
     }
 
     /**
-     * Normalizes log message to the format: ['rule' => string, 'match' => bool, 'parent' => string|null].
+     * Narrows a raw logger payload into the `{rule, match, parent?}` shape consumed by the view layer.
      *
-     * @param mixed $message Log message to normalize.
+     * @param mixed $message Raw logger payload.
      *
-     * @return array{rule: string, match: bool, parent?: string}|null Normalized log message or null if the input
-     * message is not in the expected format.
+     * @return array{rule: string, match: bool, parent?: string}|null Normalized entry, or `null` when the payload does
+     * not have the expected shape.
      */
     private function normalizeLogMessage($message): array|null
     {

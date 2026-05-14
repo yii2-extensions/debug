@@ -13,7 +13,6 @@ use yii\log\Target;
 
 use function array_diff;
 use function array_keys;
-use function array_merge;
 use function array_reverse;
 use function chmod;
 use function count;
@@ -40,16 +39,31 @@ use function unlink;
 use function unserialize;
 
 /**
- * Captures the per-request snapshot consumed by the debug toolbar: collects panel data, serializes it to disk and
- * maintains the rolling `index.data` manifest.
+ * Per-request snapshot collector consumed by the debug toolbar.
+ *
+ * Serializes every registered panel's payload to a dedicated `<tag>.data` file under {@see Module::$dataPath} and
+ * appends a summary row to the rolling `index.data` manifest. Old entries are evicted by {@see gc()} once the manifest
+ * grows past {@see Module::$historySize}.
+ *
+ * The unique request {@see $tag} generated in the constructor wires the active request to its data file and to the
+ * toolbar reference rendered by {@see Module}.
  */
 class LogTarget extends Target
 {
+    /**
+     * Debug module owning this target.
+     */
     public Module $module;
+    /**
+     * Unique tag identifying the current request, generated in {@see __construct()}.
+     */
     public string $tag = '';
 
     /**
-     * @param array<string, mixed> $config
+     * Creates a log target bound to the given debug module and generates a unique tag for the current request.
+     *
+     * @param Module $module Debug module owning this target.
+     * @param array<string, mixed> $config Target configuration forwarded to {@see Target::__construct()}.
      */
     public function __construct(Module $module, array $config = [])
     {
@@ -60,11 +74,14 @@ class LogTarget extends Target
     }
 
     /**
-     * @param array<array-key, mixed> $messages
+     * Appends log messages to the internal buffer and flushes the request snapshot when `$final` is `true`.
+     *
+     * @param array<array-key, mixed> $messages Log messages captured during the request.
+     * @param bool $final `true` when this is the final flush at request end; triggers {@see export()}.
      */
     public function collect($messages, $final): void
     {
-        $this->messages = array_merge($this->messages, $messages);
+        $this->messages = [...$this->messages, ...$messages];
 
         if ($final) {
             $this->export();
@@ -72,7 +89,13 @@ class LogTarget extends Target
     }
 
     /**
-     * @throws Exception
+     * Persists the per-panel payloads and summary for the current request.
+     *
+     * Creates {@see Module::$dataPath} when missing, serializes every registered panel's `save()` return into a single
+     * `<tag>.data` file (capturing any thrown {@see Exception} as a {@see FlattenException} so the request still
+     * completes), then appends the summary row to the rolling `index.data` manifest.
+     *
+     * @throws Exception When the data directory cannot be created.
      */
     public function export(): void
     {
@@ -81,8 +104,8 @@ class LogTarget extends Target
         FileHelper::createDirectory($path, $this->module->dirMode);
 
         $summary = $this->collectSummary();
-        $dataFile = "{$path}/{$this->tag}.data";
 
+        $dataFile = "{$path}/{$this->tag}.data";
         $data = [];
         $exceptions = [];
 
@@ -116,9 +139,12 @@ class LogTarget extends Target
     }
 
     /**
+     * Reads and reverses the rolling `index.data` manifest so the most recent request appears first.
+     *
      * @see DefaultController
      *
-     * @return array<string, array<string, mixed>>
+     * @return array<string, array<string, mixed>> Manifest entries keyed by request tag, ordered newest-first; `[]`
+     * when the manifest is missing, empty, or corrupted.
      */
     public function loadManifest(): array
     {
@@ -155,9 +181,19 @@ class LogTarget extends Target
     }
 
     /**
+     * Hydrates the registered panels from a previously persisted `<tag>.data` file.
+     *
+     * Each panel keyed in the saved payload receives its serialized data via {@see Panel::load()}; panels that
+     * produced an exception during the original request are flagged via {@see Panel::setError()} so the controller can
+     * render the error view. Panels neither present in the payload nor flagged with an exception are dropped from
+     * {@see Module::$panels}, because they were added or removed between requests.
+     *
      * @see DefaultController
      *
-     * @return array<string, mixed>
+     * @param string $tag Request tag identifying the data file to load.
+     *
+     * @return array<string, mixed> Raw deserialized payload keyed by panel id, plus the `summary` and `exceptions`
+     * entries.
      */
     public function loadTagToPanels(string $tag): array
     {
@@ -181,14 +217,16 @@ class LogTarget extends Target
         }
 
         foreach ($this->module->panels as $id => $panel) {
+            $hasError = isset($exceptions[$id]) && $exceptions[$id] instanceof FlattenException;
+
             if (isset($normalized[$id]) && is_string($normalized[$id])) {
                 $panel->tag = $tag;
                 $panel->load(@unserialize($normalized[$id]));
-            } else {
+            } elseif ($hasError === false) {
                 unset($this->module->panels[$id]);
             }
 
-            if (isset($exceptions[$id]) && $exceptions[$id] instanceof FlattenException) {
+            if ($hasError) {
                 $panel->setError($exceptions[$id]);
             }
         }
@@ -197,9 +235,14 @@ class LogTarget extends Target
     }
 
     /**
-     * Collects summary data of current request.
+     * Collects the request-summary row recorded in the manifest.
      *
-     * @return array<string, mixed>
+     * Captures URL, HTTP method, AJAX flag, client IP, request start time (`$_SERVER['REQUEST_TIME_FLOAT']` with
+     * `microtime(true)` fallback for long-running runtimes such as RoadRunner or FrankenPHP where the global value is
+     * stale), response status code, SQL query count, excessive DB caller count, and mail message metadata when the
+     * Mail panel is registered.
+     *
+     * @return array<string, mixed> Summary row keyed by attribute name.
      */
     protected function collectSummary(): array
     {
@@ -207,6 +250,7 @@ class LogTarget extends Target
         $response = Yii::$app->getResponse();
 
         $requestTime = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
+
         $userIP = $request->getUserIP();
 
         $summary = [
@@ -234,9 +278,13 @@ class LogTarget extends Target
     }
 
     /**
-     * Removes obsolete data files.
+     * Evicts the oldest manifest entries (and their data files) when the manifest exceeds {@see Module::$historySize}.
      *
-     * @param array<string, array<string, mixed>> $manifest
+     * Tolerance of `+10` over the configured size avoids running the garbage collector on every request; once the
+     * threshold is crossed, the surplus is removed in a single pass. Associated mail message files (when present in the
+     * summary) are removed alongside the request data file.
+     *
+     * @param array<string, array<string, mixed>> $manifest Manifest passed by reference and mutated in place.
      */
     protected function gc(array &$manifest): void
     {
@@ -245,7 +293,9 @@ class LogTarget extends Target
         }
 
         $n = count($manifest) - $this->module->historySize;
+
         $mailPanel = $this->module->panels['mail'] ?? null;
+
         $mailPath = $mailPanel instanceof MailPanel ? Yii::getAlias($mailPanel->mailPath) : '';
 
         foreach (array_keys($manifest) as $tag) {
@@ -274,7 +324,9 @@ class LogTarget extends Target
     }
 
     /**
-     * Returns the number of excessive Database caller(s).
+     * Returns the number of database callers that exceeded the configured query threshold.
+     *
+     * @return int `0` when the database panel is not registered.
      */
     protected function getExcessiveDbCallersCount(): int
     {
@@ -284,7 +336,11 @@ class LogTarget extends Target
     }
 
     /**
-     * Returns total sql count executed in current request; `0` when the database panel is not configured.
+     * Returns the total number of SQL queries executed during the request.
+     *
+     * Profile messages are recorded as begin/end pairs, so the raw message count is halved.
+     *
+     * @return int `0` when the database panel is not registered.
      */
     protected function getSqlTotalCount(): int
     {
@@ -294,14 +350,13 @@ class LogTarget extends Target
             return 0;
         }
 
-        // / 2 because messages are in couple (begin/end)
         return (int) (count($panel->getProfileLogs()) / 2);
     }
 
     /**
-     * Removes stale data files (files not in the current index file — can happen due to a corrupted or rotated index).
+     * Removes orphan `<tag>.data` files left behind when the index file was rotated or corrupted.
      *
-     * @param array<string, array<string, mixed>> $manifest
+     * @param array<string, array<string, mixed>> $manifest Authoritative manifest used to identify orphans.
      */
     protected function removeStaleDataFiles(array $manifest): void
     {
@@ -321,11 +376,13 @@ class LogTarget extends Target
     }
 
     /**
-     * Narrows a raw deserialized manifest into `array<string, array<string, mixed>>`.
+     * Narrows a raw deserialized manifest into the typed `array<string, array<string, mixed>>` shape.
      *
      * Drops entries whose tag or inner key is non-string; returns `[]` when the input is not an array.
      *
-     * @return array<string, array<string, mixed>>
+     * @param mixed $manifest Raw value returned by {@see unserialize()}.
+     *
+     * @return array<string, array<string, mixed>> Typed manifest safe to iterate.
      */
     private static function narrowManifestEntries(mixed $manifest): array
     {
@@ -345,12 +402,15 @@ class LogTarget extends Target
     }
 
     /**
-     * Updates index file with summary log data.
+     * Appends the current request summary to the rolling `index.data` manifest under an exclusive file lock.
      *
-     * @param string $indexFile Path to index file.
-     * @param array<string, mixed> $summary Summary log data.
+     * Reads the existing manifest (creating the file when missing), inserts the current `$tag => $summary` entry,
+     * triggers {@see gc()} to enforce the history-size cap, and rewrites the file atomically.
      *
-     * @throws InvalidConfigException
+     * @param string $indexFile Absolute path to the manifest file.
+     * @param array<string, mixed> $summary Summary row produced by {@see collectSummary()}.
+     *
+     * @throws InvalidConfigException When the manifest file cannot be opened for read/write.
      */
     private function updateIndexFile(string $indexFile, array $summary): void
     {
@@ -373,6 +433,7 @@ class LogTarget extends Target
         }
 
         $manifest[$this->tag] = $summary;
+
         $this->gc($manifest);
 
         ftruncate($fp, 0);

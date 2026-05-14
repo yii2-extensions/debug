@@ -7,19 +7,15 @@ namespace yii\debug\panels\queue;
 use function is_array;
 
 /**
- * Computes the typed {@see QueueSummary} from the raw `$panel->data['records']` payload of
- * {@see \yii\debug\panels\QueuePanel}.
- *
- * Usage example:
- * ```php
- * $summary = QueueSummaryNormalizer::fromPanelData($panel->data);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Computes the typed {@see QueueSummary} from the raw `$panel->data['records']` payload of {@see \yii\debug\panels\QueuePanel}.
  */
 final class QueueSummaryNormalizer
 {
+    /**
+     * Builds a {@see QueueSummary} from the raw panel payload, treating malformed entries as an empty summary.
+     *
+     * @param mixed $data Raw value of {@see \yii\debug\panels\QueuePanel::$data}.
+     */
     public static function fromPanelData(mixed $data): QueueSummary
     {
         $payload = is_array($data) ? $data : [];

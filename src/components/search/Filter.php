@@ -8,21 +8,25 @@ use yii\base\Component;
 use yii\debug\components\search\matchers\MatcherInterface;
 
 /**
- * Provides array filtering capabilities.
+ * Filters tabular arrays by attribute-matching rules.
+ *
+ * Rules are registered with {@see addMatcher()} keyed by attribute name; {@see filter()} returns the subset of rows
+ * that satisfy every rule attached to each present attribute.
  */
 class Filter extends Component
 {
     /**
-     * @var array<string, array<int, MatcherInterface>> Rules for matching filters in the way:
-     * `[:fieldName => [rule1, rule2,..]]`
+     * @var array<string, array<int, MatcherInterface>> Matchers indexed by attribute name, in registration order.
      */
     protected array $rules = [];
 
     /**
-     * Adds data filtering rule.
+     * Registers a matcher rule for the given attribute.
      *
-     * @param string $name Attribute name.
-     * @param MatcherInterface $rule Rule to be applied for filtering.
+     * Rules whose {@see MatcherInterface::hasValue()} returns `false` are silently skipped.
+     *
+     * @param string $name Attribute name the rule applies to.
+     * @param MatcherInterface $rule Matcher rule to attach.
      */
     public function addMatcher(string $name, MatcherInterface $rule): void
     {
@@ -32,11 +36,11 @@ class Filter extends Component
     }
 
     /**
-     * Applies filter on a given array and returns filtered data.
+     * Returns the subset of rows that satisfy every registered rule.
      *
-     * @param array<int, array<string, mixed>> $data Data to filter.
+     * @param array<int, array<string, mixed>> $data Rows to filter.
      *
-     * @return array<int, array<string, mixed>> Filtered data.
+     * @return array<int, array<string, mixed>> Rows that passed all matchers, reindexed sequentially.
      */
     public function filter(array $data): array
     {
@@ -52,15 +56,14 @@ class Filter extends Component
     }
 
     /**
-     * Checks if the given data satisfies filters.
+     * Returns whether the row passes every matcher attached to a present attribute.
      *
-     * @param array<string, mixed> $row Data to check.
+     * @param array<string, mixed> $row Row to check.
      */
     private function passesFilter(array $row): bool
     {
         foreach ($row as $name => $value) {
             if (isset($this->rules[$name])) {
-                // check all rules for a given attribute
                 foreach ($this->rules[$name] as $rule) {
                     if (!$rule->match($value)) {
                         return false;

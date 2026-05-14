@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\controllers;
 
-use ReflectionMethod;
 use UnexpectedValueException;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
 use yii\debug\{FlattenException, LogTarget};
 use yii\debug\helpers\Icon;
-use yii\debug\models\search\Debug;
+use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\{ConfigPanel, MailPanel};
 use yii\helpers\Url;
@@ -20,7 +19,11 @@ use function is_array;
 use function is_string;
 
 /**
- * Debugger controller provides browsing over available debug logs.
+ * Browses recorded debug entries and serves the debug toolbar payload.
+ *
+ * Hosts the entry-point actions consumed by the debug UI (`index`, `view`, `toolbar`, `toolbar-data`, `php-info`,
+ * `download-mail`) and adopts external panel actions through {@see actions()}. Loads the active tag's payload into
+ * registered panels via {@see loadData()} before rendering.
  *
  * @template T of \yii\debug\Module
  * @extends Controller<T>
@@ -28,30 +31,29 @@ use function is_string;
 class DefaultController extends Controller
 {
     /**
-     * @var false|string|null Layout name for rendering views.
+     * @var false|string|null Layout name used when rendering full-page views.
      */
     public $layout = 'main';
     /**
-     * Module instance.
+     * Owning debug module instance.
      */
     public $module = null;
     /**
-     * @var array<string, mixed> Summary data (for example, URL, time)
+     * @var array<string, mixed> Summary metadata for the active debug entry (for example, URL and time).
      */
     public $summary = [];
 
     /**
-     * @var array<string, array<string, mixed>>|null Manifest of available debug data.
+     * @var array<string, array<string, mixed>>|null Cached manifest of available debug entries, indexed by tag.
      */
     private array|null $manifest = null;
 
     /**
-     * Download mail file action.
+     * Streams the requested captured mail file as a download.
      *
-     * @throws NotFoundHttpException if the mail file is not found or invalid.
+     * @throws NotFoundHttpException When the file name contains a path separator or the file does not exist on disk.
      *
-     * @return Response Response containing the mail file for download, or a console response if run in a console
-     * application.
+     * @return Response Response that emits the mail file as an attachment.
      */
     public function actionDownloadMail(string $file): Response
     {
@@ -69,15 +71,15 @@ class DefaultController extends Controller
     }
 
     /**
-     * Index action, shows list of available debug data.
+     * Renders the index view listing every captured debug entry.
      *
-     * @throws NotFoundHttpException if no debug data is available.
+     * @throws Exception When no debug entries have been captured yet.
      *
      * @return string Rendered index view.
      */
     public function actionIndex(): string
     {
-        $searchModel = new Debug();
+        $searchModel = new DebugSearch();
 
         $manifest = $this->getManifest();
 
@@ -110,10 +112,10 @@ class DefaultController extends Controller
     }
 
     /**
-     * Renders the full `phpinfo()` output in a standalone page (no sidebar).
+     * Renders the full {@see phpinfo()} output in a standalone page (no sidebar).
      *
-     * This action is intentionally kept outside the panel registry so the entry never appears on the sidebar nav it is
-     * linked from the Configuration panel's CTA and opens in a new tab.
+     * Kept outside the panel registry so the entry never appears on the sidebar nav; the Configuration panel links to
+     * it via a CTA that opens in a new tab.
      *
      * @return string Rendered phpinfo view.
      */
@@ -125,8 +127,9 @@ class DefaultController extends Controller
     }
 
     /**
-     * @return array<array-key, array{class: class-string, ...}|class-string> List of external action classes or
-     * configurations.
+     * Adopts every panel-declared action so they share the debug controller's lifecycle.
+     *
+     * @return array<array-key, array{class: class-string, ...}|class-string> Action map indexed by action ID.
      */
     public function actions(): array
     {
@@ -142,11 +145,11 @@ class DefaultController extends Controller
     }
 
     /**
-     * Toolbar rendering action.
+     * Renders the floating debug toolbar partial for the given tag.
      *
-     * @param string $tag Debug data tag to render the toolbar for.
+     * @param string $tag Tag of the debug entry to render the toolbar for.
      *
-     * @throws NotFoundHttpException if debug data for the specified tag is not found.
+     * @throws NotFoundHttpException When no debug entry exists for the given tag.
      *
      * @return string Rendered toolbar partial view.
      */
@@ -166,27 +169,27 @@ class DefaultController extends Controller
     }
 
     /**
-     * Toolbar data action, provides metadata about the debug entry and panels for the toolbar JS app.
+     * Returns the JSON metadata payload consumed by the toolbar JS app.
      *
-     * @param string $tag Debug data tag to retrieve metadata for.
+     * Degrades gracefully on a rotated tag by emitting a JSON 404 instead of the host application's HTML error page.
      *
-     * @throws NotFoundHttpException if debug data for the specified tag is not found.
+     * @param string $tag Tag of the debug entry to expose metadata for.
      *
      * @return array{error: string, tag: string}|array{
-     *     configUrl: string|null,
-     *     defaultHeight: int,
-     *     iconBaseUrl: string,
-     *     indexUrl: string,
-     *     items: list<array<string, mixed>>,
-     *     logo: string,
-     *     logoFallback: string,
-     *     phpInfoUrl: string,
-     *     phpVersion: string|null,
-     *     position: string,
-     *     tag: string,
-     *     title: string,
-     *     yiiVersion: string|null,
-     * } Metadata about the debug entry and panels for the toolbar JS app.
+     *   configUrl: string|null,
+     *   defaultHeight: int,
+     *   iconBaseUrl: string,
+     *   indexUrl: string,
+     *   items: list<array<string, mixed>>,
+     *   logo: string,
+     *   logoFallback: string,
+     *   phpInfoUrl: string,
+     *   phpVersion: string|null,
+     *   position: string,
+     *   tag: string,
+     *   title: string,
+     *   yiiVersion: string|null,
+     * } Toolbar metadata, or an error envelope when the tag has rotated out.
      */
     public function actionToolbarData(string $tag): array
     {
@@ -195,13 +198,14 @@ class DefaultController extends Controller
         try {
             $this->loadData($tag, 5);
         } catch (NotFoundHttpException) {
-            /**
-             * Tag rotated out of history. Return a JSON 404 so the toolbar can degrade gracefully without triggering
-             * the host application's HTML error page.
-             */
+            // Tag rotated out of history. Return a JSON 404 so the toolbar can degrade gracefully without triggering
+            // the host application's HTML error page.
             Yii::$app->getResponse()->setStatusCode(404);
 
-            return ['error' => 'Debug tag not found.', 'tag' => $tag];
+            return [
+                'error' => 'Debug tag not found.',
+                'tag' => $tag,
+            ];
         }
 
         $items = [];
@@ -237,31 +241,44 @@ class DefaultController extends Controller
 
         try {
             $published = Yii::$app->assetManager->publish(Yii::getAlias('@yii/debug/assets'));
+
             $publishedUrl = $published[1] ?? null;
 
             if (is_string($publishedUrl)) {
                 $iconBaseUrl = rtrim($publishedUrl, '/') . '/svg/';
             }
         } catch (\Throwable $e) {
-            /**
-             * Asset manager not configured (for example, unit test environment) keep empty so the toolbar JS falls back
-             * to the bundled PNG logo and skips chip icons.
-             */
+            // Asset manager not configured (for example, unit test environment) keep empty so the toolbar JS falls back
+            // to the bundled PNG logo and skips chip icons.
         }
 
         return [
             'configUrl' => $configPanel !== null
-                ? Url::toRoute(['/' . $this->module->getUniqueId() . '/default/view', 'tag' => $tag, 'panel' => 'config'])
+                ? Url::toRoute(
+                    [
+                        '/' . $this->module->getUniqueId() . '/default/view',
+                        'tag' => $tag,
+                        'panel' => 'config',
+                    ],
+                )
                 : null,
             'defaultHeight' => $this->module->defaultHeight,
             'iconBaseUrl' => $iconBaseUrl,
-            'indexUrl' => Url::toRoute(['/' . $this->module->getUniqueId() . '/default/index']),
+            'indexUrl' => Url::toRoute(
+                [
+                    '/' . $this->module->getUniqueId() . '/default/index',
+                ]
+            ),
             'items' => $items,
             'logo' => $iconBaseUrl !== ''
                 ? "{$iconBaseUrl}yii.svg"
                 : $this->module::getYiiLogo(),
             'logoFallback' => $this->module::getYiiLogo(),
-            'phpInfoUrl' => Url::toRoute(['/' . $this->module->getUniqueId() . '/default/php-info']),
+            'phpInfoUrl' => Url::toRoute(
+                [
+                    '/' . $this->module->getUniqueId() . '/default/php-info',
+                ],
+            ),
             'phpVersion' => $phpVersion,
             'position' => $this->module->toolbarPosition,
             'tag' => $tag,
@@ -271,15 +288,18 @@ class DefaultController extends Controller
     }
 
     /**
-     * View action, shows debug data for the specified tag and panel.
+     * Renders the detail view for the given tag, focused on the requested panel.
      *
-     * @param string|null $tag Debug data tag.
-     * @param string|null $panel Debug panel ID.
+     * Falls back to the most recent tag when `$tag` is omitted and to the module's default panel when `$panel` is
+     * omitted or unknown. Panel-reported errors are rendered through Yii's exception view instead of the panel
+     * template.
      *
-     * @throws NotFoundHttpException if debug data not found.
+     * @param string|null $tag Tag of the debug entry to render, or `null` to use the most recent one.
+     * @param string|null $panel Panel ID to focus, or `null` to use the module's default panel.
      *
-     * @return string Response from the panel's view or the rendered view if the panel does not provide its own
-     * response.
+     * @throws NotFoundHttpException When no debug entries are available or the resolved tag cannot be loaded.
+     *
+     * @return string Rendered panel view, or the rendered exception view when the panel reported an error.
      *
      * @see \yii\debug\Panel
      */
@@ -306,7 +326,7 @@ class DefaultController extends Controller
         $error = $activePanel->getError();
 
         if ($error !== null) {
-            $this->handlePanelError($error);
+            return $this->renderPanelError($error);
         }
 
         $themeContext = $this->primeThemeContext();
@@ -327,7 +347,9 @@ class DefaultController extends Controller
     }
 
     /**
-     * @throws \yii\web\BadRequestHttpException
+     * Forces the response format to HTML before delegating to the parent guard.
+     *
+     * @throws \yii\web\BadRequestHttpException When the parent guard rejects the request.
      */
     public function beforeAction($action): bool
     {
@@ -337,12 +359,11 @@ class DefaultController extends Controller
     }
 
     /**
-     * Returns the debug data manifest, optionally forcing a reload from the log target.
+     * Returns the debug entry manifest, reloading it from the log target on demand.
      *
-     * @param bool $forceReload Whether to force reload the manifest from the log target, bypassing any cached version.
+     * @param bool $forceReload `true` to bypass the in-memory cache and re-read the manifest from disk.
      *
-     * @return array<string, array<string, mixed>> Debug data manifest, indexed by tag, containing metadata about
-     * available debug entries.
+     * @return array<string, array<string, mixed>> Manifest entries indexed by tag.
      */
     public function getManifest(bool $forceReload = false): array
     {
@@ -358,21 +379,21 @@ class DefaultController extends Controller
     }
 
     /**
-     * Loads debug data for the specified tag into panels.
+     * Loads the debug entry for the given tag into every registered panel.
      *
-     * @param string $tag Debug data tag.
-     * @param int $maxRetry Maximum numbers of tag retrieval attempts.
+     * Retries up to `$maxRetry` times (waiting one second between attempts) because debug data is logged from a PHP
+     * shutdown function whose execution may be delayed (notably when xdebug is enabled).
      *
-     * @throws NotFoundHttpException if specified tag not found.
+     * @link https://github.com/yiisoft/yii2/issues/1504
+     *
+     * @param string $tag Tag of the debug entry to load.
+     * @param int $maxRetry Maximum number of retries before giving up.
+     *
+     * @throws NotFoundHttpException When the tag cannot be located after every retry, or when the entry lacks a
+     * summary block.
      */
     public function loadData(string $tag, int $maxRetry = 0): void
     {
-        /**
-         * Retry loading debug data because the debug data is logged in shutdown function which may be delayed in some
-         * environment if xdebug is enabled.
-         *
-         * @link https://github.com/yiisoft/yii2/issues/1504
-         */
         for ($retry = 0; $retry <= $maxRetry; ++$retry) {
             $manifest = $this->getManifest($retry > 0);
 
@@ -399,13 +420,14 @@ class DefaultController extends Controller
     }
 
     /**
-     * Resolves the debug panel's theme + theme-toggle SVG glyphs and exposes them to the view layer.
+     * Resolves the active theme and theme-toggle SVG glyphs and exposes them to the view layer.
      *
      * The resolved values are pushed into `Yii::$app->view->params['debugTheme']` so the layout can pick them up
-     * without re-reading the request, and a small associative array with the same data is returned so individual
-     * actions can pass the SVGs to the view as render params (avoiding inline filesystem reads in the templates).
+     * without re-reading the request; the returned associative array carries the same data so individual actions can
+     * pass the SVGs as render params and avoid inline filesystem reads in templates.
      *
-     * @return array{theme: string, sun: string, moon: string}
+     * @return array{theme: string, sun: string, moon: string} Theme name (`'dark'` or `'light'`) and the inline SVG
+     * markup for both toggle icons.
      */
     public function primeThemeContext(): array
     {
@@ -414,11 +436,6 @@ class DefaultController extends Controller
         $raw = $request->get('yii_debug_theme');
 
         if ($raw === null) {
-            // Yii validates cookies with HMAC by default, so the unsigned cookie written from JS
-            // (`document.cookie = 'yii-debug-toolbar-theme=…'`) gets rejected by `getCookies()`. Fall back to
-            // `$_COOKIE` so the theme survives toolbar-driven navigations and JS toggles. The value is only ever
-            // accepted as `'dark'` or `'light'` below, so reading it raw is safe; it can't be used as an injection
-            // vector.
             $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
 
             if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
@@ -439,6 +456,7 @@ class DefaultController extends Controller
         ];
 
         $view = $this->view;
+
         $view->params['debugTheme'] = $theme;
         $view->params['themeIconSun'] = $context['sun'];
         $view->params['themeIconMoon'] = $context['moon'];
@@ -449,9 +467,9 @@ class DefaultController extends Controller
     /**
      * Returns the initialized debug log target.
      *
-     * @throws InvalidConfigException if the module was not bootstrapped before controller use.
+     * @throws InvalidConfigException When the module was not bootstrapped before the controller is used.
      *
-     * @return LogTarget Debug log target instance used to load debug data and manifest.
+     * @return LogTarget Log target used to read the manifest and per-tag panel payloads.
      */
     private function getLogTarget(): LogTarget
     {
@@ -469,56 +487,51 @@ class DefaultController extends Controller
     /**
      * Returns the configured mail panel.
      *
-     * @throws NotFoundHttpException if the mail panel is not available.
+     * @throws NotFoundHttpException When no mail panel is registered on the module.
      *
-     * @return MailPanel Mail panel instance used for handling mail file downloads.
+     * @return MailPanel Mail panel used to resolve captured mail files.
      */
     private function getMailPanel(): MailPanel
     {
         $panel = $this->module->panels['mail'] ?? null;
 
         if (!$panel instanceof MailPanel) {
-            throw new NotFoundHttpException('Mail panel not found.');
+            throw new NotFoundHttpException(
+                'Mail panel not found.',
+            );
         }
 
         return $panel;
     }
 
     /**
-     * Returns a configured panel by ID.
+     * Returns a registered panel by ID.
      *
-     * @throws NotFoundHttpException if the panel is not configured.
+     * @throws NotFoundHttpException When the module has no panel registered under the given ID.
      *
-     * @return Panel Debug panel instance corresponding to the specified ID.
+     * @return Panel Panel instance matching the given ID.
      */
     private function getPanel(string $id): Panel
     {
         $panel = $this->module->panels[$id] ?? null;
 
         if (!$panel instanceof Panel) {
-            throw new NotFoundHttpException("Debug panel '$id' not found.");
+            throw new NotFoundHttpException(
+                "Debug panel '{$id}' not found.",
+            );
         }
 
         return $panel;
     }
 
     /**
-     * Handles a serialized panel exception through Yii's legacy untyped error handler entry point.
+     * Narrows the manifest payload returned by the log target into a strictly typed map.
      *
-     * @param FlattenException $error Exception to handle, typically retrieved from a panel {@see getError()} method.
-     */
-    private function handlePanelError(FlattenException $error): void
-    {
-        /**
-         * Yii PHPDoc narrows this legacy entry point to Throwable, but the native method remains untyped and the debug
-         * module stores panel errors as FlattenException instances.
-         */
-        (new ReflectionMethod(Yii::$app->errorHandler, 'handleException'))
-            ->invoke(Yii::$app->errorHandler, $error);
-    }
-
-    /**
-     * @return array<string, array<string, mixed>>
+     * @param mixed $manifest Raw manifest value read from the log target.
+     *
+     * @throws UnexpectedValueException When the payload is not an array of string-keyed entries.
+     *
+     * @return array<string, array<string, mixed>> Manifest entries indexed by tag.
      */
     private static function normalizeManifest(mixed $manifest): array
     {
@@ -544,13 +557,13 @@ class DefaultController extends Controller
     }
 
     /**
-     * Normalizes an array to ensure all keys are strings, throwing an exception if a non-string key is encountered.
+     * Narrows an arbitrarily keyed array into a string-keyed map, failing fast on any non-string key.
      *
-     * @param array<array-key, mixed> $data Array to normalize, typically containing metadata or summary data from debug
-     * panels or manifest entries.
+     * @param array<array-key, mixed> $data Source array (typically a manifest entry or summary block).
      *
-     * @return array<string, mixed> Normalized array with string keys, suitable for use in views and JSON responses
-     * where string keys are expected.
+     * @throws UnexpectedValueException When any key is not a string.
+     *
+     * @return array<string, mixed> Map suitable for views and JSON responses that expect string keys.
      */
     private static function normalizeStringKeyArray(array $data): array
     {
@@ -567,5 +580,29 @@ class DefaultController extends Controller
         }
 
         return $normalized;
+    }
+
+    /**
+     * Renders a serialized panel exception through Yii's exception view.
+     *
+     * `ErrorHandler::renderFile()` accepts mixed params and injects `$handler` into the view, so the FlattenException
+     * travels through the duck-typed `$exception` slot without tripping the `@param Throwable` PHPDoc.
+     *
+     * @param FlattenException $error Exception captured by the panel, typically via {@see Panel::getError()}.
+     *
+     * @throws InvalidConfigException When the application is not bound to a `yii\web\ErrorHandler`.
+     *
+     * @return string Rendered exception view body.
+     */
+    private function renderPanelError(FlattenException $error): string
+    {
+        $errorHandler = Yii::$app->errorHandler;
+
+        Yii::$app->getResponse()->setStatusCode(500);
+
+        return $errorHandler->renderFile(
+            '@yii/views/errorHandler/exception.php',
+            ['exception' => $error],
+        );
     }
 }

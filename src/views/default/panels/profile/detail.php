@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Palpable\A;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\models\search\Profile;
+use yii\debug\models\search\ProfileSearch;
 use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRowNormalizer};
 use yii\debug\panels\ProfilingPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
-use yii\helpers\Html;
 
 /**
  * @var ArrayDataProvider $dataProvider
- * @var Profile $searchModel
+ * @var ProfileSearch $searchModel
  * @var ProfilingPanel $panel
  * @var string $memory
  * @var string $time
@@ -29,7 +29,7 @@ $hasProfileBlocks = $dataProvider->getTotalCount() > 0;
     <span><strong><?= $memory ?></strong> peak</span>
     <?php if ($hasProfileBlocks): ?>
         <span class="yii-debug-grid-summary-sep">·</span>
-        <?= Html::a('Open timeline', $timelineUrl) ?>
+        <?= A::tag()->href($timelineUrl)->content('Open timeline')->render() ?>
         <?= GridViewConfig::pageSizeSelectorHtml() ?>
     <?php endif; ?>
 </header>

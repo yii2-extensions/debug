@@ -10,23 +10,16 @@ use function sprintf;
 /**
  * Renders the typed cells of the events grid for the Event debug panel.
  *
- * Stateless static helpers; every method takes a typed {@see EventRow} and returns the rendered cell string. Keeps
+ * Stateless static helpers: every method takes a typed {@see EventRow} and returns the rendered cell string, keeping
  * the GridView column closures in `panels/event/detail.php` free of `mixed` narrowing.
- *
- * Usage example:
- * ```php
- * 'value' => static fn(mixed $data): string => EventCellRenderer::renderTimeCell(EventRowNormalizer::from($data)),
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class EventCellRenderer
 {
     /**
-     * Renders the sender FQCN as plain text. The DTO already guarantees a string (empty for static events) so this
-     * is a typed pass-through that documents the column intent and keeps the view symmetric with the rest of the
-     * panel renderers.
+     * Returns the sender FQCN as plain text (`''` for static events).
+     *
+     * Acts as a typed pass-through that documents the column intent and keeps the view symmetric with the other panel
+     * renderers.
      */
     public static function renderSenderCell(EventRow $row): string
     {
@@ -34,7 +27,7 @@ final class EventCellRenderer
     }
 
     /**
-     * Renders the `H:i:s.mmm` timestamp for the event capture time.
+     * Renders the capture time as `H:i:s.mmm`, derived from the row's second-precision timestamp.
      */
     public static function renderTimeCell(EventRow $row): string
     {

@@ -16,26 +16,21 @@ use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
 use function count;
 
 /**
- * Renders the Router panel detail view on top of `ui-awesome/html` builders.
+ * Renders the Router panel detail view.
  *
- * Stateless static helpers; each public method takes a typed model or DTO and returns a fully-rendered HTML string.
- *
- * Concentrates tab strip wiring, badge tinting, the three section tables (Current Route logs / Router Rules / Action
- * Routes) and the callout block in one testable place.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\panels\router\RouterRenderer::renderTabs($currentRoute, $routerRules, $actionRoutes);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: each public method takes a typed model or row and returns a fully-rendered HTML string.
+ * Concentrates tab-strip wiring, badge tinting, the three section tables (Current Route logs / Router Rules / Action
+ * Routes), and the callout block in one testable place.
  */
 final class RouterRenderer
 {
     /**
      * Renders the entire Router panel detail: tab strip (Current Route / Router Rules / Action Routes plus the
      * read-only badges for Pretty URL / Strict Parsing / Global Suffix) followed by the per-tab content panels.
+     *
+     * @param CurrentRoute $currentRoute Current-route resolver snapshot.
+     * @param RouterRules $routerRules Flattened URL-rules snapshot.
+     * @param ActionRoutes $actionRoutes Discovered controller actions and matching rules.
      */
     public static function renderTabs(
         CurrentRoute $currentRoute,
@@ -46,7 +41,7 @@ final class RouterRenderer
     }
 
     /**
-     * Renders the Action Routes section (`<table>` of action FQCN → route + first matching rule + rules tested).
+     * Renders the Action Routes section as a `<table>` of action FQCN → route, first matching rule, and rules tested.
      */
     private static function renderActionRoutesPanel(ActionRoutes $actionRoutes): string
     {
@@ -95,7 +90,9 @@ final class RouterRenderer
     }
 
     /**
-     * Renders one read-only badge chip on the tab strip (non-clickable; surfaces a router-wide flag).
+     * Renders one read-only badge chip on the tab strip.
+     *
+     * Non-clickable; surfaces a router-wide flag (Pretty URL / Strict Parsing / Global Suffix).
      */
     private static function renderBadgeChip(string $label, string $variant): Li
     {
@@ -113,8 +110,10 @@ final class RouterRenderer
     }
 
     /**
-     * Renders the callout block surfaced by {@see CurrentRoute::$message} (info banner with the resolver explanation,
-     * plus the resolved-route / dispatched-action `<dl>` when the resolver did not match).
+     * Renders the callout block surfaced by {@see CurrentRoute::$message}.
+     *
+     * Shows an info banner with the resolver explanation, plus the resolved-route / dispatched-action `<dl>` when the
+     * resolver did not match.
      */
     private static function renderCalloutBlock(CurrentRoute $currentRoute): string
     {
@@ -160,7 +159,7 @@ final class RouterRenderer
     }
 
     /**
-     * Renders the Current Route section (callout block + rules-tested log table).
+     * Renders the Current Route section: heading, callout block, and rules-tested log table.
      */
     private static function renderCurrentRoutePanel(CurrentRoute $currentRoute): string
     {
@@ -180,8 +179,9 @@ final class RouterRenderer
     }
 
     /**
-     * Renders the rules-tested log table beneath the Current Route callout; returns empty string when there are no
-     * captured logs (the heading already conveys the `Tested 0 rules` state).
+     * Renders the rules-tested log table beneath the Current Route callout.
+     *
+     * Returns `''` when there are no captured logs, since the heading already conveys the `Tested 0 rules` state.
      */
     private static function renderLogsTable(CurrentRoute $currentRoute): string
     {
@@ -229,12 +229,14 @@ final class RouterRenderer
     }
 
     /**
-     * Renders the Router Rules section (`<table>` of rule → target → verb/suffix/mode/type).
+     * Renders the Router Rules section as a `<table>` of rule → target, verb, suffix, mode, and type.
      */
     private static function renderRouterRulesPanel(RouterRules $routerRules): string
     {
         if (count($routerRules->rules) === 0) {
-            return H3::tag()->content('No routing rules configured.')->render();
+            return H3::tag()
+                ->content('No routing rules configured.')
+                ->render();
         }
 
         $rows = [];
@@ -279,7 +281,7 @@ final class RouterRenderer
     }
 
     /**
-     * Renders the `<ul class="yii-debug-tabs">` strip — three navigable tabs plus the read-only badge chips for the
+     * Renders the `<ul class="yii-debug-tabs">` strip: three navigable tabs plus the read-only badge chips for the
      * router-wide Pretty URL / Strict Parsing / Global Suffix flags.
      */
     private static function renderTabNav(RouterRules $routerRules): string
@@ -324,8 +326,9 @@ final class RouterRenderer
     }
 
     /**
-     * Renders the per-tab content panels (`Current Route` is the active one; the rest stay hidden until the toggle
-     * JS activates them).
+     * Renders the per-tab content panels.
+     *
+     * `Current Route` is rendered active; the rest stay hidden until the toggle JS activates them.
      */
     private static function renderTabPanels(
         CurrentRoute $currentRoute,

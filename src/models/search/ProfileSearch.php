@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
@@ -15,20 +9,20 @@ use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
 
 /**
- * Search model for current request profiling log.
+ * Backs the filter form above the Profiling panel grid of profile blocks captured for the request.
  */
-class Profile extends Base
+class ProfileSearch extends Base
 {
     /**
-     * Category attribute input search value.
+     * Submitted value for the `category` filter (substring match).
      */
     public string $category = '';
     /**
-     * Info attribute input search value.
+     * Submitted value for the `info` filter (substring match).
      */
     public string $info = '';
 
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'category' => 'Category',
@@ -36,7 +30,7 @@ class Profile extends Base
         ];
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
             [['category', 'info'], 'safe'],
@@ -44,10 +38,10 @@ class Profile extends Base
     }
 
     /**
-     * Returns data provider with filled models. Filter applied if needed.
+     * Returns an {@see ArrayDataProvider} over the captured profile blocks, applying the loaded filter values.
      *
-     * @param array<int|string, mixed> $params an array of parameter values indexed by parameter names
-     * @param array<int, array<string, mixed>> $models data to return provider for
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param array<int, array<string, mixed>> $models Captured profile records to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

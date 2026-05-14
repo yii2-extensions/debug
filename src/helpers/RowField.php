@@ -9,21 +9,18 @@ use function is_numeric;
 use function is_string;
 
 /**
- * Narrows `mixed` row entries into the typed scalars row-normalizers expect.
+ * Narrows mixed row entries into the typed scalars row-normalizers expect.
  *
  * GridView callbacks receive every row as `array<array-key, mixed>`; the normalizer layer used to repeat the same
  * {@see is_numeric()} / {@see is_int()} / {@see is_string()} defensive ladders in every panel. This helper centralises
  * that pattern so the row narrowing behaves identically across panels.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class RowField
 {
     /**
-     * Returns the numeric value at `$key` cast to `float`, or `0.0` when missing/non-numeric.
+     * Returns the numeric value at `$key` cast to float, or `0.0` when missing or non-numeric.
      *
-     * @param array<array-key, mixed> $row
+     * @param array<array-key, mixed> $row Source row, typically supplied by a GridView callback.
      */
     public static function floatField(array $row, string $key): float
     {
@@ -33,9 +30,9 @@ final class RowField
     }
 
     /**
-     * Returns the numeric value at `$key` cast to `int`, or `0` when missing/non-numeric.
+     * Returns the numeric value at `$key` cast to int, or `0` when missing or non-numeric.
      *
-     * @param array<array-key, mixed> $row
+     * @param array<array-key, mixed> $row Source row, typically supplied by a GridView callback.
      */
     public static function intField(array $row, string $key): int
     {
@@ -49,9 +46,9 @@ final class RowField
     }
 
     /**
-     * Returns the numeric value at `$key` cast to `float`, or `null` when missing/non-numeric.
+     * Returns the numeric value at `$key` cast to float, or `null` when missing or non-numeric.
      *
-     * @param array<array-key, mixed> $row
+     * @param array<array-key, mixed> $row Source row, typically supplied by a GridView callback.
      */
     public static function nullableFloatField(array $row, string $key): float|null
     {
@@ -61,9 +58,9 @@ final class RowField
     }
 
     /**
-     * Returns the numeric value at `$key` cast to `int`, or `null` when missing/non-numeric.
+     * Returns the numeric value at `$key` cast to int, or `null` when missing or non-numeric.
      *
-     * @param array<array-key, mixed> $row
+     * @param array<array-key, mixed> $row Source row, typically supplied by a GridView callback.
      */
     public static function nullableIntField(array $row, string $key): int|null
     {
@@ -79,7 +76,7 @@ final class RowField
     /**
      * Returns the string value at `$key`, or `''` when missing or not a string.
      *
-     * @param array<array-key, mixed> $row
+     * @param array<array-key, mixed> $row Source row, typically supplied by a GridView callback.
      */
     public static function stringField(array $row, string $key): string
     {

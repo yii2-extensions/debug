@@ -2,31 +2,27 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use Yii;
-use yii\base\InvalidConfigException;
-use yii\base\Model;
+use yii\base\{InvalidConfigException, Model};
 use yii\data\ActiveDataProvider;
 use yii\db\ActiveRecord;
 
 /**
- * Search model for implementation of IdentityInterface
+ * Backs the User Switch panel's search form, delegating attribute access to the application's identity model.
+ *
+ * Instantiates the configured `identityClass` and forwards `__get`/`__set`/`attributes()` to it, so the panel can
+ * surface a search form whose fields automatically match whatever identity model the host application uses.
  */
-class User extends Model
+class UserSearch extends Model
 {
     /**
-     * Implementation of `IdentityInterface` resolved from the configured user component.
+     * Identity model instance resolved from the configured user component, or `null` when no user component exists.
      */
     public Model|null $identityImplement = null;
 
-    public function __get($name)
+    public function __get($name): mixed
     {
         if ($this->identityImplement === null) {
             return null;
@@ -35,7 +31,7 @@ class User extends Model
         return $this->identityImplement->__get($name);
     }
 
-    public function __set($name, $value)
+    public function __set($name, $value): void
     {
         if ($this->identityImplement === null) {
             return;
@@ -44,7 +40,7 @@ class User extends Model
         $this->identityImplement->__set($name, $value);
     }
 
-    public function attributes()
+    public function attributes(): array
     {
         if ($this->identityImplement === null) {
             return [];
@@ -68,7 +64,7 @@ class User extends Model
         parent::init();
     }
 
-    public function rules()
+    public function rules(): array
     {
         if ($this->identityImplement === null) {
             return [];
@@ -78,10 +74,11 @@ class User extends Model
     }
 
     /**
-     * @param array<int|string, mixed> $params
+     * Returns an {@see ActiveDataProvider} over the identity model, or `null` when it is not an {@see ActiveRecord}.
      *
-     * @throws InvalidConfigException if the user component is not properly configured or the identity class does not
-     * implement ActiveRecord.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     *
+     * @throws InvalidConfigException When the identity model cannot be queried as an {@see ActiveRecord}.
      */
     public function search(array $params): ActiveDataProvider|null
     {
@@ -93,12 +90,13 @@ class User extends Model
     }
 
     /**
-     * Search method for ActiveRecord.
+     * Builds the data provider for an {@see ActiveRecord} identity model, applying per-column filters.
      *
-     * @param array<int|string, mixed> $params the data array to load model.
+     * String columns are matched with `LIKE`; all other columns use exact matching.
      *
-     * @throws InvalidConfigException if the user component is not properly configured or the identity class does not
-     * implement ActiveRecord.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     *
+     * @throws InvalidConfigException When the table schema cannot be resolved.
      */
     private function searchActiveDataProvider(array $params, ActiveRecord $model): ActiveDataProvider
     {

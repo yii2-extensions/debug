@@ -14,22 +14,19 @@ use function is_file;
  *
  * Icons live as `.svg` files under `src/assets/svg/` and are looked up by name (without extension). Results are cached
  * in-memory for the request, so repeated lookups (panel icons, chevrons, etc.) do not re-read the file or re-run the
- * libxml-based sanitization that `ui-awesome/html-svg` performs on every `filePath()` render.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * libxml-based sanitization process.
  */
 final class Icon
 {
     /**
-     * @var array<string, string>
+     * @var array<string, string> In-memory cache of rendered SVG markup, indexed by icon name.
      */
     private static array $cache = [];
 
     /**
      * Returns the rendered SVG markup for the given icon name, or an empty string when the file does not exist.
      *
-     * @param string $name Icon basename without the `.svg` extension (for example. `'chevron-down'`).
+     * @param string $name Icon basename without the `.svg` extension (for example, `chevron-down`).
      *
      * @return string Sanitized SVG markup, or `''` when the source file is missing.
      */

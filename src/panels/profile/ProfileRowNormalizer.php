@@ -13,22 +13,17 @@ use function max;
  * Narrows the loose `mixed` argument GridView passes to profile-column callbacks into a typed {@see ProfileRow}.
  *
  * The profiling panel already produces typed rows, but the data provider erases the shape at the callback boundary.
- * This normalizer restores it once per row so every cell renderer can read typed properties without further runtime
+ *
+ * This normalizer restores it once per row, so every cell renderer can read typed properties without further runtime
  * checks.
- *
- * Usage example:
- * ```php
- * 'value' => static fn(mixed $data): string => ProfileCellRenderer::renderTimeCell(ProfileRowNormalizer::from($data)),
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class ProfileRowNormalizer
 {
     /**
      * Builds a {@see ProfileRow} from an arbitrary value, falling back to defensible defaults for any field that is
      * missing or has the wrong type.
+     *
+     * @param mixed $data Raw row supplied by the GridView callback.
      */
     public static function from(mixed $data): ProfileRow
     {

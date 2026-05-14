@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\mail;
 
-use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Flow\{Div, Pre};
 use UIAwesome\Html\Heading\H2;
+use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Interactive\{Details, Summary};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\Article;
 use yii\debug\helpers\{Avatar, Icon};
-use yii\helpers\Html;
 
 use function array_map;
 use function date;
@@ -27,17 +27,9 @@ use function time;
 /**
  * Renders the typed mail message card consumed by the Mail panel detail view's `_item` template.
  *
- * Stateless static helpers; the public entry point takes a typed {@see MailMessage} and returns the rendered
- * `<article>`. Private helpers handle the avatar hue/initials, the body preview, the relative/absolute time labels and
- * each card section (header, recipients, body, raw-headers details).
- *
- * Usage example:
- * ```php
- * echo \yii\debug\panels\mail\MailCardRenderer::renderItem(MailMessageNormalizer::from($model));
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Stateless static helpers: the public entry point takes a typed {@see MailMessage} and returns the rendered
+ * `<article>`. Private helpers handle the avatar hue/initials, the body preview, the relative/absolute time labels,
+ * and each card section (header, recipients, body, raw-headers details).
  */
 final class MailCardRenderer
 {
@@ -58,9 +50,10 @@ final class MailCardRenderer
     /**
      * Renders the full mail message `<article>` element.
      *
-     * The caller resolves the `.eml` download URL (typically via `Url::to(['download-mail', 'file' => $file])`) so the
-     * renderer stays free of routing concerns and easy to test in isolation.
+     * The caller supplies an URL builder (typically `static fn(string $file) => Url::to(['download-mail', 'file' => $file])`)
+     * so the renderer stays free of routing concerns and easy to test in isolation.
      *
+     * @param MailMessage $message Typed mail record.
      * @param callable(string): string $downloadUrlBuilder Builds the download URL for the given `.eml` file path.
      */
     public static function renderItem(MailMessage $message, callable $downloadUrlBuilder): string
@@ -77,12 +70,15 @@ final class MailCardRenderer
             $children[] = self::renderTechDetails($message);
         }
 
-        return Article::tag()->class('yii-debug-mail-card')->html(...$children)->render();
+        return Article::tag()
+            ->class('yii-debug-mail-card')
+            ->html(...$children)
+            ->render();
     }
 
     /**
-     * Truncates the body to a single-line preview suitable for the headline area, returning empty string when the
-     * body is empty.
+     * Truncates the body to a single-line preview suitable for the headline area, falling back to `''` when the body
+     * is empty.
      */
     private static function bodyPreview(string $body): string
     {
@@ -98,15 +94,16 @@ final class MailCardRenderer
 
         $preview = mb_substr($collapsed, 0, self::BODY_PREVIEW_LIMIT);
 
-        return mb_strlen($collapsed) > self::BODY_PREVIEW_LIMIT ? $preview . '…' : $preview;
+        return mb_strlen($collapsed) > self::BODY_PREVIEW_LIMIT ? "{$preview}…" : $preview;
     }
 
     /**
-     * Formats a Unix timestamp into `[relative, absolute]` strings for the meta time line. The relative form returns
-     * `'just now'` for less than a minute, `'X min ago'` / `'X h ago'` / `'X d ago'` thresholds, and falls back to
-     * the absolute form past 30 days.
+     * Formats a Unix timestamp into `[relative, absolute]` strings for the meta time line.
      *
-     * @return array{0: string, 1: string}
+     * The relative form returns `'just now'` for under a minute, `'X min ago'` / `'X h ago'` / `'X d ago'` for the
+     * matching thresholds, and falls back to the absolute form past 30 days.
+     *
+     * @return array{0: string, 1: string} Relative label and absolute label, in that order.
      */
     private static function formatTime(int $unix): array
     {
@@ -133,8 +130,9 @@ final class MailCardRenderer
     }
 
     /**
-     * Whether the message has at least one populated recipient group (used to decide whether to emit the recipient
-     * block at all).
+     * Returns whether the message has at least one populated recipient group.
+     *
+     * Used to decide whether the recipient block is emitted at all.
      */
     private static function hasRecipients(MailMessage $message): bool
     {
@@ -142,7 +140,7 @@ final class MailCardRenderer
     }
 
     /**
-     * Returns the uppercased first letter of the local part of the address, falling back to `?` when empty.
+     * Returns the uppercased first letter of the local part of the address, falling back to `'?'` when empty.
      */
     private static function initialsFor(string $email): string
     {
@@ -158,7 +156,11 @@ final class MailCardRenderer
     }
 
     /**
-     * @return list<string>
+     * Returns the recipient list selected by `$getter` (`'to'`, `'cc'`, `'bcc'`, `'replyTo'`).
+     *
+     * @param string $getter Identifier of the recipient field to read; unknown values yield an empty list.
+     *
+     * @return list<string> Recipient addresses in declaration order.
      */
     private static function recipientList(MailMessage $message, string $getter): array
     {
@@ -172,8 +174,9 @@ final class MailCardRenderer
     }
 
     /**
-     * Renders the colored avatar `<span>` with the sender's first-letter initial; the hue is derived deterministically
-     * from the address so the same sender always gets the same color.
+     * Renders the colored avatar `<span>` with the sender's first-letter initial.
+     *
+     * The hue is derived deterministically from the address, so the same sender always gets the same color.
      */
     private static function renderAvatar(MailMessage $message): Span
     {
@@ -185,7 +188,7 @@ final class MailCardRenderer
     }
 
     /**
-     * Renders the body block — escaped plain-text body or an empty-state placeholder.
+     * Renders the body block: the escaped plain-text body, or an empty-state placeholder when the body is empty.
      */
     private static function renderBody(MailMessage $message): Div
     {
@@ -201,7 +204,7 @@ final class MailCardRenderer
     }
 
     /**
-     * Renders the card head (avatar, headline, meta line with status / time / optional download).
+     * Renders the card head: avatar, headline, and meta line with status, time, and the optional download link.
      *
      * @param callable(string): string $downloadUrlBuilder Builds the download URL for the given `.eml` file path.
      */
@@ -217,7 +220,7 @@ final class MailCardRenderer
     }
 
     /**
-     * Renders the headline block: from line, subject heading, optional body preview.
+     * Renders the headline block: from line, subject heading, and optional body preview.
      */
     private static function renderHeadline(MailMessage $message): Div
     {
@@ -244,7 +247,7 @@ final class MailCardRenderer
     }
 
     /**
-     * Renders the meta line: status pill, relative/absolute time, optional `.eml` download link.
+     * Renders the meta line: status pill, relative/absolute time, and the optional `.eml` download link.
      *
      * @param callable(string): string $downloadUrlBuilder Builds the download URL for the given `.eml` file path.
      */
@@ -275,7 +278,7 @@ final class MailCardRenderer
     }
 
     /**
-     * Renders the recipient group block — one row per non-empty list (TO, CC, BCC, REPLY-TO).
+     * Renders the recipient group block: one row per non-empty list (TO, CC, BCC, REPLY-TO).
      */
     private static function renderRecipients(MailMessage $message): Div
     {
@@ -326,13 +329,14 @@ final class MailCardRenderer
             ->title($tooltip)
             ->html(
                 Span::tag()->class('yii-debug-mail-status-dot')->addAriaAttribute('hidden', 'true'),
-                ' ' . Html::encode($label),
+                ' ' . Encode::content($label),
             );
     }
 
     /**
-     * Renders the raw-headers `<details>` block (collapsed by default), only emitted when at least one of headers /
-     * charset is populated.
+     * Renders the raw-headers `<details>` block, collapsed by default.
+     *
+     * Emitted only when at least one of `headers` / `charset` is populated.
      */
     private static function renderTechDetails(MailMessage $message): Details
     {
@@ -360,7 +364,7 @@ final class MailCardRenderer
             ->class('yii-debug-mail-tech')
             ->html(
                 Summary::tag()->html(...$summaryChildren),
-                '<pre class="yii-debug-mail-headers">' . Html::encode($message->headers) . '</pre>',
+                Pre::tag()->class('yii-debug-mail-headers')->content($message->headers),
             );
     }
 }

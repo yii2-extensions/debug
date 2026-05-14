@@ -19,21 +19,12 @@ use function strrpos;
 use function substr;
 
 /**
- * Renders the per-bundle markup for the Asset Bundles detail view on top of typed `ui-awesome/html` builders.
+ * Renders the per-bundle markup for the Asset Bundles detail view.
  *
- * Stateless static helpers; every method takes the data it needs as arguments and returns a UIAwesome component tree.
- * Keeps the detail view focused on page-level scaffolding while concentrating render logic (chip pluralization, anchor
- * resolution, wiring/depends sections) in one testable place.
+ * Stateless static helpers: every method takes the data it needs as arguments and returns the rendered HTML tree.
  *
- * Usage example:
- * ```php
- * foreach ($summary->bundles as $bundle) {
- *     echo \yii\debug\panels\asset\AssetCardRenderer::renderCard($bundle, $summary);
- * }
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * Concentrates the render logic (chip pluralization, anchor resolution, wiring/depends sections) in one testable place,
+ * keeping the detail view focused on page-level scaffolding.
  */
 final class AssetCardRenderer
 {
@@ -52,8 +43,8 @@ final class AssetCardRenderer
 
         if ($bodyChildren !== []) {
             $articleChildren[] = Div::tag()
-                ->class('yii-debug-asset-card-body')
                 ->addDataAttribute('cols', (string) $bundle->bodyCols)
+                ->class('yii-debug-asset-card-body')
                 ->html(...$bodyChildren);
         }
 
@@ -66,9 +57,9 @@ final class AssetCardRenderer
     /**
      * Resolves the anchor id for a dependency name.
      *
-     * Prefers the id of an already-registered bundle so cross-references jump to a real card; falls back to a fresh
-     * `Inflector::camel2id()` pass for dependencies that are not yet (or never) loaded; the link still points to the
-     * id that would be assigned if the bundle were registered later.
+     * Prefers the id of an already-registered bundle so cross-references jump to a real card; otherwise falls back to
+     * a fresh {@see \yii\helpers\Inflector::camel2id()} pass, so the link still points to the id the bundle would get
+     * if it were registered later.
      *
      * @param string $depName Fully qualified class name of the dependency.
      * @param AssetSummary $summary Already-normalized summary.
@@ -85,10 +76,11 @@ final class AssetCardRenderer
     }
 
     /**
-     * Builds the optional card body; `Files` and `Wiring` sections; collapsing to an empty list when neither applies
-     * (the caller then drops the body wrapper entirely).
+     * Builds the optional card body (Files and Wiring sections), collapsing to an empty list when neither applies.
      *
-     * @return list<Section>
+     * The caller drops the body wrapper entirely when the returned list is empty.
+     *
+     * @return list<Section> Body sections in render order.
      */
     private static function renderBody(AssetBundleView $bundle, AssetSummary $summary): array
     {
@@ -106,12 +98,11 @@ final class AssetCardRenderer
     }
 
     /**
-     * Renders a count chip such as:
+     * Renders a count chip such as `<span class="yii-debug-asset-chip yii-debug-asset-chip-css"><strong>3</strong>
+     * css</span>`.
      *
-     * `<span class="yii-debug-asset-chip yii-debug-asset-chip-css"><strong>3</strong> css</span>`.
-     *
-     * Chooses between singular and plural based on `$count`. When `$plural` is omitted the same word is used for any
-     * count.
+     * Chooses between singular and plural based on `$count`. When `$plural` is `''`, the singular form is used for
+     * every count.
      */
     private static function renderChip(string $modifier, int $count, string $singular, string $plural = ''): Span
     {
@@ -126,7 +117,7 @@ final class AssetCardRenderer
     }
 
     /**
-     * Renders one dependency link; short name visible, full FQCN in the `title`, anchor resolved via
+     * Renders one dependency link with the short name visible, the full FQCN in `title`, and the anchor resolved via
      * {@see self::resolveAnchor()}.
      */
     private static function renderDepend(string $depName, AssetSummary $summary): A
@@ -136,8 +127,6 @@ final class AssetCardRenderer
 
         return A::tag()
             ->class('yii-debug-asset-depend')
-            ->href('#' . self::resolveAnchor($depName, $summary))
-            ->title($depName)
             ->html(
                 Span::tag()
                     ->class('yii-debug-asset-depend-icon')
@@ -146,7 +135,9 @@ final class AssetCardRenderer
                 Span::tag()
                     ->class('yii-debug-asset-depend-name')
                     ->content($shortName),
-            );
+            )
+            ->href('#' . self::resolveAnchor($depName, $summary))
+            ->title($depName);
     }
 
     /**
@@ -168,7 +159,7 @@ final class AssetCardRenderer
     }
 
     /**
-     * Renders the `Files` section; separate `<div class="yii-debug-asset-files">` lists for CSS and JS.
+     * Renders the `Files` section with separate `<div class="yii-debug-asset-files">` lists for CSS and JS.
      */
     private static function renderFilesSection(AssetBundleView $bundle): Section
     {
@@ -205,7 +196,7 @@ final class AssetCardRenderer
     }
 
     /**
-     * Renders the card header; bundle icon, short name, namespace prefix and CSS/JS/deps chips.
+     * Renders the card header: bundle icon, short name, namespace prefix, and CSS/JS/deps chips.
      */
     private static function renderHead(AssetBundleView $bundle): Header
     {
@@ -271,7 +262,7 @@ final class AssetCardRenderer
     /**
      * Renders the `Wiring` section combining the `source` / `base` / `url` rows and the `Depends on N` cross-link list.
      *
-     * At least one of `hasWiring` / `hasDepends` is guaranteed to be `true` by the caller.
+     * The caller guarantees that at least one of `hasWiring` / `hasDepends` is `true`.
      */
     private static function renderWiringSection(AssetBundleView $bundle, AssetSummary $summary): Section
     {

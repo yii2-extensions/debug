@@ -13,19 +13,16 @@ use function is_numeric;
  * Computes the typed {@see LogCounts} totals (errors / warnings / info) from the raw `$panel->data['messages']`
  * payload of {@see \yii\debug\panels\LogPanel}.
  *
- * Iterates the positional log tuples directly (the second element is the level) so the summary header shows totals
+ * Iterates the positional log tuples directly (the second element is the level), so the summary header shows totals
  * across every captured message regardless of the search-model filter applied to the grid.
- *
- * Usage example:
- * ```php
- * $counts = LogCountsNormalizer::fromPanelData($panel->data);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class LogCountsNormalizer
 {
+    /**
+     * Builds a {@see LogCounts} from the raw panel payload, treating malformed entries as a zero-filled result.
+     *
+     * @param mixed $data Raw value of {@see \yii\debug\panels\LogPanel::$data}.
+     */
     public static function fromPanelData(mixed $data): LogCounts
     {
         $payload = is_array($data) ? $data : [];

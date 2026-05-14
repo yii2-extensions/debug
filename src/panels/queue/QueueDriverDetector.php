@@ -14,27 +14,18 @@ use function ucfirst;
 /**
  * Resolves the friendly display name of a queue driver from the FQCN of the sender that emitted the event.
  *
- * The yii2-queue ecosystem groups driver implementations under a per-driver namespace segment
- * (`yii\queue\sync\Queue`, `yii\queue\amqp\Queue`, ...). This detector walks the FQCN segments to find a known
- * driver token and falls back to a title-cased namespace fragment when an unknown driver is encountered, so custom
- * drivers still get a readable label without requiring code changes here.
- *
- * Usage example:
- * ```php
- * [$name, $isAsync] = QueueDriverDetector::detect('yii\\queue\\amqp\\Queue');
- * // -> ['AMQP', true]
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * The yii2-queue ecosystem groups driver implementations under a per-driver namespace segment (`yii\queue\sync\Queue`,
+ * `yii\queue\amqp\Queue`, ...). This detector walks the FQCN segments to find a known driver token, falling back to a
+ * title-cased namespace fragment when an unknown driver is encountered, so custom drivers still get a readable label
+ * without requiring code changes here.
  */
 final class QueueDriverDetector
 {
     /**
-     * Maps the per-driver namespace token (lowercase) to a display name. Drivers not listed here fall back to a
-     * title-cased version of the token, so adding a brand-new driver does not require updating this map.
+     * @var array<string, string> Maps the per-driver namespace token (lowercase) to a display name.
      *
-     * @var array<string, string>
+     * Drivers not listed here fall back to a title-cased version of the token, so adding a brand-new driver does not
+     * require updating this map.
      */
     private const array DRIVER_LABELS = [
         'sync' => 'Sync',
@@ -48,25 +39,27 @@ final class QueueDriverDetector
         'sqs' => 'SQS',
     ];
     /**
-     * Driver tokens whose jobs run in-process during the same request. Everything else is considered async (the worker
-     * runs in a separate process) and the panel shows the "exec events live in CLI snapshots" hint.
+     * @var list<string> Driver tokens whose jobs run in-process during the same request.
      *
-     * @var list<string>
+     * Everything else is considered async (the worker runs in a separate process) and the panel shows the "exec events
+     * live in CLI snapshots" hint.
      */
     private const array SYNC_DRIVERS = ['sync'];
 
     /**
-     * Per-FQCN cache. Detection only depends on the FQCN, so the same queue component hitting the event listener
-     * thousands of times during a worker loop pays the lookup cost once.
+     * @var array<string, array{0: string, 1: bool}> Per-FQCN cache.
      *
-     * @var array<string, array{0: string, 1: bool}>
+     * Detection only depends on the FQCN, so the same queue component hitting the event listener thousands of times
+     * during a worker loop pays the lookup cost once.
      */
     private static array $cache = [];
 
     /**
      * Detects the friendly driver label and the async flag from a queue class FQCN.
      *
-     * @return array{0: string, 1: bool} `[displayName, isAsync]`
+     * @param string $fqcn Fully qualified class name of the queue sender.
+     *
+     * @return array{0: string, 1: bool} `[displayName, isAsync]`.
      */
     public static function detect(string $fqcn): array
     {
@@ -88,9 +81,10 @@ final class QueueDriverDetector
     }
 
     /**
-     * Extracts the per-driver namespace token by walking the FQCN segments and picking the segment immediately before
-     * the trailing class name. For `yii\queue\amqp\Queue` this yields `'amqp'`. When the FQCN has a single segment
-     * (no namespace) it falls back to the lowercased class name itself.
+     * Extracts the per-driver namespace token by picking the FQCN segment immediately before the trailing class name.
+     *
+     * For `yii\queue\amqp\Queue` this yields `'amqp'`. When the FQCN has a single segment (no namespace), it falls
+     * back to the lowercased class name itself.
      */
     private static function extractDriverToken(string $fqcn): string
     {

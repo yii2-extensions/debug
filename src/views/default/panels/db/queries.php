@@ -2,22 +2,24 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Palpable\A;
 use yii\data\ArrayDataProvider;
 use yii\debug\DbAsset;
 use yii\debug\GridViewConfig;
-use yii\debug\models\search\Db;
+use yii\debug\models\search\DbSearch;
 use yii\debug\panels\db\{DbQueryRenderer, QueryRowNormalizer};
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
-use yii\helpers\{Html, Url};
+use yii\helpers\Url;
 use yii\web\View;
 
 /**
  * @var ArrayDataProvider $queryDataProvider
  * @var bool $hasExplain
  * @var DbPanel $panel
- * @var Db $searchModel
+ * @var DbSearch $searchModel
  * @var int $sumDuplicates
  * @var View $this
  */
@@ -114,9 +116,10 @@ echo GridView::widget(
 if ($hasExplain) {
     DbAsset::register($this);
 
-    echo Html::tag(
-        'div',
-        Html::a('[+] Explain all', 'javascript:;'),
-        ['class' => 'yii-debug-db-explain-all'],
-    );
+    echo Div::tag()
+        ->class('yii-debug-db-explain-all')
+        ->html(
+            A::tag()->href('javascript:;')->content('[+] Explain all')->render(),
+        )
+        ->render();
 }

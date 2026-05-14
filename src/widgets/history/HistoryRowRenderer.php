@@ -10,7 +10,7 @@ use UIAwesome\Html\Root\Header;
 use Yii;
 use yii\debug\GridViewConfig;
 use yii\debug\helpers\Format;
-use yii\debug\models\search\Debug as DebugSearch;
+use yii\debug\models\search\DebugSearch;
 use yii\debug\panels\DbPanel;
 use yii\helpers\Url;
 

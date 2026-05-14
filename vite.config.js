@@ -30,8 +30,8 @@ export default defineConfig({
         "css-timeline": r("resources/src/styles/timeline.entry.js"),
       },
       output: {
-        entryFileNames: "js/[name].js",
-        chunkFileNames: "js/[name].js",
+        entryFileNames: "js/[name].min.js",
+        chunkFileNames: "js/[name].min.js",
         assetFileNames: (info) => {
           const name = info.names?.[0] ?? info.name ?? "";
           if (name.endsWith(".css")) {
@@ -50,7 +50,7 @@ export default defineConfig({
       closeBundle() {
         cssShimEntries.forEach((n) => {
           try {
-            rmSync(r(`src/assets/dist/js/${n}.js`));
+            rmSync(r(`src/assets/dist/js/${n}.min.js`));
           } catch {
             // shim js was already pruned.
           }

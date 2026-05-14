@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace yii\debug\components\search\matchers;
 
 /**
- * Checks if the given value is lower than the base one.
+ * Matches candidate values strictly lower than the configured base value.
  */
 class LowerThan extends Base
 {
     /**
-     * Checks if the given value is lower than the base one.
+     * Returns whether the candidate is strictly lower than the base value.
      *
-     * @param mixed $value Value to check.
+     * @param mixed $value Candidate value to test.
      *
-     * @return bool `true` if the given value is lower than the base one, `false` otherwise.
+     * @return bool `true` when `$value < $baseValue`, `false` otherwise.
      */
     public function match(mixed $value): bool
     {

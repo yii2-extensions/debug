@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\db;
 
-use yii\debug\helpers\Coerce;
-use yii\debug\helpers\RowField;
+use yii\debug\helpers\{Coerce, RowField};
 
 use function is_array;
 use function max;
@@ -14,22 +13,16 @@ use function max;
  * Narrows the loose `mixed` argument GridView passes to column callbacks into a typed {@see QueryRow}.
  *
  * The DB panel already produces typed rows (`array{type, query, duration, ...}`), but the data provider erases that
- * shape at the callback boundary. This normalizer restores it once per row so every cell renderer can read typed
+ * shape at the callback boundary. This normalizer restores it once per row, so every cell renderer can read typed
  * properties.
- *
- * Usage example:
- * ```php
- * 'value' => static fn(mixed $data): string => DbQueryRenderer::renderTypeCell(QueryRowNormalizer::from($data)),
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class QueryRowNormalizer
 {
     /**
      * Builds a {@see QueryRow} from an arbitrary value, falling back to defensible defaults for any field that is
      * missing or has the wrong type.
+     *
+     * @param mixed $data Raw row supplied by the GridView callback.
      */
     public static function from(mixed $data): QueryRow
     {
