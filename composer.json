@@ -17,9 +17,10 @@
         "composer-runtime-api": "^2.0",
         "symfony/mime": "^7.4",
         "ui-awesome/html": "^0.4",
+        "ui-awesome/html-helper": "^0.7",
         "ui-awesome/html-svg": "^0.4",
-        "yiisoft/yii2": "^22.0@dev",
-        "yiisoft/yii2-symfonymailer": "^22.0@dev"
+        "yiisoft/yii2": "^2.0.55 || ^22.0@dev",
+        "yiisoft/yii2-symfonymailer": "^2.0 || ^22.0@dev"
     },
     "require-dev": {
         "infection/infection": "^0.32",
@@ -43,6 +44,12 @@
             "yiiunit\\debug\\": "tests"
         }
     },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ],
     "extra": {
         "branch-alias": {
             "dev-main": "1.0.x-dev"
