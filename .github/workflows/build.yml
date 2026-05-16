@@ -21,5 +21,5 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     with:
-      extensions: gd, intl
+      extensions: gd, intl, pdo, pdo_sqlite
       php-version: '["8.3","8.4","8.5"]'
