@@ -6,7 +6,9 @@ namespace yii\debug\tests\log;
 
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
-use yii\debug\{LogTarget, Module};
+use yii\base\{Exception as YiiException, InvalidConfigException};
+use yii\debug\{FlattenException, LogTarget, Module, Panel};
+use yii\debug\panels\{DbPanel, MailPanel};
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -51,6 +53,289 @@ final class LogTargetTest extends TestCase
             $data['time'],
             'Captured time must mirror REQUEST_TIME_FLOAT exactly.',
         );
+    }
+
+    public function testCollectSummaryReadsSqlCountFromDbPanel(): void
+    {
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $dbPanel = new class extends DbPanel {
+            public function getProfileLogs(): array
+            {
+                return [
+                    ['SELECT 1', Logger::LEVEL_PROFILE_BEGIN],
+                    ['SELECT 1', Logger::LEVEL_PROFILE_END],
+                    ['SELECT 2', Logger::LEVEL_PROFILE_BEGIN],
+                    ['SELECT 2', Logger::LEVEL_PROFILE_END],
+                ];
+            }
+        };
+
+        $module->panels = ['db' => $dbPanel];
+
+        $logTarget = new LogTarget($module);
+
+        $summary = $this->invoke(
+            $logTarget,
+            'collectSummary',
+        );
+
+        self::assertIsArray(
+            $summary,
+            'Summary must surface as a structured array.',
+        );
+        self::assertSame(
+            2,
+            $summary['sqlCount'] ?? -1,
+            "'sqlCount' must equal `count(profileLogs) / 2` when the DB panel is wired.",
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testExportAppliesConfiguredFileModeOnDataFiles(): void
+    {
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $module->fileMode = 0o600;
+
+        $logTarget = new LogTarget($module);
+
+        $logTarget->export();
+
+        $perms = fileperms("{$module->dataPath}/{$logTarget->tag}.data");
+
+        self::assertIsInt(
+            $perms,
+            'Exported data file must exist on disk.',
+        );
+        self::assertSame(
+            0o600,
+            $perms & 0o777,
+            "Configured 'fileMode' must be applied to the persisted data file.",
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testExportCapturesPanelExceptionsAsFlattenException(): void
+    {
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $module->panels = [
+            'broken' => new class extends Panel {
+                public function getName(): string
+                {
+                    return 'broken';
+                }
+
+                public function save(): mixed
+                {
+                    throw new YiiException('panel save failure');
+                }
+            },
+        ];
+
+        $logTarget = new LogTarget($module);
+
+        $logTarget->export();
+
+        $manifest = $logTarget->loadManifest();
+
+        $tag = array_key_first($manifest);
+
+        self::assertIsString(
+            $tag,
+            'Manifest must hold the exported request.',
+        );
+
+        $logTarget->loadTagToPanels($tag);
+
+        self::assertInstanceOf(
+            FlattenException::class,
+            $module->panels['broken']->getError(),
+            "Panel exceptions thrown by 'save()' must surface as 'FlattenException' on load.",
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testGcEvictsExcessManifestEntriesAndDeletesDataFiles(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+        $module->historySize = 2;
+
+        $logTarget = new LogTarget($module);
+
+        $manifest = [];
+
+        // historySize=2 + tolerance=10 → gc runs once count > 12; build 15 entries to force eviction.
+        for ($i = 0; $i < 15; ++$i) {
+            $tag = "tag-{$i}";
+            $manifest[$tag] = ['tag' => $tag];
+
+            file_put_contents("{$module->dataPath}/{$tag}.data", 'fixture');
+        }
+
+        $this->invoke(
+            $logTarget,
+            'gc',
+            [&$manifest],
+        );
+
+        self::assertCount(
+            2,
+            $manifest,
+            "'gc()' must trim the manifest down to 'historySize'.",
+        );
+        self::assertFileDoesNotExist(
+            "{$module->dataPath}/tag-0.data",
+            'Oldest data file must be removed alongside the manifest entry.',
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testGcEvictsMailFilesForExpiredRequests(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $module->historySize = 1;
+        $mailPath = "{$module->dataPath}/mail";
+
+        @mkdir($mailPath, 0o777, true);
+
+        $mailPanel = new MailPanel();
+
+        $mailPanel->mailPath = $mailPath;
+
+        $module->panels = ['mail' => $mailPanel];
+
+        $logTarget = new LogTarget($module);
+
+        $manifest = [];
+
+        for ($i = 0; $i < 15; ++$i) {
+            $tag = "tag-{$i}";
+            $mailFile = "msg-{$i}.eml";
+            $manifest[$tag] = ['tag' => $tag, 'mailFiles' => [$mailFile]];
+
+            file_put_contents("{$module->dataPath}/{$tag}.data", 'fixture');
+            file_put_contents("{$mailPath}/{$mailFile}", 'eml');
+        }
+
+        $this->invoke(
+            $logTarget,
+            'gc',
+            [&$manifest],
+        );
+
+        self::assertFileDoesNotExist(
+            "{$mailPath}/msg-0.eml",
+            "'gc()' must purge mail files referenced by evicted manifest entries.",
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testGcRemovesStaleDataFilesNotPresentInManifest(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+        $module->historySize = 1;
+
+        $logTarget = new LogTarget($module);
+
+        // Real entries the manifest will retain after eviction.
+        $manifest = [];
+
+        for ($i = 0; $i < 15; ++$i) {
+            $tag = "live-{$i}";
+            $manifest[$tag] = ['tag' => $tag];
+            file_put_contents("{$module->dataPath}/{$tag}.data", 'fixture');
+        }
+
+        // Orphan data file with no manifest entry — must be wiped by `removeStaleDataFiles()`.
+        $orphanFile = "{$module->dataPath}/orphan.data";
+
+        file_put_contents($orphanFile, 'orphan-fixture');
+
+        $this->invoke($logTarget, 'gc', [&$manifest]);
+
+        self::assertFileDoesNotExist(
+            $orphanFile,
+            "Orphan '<tag>.data' files must be deleted by 'removeStaleDataFiles()'.",
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testLoadManifestReturnsEmptyArrayWhenFileIsCorrupted(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        file_put_contents("{$module->dataPath}/index.data", 'this is not serialized data');
+
+        self::assertSame(
+            [],
+            (new LogTarget($module))->loadManifest(),
+            'Corrupt manifest content must yield an empty manifest array.',
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testLoadTagToPanelsDropsPanelsAbsentFromPayload(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $module->panels = [
+            'orphan' => new class extends Panel {
+                public function getName(): string
+                {
+                    return 'orphan';
+                }
+            },
+        ];
+
+        $logTarget = new LogTarget($module);
+
+        file_put_contents(
+            "{$module->dataPath}/{$logTarget->tag}.data",
+            serialize(['summary' => [], 'exceptions' => []]),
+        );
+
+        $logTarget->loadTagToPanels($logTarget->tag);
+
+        self::assertArrayNotHasKey(
+            'orphan',
+            $module->panels,
+            'Panels missing from the payload and without exceptions must be evicted.',
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testLoadTagToPanelsToleratesCorruptedDataFile(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $logTarget = new LogTarget($module);
+
+        file_put_contents("{$module->dataPath}/{$logTarget->tag}.data", 'corrupted');
+
+        self::assertSame(
+            [],
+            $logTarget->loadTagToPanels($logTarget->tag),
+            'Corrupt data file must collapse to an empty normalized payload.',
+        );
+
+        $this->cleanupDataPath($module);
     }
 
     public function testLogPanelSerializesClosureArgumentsToReadableSource(): void
@@ -176,10 +461,71 @@ final class LogTargetTest extends TestCase
         );
     }
 
+    public function testThrowInvalidConfigExceptionWhenIndexFileCannotBeOpened(): void
+    {
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        // Make 'index.data' a directory so 'touch()' and 'fopen(..., r+)' both fail in `updateIndexFile`.
+        mkdir("{$module->dataPath}/index.data");
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'Unable to open debug data index file',
+        );
+
+        try {
+            (new LogTarget($module))->export();
+        } finally {
+            @rmdir("{$module->dataPath}/index.data");
+
+            $this->cleanupDataPath($module);
+        }
+    }
+
+    public function testUpdateIndexFileToleratesNonArraySerializedManifest(): void
+    {
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        // Seed `index.data` with a serialized scalar so `narrowManifestEntries()` hits its non-array branch.
+        file_put_contents("{$module->dataPath}/index.data", serialize('not-an-array'));
+
+        $logTarget = new LogTarget($module);
+        $logTarget->export();
+
+        $manifest = $logTarget->loadManifest();
+
+        self::assertArrayHasKey(
+            $logTarget->tag,
+            $manifest,
+            'Export must succeed even when the previous manifest was a non-array scalar.',
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->mockWebApplication();
+    }
+
+    private function cleanupDataPath(Module $module): void
+    {
+        $dataPath = $module->dataPath;
+
+        if (is_dir($dataPath)) {
+            $files = glob("{$dataPath}/*");
+
+            foreach (is_array($files) ? $files : [] as $file) {
+                @unlink($file);
+            }
+
+            @rmdir($dataPath);
+        }
     }
 
     /**
@@ -239,5 +585,16 @@ final class LogTargetTest extends TestCase
         }
 
         return $rows;
+    }
+
+    private function newModuleWithIsolatedDataPath(): Module
+    {
+        $module = new Module('debug');
+
+        $module->dataPath = sys_get_temp_dir() . '/debug-logtarget-' . uniqid();
+
+        @mkdir($module->dataPath, 0o777, true);
+
+        return $module;
     }
 }

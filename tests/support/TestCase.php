@@ -155,6 +155,16 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         $this->resolveReflectionProperty($object, $propertyName)->setValue($object, $value);
     }
 
+    /**
+     * Sets an inaccessible static property on the given class to a designated value.
+     *
+     * @param class-string $className FQCN of the class declaring the static property.
+     */
+    protected function setInaccessibleStaticProperty(string $className, string $propertyName, mixed $value): void
+    {
+        (new ReflectionClass($className))->setStaticPropertyValue($propertyName, $value);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
