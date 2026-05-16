@@ -550,5 +550,4 @@ class UserPanel extends Panel
 
         return $normalized;
     }
-
 }

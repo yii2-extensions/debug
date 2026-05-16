@@ -36,6 +36,7 @@ final class RequestDataNormalizerTest extends TestCase
             'Active flags must surface in declaration order.',
         );
     }
+
     public function testFromPanelDataCoercesNumericStringStatusCodeToInt(): void
     {
         $view = RequestDataNormalizer::fromPanelData(

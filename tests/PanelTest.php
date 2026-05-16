@@ -90,6 +90,7 @@ final class PanelTest extends TestCase
             'Base Panel exposes no display name.',
         );
     }
+
     public function testGetToolbarDataFallsBackToSummaryHtmlWhenNoItems(): void
     {
         $panel = $this->makeCustomPanel('custom');

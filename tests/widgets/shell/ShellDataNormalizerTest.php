@@ -370,6 +370,7 @@ final class ShellDataNormalizerTest extends TestCase
             "'PHP' version must come from the ConfigPanel data when present.",
         );
     }
+
     public function testResolveThemeFromRequestReadsCookieFallback(): void
     {
         $this->mockWebApplication();

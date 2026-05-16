@@ -56,6 +56,7 @@ final class UserDataNormalizerTest extends TestCase
             "'tier' must land in the Other bucket.",
         );
     }
+
     public function testFromIdentityBucketsSensitiveAttributesIntoSecuritySection(): void
     {
         $view = UserDataNormalizer::fromIdentity(

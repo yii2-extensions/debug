@@ -84,6 +84,7 @@ final class SidebarDataNormalizerTest extends TestCase
             "Empty manifest must use the 'pick a request' tooltip.",
         );
     }
+
     public function testFromIndexDropsSnapshotWhenManifestIsEmpty(): void
     {
         $view = SidebarDataNormalizer::fromIndex(
