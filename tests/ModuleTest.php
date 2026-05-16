@@ -251,6 +251,8 @@ final class ModuleTest extends TestCase
 
     public function testToolbarDataActionExposesNewBrandKeys(): void
     {
+        $this->resetDebugDataPath();
+
         $module = new Module('debug', null, ['dataPath' => '@runtime/debug']);
 
         $module->allowedIPs = ['*'];
@@ -258,6 +260,7 @@ final class ModuleTest extends TestCase
         $app = Yii::$app;
 
         $app->setModule('debug', $module);
+        $app->getRequest()->setUrl('dummy');
         $module->bootstrap($app);
 
         Yii::$app->log->getLogger()->messages = [];
@@ -337,6 +340,28 @@ final class ModuleTest extends TestCase
     {
         parent::setUp();
         $this->mockWebApplication();
+    }
+
+    /**
+     * Wipes any stale debug snapshot files left over by previous tests sharing the `@runtime/debug` data path.
+     */
+    private function resetDebugDataPath(): void
+    {
+        $path = Yii::getAlias('@runtime/debug');
+
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $files = glob("{$path}/*");
+
+        if ($files === false) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            @unlink($file);
+        }
     }
 
     /**
