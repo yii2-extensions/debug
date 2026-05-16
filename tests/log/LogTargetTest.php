@@ -97,6 +97,12 @@ final class LogTargetTest extends TestCase
 
     public function testExportAppliesConfiguredFileModeOnDataFiles(): void
     {
+        if (PHP_OS_FAMILY === 'Windows') {
+            self::markTestSkipped(
+                "'chmod()' does not enforce POSIX permission bits on NTFS; 'fileMode' assertion is Linux/macOS-only.",
+            );
+        }
+
         Yii::$app->getRequest()->setUrl('dummy');
 
         $module = $this->newModuleWithIsolatedDataPath();
