@@ -8,7 +8,7 @@ use function is_array;
 use function is_string;
 
 /**
- * Normalizes the mixed payload of {@see \yii\debug\panels\ConfigPanel} into a typed {@see ConfigSummary} tree.
+ * Normalizes the narrowed payload of {@see \yii\debug\panels\ConfigPanel} into a typed {@see ConfigSummary} tree.
  *
  * Centralizes every {@see is_array()} / {@see is_string()} narrowing, so the rendering layer iterates typed values
  * without further runtime type checks.
@@ -16,18 +16,17 @@ use function is_string;
 final class ConfigDataNormalizer
 {
     /**
-     * Converts a raw configuration-panel payload into a typed summary.
+     * Converts a narrowed configuration-panel payload into a typed summary.
      *
-     * @param mixed $data Raw value of {@see \yii\debug\panels\ConfigPanel::$data}.
+     * @param array<array-key, mixed> $data Narrowed configuration-panel payload (caller must guarantee `array`).
      * @param array<string, string> $extensions Already-typed roster from {@see \yii\debug\panels\ConfigPanel::getExtensions()}.
      *
      * @return ConfigSummary Typed summary safe to render directly.
      */
-    public function normalize(mixed $data, array $extensions): ConfigSummary
+    public function normalize(array $data, array $extensions): ConfigSummary
     {
-        $payload = is_array($data) ? $data : [];
-        $applicationRaw = is_array($payload['application'] ?? null) ? $payload['application'] : [];
-        $phpRaw = is_array($payload['php'] ?? null) ? $payload['php'] : [];
+        $applicationRaw = is_array($data['application'] ?? null) ? $data['application'] : [];
+        $phpRaw = is_array($data['php'] ?? null) ? $data['php'] : [];
 
         return new ConfigSummary(
             application: $this->buildApplication($applicationRaw),

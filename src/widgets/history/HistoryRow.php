@@ -15,9 +15,6 @@ use function is_string;
  * Narrows the loose `array<string, mixed>` entry produced by {@see \yii\debug\models\search\DebugSearch::search()}
  * into typed properties, so the GridView column closures stay free of {@see is_array()} / {@see is_numeric()}
  * narrowing on every cell access.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class HistoryRow
 {

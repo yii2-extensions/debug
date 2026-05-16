@@ -20,6 +20,14 @@ use function is_string;
  *
  * Subscribes to the wildcard `Event::on('*', '*', …)` listener at {@see init()} time and records each fired event's
  * name, class, sender, and capture timestamp.
+ *
+ * @extends Panel<array<int, array{
+ *   time?: float,
+ *   name?: string,
+ *   class?: class-string,
+ *   isStatic?: string,
+ *   senderClass?: string,
+ * }>>
  */
 class EventPanel extends Panel
 {
@@ -50,6 +58,7 @@ class EventPanel extends Panel
                 'panel' => $this,
                 'searchModel' => $searchModel,
             ],
+            $this,
         );
     }
 
@@ -72,6 +81,7 @@ class EventPanel extends Panel
                 'eventCount' => count(self::normalizeEvents($this->data)),
                 'panel' => $this,
             ],
+            $this,
         );
     }
 

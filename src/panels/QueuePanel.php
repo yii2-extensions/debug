@@ -32,6 +32,8 @@ use function spl_object_id;
  *
  * Listeners are attached via `Event::on()` using the queue base class FQCN as a string, so the panel registers cleanly
  * even when the `yiisoft/yii2-queue` package is not installed; in that case the empty-state view is shown.
+ *
+ * @extends Panel<array{records?: mixed}>
  */
 class QueuePanel extends Panel
 {
@@ -92,6 +94,7 @@ class QueuePanel extends Panel
                 'panel' => $this,
                 'searchModel' => $searchModel,
             ],
+            $this,
         );
     }
 

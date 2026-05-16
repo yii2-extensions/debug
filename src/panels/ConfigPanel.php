@@ -20,6 +20,34 @@ use function is_string;
  *
  * Stores the Yii framework / PHP / application identity and the installed-extensions roster, then surfaces it through
  * the detail view, the toolbar's `php-info` link, and the brand-chip version readouts.
+ *
+ * @extends Panel<array{
+ *   phpVersion?: string,
+ *   yiiVersion?: string,
+ *   application?: array{
+ *     yii?: string,
+ *     name?: string,
+ *     version?: string,
+ *     language?: string,
+ *     sourceLanguage?: string,
+ *     charset?: string,
+ *     env?: string,
+ *     debug?: bool,
+ *   },
+ *   php?: array{
+ *     version?: string,
+ *     xdebug?: bool,
+ *     apcu?: bool,
+ *     memcache?: bool,
+ *     memcached?: bool,
+ *   },
+ *   extensions?: array<int|string, array{
+ *     name?: string,
+ *     version?: string,
+ *     bootstrap?: string|array<string, mixed>,
+ *     alias?: array<string, string>,
+ *   }>,
+ * }>
  */
 class ConfigPanel extends Panel
 {
@@ -28,11 +56,14 @@ class ConfigPanel extends Panel
      */
     public function getDetail(): string
     {
-        $summary = (new ConfigDataNormalizer())->normalize($this->data, $this->getExtensions());
+        $data = is_array($this->data) ? $this->data : [];
+
+        $summary = (new ConfigDataNormalizer())->normalize($data, $this->getExtensions());
 
         return Yii::$app->view->render(
             'panels/config/detail',
             ['summary' => $summary],
+            $this,
         );
     }
 
@@ -49,15 +80,11 @@ class ConfigPanel extends Panel
         $extensions = is_array($panelData['extensions'] ?? null) ? $panelData['extensions'] : [];
 
         foreach ($extensions as $extension) {
-            if (!is_array($extension)) {
-                continue;
-            }
-
             $name = $extension['name'] ?? null;
             $version = $extension['version'] ?? null;
 
-            if (is_scalar($name) && is_scalar($version)) {
-                $data[(string) $name] = (string) $version;
+            if (is_string($name) && is_string($version)) {
+                $data[$name] = $version;
             }
         }
 
@@ -82,17 +109,8 @@ class ConfigPanel extends Panel
         ob_start();
         phpinfo();
 
-        $pinfo = ob_get_clean();
-
-        if (!is_string($pinfo)) {
-            return '';
-        }
-
-        $phpinfo = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo);
-
-        if (!is_string($phpinfo)) {
-            $phpinfo = $pinfo;
-        }
+        $pinfo = (string) ob_get_clean();
+        $phpinfo = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo) ?? $pinfo;
 
         $phpinfo = str_replace(
             '<table',
@@ -128,6 +146,7 @@ class ConfigPanel extends Panel
         return Yii::$app->view->render(
             'panels/config/summary',
             ['panel' => $this],
+            $this,
         );
     }
 
@@ -161,16 +180,21 @@ class ConfigPanel extends Panel
      *     sourceLanguage: string,
      *     charset: string,
      *     env: string,
-     *     debug: bool
+     *     debug: bool,
      *   },
      *   php: array{
      *     version: string,
      *     xdebug: bool,
      *     apcu: bool,
      *     memcache: bool,
-     *     memcached: bool
+     *     memcached: bool,
      *   },
-     *   extensions: array<int|string, array<string, mixed>>
+     *   extensions: array<int|string, array{
+     *     name?: string,
+     *     version?: string,
+     *     bootstrap?: string|array<string, mixed>,
+     *     alias?: array<string, string>,
+     *   }>,
      * } Captured configuration snapshot consumed by the detail view and the toolbar.
      */
     public function save(): array
@@ -260,31 +284,82 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * Narrows the raw extensions list into a map of string-keyed entries, dropping non-array entries and non-string
-     * keys inside each entry.
+     * Narrows the raw extensions list into the typed shape defined by {@see Application::$extensions}, dropping
+     * non-array entries and unrecognized keys.
      *
      * @param array<int|string, mixed> $extensions Raw `extensions` slice from {@see Application::$extensions}.
      *
-     * @return array<int|string, array<string, mixed>> Sanitized extension entries indexed by their original key.
+     * @return array<int|string, array{
+     *   name?: string,
+     *   version?: string,
+     *   bootstrap?: string|array<string, mixed>,
+     *   alias?: array<string, string>,
+     * }> Sanitized extension entries indexed by their original key.
      */
     private static function normalizeExtensions(array $extensions): array
     {
         $normalized = [];
 
         foreach ($extensions as $name => $extension) {
-            if (is_array($extension)) {
-                $normalizedExtension = [];
+            if (!is_array($extension)) {
+                continue;
+            }
 
-                foreach ($extension as $key => $value) {
-                    if (is_string($key)) {
-                        $normalizedExtension[$key] = $value;
+            $entry = [];
+            $rawName = $extension['name'] ?? null;
+            $rawVersion = $extension['version'] ?? null;
+            $bootstrap = $extension['bootstrap'] ?? null;
+            $rawAlias = $extension['alias'] ?? null;
+
+            if (is_string($rawName)) {
+                $entry['name'] = $rawName;
+            }
+
+            if (is_string($rawVersion)) {
+                $entry['version'] = $rawVersion;
+            }
+
+            if (is_string($bootstrap)) {
+                $entry['bootstrap'] = $bootstrap;
+            } elseif (is_array($bootstrap)) {
+                $entry['bootstrap'] = self::stringKeyedArray($bootstrap);
+            }
+
+            if (is_array($rawAlias)) {
+                $aliases = [];
+
+                foreach ($rawAlias as $aliasKey => $aliasPath) {
+                    if (is_string($aliasKey) && is_string($aliasPath)) {
+                        $aliases[$aliasKey] = $aliasPath;
                     }
                 }
 
-                $normalized[$name] = $normalizedExtension;
+                $entry['alias'] = $aliases;
             }
+
+            $normalized[$name] = $entry;
         }
 
         return $normalized;
+    }
+
+    /**
+     * Filters an array down to entries with `string` keys.
+     *
+     * @param array<array-key, mixed> $array Raw associative-style array.
+     *
+     * @return array<string, mixed> Same values, but only the entries with string keys.
+     */
+    private static function stringKeyedArray(array $array): array
+    {
+        $out = [];
+
+        foreach ($array as $key => $value) {
+            if (is_string($key)) {
+                $out[$key] = $value;
+            }
+        }
+
+        return $out;
     }
 }

@@ -23,9 +23,6 @@ use function strtolower;
  * Concentrates every defensive {@see is_array()} / {@see is_string()} check and the per-mode branching (panels map
  * narrowing, version pluck from the Config panel data, peak-memory formatting, theme attribute derivation,
  * Configuration-chip URL composition) in one testable place.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class ShellDataNormalizer
 {

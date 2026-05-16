@@ -20,7 +20,7 @@ class QueueSearch extends Base
      */
     public string $componentId = '';
     /**
-     * Friendly driver name filter (`'Sync'`, `'Database'`, `'Redis'`, ...) — substring match.
+     * Friendly driver name filter (`'Sync'`, `'Database'`, `'Redis'`, ...) substring match.
      */
     public string $driverName = '';
     /**
@@ -28,11 +28,11 @@ class QueueSearch extends Base
      */
     public string $eventType = '';
     /**
-     * Job FQCN filter — substring match, so `'Hello'` finds `'app\\jobs\\HelloJob'`.
+     * Job FQCN filter substring match, so `'Hello'` finds `'app\\jobs\\HelloJob'`.
      */
     public string $jobClass = '';
     /**
-     * Backend job-id filter — substring match against the id returned by `$queue->push($job)`.
+     * Backend job-id filter substring match against the id returned by `$queue->push($job)`.
      */
     public string $jobId = '';
 

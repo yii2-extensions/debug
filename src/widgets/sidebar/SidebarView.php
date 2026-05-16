@@ -6,9 +6,6 @@ namespace yii\debug\widgets\sidebar;
 
 /**
  * Top-level typed view-model for the debugger sidebar partial.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class SidebarView
 {

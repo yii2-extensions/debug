@@ -2,17 +2,15 @@
 
 declare(strict_types=1);
 
-namespace yiiunit\debug;
+namespace yii\debug\tests;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\phpinfo\{PhpInfoDataNormalizer, PhpInfoTile};
 
 /**
  * Unit tests for {@see PhpInfoDataNormalizer} covering the parsing of the raw {@see phpinfo()} HTML output, the
  * tile-kind classification (pill / path / token list) and the wrapping of module blocks into deep-linkable sections.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 #[Group('panel')]
 #[Group('phpinfo')]

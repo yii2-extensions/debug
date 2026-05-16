@@ -23,6 +23,8 @@ use function is_string;
  *
  * Filters the trace log by {@see $categories} (and skips categories owned by the Router panel) and stringifies each
  * captured value through {@see varDump()}, so the detail view can render the result without re-serializing.
+ *
+ * @extends Panel<array<int, array<int|string, mixed>>>
  */
 class DumpPanel extends Panel
 {
@@ -70,6 +72,7 @@ class DumpPanel extends Panel
                 'panel' => $this,
                 'searchModel' => $searchModel,
             ],
+            $this,
         );
     }
 
@@ -89,6 +92,7 @@ class DumpPanel extends Panel
         return Yii::$app->view->render(
             'panels/dump/summary',
             ['panel' => $this],
+            $this,
         );
     }
 
@@ -132,9 +136,8 @@ class DumpPanel extends Panel
     /**
      * Renders a captured value as a display string.
      *
-     * Delegates to {@see $varDumpCallback} when set; otherwise falls back to {@see VarDumper::dumpAsString()} with
-     * {@see $depth} and {@see $highlight} applied. Non-highlighted output is HTML-escaped, while highlighted output
-     * is passed through unchanged because the highlighter already emits safe markup.
+     * The highlighter emits safe markup, so highlighted output is passed through unchanged; plain output is
+     * HTML-escaped explicitly.
      */
     public function varDump(mixed $var): string
     {

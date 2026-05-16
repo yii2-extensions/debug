@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace yiiunit\debug\router\controllers;
+namespace yii\debug\tests\router\controllers;
 
-use yii\web\Controller;
+use Yii;
+use yii\web\{Controller, ErrorAction};
 
-class RedirectController extends Controller
+final class RedirectController extends Controller
 {
     public function actionOnly(): bool
     {
@@ -18,11 +19,11 @@ class RedirectController extends Controller
      */
     public function actions(): array
     {
-        return ['test' => \yii\web\ErrorAction::class];
+        return ['test' => ErrorAction::class];
     }
 
     public function init(): void
     {
-        \Yii::$app->response->redirect('web/first');
+        Yii::$app->response->redirect('web/first');
     }
 }

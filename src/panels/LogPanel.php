@@ -20,6 +20,8 @@ use function is_string;
  * Skips categories owned by the Router panel (to avoid duplicate rows in the routing trace) and decorates each row
  * with the previous/next message ids and the time-since-previous delta, so the detail view can render the navigation
  * buttons on each row.
+ *
+ * @extends Panel<array{messages?: mixed}>
  */
 class LogPanel extends Panel
 {
@@ -55,6 +57,7 @@ class LogPanel extends Panel
                 'panel' => $this,
                 'searchModel' => $searchModel,
             ],
+            $this,
         );
     }
 
@@ -77,6 +80,7 @@ class LogPanel extends Panel
                 'data' => ['messages' => $this->getSavedMessages()],
                 'panel' => $this,
             ],
+            $this,
         );
     }
 

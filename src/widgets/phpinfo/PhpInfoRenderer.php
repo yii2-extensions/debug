@@ -23,14 +23,6 @@ use function count;
  * + main column with the search input, the Overview hero, the Configure Command details disclosure, and the modules
  * HTML). Per-section / per-tile rendering branches live in private helpers, so the view template collapses to a single
  * `render()` call.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\widgets\phpinfo\PhpInfoRenderer::render($view);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class PhpInfoRenderer
 {

@@ -21,6 +21,8 @@ use function is_int;
  *
  * Records the request peak memory and total processing time alongside the profile messages, so the detail view can
  * surface the totals next to the sortable per-block grid and link to the Timeline panel.
+ *
+ * @extends Panel<array{memory?: mixed, time?: mixed, messages?: mixed}>
  */
 class ProfilingPanel extends Panel
 {
@@ -68,6 +70,7 @@ class ProfilingPanel extends Panel
                 'time' => number_format($profileData['time'] * 1000) . ' ms',
                 'timelineUrl' => $timelineUrl,
             ],
+            $this,
         );
     }
 
@@ -93,6 +96,7 @@ class ProfilingPanel extends Panel
                 'panel' => $this,
                 'time' => number_format($profileData['time'] * 1000) . ' ms',
             ],
+            $this,
         );
     }
 

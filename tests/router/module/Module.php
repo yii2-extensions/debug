@@ -2,6 +2,6 @@
 
 declare(strict_types=1);
 
-namespace yiiunit\debug\router\module;
+namespace yii\debug\tests\router\module;
 
 class Module extends \yii\base\Module {}

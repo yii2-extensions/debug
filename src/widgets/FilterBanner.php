@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\widgets;
 
 use UIAwesome\Html\Flow\Div;
@@ -30,9 +24,6 @@ use function is_string;
  * The banner surfaces every `<FormName>[<attr>]` query param currently applied to the page as a removable pill, plus a
  * "Clear all" action. Removal links rebuild the current URL minus the targeted param(s); every other query param (sort,
  * page, theme, etc.) is preserved so the developer keeps their context.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 class FilterBanner extends Widget
 {

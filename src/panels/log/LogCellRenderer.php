@@ -111,7 +111,6 @@ final class LogCellRenderer
         $diffSecondsTotal = $diffMsTotal / 1000;
         $diffMinutesTotal = $diffSecondsTotal / 60;
         $diffHoursTotal = $diffMinutesTotal / 60;
-
         $diffMs = (int) $diffMsTotal % 1000;
         $diffSeconds = (int) $diffSecondsTotal % 60;
         $diffMinutes = (int) $diffMinutesTotal % 60;

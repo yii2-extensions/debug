@@ -12,9 +12,6 @@ use yii\debug\Panel;
  * The `$mode` discriminator picks the shell layout: 'view'` (panel detail), 'index'` (history grid) or 'bare' (no shell
  * phpinfo / db-explain). Every loose-array access on the `$shellData` payload that the layout would do inline lives
  * here once: panels map, manifest, summary, theme icons, version strings, Configuration chip URL.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class ShellContext
 {

@@ -93,7 +93,7 @@ final class TimelineRenderer
                         Em::tag()->content('see'),
                         ' which operations dominate. For quick requests the ',
                         A::tag()->href(Url::to($profilingUrl))->content('Profiling panel'),
-                        ' presents the same data as a sortable list — easier to scan.',
+                        ' presents the same data as a sortable list easier to scan.',
                     ),
             )
             ->render();

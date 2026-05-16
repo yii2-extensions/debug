@@ -46,9 +46,6 @@ use const PREG_SET_ORDER;
  * hero sections ('PHP version' / 'Build' / 'Configuration' / 'Capabilities' / 'Streams') with typed tiles, and wraps
  * every module `<table>` in the panel's table chrome plus a deep-link `<section>` so the search filter and the TOC can
  * hide / jump to it.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class PhpInfoDataNormalizer
 {

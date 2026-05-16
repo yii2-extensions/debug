@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace yiiunit\debug\router\controllers;
+namespace yii\debug\tests\router\controllers;
 
+use Exception;
 use yii\web\Controller;
 
-class BadController extends Controller
+final class BadController extends Controller
 {
     public function actionOnly(): bool
     {
@@ -14,7 +15,7 @@ class BadController extends Controller
     }
 
     /**
-     * The router never reaches this body — {@see init()} throws first — so the returned payload is irrelevant to the
+     * The router never reaches this body {@see init()} throws first so the returned payload is irrelevant to the
      * scenario under test. Kept type-compliant with the parent contract.
      *
      * @return array<array-key, array{class: class-string, ...}|class-string>
@@ -26,6 +27,6 @@ class BadController extends Controller
 
     public function init(): void
     {
-        throw new \Exception('Simulates problem with controller when initialing');
+        throw new Exception('Simulates problem with controller when initialing');
     }
 }

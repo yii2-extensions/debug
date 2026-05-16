@@ -28,8 +28,8 @@ use function time;
  * Renders the typed mail message card consumed by the Mail panel detail view's `_item` template.
  *
  * Stateless static helpers: the public entry point takes a typed {@see MailMessage} and returns the rendered
- * `<article>`. Private helpers handle the avatar hue/initials, the body preview, the relative/absolute time labels,
- * and each card section (header, recipients, body, raw-headers details).
+ * `<article>`. Private helpers handle the avatar hue/initials, the body preview, the relative/absolute time labels, and
+ * each card section (header, recipients, body, raw-headers details).
  */
 final class MailCardRenderer
 {
@@ -87,10 +87,6 @@ final class MailCardRenderer
         }
 
         $collapsed = (string) preg_replace('/\s+/', ' ', $body);
-
-        if ($collapsed === '') {
-            return '';
-        }
 
         $preview = mb_substr($collapsed, 0, self::BODY_PREVIEW_LIMIT);
 
@@ -181,9 +177,9 @@ final class MailCardRenderer
     private static function renderAvatar(MailMessage $message): Span
     {
         return Span::tag()
-            ->class('yii-debug-mail-avatar')
-            ->addAriaAttribute('hidden', 'true')
             ->addAttribute('style', '--mail-hue: ' . Avatar::hueFor($message->from))
+            ->addAriaAttribute('hidden', 'true')
+            ->class('yii-debug-mail-avatar')
             ->content(self::initialsFor($message->from));
     }
 
@@ -257,19 +253,20 @@ final class MailCardRenderer
 
         if ($message->time !== null) {
             [$relative, $absolute] = self::formatTime($message->time);
+
             $children[] = Span::tag()
                 ->class('yii-debug-mail-time')
-                ->title($absolute)
-                ->content($relative);
+                ->content($relative)
+                ->title($absolute);
         }
 
         if ($message->file !== '') {
             $children[] = A::tag()
+                ->addAriaAttribute('label', 'Download .eml')
                 ->class('yii-debug-mail-download')
                 ->href($downloadUrlBuilder($message->file))
-                ->title('Download .eml')
-                ->addAriaAttribute('label', 'Download .eml')
-                ->html(Icon::render('download'));
+                ->html(Icon::render('download'))
+                ->title('Download .eml');
         }
 
         return Div::tag()
@@ -294,8 +291,8 @@ final class MailCardRenderer
             $pills = array_map(
                 static fn(string $email): Span => Span::tag()
                     ->class('yii-debug-mail-recipient-pill')
-                    ->title($email)
-                    ->content($email),
+                    ->content($email)
+                    ->title($email),
                 $list,
             );
 
@@ -303,8 +300,8 @@ final class MailCardRenderer
                 ->class('yii-debug-mail-recipient-group')
                 ->html(
                     Span::tag()
-                        ->class('yii-debug-mail-recipient-label')
                         ->addDataAttribute('role', $key)
+                        ->class('yii-debug-mail-recipient-label')
                         ->content($group['label']),
                     Span::tag()->class('yii-debug-mail-recipient-pills')->html(...$pills),
                 );
@@ -328,7 +325,7 @@ final class MailCardRenderer
             ->class("yii-debug-mail-status yii-debug-mail-status-{$variant}")
             ->title($tooltip)
             ->html(
-                Span::tag()->class('yii-debug-mail-status-dot')->addAriaAttribute('hidden', 'true'),
+                Span::tag()->addAriaAttribute('hidden', 'true')->class('yii-debug-mail-status-dot'),
                 ' ' . Encode::content($label),
             );
     }
@@ -356,8 +353,8 @@ final class MailCardRenderer
         }
 
         $summaryChildren[] = Span::tag()
-            ->class('yii-debug-mail-tech-chevron')
             ->addAriaAttribute('hidden', 'true')
+            ->class('yii-debug-mail-tech-chevron')
             ->html(Icon::render('chevron-down-thin'));
 
         return Details::tag()

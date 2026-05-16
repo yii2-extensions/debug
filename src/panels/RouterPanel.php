@@ -20,6 +20,12 @@ use function is_string;
  * Records the URL-rule resolution log emitted by the URL manager (and any REST / Composite / per-rule subclasses), the
  * resolved route, and the dispatched action, so the detail view can show the rules-tested table, the URL-rules table,
  * and the action-routes table side by side.
+ *
+ * @extends Panel<array{
+ *   action: string|null,
+ *   messages: array<int, array<int|string, mixed>>,
+ *   route: string,
+ * }>
  */
 class RouterPanel extends Panel
 {
@@ -56,6 +62,7 @@ class RouterPanel extends Panel
                 'currentRoute' => new CurrentRoute($this->getRouteData()),
                 'routerRules' => new RouterRules(),
             ],
+            $this,
         );
     }
 
@@ -75,6 +82,7 @@ class RouterPanel extends Panel
         return Yii::$app->view->render(
             'panels/router/summary',
             ['panel' => $this],
+            $this,
         );
     }
 

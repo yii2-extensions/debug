@@ -14,7 +14,6 @@ use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Sectioning\{Article, Section};
 
 use function array_map;
-use function class_exists;
 use function implode;
 use function is_string;
 
@@ -185,19 +184,13 @@ final class ConfigCardRenderer
     }
 
     /**
-     * Returns a BCP-47 tag annotated with its English display name when `ext-intl` is available.
-     *
-     * Falls back to the locale itself when `ext-intl` is missing, or to the em-dash placeholder when the locale is
+     * Returns a BCP-47 tag annotated with its English display name, or the em-dash placeholder when the locale is
      * empty.
      */
     private static function formatLanguage(string $locale): string
     {
         if ($locale === '') {
             return '—';
-        }
-
-        if (class_exists('Locale', false) === false) {
-            return $locale;
         }
 
         $parts = [];

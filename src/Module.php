@@ -60,7 +60,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public array $allowedIPs = ['127.0.0.1', '::1'];
     /**
-     * RBAC access checker — component id or fully configured manager.
+     * RBAC access checker component id or fully configured manager.
      *
      * @var array<string, mixed>|BaseManager|string
      */
@@ -119,7 +119,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public LogTarget|array|string $logTarget = 'yii\debug\LogTarget';
     /**
-     * Page title — literal string or a callable receiving the base URL and returning a string.
+     * Page title literal string or a callable receiving the base URL and returning a string.
      *
      * @var (callable(string): string)|string|null
      */
@@ -142,8 +142,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public string $toolbarPosition = 'bottom';
     /**
-     * Trace-line template — placeholder string ({file}, {line}, {text}), callable returning the rendered line, or
-     * `false` to disable trace-line rendering entirely.
+     * Trace-line template placeholder string ({file}, {line}, {text}), callable returning the rendered line, or `false`
+     * to disable trace-line rendering entirely.
      *
      * @var (callable(array<string, mixed>, Panel): string)|false|string
      */
@@ -202,7 +202,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         if (in_array($action->id, ['toolbar', 'toolbar-data'], true)) {
-            // Accessing the toolbar remotely is normal — do not throw.
+            // Accessing the toolbar remotely is normal do not throw.
             return false;
         }
 
@@ -617,7 +617,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         if (!$this->logTarget instanceof LogTarget) {
             throw new InvalidConfigException(
-                'Debug module logTarget has not been bootstrapped — call Module::bootstrap() first.',
+                'Debug module logTarget has not been bootstrapped; call Module::bootstrap() first.',
             );
         }
 

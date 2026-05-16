@@ -23,13 +23,23 @@ final class VersionResolver
     /**
      * Rewrites the `version` field of each entry with the friendly version, when resolvable.
      *
-     * Accepts the array shape produced by `Yii::$app->extensions` — `[$packageName => ['name' => ..., 'version' =>
+     * Accepts the array shape produced by `Yii::$app->extensions`; `[$packageName => ['name' => ..., 'version' =>
      * ...]]`. Entries whose key is not a string (malformed registrations) or whose package cannot be resolved through
      * Composer are returned unchanged.
      *
-     * @param array<int|string, array<string, mixed>> $extensions Extension map keyed by package name.
+     * @param array<int|string, array{
+     *   name?: string,
+     *   version?: string,
+     *   bootstrap?: string|array<string, mixed>,
+     *   alias?: array<string, string>,
+     * }> $extensions Extension map keyed by package name.
      *
-     * @return array<int|string, array<string, mixed>> Extension map with `version` fields rewritten in place.
+     * @return array<int|string, array{
+     *   name?: string,
+     *   version?: string,
+     *   bootstrap?: string|array<string, mixed>,
+     *   alias?: array<string, string>,
+     * }> Extension map with `version` fields rewritten in place.
      */
     public static function forExtensions(array $extensions): array
     {

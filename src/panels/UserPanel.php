@@ -6,8 +6,7 @@ namespace yii\debug\panels;
 
 use Throwable;
 use Yii;
-use yii\base\InvalidConfigException;
-use yii\base\Model;
+use yii\base\{InvalidConfigException, Model};
 use yii\data\{ArrayDataProvider, DataProviderInterface};
 use yii\db\ActiveRecord;
 use yii\debug\controllers\UserController;
@@ -29,12 +28,20 @@ use function is_string;
 use function method_exists;
 
 /**
- * Captures the authenticated identity and renders it in the User panel, optionally allowing the developer to switch
- * to another user.
+ * Captures the authenticated identity and renders it in the User panel, optionally allowing the developer to switch to
+ * another user.
  *
  * Captures the identity's attributes, RBAC roles, and permissions; surfaces them through the detail view with `Reveal`
  * buttons on sensitive fields; and (when the configured access rule allows) lists candidate identities in a GridView so
  * the developer can impersonate one with a single click.
+ *
+ * @extends Panel<array{
+ *   id: int|string|null,
+ *   identity: array<string, string>,
+ *   attributes: array<int, array{attribute: string, label: string}>|null,
+ *   rolesProvider: ArrayDataProvider|null,
+ *   permissionsProvider: ArrayDataProvider|null,
+ * }>
  */
 class UserPanel extends Panel
 {
@@ -44,14 +51,6 @@ class UserPanel extends Panel
     public string $displayName = 'User';
     /**
      * @var array<int|string, mixed> GridView column definitions for the user-switch table.
-     *
-     * Defaults to a curated set tailored to the standard Yii2 user schema (`id`, `username`, `email`, `status`,
-     * `created_at`, `updated_at`). Sensitive fields (`auth_key`, `password_hash`, `password_reset_token`,
-     * `verification_token`) are intentionally excluded: clicking a row switches to that user and the User panel
-     * already exposes those values behind a `Reveal` button. Override this property in your debug config to fit a
-     * different user model.
-     *
-     * @see https://www.yiiframework.com/doc-2.0/yii-grid-gridview.html#$columns-detail
      */
     public array $filterColumns = [
         [
@@ -92,12 +91,6 @@ class UserPanel extends Panel
     public string|Model|null $filterModel = null;
     /**
      * @var array<string, mixed> Access-rule definition that decides who can switch user identity.
-     *
-     * Single {@see \yii\filters\AccessRule} rule applied to the user-switch endpoint; `actions`, `controllers`, and
-     * `verbs` are managed internally, the rest (`allow`, `roles`, `ips`, `matchCallback`, `denyCallback`) is open for
-     * configuration. Defaults to deny for everyone; a typical override is `['allow' => true, 'roles' => ['admin']]`.
-     *
-     * @see https://www.yiiframework.com/doc-2.0/guide-security-authorization.html
      */
     public array $ruleUserSwitch = [
         'allow' => false,
@@ -161,6 +154,7 @@ class UserPanel extends Panel
         return Yii::$app->view->render(
             'panels/user/detail',
             ['panel' => $this],
+            $this,
         );
     }
 
@@ -180,6 +174,7 @@ class UserPanel extends Panel
         return Yii::$app->view->render(
             'panels/user/summary',
             ['panel' => $this],
+            $this,
         );
     }
 
@@ -240,8 +235,7 @@ class UserPanel extends Panel
      * Wires the user-switch model, the access rules, and the filter model when the user component resolves to a
      * non-guest identity.
      *
-     * @throws InvalidConfigException When the user component cannot be resolved or the filter model cannot be
-     * created.
+     * @throws InvalidConfigException When the user component cannot be resolved or the filter model cannot be created.
      */
     public function init(): void
     {

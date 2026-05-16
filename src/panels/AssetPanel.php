@@ -24,6 +24,26 @@ use function is_string;
  *
  * Stores the serialized bundle map (with `Closure` callbacks turned into label markers) so the detail view can render
  * each bundle's source path, base path, base URL, CSS/JS files, and dependency tree from a static snapshot.
+ *
+ * @phpstan-import-type RegisterJsFileOptions from \yii\web\View
+ * @phpstan-import-type RegisterCssFileOptions from \yii\web\View
+ *
+ * @extends Panel<
+ *   array<
+ *     string,
+ *     array{
+ *       basePath?: string|null,
+ *       baseUrl?: string|null,
+ *       css?: array<array-key, string|array<array-key, mixed>>,
+ *       cssOptions?: RegisterCssFileOptions,
+ *       depends?: array<class-string>,
+ *       js?: array<array-key, string|array<array-key, mixed>>,
+ *       jsOptions?: RegisterJsFileOptions,
+ *       publishOptions?: array<string, mixed>,
+ *       sourcePath?: string|null,
+ *     }
+ *   >
+ * >
  */
 class AssetPanel extends Panel
 {
@@ -32,11 +52,14 @@ class AssetPanel extends Panel
      */
     public function getDetail(): string
     {
-        $summary = (new AssetBundleNormalizer())->normalize($this->data);
+        $data = is_array($this->data) ? $this->data : [];
+
+        $summary = (new AssetBundleNormalizer())->normalize($data);
 
         return Yii::$app->view->render(
             'panels/assets/detail',
             ['summary' => $summary],
+            $this,
         );
     }
 
@@ -56,6 +79,7 @@ class AssetPanel extends Panel
         return Yii::$app->view->render(
             'panels/assets/summary',
             ['panel' => $this],
+            $this,
         );
     }
 
@@ -82,8 +106,17 @@ class AssetPanel extends Panel
     /**
      * Serializes every registered asset bundle into the panel-data shape consumed by the detail view.
      *
-     * @return array<string, array<string, mixed>> Serialized bundles indexed by FQCN, or `[]` when no bundles were
-     * registered.
+     * @return array<string, array{
+     *   basePath?: string|null,
+     *   baseUrl?: string|null,
+     *   css?: array<array-key, string|array<array-key, mixed>>,
+     *   cssOptions?: RegisterCssFileOptions,
+     *   depends?: array<class-string>,
+     *   js?: array<array-key, string|array<array-key, mixed>>,
+     *   jsOptions?: RegisterJsFileOptions,
+     *   publishOptions?: array<string, mixed>,
+     *   sourcePath?: string|null,
+     * }> Serialized bundles indexed by FQCN, or `[]` when no bundles were registered.
      */
     public function save(): array
     {
@@ -193,7 +226,17 @@ class AssetPanel extends Panel
     /**
      * Snapshots the bundle properties consumed by the detail view (paths, files, options, dependencies).
      *
-     * @return array<string, mixed> Bundle properties keyed by name.
+     * @return array{
+     *   basePath: string|null,
+     *   baseUrl: string|null,
+     *   css: array<array-key, string|array<array-key, mixed>>,
+     *   cssOptions: RegisterCssFileOptions,
+     *   depends: array<class-string>,
+     *   js: array<array-key, string|array<array-key, mixed>>,
+     *   jsOptions: RegisterJsFileOptions,
+     *   publishOptions: array<string, mixed>,
+     *   sourcePath: string|null,
+     * } Bundle properties keyed by name.
      */
     private function serializeBundle(AssetBundle $bundle): array
     {

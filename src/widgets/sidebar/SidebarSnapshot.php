@@ -11,9 +11,6 @@ namespace yii\debug\widgets\sidebar;
  * Pre-resolves every loose-array access on the request summary ('method', 'url', 'statusCode', 'time', 'ajax') plus
  * the navigation URLs ('First' / 'Prev' / 'Next' / 'Latest'), the status-pill variant, the path-only URL display, and
  * the cursor-mode flag that the `index.php` JS bridge needs to wire the GridView highlight.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class SidebarSnapshot
 {

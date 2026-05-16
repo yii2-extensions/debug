@@ -9,9 +9,6 @@ namespace yii\debug\widgets\phpinfo;
  *
  * The `$kind` discriminator drives the renderer's branch: enabled/disabled pill, comma-separated path or token list,
  * single shortened path, or plain code text.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class PhpInfoTile
 {

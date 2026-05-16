@@ -7,9 +7,6 @@ namespace yii\debug\widgets\phpinfo;
 /**
  * Typed view-model for one section in the phpinfo Overview hero ('PHP version' / 'Build' / 'Configuration' /
  * 'Capabilities' / 'Streams').
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class PhpInfoSection
 {

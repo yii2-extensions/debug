@@ -21,18 +21,18 @@ use function reset;
 final class AssetBundleNormalizer
 {
     /**
-     * Converts a raw asset-panel payload into a typed summary.
+     * Converts a narrowed asset-panel payload into a typed summary.
      *
-     * Accepts whatever shape {@see \yii\debug\panels\AssetPanel::$data} happens to carry; non-array input or malformed
-     * entries are silently dropped instead of triggering a render-time error.
+     * Malformed inner entries (non-string keys or non-array bundles) are silently dropped instead of triggering a
+     * render-time error.
      *
-     * @param mixed $data Raw value of {@see \yii\debug\panels\AssetPanel::$data}.
+     * @param array<array-key, mixed> $data Narrowed asset-panel payload (the caller must guarantee `array`).
      *
      * @return AssetSummary Typed summary safe to render directly.
      */
-    public function normalize(mixed $data): AssetSummary
+    public function normalize(array $data): AssetSummary
     {
-        if (!is_array($data) || $data === []) {
+        if ($data === []) {
             return new AssetSummary([], 0, 0, 0, 0);
         }
 

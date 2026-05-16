@@ -12,8 +12,7 @@ use Yii;
 use yii\base\Event;
 use yii\debug\{LogTarget, Panel};
 use yii\debug\models\search\MailSearch;
-use yii\helpers\FileHelper;
-use yii\helpers\Url;
+use yii\helpers\{FileHelper, Url};
 use yii\mail\{BaseMailer, MailEvent,MessageInterface};
 use yii\symfonymailer\Message;
 
@@ -28,6 +27,8 @@ use function is_string;
  * Subscribes to `BaseMailer::EVENT_AFTER_SEND` at {@see init()} time, persists each message to disk under
  * {@see $mailPath} as a `.eml` file, and records the metadata (sender, recipients, subject, headers, charset, time)
  * consumed by the detail view and the toolbar.
+ *
+ * @extends Panel<array<int, array<string, mixed>>>
  */
 class MailPanel extends Panel
 {
@@ -57,6 +58,7 @@ class MailPanel extends Panel
                 'panel' => $this,
                 'searchModel' => $searchModel,
             ],
+            $this,
         );
     }
 
@@ -97,6 +99,7 @@ class MailPanel extends Panel
                 'panel' => $this,
                 'mailCount' => count(self::normalizeMessages($this->data)),
             ],
+            $this,
         );
     }
 
@@ -140,8 +143,8 @@ class MailPanel extends Panel
 
                 // store message as file
                 $fileName = $event->sender->generateMessageFileName();
-                $mailPath = Yii::getAlias($this->mailPath);
 
+                $mailPath = Yii::getAlias($this->mailPath);
                 FileHelper::createDirectory($mailPath);
 
                 file_put_contents("{$mailPath}/{$fileName}", $message->toString());
@@ -378,8 +381,8 @@ class MailPanel extends Panel
     }
 
     /**
-     * Narrows the saved mail rows into a string-keyed list, dropping non-array entries and non-string keys inside
-     * each entry.
+     * Narrows the saved mail rows into a string-keyed list, dropping non-array entries and non-string keys inside each
+     * entry.
      *
      * @return array<int, array<string, mixed>> Sanitized mail records in original order.
      */

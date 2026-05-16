@@ -253,8 +253,8 @@ class FlattenException
     }
 
     /**
-     * Sterilizes the exception trace arguments — replaces objects with `['object', FQCN]` tuples, recurses into
-     * arrays (capped at depth 10 and 10 000 entries), and stringifies scalars to keep the result serializable.
+     * Sterilizes the exception trace arguments replaces objects with `['object', FQCN]` tuples, recurses into arrays
+     * (capped at depth 10 and 10 000 entries), and stringifies scalars to keep the result serializable.
      *
      * @param array<int|string, mixed> $args
      * @param int $level Recursion level.

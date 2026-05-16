@@ -7,9 +7,6 @@ namespace yii\debug\widgets\phpinfo;
 /**
  * Typed view-model for one token inside a {@see PhpInfoTile::KIND_PATH_LIST} / {@see PhpInfoTile::KIND_TOKEN_LIST}
  * tile.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final readonly class PhpInfoToken
 {

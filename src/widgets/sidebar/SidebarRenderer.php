@@ -20,14 +20,6 @@ use yii\helpers\Url;
  *
  * The snapshot card (top section) and the panel-list nav (bottom section) are built by private helpers, so the
  * `_sidebar.php` partial collapses to a single call.
- *
- * Usage example:
- * ```php
- * echo \yii\debug\widgets\sidebar\SidebarRenderer::render($view);
- * ```
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class SidebarRenderer
 {

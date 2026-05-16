@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace yiiunit\debug;
+namespace yii\debug\tests;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\phpinfo\{
     PhpInfoDataNormalizer,
     PhpInfoRenderer,
@@ -18,9 +19,6 @@ use yii\debug\widgets\phpinfo\{
 /**
  * Unit tests for {@see PhpInfoRenderer} covering the TOC sidebar, the per-section composition (eyebrow + headline +
  * tiles), the tile-kind rendering branches and the Configure Command details disclosure.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 #[Group('panel')]
 #[Group('phpinfo')]
@@ -28,10 +26,12 @@ final class PhpInfoRendererTest extends TestCase
 {
     public function testRenderEmitsTocLinkPerEntry(): void
     {
-        $view = $this->emptyView([
-            new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview'),
-            new PhpInfoTocEntry(title: 'apcu', slug: 'phpinfo-apcu'),
-        ]);
+        $view = $this->emptyView(
+            [
+                new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview'),
+                new PhpInfoTocEntry(title: 'apcu', slug: 'phpinfo-apcu'),
+            ],
+        );
 
         $html = PhpInfoRenderer::render($view);
 
@@ -122,13 +122,8 @@ final class PhpInfoRendererTest extends TestCase
                 ),
             ],
         );
-        $view = new PhpInfoView(
-            sections: [$section],
-            tocEntries: [],
-            modulesHtml: '',
-            configureCommand: '',
-        );
 
+        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
         $html = PhpInfoRenderer::render($view);
 
         self::assertStringContainsString(
@@ -157,12 +152,7 @@ final class PhpInfoRendererTest extends TestCase
         );
 
         $section = new PhpInfoSection(eyebrow: 'Configuration', tiles: [$tile]);
-        $view = new PhpInfoView(
-            sections: [$section],
-            tocEntries: [],
-            modulesHtml: '',
-            configureCommand: '',
-        );
+        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
         $html = PhpInfoRenderer::render($view);
 
         self::assertStringContainsString(
@@ -195,12 +185,8 @@ final class PhpInfoRendererTest extends TestCase
                 ),
             ],
         );
-        $view = new PhpInfoView(
-            sections: [$section],
-            tocEntries: [],
-            modulesHtml: '',
-            configureCommand: '',
-        );
+
+        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
         $html = PhpInfoRenderer::render($view);
 
         self::assertStringContainsString(

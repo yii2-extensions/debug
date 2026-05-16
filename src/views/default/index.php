@@ -26,7 +26,7 @@ use yii\web\View;
 
 $this->title = 'Yii Debugger';
 
-// `cursor` query param lets a panel-view's "History" link preserve the active tag — the inline JS reads
+// `cursor` query param lets a panel-view's "History" link preserve the active tag the inline JS reads
 // `data-yii-debug-cursor-init` and lands the cursor on that row instead of snapping back to the latest capture.
 $cursorInit = '';
 $rawCursor = Yii::$app->getRequest()->get('cursor');

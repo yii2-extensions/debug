@@ -24,6 +24,8 @@ use function is_string;
  *
  * Snapshots the routing target, request/response headers, status code, body, flash messages, and the configured PHP
  * superglobals, with optional value censoring for sensitive keys.
+ *
+ * @extends Panel<array<string, mixed>>
  */
 class RequestPanel extends Panel
 {
@@ -64,6 +66,7 @@ class RequestPanel extends Panel
         return Yii::$app->view->render(
             'panels/request/detail',
             ['view' => $view],
+            $this,
         );
     }
 
@@ -83,6 +86,7 @@ class RequestPanel extends Panel
         return Yii::$app->view->render(
             'panels/request/summary',
             ['panel' => $this],
+            $this,
         );
     }
 
@@ -123,31 +127,7 @@ class RequestPanel extends Panel
             }
         }
 
-        $responseHeaders = [];
-
-        foreach (headers_list() as $header) {
-            if (($pos = strpos($header, ':')) !== false) {
-                $name = substr($header, 0, $pos);
-
-                if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
-                    $value = $this->censorString;
-                } else {
-                    $value = trim(substr($header, $pos + 1));
-                }
-
-                if (isset($responseHeaders[$name])) {
-                    if (!is_array($responseHeaders[$name])) {
-                        $responseHeaders[$name] = [$responseHeaders[$name], $value];
-                    } else {
-                        $responseHeaders[$name][] = $value;
-                    }
-                } else {
-                    $responseHeaders[$name] = $value;
-                }
-            } else {
-                $responseHeaders[] = $header;
-            }
-        }
+        $responseHeaders = $this->normalizeResponseHeaders(headers_list());
 
         $requestedAction = Yii::$app->requestedAction;
 
@@ -280,6 +260,47 @@ class RequestPanel extends Panel
                 'value' => $statusCode,
             ],
         ];
+    }
+
+    /**
+     * Aggregates a raw response-header list into a name → value map, merging duplicates into arrays and masking entries
+     * whose name appears in {@see $censoredVariableNames}.
+     *
+     * @param array<int, string> $rawHeaders Header lines in `Name: value` form, as returned by `headers_list()`; bare
+     * strings without a colon are kept verbatim at int-keyed slots.
+     *
+     * @return array<int|string, string|array<int, string>> Aggregated header map with masked values.
+     */
+    protected function normalizeResponseHeaders(array $rawHeaders): array
+    {
+        $responseHeaders = [];
+        $hasCensorList = $this->censoredVariableNames !== [];
+
+        foreach ($rawHeaders as $header) {
+            if (($pos = strpos($header, ':')) !== false) {
+                $name = substr($header, 0, $pos);
+
+                if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
+                    $value = $this->censorString;
+                } else {
+                    $value = trim(substr($header, $pos + 1));
+                }
+
+                if (isset($responseHeaders[$name])) {
+                    if (!is_array($responseHeaders[$name])) {
+                        $responseHeaders[$name] = [$responseHeaders[$name], $value];
+                    } else {
+                        $responseHeaders[$name][] = $value;
+                    }
+                } else {
+                    $responseHeaders[$name] = $value;
+                }
+            } else {
+                $responseHeaders[] = $header;
+            }
+        }
+
+        return $responseHeaders;
     }
 
     /**

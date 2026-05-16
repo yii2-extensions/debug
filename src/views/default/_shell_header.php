@@ -5,22 +5,19 @@ declare(strict_types=1);
 use UIAwesome\Html\Helper\Encode;
 use yii\debug\helpers\Icon;
 use yii\helpers\Url;
+use yii\web\View;
 
 /**
- * Shell header partial — the brand bar (Yii / PHP / Memory? / Config / Theme toggle) plus the
- * IIFE that wires the theme chip's click. Shared between view.php and index.php so any change
- * to the top-of-page chrome happens in one file.
- *
- * @var \yii\web\View $this
+ * @var string|null $configUrl URL to the Configuration panel for the active (or latest) request, or `null` when the
+ * manifest is empty the chip then renders disabled with a hint.
  * @var string $debugTheme Resolved theme key, `'light'` or `'dark'`.
- * @var string $themeIconSun Pre-loaded sun glyph from the controller.
+ * @var string|null $peakMemory Optional formatted peak-memory chip (for example, `1.21 MB`); pass `null` to omit the
+ * chip index.php does this because there's no active request.
+ * @var string $phpVersion Friendly PHP version, for example, `8.5.3`.
  * @var string $themeIconMoon Pre-loaded moon glyph.
- * @var string $yiiVersion Friendly framework version, e.g. `22.0.x-dev`.
- * @var string $phpVersion Friendly PHP version, e.g. `8.5.3`.
- * @var string|null $peakMemory Optional formatted peak-memory chip (e.g. `1.21 MB`); pass `null`
- *      to omit the chip — index.php does this because there's no active request.
- * @var string|null $configUrl URL to the Configuration panel for the active (or latest) request,
- *      or `null` when the manifest is empty — the chip then renders disabled with a hint.
+ * @var string $themeIconSun Pre-loaded sun glyph from the controller.
+ * @var string $yiiVersion Friendly framework version, for example, `22.0.x-dev`.
+ * @var View $this
  */
 
 $themeChipIcon = $debugTheme === 'dark' ? $themeIconSun : $themeIconMoon;

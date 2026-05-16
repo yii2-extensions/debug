@@ -7,8 +7,8 @@ use UIAwesome\Html\Helper\Encode;
 /** @var yii\debug\panels\RouterPanel $panel */
 
 $data = is_array($panel->data) ? $panel->data : [];
-$action = isset($data['action']) && is_string($data['action']) ? $data['action'] : '';
-$route = isset($data['route']) && is_string($data['route']) ? $data['route'] : '';
+$action = $data['action'] ?? '';
+$route = $data['route'] ?? '';
 ?>
 <div class="yii-debug-toolbar-block">
     <a href="<?= $panel->getUrl() ?>" title="Action: <?= Encode::value($action) ?>">Route <span

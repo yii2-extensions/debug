@@ -2,48 +2,27 @@
 
 declare(strict_types=1);
 
-namespace yiiunit\debug;
+namespace yii\debug\tests;
 
-use PHPUnit\Framework\Attributes\{DataProvider, Group};
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\base\Event;
 use yii\caching\FileCache;
 use yii\debug\controllers\DefaultController;
 use yii\debug\{DebugAsset, LogTarget, Module};
-use yii\web\AssetManager;
-use yii\web\Response;
+use yii\debug\tests\provider\ModuleProvider;
+use yii\debug\tests\support\TestCase;
+use yii\web\{AssetManager, Response};
 
 /**
  * Unit tests for {@see Module} covering IP-based access control, toolbar HTML/JSON rendering, the `php-info` standalone
  * action wiring, debug-asset registration, and request-cache behavior.
  *
- * {@see ModuleTest::checkAccessProvider} for IP-filter test case data providers.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
+ * {@see ModuleProvider} for test case data providers.
  */
 #[Group('module')]
 final class ModuleTest extends TestCase
 {
-    /**
-     * @return array<int, array{0: list<string>, 1: string, 2: bool}>
-     */
-    public static function checkAccessProvider(): array
-    {
-        return [
-            [[], '10.20.30.40', false],
-            [['10.20.30.40'], '10.20.30.40', true],
-            [['*'], '10.20.30.40', true],
-            [['10.20.30.*'], '10.20.30.40', true],
-            [['10.20.30.*'], '10.20.40.40', false],
-            [['172.16.0.0/12'], '172.15.1.2', false],
-            [['172.16.0.0/12'], '172.16.0.0', true],
-            [['172.16.0.0/12'], '172.22.33.44', true],
-            [['172.16.0.0/12'], '172.31.255.255', true],
-            [['172.16.0.0/12'], '172.32.1.2', false],
-        ];
-    }
-
     public function testActionPhpInfoIsCallableStandalone(): void
     {
         $module = new Module('debug');
@@ -86,7 +65,7 @@ final class ModuleTest extends TestCase
     /**
      * @param list<string> $allowedIPs
      */
-    #[DataProvider('checkAccessProvider')]
+    #[DataProviderExternal(ModuleProvider::class, 'checkAccessCases')]
     public function testCheckAccessHonorsAllowedIpAndCidrFilters(
         array $allowedIPs,
         string $userIp,
@@ -100,7 +79,10 @@ final class ModuleTest extends TestCase
 
         self::assertSame(
             $expectedResult,
-            $this->invoke($module, 'checkAccess'),
+            $this->invoke(
+                $module,
+                'checkAccess',
+            ),
             'Allowed IP filters must accept matches and reject non-matching addresses.',
         );
     }
@@ -145,16 +127,21 @@ final class ModuleTest extends TestCase
         $this->silenceLogger();
 
         $html = $module->getToolbarHtml();
+
         $logTarget = $module->logTarget;
 
-        self::assertInstanceOf(LogTarget::class, $logTarget, 'bootstrap() must coerce logTarget to a LogTarget instance.');
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Bootstrap must coerce logTarget to a LogTarget instance.',
+        );
         self::assertStringContainsString(
             '<yii-debug-toolbar',
             $html,
             'Toolbar must render the custom element marker.',
         );
         self::assertStringContainsString(
-            'data-url="/index.php?r=debug%2Fdefault%2Ftoolbar-data&amp;tag=' . $logTarget->tag . '"',
+            "data-url=\"/index.php?r=debug%2Fdefault%2Ftoolbar-data&amp;tag={$logTarget->tag}\"",
             $html,
             'Toolbar must point its data-url to the toolbar-data action with the current tag.',
         );
@@ -220,6 +207,7 @@ final class ModuleTest extends TestCase
         $module->allowedIPs = ['*'];
 
         Yii::$app->setModule('debug', $module);
+
         $module->bootstrap(Yii::$app);
 
         $this->silenceLogger();
@@ -235,7 +223,11 @@ final class ModuleTest extends TestCase
 
         $logTarget = $module->logTarget;
 
-        self::assertInstanceOf(LogTarget::class, $logTarget, 'bootstrap() must coerce logTarget to a LogTarget instance.');
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Bootstrap must coerce logTarget to a LogTarget instance.',
+        );
 
         for ($i = 0; $i <= 1; $i++) {
             ob_start();
@@ -262,20 +254,25 @@ final class ModuleTest extends TestCase
         $module = new Module('debug', null, ['dataPath' => '@runtime/debug']);
 
         $module->allowedIPs = ['*'];
+
         $app = Yii::$app;
 
         $app->setModule('debug', $module);
         $module->bootstrap($app);
 
-        // Force a single capture cycle so the manifest has at least one entry to read back. Without this the test
-        // relies on leftover state in `@runtime/debug` from earlier tests — flaky under random test ordering.
         Yii::$app->log->getLogger()->messages = [];
+
         Yii::debug('manifest-bootstrap');
+
         Yii::$app->log->getLogger()->flush(true);
 
         $logTarget = $module->logTarget;
 
-        self::assertInstanceOf(LogTarget::class, $logTarget, 'bootstrap() must coerce logTarget to a LogTarget instance.');
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Bootstrap must coerce logTarget to a LogTarget instance.',
+        );
 
         $manifest = $logTarget->loadManifest();
 
@@ -290,8 +287,16 @@ final class ModuleTest extends TestCase
 
         $data = $controller->actionToolbarData($tag);
 
-        self::assertArrayNotHasKey('error', $data, 'toolbar-data must take the success branch for a known tag.');
-        self::assertArrayHasKey('title', $data, 'Success payload must declare the title key.');
+        self::assertArrayNotHasKey(
+            'error',
+            $data,
+            'toolbar-data must take the success branch for a known tag.',
+        );
+        self::assertArrayHasKey(
+            'title',
+            $data,
+            'Success payload must declare the title key.',
+        );
         self::assertSame(
             Response::FORMAT_JSON,
             $app->getResponse()->format,

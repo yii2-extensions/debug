@@ -31,9 +31,6 @@ use function str_starts_with;
  * - `fromView(...)` used by panel `view` requests; surfaces the active request snapshot and highlights the active panel
  *   in the nav.
  * - `fromIndex(...)`used by `index` requests; surfaces the latest captured request and highlights the History entry.
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class SidebarDataNormalizer
 {

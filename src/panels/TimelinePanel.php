@@ -21,6 +21,8 @@ use function is_string;
  * Joins the request start/end captured at `save()` time with the profile messages from {@see ProfilingPanel} to build
  * the per-span timeline, color-codes each bar based on its share of the total duration, and exposes an inline SVG
  * memory-usage line through {@see getSvg()}.
+ *
+ * @extends Panel<array{start?: mixed, end?: mixed, memory?: mixed}>
  */
 class TimelinePanel extends Panel
 {
@@ -89,6 +91,7 @@ class TimelinePanel extends Panel
                 'panel' => $this,
                 'searchModel' => $searchModel,
             ],
+            $this,
         );
     }
 
@@ -228,6 +231,12 @@ class TimelinePanel extends Panel
     /**
      * Hydrates the panel from the saved snapshot: resolves the request start/end, computes the duration (preferring
      * the Profiling panel's authoritative time when available), and records the peak memory.
+     *
+     * The parameter is intentionally widened to `mixed` (vs. the parent's typed `TData`) because the runtime feed comes
+     * straight out of {@see \yii\debug\LogTarget::loadTagToPanels()}, where the value is whatever `@unserialize()`
+     * returned including `false` on a corrupt snapshot.
+     *
+     * @param mixed $data Raw payload returned by `@unserialize()` of a captured request snapshot.
      *
      * @throws RuntimeException When any of `start`, `end`, `memory`, or the derived `duration` is missing or invalid.
      */

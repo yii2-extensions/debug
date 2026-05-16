@@ -25,15 +25,12 @@ use function trim;
  *
  * Stateless static helpers; every method takes a typed {@see HistoryRow} or {@see HistorySummary} and returns a
  * ready-to-echo HTML string (or, for the row options builder, the attribute map the GridView consumes for `<tr>`).
- *
- * @copyright Copyright (C) 2026 Terabytesoftw.
- * @license https://opensource.org/license/bsd-3-clause BSD 3-Clause License.
  */
 final class HistoryRowRenderer
 {
     /**
-     * Builds the `rowOptions` attribute map for one captured-request row — `class` carries the critical-status
-     * highlight + the JS row-link hook, and the `data-*` attributes feed the sidebar's history-cursor JS.
+     * Builds the `rowOptions` attribute map for one captured-request row `class` carries the critical-status highlight
+     * + the JS row-link hook, and the `data-*` attributes feed the sidebar's history-cursor JS.
      *
      * @return array<string, mixed>
      */

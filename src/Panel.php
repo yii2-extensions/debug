@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use Throwable;
-use yii\base\{Component, InvalidConfigException};
+use yii\base\{Component, InvalidConfigException, ViewContextInterface};
 use yii\debug\helpers\Coerce;
 use yii\helpers\{ArrayHelper, StringHelper, Url, VarDumper};
 
@@ -20,8 +20,10 @@ use function strlen;
  * Defines the contract every panel implements: how request data is captured on `save()`, rehydrated on `load()`, and
  * surfaced on the toolbar and detail views. The container {@see Module} wires {@see $id}, {@see $module}, and
  * {@see $tag} automatically on registration.
+ *
+ * @template TData of mixed = mixed
  */
-class Panel extends Component
+class Panel extends Component implements ViewContextInterface
 {
     /**
      * @var array<array-key, array{class: class-string, ...}|class-string> Extra actions merged into the debug module's
@@ -30,6 +32,8 @@ class Panel extends Component
     public array $actions = [];
     /**
      * Captured panel payload as produced by {@see save()} and rehydrated by {@see load()}.
+     *
+     * @var TData|null
      */
     public mixed $data = null;
     /**
@@ -166,7 +170,7 @@ class Panel extends Component
      * Builds a trace line for the toolbar, applying {@see Module::$tracePathMappings} and the configured
      * {@see Module::$traceLine} template (or callable).
      *
-     * Falls back to dumping the input when `file` or `line` is missing — internal PHP functions such as
+     * Falls back to dumping the input when `file` or `line` is missing internal PHP functions such as
      * {@see call_user_func()} may produce frames without those keys, see
      * {@link https://www.php.net/manual/en/function.debug-backtrace.php#59713}.
      *
@@ -252,6 +256,14 @@ class Panel extends Component
     }
 
     /**
+     * Returns the directory under which the panel's relative views resolve.
+     */
+    public function getViewPath(): string
+    {
+        return __DIR__ . '/views/default';
+    }
+
+    /**
      * Returns `true` when {@see setError()} captured a {@see FlattenException} during {@see save()}.
      */
     public function hasError(): bool
@@ -283,7 +295,7 @@ class Panel extends Component
      *
      * Invoked by {@see LogTarget::loadTagToPanels()} when the user opens a captured request.
      *
-     * @param mixed $data Payload returned by {@see save()}; format is panel-specific.
+     * @param TData $data Payload returned by {@see save()}; format is panel-specific.
      */
     public function load(mixed $data): void
     {
@@ -296,7 +308,7 @@ class Panel extends Component
      * Invoked by {@see LogTarget::export()} at request end; the return value is serialized into the `<tag>.data` file
      * and rehydrated by {@see load()} on read-back.
      *
-     * @return mixed Payload to persist; `null` when the panel records nothing.
+     * @return TData|null Payload to persist; `null` when the panel records nothing.
      */
     public function save(): mixed
     {
@@ -315,7 +327,7 @@ class Panel extends Component
      * Returns the log messages captured by the debug log target, filtered by levels and categories.
      *
      * When `$stringify` is `true`, non-string first elements are exported via {@see VarDumper::export()}, with
-     * {@see Throwable} instances cast to their string form — closures captured in exception traces are not directly
+     * {@see Throwable} instances cast to their string form closures captured in exception traces are not directly
      * serializable, so the cast guards the manifest from breaking on read-back.
      *
      * @param int $levels Bitmap of {@see \yii\log\Logger} level constants; `0` allows every level.

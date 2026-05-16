@@ -26,6 +26,11 @@ use function is_string;
  *
  * Hooks the panel-bound DB connection so each prepared statement records its row count, calculates per-query timings
  * from the profile log, and exposes the EXPLAIN action that powers the queries grid's inline plan toggle.
+ *
+ * @extends Panel<array{
+ *   messages?: mixed,
+ *   rowCounts?: mixed
+ * }>
  */
 class DbPanel extends Panel
 {
@@ -282,6 +287,7 @@ class DbPanel extends Panel
                 'searchModel' => $searchModel,
                 'sumDuplicates' => $sumDuplicates,
             ],
+            $this,
         );
     }
 
@@ -354,6 +360,7 @@ class DbPanel extends Panel
                 'queryTime' => $queryTime,
                 'timings' => $timings,
             ],
+            $this,
         );
     }
 

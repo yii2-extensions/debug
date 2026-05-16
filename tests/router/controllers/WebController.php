@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace yiiunit\debug\router\controllers;
+namespace yii\debug\tests\router\controllers;
 
-use yii\web\Controller;
+use yii\web\{Controller, ErrorAction};
 
-class WebController extends Controller
+final class WebController extends Controller
 {
     public function actionFirst(): bool
     {
@@ -20,9 +20,9 @@ class WebController extends Controller
     {
         return [
             'error' => [
-                'class' => \yii\web\ErrorAction::class,
+                'class' => ErrorAction::class,
             ],
-            'errorStraight' => \yii\web\ErrorAction::class,
+            'errorStraight' => ErrorAction::class,
         ];
     }
 
