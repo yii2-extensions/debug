@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\widgets\sidebar;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\RequestPanel;
+use yii\debug\panels\{ConfigPanel, RequestPanel};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\sidebar\SidebarDataNormalizer;
 
@@ -17,6 +17,73 @@ use yii\debug\widgets\sidebar\SidebarDataNormalizer;
 #[Group('sidebar')]
 final class SidebarDataNormalizerTest extends TestCase
 {
+    public function testFromIndexBuildsNavItemsForLatestTagWhenManifestNonEmpty(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromIndex(
+            ['request' => $panel],
+            ['tag-newest' => ['method' => 'GET']],
+            '',
+        );
+
+        self::assertArrayHasKey(
+            1,
+            $view->navItems,
+            'Panel entries must be appended after the History entry.',
+        );
+
+        $panelItem = $view->navItems[1];
+
+        self::assertContains(
+            'tag-newest',
+            $panelItem->url,
+            'Index-mode panel link must carry the latest tag.',
+        );
+        self::assertSame(
+            'Open this panel on the latest request',
+            $panelItem->tooltip,
+            'Index-mode panel tooltip must invite picking the latest request.',
+        );
+    }
+
+    public function testFromIndexBuildsNavItemsWithIndexFallbackWhenManifestEmpty(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromIndex(
+            ['request' => $panel],
+            [],
+            '',
+        );
+
+        self::assertArrayHasKey(
+            1,
+            $view->navItems,
+            'Panel nav entry must follow the History entry even with empty manifest.',
+        );
+
+        $panelItem = $view->navItems[1];
+
+        self::assertSame(
+            ['index'],
+            $panelItem->url,
+            "Empty manifest must drop panel entries back to the 'index' route.",
+        );
+        self::assertSame(
+            'Pick a request first',
+            $panelItem->tooltip,
+            "Empty manifest must use the 'pick a request' tooltip.",
+        );
+    }
     public function testFromIndexDropsSnapshotWhenManifestIsEmpty(): void
     {
         $view = SidebarDataNormalizer::fromIndex(
@@ -156,6 +223,33 @@ final class SidebarDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromViewLeavesTimeEmptyForNonPositiveOrNonNumericTimestamp(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromView(
+            ['request' => $panel],
+            ['tag-1' => []],
+            $panel,
+            'tag-1',
+            ['time' => 'not-a-number'],
+        );
+
+        self::assertNotNull(
+            $view->snapshot,
+            'Snapshot must surface.',
+        );
+        self::assertSame(
+            '',
+            $view->snapshot->time,
+            'Non-numeric time must collapse to the empty string.',
+        );
+    }
+
     public function testFromViewMapsStatusCodeToSuccessVariant(): void
     {
         $this->mockWebApplication();
@@ -221,6 +315,96 @@ final class SidebarDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromViewPopulatesPrevAndNextNavigatorsWhenSnapshotIsMiddleOfManifest(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $manifest = [
+            'tag-newest' => ['method' => 'GET'],
+            'tag-middle' => ['method' => 'GET'],
+            'tag-oldest' => ['method' => 'GET'],
+        ];
+
+        $view = SidebarDataNormalizer::fromView(
+            ['request' => $panel],
+            $manifest,
+            $panel,
+            'tag-middle',
+            ['method' => 'GET'],
+        );
+
+        self::assertNotNull(
+            $view->snapshot,
+            'Snapshot must surface.',
+        );
+        self::assertTrue(
+            $view->snapshot->hasPrev,
+            'Middle-tag snapshot must expose a previous navigator.',
+        );
+        self::assertTrue(
+            $view->snapshot->hasNext,
+            'Middle-tag snapshot must expose a next navigator.',
+        );
+    }
+
+    public function testFromViewRendersTimeChipWhenTimestampIsPositive(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromView(
+            ['request' => $panel],
+            ['tag-1' => []],
+            $panel,
+            'tag-1',
+            ['time' => 1700000000],
+        );
+
+        self::assertNotNull(
+            $view->snapshot,
+            'Snapshot must surface.',
+        );
+        self::assertNotSame(
+            '',
+            $view->snapshot->time,
+            'Positive numeric time must render as a formatted clock string.',
+        );
+    }
+
+    public function testFromViewReturnsFullUrlWhenParseUrlFails(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromView(
+            ['request' => $panel],
+            ['tag-1' => []],
+            $panel,
+            'tag-1',
+            ['method' => 'GET', 'url' => 'http://:80/', 'statusCode' => 200],
+        );
+
+        self::assertNotNull(
+            $view->snapshot,
+            'Snapshot must surface.',
+        );
+        self::assertSame(
+            'http://:80/',
+            $view->snapshot->path,
+            'Unparseable URL must pass through verbatim.',
+        );
+    }
+
     public function testFromViewSkipsConfigPanelInNavItems(): void
     {
         $this->mockWebApplication();
@@ -229,23 +413,27 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $request->id = 'request';
 
+        $config = new ConfigPanel();
+
+        $config->id = 'config';
+
         $view = SidebarDataNormalizer::fromView(
-            ['request' => $request],
+            ['config' => $config, 'request' => $request],
             ['tag-1' => []],
             $request,
             'tag-1',
             [],
         );
 
-        $labels = [];
+        $ids = [];
 
         foreach ($view->navItems as $item) {
-            $labels[] = $item->label;
+            $ids[] = $item->label;
         }
 
         self::assertNotContains(
             'Configuration',
-            $labels,
+            $ids,
             'Config panel must be skipped in the sidebar nav.',
         );
     }

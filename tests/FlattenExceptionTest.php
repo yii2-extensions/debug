@@ -11,8 +11,8 @@ use yii\debug\tests\support\TestCase;
 use yii\web\NotFoundHttpException;
 
 /**
- * Unit tests for {@see FlattenException} covering message/code/trace flattening, serialization
- * boundaries, recursion detection, and large-payload truncation.
+ * Unit tests for {@see FlattenException} covering message/code/trace flattening, serialization boundaries, recursion
+ * detection, and large-payload truncation.
  */
 #[Group('flatten-exception')]
 final class FlattenExceptionTest extends TestCase
@@ -278,6 +278,24 @@ final class FlattenExceptionTest extends TestCase
         );
     }
 
+    public function testGetTraceAsStringReturnsEmptyWhenCachedToStringLacksMarker(): void
+    {
+        $flattened = new class (new Exception('test')) extends FlattenException {
+            public function exposeSetToString(string $value): void
+            {
+                $this->setToString($value);
+            }
+        };
+
+        $flattened->exposeSetToString('Plain message without the trace marker.');
+
+        self::assertSame(
+            '',
+            $flattened->getTraceAsString(),
+            "Missing 'Stack trace:' marker must yield an empty string.",
+        );
+    }
+
     public function testGetTraceCapturesNamespaceClassAndFunction(): void
     {
         $exception = new Exception('test');
@@ -377,6 +395,40 @@ final class FlattenExceptionTest extends TestCase
             '*DEEP NESTED ARRAY*',
             serialize($flattened->getTrace()),
             'Self-referential arrays must collapse to the *DEEP NESTED ARRAY* sentinel.',
+        );
+    }
+
+    public function testSetTraceSkipsNonArrayEntries(): void
+    {
+        $flattened = new class (new Exception('test')) extends FlattenException {
+            /**
+             * @param array<int, mixed> $trace
+             */
+            public function exposeSetTrace(array $trace): void
+            {
+                $this->setTrace($trace);
+            }
+        };
+
+        $flattened->exposeSetTrace(
+            [
+                'not-an-array',
+                ['class' => 'X', 'function' => 'y', 'file' => 'f.php', 'line' => 1, 'type' => '::', 'args' => []],
+                42,
+            ],
+        );
+
+        $trace = $flattened->getTrace();
+
+        self::assertCount(
+            1,
+            $trace,
+            'Non-array frames must be skipped, leaving only the well-formed entry.',
+        );
+        self::assertSame(
+            'X',
+            $trace[0]['class'],
+            'Surviving frame must carry the original class name.',
         );
     }
 

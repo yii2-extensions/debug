@@ -14,6 +14,13 @@ use yii\debug\tests\support\TestCase;
 use yii\mail\{BaseMailer, MailEvent, MessageInterface};
 use yii\symfonymailer\Mailer;
 
+use function file_put_contents;
+use function mkdir;
+use function rmdir;
+use function sys_get_temp_dir;
+use function uniqid;
+use function unlink;
+
 /**
  * Unit tests for {@see MailPanel} covering mail capture, payload narrowing, toolbar items (current vs cross-request),
  * the recipient-list flattening, the previous-request fallback, and the rendered detail/summary views.
@@ -413,6 +420,67 @@ final class MailPanelTest extends TestCase
             $first['value'] ?? null,
             'Chip value must match the message count.',
         );
+    }
+
+    public function testGetToolbarItemsEmitsCrossRequestChipWhenCurrentTagHasSuccessorInManifest(): void
+    {
+        $panel = $this->makePanel(MailPanel::class);
+
+        $module = $panel->module ?? self::fail('Module must be wired.');
+
+        $dataPath = sys_get_temp_dir() . '/debug-mail-test-' . uniqid();
+
+        mkdir($dataPath, 0o777, true);
+
+        $module->dataPath = $dataPath;
+
+        $currentTag = 'current-tag';
+        $previousTag = 'previous-tag';
+
+        // 'loadManifest()' reverses the on-disk order; writing 'previous' first then 'current' produces a
+        // load-time manifest of [current, previous] so the loop hits the `$found` branch on iteration 2.
+        $manifest = [
+            $previousTag => ['method' => 'POST', 'url' => 'https://example.com/send-mail'],
+            $currentTag => ['method' => 'GET', 'url' => 'https://example.com/current'],
+        ];
+
+        file_put_contents(
+            "{$dataPath}/index.data",
+            serialize($manifest),
+        );
+        file_put_contents(
+            "{$dataPath}/{$previousTag}.data",
+            serialize(['mail' => serialize([['subject' => 'previous one']])]),
+        );
+
+        $panel->tag = $currentTag;
+        $panel->data = [];
+
+        $items = $this->invoke(
+            $panel,
+            'getToolbarItems',
+        );
+
+        self::assertIsArray(
+            $items,
+            'Items must be a list.',
+        );
+
+        $first = $items[0] ?? self::fail('Expected one cross-request chip.');
+
+        self::assertIsArray(
+            $first,
+            'Item must be an array.',
+        );
+        self::assertSame(
+            'cross-request',
+            $first['status'] ?? null,
+            'Status must be cross-request when the manifest has a tag after current.',
+        );
+
+        unlink("{$dataPath}/index.data");
+        unlink("{$dataPath}/{$previousTag}.data");
+        rmdir($dataPath);
     }
 
     public function testGetToolbarItemsEmitsCrossRequestChipWhenPreviousRequestHasMail(): void

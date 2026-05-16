@@ -22,10 +22,8 @@ use yii\web\{IdentityInterface, User};
 use function class_exists;
 use function get_object_vars;
 use function is_array;
-use function is_callable;
 use function is_scalar;
 use function is_string;
-use function method_exists;
 
 /**
  * Captures the authenticated identity and renders it in the User panel, optionally allowing the developer to switch to
@@ -206,8 +204,7 @@ class UserPanel extends Panel
     /**
      * Returns the data provider that backs the user-switch GridView.
      *
-     * @throws InvalidConfigException When the filter model is missing or its `search()` method does not return a
-     * data provider.
+     * @throws InvalidConfigException When the filter model does not implement {@see UserSearchInterface}.
      */
     public function getUserDataProvider(): DataProviderInterface
     {
@@ -215,11 +212,11 @@ class UserPanel extends Panel
 
         if ($filterModel === null) {
             throw new InvalidConfigException(
-                'User filter model must be a model with a search method.',
+                'User filter model must implement ' . UserSearchInterface::class . '.',
             );
         }
 
-        return $this->searchUsers($filterModel, Yii::$app->request->getQueryParams());
+        return $filterModel->search(Yii::$app->request->getQueryParams());
     }
 
     /**
@@ -457,33 +454,23 @@ class UserPanel extends Panel
     }
 
     /**
-     * Returns the filter model when it exposes a `search()` method (either via {@see UserSearchInterface} or by
-     * convention), or `null` otherwise.
+     * Returns the configured filter model when it implements {@see UserSearchInterface}, `null` otherwise.
      */
-    private function getSearchableFilterModel(): Model|null
+    private function getSearchableFilterModel(): UserSearchInterface|null
     {
-        $filterModel = $this->filterModel;
-
-        if (!$filterModel instanceof Model) {
-            return null;
-        }
-
-        if ($filterModel instanceof UserSearchInterface || method_exists($filterModel, 'search')) {
-            return $filterModel;
-        }
-
-        return null;
+        return $this->filterModel instanceof UserSearchInterface ? $this->filterModel : null;
     }
 
     /**
-     * Resolves {@see $filterModel} to a usable {@see Model} instance.
+     * Resolves {@see $filterModel} to a usable {@see UserSearchInterface} instance.
      *
      * Instantiates the configured class name when given a string; leaves an already-instantiated model alone;
-     * otherwise, falls back to {@see UserSearch} when the application identity is an {@see ActiveRecord}.
+     * otherwise, falls back to the bundled {@see UserSearch} when the application identity is an {@see ActiveRecord}.
      *
      * @param User $user Resolved user component.
      *
-     * @throws InvalidConfigException When the configured filter-model class does not extend {@see Model}.
+     * @throws InvalidConfigException When the configured filter-model class does not implement
+     * {@see UserSearchInterface}.
      */
     private function initFilterModel(User $user): void
     {
@@ -492,9 +479,9 @@ class UserPanel extends Panel
         if (is_string($filterModel) && class_exists($filterModel)) {
             $model = Yii::createObject($filterModel);
 
-            if (!$model instanceof Model) {
+            if (!$model instanceof Model || !$model instanceof UserSearchInterface) {
                 throw new InvalidConfigException(
-                    'User filter model must extend ' . Model::class . '.',
+                    'User filter model must implement ' . UserSearchInterface::class . '.',
                 );
             }
 
@@ -564,34 +551,4 @@ class UserPanel extends Panel
         return $normalized;
     }
 
-    /**
-     * Invokes the filter model's `search()` method and verifies it returns a {@see DataProviderInterface}.
-     *
-     * @param Model $filterModel Filter model that exposes a `search()` method (either via {@see UserSearchInterface}
-     * or by convention).
-     * @param array<int|string, mixed> $params Request query parameters.
-     *
-     * @throws InvalidConfigException When the filter model lacks `search()` or it returns something other than a
-     * data provider.
-     */
-    private function searchUsers(Model $filterModel, array $params): DataProviderInterface
-    {
-        if ($filterModel instanceof UserSearchInterface) {
-            $dataProvider = $filterModel->search($params);
-        } elseif (is_callable([$filterModel, 'search'])) {
-            $dataProvider = $filterModel->search($params);
-        } else {
-            throw new InvalidConfigException(
-                'User filter model must provide a search method.',
-            );
-        }
-
-        if (!$dataProvider instanceof DataProviderInterface) {
-            throw new InvalidConfigException(
-                'User filter model search method must return a data provider.',
-            );
-        }
-
-        return $dataProvider;
-    }
 }

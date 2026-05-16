@@ -172,6 +172,36 @@ final class PhpInfoRendererTest extends TestCase
         );
     }
 
+    public function testRenderSectionWithPathTileRendersCodeWithFullPathTitle(): void
+    {
+        $tile = new PhpInfoTile(
+            label: 'Loaded Configuration File',
+            displayValue: 'php.ini',
+            rawValue: '/etc/php/8.5/cli/php.ini',
+            kind: PhpInfoTile::KIND_PATH,
+        );
+
+        $section = new PhpInfoSection(eyebrow: 'Configuration', tiles: [$tile]);
+        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
+        $html = PhpInfoRenderer::render($view);
+
+        self::assertStringContainsString(
+            '<code',
+            $html,
+            'KIND_PATH must render inside a `<code>` element.',
+        );
+        self::assertStringContainsString(
+            'title="/etc/php/8.5/cli/php.ini"',
+            $html,
+            'KIND_PATH must surface the raw path in the title attribute.',
+        );
+        self::assertStringContainsString(
+            '>php.ini<',
+            $html,
+            'KIND_PATH must show the basename in the visible content.',
+        );
+    }
+
     public function testRenderSectionWithSuccessPillTile(): void
     {
         $section = new PhpInfoSection(

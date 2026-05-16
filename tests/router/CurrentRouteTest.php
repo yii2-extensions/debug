@@ -81,6 +81,31 @@ final class CurrentRouteTest extends TestCase
         );
     }
 
+    public function testMalformedRulePayloadsAreSkipped(): void
+    {
+        $router = new CurrentRoute(
+            [
+                'messages' => [
+                    [['rule' => 123, 'match' => false], 999],
+                    [['rule' => 'good rule', 'match' => 'not-bool'], 999],
+                    [['only-key' => 'x'], 999],
+                    [['rule' => 'kept', 'match' => true], 999],
+                ],
+            ],
+        );
+
+        self::assertSame(
+            [['match' => true, 'rule' => 'kept']],
+            $router->logs,
+            'Only well-formed rule payloads must survive normalization.',
+        );
+        self::assertSame(
+            1,
+            $router->count,
+            'Counter must reflect surviving entries only.',
+        );
+    }
+
     public function testMatchingRuleEntryFlipsHasMatchAndIncrementsCounter(): void
     {
         $router = new CurrentRoute(

@@ -104,6 +104,35 @@ final class SidebarRendererTest extends TestCase
         );
     }
 
+    public function testRenderEmitsIconSpanWhenNavItemDeclaresIconSvg(): void
+    {
+        $view = new SidebarView(
+            snapshot: null,
+            navItems: [
+                new SidebarNavItem(
+                    label: 'Request',
+                    iconSvg: '<svg data-test="request-icon"></svg>',
+                    url: ['/debug/default/view', 'panel' => 'request'],
+                    tooltip: 'Request',
+                    isActive: false,
+                ),
+            ],
+        );
+
+        $html = SidebarRenderer::render($view);
+
+        self::assertStringContainsString(
+            'yii-debug-nav-link-icon',
+            $html,
+            'Nav item with iconSvg must wrap the markup in the icon span.',
+        );
+        self::assertStringContainsString(
+            'data-test="request-icon"',
+            $html,
+            'Icon SVG payload must surface inside the nav link.',
+        );
+    }
+
     public function testRenderHidesAjaxTagWhenNotAjax(): void
     {
         $view = new SidebarView(

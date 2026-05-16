@@ -138,6 +138,26 @@ final class VersionResolverTest extends TestCase
         );
     }
 
+    public function testForPackageReturnsTaggedVersionVerbatimForStablePackages(): void
+    {
+        $version = VersionResolver::forPackage('cebe/markdown');
+
+        self::assertNotNull(
+            $version,
+            "'cebe/markdown' is installed as a tagged release.",
+        );
+        self::assertStringNotContainsString(
+            ' @',
+            $version,
+            'Tagged releases must not carry the dev SHA suffix.',
+        );
+        self::assertMatchesRegularExpression(
+            '/^\d+\.\d+\.\d+$/',
+            $version,
+            'Tagged releases must surface as plain semver strings.',
+        );
+    }
+
     public function testYiiOmitsGitReferenceForBrandChipReadability(): void
     {
         $framework = VersionResolver::yii();

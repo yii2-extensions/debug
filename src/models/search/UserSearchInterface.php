@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use yii\data\DataProviderInterface;
-use yii\web\IdentityInterface;
 
 /**
- * Contract for identity models that also expose a search-form data provider to the User Switch panel.
+ * Contract for filter models backing the User Switch panel's search form.
  *
- * Implementations carry the regular {@see IdentityInterface} identity API and add a {@see search()} method that the
- * panel calls to render the table of impersonation candidates.
+ * Implementations expose a single {@see search()} method that returns a {@see DataProviderInterface} over the
+ * candidate identities filtered by the submitted request parameters.
  */
-interface UserSearchInterface extends IdentityInterface
+interface UserSearchInterface
 {
     /**
      * Returns a data provider over the identity records, filtered by the submitted search parameters.

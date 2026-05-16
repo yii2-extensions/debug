@@ -8,6 +8,8 @@ use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\user\{UserAttribute, UserDataNormalizer};
 use yii\debug\tests\support\TestCase;
 
+use function array_map;
+
 /**
  * Unit tests for {@see UserDataNormalizer} covering the narrowing of the loose `$panel->data['identity']` payload
  * into the typed view-model: hero composition (monogram + status variant), attribute bucketing (Identity / Security /
@@ -17,6 +19,43 @@ use yii\debug\tests\support\TestCase;
 #[Group('user')]
 final class UserDataNormalizerTest extends TestCase
 {
+    public function testFromIdentityBucketsAttributesIntoOtherSectionWhenNotSensitiveNotTimestamp(): void
+    {
+        $view = UserDataNormalizer::fromIdentity(
+            [
+                'username' => "'admin'",
+                'preferred_locale' => "'en'",
+                'tier' => "'gold'",
+            ],
+            null,
+        );
+
+        $other = null;
+
+        foreach ($view->sections as $section) {
+            if ($section->label === 'Other attributes') {
+                $other = $section;
+            }
+        }
+
+        self::assertNotNull(
+            $other,
+            "Plain non-sensitive non-timestamp keys must surface under the 'Other attributes' section.",
+        );
+
+        $keys = array_map(static fn(UserAttribute $a): string => $a->key, $other->attributes);
+
+        self::assertContains(
+            'preferred_locale',
+            $keys,
+            "'preferred_locale' must land in the Other bucket.",
+        );
+        self::assertContains(
+            'tier',
+            $keys,
+            "'tier' must land in the Other bucket.",
+        );
+    }
     public function testFromIdentityBucketsSensitiveAttributesIntoSecuritySection(): void
     {
         $view = UserDataNormalizer::fromIdentity(
@@ -98,6 +137,60 @@ final class UserDataNormalizerTest extends TestCase
             'Unknown user',
             $view->hero->username,
             'Missing username must yield the `Unknown user` placeholder.',
+        );
+    }
+
+    public function testFromIdentityHumanizesTimestampsAcrossEveryRelativeBucket(): void
+    {
+        $now = time();
+
+        $view = UserDataNormalizer::fromIdentity(
+            [
+                'just_now_at' => "'" . ($now - 5) . "'",
+                'minute_ago_at' => "'" . ($now - 600) . "'",
+                'hour_ago_at' => "'" . ($now - 7200) . "'",
+                'day_ago_at' => "'" . ($now - 172800) . "'",
+                'old_at' => "'0'",
+            ],
+            null,
+        );
+
+        $relatives = [];
+
+        foreach ($view->sections as $section) {
+            if ($section->label !== 'Timestamps') {
+                continue;
+            }
+
+            foreach ($section->attributes as $attr) {
+                $relatives[$attr->key] = $attr->timestampRel;
+            }
+        }
+
+        self::assertSame(
+            'just now',
+            $relatives['just_now_at'] ?? null,
+            "Timestamps within the last minute must render as 'just now'.",
+        );
+        self::assertStringEndsWith(
+            ' min ago',
+            $relatives['minute_ago_at'] ?? '',
+            "Timestamps under an hour must render as '<n> min ago'.",
+        );
+        self::assertStringEndsWith(
+            ' h ago',
+            $relatives['hour_ago_at'] ?? '',
+            "Timestamps under a day must render as '<n> h ago'.",
+        );
+        self::assertStringEndsWith(
+            ' d ago',
+            $relatives['day_ago_at'] ?? '',
+            "Timestamps under a month must render as '<n> d ago'.",
+        );
+        self::assertSame(
+            '—',
+            $relatives['old_at'] ?? null,
+            'Zero / invalid timestamps must surface as the em-dash sentinel.',
         );
     }
 

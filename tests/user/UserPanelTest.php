@@ -10,17 +10,15 @@ use Yii;
 use yii\base\{InvalidConfigException, Model};
 use yii\data\ArrayDataProvider;
 use yii\debug\LogTarget;
-use yii\debug\models\search\UserSearch;
+use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
 use yii\debug\Module;
 use yii\debug\panels\UserPanel;
 use yii\debug\tests\support\stub\{
     ArIdentity,
-    FilterModel,
     Identity,
     ModelIdentity,
     NoSearchFilterModel,
-    NonProviderFilterModel,
     SearchableFilterModel,
     UserControllerNoAction,
 };
@@ -370,20 +368,6 @@ final class UserPanelTest extends TestCase
             "'nested'",
             $value,
             'Non-scalar id must be dumped through VarDumper.',
-        );
-    }
-
-    public function testGetUserDataProviderResolvesConventionalSearchMethod(): void
-    {
-        $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
-
-        $panel->filterModel = new FilterModel();
-
-
-        self::assertSame(
-            0,
-            $panel->getUserDataProvider()->getCount(),
-            'Conventional search method must yield an empty provider.',
         );
     }
 
@@ -768,7 +752,7 @@ final class UserPanelTest extends TestCase
         $this->invoke($panel, 'addAccessRules');
     }
 
-    public function testThrowInvalidConfigExceptionWhenFilterModelLacksSearchOnDataProvider(): void
+    public function testThrowInvalidConfigExceptionWhenFilterModelDoesNotImplementUserSearchInterface(): void
     {
         $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
 
@@ -776,13 +760,13 @@ final class UserPanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'User filter model must be a model with a search method.',
+            'User filter model must implement ' . UserSearchInterface::class . '.',
         );
 
         $panel->getUserDataProvider();
     }
 
-    public function testThrowInvalidConfigExceptionWhenInitFilterModelStringIsNotModel(): void
+    public function testThrowInvalidConfigExceptionWhenInitFilterModelStringIsNotUserSearchInterface(): void
     {
         $this->mockWebApplication(
             [
@@ -802,22 +786,10 @@ final class UserPanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'User filter model must extend ',
+            'User filter model must implement ' . UserSearchInterface::class . '.',
         );
 
         new UserPanel(['id' => 'user', 'module' => $module, 'filterModel' => stdClass::class]);
-    }
-
-    public function testThrowInvalidConfigExceptionWhenSearchReturnsNonDataProvider(): void
-    {
-        $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
-
-        $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage(
-            'User filter model search method must return a data provider.',
-        );
-
-        $this->invoke($panel, 'searchUsers', [new NonProviderFilterModel(), []]);
     }
 
     protected function setUp(): void

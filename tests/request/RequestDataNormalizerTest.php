@@ -36,6 +36,19 @@ final class RequestDataNormalizerTest extends TestCase
             'Active flags must surface in declaration order.',
         );
     }
+    public function testFromPanelDataCoercesNumericStringStatusCodeToInt(): void
+    {
+        $view = RequestDataNormalizer::fromPanelData(
+            ['statusCode' => '404'],
+            [],
+        );
+
+        self::assertSame(
+            404,
+            $view->hero->statusCode,
+            'Numeric-string statusCode must coerce to int.',
+        );
+    }
 
     public function testFromPanelDataDropsServerTabWhenServerKeyMissing(): void
     {

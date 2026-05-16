@@ -6,7 +6,7 @@ namespace yii\debug\models\search;
 
 use Yii;
 use yii\base\{InvalidConfigException, Model};
-use yii\data\ActiveDataProvider;
+use yii\data\{ActiveDataProvider, ArrayDataProvider, DataProviderInterface};
 use yii\db\ActiveRecord;
 
 /**
@@ -15,7 +15,7 @@ use yii\db\ActiveRecord;
  * Instantiates the configured `identityClass` and forwards `__get`/`__set`/`attributes()` to it, so the panel can
  * surface a search form whose fields automatically match whatever identity model the host application uses.
  */
-class UserSearch extends Model
+class UserSearch extends Model implements UserSearchInterface
 {
     /**
      * Identity model instance resolved from the configured user component, or `null` when no user component exists.
@@ -74,19 +74,22 @@ class UserSearch extends Model
     }
 
     /**
-     * Returns an {@see ActiveDataProvider} over the identity model, or `null` when it is not an {@see ActiveRecord}.
+     * Returns a data provider over the identity model.
+     *
+     * Yields an {@see ActiveDataProvider} when the identity is an {@see ActiveRecord}; falls back to an empty
+     * {@see ArrayDataProvider} otherwise (so non-AR identities surface an empty user-switch grid instead of failing).
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
      *
-     * @throws InvalidConfigException When the identity model cannot be queried as an {@see ActiveRecord}.
+     * @throws InvalidConfigException When the table schema cannot be resolved during AR filtering.
      */
-    public function search(array $params): ActiveDataProvider|null
+    public function search(array $params): DataProviderInterface
     {
         if ($this->identityImplement instanceof ActiveRecord) {
             return $this->searchActiveDataProvider($params, $this->identityImplement);
         }
 
-        return null;
+        return new ArrayDataProvider(['allModels' => []]);
     }
 
     /**

@@ -451,6 +451,31 @@ final class QueueCardRendererTest extends TestCase
         );
     }
 
+    public function testRenderItemRendersTruncatedMarkerInCollapsibleBlocks(): void
+    {
+        $html = QueueCardRenderer::renderItem(
+            self::makeRecord(
+                payloadFields: [
+                    'items' => [
+                        'a',
+                        '__truncated' => true,
+                    ],
+                ],
+            ),
+        )->render();
+
+        self::assertStringContainsString(
+            'yii-debug-queue-tree-truncated',
+            $html,
+            "Truncated arrays must surface the 'truncated' marker chip.",
+        );
+        self::assertStringContainsString(
+            '>truncated<',
+            $html,
+            "Truncated marker must render the literal 'truncated' label.",
+        );
+    }
+
     public function testRenderItemRendersTypeLabelsForEachScalarKind(): void
     {
         $html = QueueCardRenderer::renderItem(
@@ -489,6 +514,28 @@ final class QueueCardRendererTest extends TestCase
             '>null<',
             $html,
             "'null' type label must be present.",
+        );
+    }
+
+    public function testRenderItemRendersUnsupportedRowForNonRenderableValues(): void
+    {
+        $html = QueueCardRenderer::renderItem(
+            self::makeRecord(
+                payloadFields: [
+                    'handle' => fopen('php://memory', 'rb'),
+                ],
+            ),
+        )->render();
+
+        self::assertStringContainsString(
+            '(unsupported)',
+            $html,
+            "Unsupported value types must render the '(unsupported)' placeholder.",
+        );
+        self::assertStringContainsString(
+            '>unknown<',
+            $html,
+            "Unsupported value types must carry the 'unknown' type label.",
         );
     }
 

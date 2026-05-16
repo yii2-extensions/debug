@@ -32,6 +32,29 @@ final class RequestSectionRendererTest extends TestCase
         );
     }
 
+    public function testRenderHeroEmitsMetaSpansForEachNonEmptyMetaPiece(): void
+    {
+        $html = RequestSectionRenderer::renderHero(
+            self::makeHero(ip: '127.0.0.1', time: '12:34:56', durationMs: '7.5 ms'),
+        );
+
+        self::assertStringContainsString(
+            '>127.0.0.1</span>',
+            $html,
+            'Non-empty ip must surface in the meta strip.',
+        );
+        self::assertStringContainsString(
+            '>12:34:56</span>',
+            $html,
+            'Non-empty time must surface in the meta strip.',
+        );
+        self::assertStringContainsString(
+            '>7.5 ms</span>',
+            $html,
+            'Non-empty durationMs must surface in the meta strip.',
+        );
+    }
+
     public function testRenderHeroOmitsMethodPillWhenMethodIsEmpty(): void
     {
         $html = RequestSectionRenderer::renderHero(self::makeHero(method: ''));

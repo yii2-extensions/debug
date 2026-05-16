@@ -7,7 +7,6 @@ namespace yii\debug;
 use Composer\InstalledVersions;
 use Yii;
 
-use function class_exists;
 use function is_string;
 use function str_contains;
 use function substr;
@@ -72,15 +71,19 @@ final class VersionResolver
      */
     public static function forPackage(string $package): string|null
     {
-        if (!class_exists(InstalledVersions::class) || !InstalledVersions::isInstalled($package)) {
+        if (!InstalledVersions::isInstalled($package)) {
             return null;
         }
 
         $pretty = InstalledVersions::getPrettyVersion($package);
 
+        // Defensive guard: Composer `InstalledVersions::getPrettyVersion()` can only return `null` when the package
+        // metadata is malformed in `installed.json`. Unreachable under normal test conditions.
+        // @codeCoverageIgnoreStart
         if ($pretty === null) {
             return null;
         }
+        // @codeCoverageIgnoreEnd
 
         if (str_contains($pretty, 'dev')) {
             $reference = InstalledVersions::getReference($package);
@@ -94,24 +97,10 @@ final class VersionResolver
     }
 
     /**
-     * Returns a friendly version for the Yii framework, without the Git reference.
-     *
-     * The framework version sits in the toolbar brand chip and is read at a glance; the short SHA is noisy there and
-     * would shift on every framework rebuild. Falls back to {@see Yii::getVersion()} when Composer runtime metadata
-     * is unavailable.
-     *
-     * @return string Framework version string ready for display.
+     * Returns the Yii framework version for the toolbar brand chip.
      */
     public static function yii(): string
     {
-        if (class_exists(InstalledVersions::class) && InstalledVersions::isInstalled('yiisoft/yii2')) {
-            $pretty = InstalledVersions::getPrettyVersion('yiisoft/yii2');
-
-            if ($pretty !== null) {
-                return $pretty;
-            }
-        }
-
         return Yii::getVersion();
     }
 }

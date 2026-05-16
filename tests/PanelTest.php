@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\tests;
 
+use Exception;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\{Module, Panel};
+use yii\base\InvalidConfigException;
+use yii\debug\{FlattenException, LogTarget, Module, Panel};
 use yii\debug\tests\support\stub\CustomPanel;
 use yii\debug\tests\support\TestCase;
+use yii\log\Logger;
 
 /**
  * Unit tests for {@see Panel} covering trace-line rendering, the `getToolbarData` template flow, the `getToolbarIcon`
@@ -16,6 +19,77 @@ use yii\debug\tests\support\TestCase;
 #[Group('panel')]
 final class PanelTest extends TestCase
 {
+    public function testGetDetailDefaultsToEmptyString(): void
+    {
+        self::assertSame(
+            '',
+            $this->createPanel()->getDetail(),
+            'Base Panel exposes no detail view.',
+        );
+    }
+
+    public function testGetLogMessagesStringifiesThrowableFirstElement(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $logTarget = new LogTarget($module);
+
+        $logTarget->messages = [[new Exception('boom'), Logger::LEVEL_ERROR, 'app', 0.0]];
+
+        $module->logTarget = $logTarget;
+
+        $messages = $this->invoke(
+            $panel,
+            'getLogMessages',
+            [0, [], [], true],
+        );
+
+        self::assertIsArray(
+            $messages,
+            "'getLogMessages' must return a list of log entries.",
+        );
+        self::assertCount(
+            1,
+            $messages,
+            'Single throwable message must round-trip into the filtered list.',
+        );
+
+        self::assertArrayHasKey(
+            0,
+            $messages,
+            'Filtered list must expose the first tuple slot.',
+        );
+
+        $first = $messages[0];
+
+        self::assertIsArray(
+            $first,
+            'Each entry must be a tagged log tuple.',
+        );
+        self::assertArrayHasKey(
+            0,
+            $first,
+            "Tagged log tuple must expose the 'value' slot.",
+        );
+        self::assertIsString(
+            $first[0],
+            'Throwable first element must be cast to its string form.',
+        );
+        self::assertStringContainsString(
+            'boom',
+            $first[0],
+            'Stringified throwable must retain its message text.',
+        );
+    }
+
+    public function testGetNameDefaultsToEmptyString(): void
+    {
+        self::assertSame(
+            '',
+            $this->createPanel()->getName(),
+            'Base Panel exposes no display name.',
+        );
+    }
     public function testGetToolbarDataFallsBackToSummaryHtmlWhenNoItems(): void
     {
         $panel = $this->makeCustomPanel('custom');
@@ -158,6 +232,25 @@ final class PanelTest extends TestCase
         );
     }
 
+    public function testGetTraceLineDumpsValueWhenTraceLineClosureReturnsNonString(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $this->setInaccessibleProperty(
+            $module,
+            'traceLine',
+            static fn(): array => ['not' => 'string'],
+        );
+
+        $line = $panel->getTraceLine(['file' => 'file.php', 'line' => 10]);
+
+        self::assertStringContainsString(
+            "'not'",
+            $line,
+            'Non-string closure return must fall back to a VarDumper representation.',
+        );
+    }
+
     public function testGetTraceLineFallsBackToPlainTextWhenTraceLineDisabled(): void
     {
         [$panel, $module] = $this->createPanelWithModule();
@@ -194,6 +287,25 @@ final class PanelTest extends TestCase
             '<a href="ide://open?url=file:///newpath/file.php&line=10">/app/file.php:10</a>',
             $panel->getTraceLine(['file' => '/app/file.php', 'line' => 10]),
             "'tracePathMappings' should rewrite the URL path while keeping the displayed text intact.",
+        );
+    }
+
+    public function testGetTraceLineSkipsTraceMappingsWithNonScalarValues(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $this->setInaccessibleProperty(
+            $module,
+            'tracePathMappings',
+            ['/app' => ['ignored', 'array']],
+        );
+
+        $line = $panel->getTraceLine(['file' => '/app/file.php', 'line' => 10]);
+
+        self::assertStringContainsString(
+            'file:///app/file.php',
+            $line,
+            'Mapping values that are not scalar must be skipped, leaving the original path intact.',
         );
     }
 
@@ -238,6 +350,43 @@ final class PanelTest extends TestCase
             $this->createPanel()->hasRequestNavigation(),
             'Default panels participate in request navigation.',
         );
+    }
+
+    public function testSaveDefaultsToNull(): void
+    {
+        self::assertNull(
+            $this->createPanel()->save(),
+            'Base Panel records nothing by default.',
+        );
+    }
+
+    public function testSetErrorMakesGetErrorAndHasErrorSurfaceTheFlattenedException(): void
+    {
+        $panel = $this->createPanel();
+
+        $panel->setError(new FlattenException(new Exception('captured')));
+
+        self::assertTrue(
+            $panel->hasError(),
+            "Recording an exception must flip 'hasError' to `true`.",
+        );
+        self::assertInstanceOf(
+            FlattenException::class,
+            $panel->getError(),
+            "'getError' must surface the recorded FlattenException.",
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionWhenLogTargetIsMissing(): void
+    {
+        $panel = $this->createPanel();
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'The debug module logTarget must be initialized',
+        );
+
+        $this->invoke($panel, 'getLogTarget');
     }
 
     protected function setUp(): void

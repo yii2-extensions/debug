@@ -208,6 +208,29 @@ final class ShellDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromParamsNarrowsNonArrayShellDataToEmptyContext(): void
+    {
+        $this->mockWebApplication();
+
+        $context = ShellDataNormalizer::fromParams(
+            'view',
+            'not-an-array',
+            '',
+            null,
+        );
+
+        self::assertSame(
+            [],
+            $context->shellPanels,
+            'Non-array shell data must narrow to an empty panels map.',
+        );
+        self::assertSame(
+            '',
+            $context->cursorInit,
+            "Non-array shell data must collapse 'cursorInit' to the empty string.",
+        );
+    }
+
     public function testFromParamsNarrowsPanelsToPanelInstancesWithStringKeys(): void
     {
         $context = ShellDataNormalizer::fromParams(
@@ -256,6 +279,68 @@ final class ShellDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromParamsPluckStringCoercesNumericConfigEntries(): void
+    {
+        $this->mockWebApplication();
+
+        $config = new ConfigPanel();
+
+        $this->setInaccessibleProperty(
+            $config,
+            'data',
+            ['application' => ['yii' => 22], 'php' => ['version' => 8.5]],
+        );
+
+        $context = ShellDataNormalizer::fromParams(
+            'view',
+            ['panels' => ['config' => $config]],
+            '',
+            null,
+        );
+
+        self::assertSame(
+            '22',
+            $context->yiiVersion,
+            'Numeric Yii version must coerce to its string form.',
+        );
+        self::assertSame(
+            '8.5',
+            $context->phpVersion,
+            'Numeric PHP version must coerce to its string form.',
+        );
+    }
+
+    public function testFromParamsPluckStringFallsBackForNonScalarLeafValues(): void
+    {
+        $this->mockWebApplication();
+
+        $config = new ConfigPanel();
+
+        $this->setInaccessibleProperty(
+            $config,
+            'data',
+            ['application' => ['yii' => []], 'php' => ['version' => ['nested']]],
+        );
+
+        $context = ShellDataNormalizer::fromParams(
+            'view',
+            ['panels' => ['config' => $config]],
+            '',
+            null,
+        );
+
+        self::assertSame(
+            Yii::getVersion(),
+            $context->yiiVersion,
+            "Non-scalar leaf must fall back to the runtime 'Yii' version.",
+        );
+        self::assertSame(
+            PHP_VERSION,
+            $context->phpVersion,
+            "Non-scalar leaf must fall back to the runtime 'PHP_VERSION' constant.",
+        );
+    }
+
     public function testFromParamsPluckYiiVersionFromConfigPanelData(): void
     {
         $this->mockWebApplication();
@@ -283,6 +368,35 @@ final class ShellDataNormalizerTest extends TestCase
             '8.5.3',
             $context->phpVersion,
             "'PHP' version must come from the ConfigPanel data when present.",
+        );
+    }
+    public function testResolveThemeFromRequestReadsCookieFallback(): void
+    {
+        $this->mockWebApplication();
+
+        $_COOKIE['yii-debug-toolbar-theme'] = 'DARK';
+
+        Yii::$app->getRequest()->enableCookieValidation = false;
+
+        self::assertSame(
+            'dark',
+            ShellDataNormalizer::resolveThemeFromRequest(),
+            'Cookie value must surface lower-cased when no query param is set.',
+        );
+
+        unset($_COOKIE['yii-debug-toolbar-theme']);
+    }
+
+    public function testResolveThemeFromRequestReturnsEmptyWhenSourcesAreMissing(): void
+    {
+        $this->mockWebApplication();
+
+        Yii::$app->getRequest()->enableCookieValidation = false;
+
+        self::assertSame(
+            '',
+            ShellDataNormalizer::resolveThemeFromRequest(),
+            'Missing query / cookie pair must yield an empty theme string.',
         );
     }
 }

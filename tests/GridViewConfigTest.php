@@ -76,6 +76,72 @@ final class GridViewConfigTest extends TestCase
         );
     }
 
+    public function testPageSizeSelectorHtmlMarksCurrentPerPageOptionAsSelected(): void
+    {
+        $this->mockWebApplication();
+
+        $_GET['per-page'] = '25';
+
+        $html = GridViewConfig::pageSizeSelectorHtml();
+
+        self::assertStringContainsString(
+            '<option value="25" selected>',
+            $html,
+            "String 'per-page' value must round-trip as the selected option.",
+        );
+    }
+
+    public function testPageSizeSelectorHtmlPreservesNumericPerPageThroughQueryParamString(): void
+    {
+        $this->mockWebApplication();
+
+        $_GET['per-page'] = 100;
+
+        $html = GridViewConfig::pageSizeSelectorHtml();
+
+        self::assertStringContainsString(
+            '<option value="100" selected>',
+            $html,
+            'Numeric query-param values must be coerced to the matching string option.',
+        );
+    }
+
+    public function testPaginationFromRequestFallsBackToDefaultForNonPositiveValues(): void
+    {
+        $this->mockWebApplication();
+
+        $_GET['per-page'] = '-5';
+
+        $pagination = GridViewConfig::paginationFromRequest(75);
+
+        self::assertIsArray(
+            $pagination,
+            'Negative per-page must still yield a pagination config.',
+        );
+        self::assertArrayHasKey(
+            'pageSize',
+            $pagination,
+            "Pagination config must expose 'pageSize'.",
+        );
+        self::assertSame(
+            75,
+            $pagination['pageSize'],
+            'Non-positive per-page must fall back to the supplied default.',
+        );
+    }
+
+    public function testPaginationFromRequestReturnsFalseWhenPerPageEqualsAll(): void
+    {
+        $this->mockWebApplication();
+
+        $_GET['per-page'] = 'all';
+
+        self::assertFalse(
+            GridViewConfig::paginationFromRequest(),
+            "'per-page=all' must disable pagination entirely.",
+        );
+    }
+
     /**
      * @param array<string, mixed> $expected
      */
