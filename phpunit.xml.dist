@@ -21,4 +21,7 @@
       <directory suffix=".php">src</directory>
     </include>
   </source>
+  <extensions>
+    <bootstrap class="yii\debug\tests\support\MockerExtension"/>
+  </extensions>
 </phpunit>

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\tests\router;
 
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use Xepozz\InternalMocker\MockerState;
+use Yii;
 use yii\debug\models\router\RouterRules;
 use yii\debug\tests\provider\RouterRulesProvider;
 use yii\debug\tests\support\TestCase;
@@ -158,6 +160,61 @@ final class RouterRulesTest extends TestCase
             $expected,
             (new RouterRules())->rules,
             'RouterRules must flatten URL-manager rules into the documented per-row structure.',
+        );
+    }
+
+    public function testScanRestRuleShortCircuitsWhenRulesGroupsArentIterable(): void
+    {
+        MockerState::addCondition('yii\debug\models\router', 'is_iterable', [], false, true);
+
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'urlManager' => [
+                        'enablePrettyUrl' => true,
+                        'rules' => [['class' => 'yii\\rest\\UrlRule', 'controller' => 'user']],
+                    ],
+                ],
+            ],
+        );
+
+        self::assertSame(
+            [],
+            (new RouterRules())->rules,
+            "Non-iterable REST 'rules' groups must short-circuit 'scanRestRule()' and leave the rule list empty.",
+        );
+    }
+
+    public function testScanRestRuleSkipsNonIterableInnerGroups(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'urlManager' => [
+                        'enablePrettyUrl' => true,
+                        'rules' => [['class' => 'yii\\rest\\UrlRule', 'controller' => 'user']],
+                    ],
+                ],
+            ],
+        );
+
+        $rules = Yii::$app->urlManager->rules;
+
+        self::assertArrayHasKey(0, $rules, 'REST rule fixture must surface in the URL manager.');
+
+        $restRule = $rules[0];
+
+        self::assertIsObject($restRule, 'REST rule must be an object instance.');
+
+        $rulesGroups = $this->getInaccessibleProperty($restRule, 'rules');
+
+        MockerState::addCondition('yii\debug\models\router', 'is_iterable', [], false, true);
+        MockerState::addCondition('yii\debug\models\router', 'is_iterable', [$rulesGroups], true);
+
+        self::assertSame(
+            [],
+            (new RouterRules())->rules,
+            "Non-iterable inner groups must be skipped via the defensive 'continue' and leave the rule list empty.",
         );
     }
 }

@@ -6,6 +6,9 @@ namespace yii\debug\tests\support\stub;
 
 use yii\web\UrlRuleInterface;
 
+/**
+ * Stub implementation of {@see UrlRuleInterface} that always fails to create or parse URLs, used for testing purposes.
+ */
 class CustomRuleStub implements UrlRuleInterface
 {
     /**

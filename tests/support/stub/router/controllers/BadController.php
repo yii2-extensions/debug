@@ -2,11 +2,15 @@
 
 declare(strict_types=1);
 
-namespace yii\debug\tests\router\controllers;
+namespace yii\debug\tests\support\stub\router\controllers;
 
 use Exception;
 use yii\web\Controller;
 
+/**
+ * Stub controller that throws an exception in {@see init()} to simulate a problem with the controller when
+ * initializing.
+ */
 final class BadController extends Controller
 {
     public function actionOnly(): bool

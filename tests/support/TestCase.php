@@ -36,6 +36,15 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * Reads an inaccessible object property, walking the inheritance chain when the property is declared on a parent
+     * class.
+     */
+    protected function getInaccessibleProperty(object $object, string $propertyName): mixed
+    {
+        return $this->resolveReflectionProperty($object, $propertyName)->getValue($object);
+    }
+
+    /**
      * Invokes a non-public method on the given object via reflection and returns its result.
      *
      * @param array<int, mixed> $args Arguments forwarded to the method.
@@ -143,21 +152,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function setInaccessibleProperty(object $object, string $propertyName, mixed $value): void
     {
-        $class = new ReflectionClass($object);
-
-        while (!$class->hasProperty($propertyName)) {
-            $parent = $class->getParentClass();
-
-            if ($parent === false) {
-                self::fail(
-                    "Property '{$propertyName}' not found on '{$class->getName()}' or its ancestors.",
-                );
-            }
-
-            $class = $parent;
-        }
-
-        $class->getProperty($propertyName)->setValue($object, $value);
+        $this->resolveReflectionProperty($object, $propertyName)->setValue($object, $value);
     }
 
     protected function setUp(): void
@@ -176,5 +171,24 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
 
         $_SERVER = self::$serverSnapshot ?? [];
         $_GET = [];
+    }
+
+    private function resolveReflectionProperty(object $object, string $propertyName): \ReflectionProperty
+    {
+        $class = new ReflectionClass($object);
+
+        while (!$class->hasProperty($propertyName)) {
+            $parent = $class->getParentClass();
+
+            if ($parent === false) {
+                self::fail(
+                    "Property '{$propertyName}' not found on '{$class->getName()}' or its ancestors.",
+                );
+            }
+
+            $class = $parent;
+        }
+
+        return $class->getProperty($propertyName);
     }
 }

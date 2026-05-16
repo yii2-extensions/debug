@@ -7,7 +7,7 @@ namespace yii\debug\tests\support\stub;
 use yii\debug\Panel;
 
 /**
- * CustomPanel is a stub implementation of {@see Panel} for testing purposes.
+ * Stub implementation of {@see Panel} for testing purposes.
  */
 final class CustomPanel extends Panel
 {

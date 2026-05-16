@@ -8,7 +8,7 @@ use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
 
 /**
- * ActiveRecord-based identity stub.
+ * Stub identity class for testing user authentication in the debug module.
  */
 final class ArIdentity extends ActiveRecord implements IdentityInterface
 {

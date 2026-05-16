@@ -36,6 +36,25 @@ final class RouterRulesProvider
                 ],
             ],
         ];
+        yield 'parsing only' => [
+            [
+                [
+                    'pattern' => 'pattern',
+                    'route' => 'route',
+                    'mode' => UrlRule::PARSING_ONLY,
+                ],
+            ],
+            [
+                [
+                    'mode' => 'parsing only',
+                    'name' => 'pattern',
+                    'route' => 'route',
+                    'suffix' => null,
+                    'type' => null,
+                    'verb' => null,
+                ],
+            ],
+        ];
         yield 'custom' => [
             [['class' => CustomRuleStub::class]],
             [

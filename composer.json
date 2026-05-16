@@ -31,6 +31,7 @@
         "phpstan/phpstan-phpunit": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0.3",
         "phpunit/phpunit": "^12.5",
+        "xepozz/internal-mocker": "^1.4",
         "yii2-extensions/phpstan": "^0.4",
         "yii2-extensions/scaffold": "^0.1@dev"
     },

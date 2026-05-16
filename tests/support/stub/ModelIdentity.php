@@ -8,7 +8,7 @@ use yii\base\Model;
 use yii\web\IdentityInterface;
 
 /**
- * Model-based identity stub.
+ * Stub identity class that extends Model for testing purposes.
  */
 final class ModelIdentity extends Model implements IdentityInterface
 {

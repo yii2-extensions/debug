@@ -9,7 +9,8 @@ use yii\data\{ArrayDataProvider, DataProviderInterface};
 use yii\debug\models\search\UserSearchInterface;
 
 /**
- * Filter-model stub implementing {@see UserSearchInterface}.
+ * Stub model that implements the `UserSearchInterface` to test the behavior of the debug module when a model has search
+ * capabilities.
  */
 final class SearchableFilterModel extends Model implements UserSearchInterface
 {

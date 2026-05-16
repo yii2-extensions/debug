@@ -16,6 +16,37 @@ use yii\debug\tests\support\TestCase;
 #[Group('queue')]
 final class QueueSearchTest extends TestCase
 {
+    public function testAttributeLabelsCoverEveryFilterField(): void
+    {
+        $labels = (new QueueSearch())->attributeLabels();
+
+        self::assertArrayHasKey(
+            'eventType',
+            $labels,
+            "'eventType' label must be defined.",
+        );
+        self::assertArrayHasKey(
+            'driverName',
+            $labels,
+            "'driverName' label must be defined.",
+        );
+        self::assertArrayHasKey(
+            'componentId',
+            $labels,
+            "'componentId' label must be defined.",
+        );
+        self::assertArrayHasKey(
+            'jobClass',
+            $labels,
+            "'jobClass' label must be defined.",
+        );
+        self::assertArrayHasKey(
+            'jobId',
+            $labels,
+            "'jobId' label must be defined.",
+        );
+    }
+
     public function testSearchAppliesPartialMatchOnDriverName(): void
     {
         $records = [

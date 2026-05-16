@@ -14,9 +14,7 @@ use yii\base\{Application, Controller, Model, Module};
 use yii\helpers\Inflector;
 use yii\web\{GroupUrlRule, UrlRule, UrlRuleInterface};
 
-use function count;
 use function is_array;
-use function is_string;
 
 /**
  * Discovers every controller action reachable from the running application and pairs it with its matching URL rule.
@@ -139,8 +137,8 @@ class ActionRoutes extends Model
      *
      * @param string $route Route to test against every configured URL rule.
      *
-     * @return array{0: string|null, 1: int} Matching rule name (or `null` when no rule matches) and the number of
-     * rules actually scanned before deciding.
+     * @return array{0: string|null, 1: int} Matching rule name (or `null` when no rule matches) and the number of rules
+     * actually scanned before deciding.
      */
     protected function getMatchedCreationRule(string $route): array
     {
@@ -149,11 +147,8 @@ class ActionRoutes extends Model
         $urlManager = Yii::$app->urlManager;
 
         if ($urlManager->enablePrettyUrl) {
+            /** @var UrlRuleInterface $rule */
             foreach ($urlManager->rules as $rule) {
-                if (!$rule instanceof UrlRuleInterface) {
-                    continue;
-                }
-
                 $count++;
 
                 $url = $rule->createUrl($urlManager, $route, []);
@@ -213,11 +208,8 @@ class ActionRoutes extends Model
                     new RecursiveDirectoryIterator($controllerPath, RecursiveDirectoryIterator::KEY_AS_PATHNAME),
                 );
 
+                /** @var SplFileInfo $fileInfo */
                 foreach ($iterator as $fileInfo) {
-                    if (!$fileInfo instanceof SplFileInfo) {
-                        continue;
-                    }
-
                     $file = $fileInfo->getPathname();
 
                     if (!str_ends_with($file, 'Controller.php')) {
@@ -314,11 +306,8 @@ class ActionRoutes extends Model
         if ($rule instanceof UrlRule && $rule->getCreateUrlStatus() === UrlRule::CREATE_STATUS_SUCCESS) {
             $name = is_string($rule->name) ? $rule->name : null;
         } elseif ($rule instanceof GroupUrlRule) {
+            /** @var UrlRuleInterface $subrule */
             foreach ($rule->rules as $subrule) {
-                if (!$subrule instanceof UrlRuleInterface) {
-                    continue;
-                }
-
                 $name = $this->getRuleName($subrule);
 
                 if ($name !== null) {

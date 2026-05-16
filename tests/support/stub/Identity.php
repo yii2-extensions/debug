@@ -7,7 +7,7 @@ namespace yii\debug\tests\support\stub;
 use yii\web\IdentityInterface;
 
 /**
- * Plain identity stub.
+ * Stub identity class for testing purposes.
  */
 final class Identity implements IdentityInterface
 {

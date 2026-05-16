@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-namespace yii\debug\tests\router\controllers;
+namespace yii\debug\tests\support\stub\router\controllers;
 
 use yii\web\{Controller, ErrorAction};
 
+/**
+ * Stub controller for testing web controller routing.
+ */
 final class WebController extends Controller
 {
     public function actionFirst(): bool

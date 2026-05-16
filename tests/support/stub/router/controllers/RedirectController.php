@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
-namespace yii\debug\tests\router\controllers;
+namespace yii\debug\tests\support\stub\router\controllers;
 
 use Yii;
 use yii\web\{Controller, ErrorAction};
 
+/**
+ * Stub controller that redirects in {@see init()} to simulate a problem with the controller when initializing.
+ */
 final class RedirectController extends Controller
 {
     public function actionOnly(): bool
