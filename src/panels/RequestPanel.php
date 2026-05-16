@@ -269,7 +269,7 @@ class RequestPanel extends Panel
      * @param array<int, string> $rawHeaders Header lines in `Name: value` form, as returned by `headers_list()`; bare
      * strings without a colon are kept verbatim at int-keyed slots.
      *
-     * @return array<int|string, string|array<int, string>> Aggregated header map with masked values.
+     * @return array<int|string, array<int, string>|string> Aggregated header map with masked values.
      */
     protected function normalizeResponseHeaders(array $rawHeaders): array
     {

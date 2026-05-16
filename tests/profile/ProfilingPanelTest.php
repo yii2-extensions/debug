@@ -36,6 +36,7 @@ final class ProfilingPanelTest extends TestCase
             'Missing module must still produce markup with a placeholder timeline link.',
         );
     }
+
     public function testGetDetailRendersWithCapturedMessages(): void
     {
         $panel = $this->makePanel(ProfilingPanel::class);

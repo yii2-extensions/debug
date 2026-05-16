@@ -31,6 +31,7 @@ final class ArIdentity extends ActiveRecord implements IdentityInterface
     {
         return 1;
     }
+
     public static function tableName(): string
     {
         return 'stub_users';

@@ -265,5 +265,4 @@ final class ConfigDataNormalizerTest extends TestCase
             "Empty roster must report 'extensionCount = 0'.",
         );
     }
-
 }

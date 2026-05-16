@@ -54,6 +54,7 @@ final class MailPanelTest extends TestCase
             "Non-Symfony path must not add a 'time' slot.",
         );
     }
+
     public function testConvertParamsHandlesArrayScalarAndStringableInputs(): void
     {
         $panel = $this->makePanel(MailPanel::class);

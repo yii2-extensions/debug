@@ -819,6 +819,7 @@ final class UserPanelTest extends TestCase
 
         $this->invoke($panel, 'searchUsers', [new NonProviderFilterModel(), []]);
     }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -855,7 +856,7 @@ final class UserPanelTest extends TestCase
     /**
      * Builds a {@see UserPanel} wired to a logged-in identity, the debug module bootstrapped with the user controller.
      *
-     * @param string|Model|null $filterModel Optional filter model passed to the panel constructor.
+     * @param Model|string|null $filterModel Optional filter model passed to the panel constructor.
      */
     private function bootstrapPanelWithIdentity(
         IdentityInterface $identity,

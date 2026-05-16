@@ -128,6 +128,7 @@ final class DbPanelTest extends TestCase
             'Ignored-path frame must be dropped from the trace.',
         );
     }
+
     public function testCanBeExplainedReturnsFalseForUnsupportedVerb(): void
     {
         self::assertFalse(

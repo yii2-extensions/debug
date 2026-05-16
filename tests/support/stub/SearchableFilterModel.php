@@ -33,6 +33,7 @@ final class SearchableFilterModel extends Model implements UserSearchInterface
     {
         return 0;
     }
+
     public function search(array $params): DataProviderInterface
     {
         return new ArrayDataProvider(['allModels' => []]);
