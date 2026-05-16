@@ -7,5 +7,5 @@ useDefault = true
 description = "Allow test fixture data with dummy credentials"
 paths = [
     '''tests/support/data/.*\.php''',
-    '''tests/TestCase\.php''',
+    '''tests/support/TestCase\.php''',
 ]
