@@ -829,7 +829,6 @@ final class DefaultControllerTest extends TestCase
         return $module;
     }
 
-
     /**
      * @param array<string, array<string, mixed>> $panelData Per-panel data shapes, keyed by panel id.
      */
