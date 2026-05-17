@@ -2,37 +2,39 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug;
 
 use yii\web\AssetBundle;
 
 /**
- * Timeline asset bundle
+ * Asset bundle powering the interactive chart on the Timeline panel detail view.
  *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
- * @since 2.0.7
+ * Ships the horizontal span chart styling plus the hover/zoom handler that maps cursor coordinates to the underlying
+ * profile spans, so the user can inspect individual frames without leaving the panel.
  */
 class TimelineAsset extends AssetBundle
 {
-    public $sourcePath = '@yii/debug/assets';
-
+    /**
+     * CSS files registered with this bundle.
+     */
     public $css = [
-        'css/timeline.css',
+        'dist/css/timeline.min.css',
     ];
-
-    public $js = [
-        'js/timeline.js',
-    ];
-
+    /**
+     * Asset bundles this bundle depends on.
+     */
     public $depends = [
         DebugAsset::class,
     ];
+    /**
+     * JavaScript files registered with this bundle.
+     */
+    public $js = [
+        'dist/js/timeline.min.js',
+    ];
+    /**
+     * Source path (Yii alias) under which the bundled assets live; published by the Asset Manager on first
+     * registration.
+     */
+    public $sourcePath = '@yii/debug/assets';
 }

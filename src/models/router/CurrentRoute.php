@@ -2,82 +2,116 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\router;
 
 use yii\base\Model;
 use yii\log\Logger;
 
+use function is_array;
+use function is_bool;
 use function is_string;
 
 /**
- * CurrentRoute model
+ * Reconstructs the URL-rule match log of the active request from the captured logger messages.
  *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
- * @since 2.0.8
+ * Replays the raw log entries supplied via {@see $messages} during {@see init()} to expose the matched action, the
+ * resolved route, the trace of rules tried, and a derived flag indicating whether the URL manager actually matched.
  */
 class CurrentRoute extends Model
 {
     /**
-     * @var array logged messages.
-     */
-    public array $messages = [];
-    /**
-     * @var string logged route.
-     */
-    public string $route = '';
-    /**
-     * @var string logged action.
+     * Resolved action route logged for the current request.
      */
     public string $action = '';
     /**
-     * @var string|null info message.
+     * Number of URL rules inspected before a match (or until the trace ended).
      */
-    public string|null $message = null;
+    public int $count = 0;
     /**
-     * @var array logged rules.
-     * ```php
-     * [
-     *  [
-     *      'rule' => (string),
-     *      'match' => (bool),
-     *      'parent'=> parent class (string)
-     *  ]
-     * ]
-     * ```
+     * Whether any inspected rule reported a successful match.
+     */
+    public bool $hasMatch = false;
+    /**
+     * @var list<array{rule: string, match: bool, parent?: string}> Normalized trace of URL rules inspected during
+     * routing, in inspection order.
      */
     public array $logs = [];
     /**
-     * @var int count, before match.
+     * Trace-level info message captured for the routing pass, when present.
      */
-    public int $count = 0;
-    public bool $hasMatch = false;
+    public string|null $message = null;
+    /**
+     * @var array<int, array{0: mixed, 1: int, 2?: string, 3?: float, 4?: array<int, array<string, mixed>>}> Raw logger
+     * messages captured for the routing pass, consumed by {@see init()}.
+     */
+    public array $messages = [];
+    /**
+     * Resolved request route logged for the current request.
+     */
+    public string $route = '';
 
     public function init(): void
     {
         parent::init();
+
         $last = null;
+
         foreach ($this->messages as $message) {
             if ($message[1] === Logger::LEVEL_TRACE && is_string($message[0])) {
                 $this->message = $message[0];
-            } elseif (isset($message[0]['rule'], $message[0]['match'])) {
-                if (!empty($last['parent']) && $last['parent'] === $message[0]['rule']) {
+                continue;
+            }
+
+            $log = $this->normalizeLogMessage($message[0]);
+
+            if ($log !== null) {
+                $previousParent = $last['parent'] ?? null;
+
+                if ($previousParent !== null && $previousParent !== '' && $previousParent === $log['rule']) {
                     continue;
                 }
-                $this->logs[] = $message[0];
+
+                $this->logs[] = $log;
+
                 ++$this->count;
-                if ($message[0]['match']) {
+
+                if ($log['match']) {
                     $this->hasMatch = true;
                 }
-                $last = $message[0];
+
+                $last = $log;
             }
         }
+    }
+
+    /**
+     * Narrows a raw logger payload into the `{rule, match, parent?}` shape consumed by the view layer.
+     *
+     * @param mixed $message Raw logger payload.
+     *
+     * @return array{rule: string, match: bool, parent?: string}|null Normalized entry, or `null` when the payload does
+     * not have the expected shape.
+     */
+    private function normalizeLogMessage($message): array|null
+    {
+        if (
+            !is_array($message)
+            || !isset($message['rule'], $message['match'])
+            || !is_string($message['rule'])
+            || !is_bool($message['match'])
+        ) {
+            return null;
+        }
+
+        $log = [
+            'match' => $message['match'],
+            'rule' => $message['rule'],
+        ];
+
+        if (isset($message['parent']) && is_string($message['parent'])) {
+            $log['parent'] = $message['parent'];
+        }
+
+        return $log;
     }
 }

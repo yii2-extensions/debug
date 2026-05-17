@@ -2,47 +2,44 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use yii\base\Model;
-use yii\debug\components\search\Filter;
-use yii\debug\components\search\matchers;
+use yii\debug\components\search\{Filter, matchers};
 
-use function str_contains;
-use function str_replace;
+use function is_scalar;
 
 /**
- * Base search model
+ * Shared scaffolding for debug-panel search models, providing the operator-aware filter syntax used by every grid.
  *
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
+ * Subclasses define their searchable attributes and {@see Model::rules()}; {@see addCondition()} parses the submitted
+ * value to decide whether to attach a `>`, `<`, or exact/partial matcher to the supplied {@see Filter}.
  */
 class Base extends Model
 {
     /**
-     * Adds filtering condition for a given attribute.
+     * Attaches the matcher implied by the submitted value to the filter for the given attribute.
      *
-     * @param Filter $filter filter instance.
-     * @param string $attribute attribute to filter.
-     * @param bool $partial if partial match should be used.
+     * Recognizes a leading `>` (numeric greater-than) and `<` (numeric lower-than) operator; otherwise attaches an
+     * exact or partial {@see matchers\SameAs} matcher depending on `$partial`.
+     *
+     * @param Filter $filter Filter the matcher is added to.
+     * @param string $attribute Attribute whose submitted value drives the matcher selection.
+     * @param bool $partial `true` to use substring (case-insensitive) matching for non-operator values.
      */
     public function addCondition(Filter $filter, string $attribute, bool $partial = false): void
     {
-        $value = (string)$this->$attribute;
+        $rawValue = $this->getAttributes([$attribute])[$attribute] ?? null;
 
-        if (str_contains($value, '>')) {
+        $value = is_scalar($rawValue) ? (string) $rawValue : '';
+
+        if (mb_strpos($value, '>') !== false) {
             $value = (int) str_replace('>', '', $value);
+
             $filter->addMatcher($attribute, new matchers\GreaterThan(['value' => $value]));
-        } elseif (str_contains($value, '<')) {
-            $value = (int)str_replace('<', '', $value);
+        } elseif (mb_strpos($value, '<') !== false) {
+            $value = (int) str_replace('<', '', $value);
+
             $filter->addMatcher($attribute, new matchers\LowerThan(['value' => $value]));
         } else {
             $filter->addMatcher($attribute, new matchers\SameAs(['value' => $value, 'partial' => $partial]));

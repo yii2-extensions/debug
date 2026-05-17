@@ -1,33 +1,28 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\helpers\Html;
-use yii\web\Response;
+use UIAwesome\Html\Helper\Encode;
 use yii\debug\panels\RequestPanel;
+use yii\web\Response;
 
-/**
- * @var RequestPanel $panel
- */
-$statusCode = $panel->data['statusCode'] ?? null;
+/** @var RequestPanel $panel */
 
-if ($statusCode === null) {
-    $statusCode = 200;
-}
+$rawStatus = is_array($panel->data) ? ($panel->data['statusCode'] ?? null) : null;
+$statusCode = is_int($rawStatus) ? $rawStatus : (is_numeric($rawStatus) ? (int) $rawStatus : 200);
 
 if ($statusCode >= 200 && $statusCode < 300) {
-    $class = 'yii-debug-toolbar__label_success';
+    $class = 'yii-debug-toolbar-label-success';
 } elseif ($statusCode >= 300 && $statusCode < 400) {
-    $class = 'yii-debug-toolbar__label_info';
+    $class = 'yii-debug-toolbar-label-info';
 } else {
-    $class = 'yii-debug-toolbar__label_important';
+    $class = 'yii-debug-toolbar-label-important';
 }
 
-$statusText = Html::encode(Response::$httpStatuses[$statusCode] ?? '');
+$httpStatusText = Response::$httpStatuses[$statusCode] ?? '';
+$statusText = Encode::value(is_string($httpStatusText) ? $httpStatusText : '');
 ?>
-<div class="yii-debug-toolbar__block">
-    <a href="<?= $panel->getUrl() ?>" title="Status code: <?= $statusCode ?> <?= $statusText ?>">
-        Status
-        <span class="yii-debug-toolbar__label <?= $class ?>"><?= $statusCode ?></span>
-    </a>
+<div class="yii-debug-toolbar-block">
+    <a href="<?= $panel->getUrl() ?>" title="Status code: <?= $statusCode ?> <?= $statusText ?>">Status <span
+            class="yii-debug-toolbar-label <?= $class ?>"><?= $statusCode ?></span></a>
 </div>

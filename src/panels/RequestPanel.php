@@ -2,72 +2,118 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\panels;
 
-use Exception;
 use Yii;
 use yii\base\InlineAction;
-use yii\base\InvalidConfigException;
+use yii\debug\controllers\DefaultController;
 use yii\debug\Panel;
+use yii\debug\panels\request\RequestDataNormalizer;
 use yii\helpers\ArrayHelper;
-use yii\web\Session;
+use yii\web\{Response, Session};
+
+use function array_key_exists;
+use function count;
+use function in_array;
+use function is_array;
+use function is_int;
+use function is_string;
 
 /**
- * Debugger panel that collects and displays request data.
+ * Captures the HTTP request and response state and renders them in the Request panel.
  *
- * @author Qiang Xue <qiang.xue@gmail.com>
+ * Snapshots the routing target, request/response headers, status code, body, flash messages, and the configured PHP
+ * superglobals, with optional value censoring for sensitive keys.
  *
- * @since 2.0
+ * @extends Panel<array<string, mixed>>
  */
 class RequestPanel extends Panel
 {
     /**
-     * @var array list of the PHP predefined variables that are allowed to be displayed in the request panel.
-     *
-     * Note that a variable must be accessible via `$GLOBALS`. Otherwise, it won't be displayed.
-     */
-    public array $displayVars = ['_SERVER', '_GET', '_POST', '_COOKIE', '_FILES', '_SESSION'];
-    /**
-     * @var array list of variable names which values should be censored in the output.
+     * @var array<int, string> Variable names whose values should be replaced with `$censorString` in the captured
+     * snapshot.
      */
     public array $censoredVariableNames = [];
     /**
-     * @var string value to display instead of the variable value if the name is on the censor list.
+     * Replacement value emitted for variables listed in {@see $censoredVariableNames}.
      */
     public string $censorString = '****';
+    /**
+     * @var array<int, string> PHP predefined variables that the panel may surface.
+     *
+     * Each variable must be accessible via `$GLOBALS`; otherwise it is silently skipped.
+     */
+    public array $displayVars = [
+        '_COOKIE',
+        '_FILES',
+        '_GET',
+        '_POST',
+        '_SERVER',
+        '_SESSION',
+    ];
 
+    /**
+     * Renders the detail view with the request hero header and the per-tab sections.
+     */
+    public function getDetail(): string
+    {
+        $controller = Yii::$app->controller;
+
+        $summary = $controller instanceof DefaultController ? $controller->summary : [];
+
+        $view = RequestDataNormalizer::fromPanelData($this->data, $summary);
+
+        return Yii::$app->view->render(
+            'panels/request/detail',
+            ['view' => $view],
+            $this,
+        );
+    }
+
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Request';
     }
 
+    /**
+     * Renders the toolbar summary chip.
+     */
     public function getSummary(): string
     {
-        return Yii::$app->view->render('panels/request/summary', ['panel' => $this]);
-    }
-
-    public function getDetail(): string
-    {
-        return Yii::$app->view->render('panels/request/detail', ['panel' => $this]);
+        return Yii::$app->view->render(
+            'panels/request/summary',
+            ['panel' => $this],
+            $this,
+        );
     }
 
     /**
-     * @throws InvalidConfigException
-     * @throws Exception
+     * Returns the toolbar icon name.
      */
-    public function save(): mixed
+    public function getToolbarIcon(): string
+    {
+        return 'request';
+    }
+
+    /**
+     * Snapshots the request/response state: action, route, headers, body, status code, flash messages, and the
+     * configured superglobals.
+     *
+     * Header names listed in {@see $censoredVariableNames} are emitted with {@see $censorString} instead of their real
+     * value; the same masking is applied to top-level keys in the captured payload via {@see censorArray()}.
+     *
+     * @return array<string, mixed> Captured request payload consumed by the detail view.
+     */
+    public function save(): array
     {
         $headers = Yii::$app->getRequest()->getHeaders();
 
         $requestHeaders = [];
-        $hasCensorList = count($this->censoredVariableNames);
+
+        $hasCensorList = $this->censoredVariableNames !== [];
 
         foreach ($headers as $name => $value) {
             if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
@@ -81,9 +127,156 @@ class RequestPanel extends Panel
             }
         }
 
-        $responseHeaders = [];
+        $responseHeaders = $this->normalizeResponseHeaders(headers_list());
 
-        foreach (headers_list() as $header) {
+        $requestedAction = Yii::$app->requestedAction;
+
+        if ($requestedAction === null) {
+            $action = null;
+        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
+            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
+        } else {
+            $action = $requestedAction::class . '::run()';
+        }
+
+        $data = [
+            'action' => $action,
+            'actionParams' => Yii::$app->requestedParams,
+            'flashes' => $this->getFlashes(),
+            'general' => [
+                'isAjax' => Yii::$app->getRequest()->getIsAjax(),
+                'isFlash' => Yii::$app->getRequest()->getIsFlash(),
+                'isPjax' => Yii::$app->getRequest()->getIsPjax(),
+                'isSecureConnection' => Yii::$app->getRequest()->getIsSecureConnection(),
+                'method' => Yii::$app->getRequest()->getMethod(),
+            ],
+            'requestBody' => Yii::$app->getRequest()->getRawBody() === '' ? [] : [
+                'Content Type' => Yii::$app->getRequest()->getContentType(),
+                'Decoded' => Yii::$app->getRequest()->getBodyParams(),
+                'Raw' => Yii::$app->getRequest()->getRawBody(),
+            ],
+            'requestHeaders' => $requestHeaders,
+            'responseHeaders' => $responseHeaders,
+            'route' => $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
+            'statusCode' => Yii::$app->getResponse()->getStatusCode(),
+        ];
+
+        foreach ($this->displayVars as $name) {
+            $data[trim($name, '_')] = self::normalizeGlobalValue($GLOBALS[$name] ?? null);
+        }
+
+        return $this->censorArray($data);
+    }
+
+    /**
+     * Replaces the values of any {@see $censoredVariableNames} entries with {@see $censorString}, returning the
+     * sanitized top-level data.
+     *
+     * Also masks `requestBody.Raw` whenever a `requestBody.*` key is censored, so the verbatim payload does not leak
+     * the censored field by accident.
+     *
+     * @param array<string, mixed> $data Captured request payload.
+     *
+     * @return array<string, mixed> Sanitized payload with masked values.
+     */
+    protected function censorArray(array $data): array
+    {
+        if ($this->censoredVariableNames === [] || $data === []) {
+            return $data;
+        }
+
+        foreach ($this->censoredVariableNames as $var) {
+            $key = ltrim($var, '_');
+
+            if (ArrayHelper::getValue($data, $key) !== null) {
+                ArrayHelper::setValue($data, $key, $this->censorString);
+
+                if (strpos($key, 'requestBody') === 0) {
+                    ArrayHelper::setValue($data, 'requestBody.Raw', $this->censorString);
+                }
+            }
+        }
+
+        return self::normalizeTopLevelData($data);
+    }
+
+    /**
+     * Returns the active flash messages without deleting them or touching the deletion counters.
+     *
+     * @return array<int|string, mixed> Flash messages keyed by their session flash name.
+     */
+    protected function getFlashes(): array
+    {
+        $session = Yii::$app->has('session', true) ? Yii::$app->get('session', false) : null;
+
+        if (!$session instanceof Session || !$session->getIsActive()) {
+            return [];
+        }
+
+        $counters = $session->get($session->flashParam, []);
+
+        if (!is_array($counters)) {
+            return [];
+        }
+
+        $sessionData = $_SESSION;
+        $flashes = [];
+
+        foreach (array_keys($counters) as $key) {
+            if (array_key_exists($key, $sessionData)) {
+                $flashes[$key] = $sessionData[$key];
+            }
+        }
+
+        return $flashes;
+    }
+
+    /**
+     * Builds the toolbar item with the response status code, colored by class (`success` for 2xx, `info` for 3xx,
+     * `danger` for everything else).
+     *
+     * @return array<int, array<string, mixed>> Single-element list with the status chip.
+     */
+    protected function getToolbarItems(): array
+    {
+        $statusCode = $this->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            $status = 'success';
+        } elseif ($statusCode >= 300 && $statusCode < 400) {
+            $status = 'info';
+        } else {
+            $status = 'danger';
+        }
+
+        $statusText = Response::$httpStatuses[$statusCode] ?? '';
+
+        $statusText = is_string($statusText) ? $statusText : '';
+
+        return [
+            [
+                'status' => $status,
+                'title' => "Status code: $statusCode $statusText",
+                'value' => $statusCode,
+            ],
+        ];
+    }
+
+    /**
+     * Aggregates a raw response-header list into a name → value map, merging duplicates into arrays and masking entries
+     * whose name appears in {@see $censoredVariableNames}.
+     *
+     * @param array<int, string> $rawHeaders Header lines in `Name: value` form, as returned by `headers_list()`; bare
+     * strings without a colon are kept verbatim at int-keyed slots.
+     *
+     * @return array<int|string, array<int, string>|string> Aggregated header map with masked values.
+     */
+    protected function normalizeResponseHeaders(array $rawHeaders): array
+    {
+        $responseHeaders = [];
+        $hasCensorList = $this->censoredVariableNames !== [];
+
+        foreach ($rawHeaders as $header) {
             if (($pos = strpos($header, ':')) !== false) {
                 $name = substr($header, 0, $pos);
 
@@ -107,91 +300,60 @@ class RequestPanel extends Panel
             }
         }
 
-        if (Yii::$app->requestedAction) {
-            if (Yii::$app->requestedAction instanceof InlineAction) {
-                $action = get_class(Yii::$app->requestedAction->controller) . '::' . Yii::$app->requestedAction->actionMethod . '()';
-            } else {
-                $action = get_class(Yii::$app->requestedAction) . '::run()';
-            }
-        } else {
-            $action = null;
-        }
-
-        $data = [
-            'flashes' => $this->getFlashes(),
-            'statusCode' => Yii::$app->getResponse()->getStatusCode(),
-            'requestHeaders' => $requestHeaders,
-            'responseHeaders' => $responseHeaders,
-            'route' => Yii::$app->requestedAction ? Yii::$app->requestedAction->getUniqueId() : Yii::$app->requestedRoute,
-            'action' => $action,
-            'actionParams' => Yii::$app->requestedParams,
-            'general' => [
-                'method' => Yii::$app->getRequest()->getMethod(),
-                'isAjax' => Yii::$app->getRequest()->getIsAjax(),
-                'isPjax' => Yii::$app->getRequest()->getIsPjax(),
-                'isFlash' => Yii::$app->getRequest()->getIsFlash(),
-                'isSecureConnection' => Yii::$app->getRequest()->getIsSecureConnection(),
-            ],
-            'requestBody' => Yii::$app->getRequest()->getRawBody() == '' ? [] : [
-                'Content Type' => Yii::$app->getRequest()->getContentType(),
-                'Raw' => Yii::$app->getRequest()->getRawBody(),
-                'Decoded' => Yii::$app->getRequest()->getBodyParams(),
-            ],
-        ];
-
-        foreach ($this->displayVars as $name) {
-            $data[trim($name, '_')] = empty($GLOBALS[$name]) ? [] : $GLOBALS[$name];
-        }
-
-        return $this->censorArray($data);
+        return $responseHeaders;
     }
 
     /**
-     * Getting flash messages without deleting them or touching deletion counters.
-     *
-     * @throws InvalidConfigException
-     *
-     * @return array flash messages (key => message).
+     * Returns the saved response status code, narrowed to an int, defaulting to `200` when missing or non-numeric.
      */
-    protected function getFlashes(): array
+    private function getStatusCode(): int
     {
-        /* @var Session $session */
-        $session = Yii::$app->has('session', true) ? Yii::$app->get('session') : null;
+        $data = is_array($this->data) ? $this->data : [];
 
-        if ($session === null || !$session->getIsActive()) {
+        $statusCode = $data['statusCode'] ?? 200;
+
+        if (is_int($statusCode)) {
+            return $statusCode;
+        }
+
+        if (is_numeric($statusCode)) {
+            return (int) $statusCode;
+        }
+
+        return 200;
+    }
+
+    /**
+     * Collapses every "empty" superglobal value (`null`, `false`, `''`, `[]`, `0`, `'0'`) to `[]`, so the renderer
+     * always sees an iterable shape.
+     */
+    private static function normalizeGlobalValue(mixed $value): mixed
+    {
+        if ($value === null || $value === false || $value === '' || $value === [] || $value === 0 || $value === '0') {
             return [];
         }
 
-        $counters = $session->get($session->flashParam, []);
-        $flashes = [];
-
-        foreach (array_keys($counters) as $key) {
-            if (array_key_exists($key, $_SESSION)) {
-                $flashes[$key] = $_SESSION[$key];
-            }
-        }
-        return $flashes;
+        return $value;
     }
 
     /**
-     * @throws Exception
+     * Narrows the captured payload to string-keyed entries only, dropping any int-keyed leftovers introduced by
+     * {@see ArrayHelper::setValue()} edge cases.
+     *
+     * @param array<int|string, mixed> $data Captured payload.
+     *
+     * @return array<string, mixed> Payload restricted to string keys.
      */
-    protected function censorArray(array $data): array
+    private static function normalizeTopLevelData(array $data): array
     {
-        if (empty($this->censoredVariableNames) || empty($data)) {
-            return $data;
-        }
+        $normalized = [];
 
-        foreach ($this->censoredVariableNames as $var) {
-            $key = ltrim($var, '_');
-            if (ArrayHelper::getValue($data, $key) !== null) {
-                ArrayHelper::setValue($data, $key, $this->censorString);
-                if (str_starts_with($key, 'requestBody')) {
-                    ArrayHelper::setValue($data, 'requestBody.Raw', $this->censorString);
-                }
+        foreach ($data as $key => $value) {
+            if (is_string($key)) {
+                $normalized[$key] = $value;
             }
         }
 
-        return $data;
+        return $normalized;
     }
 }

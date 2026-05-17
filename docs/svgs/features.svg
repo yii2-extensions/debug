@@ -1,0 +1,56 @@
+<svg viewBox="0 0 1200 380" width="100%" height="340" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .box-bg { fill: #e6f4ea; stroke: #a7cdb3; stroke-width: 1; }
+        .title { font-weight: 700; font-size: 16px; fill: #1a202c; }
+        .content { font-size: 13px; fill: #4a5568; }
+    </style>
+
+    <g>
+        <rect class="box-bg" x="20" y="20" width="570" height="100" rx="6"/>
+        <rect x="20" y="20" width="4" height="100" fill="#1f883d"/>
+        <text class="title" x="40" y="50">Asset Bundle Inspector</text>
+        <text class="content" x="40" y="78">Registered bundles &#8226; Source paths &#8226; Dependency graph</text>
+        <text class="content" x="40" y="98">Track every JS/CSS bundle published per request</text>
+    </g>
+
+    <g>
+        <rect class="box-bg" x="610" y="20" width="570" height="100" rx="6"/>
+        <rect x="610" y="20" width="4" height="100" fill="#1f883d"/>
+        <text class="title" x="630" y="50">Database Query Profiler</text>
+        <text class="content" x="630" y="78">Full query log &#8226; EXPLAIN support &#8226; Duplicate detection</text>
+        <text class="content" x="630" y="98">Caller backtraces with IDE deep links</text>
+    </g>
+
+    <g>
+        <rect class="box-bg" x="20" y="140" width="570" height="100" rx="6"/>
+        <rect x="20" y="140" width="4" height="100" fill="#1f883d"/>
+        <text class="title" x="40" y="170">Debug Toolbar UI</text>
+        <text class="content" x="40" y="198">Pico-inspired design &#8226; Light/dark mode &#8226; Scoped CSS</text>
+        <text class="content" x="40" y="218">Custom element &#8226; SVG icons &#8226; Never bleeds host styles</text>
+    </g>
+
+    <g>
+        <rect class="box-bg" x="610" y="140" width="570" height="100" rx="6"/>
+        <rect x="610" y="140" width="4" height="100" fill="#1f883d"/>
+        <text class="title" x="630" y="170">Mail &amp; Queue Inspector</text>
+        <text class="content" x="630" y="198">Symfony Mailer 4.0 &#8226; Captured EML files &#8226; Headers + body</text>
+        <text class="content" x="630" y="218">yii2-queue placeholder &#8226; Auto-replaces when installed</text>
+    </g>
+
+    <g>
+        <rect class="box-bg" x="20" y="260" width="570" height="100" rx="6"/>
+        <rect x="20" y="260" width="4" height="100" fill="#1f883d"/>
+        <text class="title" x="40" y="290">Profiling Timeline</text>
+        <text class="content" x="40" y="318">Visual request execution &#8226; Memory graph &#8226; Category nesting</text>
+        <text class="content" x="40" y="338">SVG renderer &#8226; Searchable tokens &#8226; Per-message timings</text>
+    </g>
+
+    <g>
+        <rect class="box-bg" x="610" y="260" width="570" height="100" rx="6"/>
+        <rect x="610" y="260" width="4" height="100" fill="#1f883d"/>
+        <text class="title" x="630" y="290">Request &amp; Router Insights</text>
+        <text class="content" x="630" y="318">Headers &#8226; Cookies &#8226; Session &#8226; URL rules &#8226; Matched action</text>
+        <text class="content" x="630" y="338">RBAC user switcher &#8226; Configurable filter model</text>
+    </g>
+</svg>

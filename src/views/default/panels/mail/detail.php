@@ -1,75 +1,110 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
+use UIAwesome\Html\Form\Button;
+use UIAwesome\Html\Form\Values\ButtonType;
 use yii\data\ArrayDataProvider;
-use yii\debug\models\search\Mail;
+use yii\debug\helpers\Icon;
+use yii\debug\models\search\MailSearch;
 use yii\debug\panels\MailPanel;
-use yii\helpers\Html;
-use yii\widgets\ActiveForm;
-use yii\widgets\ListView;
+use yii\widgets\{ActiveForm, ListView};
 
 /**
- * @var MailPanel $panel
- * @var Mail $searchModel
  * @var ArrayDataProvider $dataProvider
+ * @var MailSearch $searchModel
+ * @var MailPanel $panel
  */
-$listView = new ListView([
-    'dataProvider' => $dataProvider,
-    'itemView' => '_item',
-    'layout' => "{summary}\n{items}\n{pager}\n",
-]);
-$listView->sorter = ['options' => ['class' => 'mail-sorter']];
+
+$totalCount = $dataProvider->getTotalCount();
+$hasMessages = $totalCount > 0;
 ?>
 
-<h1>Email messages</h1>
+<h1 class="yii-debug-sr-only">Email messages</h1>
 
-<div class="row mb-2">
-    <div class="col-3 col-lg-2">
-        <?= Html::button('Form filtering', [
-            'class' => ['btn', 'btn-outline-secondary'],
-            'type' => 'button',
-            'data' => [
-                'toggle' => 'collapse',
-                'target' => '#email-form'
+<header class="yii-debug-mail-header">
+    <div class="yii-debug-mail-header-stat">
+        <span class="yii-debug-mail-header-icon" aria-hidden="true"><?= Icon::render('envelope') ?></span>
+        <strong><?= $totalCount ?></strong>
+        <span><?= $totalCount === 1 ? 'message' : 'messages' ?> captured</span>
+    </div>
+
+    <?php if ($hasMessages): ?>
+        <?= Button::tag()
+            ->type(ButtonType::BUTTON)
+            ->class('yii-debug-btn yii-debug-btn-ghost yii-debug-mail-filter-toggle')
+            ->addAttribute('data-yii-debug-toggle', 'collapse')
+            ->addAttribute('data-target', '#email-form')
+            ->addAriaAttribute('expanded', 'false')
+            ->addAriaAttribute('controls', 'email-form')
+            ->content('Filter')
+            ->render() ?>
+    <?php endif; ?>
+</header>
+
+<?php if ($hasMessages): ?>
+    <div id="email-form" class="yii-debug-collapsible">
+        <?php $form = ActiveForm::begin(
+            [
+                'method' => 'get',
+                'action' => ['default/view', 'tag' => Yii::$app->request->get('tag'), 'panel' => 'mail'],
+                'enableClientScript' => false,
+                'options' => ['class' => 'yii-debug-stack'],
             ],
-            'aria-expanded' => 'false',
-            'aria-controls' => 'email-form'
-        ]) ?>
-    </div>
-    <div class="col-9 col-lg-10">
-        <?= $listView->renderSorter() ?>
-    </div>
-</div>
+        ); ?>
 
-<div id="email-form" class="collapse">
-    <?php $form = ActiveForm::begin([
-        'method' => 'get',
-        'action' => ['default/view', 'tag' => Yii::$app->request->get('tag'), 'panel' => 'mail'],
-    ]); ?>
-    <div class="form-row">
-        <?= $form->field($searchModel, 'from', ['options' => ['class' => ['form-group', 'col-lg-6']]])->textInput() ?>
-
-        <?= $form->field($searchModel, 'to', ['options' => ['class' => ['form-group', 'col-lg-6']]])->textInput() ?>
-
-        <?= $form->field($searchModel, 'reply', ['options' => ['class' => ['form-group', 'col-lg-6']]])->textInput() ?>
-
-        <?= $form->field($searchModel, 'cc', ['options' => ['class' => ['form-group', 'col-lg-6']]])->textInput() ?>
-
-        <?= $form->field($searchModel, 'bcc', ['options' => ['class' => ['form-group', 'col-lg-6']]])->textInput() ?>
-
-        <?= $form->field($searchModel, 'charset', ['options' => ['class' => ['form-group', 'col-lg-6']]])->textInput() ?>
-
-        <?= $form->field($searchModel, 'subject', ['options' => ['class' => ['form-group', 'col-lg-6']]])->textInput() ?>
-
-        <?= $form->field($searchModel, 'body', ['options' => ['class' => ['form-group', 'col-lg-6']]])->textInput() ?>
-
-        <div class="form-group col-12">
-            <?= Html::submitButton('Filter', ['class' => 'btn btn-success']) ?>
+        <div class="yii-debug-field-grid">
+            <?= $form->field($searchModel, 'from', [
+                'options' => ['class' => 'yii-debug-field'],
+            ])->textInput(['class' => 'yii-debug-input']) ?>
+            <?= $form->field($searchModel, 'to', [
+                'options' => ['class' => 'yii-debug-field'],
+            ])->textInput(['class' => 'yii-debug-input']) ?>
+            <?= $form->field($searchModel, 'reply', [
+                'options' => ['class' => 'yii-debug-field'],
+            ])->textInput(['class' => 'yii-debug-input']) ?>
+            <?= $form->field($searchModel, 'cc', [
+                'options' => ['class' => 'yii-debug-field'],
+            ])->textInput(['class' => 'yii-debug-input']) ?>
+            <?= $form->field($searchModel, 'bcc', [
+                'options' => ['class' => 'yii-debug-field'],
+            ])->textInput(['class' => 'yii-debug-input']) ?>
+            <?= $form->field($searchModel, 'charset', [
+                'options' => ['class' => 'yii-debug-field'],
+            ])->textInput(['class' => 'yii-debug-input']) ?>
+            <?= $form->field($searchModel, 'subject', [
+                'options' => ['class' => 'yii-debug-field'],
+            ])->textInput(['class' => 'yii-debug-input']) ?>
+            <?= $form->field($searchModel, 'body', [
+                'options' => ['class' => 'yii-debug-field'],
+            ])->textInput(['class' => 'yii-debug-input']) ?>
         </div>
+
+        <div>
+            <?= Button::tag()
+                ->type(ButtonType::SUBMIT)
+                ->class('yii-debug-btn yii-debug-btn-primary')
+                ->content('Apply filters')
+                ->render() ?>
+        </div>
+        <?php ActiveForm::end(); ?>
     </div>
+<?php endif; ?>
 
-    <?php ActiveForm::end(); ?>
-</div>
-
-<?= $listView->run() ?>
+<?php if (!$hasMessages): ?>
+    <div class="yii-debug-empty-state">
+        <h2>No emails sent in this request</h2>
+        <p>This request did not dispatch any messages through the Yii mailer, so the inbox is empty.</p>
+        <p>The mail panel listens for <code>BaseMailer::EVENT_AFTER_SEND</code>; only requests that actually call <code>$mailer-&gt;send()</code> populate this view. After a Post-Redirect-Get flow, the mail typically lives in the previous (POST) request — open it from the history sidebar.</p>
+    </div>
+<?php else: ?>
+    <?= ListView::widget(
+        [
+            'dataProvider' => $dataProvider,
+            'itemView' => '_item',
+            'options' => ['tag' => 'ol', 'class' => 'yii-debug-mail-list'],
+            'itemOptions' => ['tag' => 'li', 'class' => 'yii-debug-mail-list-item'],
+            'layout' => "{items}\n<div class=\"yii-debug-mail-pager\">{pager}</div>",
+        ],
+    ) ?>
+<?php endif;

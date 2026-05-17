@@ -2,32 +2,22 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\search;
 
 use yii\data\DataProviderInterface;
-use yii\web\IdentityInterface;
 
 /**
- * UserSearchInterface is the interface that should be implemented by a class providing identity information and search
- * method.
+ * Contract for filter models backing the User Switch panel's search form.
  *
- * @author Semen Dubina <yii2debug@sam002.net>
- *
- * @since 2.0.10
+ * Implementations expose a single {@see search()} method that returns a {@see DataProviderInterface} over the
+ * candidate identities filtered by the submitted request parameters.
  */
-interface UserSearchInterface extends IdentityInterface
+interface UserSearchInterface
 {
     /**
-     * Creates data provider instance with a search query applied.
+     * Returns a data provider over the identity records, filtered by the submitted search parameters.
      *
-     * @param array $params the data array to load model.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by the implementing model.
      */
     public function search(array $params): DataProviderInterface;
 }

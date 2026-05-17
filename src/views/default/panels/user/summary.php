@@ -1,31 +1,38 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
+use UIAwesome\Html\Helper\Encode;
 use yii\debug\panels\UserPanel;
-use yii\helpers\Html;
 use yii\web\View;
 
 /**
  * @var UserPanel $panel
  * @var View $this
  */
+
+$data = is_array($panel->data) ? $panel->data : [];
+$id = $data['id'] ?? null;
+$idLabel = is_scalar($id) ? (string) $id : '';
+$user = $panel->getUser();
+$isGuest = $user === null || $user->isGuest;
+$isMainUser = $panel->userSwitch === null || $panel->userSwitch->isMainUser();
 ?>
-<div class="yii-debug-toolbar__block">
+<div class="yii-debug-toolbar-block">
     <a href="<?= $panel->getUrl() ?>">
-        <?php if (!isset($panel->data['id'])): ?>
-            <span class="yii-debug-toolbar__label">Guest</span>
+        <?php if ($id === null): ?>
+            <span class="yii-debug-toolbar-label">Guest</span>
         <?php else: ?>
-            <?php if ($panel->getUser()->isGuest || $panel->userSwitch->isMainUser()): ?>
-                <?= Html::encode($panel->getName()) ?> <span
-                    class="yii-debug-toolbar__label yii-debug-toolbar__label_info"><?= $panel->data['id'] ?></span>
+            <?php if ($isGuest || $isMainUser): ?>
+                <?= Encode::content($panel->getName()) ?> <span
+                    class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= Encode::content($idLabel) ?></span>
             <?php else: ?>
-                <?= Html::encode($panel->getName()) ?> switching <span
-                    class="yii-debug-toolbar__label yii-debug-toolbar__label_warning"><?= $panel->data['id'] ?></span>
+                <?= Encode::content($panel->getName()) ?> switching <span
+                    class="yii-debug-toolbar-label yii-debug-toolbar-label-warning"><?= Encode::content($idLabel) ?></span>
             <?php endif; ?>
             <?php if ($panel->canSwitchUser()): ?>
-                <span class="yii-debug-toolbar__switch-icon yii-debug-toolbar__userswitch"
-                      id="yii-debug-toolbar__switch-users">
+                <span class="yii-debug-toolbar-switch-icon yii-debug-toolbar-userswitch"
+                    id="yii-debug-toolbar-switch-users">
             </span>
             <?php endif; ?>
         <?php endif; ?>

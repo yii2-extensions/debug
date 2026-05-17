@@ -1,27 +1,82 @@
 # Testing
 
-## Checking dependencies
+This package provides a consistent set of [Composer](https://getcomposer.org/) scripts for local validation.
 
-This package uses [composer-require-checker](https://github.com/maglnet/ComposerRequireChecker) to check if all dependencies are correctly defined in `composer.json`.
+Tool references:
 
-To run the checker, execute the following command:
+- [Composer Require Checker](https://github.com/maglnet/ComposerRequireChecker) for dependency definition checks.
+- [Easy Coding Standard (ECS)](https://github.com/easy-coding-standard/easy-coding-standard) for coding standards.
+- [Infection](https://infection.github.io/) for mutation testing.
+- [PHPStan](https://phpstan.org/) for static analysis.
+- [PHPUnit](https://phpunit.de/) for unit tests.
+- [Rector](https://github.com/rectorphp/rector) for automated refactoring.
 
-```shell
-composer run check-dependencies
+## Automated refactoring (Rector)
+
+Run Rector to apply automated code refactoring.
+
+```bash
+composer rector
 ```
 
-## Static analysis
+## Coding standards (ECS)
 
-The code is statically analyzed with [Phpstan](https://phpstan.org/). To run static analysis:
+Run Easy Coding Standard (ECS) and apply fixes.
 
-```shell
-composer run phpstan
+```bash
+composer ecs
 ```
 
-## Unit tests
+## Dependency definition check
 
-The code is tested with [PHPUnit](https://phpunit.de/). To run tests:
+Verify that runtime dependencies are correctly declared in `composer.json`.
 
+```bash
+composer check-dependencies
 ```
-composer run test
+
+## Mutation testing (Infection)
+
+Run mutation testing.
+
+```bash
+composer mutation
+```
+
+Run mutation testing with static analysis enabled.
+
+```bash
+composer mutation-static
+```
+
+## Static analysis (PHPStan)
+
+Run static analysis.
+
+```bash
+composer static
+```
+
+## Unit tests (PHPUnit)
+
+Run the full test suite.
+
+```bash
+composer tests
+```
+
+## Passing extra arguments
+
+Composer scripts support forwarding additional arguments using `--`.
+
+Run PHPUnit with code coverage report generation.
+
+```bash
+composer tests -- --coverage-html code_coverage
+```
+
+Run PHPStan with a different memory limit.
+
+```bash
+composer static -- --memory-limit=512M
 ```

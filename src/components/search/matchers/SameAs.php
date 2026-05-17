@@ -2,50 +2,53 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\components\search\matchers;
 
 use Yii;
 use yii\helpers\VarDumper;
 
 use function is_scalar;
-use function mb_stripos;
-use function mb_strtoupper;
-use function strcmp;
 
 /**
- * Checks if the given value is exactly or partially same as the base one.
+ * Matches candidate values exactly or partially against the configured base value.
  *
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
+ * Comparison is multibyte-aware: partial mode uses case-insensitive substring search via {@see mb_stripos()}; exact
+ * mode compares uppercased forms. Non-scalar values are normalized with {@see VarDumper::export()} before comparison.
  */
 class SameAs extends Base
 {
     /**
-     * @var bool if partial match should be used.
+     * Whether partial (substring) matching is used instead of exact matching.
      */
     public bool $partial = false;
 
+    /**
+     * Cached uppercase form of the base value, computed lazily for case-insensitive exact comparison.
+     */
+    private string|null $baseValueUpper = null;
+
+    /**
+     * Returns whether the candidate value matches the base value under the active comparison mode.
+     *
+     * @param mixed $value Candidate value to test.
+     *
+     * @return bool `true` when the candidate satisfies the rule, `false` otherwise.
+     */
     public function match(mixed $value): bool
     {
-        if (!is_scalar($value)) {
-            $value = VarDumper::export($value);
-        }
+        $valueStr = is_scalar($value) ? (string) $value : VarDumper::export($value);
+        $base = is_scalar($this->baseValue) ? (string) $this->baseValue : VarDumper::export($this->baseValue);
+
+        $charset = Yii::$app->charset;
 
         if ($this->partial) {
-            return mb_stripos($value, $this->baseValue, 0, Yii::$app->charset) !== false;
+            return mb_stripos($valueStr, $base, 0, $charset) !== false;
         }
 
-        return strcmp(
-            mb_strtoupper((string) $this->baseValue, Yii::$app->charset),
-            mb_strtoupper((string) $value, Yii::$app->charset)
-        ) === 0;
+        if ($this->baseValueUpper === null) {
+            $this->baseValueUpper = mb_strtoupper($base, $charset);
+        }
+
+        return strcmp($this->baseValueUpper, mb_strtoupper($valueStr, $charset)) === 0;
     }
 }

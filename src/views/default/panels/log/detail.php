@@ -1,158 +1,103 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 use yii\data\ArrayDataProvider;
-use yii\debug\models\search\Log;
+use yii\debug\GridViewConfig;
+use yii\debug\models\search\LogSearch;
+use yii\debug\panels\log\{LogCellRenderer, LogCountsNormalizer, LogRowNormalizer};
 use yii\debug\panels\LogPanel;
+use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
-use yii\helpers\Html;
-use yii\helpers\VarDumper;
 use yii\log\Logger;
 
 /**
  * @var ArrayDataProvider $dataProvider
- * @var Log $searchModel
+ * @var LogSearch $searchModel
  * @var LogPanel $panel
  */
+
+$counts = LogCountsNormalizer::fromPanelData($panel->data);
 ?>
-    <h1>Log Messages</h1>
+<h1 class="yii-debug-sr-only">Log Messages</h1>
+<header class="yii-debug-grid-summary">
+    <span><strong><?= $counts->total ?></strong> messages</span>
+
+    <?php if ($counts->hasErrors()): ?>
+        <span class="yii-debug-grid-summary-sep">·</span>
+        <span class="yii-debug-grid-summary-stat-danger"><strong><?= $counts->errors ?></strong> errors</span>
+    <?php endif; ?>
+
+    <?php if ($counts->hasWarnings()): ?>
+        <span class="yii-debug-grid-summary-sep">·</span>
+        <span class="yii-debug-grid-summary-stat-warn"><strong><?= $counts->warnings ?></strong> warnings</span>
+    <?php endif; ?>
+
+    <?php if ($counts->hasInfo()): ?>
+        <span class="yii-debug-grid-summary-sep">·</span>
+        <span><strong><?= $counts->info ?></strong> info</span>
+    <?php endif; ?>
+
+    <?= GridViewConfig::pageSizeSelectorHtml() ?>
+</header>
+
+<?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?php
-echo GridView::widget([
-    'dataProvider' => $dataProvider,
-    'id' => 'log-panel-detailed-grid',
-    'options' => ['class' => ['detail-grid-view', 'table-responsive', 'logs-messages-table']],
-    'filterModel' => $searchModel,
-    'filterUrl' => $panel->getUrl(),
-    'rowOptions' => static function ($model) {
-        $options = [
-            'id' => 'log-' . $model['id']
-        ];
-        switch ($model['level']) {
-            case Logger::LEVEL_ERROR : Html::addCssClass($options, 'table-danger'); break;
-            case Logger::LEVEL_WARNING : Html::addCssClass($options, 'table-warning'); break;
-            case Logger::LEVEL_INFO : Html::addCssClass($options, 'table-success'); break;
-        }
-        return $options;
-    },
-    'pager' => [
-        'linkContainerOptions' => [
-            'class' => 'page-item'
-        ],
-        'linkOptions' => [
-            'class' => 'page-link'
-        ],
-        'disabledListItemSubTagOptions' => [
-            'tag' => 'a',
-            'href' => 'javascript:;',
-            'tabindex' => '-1',
-            'class' => 'page-link'
-        ]
-    ],
-    'columns' => [
-        [
-            'attribute' => 'id',
-            'label' => '#',
-            'contentOptions' => [
-                'class' => 'word-break-keep'
-            ]
-        ],
-        [
-            'attribute' => 'time',
-            'value' => static function ($data) {
-                $timeInSeconds = $data['time'] / 1000;
-                $millisecondsDiff = (int)(($timeInSeconds - (int)$timeInSeconds) * 1000);
-
-                return date('H:i:s.', (int) $timeInSeconds) . sprintf('%03d', $millisecondsDiff);
-            },
-            'headerOptions' => [
-                'class' => 'sort-numerical'
+echo GridView::widget(
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $dataProvider,
+        'id' => 'log-panel-detailed-grid',
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-log'],
+        'filterModel' => $searchModel,
+        'filterUrl' => $panel->getUrl(),
+        'rowOptions' => static fn(mixed $model): array => LogCellRenderer::buildRowOptions(
+            LogRowNormalizer::from($model),
+        ),
+        'columns' => [
+            [
+                'attribute' => 'id',
+                'label' => '#',
+                'contentOptions' => ['class' => 'yii-debug-nowrap'],
             ],
-            'contentOptions' => [
-                'class' => 'word-break-keep'
-            ]
-        ],
-        [
-            'attribute' => 'time_since_previous',
-            'value' => static function ($data) {
-                $diffInMs = $data['time'] - $data['time_of_previous'];
-                $diffInSeconds = $diffInMs / 1000;
-                $diffInMinutes = $diffInSeconds / 60;
-                $diffInHours = $diffInMinutes / 60;
-
-                $diffMs = (int)$diffInMs % 1000;
-                $diffSeconds = (int)$diffInSeconds % 60;
-                $diffMinutes = (int)$diffInMinutes % 60;
-                $diffHours = (int)$diffInHours;
-
-                $formattedDiff = [];
-                if ($diffHours > 0) {
-                    $formattedDiff[] = $diffHours . 'h';
-                }
-                if ($diffMinutes > 0) {
-                    $formattedDiff[] = $diffMinutes . 'm';
-                }
-                if ($diffSeconds > 0) {
-                    $formattedDiff[] = $diffSeconds . 's';
-                }
-                $formattedDiff[] = $diffMs . 'ms';
-                $formattedDiff = implode('&nbsp;', $formattedDiff);
-
-                if ($data['id_of_previous'] === null) {
-                    $previous = Html::tag('span', '< ', ['class' => 'button']);
-                } else {
-                    $previous = Html::a('< ', '#log-' . $data['id_of_previous'], ['class' => 'button']);
-                }
-
-                if ($data['id_of_next'] === null) {
-                    $next = Html::tag('span', ' >', ['class' => 'button']);
-                } else {
-                    $next = Html::a(' >', '#log-' . $data['id_of_next'], ['class' => 'button']);
-                }
-
-                return
-                    '<div class="since-previous">' .
-                    $previous .
-                    $formattedDiff .
-                    $next .
-                    '</div>';
-            },
-            'format' => 'raw',
-            'headerOptions' => [
-                'class' => 'sort-numerical'
-            ]
-        ],
-        [
-            'attribute' => 'level',
-            'value' => static function ($data) {
-                return Logger::getLevelName($data['level']);
-            },
-            'filter' => [
-                Logger::LEVEL_TRACE => ' Trace ',
-                Logger::LEVEL_INFO => ' Info ',
-                Logger::LEVEL_WARNING => ' Warning ',
-                Logger::LEVEL_ERROR => ' Error ',
+            [
+                'attribute' => 'time',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeCell(
+                    LogRowNormalizer::from($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-nowrap'],
             ],
-        ],
-        'category',
-        [
-            'attribute' => 'message',
-            'value' => static function ($data) use ($panel) {
-                $message = Html::encode(is_string($data['message']) ? $data['message'] : VarDumper::export($data['message']));
-                if (!empty($data['trace'])) {
-                    $message .= Html::ul($data['trace'], [
-                        'class' => 'trace',
-                        'item' => static function ($trace) use ($panel) {
-                            return '<li>' . $panel->getTraceLine($trace) . '</li>';
-                        }
-                    ]);
-                }
-                return $message;
-            },
-            'format' => 'raw',
-            'options' => [
-                'width' => '50%',
+            [
+                'attribute' => 'time_since_previous',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeSincePreviousCell(
+                    LogRowNormalizer::from($data),
+                ),
+                'format' => 'raw',
+                'headerOptions' => ['class' => 'sort-numerical'],
+            ],
+            [
+                'attribute' => 'level',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderLevelCell(
+                    LogRowNormalizer::from($data),
+                ),
+                'filter' => [
+                    Logger::LEVEL_TRACE => ' Trace ',
+                    Logger::LEVEL_INFO => ' Info ',
+                    Logger::LEVEL_WARNING => ' Warning ',
+                    Logger::LEVEL_ERROR => ' Error ',
+                ],
+            ],
+            'category',
+            [
+                'attribute' => 'message',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderMessageCell(
+                    LogRowNormalizer::from($data),
+                    $panel
+                ),
+                'format' => 'raw',
+                'options' => ['width' => '50%'],
             ],
         ],
     ],
-]);
+);

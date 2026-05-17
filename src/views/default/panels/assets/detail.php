@@ -2,97 +2,48 @@
 
 declare(strict_types=1);
 
-use yii\debug\panels\AssetPanel;
-use yii\helpers\Html;
-use yii\helpers\Inflector;
+use yii\debug\helpers\Icon;
+use yii\debug\panels\asset\{AssetCardRenderer, AssetSummary};
 
 /**
- * @var AssetPanel $panel
+ * @var AssetSummary $summary
  */
 ?>
-<h1>Asset Bundles</h1>
+<h1 class="yii-debug-sr-only">Asset Bundles</h1>
 
-<?php if (empty($panel->data)) {
-    echo '<p>No asset bundle was used.</p>';
-    return;
-} ?>
-<div class="table-responsive">
-    <table class="table table-striped table-bordered">
-        <caption>
-            <p>Total <b><?= count($panel->data) ?></b> asset bundles were loaded.</p>
-        </caption>
-        <?php
-        foreach ($panel->data as $name => $bundle) {
-            ?>
-            <thead>
-            <tr>
-                <td colspan="2"><h3 id="<?= Inflector::camel2id($name) ?>"><?= $name ?></h3></td>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <th>sourcePath</th>
-                <td><?= Html::encode($bundle['sourcePath'] ?? $bundle['basePath']) ?></td>
-            </tr>
-            <?php if ($bundle['basePath'] !== null): ?>
-                <tr>
-                    <th>basePath</th>
-                    <td><?= Html::encode($bundle['basePath']) ?></td>
-                </tr>
-            <?php endif; ?>
-            <?php if ($bundle['baseUrl'] !== null): ?>
-                <tr>
-                    <th>baseUrl</th>
-                    <td><?= Html::encode($bundle['baseUrl']) ?></td>
-                </tr>
-            <?php endif; ?>
-            <?php if (!empty($bundle['css'])): ?>
-                <tr>
-                    <th>css</th>
-                    <td class="ws-normal">
-                        <?= Html::ul($bundle['css'], [
-                            'class' => 'assets',
-                            'item' => static function ($item) {
-                                if (is_array($item)) {
-                                    $item = reset($item);
-                                }
-                                return Html::tag('li', Html::encode($item));
-                            }
-                        ]) ?>
-                    </td>
-                </tr>
-            <?php endif; ?>
-            <?php if (!empty($bundle['js'])): ?>
-                <tr>
-                    <th>js</th>
-                    <td class="ws-normal">
-                        <?= Html::ul($bundle['js'], [
-                            'class' => 'assets',
-                            'item' => static function ($item) {
-                                if (is_array($item)) {
-                                    $item = reset($item);
-                                }
-                                return Html::tag('li', Html::encode($item));
-                            }
-                        ]) ?>
-                    </td>
-                </tr>
-            <?php endif; ?>
-            <?php if (!empty($bundle['depends'])): ?>
-                <tr>
-                    <th>depends</th>
-                    <td class="ws-normal">
-                        <ul class="assets">
-                            <?php foreach ($bundle['depends'] as $depend): ?>
-                                <li><?= Html::a($depend, '#' . Inflector::camel2id($depend)) ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </td>
-                </tr>
-            <?php endif; ?>
-            </tbody>
-            <?php
-        }
-        ?>
-    </table>
-</div>
+<?php if ($summary->isEmpty()): ?>
+    <div class="yii-debug-empty-state">
+        <h2>No asset bundles loaded</h2>
+        <p>This request did not register any <code>yii\web\AssetBundle</code> via <code>register()</code>, so the inventory is empty.</p>
+        <p>Bundles appear here when something in the request actively pulls them in — typically a layout or view that calls a bundle's <code>register()</code>, or any bundle reached transitively through the <code>depends</code> chain.</p>
+    </div>
+<?php else: ?>
+    <header class="yii-debug-asset-stats">
+        <div class="yii-debug-asset-stat" data-kind="bundles">
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= Icon::render('asset') ?></span>
+            <strong class="yii-debug-asset-stat-value"><?= $summary->totalBundles ?></strong>
+            <span class="yii-debug-asset-stat-label">bundle<?= $summary->totalBundles === 1 ? '' : 's' ?></span>
+        </div>
+        <div class="yii-debug-asset-stat" data-kind="css">
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= Icon::render('brand-css3') ?></span>
+            <strong class="yii-debug-asset-stat-value"><?= $summary->totalCss ?></strong>
+            <span class="yii-debug-asset-stat-label">css</span>
+        </div>
+        <div class="yii-debug-asset-stat" data-kind="js">
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= Icon::render('brand-javascript') ?></span>
+            <strong class="yii-debug-asset-stat-value"><?= $summary->totalJs ?></strong>
+            <span class="yii-debug-asset-stat-label">js</span>
+        </div>
+        <div class="yii-debug-asset-stat" data-kind="deps">
+            <span class="yii-debug-asset-stat-icon" aria-hidden="true"><?= Icon::render('link') ?></span>
+            <strong class="yii-debug-asset-stat-value"><?= $summary->totalDeps ?></strong>
+            <span class="yii-debug-asset-stat-label">link<?= $summary->totalDeps === 1 ? '' : 's' ?></span>
+        </div>
+    </header>
+
+    <ol class="yii-debug-asset-list">
+        <?php foreach ($summary->bundles as $bundle): ?>
+            <li class="yii-debug-asset-list-item"><?= AssetCardRenderer::renderCard($bundle, $summary) ?></li>
+        <?php endforeach; ?>
+    </ol>
+<?php endif;

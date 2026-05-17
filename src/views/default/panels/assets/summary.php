@@ -1,16 +1,12 @@
 <?php
 
 declare(strict_types=1);
-
-use yii\debug\panels\AssetPanel;
-
-/**
- * @var AssetPanel $panel
- */
-if (!empty($panel->data)):
+/** @var yii\debug\panels\AssetPanel $panel */
+$bundles = is_array($panel->data) ? $panel->data : [];
+if ($bundles !== []):
     ?>
-    <div class="yii-debug-toolbar__block">
+    <div class="yii-debug-toolbar-block">
         <a href="<?= $panel->getUrl() ?>" title="Number of asset bundles loaded">Asset Bundles <span
-                class="yii-debug-toolbar__label yii-debug-toolbar__label_info"><?= count($panel->data) ?></span></a>
+                class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= count($bundles) ?></span></a>
     </div>
 <?php endif; ?>

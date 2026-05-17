@@ -2,91 +2,128 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\panels;
 
+use Closure;
+use UIAwesome\Html\Helper\Encode;
 use Yii;
-use yii\debug\models\search\Log;
+use yii\debug\helpers\Coerce;
+use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
-use yii\helpers\Html;
 use yii\helpers\VarDumper;
 use yii\log\Logger;
 
-use function call_user_func;
-use function is_callable;
+use function array_key_exists;
+use function count;
+use function is_array;
+use function is_string;
 
 /**
- * Dump panel that collects and displays debug messages (Logger::LEVEL_TRACE).
+ * Captures trace-level log messages emitted by `Yii::debug()` and renders them as dump cards.
  *
- * @author Pistej <pistej2@gmail.com>
- * @author Simon Karlen <simi.albi@outlook.com>
+ * Filters the trace log by {@see $categories} (and skips categories owned by the Router panel) and stringifies each
+ * captured value through {@see varDump()}, so the detail view can render the result without re-serializing.
  *
- * @since 2.1.0
+ * @extends Panel<array<int, array<int|string, mixed>>>
  */
 class DumpPanel extends Panel
 {
     /**
-     * @var array the message categories to filter by. If empty array, it means all categories are allowed.
+     * @var array<int, string> Message categories to capture; an empty list captures every category.
      */
     public array $categories = ['application'];
     /**
-     * @var bool whether the result should be syntax-highlighted.
-     */
-    public bool $highlight = true;
-    /**
-     * @var int maximum depth that the dumper should go into the variable.
+     * Maximum recursion depth applied by the dumper.
      */
     public int $depth = 10;
     /**
-     * @var callable callback that replaces the built-in var dumper. The signature of this function should be:
-     * `function (mixed $data, DumpPanel $panel)`
+     * Whether the rendered dump should be syntax-highlighted.
      */
-    public $varDumpCallback;
+    public bool $highlight = true;
+    /**
+     * @var Closure(mixed, self): string|null Callback that replaces the built-in {@see VarDumper} rendering when set.
+     */
+    public Closure|null $varDumpCallback = null;
 
     /**
-     * @var array log messages extracted to array as models, to use with data provider.
+     * @var array<int, array{
+     *   message: string,
+     *   level: int,
+     *   category: string,
+     *   time: float,
+     *   trace: array<int, array<string, mixed>>
+     * }>|null Cached typed rows consumed by the dumps grid.
      */
-    private array $_models = [];
+    private array|null $models = null;
 
+    /**
+     * Renders the detail view with the dump grid powered by the Log search model.
+     */
+    public function getDetail(): string
+    {
+        $searchModel = new LogSearch();
+
+        $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
+
+        return Yii::$app->view->render(
+            'panels/dump/detail',
+            [
+                'dataProvider' => $dataProvider,
+                'panel' => $this,
+                'searchModel' => $searchModel,
+            ],
+            $this,
+        );
+    }
+
+    /**
+     * Returns the panel display name.
+     */
     public function getName(): string
     {
         return 'Dump';
     }
 
+    /**
+     * Renders the toolbar summary chip.
+     */
     public function getSummary(): string
     {
-        return Yii::$app->view->render('panels/dump/summary', ['panel' => $this]);
+        return Yii::$app->view->render(
+            'panels/dump/summary',
+            ['panel' => $this],
+            $this,
+        );
     }
 
-    public function getDetail(): string
+    /**
+     * Returns the toolbar icon name.
+     */
+    public function getToolbarIcon(): string
     {
-        $searchModel = new Log();
-        $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
-
-        return Yii::$app->view->render('panels/dump/detail', [
-            'dataProvider' => $dataProvider,
-            'panel' => $this,
-            'searchModel' => $searchModel,
-        ]);
+        return 'dump';
     }
 
-    public function save(): mixed
+    /**
+     * Captures the trace-level messages allowed by {@see $categories}, excluding the categories owned by the Router
+     * panel, and pre-renders each captured value through {@see varDump()}.
+     *
+     * @return array<int, array<int|string, mixed>> Raw log tuples with the first element pre-rendered as a string.
+     */
+    public function save(): array
     {
         $except = [];
-        if (isset($this->module->panels['router'])) {
-            $except = $this->module->panels['router']->getCategories();
+
+        $routerPanel = $this->module?->panels['router'] ?? null;
+
+        if ($routerPanel instanceof RouterPanel) {
+            $except = self::normalizeStringList($routerPanel->getCategories());
         }
 
         $messages = $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories, $except);
 
         foreach ($messages as &$message) {
-            if (!isset($message[0])) {
+            if (array_key_exists(0, $message) === false) {
                 continue;
             }
 
@@ -97,46 +134,131 @@ class DumpPanel extends Panel
     }
 
     /**
-     * Called by `save()` to format the dumped variable.
+     * Renders a captured value as a display string.
+     *
+     * The highlighter emits safe markup, so highlighted output is passed through unchanged; plain output is
+     * HTML-escaped explicitly.
      */
-    public function varDump($var)
+    public function varDump(mixed $var): string
     {
-        if (is_callable($this->varDumpCallback)) {
-            return call_user_func($this->varDumpCallback, $var, $this);
+        if ($this->varDumpCallback !== null) {
+            return ($this->varDumpCallback)($var, $this);
         }
 
         $message = VarDumper::dumpAsString($var, $this->depth, $this->highlight);
 
-        //don't encode highlighted variables
         if (!$this->highlight) {
-            $message = Html::encode($message);
+            $message = Encode::content($message);
         }
 
         return $message;
     }
 
     /**
-     * Returns an array of models that represents logs of the current request.
-     * Can be used with data providers, such as \yii\data\ArrayDataProvider.
+     * Builds and caches the typed dump rows consumed by the dumps grid.
      *
-     * @param bool $refresh if you need to build models from log messages and refresh them.
+     * Suitable for {@see \yii\data\ArrayDataProvider}.
+     *
+     * @param bool $refresh `true` to rebuild the cache from the saved messages.
+     *
+     * @return array<int, array{
+     *   message: string,
+     *   level: int,
+     *   category: string,
+     *   time: float,
+     *   trace: array<int, array<string, mixed>>
+     * }> Dump rows in capture order, with `time` in milliseconds.
      */
     protected function getModels(bool $refresh = false): array
     {
-        if ($refresh) {
-            $this->_models = [];
+        if ($this->models === null || $refresh) {
+            $this->models = [];
 
-            foreach ($this->data as $message) {
-                $this->_models[] = [
-                    'message' => $message[0],
-                    'level' => $message[1],
-                    'category' => $message[2],
-                    'time' => $message[3] * 1000, // time in milliseconds
-                    'trace' => $message[4],
-                ];
+            $messages = is_array($this->data) ? $this->data : [];
+
+            foreach ($messages as $message) {
+                $model = self::normalizeMessage($message);
+
+                if ($model !== null) {
+                    $this->models[] = $model;
+                }
             }
         }
 
-        return $this->_models;
+        return $this->models;
+    }
+
+    /**
+     * Returns the toolbar item showing the number of dumped variables, or `null` when none were captured.
+     *
+     * @return array<int, array<string, mixed>>|null Single-element list with the `info` chip, or `null`.
+     */
+    protected function getToolbarItems(): array|null
+    {
+        $messages = is_array($this->data) ? $this->data : [];
+
+        if ($messages === []) {
+            return null;
+        }
+
+        return [
+            [
+                'status' => 'info',
+                'title' => 'Number of dumped variables',
+                'value' => count($messages),
+            ],
+        ];
+    }
+
+    /**
+     * Narrows one raw saved log tuple into the typed dump-row shape, or returns `null` when the entry is not an array.
+     *
+     * @param mixed $message Raw log message from saved panel data.
+     *
+     * @return array{
+     *   message: string,
+     *   level: int,
+     *   category: string,
+     *   time: float,
+     *   trace: array<int, array<string, mixed>>
+     * }|null Typed dump row with `time` in milliseconds, or `null` when the entry was malformed.
+     */
+    private static function normalizeMessage(mixed $message): array|null
+    {
+        if (!is_array($message)) {
+            return null;
+        }
+
+        return [
+            'message' => Coerce::stringOrNull($message[0] ?? null) ?? '',
+            'level' => Coerce::intOrNull($message[1] ?? null) ?? 0,
+            'category' => Coerce::stringOrNull($message[2] ?? null) ?? '',
+            'time' => (Coerce::floatOrNull($message[3] ?? null) ?? 0.0) * 1000,
+            'trace' => Coerce::traceFrames($message[4] ?? []),
+        ];
+    }
+
+    /**
+     * Narrows a mixed payload into a list of strings, dropping non-string entries.
+     *
+     * @param mixed $values Raw category list.
+     *
+     * @return array<int, string> String entries in original order, possibly empty.
+     */
+    private static function normalizeStringList(mixed $values): array
+    {
+        if (!is_array($values)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($values as $value) {
+            if (is_string($value)) {
+                $normalized[] = $value;
+            }
+        }
+
+        return $normalized;
     }
 }

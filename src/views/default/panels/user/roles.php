@@ -2,68 +2,43 @@
 
 declare(strict_types=1);
 
-use yii\debug\panels\UserPanel;
+use yii\debug\GridViewConfig;
 use yii\grid\GridView;
 
-/**
- * @var UserPanel $panel
- */
-if ($panel->data['rolesProvider']) {
-    echo '<h2>Roles</h2>';
+/** @var yii\debug\panels\UserPanel $panel */
 
-    echo GridView::widget([
-        'dataProvider' => $panel->data['rolesProvider'],
-        'pager' => [
-            'linkContainerOptions' => [
-                'class' => 'page-item',
-            ],
-            'linkOptions' => [
-                'class' => 'page-link',
-            ],
-            'disabledListItemSubTagOptions' => [
-                'tag' => 'a',
-                'href' => 'javascript:;',
-                'tabindex' => '-1',
-                'class' => 'page-link',
-            ],
+$columns = [
+    'name',
+    'description',
+    'ruleName',
+    'data',
+    'createdAt:datetime',
+    'updatedAt:datetime',
+];
+
+$data = is_array($panel->data) ? $panel->data : [];
+
+$rolesProvider = $data['rolesProvider'] ?? null;
+$permissionsProvider = $data['permissionsProvider'] ?? null;
+
+if ($rolesProvider !== null) {
+    echo '<h3>Roles</h3>';
+    echo GridView::widget(
+        [
+            ...GridViewConfig::defaults(),
+            'dataProvider' => $rolesProvider,
+            'columns' => $columns,
         ],
-        'columns' => [
-            'name',
-            'description',
-            'ruleName',
-            'data',
-            'createdAt:datetime',
-            'updatedAt:datetime',
-        ],
-    ]);
+    );
 }
 
-if ($panel->data['permissionsProvider']) {
-    echo '<h2>Permissions</h2>';
-
-    echo GridView::widget([
-        'dataProvider' => $panel->data['permissionsProvider'],
-        'pager' => [
-            'linkContainerOptions' => [
-                'class' => 'page-item',
-            ],
-            'linkOptions' => [
-                'class' => 'page-link',
-            ],
-            'disabledListItemSubTagOptions' => [
-                'tag' => 'a',
-                'href' => 'javascript:;',
-                'tabindex' => '-1',
-                'class' => 'page-link',
-            ],
+if ($permissionsProvider !== null) {
+    echo '<h3>Permissions</h3>';
+    echo GridView::widget(
+        [
+            ...GridViewConfig::defaults(),
+            'dataProvider' => $permissionsProvider,
+            'columns' => $columns,
         ],
-        'columns' => [
-            'name',
-            'description',
-            'ruleName',
-            'data',
-            'createdAt:datetime',
-            'updatedAt:datetime',
-        ],
-    ]);
+    );
 }

@@ -2,42 +2,37 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\components\search\matchers;
 
 /**
- * MatcherInterface should be implemented by all matchers that are used in a filter.
+ * Contract for {@see \yii\debug\components\search\Filter} matcher rules.
  *
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
+ * Implementations hold a base value (set via {@see setValue()}) and decide through {@see match()} whether candidate
+ * values pass. {@see \yii\debug\components\search\Filter::addMatcher()} ignores rules whose {@see hasValue()} returns
+ * `false`.
  */
 interface MatcherInterface
 {
     /**
-     * Checks if the value passed matches base value.
+     * Returns whether the base value is set and not considered empty.
      *
-     * @param mixed $value value to be matched.
+     * @return bool `true` when the base value is meaningful, `false` otherwise.
+     */
+    public function hasValue(): bool;
+
+    /**
+     * Returns whether the candidate value matches the configured base value.
      *
-     * @return bool if there is a match.
+     * @param mixed $value Candidate value to test.
+     *
+     * @return bool `true` when the candidate satisfies the rule, `false` otherwise.
      */
     public function match(mixed $value): bool;
 
     /**
-     * Sets base value to match against.
-     */
-    public function setValue(mixed $value);
-
-    /**
-     * Checks if base value is set.
+     * Sets the base value to match against.
      *
-     * @return bool if base value is set.
+     * @param mixed $value Reference value for subsequent {@see match()} calls.
      */
-    public function hasValue(): bool;
+    public function setValue(mixed $value): void;
 }

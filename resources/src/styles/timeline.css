@@ -1,0 +1,318 @@
+/**
+ * Modern Timeline panel — flame-chart-meets-waterfall.
+ * Built for the dark-first design system; consumes only `--yii-debug-*` tokens
+ * so it tracks light/dark mode without per-rule overrides.
+ */
+
+.yii-debug-tl-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--yii-debug-space-3);
+  margin-bottom: var(--yii-debug-space-3);
+  padding: var(--yii-debug-space-3) var(--yii-debug-space-4);
+  border: var(--yii-debug-border);
+  border-radius: var(--yii-debug-radius-md);
+  background: var(--yii-debug-panel-surface-muted);
+}
+
+.yii-debug-tl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+
+  label {
+    color: var(--yii-debug-panel-muted);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  input {
+    padding: 6px var(--yii-debug-space-2);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-sm);
+    background: var(--yii-debug-panel-surface);
+    color: var(--yii-debug-panel-text);
+    font: inherit;
+    font-family: var(--yii-debug-font-mono);
+
+    &::placeholder {
+      color: var(--yii-debug-panel-muted);
+    }
+
+    &:focus {
+      border-color: var(--yii-debug-panel-primary);
+      outline: none;
+    }
+  }
+}
+
+.yii-debug-tl-field-grow {
+  flex: 1 1 240px;
+}
+
+/**
+ * Empty / not-useful hint shown above the chart when the request was too short
+ * to produce a meaningful waterfall.
+ */
+.yii-debug-tl-hint {
+  margin-bottom: var(--yii-debug-space-3);
+  padding: var(--yii-debug-space-3) var(--yii-debug-space-4);
+  border: 1px dashed
+    color-mix(in srgb, var(--yii-debug-panel-border) 70%, transparent);
+  border-radius: var(--yii-debug-radius-md);
+  background: color-mix(
+    in srgb,
+    var(--yii-debug-panel-surface-muted),
+    transparent 40%
+  );
+}
+
+.yii-debug-tl-hint-title {
+  margin: 0 0 6px;
+  color: var(--yii-debug-panel-text);
+  font-weight: 600;
+}
+
+.yii-debug-tl-hint-body {
+  margin: 0;
+  color: var(--yii-debug-panel-muted);
+  font-size: var(--yii-debug-fs-sm);
+  line-height: 1.55;
+
+  em {
+    color: var(--yii-debug-panel-text);
+    font-style: normal;
+    font-weight: 600;
+  }
+}
+
+/* Main chart container. */
+.yii-debug-tl {
+  display: grid;
+  grid-template-columns: minmax(180px, 22%) 1fr;
+  grid-template-rows: auto 1fr auto;
+  gap: 0;
+  border: var(--yii-debug-border);
+  border-radius: var(--yii-debug-radius-md);
+  background: var(--yii-debug-panel-surface);
+  overflow: hidden;
+}
+
+/**
+ * Time axis at the top of the right column. Tick spans are absolutely positioned
+ * inside it via `left: X%` from the rulers data.
+ */
+.yii-debug-tl-axis {
+  position: relative;
+  grid-column: 2 / 3;
+  height: 32px;
+  padding: 8px 0;
+  border-bottom: var(--yii-debug-border);
+  background: var(--yii-debug-panel-surface-muted);
+}
+
+.yii-debug-tl-tick {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  color: var(--yii-debug-panel-muted);
+  font-family: var(--yii-debug-font-mono);
+  font-size: var(--yii-debug-fs-xs);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+
+  /* Tick line that drops down behind the rows. */
+  &::after {
+    content: "";
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    width: 1px;
+    height: 8px;
+    background: var(--yii-debug-panel-border);
+  }
+}
+
+/* Row container — one row per profiled span. */
+.yii-debug-tl-rows {
+  grid-column: 1 / 3;
+  display: grid;
+  grid-template-columns: minmax(180px, 22%) 1fr;
+  background: linear-gradient(
+    to right,
+    transparent calc(22% - 1px),
+    var(--yii-debug-panel-border) calc(22% - 1px),
+    var(--yii-debug-panel-border) 22%,
+    transparent 22%
+  );
+}
+
+.yii-debug-tl-row {
+  display: contents;
+
+  /* Hover lifts the entire row (label + track) without shifting layout. */
+  &:hover .yii-debug-tl-label,
+  &:hover .yii-debug-tl-track {
+    background: var(--yii-debug-panel-surface-hover);
+  }
+
+  &:hover .yii-debug-tl-name {
+    color: var(--yii-debug-panel-text);
+  }
+}
+
+.yii-debug-tl-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px var(--yii-debug-space-3) 8px
+    calc(var(--yii-debug-space-3) + (var(--depth, 0) * 14px));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--yii-debug-panel-border) 50%, transparent);
+  transition: background-color 0.12s ease;
+}
+
+.yii-debug-tl-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+  opacity: 0.85;
+}
+
+.yii-debug-tl-name {
+  font-family: var(--yii-debug-font-mono);
+  font-size: var(--yii-debug-fs-xs);
+  color: var(--yii-debug-panel-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.12s ease;
+}
+
+.yii-debug-tl-track {
+  position: relative;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--yii-debug-panel-border) 50%, transparent);
+  transition: background-color 0.12s ease;
+}
+
+.yii-debug-tl-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 18px;
+  min-width: 2px;
+  border-radius: 4px;
+  background: currentcolor;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 1px 2px rgb(0 0 0 / 18%);
+}
+
+.yii-debug-tl-bar-duration {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 6px);
+  transform: translateY(-50%);
+  color: var(--yii-debug-panel-muted);
+  font-family: var(--yii-debug-font-mono);
+  font-size: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.yii-debug-tl-row:hover .yii-debug-tl-bar-duration {
+  opacity: 1;
+}
+
+/* Variant colors — drive both the dot and the bar via `currentcolor`. */
+.yii-debug-tl-row-info {
+  color: var(--yii-debug-panel-info);
+}
+
+.yii-debug-tl-row-success {
+  color: var(--yii-debug-panel-success);
+}
+
+.yii-debug-tl-row-warning {
+  color: var(--yii-debug-panel-warning);
+}
+
+.yii-debug-tl-row-danger {
+  color: var(--yii-debug-panel-danger);
+}
+
+.yii-debug-tl-row-muted {
+  color: color-mix(
+    in srgb,
+    var(--yii-debug-panel-muted),
+    var(--yii-debug-panel-text) 25%
+  );
+}
+
+/**
+ * Memory strip below the chart. Reuses the existing SVG output but in a
+ * labeled lane so it does not feel detached.
+ */
+.yii-debug-tl-memory {
+  display: grid;
+  grid-template-columns: minmax(180px, 22%) 1fr auto;
+  align-items: center;
+  grid-column: 1 / 3;
+  padding: var(--yii-debug-space-2) var(--yii-debug-space-3);
+  border-top: var(--yii-debug-border);
+  background: var(--yii-debug-panel-surface-muted);
+  color: var(--yii-debug-panel-muted);
+  font-family: var(--yii-debug-font-mono);
+  font-size: var(--yii-debug-fs-xs);
+}
+
+.yii-debug-tl-memory-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.yii-debug-tl-memory-track {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--yii-debug-radius-sm);
+  background: color-mix(
+    in srgb,
+    var(--yii-debug-panel-surface),
+    transparent 50%
+  );
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    /**
+         * Recolor the legacy SVG renderer's hardcoded green so it matches the
+         * design system — no need to rewrite Svg.php.
+         */
+    path,
+    polygon {
+      fill: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 60%);
+      stroke: var(--yii-debug-panel-primary);
+      stroke-width: 1.5;
+    }
+  }
+}
+
+.yii-debug-tl-memory-peak {
+  margin-left: var(--yii-debug-space-2);
+  color: var(--yii-debug-panel-text);
+  font-weight: 700;
+}

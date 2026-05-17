@@ -2,75 +2,97 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\controllers;
 
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\models\UserSwitch;
-use yii\web\BadRequestHttpException;
-use yii\web\Controller;
-use yii\web\Response;
-use yii\web\User;
+use yii\web\{BadRequestHttpException, Controller, Response, User};
+
+use function is_int;
+use function is_string;
 
 /**
- * User controller
+ * Drives the user-impersonation workflow exposed by the User Switch debug panel.
  *
- * @author Semen Dubina <yii2debug@sam002.net>
- *
- * @since 2.0.10
+ * Provides JSON endpoints to swap the active identity to an impersonated user (`set-identity`) and to restore the
+ * original identity captured before the swap (`reset-identity`). Every action requires an active session, enforced in
+ * {@see beforeAction()}.
  */
 class UserController extends Controller
 {
     /**
-     * @throws BadRequestHttpException if session is not active.
+     * Restores the original identity captured before the impersonation swap.
+     *
+     * @throws InvalidConfigException When the user component is not properly configured.
+     *
+     * @return User User component reflecting the restored identity.
      */
-    public function beforeAction($action): bool
+    public function actionResetIdentity(): User
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
+        $userSwitch = new UserSwitch();
 
-        if (!Yii::$app->session->hasSessionId) {
-            throw new BadRequestHttpException('Need an active session');
-        }
+        $userSwitch->reset();
 
-        return parent::beforeAction($action);
+        return Yii::$app->user;
     }
 
     /**
-     * Set new identity, switch user.
+     * Switches the active identity to the user resolved from the posted `user_id`.
      *
-     * @throws InvalidConfigException if a user component is not found.
-     * @throws BadRequestHttpException if user is not found.
+     * @throws BadRequestHttpException When the `user_id` parameter is missing or not a scalar, the identity class is
+     * not configured, or the identity cannot be found.
+     *
+     * @return User User component reflecting the new impersonated identity.
      */
     public function actionSetIdentity(): User
     {
         $user_id = Yii::$app->request->post('user_id');
-        $newIdentity = Yii::$app->user->identity->findIdentity($user_id);
+
+        if (!is_string($user_id) && !is_int($user_id)) {
+            throw new BadRequestHttpException(
+                'Invalid user_id parameter.',
+            );
+        }
+
+        $identityClass = Yii::$app->user->identityClass;
+
+        if (!is_subclass_of($identityClass, \yii\web\IdentityInterface::class)) {
+            throw new BadRequestHttpException(
+                'User component is not configured with an identity class.',
+            );
+        }
+
+        $newIdentity = $identityClass::findIdentity($user_id);
 
         if ($newIdentity === null) {
-            throw new BadRequestHttpException('User not found');
+            throw new BadRequestHttpException(
+                'Identity not found.',
+            );
         }
 
         $userSwitch = new UserSwitch();
+
         $userSwitch->setUserByIdentity($newIdentity);
 
         return Yii::$app->user;
     }
 
     /**
-     * Reset identity, switch to the main user.
+     * Forces the response format to JSON and requires an active session before delegating to the parent guard.
+     *
+     * @throws BadRequestHttpException When the current request has no active session.
      */
-    public function actionResetIdentity(): User
+    public function beforeAction($action): bool
     {
-        $userSwitch = new UserSwitch();
-        $userSwitch->reset();
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
-        return Yii::$app->user;
+        if (!Yii::$app->session->hasSessionId) {
+            throw new BadRequestHttpException(
+                'Need an active session',
+            );
+        }
+
+        return parent::beforeAction($action);
     }
 }

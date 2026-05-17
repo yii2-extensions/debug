@@ -2,40 +2,15 @@
 
 declare(strict_types=1);
 
-use yii\helpers\Html;
-use yii\widgets\DetailView;
+use yii\debug\panels\mail\{MailCardRenderer, MailMessageNormalizer};
+use yii\helpers\Url;
 
 /**
- * @var array $model
+ * @var array<string, mixed> $model
+ * @var int $index
  */
-echo DetailView::widget([
-    'model' => $model,
-    'attributes' => [
-        'headers',
-        'from',
-        'to',
-        'charset',
-        [
-            'attribute' => 'time',
-            'format' => 'datetime',
-        ],
-        'subject',
-        [
-            'attribute' => 'body',
-            'label' => 'Text body',
-        ],
-        [
-            'attribute' => 'isSuccessful',
-            'label' => 'Successfully sent',
-            'value' => $model['isSuccessful'] ? 'Yes' : 'No',
-        ],
-        'reply',
-        'bcc',
-        'cc',
-        [
-            'attribute' => 'file',
-            'format' => 'html',
-            'value' => Html::a('Download eml', ['download-mail', 'file' => $model['file']]),
-        ],
-    ],
-]);
+
+echo MailCardRenderer::renderItem(
+    MailMessageNormalizer::from($model),
+    static fn(string $file): string => Url::to(['download-mail', 'file' => $file]),
+);

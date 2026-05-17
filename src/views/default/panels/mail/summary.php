@@ -1,15 +1,16 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 use yii\debug\panels\MailPanel;
 
 /**
- * @var int $mailCount
  * @var MailPanel $panel
+ * @var int $mailCount
  */
-if ($mailCount): ?>
-    <div class="yii-debug-toolbar__block">
-        <a href="<?= $panel->getUrl() ?>">Mail <span class="yii-debug-toolbar__label"><?= $mailCount ?></span></a>
+
+if ($mailCount > 0): ?>
+    <div class="yii-debug-toolbar-block">
+        <a href="<?= $panel->getUrl() ?>">Mail <span class="yii-debug-toolbar-label"><?= $mailCount ?></span></a>
     </div>
-<?php endif ?>
+<?php endif;

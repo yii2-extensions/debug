@@ -2,38 +2,50 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\components\search\matchers;
 
 use yii\base\Component;
 
 /**
- * Base class for matchers that are used in a filter.
+ * Abstract base for {@see \yii\debug\components\search\Filter} matchers providing the shared base-value contract.
  *
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
+ * Concrete subclasses only need to implement {@see MatcherInterface::match()}; the base value plumbing and the
+ * empty-base-value semantics consumed by {@see \yii\debug\components\search\Filter::addMatcher()} live here.
  */
 abstract class Base extends Component implements MatcherInterface
 {
     /**
-     * @var mixed base value to check.
+     * Reference value subsequent {@see MatcherInterface::match()} calls compare against.
      */
     protected mixed $baseValue = null;
 
+    /**
+     * Returns whether the base value is set and not considered empty.
+     *
+     * Treats `null`, `''`, `false`, `0`, `0.0`, and `[]` as empty.
+     *
+     * @return bool `true` when the base value is meaningful, `false` otherwise.
+     */
+    public function hasValue(): bool
+    {
+        return match (true) {
+            $this->baseValue === null,
+            $this->baseValue === '',
+            $this->baseValue === false,
+            $this->baseValue === 0,
+            $this->baseValue === 0.0,
+            $this->baseValue === [] => false,
+            default => true,
+        };
+    }
+
+    /**
+     * Sets the base value to match against.
+     *
+     * @param mixed $value Reference value for subsequent {@see MatcherInterface::match()} calls.
+     */
     public function setValue(mixed $value): void
     {
         $this->baseValue = $value;
-    }
-
-    public function hasValue(): bool
-    {
-        return !empty($this->baseValue) || ($this->baseValue === '0');
     }
 }

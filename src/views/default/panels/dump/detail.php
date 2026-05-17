@@ -1,50 +1,47 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
-use yii\helpers\Html;
-use yii\grid\GridView;
-use yii\debug\panels\DumpPanel;
-use yii\debug\models\search\Log;
 use yii\data\ArrayDataProvider;
+use yii\debug\GridViewConfig;
+use yii\debug\models\search\LogSearch;
+use yii\debug\panels\dump\{DumpCardRenderer, DumpRowNormalizer};
+use yii\debug\panels\DumpPanel;
+use yii\debug\widgets\FilterBanner;
+use yii\grid\GridView;
 
 /**
  * @var ArrayDataProvider $dataProvider
  * @var DumpPanel $panel
- * @var Log $searchModel
+ * @var LogSearch $searchModel
  */
 ?>
-<h1>Dump</h1>
+    <h1 class="yii-debug-sr-only">Dump</h1>
+    <header class="yii-debug-grid-summary">
+        <span><strong><?= $dataProvider->getTotalCount() ?></strong> dumps captured</span>
+        <?= GridViewConfig::pageSizeSelectorHtml() ?>
+    </header>
+    <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?php
 
-echo GridView::widget([
-    'dataProvider' => $dataProvider,
-    'id' => 'dump-panel-detailed-grid',
-    'options' => ['class' => 'detail-grid-view table-responsive'],
-    'filterModel' => $searchModel,
-    'filterUrl' => $panel->getUrl(),
-    'columns' => [
-        'category',
-        [
-            'attribute' => 'message',
-            'value' => static function ($data) use ($panel) {
-                $message = $data['message'];
-
-                if (!empty($data['trace'])) {
-                    $message .= Html::ul($data['trace'], [
-                        'class' => 'trace',
-                        'item' => function ($trace) use ($panel) {
-                            return '<li>' . $panel->getTraceLine($trace) . '</li>';
-                        },
-                    ]);
-                }
-
-                return $message;
-            },
-            'format' => 'raw',
-            'options' => [
-                'width' => '80%',
+echo GridView::widget(
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $dataProvider,
+        'id' => 'dump-panel-detailed-grid',
+        'filterModel' => $searchModel,
+        'columns' => [
+            'category',
+            [
+                'attribute' => 'message',
+                'value' => static fn(mixed $data, mixed $key, int $index): string => DumpCardRenderer::renderMessageCell(
+                    DumpRowNormalizer::from($data),
+                    $panel,
+                    $index,
+                ),
+                'format' => 'raw',
+                'options' => ['width' => '80%'],
             ],
         ],
     ],
-]);
+);

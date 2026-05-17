@@ -2,24 +2,20 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\components\search\matchers;
 
 /**
- * Checks if the given value is greater than the base one.
- *
- * @author Mark Jebri <mark.github@yandex.ru>
- *
- * @since 2.0
+ * Matches candidate values strictly greater than the configured base value.
  */
 class GreaterThan extends Base
 {
+    /**
+     * Returns whether the candidate is strictly greater than the base value.
+     *
+     * @param mixed $value Candidate value to test.
+     *
+     * @return bool `true` when `$value > $baseValue`, `false` otherwise.
+     */
     public function match(mixed $value): bool
     {
         return $value > $this->baseValue;

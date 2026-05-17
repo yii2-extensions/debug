@@ -2,49 +2,29 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models\timeline;
 
+use RuntimeException;
+use UIAwesome\Html\Svg\{Defs, G, LinearGradient, Polygon, Polyline, Stop, Svg as SvgBuilder};
 use yii\base\BaseObject;
 use yii\debug\panels\TimelinePanel;
 use yii\helpers\StringHelper;
 
-use function strtr;
-use function usort;
+use function is_array;
+use function is_numeric;
 
 /**
- * Svg is used to draw a graph using SVG
+ * Renders the timeline panel's memory-usage graph as an inline SVG.
  *
- * @author Dmitriy Bashkarev <dmitriy@bashkarev.com>
- *
- * @since 2.0.8
+ * Plots memory samples drawn from the log and profiling panels onto a polyline/polygon pair, with a gradient fill keyed
+ * by percentage thresholds. The graph is stringified through {@see __toString()} so the view can embed it inline.
  */
 class Svg extends BaseObject
 {
     /**
-     * @var int Max X coordinate.
-     */
-    public int $x = 1920;
-    /**
-     * @var int Max Y coordinate.
-     */
-    public int $y = 40;
-    /**
-     * @var string Stroke color.
-     */
-    public string $stroke = '#1e6823';
-    /**
-     * @var array Listen messages panels.
-     */
-    public array $listenMessages = ['log', 'profiling'];
-    /**
-     * @var array Color indicators svg graph.
+     * Gradient color stops keyed by percentage threshold of total memory.
+     *
+     * @var array<int, string>
      */
     public array $gradient = [
         10 => '#d6e685',
@@ -53,140 +33,226 @@ class Svg extends BaseObject
         100 => '#1e6823',
     ];
     /**
-     * @var string Svg template.
+     * Panel IDs whose log messages feed the graph.
+     *
+     * @var list<string>
      */
-    public string $template = '<svg xmlns="http://www.w3.org/2000/svg" width="{x}" height="{y}" viewBox="0 0 {x} {y}" preserveAspectRatio="none"><defs>{linearGradient}</defs><g><polygon points="{polygon}" fill="url(#gradient)"/><polyline points="{polyline}" fill="none" stroke="{stroke}" stroke-width="1"/></g></svg>';
+    public array $listenMessages = ['log', 'profiling'];
+    /**
+     * Stroke color for the rendered polyline.
+     */
+    public string $stroke = '#1e6823';
+    /**
+     * Canvas width in user units.
+     */
+    public int $x = 1920;
+    /**
+     * Canvas height in user units.
+     */
+    public int $y = 40;
+
+    protected TimelinePanel|null $panel = null;
 
     /**
-     * ```php
-     * [
-     *  [x, y]
-     * ]
-     * ```
+     * Plotted points, each entry an `[x, y]` coordinate pair.
      *
-     * @var array Each point is defined by an X and a Y coordinate.
+     * @var list<array{0: float, 1: float}>
      */
     protected array $points = [];
-    protected array|TimelinePanel $panel;
 
-    public function __construct(TimelinePanel $panel, $config = [])
+    /**
+     * @param TimelinePanel $panel Panel providing total memory, request start, and total duration.
+     * @param array<string, mixed> $config Standard {@see BaseObject} configuration.
+     */
+    public function __construct(TimelinePanel $panel, array $config = [])
     {
         parent::__construct($config);
 
         $this->panel = $panel;
 
-        foreach ($this->listenMessages as $panel) {
-            if (isset($this->panel->module->panels[$panel]->data['messages'])) {
-                $this->addPoints($this->panel->module->panels[$panel]->data['messages']);
+        $module = $panel->module;
+
+        if ($module === null) {
+            return;
+        }
+
+        foreach ($this->listenMessages as $panelId) {
+            $sourcePanel = $module->panels[$panelId] ?? null;
+
+            if ($sourcePanel === null) {
+                continue;
             }
+
+            $data = $sourcePanel->data;
+
+            if (!is_array($data) || !isset($data['messages']) || !is_array($data['messages'])) {
+                continue;
+            }
+
+            $this->addPoints($data['messages']);
         }
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         if ($this->points === []) {
             return '';
         }
 
-        return strtr($this->template, [
-            '{x}' => StringHelper::normalizeNumber($this->x),
-            '{y}' => StringHelper::normalizeNumber($this->y),
-            '{stroke}' => $this->stroke,
-            '{polygon}' => $this->polygon(),
-            '{polyline}' => $this->polyline(),
-            '{linearGradient}' => $this->linearGradient(),
-        ]);
+        return SvgBuilder::tag()
+            ->height($this->y)
+            ->html(
+                Defs::tag()
+                    ->html($this->buildGradient()),
+                G::tag()->html(
+                    Polygon::tag()
+                        ->points($this->polygonPoints())
+                        ->fill('url(#gradient)'),
+                    Polyline::tag()
+                        ->points($this->polylinePoints())
+                        ->fill('none')
+                        ->stroke($this->stroke)
+                        ->strokeWidth(1),
+                ),
+            )
+            ->preserveAspectRatio('none')
+            ->viewBox("0 0 {$this->x} {$this->y}")
+            ->width($this->x)
+            ->xmlns('http://www.w3.org/2000/svg')
+            ->render();
     }
 
+    /**
+     * Returns whether at least one point has been plotted.
+     */
     public function hasPoints(): bool
     {
         return $this->points !== [];
     }
 
     /**
-     * Add points to the graph.
+     * Appends plotted points sourced from a panel's log messages.
      *
-     * @param array $messages log messages. See [[Logger::messages]] for the structure.
+     * Stops at the first message whose shape is invalid (missing timestamp/memory entries), to avoid plotting
+     * partially-populated traces.
      *
-     * @return int added points.
+     * @param array<array-key, mixed> $messages Log messages with the structure documented in {@see Logger::messages}.
+     *
+     * @return int Number of points actually appended.
      */
     protected function addPoints(array $messages): int
     {
         $hasPoints = $this->hasPoints();
+        $panelMemory = $this->panel()->getMemory();
 
-        $memory = $this->panel->getMemory() / 100; // 1 percent memory
+        if ($panelMemory <= 0 || $this->x <= 0) {
+            return 0;
+        }
 
-        $yOne = $this->y / 100; // 1 percent Y coordinate
+        $memory = $panelMemory / 100;
+        $yOne = $this->y / 100;
+        $xOne = $this->panel()->getDuration() / $this->x;
 
-        $xOne = $this->panel->duration / $this->x; // 1 percent X coordinate
+        if ($xOne <= 0) {
+            return 0;
+        }
 
         $i = 0;
 
         foreach ($messages as $message) {
-            if (empty($message[5])) {
+            if (
+                !is_array($message)
+                || !isset($message[3], $message[5])
+                || !is_numeric($message[3])
+                || !is_numeric($message[5])
+            ) {
                 break;
             }
 
             ++$i;
+
             $this->points[] = [
-                ($message[3] * 1000 - $this->panel->start) / $xOne,
-                $this->y - ($message[5] / $memory * $yOne),
+                ((float) $message[3] * 1000 - $this->panel()->getStart()) / $xOne,
+                $this->y - ((float) $message[5] / $memory * $yOne),
             ];
         }
 
-        if ($hasPoints && $i) {
-            usort($this->points, static function ($a, $b) {
-                return ($a[0] < $b[0]) ? -1 : 1;
-            });
+        if ($hasPoints && $i > 0) {
+            usort($this->points, static fn(array $a, array $b): int => $a[0] <=> $b[0]);
         }
 
         return $i;
     }
 
     /**
-     * @return string Points attribute for a polygon path.
+     * Builds the gradient definition wrapped in a `<linearGradient id="gradient">` element.
      */
-    protected function polygon(): string
+    private function buildGradient(): LinearGradient
     {
-        $str = "0 $this->y ";
-        $y = 0;
+        $stops = [];
+
+        foreach ($this->gradient as $percent => $color) {
+            $stops[] = Stop::tag()
+                ->offset(StringHelper::normalizeNumber($percent) . '%')
+                ->stopColor($color);
+        }
+
+        return LinearGradient::tag()
+            ->id('gradient')
+            ->x1(0)
+            ->x2(0)
+            ->y1(1)
+            ->y2(0)
+            ->html(...$stops);
+    }
+
+    /**
+     * Returns the bound {@see TimelinePanel}, asserting that the constructor wired it.
+     *
+     * @throws RuntimeException When the panel was somehow cleared after construction.
+     */
+    private function panel(): TimelinePanel
+    {
+        if ($this->panel === null) {
+            throw new RuntimeException('TimelinePanel has not been set on the SVG renderer.');
+        }
+
+        return $this->panel;
+    }
+
+    /**
+     * Returns the value for the polygon's `points` attribute.
+     */
+    private function polygonPoints(): string
+    {
+        $y = (float) $this->y;
+        $str = "0 {$this->y} ";
 
         foreach ($this->points as $point) {
             [$x, $y] = $point;
-            $str .= "$x $y ";
+            $str .= "{$x} {$y} ";
         }
 
-        $str .= $this->x - 0.001 . " $y $this->x $this->y";
+        $str .= ($this->x - 0.001) . " {$y} {$this->x} {$this->y}";
 
         return StringHelper::normalizeNumber($str);
     }
 
     /**
-     * @return string Points attribute for a polyline path.
+     * Returns the value for the polyline's `points` attribute.
      */
-    protected function polyline(): string
+    private function polylinePoints(): string
     {
-        $str = "0 $this->y ";
-        $y = 0;
+        $y = (float) $this->y;
+        $str = "0 {$this->y} ";
 
         foreach ($this->points as $point) {
             [$x, $y] = $point;
-            $str .= "$x $y ";
+            $str .= "{$x} {$y} ";
         }
 
-        $str .= "$this->x $y";
+        $str .= "{$this->x} {$y}";
 
         return StringHelper::normalizeNumber($str);
-    }
-
-    protected function linearGradient(): string
-    {
-        $gradient = '<linearGradient id="gradient" x1="0" x2="0" y1="1" y2="0">';
-
-        foreach ($this->gradient as $percent => $color) {
-            $gradient .= '<stop offset="' . StringHelper::normalizeNumber($percent) . '%" stop-color="' . $color . '"></stop>';
-        }
-
-        return $gradient . '</linearGradient>';
     }
 }

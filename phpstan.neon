@@ -1,26 +1,24 @@
 includes:
-	- vendor/yii2-extensions/phpstan/extension.neon
+    - phar://phpstan.phar/conf/bleedingEdge.neon
 
 parameters:
     bootstrapFiles:
-        - constants.php
+        - tests/support/bootstrap.php
 
-    dynamicConstantNames:
-        - YII_DEBUG
-        - YII_ENV
-        - YII_ENV_DEV
-        - YII_ENV_PROD
-        - YII_ENV_TEST
-
-    level: 1
+    level: max
 
     paths:
         - src
+        - tests
 
-    scanFiles:
-        - vendor/yiisoft/yii2/BaseYii.php
-        - vendor/yiisoft/yii2/Yii.php
+    tmpDir: %currentWorkingDirectory%/runtime
 
-    yii2:
-        config_path: %currentWorkingDirectory%/phpstan-yii-config.php
-
+    # Enable strict advanced checks
+    checkImplicitMixed: true
+    checkBenevolentUnionTypes: true
+    checkUninitializedProperties: true
+    checkMissingCallableSignature: true
+    checkTooWideReturnTypesInProtectedAndPublicMethods: true
+    reportAnyTypeWideningInVarTag: true
+    reportPossiblyNonexistentConstantArrayOffset: true
+    reportPossiblyNonexistentGeneralArrayOffset: true

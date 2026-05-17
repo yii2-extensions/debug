@@ -2,52 +2,43 @@
 
 declare(strict_types=1);
 
-/**
- * @link https://www.yiiframework.com/
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 namespace yii\debug\models;
 
+use RuntimeException;
 use Yii;
-use yii\base\Model;
-use yii\web\IdentityInterface;
-use yii\web\User;
+use yii\base\{InvalidConfigException, Model};
+use yii\web\{IdentityInterface, User};
+
+use function is_int;
+use function is_string;
 
 /**
- * UserSwitch is a model used to temporary logging in another user
+ * Backs the user-impersonation workflow by swapping the active session identity to another user.
  *
- * @author Semen Dubina <yii2debug@sam002.net>
- *
- * @since 2.0.10
+ * Preserves the original identity in the session (`main_user`) so {@see reset()} can restore it once the impersonator
+ * is done. Every accessor resolves the user component lazily through {@see getUser()} so unit tests can inject a
+ * pre-built {@see User} instance into {@see $userComponent}.
  */
 class UserSwitch extends Model
 {
     /**
-     * @var string|User ID of the user component or a user object
-     *
-     * @since 2.0.13
+     * Component ID of the user component, or a {@see User} instance to operate on directly.
      */
-    public $userComponent = 'user';
-    /**
-     * @var User user which we are currently switched to
-     */
-    private $_user;
-    /**
-     * @var User the main user who was originally logged in before switching.
-     */
-    private $_mainUser;
+    public string|User $userComponent = 'user';
 
-    public function rules()
-    {
-        return [
-            [['user', 'mainUser'], 'safe'],
-        ];
-    }
+    /**
+     * Cached main user: the identity originally logged in before any switch.
+     */
+    private User|null $mainUser = null;
+    /**
+     * Cached current user: the identity the session is currently switched to.
+     */
+    private User|null $user = null;
 
-    public function attributeLabels()
+    /**
+     * @return array<string, string> Form labels keyed by attribute name.
+     */
+    public function attributeLabels(): array
     {
         return [
             'user' => 'Current User',
@@ -56,103 +47,145 @@ class UserSwitch extends Model
     }
 
     /**
-     * Get current user
+     * Returns the main user; the original identity captured on the first switch.
      *
-     * @throws \yii\base\InvalidConfigException
+     * Reads the captured id from the session when present; otherwise treats the current identity as the main one.
      *
-     * @return User|null
+     * @throws InvalidConfigException When the user component cannot be resolved.
      */
-    public function getUser()
-    {
-        if ($this->_user === null) {
-            /* @var $user User */
-            $this->_user = is_string($this->userComponent) ? Yii::$app->get(
-                $this->userComponent,
-                false
-            ) : $this->userComponent;
-        }
-        return $this->_user;
-    }
-
-    /**
-     * Get main user
-     *
-     * @throws \yii\base\InvalidConfigException
-     *
-     * @return User
-     */
-    public function getMainUser()
+    public function getMainUser(): User
     {
         $currentUser = $this->getUser();
 
-        if ($this->_mainUser === null && $currentUser->getIsGuest() === false) {
-            $session = Yii::$app->getSession();
-            if ($session->has('main_user')) {
-                $mainUserId = $session->get('main_user');
-                $mainIdentity = call_user_func([$currentUser->identityClass, 'findIdentity'], $mainUserId);
-            } else {
-                $mainIdentity = $currentUser->identity;
+        if ($this->mainUser !== null) {
+            return $this->mainUser;
+        }
+
+        if ($currentUser->getIsGuest()) {
+            return $currentUser;
+        }
+
+        $session = Yii::$app->getSession();
+
+        $mainIdentity = null;
+
+        if ($session->has('main_user')) {
+            $mainUserId = $session->get('main_user');
+
+            if (is_int($mainUserId) || is_string($mainUserId)) {
+                $mainIdentity = $currentUser->identityClass::findIdentity($mainUserId);
             }
-
-            $mainUser = clone $currentUser;
-            $mainUser->setIdentity($mainIdentity);
-            $this->_mainUser = $mainUser;
-        }
-
-        return $this->_mainUser;
-    }
-
-    /**
-     * Switch user
-     *
-     * @throws \yii\base\InvalidConfigException
-     */
-    public function setUser(User $user)
-    {
-        // Check if user is currently active one
-        $isCurrent = ($user->getId() === $this->getMainUser()->getId());
-        // Switch identity
-        $this->getUser()->switchIdentity($user->identity);
-        if (!$isCurrent) {
-            Yii::$app->getSession()->set('main_user', $this->getMainUser()->getId());
         } else {
-            Yii::$app->getSession()->remove('main_user');
+            $mainIdentity = $currentUser->identity;
         }
+
+        $mainUser = clone $currentUser;
+
+        $mainUser->setIdentity($mainIdentity);
+
+        return $this->mainUser = $mainUser;
     }
 
     /**
-     * Switch to user by identity
+     * Returns the user component bound to this switch model, resolving it lazily on first call.
      *
-     * @throws \yii\base\InvalidConfigException
+     * @throws InvalidConfigException When the configured component ID does not resolve to a {@see User} instance.
      */
-    public function setUserByIdentity(IdentityInterface $identity)
+    public function getUser(): User
     {
-        $user = clone $this->getUser();
-        $user->setIdentity($identity);
-        $this->setUser($user);
+        if ($this->user !== null) {
+            return $this->user;
+        }
+
+        if ($this->userComponent instanceof User) {
+            return $this->user = $this->userComponent;
+        }
+
+        $resolved = Yii::$app->get($this->userComponent, false);
+
+        if (!$resolved instanceof User) {
+            throw new InvalidConfigException(
+                "Application component '{$this->userComponent}' must be a 'yii\\web\\User' instance.",
+            );
+        }
+
+        return $this->user = $resolved;
     }
 
     /**
-     * Reset to main user
+     * Returns whether the current identity is the main user (or a guest).
+     *
+     * @throws InvalidConfigException When the user component cannot be resolved.
      */
-    public function reset()
+    public function isMainUser(): bool
+    {
+        $user = $this->getUser();
+
+        if ($user->getIsGuest()) {
+            return true;
+        }
+
+        return $user->getId() === $this->getMainUser()->getId();
+    }
+
+    /**
+     * Restores the session to the main user captured before the first switch.
+     *
+     * @throws InvalidConfigException When the user component cannot be resolved.
+     */
+    public function reset(): void
     {
         $this->setUser($this->getMainUser());
     }
 
     /**
-     * Checks if current user is main or not.
-     *
-     * @throws \yii\base\InvalidConfigException
-     *
-     * @return bool
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */
-    public function isMainUser()
+    public function rules(): array
     {
-        $user = $this->getUser();
-        if ($user->getIsGuest()) {
-            return true;
+        return [
+            [['user', 'mainUser'], 'safe'],
+        ];
+    }
+
+    /**
+     * Switches the session to the given user and tracks the main user id when impersonating.
+     *
+     * @throws InvalidConfigException When the user component cannot be resolved.
+     * @throws RuntimeException When the supplied user has no identity attached.
+     */
+    public function setUser(User $user): void
+    {
+        $identity = $user->identity;
+
+        if ($identity === null) {
+            throw new RuntimeException('Cannot switch to a user without an attached identity.');
         }
-        return $user->getId() === $this->getMainUser()->getId();
+
+        $isCurrent = ($user->getId() === $this->getMainUser()->getId());
+
+        $this->getUser()->switchIdentity($identity);
+
+        if ($isCurrent) {
+            Yii::$app->getSession()->remove('main_user');
+
+            return;
+        }
+
+        Yii::$app->getSession()->set('main_user', $this->getMainUser()->getId());
+    }
+
+    /**
+     * Switches the session to the user identified by `$identity`.
+     *
+     * @throws InvalidConfigException When the user component cannot be resolved.
+     */
+    public function setUserByIdentity(IdentityInterface $identity): void
+    {
+        $user = clone $this->getUser();
+
+        $user->setIdentity($identity);
+
+        $this->setUser($user);
     }
 }
