@@ -25,6 +25,23 @@ use yii\web\HttpException;
 #[Group('db')]
 final class ExplainActionTest extends TestCase
 {
+    public function testDbExplainViewRendersEmptyStateWhenResultsAreEmpty(): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        $controller = new DefaultController('default', $module);
+
+        Yii::$app->controller = $controller;
+
+        $html = $controller->renderPartial('db-explain', ['query' => 'SELECT 1', 'results' => []]);
+
+        self::assertStringContainsString(
+            'EXPLAIN returned no rows.',
+            $html,
+            'Empty explain results must render the empty-state hint.',
+        );
+    }
+
     public function testRunRendersAjaxPartialWhenRequestIsAjax(): void
     {
         $module = $this->bootDebugModuleWithSqlite();

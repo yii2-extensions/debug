@@ -307,6 +307,21 @@ final class MailPanelTest extends TestCase
         rmdir($dataPath);
     }
 
+    public function testGetDetailRendersEmptyStateWhenNoMessagesCaptured(): void
+    {
+        $panel = $this->makePanel(MailPanel::class);
+
+        $panel->data = [];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'No emails sent in this request',
+            $html,
+            'Empty mail panel must render the no-messages hint.',
+        );
+    }
+
     public function testGetDetailRendersWithCapturedMessages(): void
     {
         $panel = $this->makePanel(MailPanel::class);

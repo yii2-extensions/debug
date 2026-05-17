@@ -386,6 +386,32 @@ final class RequestPanelTest extends TestCase
         );
     }
 
+    public function testGetSummaryRendersImportantChipForErrorStatusCode(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $panel->data = ['statusCode' => 500];
+
+        self::assertStringContainsString(
+            'toolbar-label-important',
+            $panel->getSummary(),
+            "'5xx' must surface the important chip class.",
+        );
+    }
+
+    public function testGetSummaryRendersInfoChipForRedirectStatusCode(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $panel->data = ['statusCode' => 302];
+
+        self::assertStringContainsString(
+            'toolbar-label-info',
+            $panel->getSummary(),
+            "'3xx' must surface the info chip class.",
+        );
+    }
+
     public function testGetToolbarItemsRendersDangerForOtherStatus(): void
     {
         $panel = $this->makePanel(RequestPanel::class);

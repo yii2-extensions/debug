@@ -144,6 +144,22 @@ final class AssetPanelTest extends TestCase
             'Detail view must surface the bundle FQCN.',
         );
     }
+
+    public function testGetDetailRendersEmptyStateWhenNoBundlesCaptured(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $panel->data = [];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'No asset bundles loaded',
+            $html,
+            'Empty asset panel must render the no-bundles hint.',
+        );
+    }
+
     public function testGetNameAndIconReturnConstantsForToolbar(): void
     {
         $panel = $this->makePanel(AssetPanel::class);

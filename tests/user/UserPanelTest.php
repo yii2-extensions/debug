@@ -163,6 +163,19 @@ final class UserPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailRendersGuestPlaceholderWhenIdentityMissing(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity());
+
+        $this->setInaccessibleProperty($panel, 'data', ['id' => null, 'identity' => null]);
+
+        self::assertStringContainsString(
+            'Is guest',
+            $panel->getDetail(),
+            "Missing identity must render the 'Is guest' fallback.",
+        );
+    }
+
     public function testGetDetailRendersIdentityView(): void
     {
         $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity());
@@ -181,6 +194,124 @@ final class UserPanelTest extends TestCase
         self::assertNotEmpty(
             $panel->getDetail(),
             'Detail view must produce markup.',
+        );
+    }
+
+    public function testGetDetailRendersResetButtonWhenSwitchIsActive(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity(), filterModel: new SearchableFilterModel());
+
+        self::assertNotNull(
+            $panel->module,
+            'Module must be wired.',
+        );
+        self::assertNotNull(
+            $panel->userSwitch,
+            'UserSwitch must be wired.',
+        );
+
+        Yii::$app->controller = new Controller('debug', $panel->module);
+
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        // Cache a different mainUser on the bound UserSwitch so 'isMainUser()' returns 'false' and the reset section
+        // renders. The cached id differs from the active identity's id ('1').
+        $mainIdentity = new ModelIdentity();
+
+        $mainIdentity->id = 99;
+
+        $mainUser = new User(['identityClass' => ModelIdentity::class]);
+
+        $mainUser->setIdentity($mainIdentity);
+
+        $this->setInaccessibleProperty(
+            $panel->userSwitch,
+            'mainUser',
+            $mainUser,
+        );
+
+        $panel->data = [
+            'id' => 1,
+            'identity' => [
+                'id' => "'1'",
+                'username' => "'wilmer'",
+            ],
+            'attributes' => [
+                [
+                    'attribute' => 'id',
+                    'label' => 'Id',
+                ],
+            ],
+            'rolesProvider' => null,
+            'permissionsProvider' => null,
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'Reset to',
+            $html,
+            'Reset button must surface when switched.',
+        );
+    }
+
+    public function testGetDetailRendersRolesAndSwitchSectionsWhenPanelAllowsThem(): void
+    {
+        $role = new Role();
+
+        $role->name = 'admin';
+        $role->description = 'Administrator';
+
+        $permission = new Permission();
+
+        $permission->name = 'manage';
+        $permission->description = 'Manage';
+
+        $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity(), filterModel: new SearchableFilterModel());
+
+        self::assertNotNull($panel->module, 'Module must be wired.');
+
+        Yii::$app->controller = new Controller('debug', $panel->module);
+
+        // Allow user switching so detail.php pulls in 'switch.php'.
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        $panel->data = [
+            'id' => 1,
+            'identity' => [
+                'id' => "'1'",
+                'username' => "'wilmer'",
+            ],
+            'attributes' => [
+                [
+                    'attribute' => 'id',
+                    'label' => 'Id',
+                ],
+                [
+                    'attribute' => 'username',
+                    'label' => 'Username',
+                ],
+            ],
+            'rolesProvider' => new ArrayDataProvider(['allModels' => [$role]]),
+            'permissionsProvider' => new ArrayDataProvider(['allModels' => [$permission]]),
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'Roles',
+            $html,
+            'Roles section must render.',
+        );
+        self::assertStringContainsString(
+            'Permissions',
+            $html,
+            'Permissions section must render.',
+        );
+        self::assertStringContainsString(
+            'Switch user',
+            $html,
+            'Switch user section must render.',
         );
     }
 
@@ -207,6 +338,76 @@ final class UserPanelTest extends TestCase
         self::assertNotEmpty(
             $panel->getSummary(),
             'Summary view must produce markup.',
+        );
+    }
+
+    public function testGetSummaryRendersMainUserChipWhenIdentityIsKnown(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
+
+        $this->setInaccessibleProperty(
+            $panel,
+            'data',
+            ['id' => 1],
+        );
+
+        $html = $panel->getSummary();
+
+        self::assertStringContainsString(
+            'toolbar-label-info',
+            $html,
+            'Main-user chip must use the info label.',
+        );
+    }
+
+    public function testGetSummaryRendersSwitchingChipAndSwitchIconWhenSwitchActive(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity(), filterModel: new SearchableFilterModel());
+
+        self::assertNotNull(
+            $panel->module,
+            'Module must be wired.',
+        );
+        self::assertNotNull(
+            $panel->userSwitch,
+            'UserSwitch must be wired.',
+        );
+
+        Yii::$app->controller = new Controller('debug', $panel->module);
+
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        // Make 'isMainUser()' return 'false' by caching a different mainUser on the bound UserSwitch.
+        $mainIdentity = new ModelIdentity();
+
+        $mainIdentity->id = 99;
+
+        $mainUser = new User(['identityClass' => ModelIdentity::class]);
+
+        $mainUser->setIdentity($mainIdentity);
+
+        $this->setInaccessibleProperty(
+            $panel->userSwitch,
+            'mainUser',
+            $mainUser
+        );
+        $this->setInaccessibleProperty(
+            $panel,
+            'data',
+            ['id' => 1]
+        );
+
+        $html = $panel->getSummary();
+
+        self::assertStringContainsString(
+            'switching',
+            $html,
+            'Summary must mark the switching state.'
+        );
+        self::assertStringContainsString(
+            'toolbar-switch-icon',
+            $html,
+            'Switch icon must surface when allowed.'
         );
     }
 

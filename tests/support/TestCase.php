@@ -57,6 +57,17 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * Invokes a non-public static method on the given class via reflection and returns its result.
+     *
+     * @param class-string $className FQCN declaring the static method.
+     * @param array<int, mixed> $args Arguments forwarded to the method.
+     */
+    protected function invokeStatic(string $className, string $method, array $args = []): mixed
+    {
+        return (new ReflectionClass($className))->getMethod($method)->invoke(null, ...$args);
+    }
+
+    /**
      * Builds a fully-wired panel with a Yii web app, debug module, log target, asset manager, and a stub controller.
      *
      * @template T of Panel

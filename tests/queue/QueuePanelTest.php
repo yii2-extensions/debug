@@ -246,6 +246,95 @@ final class QueuePanelTest extends TestCase
         );
     }
 
+    public function testGetDetailRendersEmptyStateWhenNoRecords(): void
+    {
+        $panel = $this->makePanel(QueuePanel::class);
+
+        $panel->data = ['records' => []];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'No jobs queued in this request',
+            $html,
+            'Empty queue panel must surface the empty-state hint.',
+        );
+    }
+
+    public function testGetDetailRendersExecutedAndErrorStatsAndAsyncHint(): void
+    {
+        $panel = $this->makePanel(QueuePanel::class);
+
+        $panel->data = [
+            'records' => [
+                [
+                    'eventType' => JobRecord::TYPE_PUSH,
+                    'componentId' => 'queue',
+                    'driverName' => 'Database',
+                    'driverClass' => 'yii\\queue\\db\\Queue',
+                    'isAsync' => true,
+                    'jobClass' => 'App\\Job',
+                    'payloadFields' => [],
+                    'time' => 0.0,
+                    'jobId' => 'job-1',
+                    'ttr' => null,
+                    'delay' => null,
+                    'priority' => null,
+                    'attempt' => null,
+                    'duration' => null,
+                    'error' => '',
+                ],
+                [
+                    'eventType' => JobRecord::TYPE_EXEC,
+                    'componentId' => 'queue',
+                    'driverName' => 'Database',
+                    'driverClass' => 'yii\\queue\\db\\Queue',
+                    'isAsync' => true,
+                    'jobClass' => 'App\\Job',
+                    'payloadFields' => [],
+                    'time' => 0.0,
+                    'jobId' => 'job-1',
+                    'ttr' => null,
+                    'delay' => null,
+                    'priority' => null,
+                    'attempt' => 1,
+                    'duration' => 0.05,
+                    'error' => '',
+                ],
+                [
+                    'eventType' => JobRecord::TYPE_ERROR,
+                    'componentId' => 'queue',
+                    'driverName' => 'Database',
+                    'driverClass' => 'yii\\queue\\db\\Queue',
+                    'isAsync' => true,
+                    'jobClass' => 'App\\Job',
+                    'payloadFields' => [],
+                    'time' => 0.0,
+                    'jobId' => 'job-1',
+                    'ttr' => null,
+                    'delay' => null,
+                    'priority' => null,
+                    'attempt' => 1,
+                    'duration' => 0.05,
+                    'error' => 'job failed',
+                ],
+            ],
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'executed',
+            $html,
+            'Executed counter must surface.',
+        );
+        self::assertStringContainsString(
+            'failed',
+            $html,
+            'Failed counter must surface.',
+        );
+    }
+
     public function testGetDetailRendersWithCapturedRecords(): void
     {
         $panel = $this->makePanel(QueuePanel::class);

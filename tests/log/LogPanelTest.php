@@ -17,6 +17,32 @@ use yii\log\Logger;
 #[Group('log')]
 final class LogPanelTest extends TestCase
 {
+    public function testGetDetailRendersErrorAndWarningCountersWhenLevelsArePresent(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        $panel->data = [
+            'messages' => [
+                ['oops', Logger::LEVEL_ERROR, 'application', 1.0, []],
+                ['careful', Logger::LEVEL_WARNING, 'application', 2.0, []],
+                ['hello', Logger::LEVEL_INFO, 'application', 3.0, []],
+            ],
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'errors',
+            $html,
+            'Error counter must surface.',
+        );
+        self::assertStringContainsString(
+            'warnings',
+            $html,
+            'Warning counter must surface.',
+        );
+    }
+
     public function testGetDetailRendersWithCapturedMessages(): void
     {
         $panel = $this->makePanel(LogPanel::class);
@@ -296,6 +322,31 @@ final class LogPanelTest extends TestCase
             'Log',
             $panel->getSummary(),
             'Chip must render the panel label.',
+        );
+    }
+
+    public function testGetSummaryRendersErrorAndWarningChipLinksWhenLevelsArePresent(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        $panel->data = [
+            'messages' => [
+                ['oops', Logger::LEVEL_ERROR, 'application', 1.0, []],
+                ['careful', Logger::LEVEL_WARNING, 'application', 2.0, []],
+            ],
+        ];
+
+        $html = $panel->getSummary();
+
+        self::assertStringContainsString(
+            'toolbar-label-important',
+            $html,
+            'Error chip must surface.',
+        );
+        self::assertStringContainsString(
+            'toolbar-label-warning',
+            $html,
+            'Warning chip must surface.',
         );
     }
 
