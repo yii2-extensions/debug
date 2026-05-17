@@ -144,6 +144,7 @@ final class AssetPanelTest extends TestCase
             'Detail view must surface the bundle FQCN.',
         );
     }
+
     public function testGetNameAndIconReturnConstantsForToolbar(): void
     {
         $panel = $this->makePanel(AssetPanel::class);

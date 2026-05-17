@@ -102,6 +102,7 @@ final class JobActionTest extends TestCase
             'AJAX hits must render the partial view; job class must still surface.',
         );
     }
+
     public function testRunRendersQueueJobDetailViewForCapturedRecord(): void
     {
         $module = $this->bootDebugModule();
