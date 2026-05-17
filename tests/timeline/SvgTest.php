@@ -158,6 +158,7 @@ final class SvgTest extends TestCase
             'Valid messages with timestamp + memory entries must produce plotted points.',
         );
     }
+
     public function testConstructorShortCircuitsWhenPanelModuleIsNull(): void
     {
         $this->mockWebApplication();

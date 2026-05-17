@@ -63,6 +63,7 @@ final class QueueDriverDetectorTest extends TestCase
             "'amqp_interop' driver must alias back to the AMQP display label.",
         );
     }
+
     public function testDetectClassifiesSyncDriverAsRunInProcess(): void
     {
         // Reset cache via reflection so prior runs do not mask the title-case path.

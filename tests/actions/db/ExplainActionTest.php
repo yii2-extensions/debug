@@ -80,6 +80,7 @@ final class ExplainActionTest extends TestCase
             'AJAX hits must render the partial view (no layout); query must still surface.',
         );
     }
+
     public function testRunRendersExplainQueryPlanForSqliteFixture(): void
     {
         $module = $this->bootDebugModuleWithSqlite();
