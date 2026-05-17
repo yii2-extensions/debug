@@ -34,6 +34,7 @@ final class DataProviderTest extends TestCase
             "Non-numeric 'css.width' must fall back through 'getWidth' and still produce a hex color.",
         );
     }
+
     public function testGetColorReturnsFallbackWhenNoBucketMatches(): void
     {
         $panel = $this->stubPanel();

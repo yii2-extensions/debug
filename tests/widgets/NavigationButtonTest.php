@@ -40,6 +40,7 @@ final class NavigationButtonTest extends TestCase
             "Out-of-bounds target index must surface as an empty route, exercising the defensive 'isset' guard.",
         );
     }
+
     public function testRenderEmitsEmptyMarkupForUnknownButtonKeyword(): void
     {
         $this->bootApp();

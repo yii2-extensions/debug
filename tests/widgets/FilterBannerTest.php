@@ -78,6 +78,7 @@ final class FilterBannerTest extends TestCase
             "The 'Clear all' action must be present on every rendered banner.",
         );
     }
+
     public function testRunReturnsEmptyMarkupWhenNoFiltersAreActive(): void
     {
         $this->bootApp();

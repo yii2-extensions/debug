@@ -52,6 +52,7 @@ final class TimelineRendererTest extends TestCase
             'Peak-memory chip must appear inside the memory footer.',
         );
     }
+
     public function testRenderChartReturnsEmptyStringWhenDataProviderHasNoModels(): void
     {
         $panel = $this->stubPanel(10.0, 1);
