@@ -39,7 +39,7 @@
 ### Installation
 
 ```bash
-composer require yii2-extensions/debug --dev
+composer require yii2-extensions/debug:^0.1 --dev
 ```
 
 ### Basic Usage

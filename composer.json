@@ -1,11 +1,19 @@
 {
     "name": "yii2-extensions/debug",
     "type": "yii2-extension",
-    "description": "Debugger extension for the Yii2.",
+    "description": "Debug toolbar and debugger panels for Yii2: requests, logs, queries, profiling, timeline, queue, mail, events, asset bundles, and user switching with a Vite-built dependency-free UI.",
     "keywords": [
-        "yii2",
+        "database-profiling",
         "debug",
-        "debugger"
+        "debug-toolbar",
+        "debugger",
+        "developer-tools",
+        "php",
+        "profiling",
+        "request-inspector",
+        "timeline",
+        "yii2",
+        "yii2-extension"
     ],
     "license": "BSD-3-Clause",
     "require": {
@@ -53,7 +61,7 @@
     ],
     "extra": {
         "branch-alias": {
-            "dev-main": "1.0.x-dev"
+            "dev-main": "0.2.x-dev"
         },
         "config-plugin-options": {
             "source-directory": "config"
