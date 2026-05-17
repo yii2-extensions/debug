@@ -29,6 +29,27 @@ final class RouterRendererTest extends TestCase
         );
     }
 
+    public function testRenderTabsCalloutOmitsResolvedDlWhenMatchSucceeded(): void
+    {
+        $current = new CurrentRoute();
+
+        $current->hasMatch = true;
+        $current->message = 'Matched site/index.';
+
+        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+
+        self::assertStringContainsString(
+            'yii-debug-router-callout',
+            $html,
+            'Callout block must surface when a message is present.',
+        );
+        self::assertStringNotContainsString(
+            'Resolved route',
+            $html,
+            "Successful matches must NOT render the 'Resolved route' row.",
+        );
+    }
+
     public function testRenderTabsMarksCurrentRouteAsTheActivePanel(): void
     {
         $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
@@ -62,6 +83,42 @@ final class RouterRendererTest extends TestCase
             'Global Suffix:',
             $html,
             'Empty suffix must not surface the badge.',
+        );
+    }
+
+    public function testRenderTabsRendersActionRoutesTableWithDiscoveredRows(): void
+    {
+        $actionRoutes = new ActionRoutes();
+
+        $actionRoutes->routes = [
+            'app\\controllers\\SiteController::actionIndex()' => [
+                'route' => 'site/index',
+                'rule' => 'home',
+                'count' => 1,
+            ],
+            'app\\controllers\\SiteController::actionAbout()' => [
+                'route' => 'site/about',
+                'rule' => null,
+                'count' => 3,
+            ],
+        ];
+
+        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), $actionRoutes);
+
+        self::assertMatchesRegularExpression(
+            '/<th>\s*Action\s*<\/th>/',
+            $html,
+            'Action Routes table must carry the Action column header.',
+        );
+        self::assertStringContainsString(
+            'SiteController::actionIndex()',
+            $html,
+            'First action FQCN must surface as a row.',
+        );
+        self::assertMatchesRegularExpression(
+            '/<td>\s*home\s*<\/td>/',
+            $html,
+            'Matched-rule name must surface inside the row.',
         );
     }
 
@@ -118,6 +175,42 @@ final class RouterRendererTest extends TestCase
         );
     }
 
+    public function testRenderTabsRendersLogsTableWithMatchingRuleHighlight(): void
+    {
+        $current = new CurrentRoute();
+
+        $current->logs = [
+            [
+                'rule' => 'home',
+                'match' => true,
+                'parent' => '',
+            ],
+            [
+                'rule' => 'about',
+                'match' => false,
+                'parent' => 'admin',
+            ],
+        ];
+
+        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+
+        self::assertMatchesRegularExpression(
+            '/<th>\s*Rule\s*<\/th>/',
+            $html,
+            'Current-route logs table must carry the Rule column header.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-row-success',
+            $html,
+            "Matching rule rows must carry the 'yii-debug-row-success' modifier.",
+        );
+        self::assertMatchesRegularExpression(
+            '/<td>\s*admin\s*<\/td>/',
+            $html,
+            'Parent column must surface the parent rule name when present.',
+        );
+    }
+
     public function testRenderTabsRendersPrettyUrlSuccessBadgeWhenEnabled(): void
     {
         $rules = new RouterRules();
@@ -146,6 +239,48 @@ final class RouterRendererTest extends TestCase
             'No routing rules configured.',
             $html,
             'Empty rules list must show the dedicated heading.',
+        );
+    }
+
+    public function testRenderTabsRendersRouterRulesTableWithFlattenedRules(): void
+    {
+        $rules = new RouterRules();
+
+        $rules->rules = [
+            [
+                'name' => 'home',
+                'route' => 'site/index',
+                'verb' => ['GET'],
+                'suffix' => null,
+                'mode' => null,
+                'type' => null,
+            ],
+            [
+                'name' => 'api',
+                'route' => 'api/<id>',
+                'verb' => ['POST'],
+                'suffix' => '.json',
+                'mode' => 'parsing only',
+                'type' => 'REST',
+            ],
+        ];
+
+        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), $rules, new ActionRoutes());
+
+        self::assertMatchesRegularExpression(
+            '/<th>\s*Rule\s*<\/th>/',
+            $html,
+            'Router Rules table must carry the Rule column header.',
+        );
+        self::assertStringContainsString(
+            'api/&lt;id&gt;',
+            $html,
+            'Second rule target must surface (HTML-escaped).',
+        );
+        self::assertMatchesRegularExpression(
+            '/<td>\s*parsing only\s*<\/td>/',
+            $html,
+            "Mode column must surface 'parsing only' for the parsing-only rule.",
         );
     }
 

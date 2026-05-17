@@ -12,7 +12,6 @@ use function array_values;
 use function basename;
 use function count;
 use function explode;
-use function function_exists;
 use function getenv;
 use function html_entity_decode;
 use function in_array;
@@ -20,7 +19,6 @@ use function is_array;
 use function is_string;
 use function mb_strlen;
 use function preg_match;
-use function preg_match_all;
 use function preg_replace;
 use function preg_replace_callback;
 use function rtrim;
@@ -53,8 +51,13 @@ final class PhpInfoDataNormalizer
      * Builds the typed view-model from the raw {@see phpinfo()} HTML body, the runtime metrics PHP itself reports
      * (SAPI, OS, memory limit) and the active {@see PHP_VERSION} constant.
      */
-    public static function fromOutput(string $body, string $phpVersion, string $sapi, string $os, string $memoryLimit): PhpInfoView
-    {
+    public static function fromOutput(
+        string $body,
+        string $phpVersion,
+        string $sapi,
+        string $os,
+        string $memoryLimit,
+    ): PhpInfoView {
         $home = self::resolveHomeDirectory();
 
         [$overviewSrc, $modulesSrc] = self::splitOverviewAndModules($body);
@@ -94,51 +97,111 @@ final class PhpInfoDataNormalizer
                 'tiles' => [
                     'SAPI' => $sapi,
                     'OS' => $os,
-                    'Server API' => self::pluck($rows, 'Server API'),
+                    'Server API' => self::pluck(
+                        $rows,
+                        'Server API',
+                    ),
                     'Memory limit' => $memoryLimit,
-                    'Virtual Dir Support' => self::pluck($rows, 'Virtual Directory Support'),
+                    'Virtual Dir Support' => self::pluck(
+                        $rows,
+                        'Virtual Directory Support',
+                    ),
                 ],
             ],
             [
                 'eyebrow' => 'Build',
                 'headline' => null,
                 'tiles' => [
-                    'Build Date' => self::pluck($rows, 'Build Date'),
-                    'Build System' => self::pluck($rows, 'Build System'),
-                    'PHP API' => self::pluck($rows, 'PHP API'),
-                    'PHP Extension' => self::pluck($rows, 'PHP Extension'),
-                    'Zend Extension' => self::pluck($rows, 'Zend Extension'),
+                    'Build Date' => self::pluck(
+                        $rows,
+                        'Build Date',
+                    ),
+                    'Build System' => self::pluck(
+                        $rows,
+                        'Build System',
+                    ),
+                    'PHP API' => self::pluck(
+                        $rows,
+                        'PHP API',
+                    ),
+                    'PHP Extension' => self::pluck(
+                        $rows,
+                        'PHP Extension',
+                    ),
+                    'Zend Extension' => self::pluck(
+                        $rows,
+                        'Zend Extension',
+                    ),
                 ],
             ],
             [
                 'eyebrow' => 'Configuration',
                 'headline' => null,
                 'tiles' => [
-                    'Loaded Configuration File' => self::pluck($rows, 'Loaded Configuration File'),
-                    'Configuration File (php.ini) Path' => self::pluck($rows, 'Configuration File (php.ini) Path'),
-                    'Scan this dir for additional .ini files' => self::pluck($rows, 'Scan this dir for additional .ini files'),
-                    'Additional .ini files parsed' => self::pluck($rows, 'Additional .ini files parsed'),
+                    'Loaded Configuration File' => self::pluck(
+                        $rows,
+                        'Loaded Configuration File',
+                    ),
+                    'Configuration File (php.ini) Path' => self::pluck(
+                        $rows,
+                        'Configuration File (php.ini) Path',
+                    ),
+                    'Scan this dir for additional .ini files' => self::pluck(
+                        $rows,
+                        'Scan this dir for additional .ini files',
+                    ),
+                    'Additional .ini files parsed' => self::pluck(
+                        $rows,
+                        'Additional .ini files parsed',
+                    ),
                 ],
             ],
             [
                 'eyebrow' => 'Capabilities',
                 'headline' => null,
                 'tiles' => [
-                    'Debug Build' => self::pluck($rows, 'Debug Build'),
-                    'Thread Safety' => self::pluck($rows, 'Thread Safety'),
-                    'Zend Signal Handling' => self::pluck($rows, 'Zend Signal Handling'),
-                    'Zend Memory Manager' => self::pluck($rows, 'Zend Memory Manager'),
-                    'IPv6 Support' => self::pluck($rows, 'IPv6 Support'),
-                    'DTrace Support' => self::pluck($rows, 'DTrace Support'),
+                    'Debug Build' => self::pluck(
+                        $rows,
+                        'Debug Build',
+                    ),
+                    'Thread Safety' => self::pluck(
+                        $rows,
+                        'Thread Safety',
+                    ),
+                    'Zend Signal Handling' => self::pluck(
+                        $rows,
+                        'Zend Signal Handling',
+                    ),
+                    'Zend Memory Manager' => self::pluck(
+                        $rows,
+                        'Zend Memory Manager',
+                    ),
+                    'IPv6 Support' => self::pluck(
+                        $rows,
+                        'IPv6 Support',
+                    ),
+                    'DTrace Support' => self::pluck(
+                        $rows,
+                        'DTrace Support',
+                    ),
                 ],
             ],
             [
                 'eyebrow' => 'Streams',
                 'headline' => null,
                 'tiles' => [
-                    'Registered PHP Streams' => self::pluck($rows, 'Registered PHP Streams'),
-                    'Registered Stream Socket Transports' => self::pluck($rows, 'Registered Stream Socket Transports'),
-                    'Registered Stream Filters' => self::pluck($rows, 'Registered Stream Filters'),
+                    'Registered PHP Streams' => self::pluck(
+                        $rows,
+                        'Registered PHP Streams',
+                    ),
+                    'Registered Stream Socket Transports' => self::pluck(
+                        $rows,
+                        'Registered Stream Socket Transports',
+                    ),
+                    'Registered Stream Filters' => self::pluck(
+                        $rows,
+                        'Registered Stream Filters',
+                    ),
                 ],
             ],
         ];
@@ -273,36 +336,22 @@ final class PhpInfoDataNormalizer
     {
         $rows = [];
 
-        if (
-            preg_match_all(
-                '%<table[^>]*>(.*?)</table>%s',
-                $overviewSrc,
-                $tableMatches,
-            ) === false) {
-            return $rows;
-        }
+        preg_match_all(
+            '%<tr[^>]*>\s*<td[^>]*>(.*?)</td>\s*<td[^>]*>(.*?)</td>\s*</tr>%s',
+            $overviewSrc,
+            $rowMatches,
+            PREG_SET_ORDER,
+        );
 
-        foreach ($tableMatches[1] as $tableHtml) {
-            if (
-                preg_match_all(
-                    '%<tr[^>]*>\s*<td[^>]*>(.*?)</td>\s*<td[^>]*>(.*?)</td>\s*</tr>%s',
-                    $tableHtml,
-                    $rowMatches,
-                    PREG_SET_ORDER
-                ) === false) {
+        foreach ($rowMatches as $row) {
+            $key = trim(html_entity_decode(strip_tags($row[1]), ENT_QUOTES, 'UTF-8'));
+            $value = trim(html_entity_decode(strip_tags($row[2]), ENT_QUOTES, 'UTF-8'));
+
+            if ($key === '' || stripos($key, 'PHP Logo') !== false) {
                 continue;
             }
 
-            foreach ($rowMatches as $row) {
-                $key = trim(html_entity_decode(strip_tags($row[1]), ENT_QUOTES, 'UTF-8'));
-                $value = trim(html_entity_decode(strip_tags($row[2]), ENT_QUOTES, 'UTF-8'));
-
-                if ($key === '' || stripos($key, 'PHP Logo') !== false) {
-                    continue;
-                }
-
-                $rows[$key] = $value;
-            }
+            $rows[$key] = $value;
         }
 
         return $rows;
@@ -372,18 +421,18 @@ final class PhpInfoDataNormalizer
     }
 
     /**
+     * @param non-empty-string $separator
+     *
      * @return list<string>
      */
     private static function splitTrimmed(string $value, string $separator): array
     {
-        if ($separator === '') {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_map('trim', explode($separator, $value)),
-            static fn(string $entry): bool => $entry !== '',
-        ));
+        return array_values(
+            array_filter(
+                array_map('trim', explode($separator, $value)),
+                static fn(string $entry): bool => $entry !== '',
+            ),
+        );
     }
 
     /**

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use PHPUnit\Framework\Attributes\Group;
+use Xepozz\InternalMocker\MockerState;
 use yii\debug\tests\support\TestCase;
-use yii\debug\widgets\phpinfo\{PhpInfoDataNormalizer, PhpInfoTile};
+use yii\debug\widgets\phpinfo\{PhpInfoDataNormalizer, PhpInfoTile, PhpInfoView};
 
 /**
  * Unit tests for {@see PhpInfoDataNormalizer} covering the parsing of the raw {@see phpinfo()} HTML output, the
@@ -41,6 +42,31 @@ final class PhpInfoDataNormalizerTest extends TestCase
             '8.5.3',
             $view->sections[0]->headline,
             "Headline must echo the active 'PHP_VERSION'.",
+        );
+    }
+
+    public function testFromOutputClassifiesDisabledAsMutedPill(): void
+    {
+        $body = '<table><tr><td>Debug Build</td><td>disabled</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput(
+            $body,
+            'x',
+            'cli',
+            'Linux',
+            '',
+        );
+
+        $tile = $this->findTileByLabel($view, 'Debug Build');
+
+        self::assertNotNull(
+            $tile,
+            'Debug Build tile must surface.',
+        );
+        self::assertSame(
+            PhpInfoTile::KIND_PILL_MUTED,
+            $tile->kind,
+            "'disabled' values must classify as the muted pill.",
         );
     }
 
@@ -141,6 +167,61 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputClassifiesTokenListWithShortCommaSeparatedValues(): void
+    {
+        $body = '<table><tr><td>Registered PHP Streams</td><td>https,ftps,ssh2</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput(
+            $body,
+            'x',
+            'cli',
+            'Linux',
+            '',
+        );
+
+        $tile = $this->findTileByLabel($view, 'Registered PHP Streams');
+
+        self::assertNotNull(
+            $tile,
+            'Registered PHP Streams tile must surface.',
+        );
+        self::assertSame(
+            PhpInfoTile::KIND_TOKEN_LIST,
+            $tile->kind,
+            'Comma-separated short tokens (≤32 chars, no whitespace) must classify as KIND_TOKEN_LIST.',
+        );
+        self::assertCount(
+            3,
+            $tile->tokens,
+            'Token list must produce one token per comma-separated entry.',
+        );
+    }
+
+    public function testFromOutputDowngradesTokenListToTextWhenTokenContainsWhitespace(): void
+    {
+        $body = '<table><tr><td>Registered PHP Streams</td><td>https,ftp with space,ssh2</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput(
+            $body,
+            'x',
+            'cli',
+            'Linux',
+            '',
+        );
+
+        $tile = $this->findTileByLabel($view, 'Registered PHP Streams');
+
+        self::assertNotNull(
+            $tile,
+            'Registered PHP Streams tile must surface.',
+        );
+        self::assertSame(
+            PhpInfoTile::KIND_TEXT,
+            $tile->kind,
+            "Token-list candidates with whitespace inside an entry must fall back to 'KIND_TEXT'.",
+        );
+    }
+
     public function testFromOutputExtractsConfigureCommand(): void
     {
         $body = '<table><tr><td>Configure Command</td><td>./configure --foo=bar</td></tr></table>';
@@ -157,6 +238,33 @@ final class PhpInfoDataNormalizerTest extends TestCase
             './configure --foo=bar',
             $view->configureCommand,
             'Configure Command must surface verbatim.',
+        );
+    }
+
+    public function testFromOutputKeepsAbsolutePathVerbatimWhenHomeNotResolved(): void
+    {
+        $body = '<table><tr><td>Loaded Configuration File</td><td>/etc/php/cli/php.ini</td></tr></table>';
+
+        unset($_SERVER['HOME'], $_SERVER['USERPROFILE']);
+
+        $view = PhpInfoDataNormalizer::fromOutput(
+            $body,
+            'x',
+            'cli',
+            'Linux',
+            '',
+        );
+
+        $tile = $this->findTileByLabel($view, 'Loaded Configuration File');
+
+        self::assertNotNull(
+            $tile,
+            'Loaded Configuration File tile must surface.',
+        );
+        self::assertSame(
+            '/etc/php/cli/php.ini',
+            $tile->displayValue,
+            'Paths outside the resolved home directory must surface verbatim.',
         );
     }
 
@@ -218,6 +326,69 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputResolvesHomeDirectoryFromPosixWhenEnvUnset(): void
+    {
+        $body = '<table><tr><td>Loaded Configuration File</td><td>/tmp/php.ini</td></tr></table>';
+
+        unset($_SERVER['HOME'], $_SERVER['USERPROFILE']);
+        putenv('HOME');
+        putenv('USERPROFILE');
+
+        $view = PhpInfoDataNormalizer::fromOutput(
+            $body,
+            'x',
+            'cli',
+            'Linux',
+            '',
+        );
+
+        $tile = $this->findTileByLabel($view, 'Loaded Configuration File');
+
+        self::assertNotNull(
+            $tile,
+            'Loaded Configuration File tile must surface.',
+        );
+        self::assertSame(
+            PhpInfoTile::KIND_PATH,
+            $tile->kind,
+            "Without env signals, 'resolveHomeDirectory()' must still produce a PATH tile (the posix fallback "
+            . 'or empty home are both acceptable).',
+        );
+    }
+
+    public function testFromOutputShortenPathsAgainstHomeDirectory(): void
+    {
+        $body = '<table><tr><td>Loaded Configuration File</td><td>/home/dev/projects/app/php.ini</td></tr></table>';
+        $_SERVER['HOME'] = '/home/dev';
+
+        $view = PhpInfoDataNormalizer::fromOutput(
+            $body,
+            'x',
+            'cli',
+            'Linux',
+            '',
+        );
+
+        $tile = $this->findTileByLabel($view, 'Loaded Configuration File');
+
+        unset($_SERVER['HOME']);
+
+        self::assertNotNull(
+            $tile,
+            'Loaded Configuration File tile must surface.',
+        );
+        self::assertSame(
+            '~/projects/app/php.ini',
+            $tile->displayValue,
+            "Paths under the resolved home directory must be shortened to '~/...'.",
+        );
+        self::assertSame(
+            '/home/dev/projects/app/php.ini',
+            $tile->rawValue,
+            'Raw path must be preserved alongside the shortened display value.',
+        );
+    }
+
     public function testFromOutputSkipsPhpLogoRows(): void
     {
         $body = '<table><tr><td>PHP Logo GUID</td><td>some-guid</td></tr><tr><td>SAPI</td><td>cli</td></tr></table>';
@@ -242,6 +413,31 @@ final class PhpInfoDataNormalizerTest extends TestCase
             'PHP Logo GUID',
             $heroLabels,
             "'PHP' Logo entries must be filtered out.",
+        );
+    }
+
+    public function testFromOutputSurfacesPathTokensForStandaloneAbsolutePath(): void
+    {
+        $body = '<table><tr><td>Loaded Configuration File</td><td>/etc/php/cli/php.ini</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput(
+            $body,
+            'x',
+            'cli',
+            'Linux',
+            '',
+        );
+
+        $tile = $this->findTileByLabel($view, 'Loaded Configuration File');
+
+        self::assertNotNull(
+            $tile,
+            'Loaded Configuration File tile must surface.',
+        );
+        self::assertSame(
+            PhpInfoTile::KIND_PATH,
+            $tile->kind,
+            "Single leading '/' path must classify as 'KIND_PATH'.",
         );
     }
 
@@ -272,5 +468,53 @@ final class PhpInfoDataNormalizerTest extends TestCase
             $view->modulesHtml,
             'Modules HTML must carry the slug id for TOC anchors.',
         );
+    }
+
+    public function testResolveHomeDirectoryReturnsEmptyWhenEnvAndPosixUnavailable(): void
+    {
+        unset($_SERVER['HOME'], $_SERVER['USERPROFILE']);
+        putenv('HOME');
+        putenv('USERPROFILE');
+
+        MockerState::addCondition(
+            'yii\debug\widgets\phpinfo',
+            'function_exists',
+            [],
+            false,
+            true,
+        );
+
+        $view = PhpInfoDataNormalizer::fromOutput(
+            '<table><tr><td>Loaded Configuration File</td><td>/etc/php.ini</td></tr></table>',
+            'x',
+            'cli',
+            'Linux',
+            '',
+        );
+
+        $tile = $this->findTileByLabel($view, 'Loaded Configuration File');
+
+        self::assertNotNull(
+            $tile,
+            'Loaded Configuration File tile must surface.',
+        );
+        self::assertSame(
+            '/etc/php.ini',
+            $tile->displayValue,
+            "With no home directory resolved, paths must surface verbatim (empty '\$home' skips shortening).",
+        );
+    }
+
+    private function findTileByLabel(PhpInfoView $view, string $label): PhpInfoTile|null
+    {
+        foreach ($view->sections as $section) {
+            foreach ($section->tiles as $tile) {
+                if ($tile->label === $label) {
+                    return $tile;
+                }
+            }
+        }
+
+        return null;
     }
 }

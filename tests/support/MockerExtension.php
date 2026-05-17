@@ -55,6 +55,7 @@ final class MockerExtension implements Extension
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_iterable'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_string'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'count'],
+            ['namespace' => 'yii\debug\widgets\phpinfo', 'name' => 'function_exists'],
         ];
 
         (new Mocker(stubPath: __DIR__ . '/mocker-stubs.php'))->load($mocks);

@@ -9,6 +9,7 @@ use Yii;
 use yii\debug\controllers\DefaultController;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Module;
+use yii\debug\panels\DbPanel;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryStatusBucket, HistorySummary};
 
@@ -77,6 +78,29 @@ final class HistoryRowRendererTest extends TestCase
         );
     }
 
+    public function testBuildRowOptionsFlagsCriticalStatusCodesWithDangerHighlight(): void
+    {
+        $row = HistoryRow::from(
+            [
+                'tag' => 'critical',
+                'statusCode' => 500,
+            ],
+        );
+
+        $searchModel = new DebugSearch();
+        $options = HistoryRowRenderer::buildRowOptions($row, $searchModel);
+
+        self::assertIsString(
+            $options['class'] ?? null,
+            'class entry must be a string.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-row-danger',
+            $options['class'],
+            'Critical status codes must surface the danger highlight class alongside the row-link hook.',
+        );
+    }
+
     public function testRenderAjaxCellMapsBoolToYesOrNo(): void
     {
         self::assertSame(
@@ -120,6 +144,121 @@ final class HistoryRowRendererTest extends TestCase
         );
     }
 
+    public function testRenderMemoryCellShowsNotSetWhenMissing(): void
+    {
+        $html = HistoryRowRenderer::renderMemoryCell(
+            HistoryRow::from([]),
+        );
+
+        self::assertStringContainsString(
+            '(not set)',
+            $html,
+            'Missing peak memory must surface the muted placeholder.',
+        );
+    }
+
+    public function testRenderSqlCountCellEmitsWarningGlyphWhenAboveThreshold(): void
+    {
+        $row = HistoryRow::from(
+            [
+                'tag' => 'flood',
+                'sqlCount' => 500,
+                'excessiveCallersCount' => 0,
+            ],
+        );
+
+        $dbPanel = new DbPanel();
+
+        $dbPanel->criticalQueryThreshold = 100;
+
+        $html = HistoryRowRenderer::renderSqlCountCell($row, $dbPanel);
+
+        self::assertStringContainsString(
+            '⚠',
+            $html,
+            'Counts above the threshold must surface the warning glyph.',
+        );
+        self::assertStringContainsString(
+            'Too many queries',
+            $html,
+            'Warning tooltip must explain the threshold breach.',
+        );
+    }
+
+    public function testRenderSqlCountCellPluralizesExcessiveCallersCount(): void
+    {
+        $row = HistoryRow::from(
+            [
+                'tag' => 'flood',
+                'sqlCount' => 10,
+                'excessiveCallersCount' => 4,
+            ],
+        );
+
+        $dbPanel = new DbPanel();
+
+        $dbPanel->criticalQueryThreshold = 100;
+
+        $html = HistoryRowRenderer::renderSqlCountCell($row, $dbPanel);
+
+        self::assertStringContainsString(
+            '4 callers are making too many calls.',
+            $html,
+            'Multiple excessive callers must surface the plural tooltip form.',
+        );
+    }
+
+    public function testRenderSqlCountCellRendersPlainCountWhenBelowThreshold(): void
+    {
+        $row = HistoryRow::from(
+            [
+                'tag' => 'low',
+                'sqlCount' => 3,
+                'excessiveCallersCount' => 0,
+            ],
+        );
+
+        $dbPanel = new DbPanel();
+
+        $dbPanel->criticalQueryThreshold = 100;
+
+        $html = HistoryRowRenderer::renderSqlCountCell($row, $dbPanel);
+
+        self::assertStringContainsString(
+            '>3<',
+            $html,
+            'Plain SQL count must surface as the bare integer.',
+        );
+        self::assertStringNotContainsString(
+            '⚠',
+            $html,
+            'Counts below the threshold must NOT carry the warning glyph.',
+        );
+    }
+
+    public function testRenderSqlCountCellSingularizesSingleExcessiveCaller(): void
+    {
+        $row = HistoryRow::from(
+            [
+                'tag' => 'flood',
+                'sqlCount' => 10,
+                'excessiveCallersCount' => 1,
+            ],
+        );
+
+        $dbPanel = new DbPanel();
+
+        $dbPanel->criticalQueryThreshold = 100;
+
+        $html = HistoryRowRenderer::renderSqlCountCell($row, $dbPanel);
+
+        self::assertStringContainsString(
+            '1 caller is making too many calls.',
+            $html,
+            'A single excessive caller must surface the singular tooltip form.',
+        );
+    }
+
     public function testRenderStatusCellMapsCommandWithZeroToSuccess(): void
     {
         self::assertStringContainsString(
@@ -158,7 +297,6 @@ final class HistoryRowRendererTest extends TestCase
             ],
             statusCodeFilter: null,
         );
-
         $html = HistoryRowRenderer::renderSummary($summary);
 
         self::assertStringContainsString(
@@ -212,6 +350,41 @@ final class HistoryRowRendererTest extends TestCase
         self::assertStringContainsString('abc', $html, 'Tag value must surface inside the link.');
     }
 
+    public function testRenderTimeCellRendersCompactClockWithFullTooltip(): void
+    {
+        $row = HistoryRow::from(
+            [
+                'time' => 1_700_000_000,
+            ],
+        );
+
+        $html = HistoryRowRenderer::renderTimeCell($row);
+
+        self::assertStringContainsString(
+            'yii-debug-nowrap',
+            $html,
+            'Time cell must carry the nowrap CSS class.',
+        );
+        self::assertStringContainsString(
+            'title="2023-11-14',
+            $html,
+            'Time cell must carry the full datetime tooltip.',
+        );
+    }
+
+    public function testRenderTimeCellShowsNotSetForZeroTimestamp(): void
+    {
+        $html = HistoryRowRenderer::renderTimeCell(
+            HistoryRow::from(['time' => 0]),
+        );
+
+        self::assertStringContainsString(
+            '(not set)',
+            $html,
+            'Zero timestamps must surface the muted placeholder.',
+        );
+    }
+
     public function testRenderUrlCellWrapsUrlInTitleSpan(): void
     {
         $html = HistoryRowRenderer::renderUrlCell(
@@ -241,6 +414,7 @@ final class HistoryRowRendererTest extends TestCase
         $module->allowedIPs = ['*'];
 
         Yii::$app->setModule('debug', $module);
+
         $module->bootstrap(Yii::$app);
 
         Yii::$app->controller = new DefaultController('default', $module);

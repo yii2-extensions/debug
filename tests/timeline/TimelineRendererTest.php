@@ -21,6 +21,37 @@ use yii\debug\tests\support\TestCase;
 #[Group('timeline')]
 final class TimelineRendererTest extends TestCase
 {
+    public function testRenderChartIncludesMemoryFooterWhenSvgHasPoints(): void
+    {
+        $panel = $this->stubPanel(100.0, 2_097_152);
+
+        // Force the memoized SVG to have plotted points so 'renderChart' attaches the memory footer.
+        $svg = $panel->getSvg();
+
+        $this->setInaccessibleProperty(
+            $svg,
+            'points',
+            [[0.0, 50.0], [1.0, 80.0]],
+        );
+
+        $dataProvider = $this->makeDataProvider(
+            $panel,
+            [['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05]],
+        );
+
+        $html = TimelineRenderer::renderChart($panel, $dataProvider);
+
+        self::assertStringContainsString(
+            'yii-debug-tl-memory',
+            $html,
+            'Memory footer must surface when the SVG memory chart has points.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-tl-memory-peak',
+            $html,
+            'Peak-memory chip must appear inside the memory footer.',
+        );
+    }
     public function testRenderChartReturnsEmptyStringWhenDataProviderHasNoModels(): void
     {
         $panel = $this->stubPanel(10.0, 1);
@@ -166,6 +197,33 @@ final class TimelineRendererTest extends TestCase
             'Apply',
             $html,
             "Submit button must render the 'Apply' label.",
+        );
+    }
+
+    public function testRenderRowsSkipsNonArrayModels(): void
+    {
+        $panel = $this->stubPanel(100.0, 1);
+
+        $dataProvider = $this->makeDataProvider($panel, []);
+
+        // Inject a non-array model via reflection so 'renderRows' hits its defensive `continue`.
+        $this->setInaccessibleProperty(
+            $dataProvider,
+            '_models',
+            ['not-an-array', 42],
+        );
+
+        $html = TimelineRenderer::renderChart($panel, $dataProvider);
+
+        self::assertStringContainsString(
+            'class="yii-debug-tl-rows"',
+            $html,
+            "Chart must still render the rows container even when 'models' contains non-array entries.",
+        );
+        self::assertStringNotContainsString(
+            'yii-debug-tl-row-',
+            $html,
+            "Non-array 'models' must be skipped via the defensive 'continue'.",
         );
     }
 
