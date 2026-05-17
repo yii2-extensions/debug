@@ -22,7 +22,7 @@ UserswitchAsset::register($this);
 
 $userSwitch = $panel->userSwitch;
 ?>
-    <h2>Switch user</h2>
+    <h3>Switch user</h3>
     <div class="yii-debug-grid-2">
         <?php if ($userSwitch !== null): ?>
         <div>

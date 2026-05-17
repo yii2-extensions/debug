@@ -22,7 +22,7 @@ $rolesProvider = $data['rolesProvider'] ?? null;
 $permissionsProvider = $data['permissionsProvider'] ?? null;
 
 if ($rolesProvider !== null) {
-    echo '<h2>Roles</h2>';
+    echo '<h3>Roles</h3>';
     echo GridView::widget(
         [
             ...GridViewConfig::defaults(),
@@ -33,7 +33,7 @@ if ($rolesProvider !== null) {
 }
 
 if ($permissionsProvider !== null) {
-    echo '<h2>Permissions</h2>';
+    echo '<h3>Permissions</h3>';
     echo GridView::widget(
         [
             ...GridViewConfig::defaults(),

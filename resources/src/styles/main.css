@@ -1926,9 +1926,9 @@
       background: var(--yii-debug-panel-surface-muted);
       color: var(--yii-debug-panel-muted);
       font-family: var(--yii-debug-font-sans);
-      font-size: 11px;
+      font-size: var(--yii-debug-fs-xs);
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
     }
 
@@ -2541,8 +2541,8 @@
     h2 {
       margin: 0 0 var(--yii-debug-space-3);
       color: var(--yii-debug-panel-text);
-      font-size: var(--yii-debug-fs-md);
-      font-weight: 600;
+      font-size: var(--yii-debug-fs-lg);
+      font-weight: 700;
     }
 
     p {
@@ -3127,10 +3127,6 @@
     text-align: right;
   }
 
-  .yii-debug-grid-queue input.yii-debug-col-queue-id-input {
-    box-sizing: content-box;
-    width: 10ch;
-  }
 
   .yii-debug-grid-queue .yii-debug-queue-status,
   .yii-debug-grid-queue .yii-debug-queue-driver {
@@ -4319,14 +4315,15 @@
   }
 
   /**
-   * Tag link in the request table — this is the primary action of the
-   * whole index, so it gets the most weight: mono, bold, slightly larger,
-   * and never wraps so the SHA stays scannable on a single line.
+   * Tag link in the request table — the primary action of the whole
+   * index. Renders mono + bold so the SHA stays scannable, but matches
+   * the surrounding `tbody td` size so the row height is uniform across
+   * columns.
    */
   .yii-debug-tag-link {
     display: inline-block;
     font-family: var(--yii-debug-font-mono);
-    font-size: var(--yii-debug-fs-base);
+    font-size: var(--yii-debug-fs-sm);
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--yii-debug-panel-primary-strong);
@@ -4529,12 +4526,28 @@
   }
 
   /**
-   * The ID column carries the tag SHA — give it enough room so the
-   * 13-character hex never wraps even when its filter input is open.
+   * The ID column (History tag SHA and Queue job id) shares a single
+   * baseline width so the filter input renders identically across panels
+   * and the 13-character hex never wraps even when the filter is open.
+   * Width is sized to fit the 13-character SHA + breathing room.
    */
-  .yii-debug-col-id {
-    min-width: 170px;
+  .yii-debug-col-id,
+  .yii-debug-col-queue-id {
+    min-width: 140px;
     white-space: nowrap;
+  }
+
+  /**
+   * Pin the ID filter inputs to a fixed compact width across panels so
+   * the search box never stretches with the column on wide viewports —
+   * sized to fit the 13-character SHA without spilling into empty space.
+   * Higher specificity than `.yii-debug-grid .filters input { width: 100% }`
+   * so this wins regardless of source order.
+   */
+  .yii-debug-grid .filters input.yii-debug-col-id-input,
+  .yii-debug-grid .filters input.yii-debug-col-queue-id-input {
+    box-sizing: border-box;
+    width: 120px;
   }
 
   /**

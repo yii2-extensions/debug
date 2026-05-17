@@ -80,6 +80,7 @@ $mailPanel = $panels['mail'] ?? null;
                     'format' => 'raw',
                     'headerOptions' => ['class' => 'yii-debug-col-id'],
                     'contentOptions' => ['class' => 'yii-debug-col-id'],
+                    'filterInputOptions' => ['class' => 'yii-debug-input yii-debug-col-id-input'],
                 ],
                 [
                     'attribute' => 'time',
