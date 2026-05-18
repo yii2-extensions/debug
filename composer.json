@@ -27,11 +27,11 @@
         "ui-awesome/html": "^0.4",
         "ui-awesome/html-helper": "^0.7",
         "ui-awesome/html-svg": "^0.4",
-        "yiisoft/yii2": "^2.0.55 || ^22.0@dev",
+        "yiisoft/yii2": "^2.0.56@dev || ^22.0@dev",
         "yiisoft/yii2-symfonymailer": "^2.0 || ^22.0@dev"
     },
     "require-dev": {
-        "infection/infection": "^0.32",
+        "infection/infection": "^0.33",
         "maglnet/composer-require-checker": "^4.1",
         "php-forge/baseline": "^0.1@dev",
         "php-forge/coding-standard": "^0.3@dev",
