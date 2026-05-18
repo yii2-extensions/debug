@@ -20,6 +20,7 @@ jobs:
   mutation:
     uses: yii2-framework/actions/.github/workflows/infection.yml@v1
     with:
+      command-options: --threads=4 --ignore-msi-with-no-mutations
       phpstan: true
     secrets:
       STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
