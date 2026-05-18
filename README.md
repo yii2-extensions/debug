@@ -27,6 +27,12 @@
     <em>Pico-inspired UI, scoped CSS, light/dark mode, and 14 inspection panels</em>
 </p>
 
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/home-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/home-light.png">
+    <img src="docs/images/home-light.png" alt="Debug toolbar">
+</picture>
+
 ## Features
 
 <picture>
@@ -57,6 +63,170 @@ if (YII_ENV_DEV) {
 ```
 
 The toolbar appears at the bottom of every rendered page; click any panel chip to open the full debugger.
+
+## Screenshots
+
+<details>
+<summary>Configuration</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/config-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/config-light.png">
+    <img src="docs/images/config-light.png" alt="Configuration panel">
+</picture>
+</details>
+
+<details>
+<summary>PHP info</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/phpinfo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/phpinfo-light.png">
+    <img src="docs/images/phpinfo-light.png" alt="PHP info panel">
+</picture>
+</details>
+
+<details>
+<summary>History</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/history-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/history-light.png">
+    <img src="docs/images/history-light.png" alt="History panel">
+</picture>
+</details>
+
+<details>
+<summary>Request</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/request-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/request-light.png">
+    <img src="docs/images/request-light.png" alt="Request panel">
+</picture>
+</details>
+
+<details>
+<summary>Router</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/router-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/router-light.png">
+    <img src="docs/images/router-light.png" alt="Router panel">
+</picture>
+</details>
+
+<details>
+<summary>Logs</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/log-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/log-light.png">
+    <img src="docs/images/log-light.png" alt="Logs panel">
+</picture>
+</details>
+
+<details>
+<summary>Database</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/database-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/database-light.png">
+    <img src="docs/images/database-light.png" alt="Database panel">
+</picture>
+</details>
+
+<details>
+<summary>Profiling</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/profiling-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/profiling-light.png">
+    <img src="docs/images/profiling-light.png" alt="Profiling panel">
+</picture>
+</details>
+
+<details>
+<summary>Timeline</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/timeline-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/timeline-light.png">
+    <img src="docs/images/timeline-light.png" alt="Timeline panel">
+</picture>
+</details>
+
+<details>
+<summary>Events</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/event-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/event-light.png">
+    <img src="docs/images/event-light.png" alt="Events panel">
+</picture>
+</details>
+
+<details>
+<summary>Mail</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/mail-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/mail-light.png">
+    <img src="docs/images/mail-light.png" alt="Mail panel">
+</picture>
+</details>
+
+<details>
+<summary>Queue</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/queue-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/queue-light.png">
+    <img src="docs/images/queue-light.png" alt="Queue panel">
+</picture>
+</details>
+
+<details>
+<summary>Queue job</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/queue-job-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/queue-job-light.png">
+    <img src="docs/images/queue-job-light.png" alt="Queue job detail">
+</picture>
+</details>
+
+<details>
+<summary>Dump</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/dump-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/dump-light.png">
+    <img src="docs/images/dump-light.png" alt="Dump panel">
+</picture>
+</details>
+
+<details>
+<summary>Asset bundles</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/asset-bundles-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/asset-bundles-light.png">
+    <img src="docs/images/asset-bundles-light.png" alt="Asset bundles panel">
+</picture>
+</details>
+
+<details>
+<summary>User</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/user-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/user-light.png">
+    <img src="docs/images/user-light.png" alt="User panel">
+</picture>
+</details>
+
+<details>
+<summary>User Roles and Permissions</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/user-roles-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/user-roles-light.png">
+    <img src="docs/images/user-roles-light.png" alt="User panel — Roles and Permissions">
+</picture>
+</details>
+
+<details>
+<summary>User Switch User</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/user-switch-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/user-switch-light.png">
+    <img src="docs/images/user-switch-light.png" alt="User panel — Switch User">
+</picture>
+</details>
 
 ## Documentation
 
