@@ -238,7 +238,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $errorHandler = $app->errorHandler;
 
-        $errorHandler->on(ErrorHandler::EVENT_AFTER_RENDER, [$this, 'injectToolbarOnErrorPage']);
+        $errorHandler->on(\yii\base\View::EVENT_AFTER_RENDER, [$this, 'injectToolbarOnErrorPage']);
 
         $app->getUrlManager()->addRules(
             [
