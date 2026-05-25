@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
+use UIAwesome\Html\Core\Component\{Item, Menu};
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Form\Button;
+use UIAwesome\Html\Interop\Inline;
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
-use UIAwesome\Html\Sectioning\{Aside, Nav, Section};
+use UIAwesome\Html\Sectioning\{Aside, Section};
 use yii\debug\helpers\Icon;
 use yii\helpers\Url;
 
@@ -195,47 +197,49 @@ final class SidebarRenderer
     }
 
     /**
-     * Renders the bottom panel-nav `<nav>` (History + every non-config panel).
+     * Renders the bottom panel-nav (History + every non-config panel) as a {@see Menu} of {@see Item} entries.
      *
-     * @param list<SidebarNavItem> $items
+     * Each entry wraps its label in a `<span>` and, when present, its icon SVG in a sibling `<span>`. The active entry
+     * receives the `is-active` class and the `aria-current="page"` attribute; inactive entries are styled through
+     * `.yii-debug-nav-link:not(.is-active)`.
+     *
+     * @param list<SidebarNavItem> $items Navigation entries to render.
+     *
+     * @return string Rendered `<nav>` markup for the panel navigation.
      */
-    private static function renderPanelNav(array $items): Nav
+    private static function renderPanelNav(array $items): string
     {
-        $children = [];
+        $menuItems = [];
 
         foreach ($items as $item) {
-            $classes = ['yii-debug-nav-link'];
-            $classes[] = $item->isActive ? 'is-active' : 'yii-debug-nav-link-muted';
-
-            $link = A::tag()
-                ->class(implode(' ', $classes))
-                ->href(Url::to($item->url))
-                ->title($item->tooltip);
-
-            if ($item->isActive) {
-                $link = $link->addAriaAttribute('current', 'page');
-            }
-
-            $linkChildren = [];
+            $menuItem = Item::tag()
+                ->label($item->label)
+                ->labelTag(Inline::SPAN)
+                ->labelClass('yii-debug-nav-link-label')
+                ->link(Url::to($item->url))
+                ->active($item->isActive)
+                ->linkAttributes(['title' => $item->tooltip]);
 
             if ($item->iconSvg !== '') {
-                $linkChildren[] = Span::tag()
-                    ->class('yii-debug-nav-link-icon')
-                    ->addAttribute('aria-hidden', 'true')
-                    ->html($item->iconSvg);
+                $menuItem = $menuItem
+                    ->iconTag('span')
+                    ->iconClass('yii-debug-nav-link-icon')
+                    ->iconAttributes(['aria-hidden' => 'true'])
+                    ->iconContent($item->iconSvg);
             }
 
-            $linkChildren[] = Span::tag()
-                ->class('yii-debug-nav-link-label')
-                ->content($item->label);
-
-            $children[] = $link->html(...$linkChildren);
+            $menuItems[] = $menuItem;
         }
 
-        return Nav::tag()
+        return Menu::tag()
+            ->type('nav')
             ->class('yii-debug-nav yii-debug-nav-iconed')
             ->addAriaAttribute('label', 'Debug panels')
-            ->html(...$children);
+            ->linkClass('yii-debug-nav-link')
+            ->linkActiveClass('is-active')
+            ->linkAriaCurrent()
+            ->items(...$menuItems)
+            ->render();
     }
 
     /**

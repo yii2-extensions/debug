@@ -806,15 +806,20 @@
    */
 
   .yii-debug-nav {
-    display: flex;
-    flex-direction: column;
     margin: 0;
     padding: var(--yii-debug-space-2);
-    list-style: none;
     border: var(--yii-debug-border);
     border-radius: var(--yii-debug-radius-lg);
     background: var(--yii-debug-panel-surface);
     box-shadow: var(--yii-debug-shadow-sm);
+  }
+
+  .yii-debug-nav ul {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .yii-debug-nav-link {
@@ -4282,7 +4287,7 @@
    * Hover restores both to full intensity and nudges the icon one px
    * right so the row clearly reads as interactive.
    */
-  .yii-debug-nav-link-muted {
+  .yii-debug-nav-link:not(.is-active) {
     color: var(--yii-debug-panel-muted);
 
     .yii-debug-nav-link-icon {
