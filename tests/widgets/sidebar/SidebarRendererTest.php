@@ -50,10 +50,10 @@ final class SidebarRendererTest extends TestCase
             $html,
             'Active nav entry must carry the is-active modifier.',
         );
-        self::assertStringContainsString(
-            'yii-debug-nav-link-muted',
-            $html,
-            'Non-active nav entry must carry the muted modifier.',
+        self::assertSame(
+            1,
+            substr_count($html, 'is-active'),
+            'Only the active entry carries the modifier.',
         );
     }
 

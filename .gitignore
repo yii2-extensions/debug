@@ -1,7 +1,6 @@
 # AI agents (if present)
 .codex
 .claude
-phpunit.xml
 
 # codecoverage (if present)
 code_coverage

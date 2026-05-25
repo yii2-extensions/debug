@@ -1,11 +1,11 @@
 {
     "providers": {
         "php-forge/baseline": {
-            "version": "0.1.1",
+            "version": "0.1.2",
             "path": "vendor/php-forge/baseline"
         },
         "php-forge/coding-standard": {
-            "version": "0.3.1",
+            "version": "0.3.2",
             "path": "vendor/php-forge/coding-standard"
         }
     },
