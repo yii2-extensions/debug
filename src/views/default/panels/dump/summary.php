@@ -6,9 +6,9 @@ use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use yii\debug\html\defaults\{ToolbarBlock, ToolbarLabel};
-use yii\debug\panels\AssetPanel;
+use yii\debug\panels\DumpPanel;
 
-/** @var AssetPanel $panel Panel providing the toolbar summary data. */
+/** @var DumpPanel $panel Panel providing the toolbar summary data. */
 $dumps = is_array($panel->data) ? $panel->data : [];
 ?>
 <?php if ($dumps !== []): ?>

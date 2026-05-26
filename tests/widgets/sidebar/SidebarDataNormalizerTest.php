@@ -11,7 +11,7 @@ use yii\debug\widgets\sidebar\SidebarDataNormalizer;
 
 /**
  * Unit tests for {@see SidebarDataNormalizer} covering the narrowing of `_sidebar.php` inputs (panels + manifest +
- * activePanel + summary) into the typed view-model. Validates both 'fromView' and 'fromIndex' factories.
+ * activePanel + summary) into the typed view-model. Validates the 'fromShell', 'fromView', and 'fromIndex' factories.
  */
 #[Group('panel')]
 #[Group('sidebar')]
@@ -186,6 +186,62 @@ final class SidebarDataNormalizerTest extends TestCase
             200,
             $view->snapshot->statusCode,
             'Status must come from the newest entry.',
+        );
+    }
+
+    public function testFromShellDispatchesToViewWhenTagIsNonEmpty(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromShell(
+            'view',
+            ['request' => $panel],
+            ['tag-1' => ['method' => 'GET']],
+            $panel,
+            'tag-1',
+            ['method' => 'GET', 'statusCode' => 200],
+        );
+
+        self::assertNotNull(
+            $view->snapshot,
+            'Snapshot must surface.',
+        );
+        self::assertSame(
+            'Current request',
+            $view->snapshot->title,
+            'Valid view request must dispatch to view mode.',
+        );
+    }
+
+    public function testFromShellFallsBackToIndexWhenTagIsEmpty(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromShell(
+            'view',
+            ['request' => $panel],
+            ['tag-1' => ['method' => 'GET']],
+            $panel,
+            '',
+            ['method' => 'GET', 'statusCode' => 200],
+        );
+
+        self::assertNotNull(
+            $view->snapshot,
+            'Snapshot must surface.',
+        );
+        self::assertSame(
+            'Latest request',
+            $view->snapshot->title,
+            'Empty tag must fall back to index mode.',
         );
     }
 

@@ -48,7 +48,7 @@ if ($results === []) {
 
         foreach ($columns as $column) {
             $value = $row[$column] ?? null;
-            $cells[] = $value === null || $value === ''
+            $cells[] = $value === null
                 ? Td::tag()->html(Em::tag()->content('NULL'))
                 : Td::tag()->content((string) $value);
         }

@@ -24,7 +24,7 @@ $permissionsProvider = $data['permissionsProvider'] ?? null;
 
 ?>
 <?php if ($rolesProvider !== null): ?>
-    <?= H3::tag()->content('User') ?>
+    <?= H3::tag()->content('Roles') ?>
     <?= GridView::widget(
         [
             ...GridViewConfig::defaults(),

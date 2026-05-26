@@ -89,7 +89,7 @@ final class SidebarDataNormalizer
         $narrowedPanels = self::narrowPanels($panels);
         $narrowedManifest = self::narrowManifest($manifest);
 
-        if ($mode === 'view' && $activePanel !== null && $tag !== null && $summary !== null) {
+        if ($mode === 'view' && $activePanel !== null && $tag !== null && $tag !== '' && $summary !== null) {
             return self::fromView($narrowedPanels, $narrowedManifest, $activePanel, $tag, $summary);
         }
 
