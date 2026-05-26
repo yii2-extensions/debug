@@ -6,11 +6,11 @@ use yii\debug\panels\mail\{MailCardRenderer, MailMessageNormalizer};
 use yii\helpers\Url;
 
 /**
- * @var array<string, mixed> $model
- * @var int $index
+ * @var int $index Zero-based index of the mail message.
+ * @var array<string, mixed> $model Raw mail message data.
  */
-
-echo MailCardRenderer::renderItem(
+?>
+<?= MailCardRenderer::renderItem(
     MailMessageNormalizer::from($model),
     static fn(string $file): string => Url::to(['download-mail', 'file' => $file]),
 );

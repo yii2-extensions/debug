@@ -145,6 +145,26 @@ final class AssetPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailRendersEmptyStateWhenNoBundlesAreLoaded(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $panel->data = [];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'yii-debug-empty-state',
+            $html,
+            'Empty data must render the empty-state container.',
+        );
+        self::assertStringContainsString(
+            'No asset bundles loaded',
+            $html,
+            'Empty state must surface the headline.',
+        );
+    }
+
     public function testGetNameAndIconReturnConstantsForToolbar(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
@@ -171,6 +191,19 @@ final class AssetPanelTest extends TestCase
             '',
             $panel->getSummary(),
             'Summary HTML must render when bundles are present.',
+        );
+    }
+
+    public function testGetSummaryReturnsEmptyStringWhenNoBundlesAreLoaded(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $panel->data = [];
+
+        self::assertSame(
+            '',
+            $panel->getSummary(),
+            'No bundles must yield empty summary markup.',
         );
     }
 

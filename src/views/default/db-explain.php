@@ -2,49 +2,72 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Helper\Encode;
+use UIAwesome\Html\Flow\{Div, P, Pre};
+use UIAwesome\Html\Heading\H1;
+use UIAwesome\Html\Phrasing\Em;
+use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
+use yii\web\View;
 
 /**
- * @var \yii\web\View $this
- * @var array<int, array<string, scalar|null>> $results
- * @var string $query
+ * @var string $query Explain query string.
+ * @var array<int, array<string, scalar|null>> $results Explain query results.
+ * @var View $this View component instance.
  */
-
 $this->title = 'EXPLAIN';
 
 $resultList = array_values($results);
 $columns = $resultList === [] ? [] : array_keys($resultList[0]);
+
+$children = [
+    H1::tag()
+        ->class('yii-debug-explain-title')
+        ->content('EXPLAIN'),
+];
+
+if ($query !== '') {
+    $children[] = Pre::tag()
+        ->class('yii-debug-explain-query')
+        ->content($query);
+}
+
+if ($results === []) {
+    $children[] = P::tag()
+        ->class('yii-debug-explain-empty')
+        ->content('EXPLAIN returned no rows.');
+} else {
+    $headerCells = [];
+
+    foreach ($columns as $column) {
+        $headerCells[] = Th::tag()->content($column);
+    }
+
+    $bodyRows = [];
+
+    foreach ($results as $row) {
+        $cells = [];
+
+        foreach ($columns as $column) {
+            $value = $row[$column] ?? null;
+            $cells[] = $value === null
+                ? Td::tag()->html(Em::tag()->content('NULL'))
+                : Td::tag()->content((string) $value);
+        }
+
+        $bodyRows[] = Tr::tag()->html(...$cells);
+    }
+
+    $children[] = Div::tag()
+        ->class('yii-debug-explain-scroll')
+        ->html(
+            Table::tag()
+                ->class('yii-debug-table yii-debug-explain-table')
+                ->html(
+                    Thead::tag()->html(Tr::tag()->html(...$headerCells)),
+                    Tbody::tag()->html(...$bodyRows),
+                ),
+        );
+}
 ?>
-<div class="yii-debug-explain">
-    <h1 class="yii-debug-explain-title">EXPLAIN</h1>
-
-    <?php if ($query !== ''): ?>
-        <pre class="yii-debug-explain-query"><?= Encode::content($query) ?></pre>
-    <?php endif; ?>
-
-    <?php if ($results === []): ?>
-        <p class="yii-debug-explain-empty">EXPLAIN returned no rows.</p>
-    <?php else: ?>
-        <div class="yii-debug-explain-scroll">
-            <table class="yii-debug-table yii-debug-explain-table">
-                <thead>
-                    <tr>
-                        <?php foreach ($columns as $column): ?>
-                            <th><?= Encode::content($column) ?></th>
-                        <?php endforeach; ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($results as $row): ?>
-                        <tr>
-                            <?php foreach ($columns as $column): ?>
-                                <?php $value = $row[$column] ?? null; ?>
-                                <td><?= $value === null || $value === '' ? '<em>NULL</em>' : Encode::content((string) $value) ?></td>
-                            <?php endforeach; ?>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif; ?>
-</div>
+<?= Div::tag()
+    ->class('yii-debug-explain')
+    ->html(...$children);

@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Helper\Encode;
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Span;
+use yii\debug\html\defaults\{ToolbarBlock, ToolbarLabel};
 use yii\debug\panels\RequestPanel;
 use yii\web\Response;
 
-/** @var RequestPanel $panel */
-
+/** @var RequestPanel $panel Panel providing the toolbar summary data. */
 $rawStatus = is_array($panel->data) ? ($panel->data['statusCode'] ?? null) : null;
 $statusCode = is_int($rawStatus) ? $rawStatus : (is_numeric($rawStatus) ? (int) $rawStatus : 200);
 
@@ -20,9 +22,20 @@ if ($statusCode >= 200 && $statusCode < 300) {
 }
 
 $httpStatusText = Response::$httpStatuses[$statusCode] ?? '';
-$statusText = Encode::value(is_string($httpStatusText) ? $httpStatusText : '');
+
+$statusText = is_string($httpStatusText) ? $httpStatusText : '';
 ?>
-<div class="yii-debug-toolbar-block">
-    <a href="<?= $panel->getUrl() ?>" title="Status code: <?= $statusCode ?> <?= $statusText ?>">Status <span
-            class="yii-debug-toolbar-label <?= $class ?>"><?= $statusCode ?></span></a>
-</div>
+<?= Div::tag()
+    ->addDefaultProvider(ToolbarBlock::class)
+    ->html(
+        A::tag()
+            ->content('Status ')
+            ->href($panel->getUrl())
+            ->html(
+                Span::tag()
+                    ->addDefaultProvider(ToolbarLabel::class)
+                    ->class($class)
+                    ->content((string) $statusCode),
+            )
+            ->title("Status code: {$statusCode} {$statusText}"),
+    ) ?>

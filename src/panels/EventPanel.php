@@ -75,10 +75,16 @@ class EventPanel extends Panel
      */
     public function getSummary(): string
     {
+        $eventCount = count(self::normalizeEvents($this->data));
+
+        if ($eventCount === 0) {
+            return '';
+        }
+
         return Yii::$app->view->render(
             'panels/event/summary',
             [
-                'eventCount' => count(self::normalizeEvents($this->data)),
+                'eventCount' => $eventCount,
                 'panel' => $this,
             ],
             $this,

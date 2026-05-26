@@ -2,15 +2,18 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Span;
+use yii\debug\html\defaults\{ToolbarBlock, ToolbarLabel};
 use yii\debug\panels\DbPanel;
 
 /**
- * @var DbPanel $panel
- * @var int $queryCount
- * @var int $queryTime
- * @var int $excessiveCallerCount
+ * @var int $excessiveCallerCount Number of callers exceeding the call threshold.
+ * @var DbPanel $panel Panel providing the toolbar summary data.
+ * @var int $queryCount Number of executed database queries.
+ * @var int $queryTime Total database query execution time.
  */
-
 $title = "Executed $queryCount database queries which took $queryTime.";
 $warning = '';
 
@@ -25,16 +28,36 @@ if ($excessiveCallerCount > 0) {
         . ' making too many calls.';
 }
 
+$block = '';
+
+if ($queryCount > 0) {
+    $anchor = A::tag()
+        ->href($panel->getUrl())
+        ->html(
+            $panel->getSummaryName() . ' ',
+            Span::tag()
+                ->addDefaultProvider(ToolbarLabel::class)
+                ->class('yii-debug-toolbar-label-info')
+                ->content((string) $queryCount),
+        )
+        ->title($title);
+
+    // Warning chip kept as raw HTML: its title embeds the '&#10;' newline entity and the body uses the '&#x26a0;'
+    // glyph entity, both of which the builder's content/attribute encoding would turn into literal text.
+    if ($warning !== '') {
+        $anchor = $anchor->html("<span title=\"{$warning}\">&#x26a0;</span>");
+    }
+
+    $anchor = $anchor->html(
+        Span::tag()
+            ->addDefaultProvider(ToolbarLabel::class)
+            ->content((string) $queryTime),
+    );
+
+    $block = Div::tag()
+        ->addDefaultProvider(ToolbarBlock::class)
+        ->html($anchor)
+        ->render();
+}
 ?>
-<?php if ($queryCount > 0): ?>
-    <div class="yii-debug-toolbar-block">
-        <a href="<?= $panel->getUrl() ?>" title="<?= $title ?>">
-            <?= $panel->getSummaryName() ?>
-            <span class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= $queryCount ?></span>
-            <?php if ($warning !== ''): ?>
-                <span title="<?= $warning ?>">&#x26a0;</span>
-            <?php endif; ?>
-            <span class="yii-debug-toolbar-label"><?= $queryTime ?></span>
-        </a>
-    </div>
-<?php endif;
+<?= $block;

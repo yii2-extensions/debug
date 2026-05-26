@@ -93,11 +93,17 @@ class MailPanel extends Panel
      */
     public function getSummary(): string
     {
+        $mailCount = count(self::normalizeMessages($this->data));
+
+        if ($mailCount === 0) {
+            return '';
+        }
+
         return Yii::$app->view->render(
             'panels/mail/summary',
             [
                 'panel' => $this,
-                'mailCount' => count(self::normalizeMessages($this->data)),
+                'mailCount' => $mailCount,
             ],
             $this,
         );

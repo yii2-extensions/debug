@@ -42,6 +42,29 @@ final class ExplainActionTest extends TestCase
         );
     }
 
+    public function testDbExplainViewRendersEmptyStringCellWithoutNullPlaceholder(): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        $controller = new DefaultController('default', $module);
+
+        Yii::$app->controller = $controller;
+
+        $html = $controller->renderPartial(
+            'db-explain',
+            [
+                'query' => 'SELECT 1',
+                'results' => [['detail' => null, 'extra' => '']],
+            ],
+        );
+
+        self::assertSame(
+            1,
+            substr_count($html, '<em>NULL</em>'),
+            "Only the `null` cell may render the 'NULL' placeholder; `''` must stay an empty cell.",
+        );
+    }
+
     public function testRunRendersAjaxPartialWhenRequestIsAjax(): void
     {
         $module = $this->bootDebugModuleWithSqlite();

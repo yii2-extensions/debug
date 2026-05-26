@@ -2,39 +2,62 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Helper\Encode;
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Span;
+use yii\debug\html\defaults\{ToolbarBlock, ToolbarLabel};
 use yii\debug\panels\UserPanel;
 use yii\web\View;
 
 /**
- * @var UserPanel $panel
- * @var View $this
+ * @var UserPanel $panel Panel providing the toolbar summary data.
+ * @var View $this View component instance.
  */
-
 $data = is_array($panel->data) ? $panel->data : [];
+
 $id = $data['id'] ?? null;
-$idLabel = is_scalar($id) ? (string) $id : '';
-$user = $panel->getUser();
-$isGuest = $user === null || $user->isGuest;
-$isMainUser = $panel->userSwitch === null || $panel->userSwitch->isMainUser();
 ?>
-<div class="yii-debug-toolbar-block">
-    <a href="<?= $panel->getUrl() ?>">
-        <?php if ($id === null): ?>
-            <span class="yii-debug-toolbar-label">Guest</span>
-        <?php else: ?>
-            <?php if ($isGuest || $isMainUser): ?>
-                <?= Encode::content($panel->getName()) ?> <span
-                    class="yii-debug-toolbar-label yii-debug-toolbar-label-info"><?= Encode::content($idLabel) ?></span>
-            <?php else: ?>
-                <?= Encode::content($panel->getName()) ?> switching <span
-                    class="yii-debug-toolbar-label yii-debug-toolbar-label-warning"><?= Encode::content($idLabel) ?></span>
-            <?php endif; ?>
-            <?php if ($panel->canSwitchUser()): ?>
-                <span class="yii-debug-toolbar-switch-icon yii-debug-toolbar-userswitch"
-                    id="yii-debug-toolbar-switch-users">
-            </span>
-            <?php endif; ?>
-        <?php endif; ?>
-    </a>
-</div>
+<?php if ($id === null): ?>
+    <?= Div::tag()
+        ->addDefaultProvider(ToolbarBlock::class)
+        ->html(
+            A::tag()
+                ->href($panel->getUrl())
+                ->html(
+                    Span::tag()
+                        ->addDefaultProvider(ToolbarLabel::class)
+                        ->content('Guest'),
+                ),
+        ) ?>
+    <?php return; ?>
+<?php endif; ?>
+<?php
+$idLabel = (string) $id;
+
+$user = $panel->getUser();
+
+$isGuest = $user === null || $user->isGuest;
+
+$isMainUser = $panel->userSwitch === null || $panel->userSwitch->isMainUser();
+
+$anchor = A::tag()
+    ->content($panel->getName() . ($isGuest || $isMainUser ? ' ' : ' switching '))
+    ->href($panel->getUrl())
+    ->html(
+        Span::tag()
+            ->addDefaultProvider(ToolbarLabel::class)
+            ->class($isGuest || $isMainUser ? 'yii-debug-toolbar-label-info' : 'yii-debug-toolbar-label-warning')
+            ->content($idLabel),
+    );
+
+if ($panel->canSwitchUser()) {
+    $anchor = $anchor->html(
+        Span::tag()
+            ->class('yii-debug-toolbar-switch-icon yii-debug-toolbar-userswitch')
+            ->id('yii-debug-toolbar-switch-users'),
+    );
+}
+?>
+<?= Div::tag()
+    ->addDefaultProvider(ToolbarBlock::class)
+    ->html($anchor);

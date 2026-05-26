@@ -8,8 +8,8 @@ use yii\helpers\Html;
 use yii\web\View;
 
 /**
- * @var string $content
- * @var View $this
+ * @var string $content Rendered view content for the layout body.
+ * @var View $this View component instance.
  */
 
 yii\debug\DebugAsset::register($this);
