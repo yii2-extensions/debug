@@ -71,6 +71,15 @@ final class RouterRendererTest extends TestCase
         );
     }
 
+    public function testRenderTabsOmitsCurrentRouteHeadingWhenNoRulesTested(): void
+    {
+        self::assertDoesNotMatchRegularExpression(
+            '/<h3>\s*\.\s*<\/h3>/',
+            RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes()),
+            "No rules tested must not surface a lone '.' heading.",
+        );
+    }
+
     public function testRenderTabsOmitsGlobalSuffixBadgeWhenSuffixIsEmpty(): void
     {
         $rules = new RouterRules();
@@ -152,6 +161,22 @@ final class RouterRendererTest extends TestCase
             'site/index',
             $html,
             'Resolved route value must render inside the callout.',
+        );
+    }
+
+    public function testRenderTabsRendersCurrentRouteHeadingWhenRulesTested(): void
+    {
+        $current = new CurrentRoute();
+
+        $current->count = 3;
+        $current->hasMatch = true;
+
+        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+
+        self::assertMatchesRegularExpression(
+            '/<h3>\s*Tested 3 rules before match\.\s*<\/h3>/',
+            $html,
+            'Tested rules must surface the count and the match suffix.',
         );
     }
 
@@ -323,11 +348,9 @@ final class RouterRendererTest extends TestCase
 
     public function testRenderTabsSuppressesCalloutBlockWhenMessageIsNull(): void
     {
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
-
         self::assertStringNotContainsString(
             'yii-debug-router-callout',
-            $html,
+            RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes()),
             "'null' message must not surface the callout block.",
         );
     }

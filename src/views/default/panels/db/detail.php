@@ -2,24 +2,22 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Helper\Encode;
+use UIAwesome\Html\Heading\H1;
 use yii\data\ArrayDataProvider;
 use yii\debug\models\search\DbSearch;
 use yii\debug\panels\DbPanel;
 use yii\web\View;
 
 /**
- * @var ArrayDataProvider $queryDataProvider
- * @var bool $hasExplain
- * @var DbPanel $panel
- * @var DbSearch $searchModel
- * @var int $sumDuplicates
- * @var View $this
+ * @var bool $hasExplain Whether the database driver supports EXPLAIN.
+ * @var DbPanel $panel Panel providing the detail content.
+ * @var ArrayDataProvider $queryDataProvider Data provider for the query GridView widget.
+ * @var DbSearch $searchModel Search model for filtering the database query grid.
+ * @var int $sumDuplicates Number of duplicated queries.
+ * @var View $this View component instance.
  */
 ?>
-
-<h1 class="yii-debug-sr-only"><?= Encode::content($panel->getName()) ?></h1>
-
+<?= H1::tag()->class('yii-debug-sr-only')->content($panel->getName()) ?>
 <?= $this->render(
     'queries',
     [

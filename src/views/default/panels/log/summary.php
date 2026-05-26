@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Span;
+use yii\debug\html\defaults\{ToolbarBlock, ToolbarLabel};
 use yii\debug\panels\LogPanel;
 use yii\log\{Logger, Target};
 
 /**
- * @var array{messages?: array<int, array<int, mixed>>} $data
- * @var LogPanel $panel
+ * @var array{messages?: array<int, array<int, mixed>>} $data Log panel data with captured messages.
+ * @var LogPanel $panel Panel providing the toolbar summary data.
  */
-
 $messages = $data['messages'] ?? [];
 
 $errorCount = count(Target::filterMessages($messages, Logger::LEVEL_ERROR));
@@ -28,19 +31,42 @@ $warningsTitle = $warningCount > 0
     : '';
 
 $titles = array_filter([$allTitle, $errorsTitle, $warningsTitle], static fn(string $title): bool => $title !== '');
+$anchors = [
+    A::tag()
+        ->href($panel->getUrl())
+        ->title(implode(",\u{00A0}", $titles))
+        ->content('Log ')
+        ->html(
+            Span::tag()
+                ->addDefaultProvider(ToolbarLabel::class)
+                ->content((string) count($messages)),
+        ),
+];
+
+if ($errorCount > 0) {
+    $anchors[] = A::tag()
+        ->href($panel->getUrl(['Log[level]' => Logger::LEVEL_ERROR]))
+        ->html(
+            Span::tag()
+                ->addDefaultProvider(ToolbarLabel::class)
+                ->class('yii-debug-toolbar-label-important')
+                ->content((string) $errorCount),
+        )
+        ->title($errorsTitle);
+}
+
+if ($warningCount > 0) {
+    $anchors[] = A::tag()
+        ->href($panel->getUrl(['Log[level]' => Logger::LEVEL_WARNING]))
+        ->html(
+            Span::tag()
+                ->addDefaultProvider(ToolbarLabel::class)
+                ->class('yii-debug-toolbar-label-warning')
+                ->content((string) $warningCount),
+        )
+        ->title($warningsTitle);
+}
 ?>
-<div class="yii-debug-toolbar-block">
-    <a href="<?= $panel->getUrl() ?>" title="<?= implode(',&nbsp;', $titles) ?>">Log
-        <span class="yii-debug-toolbar-label"><?= count($messages) ?></span>
-    </a>
-    <?php if ($errorCount > 0): ?>
-        <a href="<?= $panel->getUrl(['Log[level]' => Logger::LEVEL_ERROR]) ?>" title="<?= $errorsTitle ?>">
-            <span class="yii-debug-toolbar-label yii-debug-toolbar-label-important"><?= $errorCount ?></span>
-        </a>
-    <?php endif; ?>
-    <?php if ($warningCount > 0): ?>
-        <a href="<?= $panel->getUrl(['Log[level]' => Logger::LEVEL_WARNING]) ?>" title="<?= $warningsTitle ?>">
-            <span class="yii-debug-toolbar-label yii-debug-toolbar-label-warning"><?= $warningCount ?></span>
-        </a>
-    <?php endif; ?>
-</div>
+<?= Div::tag()
+    ->addDefaultProvider(ToolbarBlock::class)
+    ->html(...$anchors);

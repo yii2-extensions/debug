@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Heading\H1;
 use yii\debug\panels\request\{RequestSectionRenderer, RequestView};
 
-/**
- * @var RequestView $view
- */
+/** @var RequestView $view Typed request view payload */
 ?>
-<h1 class="yii-debug-sr-only">Request</h1>
-
+<?= H1::tag()->class('yii-debug-sr-only')->content('Request') ?>
 <?= RequestSectionRenderer::renderHero($view->hero) ?>
 <?= RequestSectionRenderer::renderTabs($view->tabs);

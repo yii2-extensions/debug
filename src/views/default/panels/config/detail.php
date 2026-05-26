@@ -2,15 +2,13 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Heading\H1;
 use yii\debug\panels\config\{ConfigCardRenderer, ConfigSummary};
 use yii\helpers\Url;
 
-/**
- * @var ConfigSummary $summary
- */
+/** @var ConfigSummary $summary Typed configuration summary. */
 ?>
-<h1 class="yii-debug-sr-only">Configuration</h1>
-
+<?= H1::tag()->class('yii-debug-sr-only')->content('Configuration') ?>
 <?= ConfigCardRenderer::renderReadoutGrid($summary) ?>
 <?= ConfigCardRenderer::renderPhpExtensionsSection($summary->php) ?>
 <?= ConfigCardRenderer::renderApplicationDetailsSection($summary->application) ?>

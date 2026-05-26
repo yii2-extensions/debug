@@ -2,8 +2,13 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Helper\Encode;
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Form\Button;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Span;
+use UIAwesome\Html\Root\Header;
 use yii\debug\helpers\Icon;
+use yii\debug\html\defaults\BrandChip;
 use yii\helpers\Url;
 use yii\web\View;
 
@@ -17,54 +22,98 @@ use yii\web\View;
  * @var string $themeIconMoon Pre-loaded moon glyph.
  * @var string $themeIconSun Pre-loaded sun glyph from the controller.
  * @var string $yiiVersion Friendly framework version, for example, `22.0.x-dev`.
- * @var View $this
+ * @var View $this View component instance.
  */
-
 $themeChipIcon = $debugTheme === 'dark' ? $themeIconSun : $themeIconMoon;
+
 $configIcon = Icon::render('config');
+$yiiChip = A::tag()
+    ->addDefaultProvider(BrandChip::class)
+    ->class('yii-debug-brand-chip-yii')
+    ->href(Url::to(['index']))
+    ->html(
+        Span::tag()
+            ->class('yii-debug-brand-icon')
+            ->html(Icon::render('yii')),
+        Span::tag()
+            ->class('yii-debug-brand-label')
+            ->content('Yii'),
+        Span::tag()
+            ->class('yii-debug-brand-value')
+            ->content($yiiVersion)
+    );
+$phpChip = Div::tag()
+    ->addDefaultProvider(BrandChip::class)
+    ->class('yii-debug-brand-chip-php')
+    ->html(
+        Span::tag()
+            ->class('yii-debug-brand-icon')
+            ->html(Icon::render('php-alt')),
+        Span::tag()
+            ->class('yii-debug-brand-value')
+            ->content($phpVersion)
+    );
+$memChip = $peakMemory === null
+    ? ''
+    : Div::tag()
+        ->addDefaultProvider(BrandChip::class)
+        ->class('yii-debug-brand-chip-mem')
+        ->html(
+            Span::tag()
+                ->class('yii-debug-brand-label')
+                ->content('Memory'),
+            Span::tag()
+                ->class('yii-debug-brand-value')
+                ->content($peakMemory)
+        );
+$configIconSpan = Span::tag()
+    ->addAriaAttribute('hidden', 'true')
+    ->class('yii-debug-brand-icon')
+    ->html($configIcon);
+$configLabel = Span::tag()
+    ->class('yii-debug-brand-label')
+    ->content('Config');
+$configChip = $configUrl !== null
+    ? A::tag()
+        ->addAriaAttribute('label', 'Open the Configuration panel')
+        ->addDefaultProvider(BrandChip::class)
+        ->class('yii-debug-brand-chip-config')
+        ->href($configUrl)
+        ->html($configIconSpan, $configLabel)
+        ->title('Open the Configuration panel')
+    : Span::tag()
+        ->addAriaAttribute('disabled', 'true')
+        ->addDefaultProvider(BrandChip::class)
+        ->class('yii-debug-brand-chip-config is-disabled')
+        ->html($configIconSpan, $configLabel)
+        ->title('No requests captured yet');
+$themeChip = Button::tag()
+    ->addAriaAttribute('label', 'Toggle debug panel theme')
+    ->addDataAttribute('yii-debug-theme-toggle', true)
+    ->addDefaultProvider(BrandChip::class)
+    ->class('yii-debug-brand-chip-theme')
+    ->dataAttributes(
+        [
+            'current-theme' => $debugTheme,
+            'icon-sun' => $themeIconSun,
+            'icon-moon' => $themeIconMoon,
+        ]
+    )
+    ->html(
+        Span::tag()
+            ->class('yii-debug-brand-icon')
+            ->addAriaAttribute('hidden', 'true')
+            ->html($themeChipIcon)
+    )
+    ->title('Toggle debug panel theme')
+    ->type('button');
 ?>
-<header class="yii-debug-brand-bar">
-    <a class="yii-debug-brand-chip yii-debug-brand-chip-yii" href="<?= Url::to(['index']) ?>">
-        <span class="yii-debug-brand-icon"><?= Icon::render('yii') ?></span>
-        <span class="yii-debug-brand-label">Yii</span>
-        <span class="yii-debug-brand-value"><?= Encode::content($yiiVersion) ?></span>
-    </a>
-    <div class="yii-debug-brand-chip yii-debug-brand-chip-php">
-        <span class="yii-debug-brand-icon"><?= Icon::render('php-alt') ?></span>
-        <span class="yii-debug-brand-value"><?= Encode::content($phpVersion) ?></span>
-    </div>
-    <?php if ($peakMemory !== null): ?>
-        <div class="yii-debug-brand-chip yii-debug-brand-chip-mem">
-            <span class="yii-debug-brand-label">Memory</span>
-            <span class="yii-debug-brand-value"><?= Encode::content($peakMemory) ?></span>
-        </div>
-    <?php endif; ?>
-    <?php if ($configUrl !== null): ?>
-        <a class="yii-debug-brand-chip yii-debug-brand-chip-config"
-            href="<?= Encode::value($configUrl) ?>"
-            title="Open the Configuration panel"
-            aria-label="Open the Configuration panel">
-            <span class="yii-debug-brand-icon" aria-hidden="true"><?= $configIcon ?></span>
-            <span class="yii-debug-brand-label">Config</span>
-        </a>
-    <?php else: ?>
-        <span class="yii-debug-brand-chip yii-debug-brand-chip-config is-disabled"
-            title="No requests captured yet"
-            aria-disabled="true">
-            <span class="yii-debug-brand-icon" aria-hidden="true"><?= $configIcon ?></span>
-            <span class="yii-debug-brand-label">Config</span>
-        </span>
-    <?php endif; ?>
-    <button
-        type="button"
-        class="yii-debug-brand-chip yii-debug-brand-chip-theme"
-        data-yii-debug-theme-toggle
-        data-current-theme="<?= Encode::value($debugTheme) ?>"
-        data-icon-sun="<?= Encode::value($themeIconSun) ?>"
-        data-icon-moon="<?= Encode::value($themeIconMoon) ?>"
-        aria-label="Toggle debug panel theme"
-        title="Toggle debug panel theme"
-    >
-        <span class="yii-debug-brand-icon" aria-hidden="true"><?= $themeChipIcon ?></span>
-    </button>
-</header>
+<?= Header::tag()
+    ->class('yii-debug-brand-bar')
+    ->html(
+        $yiiChip,
+        $phpChip,
+        $memChip,
+        $configChip,
+        $themeChip,
+    );

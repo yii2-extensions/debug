@@ -54,4 +54,11 @@ final class DebugPdoStatementTest extends TestCase
             'Each INSERT must record `1` rows affected.',
         );
     }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        DebugPdoStatement::$rowCounts = [];
+    }
 }

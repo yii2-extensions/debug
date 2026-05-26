@@ -2,50 +2,86 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Helper\Encode;
+use UIAwesome\Html\Embedded\{Iframe, Img};
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Span;
+use UIAwesome\Html\Table\{Table, Tbody, Th, Thead, Tr};
+use yii\debug\html\defaults\{ToolbarBlock, ToolbarLabel};
+use yii\debug\{Module, Panel};
 use yii\helpers\Url;
+use yii\web\View;
 
-/** @var \yii\web\View $this */
-/** @var array<string, \yii\debug\Panel> $panels */
-/** @var string $tag */
-/** @var string $position */
-/** @var int $defaultHeight */
+/**
+ * @var int $defaultHeight Default toolbar height, in pixels.
+ * @var array<string, Panel> $panels Debug panels keyed by id.
+ * @var string $position Toolbar position modifier.
+ * @var string $tag Active request tag.
+ * @var View $this View component instance.
+ */
 ?>
 <div id="yii-debug-toolbar" class="yii-debug-toolbar yii-debug-toolbar-position-<?= $position ?>" data-height="<?= $defaultHeight ?>">
     <div class="yii-debug-toolbar-resize-handle"></div>
     <div class="yii-debug-toolbar-bar">
-        <div class="yii-debug-toolbar-block yii-debug-toolbar-title">
-            <a href="<?= Url::to(['index']) ?>">
-                <img width="30" height="30" alt="Yii" src="<?= \yii\debug\Module::getYiiLogo() ?>">
-            </a>
-        </div>
+        <?= Div::tag()
+            ->addDefaultProvider(ToolbarBlock::class)
+            ->class('yii-debug-toolbar-title')
+            ->html(
+                A::tag()
+                    ->href(Url::to(['index']))
+                    ->html(
+                        Img::tag()
+                            ->width(30)
+                            ->height(30)
+                            ->alt('Yii')
+                            ->src(Module::getYiiLogo())
+                    )
+            ) ?>
 
         <div class="yii-debug-toolbar-block yii-debug-toolbar-ajax" style="display: none">
-            AJAX <span class="yii-debug-toolbar-label yii-debug-toolbar-ajax-counter">0</span>
+            AJAX
+            <?= Span::tag()
+                ->addDefaultProvider(ToolbarLabel::class)
+                ->class('yii-debug-toolbar-ajax-counter')
+                ->content('0') ?>
             <div class="yii-debug-toolbar-ajax-info">
-                <table>
-                    <thead>
-                    <tr>
-                        <th>Method</th>
-                        <th>Status</th>
-                        <th>URL</th>
-                        <th>Time</th>
-                        <th>Profile</th>
-                    </tr>
-                    </thead>
-                    <tbody class="yii-debug-toolbar-ajax-requests"></tbody>
-                </table>
+                <?= Table::tag()
+                    ->html(
+                        Thead::tag()
+                            ->html(
+                                Tr::tag()
+                                    ->html(
+                                        Th::tag()->content('Method'),
+                                        Th::tag()->content('Status'),
+                                        Th::tag()->content('URL'),
+                                        Th::tag()->content('Time'),
+                                        Th::tag()->content('Profile'),
+                                    )
+                            ),
+                        Tbody::tag()
+                            ->class('yii-debug-toolbar-ajax-requests'),
+                    ) ?>
             </div>
         </div>
 
         <?php foreach ($panels as $panel): ?>
             <?php if ($panel->hasError()): ?>
                 <?php $panelError = $panel->getError(); ?>
-                <div class="yii-debug-toolbar-block">
-                    <a href="<?= $panel->getUrl() ?>"
-                        title="<?= Encode::value($panelError !== null ? $panelError->getMessage() : '') ?>"><?= Encode::content($panel->getName()) ?>
-                        <span class="yii-debug-toolbar-label yii-debug-toolbar-label-error">error</span></a>
-                </div>
+                <?= Div::tag()
+                    ->addDefaultProvider(ToolbarBlock::class)
+                    ->html(
+                        A::tag()
+                            ->href($panel->getUrl())
+                            ->title($panelError?->getMessage() ?? '')
+                            ->content($panel->getName())
+                            ->html(
+                                ' ',
+                                Span::tag()
+                                    ->addDefaultProvider(ToolbarLabel::class)
+                                    ->class('yii-debug-toolbar-label-error')
+                                    ->content('error'),
+                            )
+                    ) ?>
             <?php else: ?>
                 <?= $panel->getSummary() ?>
             <?php endif; ?>
@@ -54,16 +90,23 @@ use yii\helpers\Url;
         <div class="yii-debug-toolbar-block-last">
 
         </div>
-        <a class="yii-debug-toolbar-external" href="#" target="_blank">
-            <span class="yii-debug-toolbar-external-icon"></span>
-        </a>
-
-        <span class="yii-debug-toolbar-toggle">
-            <span class="yii-debug-toolbar-toggle-icon"></span>
-        </span>
+        <?= A::tag()
+            ->class('yii-debug-toolbar-external')
+            ->href('#')
+            ->html(
+                Span::tag()->class('yii-debug-toolbar-external-icon')
+            )
+            ->target('_blank'); ?>
+        <?= Span::tag()
+            ->class('yii-debug-toolbar-toggle')
+            ->html(
+                Span::tag()->class('yii-debug-toolbar-toggle-icon')
+            ) ?>
     </div>
 
     <div class="yii-debug-toolbar-view">
-        <iframe src="about:blank" frameborder="0" title="Yii2 debug bar"></iframe>
+        <?= Iframe::tag()
+            ->src('about:blank')
+            ->title('Yii2 debug bar') ?>
     </div>
 </div>

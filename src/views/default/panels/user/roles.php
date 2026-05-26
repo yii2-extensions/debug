@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Heading\H3;
 use yii\debug\GridViewConfig;
+use yii\debug\panels\UserPanel;
 use yii\grid\GridView;
 
-/** @var yii\debug\panels\UserPanel $panel */
-
+/** @var UserPanel $panel User panel providing role and permission data. */
 $columns = [
     'name',
     'description',
@@ -21,24 +22,24 @@ $data = is_array($panel->data) ? $panel->data : [];
 $rolesProvider = $data['rolesProvider'] ?? null;
 $permissionsProvider = $data['permissionsProvider'] ?? null;
 
-if ($rolesProvider !== null) {
-    echo '<h3>Roles</h3>';
-    echo GridView::widget(
+?>
+<?php if ($rolesProvider !== null): ?>
+    <?= H3::tag()->content('User') ?>
+    <?= GridView::widget(
         [
             ...GridViewConfig::defaults(),
             'dataProvider' => $rolesProvider,
             'columns' => $columns,
         ],
-    );
-}
-
-if ($permissionsProvider !== null) {
-    echo '<h3>Permissions</h3>';
-    echo GridView::widget(
+    ) ?>
+<?php endif; ?>
+<?php if ($permissionsProvider !== null): ?>
+    <?= H3::tag()->content('Permissions') ?>
+    <?= GridView::widget(
         [
             ...GridViewConfig::defaults(),
             'dataProvider' => $permissionsProvider,
             'columns' => $columns,
         ],
-    );
-}
+    ) ?>
+<?php endif;

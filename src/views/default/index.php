@@ -9,26 +9,25 @@ use yii\debug\Panel;
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistorySummary};
-use yii\grid\GridView;
-use yii\grid\SerialColumn;
+use yii\grid\{GridView, SerialColumn};
 use yii\web\View;
 
 /**
- * @var ArrayDataProvider $dataProvider
- * @var string $debugTheme
- * @var array<int|string, mixed> $manifest
- * @var DebugSearch $searchModel
- * @var Panel[] $panels
- * @var string $themeIconMoon
- * @var string $themeIconSun
- * @var View $this
+ * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.
+ * @var string $debugTheme Current debug theme ID.
+ * @var array<int|string, mixed> $manifest Debug data manifest.
+ * @var Panel[] $panels Debug panels.
+ * @var DebugSearch $searchModel Search model for filtering debug data.
+ * @var string $themeIconMoon Icon for the moon theme.
+ * @var string $themeIconSun Icon for the sun theme.
+ * @var View $this View component instance.
  */
-
 $this->title = 'Yii Debugger';
 
 // `cursor` query param lets a panel-view's "History" link preserve the active tag the inline JS reads
 // `data-yii-debug-cursor-init` and lands the cursor on that row instead of snapping back to the latest capture.
 $cursorInit = '';
+
 $rawCursor = Yii::$app->getRequest()->get('cursor');
 
 if (is_string($rawCursor) && $rawCursor !== '') {

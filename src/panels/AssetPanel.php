@@ -76,6 +76,12 @@ class AssetPanel extends Panel
      */
     public function getSummary(): string
     {
+        $bundles = is_array($this->data) ? $this->data : [];
+
+        if ($bundles === []) {
+            return '';
+        }
+
         return Yii::$app->view->render(
             'panels/assets/summary',
             ['panel' => $this],

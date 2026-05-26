@@ -163,17 +163,21 @@ final class RouterRenderer
      */
     private static function renderCurrentRoutePanel(CurrentRoute $currentRoute): string
     {
-        $heading = H3::tag()->content(
-            Yii::$app->i18n->format(
-                '{rulesTested, plural, =0{} =1{Tested # rule} other{Tested # rules}}'
-                    . '{hasMatch, plural, =0{} other{ before match}}.',
-                [
-                    'rulesTested' => $currentRoute->count,
-                    'hasMatch' => (int) $currentRoute->hasMatch,
-                ],
-                'en_US',
-            ),
-        )->render();
+        $heading = $currentRoute->count === 0
+            ? ''
+            : H3::tag()
+                ->content(
+                    Yii::$app->i18n->format(
+                        '{rulesTested, plural, =1{Tested # rule} other{Tested # rules}}'
+                            . '{hasMatch, plural, =0{} other{ before match}}.',
+                        [
+                            'rulesTested' => $currentRoute->count,
+                            'hasMatch' => (int) $currentRoute->hasMatch,
+                        ],
+                        'en_US',
+                    ),
+                )
+                ->render();
 
         return $heading . self::renderCalloutBlock($currentRoute) . self::renderLogsTable($currentRoute);
     }

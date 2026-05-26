@@ -1,10 +1,27 @@
 <?php
 
 declare(strict_types=1);
-/** @var yii\debug\panels\EventPanel $panel */
-/** @var int $eventCount */
-if ($eventCount > 0): ?>
-    <div class="yii-debug-toolbar-block">
-        <a href="<?= $panel->getUrl() ?>">Events <span class="yii-debug-toolbar-label"><?= $eventCount ?></span></a>
-    </div>
-<?php endif ?>
+
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Phrasing\Span;
+use yii\debug\html\defaults\{ToolbarBlock, ToolbarLabel};
+use yii\debug\panels\EventPanel;
+
+/**
+ * @var int $eventCount Number of triggered events.
+ * @var EventPanel $panel Panel providing the toolbar summary data.
+ */
+?>
+<?= Div::tag()
+    ->addDefaultProvider(ToolbarBlock::class)
+    ->html(
+        A::tag()
+            ->content('Events ')
+            ->href($panel->getUrl())
+            ->html(
+                Span::tag()
+                    ->addDefaultProvider(ToolbarLabel::class)
+                    ->content((string) $eventCount),
+            )
+    );

@@ -3,75 +3,91 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Helper\Encode;
-use UIAwesome\Html\List\Li;
+use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Palpable\A;
 use yii\debug\panels\UserPanel;
 use yii\web\View;
 
 /**
- * @var UserPanel $panel
- * @var View $this
+ * @var UserPanel $panel Panel providing the detail content.
+ * @var View $this View component instance.
  */
-
 $encodedName = Encode::content($panel->getName());
-?>
 
-<h1 class="yii-debug-sr-only"><?= $encodedName ?></h1>
-
-<?php
 $panelData = is_array($panel->data) ? $panel->data : [];
+
 $identity = $panelData['identity'] ?? null;
-if ($identity !== null) {
-    $items = [
-        'nav' => [$encodedName],
-        'content' => [
-            $this->render('_identity', [
-                'identity' => $identity,
+?>
+<?= H1::tag()
+    ->class('yii-debug-sr-only')
+    ->content($panel->getName()) ?>
+<?php if ($identity === null): ?>
+    Is guest.
+    <?php return; ?>
+<?php endif; ?>
+<?php
+$items = [
+    'nav' => [$encodedName],
+    'content' => [
+        $this->render(
+            '_identity',
+            [
                 'attributes' => $panelData['attributes'] ?? null,
-            ]),
-        ],
-    ];
-    if (($panelData['rolesProvider'] ?? null) !== null || ($panelData['permissionsProvider'] ?? null) !== null) {
-        $items['nav'][] = 'Roles and Permissions';
-        $items['content'][] = $this->render('roles', ['panel' => $panel]);
-    }
+                'identity' => $identity,
+            ],
+        ),
+    ],
+];
 
-    if ($panel->canSwitchUser()) {
-        $items['nav'][] = "Switch {$encodedName}";
-        $items['content'][] = $this->render('switch', ['panel' => $panel]);
-    }
+if (($panelData['rolesProvider'] ?? null) !== null || ($panelData['permissionsProvider'] ?? null) !== null) {
+    $items['nav'][] = 'Roles and Permissions';
 
-    ?>
-    <ul class="yii-debug-tabs">
-        <?php
-        foreach ($items['nav'] as $k => $item) {
-            $link = A::tag()
-                ->class($k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link')
-                ->href("#u-tab-{$k}")
-                ->addAttribute('data-yii-debug-toggle', 'tab')
-                ->addAttribute('role', 'tab')
+    $items['content'][] = $this->render(
+        'roles',
+        ['panel' => $panel],
+    );
+}
+
+if ($panel->canSwitchUser()) {
+    $items['nav'][] = "Switch {$encodedName}";
+
+    $items['content'][] = $this->render(
+        'switch',
+        ['panel' => $panel],
+    );
+}
+
+$navItems = [];
+
+foreach ($items['nav'] as $k => $item) {
+    $navItems[] = Li::tag()
+        ->class('yii-debug-tab')
+        ->html(
+            A::tag()
                 ->addAriaAttribute('controls', "u-tab-{$k}")
                 ->addAriaAttribute('selected', $k === 0 ? 'true' : 'false')
-                ->html($item)
-                ->render();
+                ->addAttribute('data-yii-debug-toggle', 'tab')
+                ->addAttribute('role', 'tab')
+                ->class($k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link')
+                ->href("#u-tab-{$k}")
+                ->html($item),
+        );
+}
 
-            echo Li::tag()->class('yii-debug-tab')->html($link)->render();
-        }
-    ?>
-    </ul>
-    <div class="yii-debug-tab-content">
-        <?php
-    foreach ($items['content'] as $k => $item) {
-        echo Div::tag()
-            ->class($k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel')
-            ->id("u-tab-{$k}")
-            ->html($item)
-            ->render();
-    }
-    ?>
-    </div>
-    <?php
-} else {
-    echo 'Is guest.';
-} ?>
+$contentPanels = [];
+
+foreach ($items['content'] as $k => $item) {
+    $contentPanels[] = Div::tag()
+        ->class($k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel')
+        ->html($item)
+        ->id("u-tab-{$k}");
+}
+?>
+<?= Ul::tag()
+    ->class('yii-debug-tabs')
+    ->html(...$navItems) ?>
+<?= Div::tag()
+    ->class('yii-debug-tab-content')
+    ->html(...$contentPanels);

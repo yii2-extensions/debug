@@ -68,6 +68,32 @@ final class SidebarDataNormalizer
             ),
         );
     }
+    /**
+     * Builds the typed sidebar view-model from the loose `_sidebar.php` inputs, narrowing the panel and manifest maps
+     * and dispatching to {@see fromView()} or {@see fromIndex()} based on the request mode.
+     *
+     * @param array<int|string, mixed> $panels
+     * @param array<int|string, mixed> $manifest
+     * @param array<string, mixed>|null $summary
+     */
+    public static function fromShell(
+        string $mode,
+        array $panels,
+        array $manifest,
+        Panel|null $activePanel,
+        string|null $tag,
+        array|null $summary,
+        string $cursorInit = '',
+    ): SidebarView {
+        $narrowedPanels = self::narrowPanels($panels);
+        $narrowedManifest = self::narrowManifest($manifest);
+
+        if ($mode === 'view' && $activePanel !== null && $tag !== null && $summary !== null) {
+            return self::fromView($narrowedPanels, $narrowedManifest, $activePanel, $tag, $summary);
+        }
+
+        return self::fromIndex($narrowedPanels, $narrowedManifest, $cursorInit);
+    }
 
     /**
      * Builds the typed sidebar view-model for panel `view` requests. Surfaces the active request snapshot and
@@ -290,6 +316,54 @@ final class SidebarDataNormalizer
         }
 
         return array_key_first($manifest);
+    }
+
+    /**
+     * Narrows a loose manifest map to the typed `array<string, array<string, mixed>>` shape.
+     *
+     * @param array<int|string, mixed> $manifest
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private static function narrowManifest(array $manifest): array
+    {
+        $narrowed = [];
+
+        foreach ($manifest as $tag => $entry) {
+            if (is_string($tag) && is_array($entry)) {
+                $stringKeyed = [];
+
+                foreach ($entry as $key => $value) {
+                    if (is_string($key)) {
+                        $stringKeyed[$key] = $value;
+                    }
+                }
+
+                $narrowed[$tag] = $stringKeyed;
+            }
+        }
+
+        return $narrowed;
+    }
+
+    /**
+     * Narrows a loose panel map to the typed `array<string, Panel>` shape.
+     *
+     * @param array<int|string, mixed> $panels
+     *
+     * @return array<string, Panel>
+     */
+    private static function narrowPanels(array $panels): array
+    {
+        $narrowed = [];
+
+        foreach ($panels as $id => $panel) {
+            if (is_string($id) && $panel instanceof Panel) {
+                $narrowed[$id] = $panel;
+            }
+        }
+
+        return $narrowed;
     }
 
     private static function statusVariant(int $statusCode): string

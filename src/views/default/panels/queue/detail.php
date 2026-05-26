@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use UIAwesome\Html\Flow\{Div, P};
+use UIAwesome\Html\Heading\{H1, H2};
+use UIAwesome\Html\Phrasing\{Code, Span, Strong};
+use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\models\search\QueueSearch;
@@ -12,11 +16,10 @@ use yii\grid\GridView;
 use yii\helpers\Url;
 
 /**
- * @var ArrayDataProvider $dataProvider
- * @var QueueSearch $searchModel
- * @var QueuePanel $panel
+ * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.
+ * @var QueuePanel $panel Panel providing the detail content.
+ * @var QueueSearch $searchModel Search model for filtering the queue grid.
  */
-
 $summary = QueueSummaryNormalizer::fromPanelData($panel->data);
 
 $totalRecords = $summary->totalEvents();
@@ -40,37 +43,96 @@ $eventTypeOptions = [
     'exec' => 'Done (exec)',
     'error' => 'Failed (error)',
 ];
+
 $componentOptions = ['' => 'All'] + array_combine($componentIds, $componentIds);
 $driverOptions = ['' => 'All'] + array_combine($driverNames, $driverNames);
 
 $tag = $panel->tag;
+
 $jobUrlBuilder = static fn(int $seq): string => Url::to(['queue-job', 'seq' => $seq, 'tag' => $tag]);
 ?>
-<h1 class="yii-debug-sr-only">Queue</h1>
-
+<?= H1::tag()
+    ->class('yii-debug-sr-only')
+    ->content('Queue') ?>
 <?php if ($totalRecords === 0): ?>
-    <div class="yii-debug-empty-state">
-        <h2>No jobs queued in this request</h2>
-        <p>This request did not push any jobs through a configured queue component, so the inventory is empty.</p>
-        <p>The Queue panel listens for <code>afterPush</code>, <code>afterExec</code> and <code>afterError</code> events emitted by any class extending <code>yii\queue\Queue</code> (the abstract base from <code>yiisoft/yii2-queue</code>). Configure a queue component (sync, db, redis, ...) and call <code>$queue-&gt;push($job)</code> to populate this view.</p>
-    </div>
-<?php else: ?>
-    <header class="yii-debug-grid-summary">
-        <span><strong><?= $visibleRecords ?></strong> of <strong><?= $totalRecords ?></strong> events</span>
-        <span class="yii-debug-grid-summary-sep">·</span>
-        <span><strong><?= $summary->totalPushed() ?></strong> pushed</span>
+    <?= Div::tag()
+        ->class('yii-debug-empty-state')
+        ->html(
+            H2::tag()
+                ->content('No jobs queued in this request'),
+            P::tag()
+                ->content(
+                    'This request did not push any jobs through a configured queue component, so the inventory is empty.',
+                ),
+            P::tag()
+                ->html(
+                    'The Queue panel listens for ',
+                    Code::tag()->content('afterPush'),
+                    ', ',
+                    Code::tag()->content('afterExec'),
+                    ' and ',
+                    Code::tag()->content('afterError'),
+                    ' events emitted by any class extending ',
+                    Code::tag()->content('yii\\queue\\Queue'),
+                    ' (the abstract base from ',
+                    Code::tag()->content('yiisoft/yii2-queue'),
+                    '). Configure a queue component (sync, db, redis, ...) and call ',
+                    Code::tag()->content('$queue->push($job)'),
+                    ' to populate this view.',
+                ),
+        ) ?>
+    <?php return; ?>
+<?php endif; ?>
+<?php
+$summaryItems = [
+    Span::tag()
+        ->html(
+            Strong::tag()->content((string) $visibleRecords),
+            ' of ',
+            Strong::tag()->content((string) $totalRecords),
+            ' events',
+        ),
+    Span::tag()
+        ->class('yii-debug-grid-summary-sep')
+        ->content('·'),
+    Span::tag()
+        ->html(
+            Strong::tag()
+                ->content((string) $summary->totalPushed()),
+            ' pushed',
+        ),
+];
 
-        <?php if ($summary->totalExecuted() > 0): ?>
-            <span class="yii-debug-grid-summary-sep">·</span>
-            <span><strong><?= $summary->totalExecuted() ?></strong> executed</span>
-        <?php endif; ?>
+if ($summary->totalExecuted() > 0) {
+    $summaryItems[] = Span::tag()
+        ->class('yii-debug-grid-summary-sep')
+        ->content('·');
+    $summaryItems[] = Span::tag()
+        ->html(
+            Strong::tag()
+                ->content((string) $summary->totalExecuted()),
+            ' executed',
+        );
+}
 
-        <?php if ($summary->hasErrors()): ?>
-            <span class="yii-debug-grid-summary-sep">·</span>
-            <span class="yii-debug-grid-summary-stat-danger"><strong><?= $summary->totalErrors() ?></strong> failed</span>
-        <?php endif; ?>
-        <?= GridViewConfig::pageSizeSelectorHtml() ?>
-    </header>
+if ($summary->hasErrors()) {
+    $summaryItems[] = Span::tag()
+        ->class('yii-debug-grid-summary-sep')
+        ->content('·');
+    $summaryItems[] = Span::tag()
+        ->class('yii-debug-grid-summary-stat-danger')
+        ->html(
+            Strong::tag()
+                ->content((string) $summary->totalErrors()),
+            ' failed',
+        );
+}
+
+$summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
+?>
+<?= Header::tag()
+    ->class('yii-debug-grid-summary')
+    ->html(...$summaryItems) ?>
 
     <?php if ($asyncHint !== null): ?>
         <?= $asyncHint ?>
@@ -175,5 +237,4 @@ $jobUrlBuilder = static fn(int $seq): string => Url::to(['queue-job', 'seq' => $
                 ],
             ],
         ],
-    ) ?>
-<?php endif;
+    );
