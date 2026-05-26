@@ -68,6 +68,7 @@ final class SidebarDataNormalizer
             ),
         );
     }
+
     /**
      * Builds the typed sidebar view-model from the loose `_sidebar.php` inputs, narrowing the panel and manifest maps
      * and dispatching to {@see fromView()} or {@see fromIndex()} based on the request mode.
