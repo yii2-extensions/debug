@@ -30,8 +30,8 @@
         "ui-awesome/html-helper": "^0.7",
         "ui-awesome/html-interop": "^0.4",
         "ui-awesome/html-svg": "^0.4",
-        "yiisoft/yii2": "^2.0.56@dev || ^22.0@dev",
-        "yiisoft/yii2-symfonymailer": "^2.0 || ^22.0@dev"
+        "yiisoft/yii2": "2.0.*@dev || ^22.0@dev",
+        "yiisoft/yii2-symfonymailer": "^4.0"
     },
     "require-dev": {
         "infection/infection": "^0.33",
