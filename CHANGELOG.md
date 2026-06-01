@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: Render the sidebar panel nav with the new `ui-awesome/html-core-component` `Menu` component.
 - refactor: Migrate the `default` debug views to `ui-awesome/html` builder components for consistent, escape-safe rendering.
 - fix: Update `yiisoft/yii2` and `yiisoft/yii2-symfonymailer` version constraints for compatibility.
+- docs: Update package badges and add social media links in `README.md`.
 
 ## 0.1.1 May 18, 2026
 
