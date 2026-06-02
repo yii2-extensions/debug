@@ -181,7 +181,7 @@ final class SvgTest extends TestCase
 
         self::assertInstanceOf(LogPanel::class, $logPanel, 'Log panel must be wired.');
 
-        $logPanel->data = ['no-messages-key' => 'value'];
+        $logPanel->data = [];
 
         $svg = new Svg($panel);
 

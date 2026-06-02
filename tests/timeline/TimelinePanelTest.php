@@ -602,7 +602,7 @@ final class TimelinePanelTest extends TestCase
      * Sets the {@see ProfilingPanel::$data} payload backing the profiling lookups (`time` for duration override,
      * `messages` for the span rows).
      *
-     * @param array<string, mixed> $data Profiling payload to inject.
+     * @param array{memory?: mixed, time?: mixed, messages?: mixed} $data Profiling payload to inject.
      */
     private function primeProfilingPanel(TimelinePanel $panel, array $data): void
     {
