@@ -4,8 +4,8 @@ title = "gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "Allow test fixture data with dummy credentials"
+description = "Allow dummy credentials in test fixtures"
 paths = [
-    '''tests/support/data/.*\.php''',
+    '''tests/request/RequestPanelTest\.php''',
     '''tests/support/TestCase\.php''',
 ]

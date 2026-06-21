@@ -1,14 +1,14 @@
 /**
- * Flat-config ESLint rules consumed by Super-Linter (and reproducible locally via `npm run lint:js`).
+ * Flat-config ESLint rules for the client-side assets, reproducible locally via `npm run lint:js`.
  *
- * Self-contained on purpose — Super-Linter resolves imports relative to this file's directory, where node_modules is
- * not available. Browser globals are declared inline; the only rules we touch are the two that conflict with the
+ * Self-contained on purpose so CI jobs and local runs can resolve this file without extra imports. Browser globals are
+ * declared inline; the only rules we touch are the two that conflict with the
  * project's defensive `try { ... } catch (_e) {}` pattern. Stylistic rules are intentionally left out: Prettier owns
  * formatting via `.prettierrc.json`.
  */
 export default [
     {
-        ignores: ["**/dist/**", "**/node_modules/**", "tests/runtime/**"],
+        ignores: ["**/dist/**", "**/node_modules/**", "runtime/**"],
     },
     {
         languageOptions: {

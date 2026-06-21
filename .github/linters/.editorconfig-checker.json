@@ -1,11 +1,12 @@
 {
     "Exclude": [
-        "phpstan-baseline\\.neon$",
-        "^tests/runtime/",
-        "\\.min\\.css$",
-        "\\.min\\.js$",
-        "^vendor/",
+        "^\\.phpunit\\.cache/",
+        "^composer\\.lock$",
+        "^node_modules/",
+        "^package-lock\\.json$",
         "^runtime/",
-        "scaffold-lock\\.json$"
+        "^scaffold-lock\\.json$",
+        "^src/assets/dist/",
+        "^vendor/"
     ]
 }

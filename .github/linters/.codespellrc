@@ -1,2 +1,2 @@
 [codespell]
-skip = */tests/*,tests/**,*/composer.lock,*/composer.json,*/package-lock.json,*/dist/*,*/node_modules/*
+skip = ./.git,.phpunit.cache/*,composer.lock,node_modules/*,package-lock.json,runtime/*,scaffold-lock.json,src/assets/dist/*,vendor/*

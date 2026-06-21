@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: Update `yiisoft/yii2` and `yiisoft/yii2-symfonymailer` version constraints for compatibility.
 - docs: Update package badges and add social media links in `README.md`.
 - fix(ci): Remove unnecessary permissions and secrets from `linter.yml` workflow.
+- ci: migrate reusable workflows to pinned `v2.0.1` quality and security checks, updating project status badges.
 
 ## 0.1.1 May 18, 2026
 
