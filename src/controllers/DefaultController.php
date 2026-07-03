@@ -384,7 +384,7 @@ class DefaultController extends Controller
      * Retries up to `$maxRetry` times (waiting one second between attempts) because debug data is logged from a PHP
      * shutdown function whose execution may be delayed (notably when xdebug is enabled).
      *
-     * @link https://github.com/yiisoft/yii2/issues/1504
+     * @see https://github.com/yiisoft/yii2/issues/1504
      *
      * @param string $tag Tag of the debug entry to load.
      * @param int $maxRetry Maximum number of retries before giving up.

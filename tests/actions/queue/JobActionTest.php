@@ -17,10 +17,6 @@ use yii\web\{AssetManager, HttpException};
 /**
  * Unit tests for {@see JobAction} covering the panel-missing / non-DefaultController / record-not-found error paths,
  * and the happy path that renders the queue-job detail view for a captured record (both regular and AJAX requests).
- *
- * @author Wilmer Arambula <terabytesoftw@gmail.com>
- *
- * @since 0.1
  */
 #[Group('actions')]
 #[Group('queue')]

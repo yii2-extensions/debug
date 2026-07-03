@@ -11,7 +11,6 @@ use yii\web\View;
  * @var string $content Rendered view content for the layout body.
  * @var View $this View component instance.
  */
-
 yii\debug\DebugAsset::register($this);
 
 // `debugTheme` is primed by DefaultController::primeThemeContext() and exposed via $this->params; we still fall back to
