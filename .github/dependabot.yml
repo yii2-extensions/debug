@@ -8,6 +8,9 @@ updates:
       interval: "daily"
     cooldown:
       default-days: 7
+    groups:
+      github-actions:
+        patterns: ["*"]
 
   # Maintain dependencies for Composer
   - package-ecosystem: "composer"
@@ -16,6 +19,9 @@ updates:
       interval: "daily"
     cooldown:
       default-days: 7
+    groups:
+      composer:
+        patterns: ["*"]
     versioning-strategy: increase-if-necessary
 
   # Maintain dependencies for npm
@@ -25,3 +31,6 @@ updates:
       interval: "daily"
     cooldown:
       default-days: 7
+    groups:
+      npm:
+        patterns: ["*"]

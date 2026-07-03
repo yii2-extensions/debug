@@ -18,7 +18,7 @@ phpinfo();
 $pinfo = ob_get_contents();
 ob_end_clean();
 
-$body = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', (string) $pinfo) ?? '';
+$body = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo) ?? '';
 
 $view = PhpInfoDataNormalizer::fromOutput(
     body: $body,
