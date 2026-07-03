@@ -29,7 +29,7 @@ use function substr;
  *
  * Basically, this class removes all objects from the trace.
  *
- * Ported from Symfony components @link https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Debug/Exception/FlattenException.php
+ * Ported from Symfony components @see https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Debug/Exception/FlattenException.php
  */
 class FlattenException
 {

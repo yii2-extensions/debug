@@ -22,10 +22,6 @@ use Xepozz\InternalMocker\MockerState;
  * Lets unit tests cover the defensive branches that depend on `preg_replace()` returning `null`, `is_string()` /
  * `is_iterable()` returning `false`, and similar guards that Yii's runtime contracts make unreachable under normal
  * fixtures.
- *
- * @author Wilmer Arambula <terabytesoftw@gmail.com>
- *
- * @since 0.1
  */
 final class MockerExtension implements Extension
 {

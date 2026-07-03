@@ -109,7 +109,7 @@ class ConfigPanel extends Panel
         ob_start();
         phpinfo();
 
-        $pinfo = (string) ob_get_clean();
+        $pinfo = ob_get_clean();
         $phpinfo = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo) ?? $pinfo;
 
         $phpinfo = str_replace(

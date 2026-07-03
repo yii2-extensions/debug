@@ -17,9 +17,9 @@ $rootPath = dirname(__DIR__, 2);
 $vendor = "{$rootPath}/vendor";
 
 if (is_dir($vendor)) {
-    $vendorRoot = $vendor; //this extension has its own vendor folder
+    $vendorRoot = $vendor; // this extension has its own vendor folder
 } else {
-    $vendorRoot = dirname($rootPath, 1); //this extension is part of a project vendor folder
+    $vendorRoot = dirname($rootPath, 1); // this extension is part of a project vendor folder
 }
 
 require_once($vendorRoot . '/autoload.php');
