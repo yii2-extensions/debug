@@ -1,5 +1,8 @@
 {
     "Exclude": [
+        "^\\.vscode/",
+        "^\\.codex/",
+        "^\\.claude/",
         "^\\.phpunit\\.cache/",
         "^composer\\.lock$",
         "^node_modules/",
