@@ -1,4 +1,7 @@
-# Generated runtime state, caches, and dependencies.
+# Local agent, editor, generated runtime state, caches, and dependencies.
+.claude/**
+.codex/**
+.vscode/**
 .phpunit.cache/**
 node_modules/**
 runtime/**

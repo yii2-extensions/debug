@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(ci): Remove unnecessary permissions and secrets from `linter.yml` workflow.
 - ci: migrate reusable workflows to pinned `v2.0.1` quality and security checks, updating project status badges.
 - chore: update dependency versions and improve phpinfo output handling.
+- ci: exclude local agent and editor directories from quality checks.
 
 ## 0.1.1 May 18, 2026
 
