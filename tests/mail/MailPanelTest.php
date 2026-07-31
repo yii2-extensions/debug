@@ -379,32 +379,6 @@ final class MailPanelTest extends TestCase
         );
     }
 
-    public function testGetSummaryRendersChipWhenMessagesPresent(): void
-    {
-        $panel = $this->makePanel(MailPanel::class);
-
-        $panel->data = [
-            ['subject' => 'Hello'],
-        ];
-
-        self::assertStringContainsString(
-            'Mail',
-            $panel->getSummary(),
-            'Chip must render the panel label.',
-        );
-    }
-
-    public function testGetSummaryReturnsEmptyMarkupWhenNoMessages(): void
-    {
-        $panel = $this->makePanel(MailPanel::class);
-
-        self::assertSame(
-            '',
-            $panel->getSummary(),
-            'No data means no toolbar chip.',
-        );
-    }
-
     public function testGetToolbarItemsEmitsCountChipWhenMessagesPresent(): void
     {
         $panel = $this->makePanel(MailPanel::class);

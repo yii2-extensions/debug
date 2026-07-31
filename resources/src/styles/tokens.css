@@ -59,8 +59,13 @@
   --yii-debug-panel-success: light-dark(#128a50, #34c97e);
   --yii-debug-panel-warning: light-dark(#b26a00, #e8a33d);
   --yii-debug-panel-danger: light-dark(#c93838, #f16a6a);
-  --yii-debug-panel-info: light-dark(#2467a8, #5fa8e8);
+
+  /* Base informational accent shared by chips, callouts, and metadata highlights. */
+  --yii-debug-info: light-dark(#2467a8, #5fa8e8);
   --yii-debug-panel-code-bg: light-dark(#ecf1ec, #17211a);
+
+  /* Neutral pill fill for metric readouts and verdict-free badges. */
+  --yii-debug-panel-pill: light-dark(rgb(22 33 26 / 6%), rgb(143 163 150 / 18%));
   --yii-debug-panel-shadow: light-dark(
     0 22px 60px rgb(22 33 26 / 8%),
     0 22px 60px rgb(0 0 0 / 40%)
@@ -90,7 +95,7 @@
      */
   --yii-debug-level-error: var(--yii-debug-panel-danger);
   --yii-debug-level-warning: var(--yii-debug-panel-warning);
-  --yii-debug-level-info: var(--yii-debug-panel-info);
+  --yii-debug-level-info: var(--yii-debug-info);
   --yii-debug-level-trace: var(--yii-debug-panel-muted);
   --yii-debug-level-profile: light-dark(#9333ea, #b16be8);
   --yii-debug-level-other: var(--yii-debug-panel-muted);

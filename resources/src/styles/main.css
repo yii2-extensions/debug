@@ -1035,7 +1035,7 @@
   }
 
   .yii-debug-callout-info {
-    border-left-color: var(--yii-debug-panel-info);
+    border-left-color: var(--yii-debug-info);
   }
 
   .yii-debug-callout-success {
@@ -1197,7 +1197,7 @@
   .yii-debug-row-info th {
     background: color-mix(
       in srgb,
-      var(--yii-debug-panel-info),
+      var(--yii-debug-info),
       var(--yii-debug-panel-surface) 86%
     ) !important;
   }
@@ -1811,7 +1811,7 @@
     background: linear-gradient(
       135deg,
       var(--yii-debug-panel-primary),
-      var(--yii-debug-panel-info)
+      var(--yii-debug-info)
     );
     box-shadow:
       0 4px 12px
@@ -2856,7 +2856,7 @@
     text-align: right;
 
     &[data-role="reply"] {
-      color: var(--yii-debug-panel-info);
+      color: var(--yii-debug-info);
     }
 
     &[data-role="bcc"] {
@@ -3196,10 +3196,10 @@
   }
 
   .yii-debug-queue-status-queued {
-    color: var(--yii-debug-panel-info);
+    color: var(--yii-debug-info);
     background: color-mix(
       in srgb,
-      var(--yii-debug-panel-info),
+      var(--yii-debug-info),
       transparent 86%
     );
   }
@@ -3330,7 +3330,7 @@
   }
 
   .yii-debug-queue-tree-class {
-    color: var(--yii-debug-panel-info);
+    color: var(--yii-debug-info);
     font-weight: 600;
     cursor: help;
   }
@@ -3362,7 +3362,7 @@
   }
 
   .yii-debug-queue-tree-value-number {
-    color: var(--yii-debug-panel-info);
+    color: var(--yii-debug-info);
   }
 
   .yii-debug-queue-tree-value-bool {
@@ -3524,13 +3524,13 @@
     &[data-type="array"] {
       background: color-mix(
         in srgb,
-        var(--yii-debug-panel-info),
+        var(--yii-debug-info),
         transparent 86%
       );
-      color: var(--yii-debug-panel-info);
+      color: var(--yii-debug-info);
       border-color: color-mix(
         in srgb,
-        var(--yii-debug-panel-info),
+        var(--yii-debug-info),
         transparent 65%
       );
     }
@@ -3686,7 +3686,7 @@
     }
 
     &[data-kind="css"] .yii-debug-asset-stat-icon {
-      color: var(--yii-debug-panel-info);
+      color: var(--yii-debug-info);
     }
 
     &[data-kind="js"] .yii-debug-asset-stat-icon {
@@ -3801,7 +3801,7 @@
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--yii-debug-panel-primary), transparent 78%),
-      color-mix(in srgb, var(--yii-debug-panel-info), transparent 78%)
+      color-mix(in srgb, var(--yii-debug-info), transparent 78%)
     );
     color: var(--yii-debug-panel-primary-strong);
 
@@ -3876,18 +3876,18 @@
   .yii-debug-asset-chip-css {
     border-color: color-mix(
       in srgb,
-      var(--yii-debug-panel-info),
+      var(--yii-debug-info),
       transparent 60%
     );
     background: color-mix(
       in srgb,
-      var(--yii-debug-panel-info),
+      var(--yii-debug-info),
       transparent 90%
     );
-    color: var(--yii-debug-panel-info);
+    color: var(--yii-debug-info);
 
     strong {
-      color: var(--yii-debug-panel-info);
+      color: var(--yii-debug-info);
     }
   }
 
@@ -3995,10 +3995,10 @@
   .yii-debug-asset-file-type-css {
     background: color-mix(
       in srgb,
-      var(--yii-debug-panel-info),
+      var(--yii-debug-info),
       transparent 84%
     );
-    color: var(--yii-debug-panel-info);
+    color: var(--yii-debug-info);
   }
 
   .yii-debug-asset-file-type-js {
@@ -4369,17 +4369,17 @@
     margin-bottom: var(--yii-debug-space-3);
     padding: 8px var(--yii-debug-space-3);
     border: 1px solid
-      color-mix(in srgb, var(--yii-debug-panel-info), transparent 60%);
+      color-mix(in srgb, var(--yii-debug-info), transparent 60%);
     border-radius: var(--yii-debug-radius-md);
     background: color-mix(
       in srgb,
-      var(--yii-debug-panel-info),
+      var(--yii-debug-info),
       transparent 92%
     );
   }
 
   .yii-debug-active-filters-label {
-    color: var(--yii-debug-panel-info);
+    color: var(--yii-debug-info);
     font-family: var(--yii-debug-font-mono);
     font-size: var(--yii-debug-fs-xs);
     font-weight: 700;
@@ -4399,7 +4399,7 @@
     gap: 4px;
     padding: 2px 6px 2px 8px;
     border: 1px solid
-      color-mix(in srgb, var(--yii-debug-panel-info), transparent 50%);
+      color-mix(in srgb, var(--yii-debug-info), transparent 50%);
     border-radius: var(--yii-debug-radius-pill);
     background: var(--yii-debug-panel-surface);
     color: var(--yii-debug-panel-text);

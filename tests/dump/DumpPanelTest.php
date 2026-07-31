@@ -202,32 +202,6 @@ final class DumpPanelTest extends TestCase
         );
     }
 
-    public function testGetSummaryRendersChipWhenMessagesPresent(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        $panel->data = [
-            ['a', Logger::LEVEL_TRACE, 'application', 0.0, []],
-        ];
-
-        self::assertStringContainsString(
-            'Dump',
-            $panel->getSummary(),
-            'Chip must render the panel label.',
-        );
-    }
-
-    public function testGetSummaryReturnsEmptyMarkupWhenNoMessages(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        self::assertSame(
-            '',
-            $panel->getSummary(),
-            'No data means no toolbar chip.',
-        );
-    }
-
     public function testGetToolbarItemsEmitsCountChipWhenMessagesPresent(): void
     {
         $panel = $this->makePanel(DumpPanel::class);

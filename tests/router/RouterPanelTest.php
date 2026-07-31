@@ -187,23 +187,6 @@ final class RouterPanelTest extends TestCase
         );
     }
 
-    public function testGetSummaryRendersChip(): void
-    {
-        $panel = $this->makePanel(RouterPanel::class);
-
-        $panel->data = [
-            'action' => 'app\\controllers\\SiteController::actionIndex()',
-            'messages' => [],
-            'route' => 'site/index',
-        ];
-
-        self::assertStringContainsString(
-            'site/index',
-            $panel->getSummary(),
-            'Summary chip must echo the resolved route.',
-        );
-    }
-
     public function testGetToolbarItemsFormatsTitleAndValue(): void
     {
         $panel = $this->makePanel(RouterPanel::class);

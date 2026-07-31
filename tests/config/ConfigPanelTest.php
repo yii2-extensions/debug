@@ -246,18 +246,6 @@ final class ConfigPanelTest extends TestCase
         );
     }
 
-    public function testGetSummaryNameDelegatesToControllerTemplate(): void
-    {
-        $panel = $this->makePanel(ConfigPanel::class);
-
-        $html = $panel->getSummary();
-
-        self::assertNotEmpty(
-            $html,
-            'Summary chip must produce non-empty markup.',
-        );
-    }
-
     public function testGetToolbarItemsAlwaysReturnsNull(): void
     {
         $panel = new ConfigPanel();

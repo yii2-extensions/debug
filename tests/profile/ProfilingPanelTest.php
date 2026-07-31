@@ -214,22 +214,6 @@ final class ProfilingPanelTest extends TestCase
         );
     }
 
-    public function testGetSummaryRendersChip(): void
-    {
-        $panel = $this->makePanel(ProfilingPanel::class);
-
-        $panel->data = [
-            'memory' => 1024,
-            'time' => 0.1,
-            'messages' => [],
-        ];
-
-        self::assertNotEmpty(
-            $panel->getSummary(),
-            'Summary chip must produce markup.',
-        );
-    }
-
     public function testGetToolbarDataBlanksTitleOnSuccess(): void
     {
         $panel = $this->makePanel(ProfilingPanel::class);
@@ -262,6 +246,39 @@ final class ProfilingPanelTest extends TestCase
             $payload['title'] ?? null,
             'Error path must keep the panel title.',
         );
+    }
+
+    public function testGetToolbarItemsCarryNoStatusVerdict(): void
+    {
+        $panel = $this->makePanel(ProfilingPanel::class);
+
+        $panel->data = [
+            'memory' => 2_097_152,
+            'time' => 0.25,
+            'messages' => [],
+        ];
+
+        $items = $this->invoke(
+            $panel,
+            'getToolbarItems',
+        );
+
+        self::assertIsArray(
+            $items,
+            'Items must be a list.',
+        );
+
+        foreach ($items as $item) {
+            self::assertIsArray(
+                $item,
+                'Each chip must be an array.',
+            );
+            self::assertArrayNotHasKey(
+                'status',
+                $item,
+                'Metrics must render as neutral readouts.',
+            );
+        }
     }
 
     public function testGetToolbarItemsEmitsTimeAndMemoryChips(): void

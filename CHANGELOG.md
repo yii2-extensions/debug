@@ -32,6 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: add server-side micro-gauge rails behind the History Duration/Memory readouts and the Profiling duration column, scaled to the visible capture maximum (new `Gauge` and `HistoryScale` helpers, no new JavaScript).
 - feat: make the timeline axis ticks adaptive; "nice" `{1, 2, 5} x 10^n` steps with second-scale labels (`1.5 s`) replace the ten fixed ticks that collided on long requests; `DataProvider::getRulers()` now treats its argument as a maximum tick count and defaults to `6`.
 - fix: restore the History status chips and the log row severity tinting; the renderers emitted BEM double-dash classes (`yii-debug-badge--*`, `yii-debug-row--*`) that no stylesheet defined, so both rendered neutral.
+- refactor!: remove `Panel::getSummary()` and the legacy HTML summary fallback from `Panel::getToolbarData()`; `getToolbarItems()` returning `[]` now skips the panel like `null`. Third-party panels must return structured items to surface a toolbar chip.
+- refactor!: remove `DefaultController::actionToolbar()`, the light-DOM `toolbar` view, and its `Module::beforeAction()` allowlist entry; the web-component toolbar consumes the `toolbar-data` JSON endpoint only.
+- refactor!: remove `DbPanel::getSummaryName()`, the eleven per-panel `summary` views, and the `ToolbarBlock`/`ToolbarLabel` HTML defaults.
+- refactor!: drop `toolbar.min.css` from `DebugAsset` and delete the legacy toolbar stylesheet; the user switch view now wears the tinted `yii-debug-level-chip` vocabulary.
+- refactor: delete the dead timeline hover script (its `.debug-timeline-*` selectors matched no markup); `TimelineAsset` ships CSS only.
+- refactor: remove the legacy `panel.html` render branch and the `.legacy-panel` styles from the toolbar web component; panel payloads render exclusively through the structured-items path.
+- refactor!: rename the `--yii-debug-panel-info` token to `--yii-debug-info` as the base informational accent; `--yii-debug-level-info` now aliases it.
+- feat: restyle the generic toolbar badges (`success`/`info`/`loading`/`warning`/`danger`/`cross-request`) with the tinted "ink on paper" vocabulary formula, removing the hardcoded white-on-solid hex pairs; add the missing `.badge` base rule so the AJAX popover status cells render as pills; tokenize the neutral pill fill as `--yii-debug-panel-pill`; the profiling time/memory metrics render as neutral readouts.
 
 ## 0.1.1 May 18, 2026
 

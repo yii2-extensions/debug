@@ -48,32 +48,6 @@ final class EventPanelTest extends TestCase
         );
     }
 
-    public function testGetSummaryRendersChipWhenEventsPresent(): void
-    {
-        $panel = $this->makePanel(EventPanel::class);
-
-        $panel->data = [
-            ['time' => 1.0, 'name' => 'a', 'class' => Event::class, 'isStatic' => '0', 'senderClass' => ''],
-        ];
-
-        self::assertStringContainsString(
-            'Events',
-            $panel->getSummary(),
-            'Chip must render the panel label.',
-        );
-    }
-
-    public function testGetSummaryReturnsEmptyMarkupWhenNoEvents(): void
-    {
-        $panel = $this->makePanel(EventPanel::class);
-
-        self::assertSame(
-            '',
-            trim($panel->getSummary()),
-            'No data means no toolbar chip.',
-        );
-    }
-
     public function testGetToolbarItemsEmitsCountChipWhenEventsPresent(): void
     {
         $panel = $this->makePanel(EventPanel::class);

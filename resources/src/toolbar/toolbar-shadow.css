@@ -305,6 +305,7 @@
   color: var(--yii-debug-panel-muted);
 }
 
+/* PHP brand purple — a brand constant, not part of the semantic vocabulary. */
 .panel-icon-php {
   width: 32px;
   color: light-dark(#4f5b93, #a3aedb);
@@ -319,7 +320,7 @@
   border: 1px solid var(--yii-debug-panel-border);
   border-radius: 999px;
   color: var(--yii-debug-panel-text);
-  background: light-dark(rgb(22 33 26 / 6%), rgb(143 163 150 / 18%));
+  background: var(--yii-debug-panel-pill);
   font-family: var(--yii-debug-font-mono);
   font-size: 11px;
   font-weight: 700;
@@ -327,6 +328,21 @@
   line-height: 18px;
   box-shadow: 0 1px 0 light-dark(rgb(255 255 255 / 82%), rgb(255 255 255 / 8%))
     inset;
+}
+
+/* Pill base for the AJAX popover status cells; chip metrics get their shape from .metric-value. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 7px;
+  border: 1px solid var(--yii-debug-panel-border);
+  border-radius: 999px;
+  font-family: var(--yii-debug-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
 }
 
 .metric[data-debug-url]:hover .metric-value,
@@ -338,12 +354,14 @@
 }
 
 /*
- * Status-class badges follow the fixed semantic hue vocabulary with the
- * tinted "ink on paper" formula shared with the debugger panels; the class
- * suffix comes from `Vocabulary::statusClass()` via the RequestPanel
- * toolbar item and the AJAX popover rows.
+ * Badges follow the fixed semantic hue vocabulary with the tinted "ink on
+ * paper" formula shared with the debugger panels. Status-class suffixes come
+ * from `Vocabulary::statusClass()` via the RequestPanel toolbar item and the
+ * AJAX popover rows; the generic verdicts come from the panels' toolbar items
+ * and the AJAX counter.
  */
-.badge-status-2xx {
+.badge-status-2xx,
+.badge-success {
   --badge-hue: var(--yii-debug-status-2xx);
 }
 
@@ -359,10 +377,33 @@
   --badge-hue: var(--yii-debug-status-5xx);
 }
 
+.badge-info,
+.badge-loading {
+  --badge-hue: var(--yii-debug-info);
+}
+
+.badge-warning {
+  --badge-hue: var(--yii-debug-panel-warning);
+}
+
+.badge-danger {
+  --badge-hue: var(--yii-debug-panel-danger);
+}
+
+.badge-cross-request {
+  --badge-hue: var(--yii-debug-cat-mail);
+}
+
 .badge-status-2xx,
 .badge-status-3xx,
 .badge-status-4xx,
-.badge-status-5xx {
+.badge-status-5xx,
+.badge-success,
+.badge-info,
+.badge-loading,
+.badge-warning,
+.badge-danger,
+.badge-cross-request {
   border-color: color-mix(in srgb, var(--badge-hue), transparent 65%);
   background: color-mix(in srgb, var(--badge-hue), transparent 90%);
   color: color-mix(in srgb, var(--badge-hue) 80%, var(--yii-debug-panel-text));
@@ -389,46 +430,10 @@
   color: color-mix(in srgb, var(--yii-debug-verb-other) 80%, var(--yii-debug-panel-text));
 }
 
-/* Generic badges used by the non-request panel chips. */
-.badge-success {
-  border-color: transparent;
-  background: var(--yii-debug-status-2xx);
-  color: light-dark(#fff, #062c1b);
-}
-
-.badge-info {
-  border-color: transparent;
-  background: var(--yii-debug-panel-info);
-  color: light-dark(#fff, #0a1a2b);
-}
-
-.badge-loading {
-  border-color: transparent;
-  background: var(--yii-debug-panel-info);
-  color: light-dark(#fff, #0a1a2b);
-}
-
-.badge-warning {
-  border-color: transparent;
-  background: light-dark(#9a5b00, #e8a33d);
-  color: light-dark(#fff, #241503);
-}
-
-.badge-danger {
-  border-color: transparent;
-  background: var(--yii-debug-panel-danger);
-  color: light-dark(#fff, #2b0808);
-}
-
+/* Verdict-free readouts keep the neutral pill fill. */
 .badge-default {
-  background: light-dark(rgb(22 33 26 / 6%), rgb(143 163 150 / 18%));
+  background: var(--yii-debug-panel-pill);
   color: var(--yii-debug-panel-text);
-}
-
-.badge-cross-request {
-  border-color: transparent;
-  background: var(--yii-debug-cat-mail);
-  color: light-dark(#fff, #36101f);
 }
 
 /* AJAX inspector popover. */
@@ -628,33 +633,6 @@
 
 .position-upper .resize-handle {
   margin: -3px 18px 0;
-}
-
-/* Legacy HTML summaries (Panel::getSummary() fallback). */
-.legacy-panel {
-  padding: 0;
-}
-
-.legacy-panel .yii-debug-toolbar-block {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0;
-}
-
-.legacy-panel a {
-  color: var(--yii-debug-panel-text);
-  text-decoration: none;
-}
-
-.legacy-panel .yii-debug-toolbar-label {
-  display: inline-flex;
-  margin-left: 4px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  color: var(--yii-debug-panel-text);
-  background: light-dark(rgb(22 33 26 / 6%), rgb(143 163 150 / 18%));
-  font-weight: 700;
 }
 
 .error-message {

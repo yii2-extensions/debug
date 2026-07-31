@@ -380,7 +380,7 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testGetNameAndSummaryNameAndIcon(): void
+    public function testGetNameAndIcon(): void
     {
         $panel = $this->makePanel(DbPanel::class);
 
@@ -388,11 +388,6 @@ final class DbPanelTest extends TestCase
             'Database',
             $panel->getName(),
             "Display name must be 'Database'.",
-        );
-        self::assertSame(
-            'DB',
-            $panel->getSummaryName(),
-            "Summary chip name must be 'DB'.",
         );
         self::assertSame(
             'db',
@@ -516,87 +511,6 @@ final class DbPanelTest extends TestCase
         );
 
         DebugPdoStatement::$rowCounts = [];
-    }
-
-    public function testGetSummaryConcatenatesWarningsWhenQueryCountAndCallerCountAreCritical(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $panel->criticalQueryThreshold = 1;
-        $panel->excessiveCallerThreshold = 0;
-        $panel->data = [
-            'messages' => [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
-                ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 2]]),
-            ],
-        ];
-
-        $html = $panel->getSummary();
-
-        self::assertStringContainsString(
-            '&#10;',
-            $html,
-            'Multiple warnings must concatenate with a newline separator.',
-        );
-    }
-
-    public function testGetSummaryRendersChip(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $panel->data = [
-            'messages' => [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
-        ];
-
-        $html = $panel->getSummary();
-
-        self::assertNotEmpty(
-            $html,
-            'Summary chip must produce non-empty markup.',
-        );
-    }
-
-    public function testGetSummaryRendersWarningGlyphWhenExcessiveCallersPresent(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        // 'excessiveCallerThreshold = 0' classifies every caller as excessive; a single caller hits the singular
-        // 'caller is' branch in summary.php.
-        $panel->excessiveCallerThreshold = 0;
-        $panel->data = [
-            'messages' => [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
-            ],
-        ];
-
-        $html = $panel->getSummary();
-
-        self::assertStringContainsString(
-            '&#x26a0;',
-            $html,
-            'Excessive callers must surface the warning glyph.',
-        );
-    }
-
-    public function testGetSummaryRendersWarningGlyphWhenQueryCountIsCritical(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $panel->criticalQueryThreshold = 1;
-        $panel->data = [
-            'messages' => [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0),
-                ...$this->makeMessage('SELECT 2', 0.001, 0.001),
-            ],
-        ];
-
-        $html = $panel->getSummary();
-
-        self::assertStringContainsString(
-            '&#x26a0;',
-            $html,
-            'Critical query count must surface the warning glyph in the summary chip.',
-        );
     }
 
     public function testGetToolbarItemsEmitsWarningForExcessiveCallers(): void

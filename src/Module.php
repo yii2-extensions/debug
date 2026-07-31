@@ -16,7 +16,6 @@ use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Resp
 
 use function file_get_contents;
 use function gethostbyname;
-use function in_array;
 use function is_array;
 use function is_callable;
 use function is_numeric;
@@ -201,8 +200,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return true;
         }
 
-        if (in_array($action->id, ['toolbar', 'toolbar-data'], true)) {
-            // Accessing the toolbar remotely is normal do not throw.
+        if ($action->id === 'toolbar-data') {
+            // Accessing the toolbar data remotely is normal do not throw.
             return false;
         }
 
