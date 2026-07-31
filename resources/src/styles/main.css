@@ -529,7 +529,11 @@
 
   .yii-debug-snapshot-method {
     flex: none;
-    color: var(--yii-debug-panel-primary-strong);
+    color: color-mix(
+      in srgb,
+      var(--yii-debug-hue, var(--yii-debug-panel-primary-strong)) 80%,
+      var(--yii-debug-panel-text)
+    );
     font-weight: 700;
   }
 
@@ -551,30 +555,12 @@
     font-size: var(--yii-debug-fs-xs);
   }
 
+  /* Colors come from the shared vocabulary chip formula (see Semantic vocabulary). */
   .yii-debug-snapshot-status {
     display: inline-block;
     padding: 1px 6px;
     border-radius: var(--yii-debug-radius-pill);
-    color: #fff;
     font-weight: 700;
-  }
-
-  .yii-debug-snapshot-status-success {
-    background: var(--yii-debug-panel-success);
-  }
-
-  .yii-debug-snapshot-status-warning {
-    background: var(--yii-debug-panel-warning);
-    color: #1c1917;
-  }
-
-  .yii-debug-snapshot-status-danger {
-    background: var(--yii-debug-panel-danger);
-  }
-
-  .yii-debug-snapshot-status-muted {
-    background: var(--yii-debug-panel-surface-muted);
-    color: var(--yii-debug-panel-muted);
   }
 
   .yii-debug-snapshot-tag {
@@ -604,12 +590,11 @@
     font-size: var(--yii-debug-fs-base);
   }
 
+  /* Colors come from the shared vocabulary chip formula (see Semantic vocabulary). */
   .yii-debug-request-hero-method {
     flex: none;
     padding: 2px 10px;
     border-radius: var(--yii-debug-radius-pill);
-    background: var(--yii-debug-panel-info);
-    color: #fff;
     font-weight: 700;
     letter-spacing: 0.04em;
   }
@@ -882,11 +867,6 @@
     color: #fff;
   }
 
-  .yii-debug-badge-info {
-    background: var(--yii-debug-panel-info);
-    color: #fff;
-  }
-
   .yii-debug-badge-warning {
     background: var(--yii-debug-panel-warning);
     color: #1c1917;
@@ -900,6 +880,139 @@
   .yii-debug-badge-muted {
     background: var(--yii-debug-panel-surface-muted);
     color: var(--yii-debug-panel-muted);
+  }
+
+  /**
+   * -------------------------------------------------------------------
+   * Semantic vocabulary.
+   * -------------------------------------------------------------------
+   * Hue setters map the fixed vocabulary (HTTP verbs, status classes,
+   * log levels) onto `--yii-debug-hue`; the shared "ink on paper" chip
+   * formula below consumes it once. The PHP source of truth for the
+   * class suffixes is `src/helpers/Vocabulary.php`.
+   */
+
+  .yii-debug-verb-get {
+    --yii-debug-hue: var(--yii-debug-verb-get);
+  }
+
+  .yii-debug-verb-post {
+    --yii-debug-hue: var(--yii-debug-verb-post);
+  }
+
+  .yii-debug-verb-put {
+    --yii-debug-hue: var(--yii-debug-verb-put);
+  }
+
+  .yii-debug-verb-delete {
+    --yii-debug-hue: var(--yii-debug-verb-delete);
+  }
+
+  .yii-debug-verb-other {
+    --yii-debug-hue: var(--yii-debug-verb-other);
+  }
+
+  .yii-debug-status-2xx {
+    --yii-debug-hue: var(--yii-debug-status-2xx);
+  }
+
+  .yii-debug-status-3xx {
+    --yii-debug-hue: var(--yii-debug-status-3xx);
+  }
+
+  .yii-debug-status-4xx {
+    --yii-debug-hue: var(--yii-debug-status-4xx);
+  }
+
+  .yii-debug-status-5xx {
+    --yii-debug-hue: var(--yii-debug-status-5xx);
+  }
+
+  .yii-debug-status-none {
+    --yii-debug-hue: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-level-error {
+    --yii-debug-hue: var(--yii-debug-level-error);
+  }
+
+  .yii-debug-level-warning {
+    --yii-debug-hue: var(--yii-debug-level-warning);
+  }
+
+  .yii-debug-level-info {
+    --yii-debug-hue: var(--yii-debug-level-info);
+  }
+
+  .yii-debug-level-trace {
+    --yii-debug-hue: var(--yii-debug-level-trace);
+  }
+
+  .yii-debug-level-profile {
+    --yii-debug-hue: var(--yii-debug-level-profile);
+  }
+
+  .yii-debug-level-other {
+    --yii-debug-hue: var(--yii-debug-level-other);
+  }
+
+  /**
+   * The tinted chip formula, written once: full-hue ink (nudged 20% toward
+   * the text color so every hue clears AA on the 10% tint in both modes),
+   * a soft border, and a near-transparent wash of the same hue.
+   */
+  .yii-debug-request-hero-method,
+  .yii-debug-snapshot-status,
+  .yii-debug-level-chip,
+  .yii-debug-db-type,
+  .yii-debug-badge:is(
+      .yii-debug-status-2xx,
+      .yii-debug-status-3xx,
+      .yii-debug-status-4xx,
+      .yii-debug-status-5xx,
+      .yii-debug-status-none
+    ) {
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--yii-debug-hue, var(--yii-debug-panel-muted)),
+        transparent 65%
+      );
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-hue, var(--yii-debug-panel-muted)),
+      transparent 90%
+    );
+    color: color-mix(
+      in srgb,
+      var(--yii-debug-hue, var(--yii-debug-panel-muted)) 80%,
+      var(--yii-debug-panel-text)
+    );
+  }
+
+  /* History Method column — vocabulary-colored mono text, no pill. */
+  .yii-debug-method {
+    color: color-mix(
+      in srgb,
+      var(--yii-debug-hue, var(--yii-debug-panel-muted)) 80%,
+      var(--yii-debug-panel-text)
+    );
+    font-family: var(--yii-debug-font-mono);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  /* Log level chip — tinted pill carrying the level name as its own label. */
+  .yii-debug-level-chip {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: var(--yii-debug-radius-pill);
+    font-family: var(--yii-debug-font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   /**
@@ -2093,31 +2206,49 @@
     color: var(--yii-debug-panel-danger);
   }
 
-  .yii-debug-grid-summary-stat-success strong {
-    color: var(--yii-debug-panel-success);
-  }
-
-  .yii-debug-grid-summary-stat-info strong {
-    color: var(--yii-debug-panel-info);
-  }
-
   /**
-   * Pill variant — when the stat is also a clickable filter (`<a>` element),
-   * wrap it in a rounded badge with a tinted background that matches its
-   * variant. Used by the index page's status-code distribution to deep-link
-   * the GridView. Inline spans (`<span class="yii-debug-grid-summary-stat-…">`)
-   * — used by panels like Log/DB for warning/error counts — are left alone and
-   * only get the colored `<strong>` from the rules above.
+   * Pill variant — the History status buckets are clickable filters
+   * (`<a>` elements) named by their vocabulary status class. Each bucket
+   * pill wears the tinted formula on its `--yii-debug-hue`. Inline spans
+   * (`<span class="yii-debug-grid-summary-stat-…">`) — used by panels
+   * like Log/DB for warning/error counts — are left alone and only get
+   * the colored `<strong>` from the rules above.
    */
-  a.yii-debug-grid-summary-stat-success,
-  a.yii-debug-grid-summary-stat-info,
-  a.yii-debug-grid-summary-stat-warn,
-  a.yii-debug-grid-summary-stat-danger {
+  .yii-debug-grid-summary-stat-2xx {
+    --yii-debug-hue: var(--yii-debug-status-2xx);
+  }
+
+  .yii-debug-grid-summary-stat-3xx {
+    --yii-debug-hue: var(--yii-debug-status-3xx);
+  }
+
+  .yii-debug-grid-summary-stat-4xx {
+    --yii-debug-hue: var(--yii-debug-status-4xx);
+  }
+
+  .yii-debug-grid-summary-stat-5xx {
+    --yii-debug-hue: var(--yii-debug-status-5xx);
+  }
+
+  a:is(
+      .yii-debug-grid-summary-stat-2xx,
+      .yii-debug-grid-summary-stat-3xx,
+      .yii-debug-grid-summary-stat-4xx,
+      .yii-debug-grid-summary-stat-5xx
+    ) {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 2px 10px;
+    border: 1px solid
+      color-mix(in srgb, var(--yii-debug-hue), transparent 65%);
     border-radius: var(--yii-debug-radius-pill);
+    background: color-mix(in srgb, var(--yii-debug-hue), transparent 90%);
+    color: color-mix(
+      in srgb,
+      var(--yii-debug-hue) 80%,
+      var(--yii-debug-panel-text)
+    );
     text-decoration: none;
     transition:
       transform 140ms ease,
@@ -2131,87 +2262,8 @@
     &:hover,
     &:focus-visible {
       transform: translateY(-1px);
+      background: color-mix(in srgb, var(--yii-debug-hue), transparent 80%);
       text-decoration: none;
-    }
-  }
-
-  a.yii-debug-grid-summary-stat-success {
-    color: var(--yii-debug-panel-success);
-    border: 1px solid
-      color-mix(in srgb, var(--yii-debug-panel-success), transparent 65%);
-    background: color-mix(
-      in srgb,
-      var(--yii-debug-panel-success),
-      transparent 90%
-    );
-
-    &:hover,
-    &:focus-visible {
-      background: color-mix(
-        in srgb,
-        var(--yii-debug-panel-success),
-        transparent 80%
-      );
-    }
-  }
-
-  a.yii-debug-grid-summary-stat-info {
-    color: var(--yii-debug-panel-info);
-    border: 1px solid
-      color-mix(in srgb, var(--yii-debug-panel-info), transparent 65%);
-    background: color-mix(
-      in srgb,
-      var(--yii-debug-panel-info),
-      transparent 90%
-    );
-
-    &:hover,
-    &:focus-visible {
-      background: color-mix(
-        in srgb,
-        var(--yii-debug-panel-info),
-        transparent 80%
-      );
-    }
-  }
-
-  a.yii-debug-grid-summary-stat-warn {
-    color: var(--yii-debug-panel-warning);
-    border: 1px solid
-      color-mix(in srgb, var(--yii-debug-panel-warning), transparent 65%);
-    background: color-mix(
-      in srgb,
-      var(--yii-debug-panel-warning),
-      transparent 90%
-    );
-
-    &:hover,
-    &:focus-visible {
-      background: color-mix(
-        in srgb,
-        var(--yii-debug-panel-warning),
-        transparent 80%
-      );
-    }
-  }
-
-  a.yii-debug-grid-summary-stat-danger {
-    color: var(--yii-debug-panel-danger);
-    border: 1px solid
-      color-mix(in srgb, var(--yii-debug-panel-danger), transparent 65%);
-    background: color-mix(
-      in srgb,
-      var(--yii-debug-panel-danger),
-      transparent 90%
-    );
-
-    &:hover,
-    &:focus-visible {
-      background: color-mix(
-        in srgb,
-        var(--yii-debug-panel-danger),
-        transparent 80%
-      );
     }
   }
 
@@ -2297,6 +2349,7 @@
     }
   }
 
+  /* Colors come from the shared vocabulary chip formula (see Semantic vocabulary). */
   .yii-debug-db-type {
     display: inline-block;
     min-width: 5em;
@@ -2309,29 +2362,6 @@
     text-align: center;
     text-transform: uppercase;
     white-space: nowrap;
-    color: #fff;
-  }
-
-  .yii-debug-db-type-info {
-    background: var(--yii-debug-panel-info);
-  }
-
-  .yii-debug-db-type-success {
-    background: var(--yii-debug-panel-success);
-  }
-
-  .yii-debug-db-type-warning {
-    background: var(--yii-debug-panel-warning);
-    color: #1c1917;
-  }
-
-  .yii-debug-db-type-danger {
-    background: var(--yii-debug-panel-danger);
-  }
-
-  .yii-debug-db-type-muted {
-    background: var(--yii-debug-panel-surface-muted);
-    color: var(--yii-debug-panel-muted);
   }
 
   .yii-debug-db-sql {
@@ -4566,6 +4596,38 @@
   .yii-debug-not-set {
     color: var(--yii-debug-panel-danger);
     font-style: italic;
+  }
+
+  /**
+   * Micro-gauge — instrument rail under numeric readouts (History
+   * Duration/Memory, Profiling Duration). The fill width arrives from PHP
+   * as the inline `--yii-debug-gauge` custom property, relative to the
+   * capture maximum; the rail itself is pure CSS.
+   */
+  .yii-debug-gauge {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 76px;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .yii-debug-gauge-bar {
+    display: block;
+    height: 3px;
+    overflow: hidden;
+    border-radius: var(--yii-debug-radius-pill);
+    background: var(--yii-debug-gauge-track);
+  }
+
+  .yii-debug-gauge-bar::after {
+    content: "";
+    display: block;
+    width: var(--yii-debug-gauge, 0%);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--yii-debug-gauge-fill);
   }
 
   /**

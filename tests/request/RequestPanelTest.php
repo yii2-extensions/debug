@@ -412,70 +412,7 @@ final class RequestPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsRendersDangerForOtherStatus(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        $panel->data = ['statusCode' => 500];
-
-        $items = $this->invoke(
-            $panel,
-            'getToolbarItems',
-        );
-
-        self::assertIsArray(
-            $items,
-            'Toolbar items must be an array.',
-        );
-
-        $first = $items[0] ?? self::fail('Expected one item.');
-
-        self::assertIsArray(
-            $first,
-            'Item must be an array.',
-        );
-        self::assertSame(
-            'danger',
-            $first['status'] ?? null,
-            'Server errors must carry the danger status.',
-        );
-        self::assertSame(
-            500,
-            $first['value'] ?? null,
-            'Value must echo the captured status code.',
-        );
-    }
-
-    public function testGetToolbarItemsRendersInfoForStatus3xx(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        $panel->data = ['statusCode' => 302];
-
-        $items = $this->invoke(
-            $panel,
-            'getToolbarItems',
-        );
-
-        self::assertIsArray(
-            $items,
-            'Toolbar items must be an array.',
-        );
-
-        $first = $items[0] ?? self::fail('Expected one item.');
-
-        self::assertIsArray(
-            $first,
-            'Item must be an array.',
-        );
-        self::assertSame(
-            'info',
-            $first['status'] ?? null,
-            'Redirects must carry the info status.',
-        );
-    }
-
-    public function testGetToolbarItemsRendersSuccessForStatus2xx(): void
+    public function testGetToolbarItemsRendersStatus2xxForSuccess(): void
     {
         $panel = $this->makePanel(RequestPanel::class);
 
@@ -498,9 +435,9 @@ final class RequestPanelTest extends TestCase
             'Item must be an array.',
         );
         self::assertSame(
-            'success',
+            'status-2xx',
             $first['status'] ?? null,
-            '2xx must carry the success status.',
+            "2xx must carry the 'status-2xx' badge.",
         );
 
         $title = $first['title'] ?? '';
@@ -513,6 +450,69 @@ final class RequestPanelTest extends TestCase
             'Status code: 201',
             $title,
             'Title must include the captured status code.',
+        );
+    }
+
+    public function testGetToolbarItemsRendersStatus3xxForRedirects(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $panel->data = ['statusCode' => 302];
+
+        $items = $this->invoke(
+            $panel,
+            'getToolbarItems',
+        );
+
+        self::assertIsArray(
+            $items,
+            'Toolbar items must be an array.',
+        );
+
+        $first = $items[0] ?? self::fail('Expected one item.');
+
+        self::assertIsArray(
+            $first,
+            'Item must be an array.',
+        );
+        self::assertSame(
+            'status-3xx',
+            $first['status'] ?? null,
+            "Redirects must carry the 'status-3xx' badge.",
+        );
+    }
+
+    public function testGetToolbarItemsRendersStatus5xxForServerErrors(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $panel->data = ['statusCode' => 500];
+
+        $items = $this->invoke(
+            $panel,
+            'getToolbarItems',
+        );
+
+        self::assertIsArray(
+            $items,
+            'Toolbar items must be an array.',
+        );
+
+        $first = $items[0] ?? self::fail('Expected one item.');
+
+        self::assertIsArray(
+            $first,
+            'Item must be an array.',
+        );
+        self::assertSame(
+            'status-5xx',
+            $first['status'] ?? null,
+            "Server errors must carry the 'status-5xx' badge.",
+        );
+        self::assertSame(
+            500,
+            $first['value'] ?? null,
+            'Value must echo the captured status code.',
         );
     }
 

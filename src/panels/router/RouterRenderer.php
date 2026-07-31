@@ -96,9 +96,7 @@ final class RouterRenderer
      */
     private static function renderBadgeChip(string $label, string $variant): Li
     {
-        $badgeClass = $variant === 'warning'
-            ? 'yii-debug-badge yii-debug-badge-warning'
-            : "yii-debug-badge yii-debug-badge--{$variant}";
+        $badgeClass = "yii-debug-badge yii-debug-badge-{$variant}";
 
         return Li::tag()
             ->class('yii-debug-tab')

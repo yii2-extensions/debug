@@ -7,6 +7,7 @@ namespace yii\debug\panels;
 use Yii;
 use yii\base\InlineAction;
 use yii\debug\controllers\DefaultController;
+use yii\debug\helpers\Vocabulary;
 use yii\debug\Panel;
 use yii\debug\panels\request\RequestDataNormalizer;
 use yii\helpers\ArrayHelper;
@@ -232,8 +233,8 @@ class RequestPanel extends Panel
     }
 
     /**
-     * Builds the toolbar item with the response status code, colored by class (`success` for 2xx, `info` for 3xx,
-     * `danger` for everything else).
+     * Builds the toolbar item with the response status code, colored by its vocabulary status class
+     * (`status-2xx` ... `status-5xx`, or `default` for uncaptured codes).
      *
      * @return array<int, array<string, mixed>> Single-element list with the status chip.
      */
@@ -241,13 +242,9 @@ class RequestPanel extends Panel
     {
         $statusCode = $this->getStatusCode();
 
-        if ($statusCode >= 200 && $statusCode < 300) {
-            $status = 'success';
-        } elseif ($statusCode >= 300 && $statusCode < 400) {
-            $status = 'info';
-        } else {
-            $status = 'danger';
-        }
+        $statusClass = Vocabulary::statusClass($statusCode);
+
+        $status = $statusClass === 'none' ? 'default' : "status-{$statusClass}";
 
         $statusText = Response::$httpStatuses[$statusCode] ?? '';
 

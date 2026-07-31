@@ -24,6 +24,7 @@ use yii\grid\GridView;
  * @var string $timelineUrl URL to the Timeline panel.
  */
 $hasProfileBlocks = $dataProvider->getTotalCount() > 0;
+$maxDuration = ProfileRowNormalizer::maxDuration($dataProvider->getModels());
 
 $summaryItems = [
     Span::tag()
@@ -106,7 +107,9 @@ if ($hasProfileBlocks) {
                     'attribute' => 'duration',
                     'value' => static fn(mixed $data): string => ProfileCellRenderer::renderDurationCell(
                         ProfileRowNormalizer::from($data),
+                        $maxDuration,
                     ),
+                    'format' => 'raw',
                     'options' => ['width' => '10%'],
                     'headerOptions' => ['class' => 'sort-numerical'],
                     ],

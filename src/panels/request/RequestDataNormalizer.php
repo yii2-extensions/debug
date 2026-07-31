@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\request;
 
+use yii\debug\helpers\Vocabulary;
+
 use function array_key_exists;
 use function date;
 use function is_array;
@@ -267,16 +269,10 @@ final class RequestDataNormalizer
     }
 
     /**
-     * Resolves the status-pill CSS modifier (`success` / `muted` / `warning` / `danger`) for the given HTTP status.
+     * Resolves the status-pill vocabulary suffix (`2xx` / `3xx` / `4xx` / `5xx` / `none`) for the given HTTP status.
      */
     private static function statusVariant(int $statusCode): string
     {
-        return match (true) {
-            $statusCode >= 500 => 'danger',
-            $statusCode >= 400 => 'warning',
-            $statusCode >= 300 => 'muted',
-            $statusCode >= 200 => 'success',
-            default => 'muted',
-        };
+        return Vocabulary::statusClass($statusCode);
     }
 }

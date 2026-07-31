@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
-use yii\debug\helpers\Icon;
+use yii\debug\helpers\{Icon, Vocabulary};
 use yii\debug\Panel;
 
 use function array_key_first;
@@ -369,13 +369,7 @@ final class SidebarDataNormalizer
 
     private static function statusVariant(int $statusCode): string
     {
-        return match (true) {
-            $statusCode >= 500 => 'danger',
-            $statusCode >= 400 => 'warning',
-            $statusCode >= 300 => 'muted',
-            $statusCode >= 200 => 'success',
-            default => 'muted',
-        };
+        return Vocabulary::statusClass($statusCode);
     }
 
     /**

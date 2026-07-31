@@ -119,19 +119,53 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertSame(
             '125 ms',
-            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.125])),
+            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.125]), 0.0),
             "Seconds must format as 'X ms'.",
+        );
+        self::assertSame(
+            '2,000 ms',
+            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 2.0]), 0.0),
+            'Second-scale durations must keep the thousands separator.',
+        );
+    }
+
+    public function testRenderDurationCellScalesGaugeAgainstPageMaximum(): void
+    {
+        $html = HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.125]), 0.25);
+
+        self::assertSame(
+            '<span class="yii-debug-gauge" style=\'--yii-debug-gauge: 50%;\'>'
+            . '<span class="yii-debug-gauge-value">125 ms</span>'
+            . '<span class="yii-debug-gauge-bar" aria-hidden="true"></span>'
+            . '</span>',
+            $html,
+            'Rail must sit at half the page maximum.',
+        );
+        self::assertStringContainsString(
+            '--yii-debug-gauge: 100%;',
+            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.25]), 0.25),
+            'The slowest row must fill its rail.',
+        );
+        self::assertStringContainsString(
+            '--yii-debug-gauge: 0%;',
+            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.0]), 0.25),
+            'A zero measurement must show an empty rail.',
         );
     }
 
     public function testRenderDurationCellShowsNotSetWhenMissing(): void
     {
-        $html = HistoryRowRenderer::renderDurationCell(HistoryRow::from([]));
+        $html = HistoryRowRenderer::renderDurationCell(HistoryRow::from([]), 0.25);
 
         self::assertStringContainsString(
             '(not set)',
             $html,
             'Missing duration must surface the muted placeholder.',
+        );
+        self::assertStringNotContainsString(
+            'yii-debug-gauge',
+            $html,
+            'Missing duration must not draw a rail.',
         );
     }
 
@@ -139,8 +173,24 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertSame(
             '2.000 MB',
-            HistoryRowRenderer::renderMemoryCell(HistoryRow::from(['peakMemory' => 2097152])),
+            HistoryRowRenderer::renderMemoryCell(HistoryRow::from(['peakMemory' => 2097152]), 0),
             "Bytes must format as 'X.XXX MB'.",
+        );
+    }
+
+    public function testRenderMemoryCellScalesGaugeAgainstPageMaximum(): void
+    {
+        $html = HistoryRowRenderer::renderMemoryCell(HistoryRow::from(['peakMemory' => 2097152]), 4194304);
+
+        self::assertStringContainsString(
+            '--yii-debug-gauge: 50%;',
+            $html,
+            'Rail must sit at half the page maximum.',
+        );
+        self::assertStringContainsString(
+            '2.000 MB',
+            $html,
+            'Readout must keep its formatted value.',
         );
     }
 
@@ -148,12 +198,46 @@ final class HistoryRowRendererTest extends TestCase
     {
         $html = HistoryRowRenderer::renderMemoryCell(
             HistoryRow::from([]),
+            4194304,
         );
 
         self::assertStringContainsString(
             '(not set)',
             $html,
             'Missing peak memory must surface the muted placeholder.',
+        );
+        self::assertStringNotContainsString(
+            'yii-debug-gauge',
+            $html,
+            'Missing peak memory must not draw a rail.',
+        );
+    }
+
+    public function testRenderMethodCellRendersVocabularyColoredText(): void
+    {
+        self::assertSame(
+            '<span class="yii-debug-method yii-debug-verb-get">GET</span>',
+            HistoryRowRenderer::renderMethodCell(HistoryRow::from(['method' => 'GET'])),
+            "GET must wear the 'get' verb class.",
+        );
+        self::assertStringContainsString(
+            'yii-debug-verb-put',
+            HistoryRowRenderer::renderMethodCell(HistoryRow::from(['method' => 'PATCH'])),
+            "PATCH must share the 'put' verb hue.",
+        );
+        self::assertStringContainsString(
+            'yii-debug-verb-other',
+            HistoryRowRenderer::renderMethodCell(HistoryRow::from(['method' => 'COMMAND'])),
+            "COMMAND must fall back to the 'other' verb.",
+        );
+    }
+
+    public function testRenderMethodCellReturnsEmptyStringForUncapturedMethod(): void
+    {
+        self::assertSame(
+            '',
+            HistoryRowRenderer::renderMethodCell(HistoryRow::from([])),
+            'An uncaptured method must render nothing.',
         );
     }
 
@@ -262,28 +346,33 @@ final class HistoryRowRendererTest extends TestCase
     public function testRenderStatusCellMapsCommandWithZeroToSuccess(): void
     {
         self::assertStringContainsString(
-            'yii-debug-badge--success',
+            'yii-debug-status-2xx',
             HistoryRowRenderer::renderStatusCell(HistoryRow::from(['method' => 'COMMAND', 'statusCode' => 0])),
-            "COMMAND with status '0' must map to the success variant.",
+            "COMMAND with status '0' must display as a '2xx'.",
         );
     }
 
-    public function testRenderStatusCellMapsRangeToVariant(): void
+    public function testRenderStatusCellMapsRangeToStatusClass(): void
     {
         self::assertStringContainsString(
-            'yii-debug-badge--success',
+            'yii-debug-badge yii-debug-status-2xx',
             HistoryRowRenderer::renderStatusCell(HistoryRow::from(['statusCode' => 200])),
-            "Status code '200' must map to the success variant.",
+            "Status code '200' must map to '2xx'.",
         );
         self::assertStringContainsString(
-            'yii-debug-badge--info',
+            'yii-debug-status-3xx',
             HistoryRowRenderer::renderStatusCell(HistoryRow::from(['statusCode' => 301])),
-            "Status code '301' must map to the info variant.",
+            "Status code '301' must map to '3xx'.",
         );
         self::assertStringContainsString(
-            'yii-debug-badge--danger',
+            'yii-debug-status-4xx',
+            HistoryRowRenderer::renderStatusCell(HistoryRow::from(['statusCode' => 404])),
+            "Status code '404' must map to '4xx'.",
+        );
+        self::assertStringContainsString(
+            'yii-debug-status-5xx',
             HistoryRowRenderer::renderStatusCell(HistoryRow::from(['statusCode' => 500])),
-            "Status code '500' must map to the danger variant.",
+            "Status code '500' must map to '5xx'.",
         );
     }
 
@@ -292,8 +381,8 @@ final class HistoryRowRendererTest extends TestCase
         $summary = new HistorySummary(
             totalRequests: 5,
             statusBuckets: [
-                new HistoryStatusBucket(label: '2xx', count: 4, sampleCode: 200, variant: 'success'),
-                new HistoryStatusBucket(label: '4xx', count: 1, sampleCode: 404, variant: 'warn'),
+                new HistoryStatusBucket(label: '2xx', count: 4, sampleCode: 200, variant: '2xx'),
+                new HistoryStatusBucket(label: '4xx', count: 1, sampleCode: 404, variant: '4xx'),
             ],
             statusCodeFilter: null,
         );
@@ -305,14 +394,14 @@ final class HistoryRowRendererTest extends TestCase
             'Summary must label the total figure.',
         );
         self::assertStringContainsString(
-            'yii-debug-grid-summary-stat-success',
+            'yii-debug-grid-summary-stat-2xx',
             $html,
-            "'2xx' pill must carry the success variant.",
+            "'2xx' pill must carry the '2xx' status class.",
         );
         self::assertStringContainsString(
-            'yii-debug-grid-summary-stat-warn',
+            'yii-debug-grid-summary-stat-4xx',
             $html,
-            "'4xx' pill must carry the warn variant."
+            "'4xx' pill must carry the '4xx' status class."
         );
         self::assertStringContainsString(
             '2xx',

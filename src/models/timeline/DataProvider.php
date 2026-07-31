@@ -9,8 +9,11 @@ use yii\data\ArrayDataProvider;
 use yii\debug\helpers\Format;
 use yii\debug\panels\TimelinePanel;
 
+use function floor;
 use function is_array;
 use function is_numeric;
+use function log10;
+use function max;
 
 /**
  * Wraps the timeline records as a sortable provider that derives per-row CSS layout fields for the timeline view.
@@ -102,29 +105,45 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Returns ruler tick positions keyed by milliseconds, valued by their left-offset percentage.
+     * Returns adaptive ruler tick positions keyed by milliseconds, valued by their left-offset percentage.
      *
-     * @param int $line Number of ruler segments. `0` disables the ruler entirely.
+     * Ticks land on "nice" steps ({1, 2, 5} x 10^n, minimum 1 ms) derived from the request duration, so labels stay
+     * round and never collide; the last tick is dropped when it falls within a quarter step of the right edge.
+     *
+     * @param int $line Maximum number of ticks. Values below `1` disable the ruler entirely, as does a request
+     * without a measurable duration.
      *
      * @return array<int, float> Tick positions keyed by absolute milliseconds, valued by left-offset percentage.
      */
-    public function getRulers(int $line = 10): array
+    public function getRulers(int $line = 6): array
     {
-        if ($line === 0) {
+        if ($line < 1) {
             return [];
         }
 
         $duration = $this->panel()->getDuration();
 
-        $percent = $duration / 100;
-        $row = $duration / $line;
-        $precision = $row > 100 ? -2 : -1;
+        if ($duration <= 0.0) {
+            return [];
+        }
+
+        $rough = $duration / $line;
+        $magnitude = 10 ** max(0, (int) floor(log10($rough)));
+        $normalized = $rough / $magnitude;
+
+        $factor = match (true) {
+            $normalized <= 1.0 => 1,
+            $normalized <= 2.0 => 2,
+            $normalized <= 5.0 => 5,
+            default => 10,
+        };
+
+        $step = $factor * $magnitude;
         $data = [0 => 0.0];
+        $limit = $duration - $step / 4;
 
-        for ($i = 1; $i < $line; $i++) {
-            $ms = (int) round($i * $row, $precision);
-
-            $data[$ms] = $ms / $percent;
+        for ($ms = $step; $ms <= $limit; $ms += $step) {
+            $data[$ms] = $ms / $duration * 100;
         }
 
         return $data;

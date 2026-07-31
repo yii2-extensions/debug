@@ -614,6 +614,31 @@ YiiDebugToolbar.prototype.renderPhpChip = function () {
   return "";
 };
 
+/*
+ * Mirrors `Vocabulary::statusClass()` / `Vocabulary::verb()` in
+ * `src/helpers/Vocabulary.php` — keep both sides in sync.
+ */
+function ajaxStatusBadgeClass(request) {
+  if (request.loading) {
+    return "badge-loading";
+  }
+  var code = parseInt(request.statusCode, 10);
+  if (code >= 500) return "badge-status-5xx";
+  if (code >= 400) return "badge-status-4xx";
+  if (code >= 300) return "badge-status-3xx";
+  if (code >= 200) return "badge-status-2xx";
+  return "badge-danger";
+}
+
+function ajaxVerbClass(method) {
+  var verb = (method || "").toUpperCase();
+  if (verb === "GET" || verb === "HEAD") return "verb-get";
+  if (verb === "POST") return "verb-post";
+  if (verb === "PUT" || verb === "PATCH") return "verb-put";
+  if (verb === "DELETE") return "verb-delete";
+  return "verb-other";
+}
+
 YiiDebugToolbar.prototype.renderAjaxPanel = function () {
   var status = "success";
   var requests = this.ajaxRequests || [];
@@ -630,11 +655,6 @@ YiiDebugToolbar.prototype.renderAjaxPanel = function () {
   });
 
   recent.forEach(function (request) {
-    var requestStatus = request.loading
-      ? "loading"
-      : request.error
-        ? "danger"
-        : "success";
     var profile = request.profilerUrl
       ? '<button type="button" class="ajax-link" data-debug-url="' +
         escapeHtml(request.profilerUrl) +
@@ -644,11 +664,13 @@ YiiDebugToolbar.prototype.renderAjaxPanel = function () {
       : "n/a";
 
     rows +=
-      "<tr><td>" +
+      '<tr><td><span class="' +
+      ajaxVerbClass(request.method) +
+      '">' +
       escapeHtml(request.method || "GET") +
-      "</td>" +
-      '<td><span class="badge badge-' +
-      requestStatus +
+      "</span></td>" +
+      '<td><span class="badge ' +
+      ajaxStatusBadgeClass(request) +
       '">' +
       escapeHtml(request.statusCode || "-") +
       "</span></td>" +

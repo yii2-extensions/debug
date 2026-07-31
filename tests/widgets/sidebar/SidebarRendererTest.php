@@ -197,6 +197,37 @@ final class SidebarRendererTest extends TestCase
         );
     }
 
+    public function testRenderTintsSnapshotMethodAndStatusWithVocabularyClasses(): void
+    {
+        $html = SidebarRenderer::render(
+            new SidebarView(
+                snapshot: $this->snapshot(),
+                navItems: [],
+            ),
+        );
+
+        self::assertStringContainsString(
+            'class="yii-debug-snapshot-method yii-debug-verb-get"',
+            $html,
+            "GET must wear the 'get' verb class.",
+        );
+        self::assertStringContainsString(
+            'class="yii-debug-snapshot-status yii-debug-status-2xx"',
+            $html,
+            "Status '200' must wear the '2xx' status class.",
+        );
+        self::assertStringContainsString(
+            'class="yii-debug-snapshot-status yii-debug-status-5xx"',
+            SidebarRenderer::render(
+                new SidebarView(
+                    snapshot: $this->snapshot(statusCode: 500),
+                    navItems: [],
+                ),
+            ),
+            "Status '500' must wear the '5xx' status class.",
+        );
+    }
+
     public function testRenderWiresNavigationAnchorsInViewMode(): void
     {
         $view = new SidebarView(
@@ -246,7 +277,7 @@ final class SidebarRendererTest extends TestCase
             path: '/index.php',
             fullUrl: 'http://example.test/index.php',
             statusCode: $statusCode,
-            statusVariant: $statusCode >= 500 ? 'danger' : 'success',
+            statusVariant: $statusCode >= 500 ? '5xx' : '2xx',
             time: $time,
             isAjax: $isAjax,
             isCursor: $isCursor,

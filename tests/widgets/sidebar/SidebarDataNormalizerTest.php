@@ -332,9 +332,9 @@ final class SidebarDataNormalizerTest extends TestCase
             'Snapshot must surface.',
         );
         self::assertSame(
-            'success',
+            '2xx',
             $view->snapshot->statusVariant,
-            "Status '200' must map to the success variant.",
+            "Status '200' must map to the '2xx' status class.",
         );
     }
 
@@ -504,11 +504,11 @@ final class SidebarDataNormalizerTest extends TestCase
         $panel->id = 'request';
 
         $codes = [
-            100 => 'muted',
-            200 => 'success',
-            304 => 'muted',
-            404 => 'warning',
-            500 => 'danger',
+            100 => 'none',
+            200 => '2xx',
+            304 => '3xx',
+            404 => '4xx',
+            500 => '5xx',
         ];
 
         foreach ($codes as $code => $expected) {

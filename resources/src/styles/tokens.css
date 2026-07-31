@@ -79,6 +79,29 @@
   --yii-debug-status-4xx: light-dark(#c2410c, #fb923c);
   --yii-debug-status-5xx: var(--yii-debug-panel-danger);
 
+  /*
+     * Semantic hue vocabulary — log levels.
+     * Cluster validated with the dataviz six-checks script per mode (light on
+     * #ffffff, dark on #121a15): profile passes fully in light; in dark its
+     * worst pair (vs. level-info) sits in the 6-8 CVD floor band, which is
+     * acceptable only with secondary encoding - level chips always carry the
+     * level name as text. The error/warning pair shares the traffic-light
+     * confusion axis by design and relies on the same text labels.
+     */
+  --yii-debug-level-error: var(--yii-debug-panel-danger);
+  --yii-debug-level-warning: var(--yii-debug-panel-warning);
+  --yii-debug-level-info: var(--yii-debug-panel-info);
+  --yii-debug-level-trace: var(--yii-debug-panel-muted);
+  --yii-debug-level-profile: light-dark(#9333ea, #b16be8);
+  --yii-debug-level-other: var(--yii-debug-panel-muted);
+
+  /* Micro-gauge rails (History Duration/Memory, Profiling Duration). */
+  --yii-debug-gauge-fill: var(--yii-debug-panel-primary);
+  --yii-debug-gauge-track: light-dark(
+    rgb(14 122 85 / 16%),
+    rgb(47 208 140 / 14%)
+  );
+
   /* Semantic hue vocabulary — SQL tokens. */
   --yii-debug-sql-kw: light-dark(#0a5c40, #4fd39a);
   --yii-debug-sql-str: light-dark(#8f4e00, #e8a33d);

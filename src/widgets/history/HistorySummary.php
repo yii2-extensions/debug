@@ -77,7 +77,6 @@ final readonly class HistorySummary
             $sample[$bucket] ??= $statusCode;
         }
 
-        $variants = ['2xx' => 'success', '3xx' => 'info', '4xx' => 'warn', '5xx' => 'danger'];
         $statusBuckets = [];
 
         foreach ($buckets as $label => $count) {
@@ -89,7 +88,7 @@ final readonly class HistorySummary
                 label: $label,
                 count: $count,
                 sampleCode: $sample[$label] ?? 0,
-                variant: $variants[$label],
+                variant: $label,
             );
         }
 

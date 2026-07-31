@@ -6,6 +6,7 @@ namespace yii\debug\panels\profile;
 
 use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Phrasing\Span;
+use yii\debug\helpers\Gauge;
 
 use function date;
 use function sprintf;
@@ -20,11 +21,19 @@ use function str_repeat;
 final class ProfileCellRenderer
 {
     /**
-     * Renders the block duration formatted as `N.N ms`.
+     * Renders the block duration formatted as `N.N ms`, with a micro-gauge rail scaled against the capture maximum
+     * when one exists.
+     *
+     * @param ProfileRow $row Typed profile row.
+     * @param float $maxDuration Capture maximum in milliseconds ({@see ProfileRowNormalizer::maxDuration()}).
      */
-    public static function renderDurationCell(ProfileRow $row): string
+    public static function renderDurationCell(ProfileRow $row, float $maxDuration): string
     {
-        return sprintf('%.1f ms', $row->duration);
+        return Gauge::render(
+            sprintf('%.1f ms', $row->duration),
+            $row->duration,
+            $maxDuration,
+        );
     }
 
     /**

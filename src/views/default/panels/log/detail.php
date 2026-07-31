@@ -111,6 +111,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                     'value' => static fn(mixed $data): string => LogCellRenderer::renderLevelCell(
                         LogRowNormalizer::from($data),
                     ),
+                    'format' => 'raw',
                     'filter' => [
                         Logger::LEVEL_TRACE => ' Trace ',
                         Logger::LEVEL_INFO => ' Info ',

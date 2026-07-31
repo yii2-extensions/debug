@@ -79,17 +79,28 @@ final class RequestSectionRendererTest extends TestCase
 
     public function testRenderHeroRendersStatusPillWithVariantModifier(): void
     {
-        $html = RequestSectionRenderer::renderHero(self::makeHero(statusCode: 500, statusVariant: 'danger'));
+        $html = RequestSectionRenderer::renderHero(self::makeHero(statusCode: 500, statusVariant: '5xx'));
 
         self::assertStringContainsString(
-            'yii-debug-snapshot-status-danger',
+            'yii-debug-snapshot-status yii-debug-status-5xx',
             $html,
-            'Variant must surface as a CSS modifier.',
+            'Variant must surface as a vocabulary status class.',
         );
         self::assertStringContainsString(
             '>500</span>',
             $html,
             'Status code value must render inside the pill.',
+        );
+    }
+
+    public function testRenderHeroTintsMethodPillWithVocabularyVerb(): void
+    {
+        $html = RequestSectionRenderer::renderHero(self::makeHero(method: 'POST'));
+
+        self::assertStringContainsString(
+            'yii-debug-request-hero-method yii-debug-verb-post',
+            $html,
+            "POST must wear the 'post' verb class.",
         );
     }
 
@@ -229,7 +240,7 @@ final class RequestSectionRendererTest extends TestCase
         string $method = 'GET',
         string $url = 'http://example.test/',
         int $statusCode = 200,
-        string $statusVariant = 'success',
+        string $statusVariant = '2xx',
         string $ip = '',
         string $time = '',
         string $durationMs = '',

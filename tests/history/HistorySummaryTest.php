@@ -78,7 +78,7 @@ final class HistorySummaryTest extends TestCase
         );
     }
 
-    public function testFromManifestMapsBucketsToCssVariants(): void
+    public function testFromManifestMapsBucketsToVocabularyStatusClasses(): void
     {
         $summary = HistorySummary::fromManifest(
             [
@@ -97,13 +97,13 @@ final class HistorySummaryTest extends TestCase
 
         self::assertSame(
             [
-                '2xx' => 'success',
-                '3xx' => 'info',
-                '4xx' => 'warn',
-                '5xx' => 'danger',
+                '2xx' => '2xx',
+                '3xx' => '3xx',
+                '4xx' => '4xx',
+                '5xx' => '5xx',
             ],
             $variants,
-            'Bucket variants must follow the status code class mapping.',
+            'Bucket variants must equal their status-class labels.',
         );
     }
 
