@@ -66,28 +66,6 @@
     },
     "repositories": [
         {
-            "name": "component-local",
-            "type": "path",
-            "url": "/home/terabytesoftw/Github/ui-awesome/html-core-component",
-            "options": {
-                "symlink": false,
-                "versions": {
-                    "ui-awesome/html-core-component": "0.4.0"
-                }
-            }
-        },
-        {
-            "name": "svg-local",
-            "type": "path",
-            "url": "/home/terabytesoftw/Github/ui-awesome/html-svg",
-            "options": {
-                "symlink": false,
-                "versions": {
-                    "ui-awesome/html-svg": "0.6.0"
-                }
-            }
-        },
-        {
             "type": "composer",
             "url": "https://asset-packagist.org"
         }
