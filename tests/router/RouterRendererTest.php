@@ -245,7 +245,7 @@ final class RouterRendererTest extends TestCase
         $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), $rules, new ActionRoutes());
 
         self::assertStringContainsString(
-            'yii-debug-badge--success',
+            'yii-debug-badge-success',
             $html,
             'Enabled Pretty URL must carry the success variant.',
         );
@@ -314,7 +314,7 @@ final class RouterRendererTest extends TestCase
         $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
 
         self::assertStringContainsString(
-            'yii-debug-badge--muted',
+            'yii-debug-badge-muted',
             $html,
             'Disabled Strict Parsing must carry the muted variant.',
         );

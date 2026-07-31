@@ -1111,14 +1111,14 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testTypeBadgeVariantMapsVerbsToCssVariants(): void
+    public function testTypeBadgeVariantMapsVerbsToVocabularySuffixes(): void
     {
         $mappings = [
-            'SELECT' => 'info', 'SHOW' => 'info', 'EXPLAIN' => 'info', 'DESCRIBE' => 'info', 'PRAGMA' => 'info',
-            'INSERT' => 'success',
-            'UPDATE' => 'warning', 'REPLACE' => 'warning', 'UPSERT' => 'warning',
-            'DELETE' => 'danger', 'DROP' => 'danger', 'TRUNCATE' => 'danger',
-            'BOGUS' => 'muted', '' => 'muted',
+            'SELECT' => 'get', 'SHOW' => 'get', 'EXPLAIN' => 'get', 'DESCRIBE' => 'get', 'PRAGMA' => 'get',
+            'INSERT' => 'post',
+            'UPDATE' => 'put', 'REPLACE' => 'put', 'UPSERT' => 'put',
+            'DELETE' => 'delete', 'DROP' => 'delete', 'TRUNCATE' => 'delete',
+            'BOGUS' => 'other', '' => 'other',
         ];
 
         foreach ($mappings as $verb => $expected) {

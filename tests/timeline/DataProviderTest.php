@@ -15,7 +15,7 @@ use yii\web\Controller;
 
 /**
  * Unit tests for {@see DataProvider} covering the color-bucket fallback, the CSS alignment class, the memory tuple,
- * the ruler-tick disable branch, the orphan-panel error path, and the `cssNumber` non-numeric guard.
+ * the adaptive ruler ticks, the orphan-panel error path, and the `cssNumber` non-numeric guard.
  */
 #[Group('timeline')]
 final class DataProviderTest extends TestCase
@@ -122,6 +122,107 @@ final class DataProviderTest extends TestCase
         );
     }
 
+    public function testGetRulersDropsTickCrowdingTheRightEdge(): void
+    {
+        self::assertSame(
+            [0 => 0.0, 2000 => 2000 / 6050 * 100, 4000 => 4000 / 6050 * 100],
+            $this->rulersFor(6050.0),
+            'A tick within a quarter step of the edge must be dropped.',
+        );
+        self::assertSame(
+            [0 => 0.0, 2000 => 2000 / 6450 * 100, 4000 => 4000 / 6450 * 100],
+            $this->rulersFor(6450.0),
+            'A tick just inside the quarter-step margin must still be dropped.',
+        );
+    }
+
+    public function testGetRulersKeepsEdgeTickAtExactQuarterStepLimit(): void
+    {
+        self::assertSame(
+            [0 => 0.0, 2000 => 2000 / 6500 * 100, 4000 => 4000 / 6500 * 100, 6000 => 6000 / 6500 * 100],
+            $this->rulersFor(6500.0),
+            'A tick landing exactly on the quarter-step limit must be kept.',
+        );
+    }
+
+    public function testGetRulersKeepsFactorBoundariesOnTheSmallerStep(): void
+    {
+        self::assertSame(
+            [
+                0 => 0.0,
+                100 => 100 / 600 * 100,
+                200 => 200 / 600 * 100,
+                300 => 300 / 600 * 100,
+                400 => 400 / 600 * 100,
+                500 => 500 / 600 * 100,
+            ],
+            $this->rulersFor(600.0),
+            'A 600 ms capture must tick every 100 ms.',
+        );
+        self::assertSame(
+            [
+                0 => 0.0,
+                200 => 200 / 1200 * 100,
+                400 => 400 / 1200 * 100,
+                600 => 600 / 1200 * 100,
+                800 => 800 / 1200 * 100,
+                1000 => 1000 / 1200 * 100,
+            ],
+            $this->rulersFor(1200.0),
+            'A 1.2 s capture must tick every 200 ms.',
+        );
+        self::assertSame(
+            [
+                0 => 0.0,
+                500 => 500 / 3000 * 100,
+                1000 => 1000 / 3000 * 100,
+                1500 => 1500 / 3000 * 100,
+                2000 => 2000 / 3000 * 100,
+                2500 => 2500 / 3000 * 100,
+            ],
+            $this->rulersFor(3000.0),
+            'A 3 s capture must tick every 500 ms.',
+        );
+    }
+
+    public function testGetRulersPicksNiceStepsAcrossMagnitudes(): void
+    {
+        self::assertSame(
+            [0 => 0.0, 2 => 25.0, 4 => 50.0, 6 => 75.0],
+            $this->rulersFor(8.0),
+            'An 8 ms capture must tick every 2 ms.',
+        );
+        self::assertSame(
+            [0 => 0.0, 10 => 10 / 47 * 100, 20 => 20 / 47 * 100, 30 => 30 / 47 * 100, 40 => 40 / 47 * 100],
+            $this->rulersFor(47.0),
+            'A 47 ms capture must tick every 10 ms.',
+        );
+        self::assertSame(
+            [0 => 0.0, 50 => 50 / 230 * 100, 100 => 100 / 230 * 100, 150 => 150 / 230 * 100, 200 => 200 / 230 * 100],
+            $this->rulersFor(230.0),
+            'A 230 ms capture must tick every 50 ms.',
+        );
+        self::assertSame(
+            [0 => 0.0, 10000 => 10000 / 36000 * 100, 20000 => 20000 / 36000 * 100, 30000 => 30000 / 36000 * 100],
+            $this->rulersFor(36000.0),
+            'A 36 s capture must tick every 10 s.',
+        );
+    }
+
+    public function testGetRulersReturnsEmptyArrayForNonPositiveDuration(): void
+    {
+        self::assertSame(
+            [],
+            $this->rulersFor(0.0),
+            'Zero duration must disable the ruler.',
+        );
+        self::assertSame(
+            [],
+            $this->rulersFor(-5.0),
+            'Negative duration must disable the ruler.',
+        );
+    }
+
     public function testGetRulersReturnsEmptyArrayForZeroLines(): void
     {
         $panel = $this->stubPanel();
@@ -132,6 +233,38 @@ final class DataProviderTest extends TestCase
             [],
             $provider->getRulers(0),
             'Zero ruler lines must disable the ruler entirely.',
+        );
+    }
+
+    public function testGetRulersReturnsOriginOnlyWhenStepOutgrowsDuration(): void
+    {
+        self::assertSame(
+            [0 => 0.0],
+            $this->rulersFor(1200.0, 1),
+            'A single-tick target must keep only the origin.',
+        );
+    }
+
+    public function testGetRulersRoundsIntermediateFactorsUpToTheNextNiceStep(): void
+    {
+        self::assertSame(
+            [0 => 0.0, 500 => 500 / 1500 * 100, 1000 => 1000 / 1500 * 100],
+            $this->rulersFor(1500.0),
+            'A 1.5 s capture must round up to 500 ms steps.',
+        );
+        self::assertSame(
+            [0 => 0.0, 1000 => 1000 / 3300 * 100, 2000 => 2000 / 3300 * 100, 3000 => 3000 / 3300 * 100],
+            $this->rulersFor(3300.0),
+            'A 3.3 s capture must round up to 1 s steps.',
+        );
+    }
+
+    public function testGetRulersUsesUnitStepForTinyDurations(): void
+    {
+        self::assertSame(
+            [0 => 0.0, 1 => 1 / 3 * 100, 2 => 2 / 3 * 100],
+            $this->rulersFor(3.0),
+            'A 3 ms capture must tick every millisecond.',
         );
     }
 
@@ -188,6 +321,23 @@ final class DataProviderTest extends TestCase
         );
 
         $provider->getRulers();
+    }
+
+    /**
+     * Builds a provider whose panel reports the exact duration (bypassing `load()` epoch float noise) and returns its
+     * ruler ticks; `$line` of `null` exercises the default tick target.
+     *
+     * @return array<int, float>
+     */
+    private function rulersFor(float $durationMs, int|null $line = null): array
+    {
+        $panel = $this->stubPanel();
+
+        $this->setInaccessibleProperty($panel, 'duration', $durationMs);
+
+        $provider = new DataProvider($panel);
+
+        return $line === null ? $provider->getRulers() : $provider->getRulers($line);
     }
 
     private function stubPanel(): TimelinePanel

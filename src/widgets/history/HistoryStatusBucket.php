@@ -24,7 +24,7 @@ final readonly class HistoryStatusBucket
          */
         public int $sampleCode,
         /**
-         * CSS variant token ('success' / 'info' / 'warn' / 'danger').
+         * Semantic vocabulary status-class suffix ('2xx' / '3xx' / '4xx' / '5xx').
          */
         public string $variant,
     ) {}

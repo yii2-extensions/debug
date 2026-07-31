@@ -10,7 +10,7 @@ use yii\data\Sort;
 use yii\db\Connection;
 use yii\debug\actions\db\ExplainAction;
 use yii\debug\db\DebugPdoStatement;
-use yii\debug\helpers\Coerce;
+use yii\debug\helpers\{Coerce, Vocabulary};
 use yii\debug\models\search\DbSearch;
 use yii\debug\Panel;
 use yii\log\Logger;
@@ -511,20 +511,14 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns the CSS badge variant for the given SQL command verb.
+     * Returns the vocabulary verb suffix for the given SQL command verb.
      *
-     * Maps `SELECT`/`SHOW`/`EXPLAIN`/`DESCRIBE`/`PRAGMA` to `info`, `INSERT` to `success`, `UPDATE`/`REPLACE`/`UPSERT`
-     * to `warning`, `DELETE`/`DROP`/`TRUNCATE` to `danger`, and everything else to `muted`.
+     * Delegates to {@see Vocabulary::sqlVerb()}: read statements share `get`, `INSERT` shares `post`, in-place
+     * mutations share `put`, destructive statements share `delete`, and everything else falls back to `other`.
      */
     public static function typeBadgeVariant(string $type): string
     {
-        return match (strtoupper($type)) {
-            'SELECT', 'SHOW', 'EXPLAIN', 'DESCRIBE', 'PRAGMA' => 'info',
-            'INSERT' => 'success',
-            'UPDATE', 'REPLACE', 'UPSERT' => 'warning',
-            'DELETE', 'DROP', 'TRUNCATE' => 'danger',
-            default => 'muted',
-        };
+        return Vocabulary::sqlVerb($type);
     }
 
     /**

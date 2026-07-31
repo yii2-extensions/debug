@@ -21,6 +21,88 @@ use yii\debug\tests\support\TestCase;
 #[Group('timeline')]
 final class TimelineRendererTest extends TestCase
 {
+    public function testFormatTickLabelSwitchesFromMillisecondsToTrimmedSeconds(): void
+    {
+        $labels = [
+            999 => '999 ms',
+            1000 => '1 s',
+            1500 => '1.5 s',
+            2000 => '2 s',
+            50000 => '50 s',
+            100000 => '100 s',
+        ];
+
+        foreach ($labels as $ms => $expected) {
+            self::assertSame(
+                $expected,
+                $this->invokeStatic(TimelineRenderer::class, 'formatTickLabel', [$ms]),
+                "Tick at {$ms} ms must label as '{$expected}'.",
+            );
+        }
+    }
+
+    public function testRenderChartAxisLabelsKeepOneDecimalOnHalfSecondTicks(): void
+    {
+        $panel = $this->stubPanel(100.0, 1_048_576);
+
+        $this->setInaccessibleProperty($panel, 'duration', 3000.0);
+
+        $html = TimelineRenderer::renderChart(
+            $panel,
+            $this->makeDataProvider(
+                $panel,
+                [['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05]],
+            ),
+        );
+
+        self::assertStringContainsString(
+            '>500 ms<',
+            $html,
+            'The 500 ms tick must keep its millisecond label.',
+        );
+        self::assertStringContainsString(
+            '>1.5 s<',
+            $html,
+            'Half-second ticks must keep one decimal.',
+        );
+        self::assertStringContainsString(
+            '>2.5 s<',
+            $html,
+            'The 2500 ms tick must trim to one decimal.',
+        );
+    }
+
+    public function testRenderChartAxisLabelsSubSecondTicksInMsAndSecondTicksTrimmed(): void
+    {
+        $panel = $this->stubPanel(100.0, 1_048_576);
+
+        $this->setInaccessibleProperty($panel, 'duration', 1200.0);
+
+        $html = TimelineRenderer::renderChart(
+            $panel,
+            $this->makeDataProvider(
+                $panel,
+                [['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05]],
+            ),
+        );
+
+        self::assertStringContainsString(
+            '800 ms',
+            $html,
+            'Sub-second ticks must keep millisecond labels.',
+        );
+        self::assertStringContainsString(
+            '>1 s<',
+            $html,
+            "The 1000 ms tick must label as '1 s'.",
+        );
+        self::assertStringNotContainsString(
+            '1000 ms',
+            $html,
+            'Second-scale ticks must not fall back to milliseconds.',
+        );
+    }
+
     public function testRenderChartIncludesMemoryFooterWhenSvgHasPoints(): void
     {
         $panel = $this->stubPanel(100.0, 2_097_152);

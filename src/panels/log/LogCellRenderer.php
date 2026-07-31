@@ -9,6 +9,7 @@ use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
+use yii\debug\helpers\Vocabulary;
 use yii\debug\panels\LogPanel;
 use yii\log\Logger;
 
@@ -48,18 +49,21 @@ final class LogCellRenderer
         ];
 
         if ($variant !== null) {
-            $options['class'] = "yii-debug-row--{$variant}";
+            $options['class'] = "yii-debug-row-{$variant}";
         }
 
         return $options;
     }
 
     /**
-     * Renders the human-readable level name (`error`, `warning`, `info`, ...).
+     * Renders the level name as a vocabulary-tinted chip (`error`, `warning`, `info`, `trace`, `profile`).
      */
     public static function renderLevelCell(LogRow $row): string
     {
-        return Logger::getLevelName($row->level);
+        return Span::tag()
+            ->class('yii-debug-level-chip yii-debug-level-' . Vocabulary::logLevel($row->level))
+            ->content(Logger::getLevelName($row->level))
+            ->render();
     }
 
     /**

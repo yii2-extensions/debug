@@ -21,12 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: color timeline spans by domain category and add a chart legend; both palettes validated for color-vision accessibility.
 - feat: self-host the `JetBrains Mono` and `IBM Plex Sans` webfonts through the published asset bundle and drop the Google Fonts CDN links (removes `Major Mono Display`).
 - fix: prevent horizontal overflow in the history and db panel tables, keep statement-type pills and capture timestamps on one line.
-- fix: keep the client's latest theme choice authoritative — the `yii_debug_theme` query snapshot no longer outranks the theme cookie on the server or the client, so stale panel links cannot revert a fresh light/dark pick.
-- fix: make the toolbar follow the host application's theme — unmarked documents read as the host's light state, text-labeled theme switchers are detected, and SPA-mounted switchers are re-checked after page load.
+- fix: keep the client's latest theme choice authoritative; the `yii_debug_theme` query snapshot no longer outranks the theme cookie on the server or the client, so stale panel links cannot revert a fresh light/dark pick.
+- fix: make the toolbar follow the host application's theme; unmarked documents read as the host's light state, text-labeled theme switchers are detected, and SPA-mounted switchers are re-checked after page load.
 - refactor: move the toolbar shadow DOM styles from an inline JS string into `toolbar-shadow.css`, bundled with `?inline` and sharing the token system.
 - chore: keep the repository prettier configuration on two-space js/css/json indentation, overriding the `php-forge/baseline` `0.1.7` scaffold refresh (the scaffold lock now guards the file as user-modified).
 - refactor!: replace the removed `DefaultsProviderInterface` classes in `yii\debug\html\defaults` with `tag()` defaults definitions.
 - fix: keep the base `yii-debug-nav-link` class on the active sidebar entry now that `Menu::linkActiveClass()` replaces the link class list.
+- feat: wire the semantic hue vocabulary end to end; the History method/status cells, request hero, sidebar snapshot, toolbar status badge, and AJAX popover now consume the `verb-*`/`status-*` tokens through the new `Vocabulary` helper, with tinted "ink on paper" chips replacing solid fills. Status mapping is unified to `2xx`/`3xx`/`4xx`/`5xx`: 3xx responses now read amber (previously blue or muted depending on the surface) and 4xx gain their own orange, distinct from 5xx red.
+- feat: render log levels as tinted vocabulary chips (`error`/`warning`/`info`/`trace`/`profile`) backed by the new `--yii-debug-level-*` tokens, and map the db statement-type pills onto the REST verb hues (`SELECT` = get, `INSERT` = post, `UPDATE` = put, `DELETE` = delete).
+- feat: add server-side micro-gauge rails behind the History Duration/Memory readouts and the Profiling duration column, scaled to the visible capture maximum (new `Gauge` and `HistoryScale` helpers, no new JavaScript).
+- feat: make the timeline axis ticks adaptive; "nice" `{1, 2, 5} x 10^n` steps with second-scale labels (`1.5 s`) replace the ten fixed ticks that collided on long requests; `DataProvider::getRulers()` now treats its argument as a maximum tick count and defaults to `6`.
+- fix: restore the History status chips and the log row severity tinting; the renderers emitted BEM double-dash classes (`yii-debug-badge--*`, `yii-debug-row--*`) that no stylesheet defined, so both rendered neutral.
 
 ## 0.1.1 May 18, 2026
 

@@ -20,13 +20,27 @@ final class ProfileCellRendererTest extends TestCase
     {
         self::assertSame(
             '12.5 ms',
-            ProfileCellRenderer::renderDurationCell(self::makeRow(duration: 12.5)),
+            ProfileCellRenderer::renderDurationCell(self::makeRow(duration: 12.5), 0.0),
             'Duration must keep one decimal.',
         );
         self::assertSame(
             '0.0 ms',
-            ProfileCellRenderer::renderDurationCell(self::makeRow(duration: 0.0)),
+            ProfileCellRenderer::renderDurationCell(self::makeRow(duration: 0.0), 0.0),
             "Zero duration must render as '0.0 ms'.",
+        );
+    }
+
+    public function testRenderDurationCellScalesGaugeAgainstCaptureMaximum(): void
+    {
+        $html = ProfileCellRenderer::renderDurationCell(self::makeRow(duration: 12.5), 25.0);
+
+        self::assertSame(
+            '<span class="yii-debug-gauge" style=\'--yii-debug-gauge: 50%;\'>'
+            . '<span class="yii-debug-gauge-value">12.5 ms</span>'
+            . '<span class="yii-debug-gauge-bar" aria-hidden="true"></span>'
+            . '</span>',
+            $html,
+            'Rail must sit at half the capture maximum.',
         );
     }
 

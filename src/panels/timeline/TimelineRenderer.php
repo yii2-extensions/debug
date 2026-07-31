@@ -219,21 +219,31 @@ final class TimelineRenderer
     }
 
     /**
+     * Formats a ruler tick label: milliseconds below one second, trimmed decimal seconds from there on.
+     */
+    private static function formatTickLabel(int $ms): string
+    {
+        if ($ms < 1000) {
+            return $ms . ' ms';
+        }
+
+        $seconds = sprintf('%.1f', $ms / 1000);
+        $seconds = rtrim($seconds, '0');
+        $seconds = rtrim($seconds, '.');
+
+        return $seconds . ' s';
+    }
+
+    /**
      * Formats a numeric value as a percentage string with up to three decimals, dropping trailing zeros.
      */
     private static function percent(float|int|string $value): string
     {
-        $float = (float) $value;
-
-        $rendered = sprintf('%.3f', $float);
-        $rendered = rtrim($rendered, '0');
-        $rendered = rtrim($rendered, '.');
-
-        return $rendered . '%';
+        return Format::cssPercent((float) $value);
     }
 
     /**
-     * Renders the ruler axis: the top tick strip with `Xms` labels positioned via inline `left:<pct>%`.
+     * Renders the ruler axis: the top tick strip with `N ms` / `N s` labels positioned via inline `left:<pct>%`.
      */
     private static function renderAxis(DataProvider $dataProvider): Header
     {
@@ -242,7 +252,7 @@ final class TimelineRenderer
         foreach ($dataProvider->getRulers() as $ms => $left) {
             $ticks[] = Span::tag()
                 ->class('yii-debug-tl-tick')
-                ->content(sprintf('%d ms', $ms))
+                ->content(self::formatTickLabel($ms))
                 ->style(['left' => self::percent($left)]);
         }
 

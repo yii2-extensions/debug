@@ -337,7 +337,59 @@
     0 1px 0 light-dark(rgb(255 255 255 / 82%), rgb(255 255 255 / 8%)) inset;
 }
 
-/* Status badges follow the fixed semantic hue vocabulary. */
+/*
+ * Status-class badges follow the fixed semantic hue vocabulary with the
+ * tinted "ink on paper" formula shared with the debugger panels; the class
+ * suffix comes from `Vocabulary::statusClass()` via the RequestPanel
+ * toolbar item and the AJAX popover rows.
+ */
+.badge-status-2xx {
+  --badge-hue: var(--yii-debug-status-2xx);
+}
+
+.badge-status-3xx {
+  --badge-hue: var(--yii-debug-status-3xx);
+}
+
+.badge-status-4xx {
+  --badge-hue: var(--yii-debug-status-4xx);
+}
+
+.badge-status-5xx {
+  --badge-hue: var(--yii-debug-status-5xx);
+}
+
+.badge-status-2xx,
+.badge-status-3xx,
+.badge-status-4xx,
+.badge-status-5xx {
+  border-color: color-mix(in srgb, var(--badge-hue), transparent 65%);
+  background: color-mix(in srgb, var(--badge-hue), transparent 90%);
+  color: color-mix(in srgb, var(--badge-hue) 80%, var(--yii-debug-panel-text));
+}
+
+/* HTTP verb readouts in the AJAX popover — vocabulary-colored text. */
+.verb-get {
+  color: color-mix(in srgb, var(--yii-debug-verb-get) 80%, var(--yii-debug-panel-text));
+}
+
+.verb-post {
+  color: color-mix(in srgb, var(--yii-debug-verb-post) 80%, var(--yii-debug-panel-text));
+}
+
+.verb-put {
+  color: color-mix(in srgb, var(--yii-debug-verb-put) 80%, var(--yii-debug-panel-text));
+}
+
+.verb-delete {
+  color: color-mix(in srgb, var(--yii-debug-verb-delete) 80%, var(--yii-debug-panel-text));
+}
+
+.verb-other {
+  color: color-mix(in srgb, var(--yii-debug-verb-other) 80%, var(--yii-debug-panel-text));
+}
+
+/* Generic badges used by the non-request panel chips. */
 .badge-success {
   border-color: transparent;
   background: var(--yii-debug-status-2xx);
@@ -375,8 +427,8 @@
 
 .badge-cross-request {
   border-color: transparent;
-  background: var(--yii-debug-verb-post);
-  color: light-dark(#fff, #231352);
+  background: var(--yii-debug-cat-mail);
+  color: light-dark(#fff, #36101f);
 }
 
 /* AJAX inspector popover. */

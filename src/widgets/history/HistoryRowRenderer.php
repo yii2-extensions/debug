@@ -9,7 +9,7 @@ use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use Yii;
 use yii\debug\GridViewConfig;
-use yii\debug\helpers\Format;
+use yii\debug\helpers\{Format, Gauge, Vocabulary};
 use yii\debug\models\search\DebugSearch;
 use yii\debug\panels\DbPanel;
 use yii\helpers\Url;
@@ -63,9 +63,13 @@ final class HistoryRowRenderer
     }
 
     /**
-     * Renders the duration column cell (`'X ms'` or `'(not set)'` muted placeholder when missing).
+     * Renders the duration column cell (`'X ms'` or `'(not set)'` muted placeholder when missing), with a micro-gauge
+     * rail scaled against the page maximum when one exists.
+     *
+     * @param HistoryRow $row Typed history row.
+     * @param float $maxProcessingTime Page maximum in seconds ({@see HistoryScale::$maxProcessingTime}).
      */
-    public static function renderDurationCell(HistoryRow $row): string
+    public static function renderDurationCell(HistoryRow $row, float $maxProcessingTime): string
     {
         if ($row->processingTime === null) {
             return Span::tag()
@@ -74,13 +78,21 @@ final class HistoryRowRenderer
                 ->render();
         }
 
-        return number_format($row->processingTime * 1000) . ' ms';
+        return Gauge::render(
+            number_format($row->processingTime * 1000) . ' ms',
+            $row->processingTime,
+            $maxProcessingTime,
+        );
     }
 
     /**
-     * Renders the memory column cell (`'X.XXX MB'` or `'(not set)'`).
+     * Renders the memory column cell (`'X.XXX MB'` or `'(not set)'`), with a micro-gauge rail scaled against the page
+     * maximum when one exists.
+     *
+     * @param HistoryRow $row Typed history row.
+     * @param int $maxPeakMemory Page maximum in bytes ({@see HistoryScale::$maxPeakMemory}).
      */
-    public static function renderMemoryCell(HistoryRow $row): string
+    public static function renderMemoryCell(HistoryRow $row, int $maxPeakMemory): string
     {
         if ($row->peakMemory === null) {
             return Span::tag()
@@ -89,7 +101,26 @@ final class HistoryRowRenderer
                 ->render();
         }
 
-        return Format::bytesToMb($row->peakMemory, 3);
+        return Gauge::render(
+            Format::bytesToMb($row->peakMemory, 3),
+            (float) $row->peakMemory,
+            (float) $maxPeakMemory,
+        );
+    }
+
+    /**
+     * Renders the method column cell as vocabulary-colored text, or an empty string when the method was not captured.
+     */
+    public static function renderMethodCell(HistoryRow $row): string
+    {
+        if ($row->method === '') {
+            return '';
+        }
+
+        return Span::tag()
+            ->class('yii-debug-method yii-debug-verb-' . Vocabulary::verb($row->method))
+            ->content($row->method)
+            ->render();
     }
 
     /**
@@ -131,21 +162,14 @@ final class HistoryRowRenderer
     }
 
     /**
-     * Renders the status-code badge cell, branching the variant on the status range.
+     * Renders the status-code badge cell; an uncaptured (`0`) code displays as a successful `200`.
      */
     public static function renderStatusCell(HistoryRow $row): string
     {
         $statusCode = $row->statusCode === 0 ? 200 : $row->statusCode;
 
-        $variant = match (true) {
-            $statusCode >= 200 && $statusCode < 300 => 'success',
-            $row->method === 'COMMAND' && $row->statusCode === 0 => 'success',
-            $statusCode >= 300 && $statusCode < 400 => 'info',
-            default => 'danger',
-        };
-
         return Span::tag()
-            ->class("yii-debug-badge yii-debug-badge--{$variant}")
+            ->class('yii-debug-badge yii-debug-status-' . Vocabulary::statusClass($statusCode))
             ->content((string) $statusCode)
             ->render();
     }

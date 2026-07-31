@@ -38,4 +38,21 @@ final class ProfileRowNormalizer
             seq: RowField::intField($row, 'seq'),
         );
     }
+
+    /**
+     * Returns the largest block duration (in milliseconds) across the given rows — the micro-gauge reference scale.
+     * `0.0` when the list is empty or no row carries a usable duration.
+     *
+     * @param array<array-key, mixed> $models Rows as supplied by the data provider.
+     */
+    public static function maxDuration(array $models): float
+    {
+        $maxDuration = 0.0;
+
+        foreach ($models as $model) {
+            $maxDuration = max($maxDuration, self::from($model)->duration);
+        }
+
+        return $maxDuration;
+    }
 }

@@ -8,7 +8,7 @@ use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
-use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistorySummary};
+use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryScale, HistorySummary};
 use yii\grid\{GridView, SerialColumn};
 use yii\web\View;
 
@@ -47,6 +47,7 @@ $this->params['shellData'] = [
 ];
 
 $summary = HistorySummary::fromManifest($manifest);
+$scale = HistoryScale::fromModels($dataProvider->getModels());
 
 $dbPanel = $panels['db'] ?? null;
 $mailPanel = $panels['mail'] ?? null;
@@ -94,6 +95,7 @@ $mailPanel = $panels['mail'] ?? null;
                     'label' => 'Duration',
                     'value' => static fn(mixed $data): string => HistoryRowRenderer::renderDurationCell(
                         HistoryRow::fromMixed($data),
+                        $scale->maxProcessingTime,
                     ),
                     'format' => 'raw',
                 ],
@@ -102,6 +104,7 @@ $mailPanel = $panels['mail'] ?? null;
                     'label' => 'Memory',
                     'value' => static fn(mixed $data): string => HistoryRowRenderer::renderMemoryCell(
                         HistoryRow::fromMixed($data),
+                        $scale->maxPeakMemory,
                     ),
                     'format' => 'raw',
                 ],
@@ -127,6 +130,10 @@ $mailPanel = $panels['mail'] ?? null;
                 ] : null,
                 [
                     'attribute' => 'method',
+                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderMethodCell(
+                        HistoryRow::fromMixed($data),
+                    ),
+                    'format' => 'raw',
                     'filter' => [
                         'get' => 'GET',
                         'post' => 'POST',

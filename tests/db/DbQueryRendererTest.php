@@ -221,17 +221,17 @@ final class DbQueryRendererTest extends TestCase
         );
     }
 
-    public function testRenderTypeCellMapsInsertToSuccessAndDeleteToDanger(): void
+    public function testRenderTypeCellMapsInsertToPostAndDeleteToDeleteVerbs(): void
     {
         self::assertStringContainsString(
-            'yii-debug-db-type-success',
+            'yii-debug-verb-post',
             DbQueryRenderer::renderTypeCell(self::makeRow(type: 'INSERT')),
-            "INSERT must map to the 'success' variant.",
+            "INSERT must map to the 'post' verb.",
         );
         self::assertStringContainsString(
-            'yii-debug-db-type-danger',
+            'yii-debug-verb-delete',
             DbQueryRenderer::renderTypeCell(self::makeRow(type: 'DELETE')),
-            "DELETE must map to the 'danger' variant.",
+            "DELETE must map to the 'delete' verb.",
         );
     }
 
@@ -240,9 +240,9 @@ final class DbQueryRendererTest extends TestCase
         $html = DbQueryRenderer::renderTypeCell(self::makeRow(type: 'SELECT'));
 
         self::assertStringContainsString(
-            'class="yii-debug-db-type yii-debug-db-type-info"',
+            'class="yii-debug-db-type yii-debug-verb-get"',
             $html,
-            "SELECT must use the 'info' variant.",
+            "SELECT must use the 'get' verb.",
         );
         self::assertStringContainsString(
             '>SELECT<',

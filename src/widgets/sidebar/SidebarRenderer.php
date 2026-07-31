@@ -12,7 +12,7 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Aside, Section};
-use yii\debug\helpers\Icon;
+use yii\debug\helpers\{Icon, Vocabulary};
 use yii\helpers\Url;
 
 /**
@@ -59,7 +59,7 @@ final class SidebarRenderer
                     ->class('yii-debug-snapshot-line')
                     ->html(
                         Span::tag()
-                            ->class('yii-debug-snapshot-method')
+                            ->class('yii-debug-snapshot-method yii-debug-verb-' . Vocabulary::verb($snapshot->method))
                             ->addDataAttribute('snapshot-field', 'method')
                             ->content($snapshot->method),
                         Span::tag()
@@ -100,7 +100,7 @@ final class SidebarRenderer
             ->class('yii-debug-snapshot-meta')
             ->html(
                 Span::tag()
-                    ->class('yii-debug-snapshot-status yii-debug-snapshot-status-' . $snapshot->statusVariant)
+                    ->class('yii-debug-snapshot-status yii-debug-status-' . $snapshot->statusVariant)
                     ->addDataAttribute('snapshot-field', 'status')
                     ->content($snapshot->statusCode > 0 ? (string) $snapshot->statusCode : '–'),
                 $time,

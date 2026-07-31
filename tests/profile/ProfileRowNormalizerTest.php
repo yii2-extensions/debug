@@ -213,4 +213,25 @@ final class ProfileRowNormalizerTest extends TestCase
             'Seq must round-trip.',
         );
     }
+
+    public function testMaxDurationReturnsLargestDurationIgnoringInvalidRows(): void
+    {
+        self::assertSame(
+            0.0,
+            ProfileRowNormalizer::maxDuration([]),
+            'Empty lists must report a `0.0` scale.',
+        );
+        self::assertSame(
+            12.5,
+            ProfileRowNormalizer::maxDuration(
+                [
+                    ['duration' => 3.0],
+                    ['duration' => 12.5],
+                    ['duration' => 7.25],
+                    'garbage-row',
+                ],
+            ),
+            'Largest duration must win; invalid rows count as `0.0`.',
+        );
+    }
 }

@@ -13,6 +13,7 @@ use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
 use Yii;
+use yii\debug\helpers\Vocabulary;
 use yii\helpers\VarDumper;
 
 use function htmlspecialchars;
@@ -38,7 +39,7 @@ final class RequestSectionRenderer
 
         if ($hero->method !== '') {
             $line[] = Span::tag()
-                ->class('yii-debug-request-hero-method')
+                ->class('yii-debug-request-hero-method yii-debug-verb-' . Vocabulary::verb($hero->method))
                 ->content($hero->method);
         }
 
@@ -49,7 +50,7 @@ final class RequestSectionRenderer
 
         if ($hero->statusCode > 0) {
             $line[] = Span::tag()
-                ->class("yii-debug-snapshot-status yii-debug-snapshot-status-{$hero->statusVariant}")
+                ->class("yii-debug-snapshot-status yii-debug-status-{$hero->statusVariant}")
                 ->content((string) $hero->statusCode);
         }
 

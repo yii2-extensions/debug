@@ -146,7 +146,7 @@ final class RequestDataNormalizerTest extends TestCase
 
     public function testFromPanelDataMapsHttpStatusToVariantBucket(): void
     {
-        foreach ([200 => 'success', 304 => 'muted', 404 => 'warning', 500 => 'danger', 0 => 'muted'] as $code => $expected) {
+        foreach ([200 => '2xx', 304 => '3xx', 404 => '4xx', 500 => '5xx', 0 => 'none'] as $code => $expected) {
             $view = RequestDataNormalizer::fromPanelData(
                 ['statusCode' => $code],
                 [],

@@ -114,14 +114,14 @@ final class DbQueryRenderer
     }
 
     /**
-     * Renders the colored statement-type pill (`SELECT`, `INSERT`, `UPDATE`, ...).
+     * Renders the statement-type pill (`SELECT`, `INSERT`, `UPDATE`, ...), tinted by its vocabulary verb.
      */
     public static function renderTypeCell(QueryRow $row): string
     {
         $variant = DbPanel::typeBadgeVariant($row->type);
 
         return Span::tag()
-            ->class("yii-debug-db-type yii-debug-db-type-{$variant}")
+            ->class("yii-debug-db-type yii-debug-verb-{$variant}")
             ->content($row->type)
             ->render();
     }

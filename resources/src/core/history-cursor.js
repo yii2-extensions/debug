@@ -43,7 +43,12 @@
     return;
   }
 
-  var STATUS_VARIANTS = ["success", "warning", "danger", "muted"];
+  /*
+   * Mirrors `Vocabulary::statusClass()` / `Vocabulary::verb()` in
+   * `src/helpers/Vocabulary.php` — keep both sides in sync.
+   */
+  var STATUS_CLASSES = ["2xx", "3xx", "4xx", "5xx", "none"];
+  var VERBS = ["get", "post", "put", "delete", "other"];
 
   /**
    * Honour `data-yii-debug-cursor-init` so the cursor lands on the tag the
@@ -94,12 +99,21 @@
     };
   }
 
-  function statusVariant(status) {
-    if (status >= 500) return "danger";
-    if (status >= 400) return "warning";
-    if (status >= 300) return "muted";
-    if (status >= 200) return "success";
-    return "muted";
+  function statusClass(status) {
+    if (status >= 500) return "5xx";
+    if (status >= 400) return "4xx";
+    if (status >= 300) return "3xx";
+    if (status >= 200) return "2xx";
+    return "none";
+  }
+
+  function verbClass(method) {
+    var verb = (method || "").toUpperCase();
+    if (verb === "GET" || verb === "HEAD") return "get";
+    if (verb === "POST") return "post";
+    if (verb === "PUT" || verb === "PATCH") return "put";
+    if (verb === "DELETE") return "delete";
+    return "other";
   }
 
   function update() {
@@ -113,6 +127,10 @@
       var field = el.getAttribute("data-snapshot-field");
       if (field === "method") {
         el.textContent = snap.method;
+        VERBS.forEach(function (v) {
+          el.classList.remove("yii-debug-verb-" + v);
+        });
+        el.classList.add("yii-debug-verb-" + verbClass(snap.method));
       } else if (field === "url") {
         el.textContent = snap.url;
         if (snap.fullUrl) {
@@ -120,12 +138,10 @@
         }
       } else if (field === "status") {
         el.textContent = snap.status ? String(snap.status) : "–";
-        STATUS_VARIANTS.forEach(function (v) {
-          el.classList.remove("yii-debug-snapshot-status-" + v);
+        STATUS_CLASSES.forEach(function (v) {
+          el.classList.remove("yii-debug-status-" + v);
         });
-        el.classList.add(
-          "yii-debug-snapshot-status-" + statusVariant(snap.status),
-        );
+        el.classList.add("yii-debug-status-" + statusClass(snap.status));
       } else if (field === "time") {
         el.textContent = snap.time;
         el.hidden = snap.time === "";

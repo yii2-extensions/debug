@@ -30,7 +30,7 @@ final class LogCellRendererTest extends TestCase
             "Row id must be 'log-{N}'.",
         );
         self::assertSame(
-            'yii-debug-row--danger',
+            'yii-debug-row-danger',
             $options['class'] ?? null,
             'Error level must carry the danger class.',
         );
@@ -39,12 +39,12 @@ final class LogCellRendererTest extends TestCase
     public function testBuildRowOptionsMapsWarningAndInfoToTheirVariantClasses(): void
     {
         self::assertSame(
-            'yii-debug-row--warning',
+            'yii-debug-row-warning',
             LogCellRenderer::buildRowOptions(self::makeRow(level: Logger::LEVEL_WARNING))['class'] ?? null,
             'Warning level must map to the warning class.',
         );
         self::assertSame(
-            'yii-debug-row--info',
+            'yii-debug-row-info',
             LogCellRenderer::buildRowOptions(self::makeRow(level: Logger::LEVEL_INFO))['class'] ?? null,
             'Info level must map to the info class.',
         );
@@ -68,17 +68,27 @@ final class LogCellRendererTest extends TestCase
         );
     }
 
-    public function testRenderLevelCellMapsLoggerLevelConstantsToNames(): void
+    public function testRenderLevelCellWrapsLevelNameInVocabularyChip(): void
     {
         self::assertSame(
-            Logger::getLevelName(Logger::LEVEL_ERROR),
+            '<span class="yii-debug-level-chip yii-debug-level-error">error</span>',
             LogCellRenderer::renderLevelCell(self::makeRow(level: Logger::LEVEL_ERROR)),
-            'Error level must map to its canonical name.',
+            "Error level must wear the 'error' chip.",
         );
         self::assertSame(
-            Logger::getLevelName(Logger::LEVEL_WARNING),
+            '<span class="yii-debug-level-chip yii-debug-level-warning">warning</span>',
             LogCellRenderer::renderLevelCell(self::makeRow(level: Logger::LEVEL_WARNING)),
-            'Warning level must map to its canonical name.',
+            "Warning level must wear the 'warning' chip.",
+        );
+        self::assertStringContainsString(
+            'yii-debug-level-trace',
+            LogCellRenderer::renderLevelCell(self::makeRow(level: Logger::LEVEL_TRACE)),
+            "Trace level must wear the 'trace' chip.",
+        );
+        self::assertStringContainsString(
+            'yii-debug-level-profile',
+            LogCellRenderer::renderLevelCell(self::makeRow(level: Logger::LEVEL_PROFILE)),
+            "Profile level must wear the 'profile' chip.",
         );
     }
 
