@@ -236,7 +236,7 @@ final class SidebarRenderer
             ->class('yii-debug-nav yii-debug-nav-iconed')
             ->addAriaAttribute('label', 'Debug panels')
             ->linkClass('yii-debug-nav-link')
-            ->linkActiveClass('is-active')
+            ->linkActiveClass(['yii-debug-nav-link', 'is-active'])
             ->linkAriaCurrent()
             ->items(...$menuItems)
             ->render();

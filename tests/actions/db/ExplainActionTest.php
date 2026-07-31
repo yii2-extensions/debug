@@ -98,9 +98,9 @@ final class ExplainActionTest extends TestCase
         }
 
         self::assertStringContainsString(
-            'SELECT 1',
+            '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
             $html,
-            'AJAX hits must render the partial view (no layout); query must still surface.',
+            'AJAX hits must render the partial view (no layout); query must still surface highlighted.',
         );
     }
 
@@ -132,9 +132,9 @@ final class ExplainActionTest extends TestCase
         $html = $action->run('0', 'tag-explain');
 
         self::assertStringContainsString(
-            'SELECT 1',
+            '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
             $html,
-            'Rendered view must surface the explained query verbatim.',
+            'Rendered view must surface the explained query highlighted.',
         );
     }
 

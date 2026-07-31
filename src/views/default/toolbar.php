@@ -23,8 +23,7 @@ use yii\web\View;
 <div id="yii-debug-toolbar" class="yii-debug-toolbar yii-debug-toolbar-position-<?= $position ?>" data-height="<?= $defaultHeight ?>">
     <div class="yii-debug-toolbar-resize-handle"></div>
     <div class="yii-debug-toolbar-bar">
-        <?= Div::tag()
-            ->addDefaultProvider(ToolbarBlock::class)
+        <?= Div::tag(ToolbarBlock::DEFINITION)
             ->class('yii-debug-toolbar-title')
             ->html(
                 A::tag()
@@ -40,8 +39,7 @@ use yii\web\View;
 
         <div class="yii-debug-toolbar-block yii-debug-toolbar-ajax" style="display: none">
             AJAX
-            <?= Span::tag()
-                ->addDefaultProvider(ToolbarLabel::class)
+            <?= Span::tag(ToolbarLabel::DEFINITION)
                 ->class('yii-debug-toolbar-ajax-counter')
                 ->content('0') ?>
             <div class="yii-debug-toolbar-ajax-info">
@@ -67,8 +65,7 @@ use yii\web\View;
         <?php foreach ($panels as $panel): ?>
             <?php if ($panel->hasError()): ?>
                 <?php $panelError = $panel->getError(); ?>
-                <?= Div::tag()
-                    ->addDefaultProvider(ToolbarBlock::class)
+                <?= Div::tag(ToolbarBlock::DEFINITION)
                     ->html(
                         A::tag()
                             ->href($panel->getUrl())
@@ -76,8 +73,7 @@ use yii\web\View;
                             ->content($panel->getName())
                             ->html(
                                 ' ',
-                                Span::tag()
-                                    ->addDefaultProvider(ToolbarLabel::class)
+                                Span::tag(ToolbarLabel::DEFINITION)
                                     ->class('yii-debug-toolbar-label-error')
                                     ->content('error'),
                             )

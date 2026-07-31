@@ -14,15 +14,13 @@ use yii\debug\panels\ProfilingPanel;
  * @var int $time Total request processing time.
  */
 ?>
-<?= Div::tag()
-    ->addDefaultProvider(ToolbarBlock::class)
+<?= Div::tag(ToolbarBlock::DEFINITION)
     ->html(
         A::tag()
             ->content('Time ')
             ->href($panel->getUrl())
             ->html(
-                Span::tag()
-                    ->addDefaultProvider(ToolbarLabel::class)
+                Span::tag(ToolbarLabel::DEFINITION)
                     ->class('yii-debug-toolbar-label-info')
                     ->content((string) $time),
             )
@@ -31,8 +29,7 @@ use yii\debug\panels\ProfilingPanel;
             ->content('Memory ')
             ->href($panel->getUrl())
             ->html(
-                Span::tag()
-                    ->addDefaultProvider(ToolbarLabel::class)
+                Span::tag(ToolbarLabel::DEFINITION)
                     ->class('yii-debug-toolbar-label-info')
                     ->content((string) $memory),
             )

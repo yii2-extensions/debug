@@ -170,12 +170,19 @@ export function hostHasThemeControl() {
 
   for (i = 0; i < nodes.length; i++) {
     node = nodes[i];
+    /**
+     * Include the visible/sr-only text content: many stacks (Flowbite,
+     * Tailwind UI) label their switcher with a `sr-only` span instead of
+     * `aria-label`, and those toggles must count too.
+     */
     label =
       (node.getAttribute("aria-label") || "") +
       " " +
       (node.getAttribute("title") || "") +
       " " +
-      (node.dataset && node.dataset.themeToggle ? "theme-toggle" : "");
+      (node.dataset && node.dataset.themeToggle ? "theme-toggle" : "") +
+      " " +
+      (node.textContent || "").trim().slice(0, 80);
 
     if (!labelPattern.test(label)) {
       continue;

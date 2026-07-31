@@ -120,63 +120,112 @@ final class TimelineSpanRowTest extends TestCase
         );
     }
 
-    public function testFromMapsCacheCategoryToSuccessVariant(): void
+    public function testFromMapsApplicationControllerCategoryToAppVariant(): void
     {
         self::assertSame(
-            'success',
-            TimelineSpanRow::from(['category' => 'yii\\caching\\FileCache::get'])->variant
+            'app',
+            TimelineSpanRow::from(['category' => 'yii\\base\\Application::handleRequest'])->variant,
+            'Application spans must map to `app`.',
         );
         self::assertSame(
-            'success',
-            TimelineSpanRow::from(['category' => 'cache.something'])->variant
+            'app',
+            TimelineSpanRow::from(['category' => 'MyController::behaviors'])->variant,
+            'Controller-only spans must map to `app`.',
+        );
+        self::assertSame(
+            'app',
+            TimelineSpanRow::from(['category' => 'app\\controllers\\site'])->variant,
+            'Lowercase controllers namespace must map to `app`.',
+        );
+        self::assertSame(
+            'app',
+            TimelineSpanRow::from(['category' => 'yii\\base\\Module::runAction'])->variant,
+            'Action dispatch spans must map to `app`.',
         );
     }
 
-    public function testFromMapsDbCategoryToInfoVariant(): void
+    public function testFromMapsCacheCategoryToCacheVariant(): void
     {
         self::assertSame(
-            'info',
-            TimelineSpanRow::from(['category' => 'yii\\db\\Command::query'])->variant
+            'cache',
+            TimelineSpanRow::from(['category' => 'yii\\caching\\FileCache::get'])->variant,
+            'Cache class spans must map to `cache`.',
         );
         self::assertSame(
-            'info',
-            TimelineSpanRow::from(['category' => 'SomeCommand::execute'])->variant
+            'cache',
+            TimelineSpanRow::from(['category' => 'cache.something'])->variant,
+            'Lowercase cache spans must map to `cache`.',
         );
     }
 
-    public function testFromMapsMailQueueCategoryToDangerVariant(): void
+    public function testFromMapsDbCategoryToDbVariant(): void
     {
         self::assertSame(
-            'danger',
-            TimelineSpanRow::from(['category' => 'app\\jobs\\mail'])->variant
+            'db',
+            TimelineSpanRow::from(['category' => 'yii\\db\\Connection::open'])->variant,
+            'Namespace-only db spans must map to `db`.',
         );
         self::assertSame(
-            'danger',
-            TimelineSpanRow::from(['category' => 'queue.push'])->variant
+            'db',
+            TimelineSpanRow::from(['category' => 'SomeCommand::execute'])->variant,
+            'Command spans must map to `db`.',
         );
     }
 
-    public function testFromMapsUnknownCategoryToMutedVariant(): void
+    public function testFromMapsMailAndQueueCategoriesToTheirOwnVariants(): void
     {
         self::assertSame(
-            'muted',
-            TimelineSpanRow::from(['category' => 'app\\custom'])->variant
+            'mail',
+            TimelineSpanRow::from(['category' => 'app\\jobs\\mail'])->variant,
+            'Mail spans must map to `mail`.',
         );
         self::assertSame(
-            'muted',
-            TimelineSpanRow::from(['category' => ''])->variant
+            'mail',
+            TimelineSpanRow::from(['category' => 'SendMailer::send'])->variant,
+            'Capitalized Mail spans must map to `mail`.',
+        );
+        self::assertSame(
+            'queue',
+            TimelineSpanRow::from(['category' => 'queue.push'])->variant,
+            'Queue spans must map to `queue`.',
+        );
+        self::assertSame(
+            'queue',
+            TimelineSpanRow::from(['category' => 'AppQueueWorker::run'])->variant,
+            'Capitalized Queue spans must map to `queue`.',
         );
     }
 
-    public function testFromMapsViewRenderTwigCategoryToWarningVariant(): void
+    public function testFromMapsUnknownCategoryToOtherVariant(): void
     {
         self::assertSame(
-            'warning',
-            TimelineSpanRow::from(['category' => 'yii\\base\\View::render'])->variant
+            'other',
+            TimelineSpanRow::from(['category' => 'my\\custom\\thing'])->variant,
+            'Unknown spans must map to `other`.',
         );
         self::assertSame(
-            'warning',
-            TimelineSpanRow::from(['category' => 'twig.render'])->variant
+            'other',
+            TimelineSpanRow::from(['category' => ''])->variant,
+            'Empty category must map to `other`.',
+        );
+    }
+
+    public function testFromMapsViewRenderTwigCategoryToViewVariant(): void
+    {
+        self::assertSame(
+            'view',
+            TimelineSpanRow::from(['category' => 'app\\components\\View::init'])->variant,
+            'View-only spans must map to `view`.',
+        );
+        self::assertSame(
+            'view',
+            TimelineSpanRow::from(['category' => 'blade.render'])->variant,
+            'Render-only spans must map to `view`.',
+        );
+        self::assertSame(
+            'view',
+            TimelineSpanRow::from(['category' => 'twig.compile'])->variant,
+            'Twig-only spans must map to `view`.',
         );
     }
 
@@ -210,9 +259,9 @@ final class TimelineSpanRowTest extends TestCase
             "Missing width must default to the floor '0.4'.",
         );
         self::assertSame(
-            'muted',
+            'other',
             $row->variant,
-            'Missing category must yield the muted variant.',
+            'Missing category must yield the `other` variant.',
         );
     }
 }

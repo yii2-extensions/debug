@@ -167,9 +167,14 @@ final class DbQueryRendererTest extends TestCase
             'SQL must be wrapped in the dedicated container.',
         );
         self::assertStringContainsString(
-            'SELECT 1',
+            '<span class="yii-debug-sql-kw">SELECT</span>',
             $html,
-            'SQL text must be rendered.',
+            'SQL keywords must be highlighted.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-sql-num">1</span>',
+            $html,
+            'SQL numbers must be highlighted.',
         );
     }
 

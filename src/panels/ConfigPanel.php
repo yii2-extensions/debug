@@ -110,6 +110,11 @@ class ConfigPanel extends Panel
         phpinfo();
 
         $pinfo = ob_get_clean();
+
+        if ($pinfo === false) {
+            return '';
+        }
+
         $phpinfo = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo) ?? $pinfo;
 
         $phpinfo = str_replace(

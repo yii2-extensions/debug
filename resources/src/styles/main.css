@@ -1,113 +1,17 @@
 /**
- * Yii Debug Panel UI — Pico-inspired, scoped under `.yii-debug`.
+ * Yii Debug Panel UI — instrument-panel identity, scoped under `.yii-debug`.
  * Isolation strategy:
  * 1. Wrapper class `.yii-debug` on <body>.
  * 2. Namespace prefix `.yii-debug-*` on every component class.
  * 3. Authored rules wrapped in `@layer yii-debug {}` so host CSS (unlayered) wins
  *    by default and nothing bleeds either way.
- * ---------------------------------------------------------------------------
- * Theme tokens.
- * Kept at :root scope (not inside the layer) so the toolbar shadow-DOM element
- * can still inherit `--yii-debug-panel-*` via `:host` cascade.
- * Token names preserved for backward compatibility.
- * ---------------------------------------------------------------------------
+ *
+ * Theme tokens live in tokens.css (single `light-dark()` declaration per token,
+ * shared with the toolbar shadow DOM). Token names preserved for compatibility.
  */
 
-:root {
-  color-scheme: light dark;
-
-  --yii-debug-panel-bg: #eef4fb;
-  --yii-debug-panel-bg-accent: rgb(14 165 233 / 12%);
-  --yii-debug-panel-surface: rgb(255 255 255 / 94%);
-  --yii-debug-panel-surface-muted: #f8fafc;
-  --yii-debug-panel-surface-hover: #eef6ff;
-  --yii-debug-panel-border: rgb(148 163 184 / 28%);
-  --yii-debug-panel-border-strong: rgb(100 116 139 / 32%);
-  --yii-debug-panel-text: #0f172a;
-  --yii-debug-panel-muted: #64748b;
-  --yii-debug-panel-link: #0369a1;
-  --yii-debug-panel-link-hover: #0284c7;
-  --yii-debug-panel-primary: #0ea5e9;
-  --yii-debug-panel-primary-strong: #0369a1;
-  --yii-debug-panel-success: #059669;
-  --yii-debug-panel-warning: #d97706;
-  --yii-debug-panel-danger: #dc2626;
-  --yii-debug-panel-info: #0284c7;
-  --yii-debug-panel-code-bg: #eef2f6;
-  --yii-debug-panel-shadow: 0 22px 60px rgb(15 23 42 / 8%);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --yii-debug-panel-bg: #0b1120;
-    --yii-debug-panel-bg-accent: rgb(56 189 248 / 12%);
-    --yii-debug-panel-surface: rgb(15 23 42 / 92%);
-    --yii-debug-panel-surface-muted: #111827;
-    --yii-debug-panel-surface-hover: #1e293b;
-    --yii-debug-panel-border: rgb(148 163 184 / 20%);
-    --yii-debug-panel-border-strong: rgb(148 163 184 / 32%);
-    --yii-debug-panel-text: #e5edf7;
-    --yii-debug-panel-muted: #93a4b8;
-    --yii-debug-panel-link: #7dd3fc;
-    --yii-debug-panel-link-hover: #bae6fd;
-    --yii-debug-panel-primary: #38bdf8;
-    --yii-debug-panel-primary-strong: #0ea5e9;
-    --yii-debug-panel-success: #10b981;
-    --yii-debug-panel-warning: #f59e0b;
-    --yii-debug-panel-danger: #ef4444;
-    --yii-debug-panel-info: #38bdf8;
-    --yii-debug-panel-code-bg: #1e293b;
-    --yii-debug-panel-shadow: 0 22px 60px rgb(0 0 0 / 38%);
-  }
-}
-
-:root[data-yii-debug-theme="light"] {
-  color-scheme: light;
-
-  --yii-debug-panel-bg: #eef4fb;
-  --yii-debug-panel-bg-accent: rgb(14 165 233 / 12%);
-  --yii-debug-panel-surface: rgb(255 255 255 / 94%);
-  --yii-debug-panel-surface-muted: #f8fafc;
-  --yii-debug-panel-surface-hover: #eef6ff;
-  --yii-debug-panel-border: rgb(148 163 184 / 28%);
-  --yii-debug-panel-border-strong: rgb(100 116 139 / 32%);
-  --yii-debug-panel-text: #0f172a;
-  --yii-debug-panel-muted: #64748b;
-  --yii-debug-panel-link: #0369a1;
-  --yii-debug-panel-link-hover: #0284c7;
-  --yii-debug-panel-primary: #0ea5e9;
-  --yii-debug-panel-primary-strong: #0369a1;
-  --yii-debug-panel-success: #059669;
-  --yii-debug-panel-warning: #d97706;
-  --yii-debug-panel-danger: #dc2626;
-  --yii-debug-panel-info: #0284c7;
-  --yii-debug-panel-code-bg: #eef2f6;
-  --yii-debug-panel-shadow: 0 22px 60px rgb(15 23 42 / 8%);
-}
-
-:root[data-yii-debug-theme="dark"] {
-  color-scheme: dark;
-
-  --yii-debug-panel-bg: #0b1120;
-  --yii-debug-panel-bg-accent: rgb(56 189 248 / 12%);
-  --yii-debug-panel-surface: rgb(15 23 42 / 92%);
-  --yii-debug-panel-surface-muted: #111827;
-  --yii-debug-panel-surface-hover: #1e293b;
-  --yii-debug-panel-border: rgb(148 163 184 / 20%);
-  --yii-debug-panel-border-strong: rgb(148 163 184 / 32%);
-  --yii-debug-panel-text: #e5edf7;
-  --yii-debug-panel-muted: #93a4b8;
-  --yii-debug-panel-link: #7dd3fc;
-  --yii-debug-panel-link-hover: #bae6fd;
-  --yii-debug-panel-primary: #38bdf8;
-  --yii-debug-panel-primary-strong: #0ea5e9;
-  --yii-debug-panel-success: #10b981;
-  --yii-debug-panel-warning: #f59e0b;
-  --yii-debug-panel-danger: #ef4444;
-  --yii-debug-panel-info: #38bdf8;
-  --yii-debug-panel-code-bg: #1e293b;
-  --yii-debug-panel-shadow: 0 22px 60px rgb(0 0 0 / 38%);
-}
+@import "./tokens.css";
+@import "./fonts.css";
 
 /**
  * ---------------------------------------------------------------------------
@@ -139,14 +43,6 @@
   --yii-debug-fs-lg: 1.0625rem;
   --yii-debug-fs-xl: 1.25rem;
   --yii-debug-fs-2xl: 1.5rem;
-  --yii-debug-font-sans:
-    ui-sans-serif, system-ui, -apple-system, blinkmacsystemfont, "Segoe UI",
-    roboto, helvetica, arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --yii-debug-font-mono:
-    "JetBrains Mono", ui-monospace, sfmono-regular, menlo, monaco, consolas,
-    "Liberation Mono", "Courier New", monospace;
-  --yii-debug-font-display:
-    "Major Mono Display", "JetBrains Mono", ui-monospace, monospace;
   --yii-debug-border: 1px solid var(--yii-debug-panel-border);
   --yii-debug-border-strong: 1px solid var(--yii-debug-panel-border-strong);
   --yii-debug-shadow-sm: 0 1px 2px rgb(15 23 42 / 6%);
@@ -1400,6 +1296,7 @@
   .yii-debug-grid .filters select,
   .yii-debug-grid .filters textarea {
     width: 100%;
+    min-width: 0;
     min-height: 28px;
     padding: 4px 8px;
     border: 1px solid var(--yii-debug-panel-border-strong);
@@ -2411,6 +2308,7 @@
     letter-spacing: 0.04em;
     text-align: center;
     text-transform: uppercase;
+    white-space: nowrap;
     color: #fff;
   }
 
@@ -2438,7 +2336,36 @@
 
   .yii-debug-db-sql {
     font-family: var(--yii-debug-font-mono);
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* Capture timestamps are single readouts — never let them wrap. */
+  .yii-debug-grid-db .yii-debug-table tbody td:nth-child(2) {
+    white-space: nowrap;
+  }
+
+  /* SQL token spans emitted by SqlHighlighter — fixed semantic hues. */
+  .yii-debug-sql-kw {
+    color: var(--yii-debug-sql-kw);
+    font-weight: 700;
+  }
+
+  .yii-debug-sql-str {
+    color: var(--yii-debug-sql-str);
+  }
+
+  .yii-debug-sql-num {
+    color: var(--yii-debug-sql-num);
+  }
+
+  .yii-debug-sql-comment {
+    color: var(--yii-debug-sql-comment);
+    font-style: italic;
+  }
+
+  .yii-debug-sql-param {
+    color: var(--yii-debug-sql-param);
+    font-weight: 600;
   }
 
   .yii-debug-db-explain {
@@ -4350,7 +4277,7 @@
    */
   .yii-debug-url-cell {
     display: inline-block;
-    max-width: 320px;
+    max-width: clamp(180px, 26vw, 460px);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -4537,7 +4464,7 @@
    */
   .yii-debug-col-id,
   .yii-debug-col-queue-id {
-    min-width: 140px;
+    min-width: 120px;
     white-space: nowrap;
   }
 
@@ -4551,7 +4478,20 @@
   .yii-debug-grid .filters input.yii-debug-col-id-input,
   .yii-debug-grid .filters input.yii-debug-col-queue-id-input {
     box-sizing: border-box;
-    width: 120px;
+    width: 104px;
+  }
+
+  /**
+   * History rows are single-line instrument readouts: dense padding and
+   * no wrapping keep every capture scannable at a glance, while the URL
+   * cell's own ellipsis cap prevents runaway growth.
+   */
+  .yii-debug-grid-history .yii-debug-table {
+    tbody td,
+    tbody th {
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
   }
 
   /**

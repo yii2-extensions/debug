@@ -27,8 +27,7 @@ use yii\web\View;
 $themeChipIcon = $debugTheme === 'dark' ? $themeIconSun : $themeIconMoon;
 
 $configIcon = Icon::render('config');
-$yiiChip = A::tag()
-    ->addDefaultProvider(BrandChip::class)
+$yiiChip = A::tag(BrandChip::DEFINITION)
     ->class('yii-debug-brand-chip-yii')
     ->href(Url::to(['index']))
     ->html(
@@ -42,8 +41,7 @@ $yiiChip = A::tag()
             ->class('yii-debug-brand-value')
             ->content($yiiVersion)
     );
-$phpChip = Div::tag()
-    ->addDefaultProvider(BrandChip::class)
+$phpChip = Div::tag(BrandChip::DEFINITION)
     ->class('yii-debug-brand-chip-php')
     ->html(
         Span::tag()
@@ -55,8 +53,7 @@ $phpChip = Div::tag()
     );
 $memChip = $peakMemory === null
     ? ''
-    : Div::tag()
-        ->addDefaultProvider(BrandChip::class)
+    : Div::tag(BrandChip::DEFINITION)
         ->class('yii-debug-brand-chip-mem')
         ->html(
             Span::tag()
@@ -74,23 +71,20 @@ $configLabel = Span::tag()
     ->class('yii-debug-brand-label')
     ->content('Config');
 $configChip = $configUrl !== null
-    ? A::tag()
+    ? A::tag(BrandChip::DEFINITION)
         ->addAriaAttribute('label', 'Open the Configuration panel')
-        ->addDefaultProvider(BrandChip::class)
         ->class('yii-debug-brand-chip-config')
         ->href($configUrl)
         ->html($configIconSpan, $configLabel)
         ->title('Open the Configuration panel')
-    : Span::tag()
+    : Span::tag(BrandChip::DEFINITION)
         ->addAriaAttribute('disabled', 'true')
-        ->addDefaultProvider(BrandChip::class)
         ->class('yii-debug-brand-chip-config is-disabled')
         ->html($configIconSpan, $configLabel)
         ->title('No requests captured yet');
-$themeChip = Button::tag()
+$themeChip = Button::tag(BrandChip::DEFINITION)
     ->addAriaAttribute('label', 'Toggle debug panel theme')
     ->addDataAttribute('yii-debug-theme-toggle', true)
-    ->addDefaultProvider(BrandChip::class)
     ->class('yii-debug-brand-chip-theme')
     ->dataAttributes(
         [

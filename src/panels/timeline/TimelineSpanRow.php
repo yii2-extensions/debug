@@ -48,7 +48,7 @@ final readonly class TimelineSpanRow
          */
         public string $cssWidth,
         /**
-         * CSS variant token (`info` / `success` / `warning` / `danger` / `muted`) derived from `$category`.
+         * CSS variant token (`app` / `db` / `view` / `cache` / `mail` / `queue` / `other`) derived from `$category`.
          */
         public string $variant,
         /**
@@ -160,23 +160,19 @@ final readonly class TimelineSpanRow
     }
 
     /**
-     * Maps the span category to a CSS variant.
+     * Maps the span category to its domain variant from the fixed timeline vocabulary.
      *
-     * Categories the matcher does not recognize fall back to `muted`, so unknown providers render in the neutral
+     * Categories the matcher does not recognize fall back to `other`, so unknown providers render in the neutral
      * track styling.
      */
     private static function variantOf(string $category): string
     {
-        if ($category === '') {
-            return 'muted';
-        }
-
         if (str_contains($category, 'db\\') || str_contains($category, 'Command')) {
-            return 'info';
+            return 'db';
         }
 
         if (str_contains($category, 'cache') || str_contains($category, 'Cache')) {
-            return 'success';
+            return 'cache';
         }
 
         if (
@@ -184,13 +180,26 @@ final readonly class TimelineSpanRow
             || str_contains($category, 'render')
             || str_contains($category, 'twig')
         ) {
-            return 'warning';
+            return 'view';
         }
 
-        if (str_contains($category, 'mail') || str_contains($category, 'queue')) {
-            return 'danger';
+        if (str_contains($category, 'mail') || str_contains($category, 'Mail')) {
+            return 'mail';
         }
 
-        return 'muted';
+        if (str_contains($category, 'queue') || str_contains($category, 'Queue')) {
+            return 'queue';
+        }
+
+        if (
+            str_contains($category, 'Application')
+            || str_contains($category, 'Controller')
+            || str_contains($category, 'controllers')
+            || str_contains($category, 'runAction')
+        ) {
+            return 'app';
+        }
+
+        return 'other';
     }
 }

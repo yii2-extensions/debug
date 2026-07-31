@@ -12,15 +12,13 @@ use yii\debug\panels\DumpPanel;
 $dumps = is_array($panel->data) ? $panel->data : [];
 ?>
 <?php if ($dumps !== []): ?>
-<?= Div::tag()
-    ->addDefaultProvider(ToolbarBlock::class)
+<?= Div::tag(ToolbarBlock::DEFINITION)
     ->html(
         A::tag()
             ->content('Dump ')
             ->href($panel->getUrl())
             ->html(
-                Span::tag()
-                    ->addDefaultProvider(ToolbarLabel::class)
+                Span::tag(ToolbarLabel::DEFINITION)
                     ->class('yii-debug-toolbar-label-info')
                     ->content((string) count($dumps)),
             )

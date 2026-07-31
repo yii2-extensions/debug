@@ -38,9 +38,10 @@ final class LogTargetTest extends TestCase
             $data,
             "'collectSummary' must hand back a structured array.",
         );
-        self::assertArrayHasKey(
-            'REQUEST_TIME_FLOAT',
-            $_SERVER,
+        $requestTimeFloat = $_SERVER['REQUEST_TIME_FLOAT'] ?? null;
+
+        self::assertNotNull(
+            $requestTimeFloat,
             'Web app bootstrap must seed REQUEST_TIME_FLOAT.',
         );
         self::assertArrayHasKey(
@@ -49,7 +50,7 @@ final class LogTargetTest extends TestCase
             'Summary must declare a captured request time.',
         );
         self::assertSame(
-            $_SERVER['REQUEST_TIME_FLOAT'],
+            $requestTimeFloat,
             $data['time'],
             'Captured time must mirror REQUEST_TIME_FLOAT exactly.',
         );

@@ -15,18 +15,15 @@ $php = is_array($data['php'] ?? null) ? $data['php'] : [];
 $yiiVersion = is_string($application['yii'] ?? null) ? $application['yii'] : '';
 $phpVersion = is_string($php['version'] ?? null) ? $php['version'] : '';
 ?>
-<?= Div::tag()
-    ->addDefaultProvider(ToolbarBlock::class)
+<?= Div::tag(ToolbarBlock::DEFINITION)
     ->html(
         A::tag()
             ->href($panel->getUrl())
             ->html(
-                Span::tag()
-                    ->addDefaultProvider(ToolbarLabel::class)
+                Span::tag(ToolbarLabel::DEFINITION)
                     ->content($yiiVersion),
                 ' PHP ',
-                Span::tag()
-                    ->addDefaultProvider(ToolbarLabel::class)
+                Span::tag(ToolbarLabel::DEFINITION)
                     ->content($phpVersion),
             ),
     ) ?>

@@ -13,15 +13,13 @@ use yii\debug\panels\MailPanel;
  * @var MailPanel $panel Panel providing the toolbar summary data.
  */
 ?>
-<?= Div::tag()
-    ->addDefaultProvider(ToolbarBlock::class)
+<?= Div::tag(ToolbarBlock::DEFINITION)
     ->html(
         A::tag()
             ->content('Mail ')
             ->href($panel->getUrl())
             ->html(
-                Span::tag()
-                    ->addDefaultProvider(ToolbarLabel::class)
+                Span::tag(ToolbarLabel::DEFINITION)
                     ->content((string) $mailCount),
             ),
     ) ?>
