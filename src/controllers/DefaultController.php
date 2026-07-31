@@ -21,7 +21,7 @@ use function is_string;
 /**
  * Browses recorded debug entries and serves the debug toolbar payload.
  *
- * Hosts the entry-point actions consumed by the debug UI (`index`, `view`, `toolbar`, `toolbar-data`, `php-info`,
+ * Hosts the entry-point actions consumed by the debug UI (`index`, `view`, `toolbar-data`, `php-info`,
  * `download-mail`) and adopts external panel actions through {@see actions()}. Loads the active tag's payload into
  * registered panels via {@see loadData()} before rendering.
  *
@@ -146,30 +146,6 @@ class DefaultController extends Controller
         }
 
         return $actions;
-    }
-
-    /**
-     * Renders the floating debug toolbar partial for the given tag.
-     *
-     * @param string $tag Tag of the debug entry to render the toolbar for.
-     *
-     * @throws NotFoundHttpException When no debug entry exists for the given tag.
-     *
-     * @return string Rendered toolbar partial view.
-     */
-    public function actionToolbar(string $tag): string
-    {
-        $this->loadData($tag, 5);
-
-        return $this->renderPartial(
-            'toolbar',
-            [
-                'tag' => $tag,
-                'panels' => $this->module->panels,
-                'position' => $this->module->toolbarPosition,
-                'defaultHeight' => $this->module->defaultHeight,
-            ],
-        );
     }
 
     /**

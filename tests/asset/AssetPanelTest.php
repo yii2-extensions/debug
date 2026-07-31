@@ -13,8 +13,8 @@ use yii\web\AssetBundle;
 
 /**
  * Unit tests for {@see AssetPanel} covering `getName`/`getToolbarIcon`, the toolbar-items chip with bundle count
- * (and the `null` short-circuit when no bundles), `getDetail`/`getSummary` rendering, `isEnabled` resolution, the
- * `save()` snapshot path (including the `format()` URL wrapping, `formatOptions()` stringification, and the
+ * (and the `null` short-circuit when no bundles), `getDetail` rendering, `isEnabled` resolution, the `save()`
+ * snapshot path (including the `format()` URL wrapping, `formatOptions()` stringification, and the
  * `serializeOptions()` closure-to-label substitution).
  */
 #[Group('asset')]
@@ -178,32 +178,6 @@ final class AssetPanelTest extends TestCase
             'asset',
             $panel->getToolbarIcon(),
             "Toolbar icon must be 'asset'.",
-        );
-    }
-
-    public function testGetSummaryRendersToolbarChip(): void
-    {
-        $panel = $this->makePanel(AssetPanel::class);
-
-        $panel->data = ['BundleA' => []];
-
-        self::assertNotSame(
-            '',
-            $panel->getSummary(),
-            'Summary HTML must render when bundles are present.',
-        );
-    }
-
-    public function testGetSummaryReturnsEmptyStringWhenNoBundlesAreLoaded(): void
-    {
-        $panel = $this->makePanel(AssetPanel::class);
-
-        $panel->data = [];
-
-        self::assertSame(
-            '',
-            $panel->getSummary(),
-            'No bundles must yield empty summary markup.',
         );
     }
 

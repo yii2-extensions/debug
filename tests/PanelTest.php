@@ -91,51 +91,6 @@ final class PanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarDataFallsBackToSummaryHtmlWhenNoItems(): void
-    {
-        $panel = $this->makeCustomPanel('custom');
-
-        $panel->stubName = 'Custom';
-        $panel->stubSummary = '<strong>Custom summary</strong>';
-
-        $data = $panel->getToolbarData();
-
-        self::assertArrayHasKey(
-            'title',
-            $data,
-            "Toolbar envelope must expose a 'title' key.",
-        );
-        self::assertArrayHasKey(
-            'html',
-            $data,
-            "Toolbar envelope must expose a 'html' key.",
-        );
-        self::assertArrayHasKey(
-            'url',
-            $data,
-            "Toolbar envelope must expose a 'url' key.",
-        );
-        self::assertSame(
-            'Custom',
-            $data['title'],
-            'Title should mirror the panel name.',
-        );
-        self::assertSame(
-            '<strong>Custom summary</strong>',
-            $data['html'],
-            "Empty 'getToolbarItems' should fall back to the summary HTML.",
-        );
-        self::assertIsString(
-            $data['url'],
-            'URL value must be a string.',
-        );
-        self::assertStringContainsString(
-            'panel=custom',
-            $data['url'],
-            'URL should target the panel by id.',
-        );
-    }
-
     public function testGetToolbarDataIncludesIconKeyWhenPanelDeclaresOne(): void
     {
         $panel = $this->makeCustomPanel('hot');
@@ -172,6 +127,19 @@ final class PanelTest extends TestCase
         );
     }
 
+    public function testGetToolbarDataReturnsEmptyArrayWhenItemsAreEmpty(): void
+    {
+        $panel = $this->makeCustomPanel('quiet');
+
+        $panel->stubName = 'Quiet';
+
+        self::assertSame(
+            [],
+            $panel->getToolbarData(),
+            'An empty items list must hide the chip entirely.',
+        );
+    }
+
     public function testGetToolbarDataReturnsEmptyArrayWhenItemsAreNull(): void
     {
         $panel = $this->makeCustomPanel('silent');
@@ -183,6 +151,36 @@ final class PanelTest extends TestCase
             [],
             $panel->getToolbarData(),
             "Returning 'null' from 'getToolbarItems' hides the chip entirely.",
+        );
+    }
+
+    public function testGetToolbarDataWrapsStructuredItems(): void
+    {
+        $panel = $this->makeCustomPanel('custom');
+
+        $panel->stubName = 'Custom';
+        $panel->stubItems = [['value' => 42]];
+
+        $data = $panel->getToolbarData();
+
+        self::assertSame(
+            'Custom',
+            $data['title'] ?? null,
+            'Title should mirror the panel name.',
+        );
+        self::assertSame(
+            [['value' => 42]],
+            $data['items'] ?? null,
+            'Items must round-trip into the envelope verbatim.',
+        );
+        self::assertIsString(
+            $data['url'] ?? null,
+            'URL value must be a string.',
+        );
+        self::assertStringContainsString(
+            'panel=custom',
+            $data['url'],
+            'URL should target the panel by id.',
         );
     }
 

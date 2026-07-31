@@ -70,21 +70,6 @@ class LogPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip with the per-level counts (error / warning / info).
-     */
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render(
-            'panels/log/summary',
-            [
-                'data' => ['messages' => $this->getSavedMessages()],
-                'panel' => $this,
-            ],
-            $this,
-        );
-    }
-
-    /**
      * Returns the toolbar icon name.
      */
     public function getToolbarIcon(): string

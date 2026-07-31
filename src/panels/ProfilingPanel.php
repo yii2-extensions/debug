@@ -83,24 +83,6 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip with the total processing time and peak memory.
-     */
-    public function getSummary(): string
-    {
-        $profileData = $this->getProfileData();
-
-        return Yii::$app->view->render(
-            'panels/profile/summary',
-            [
-                'memory' => Format::bytesToMb($profileData['memory'], 3),
-                'panel' => $this,
-                'time' => number_format($profileData['time'] * 1000) . ' ms',
-            ],
-            $this,
-        );
-    }
-
-    /**
      * Hides the "Profiling" title from the toolbar; the gauge icon plus the time/memory metrics are self-explanatory.
      *
      * @return array<string, mixed> Toolbar payload with the title blanked on success.
@@ -177,7 +159,8 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * Builds the toolbar items: the total processing time and the peak memory usage.
+     * Builds the toolbar items: the total processing time and the peak memory usage, rendered as neutral metric
+     * readouts.
      *
      * @return array<int, array<string, mixed>> Toolbar items in display order.
      */
@@ -187,12 +170,10 @@ class ProfilingPanel extends Panel
 
         return [
             [
-                'status' => 'info',
                 'title' => 'Total processing time',
                 'value' => number_format($profileData['time'] * 1000) . ' ms',
             ],
             [
-                'status' => 'info',
                 'title' => 'Peak memory',
                 'value' => Format::bytesToMb($profileData['memory'], 3),
             ],

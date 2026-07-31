@@ -72,7 +72,7 @@ $userSwitch = $panel->userSwitch;
                 ->html(
                     'Reset to ',
                     Span::tag()
-                        ->class('yii-debug-toolbar-label yii-debug-toolbar-label-info')
+                        ->class('yii-debug-level-chip yii-debug-level-info')
                         ->content((string) $userSwitch->getMainUser()->getId()),
                 )
                 ->id('debug-userswitch__reset-identity-button')

@@ -83,20 +83,10 @@ class Panel extends Component implements ViewContextInterface
     }
 
     /**
-     * Returns the legacy HTML summary rendered on the toolbar when {@see getToolbarItems()} yields `[]`.
-     *
-     * @return string Summary markup; `''` when the panel does not contribute a summary.
-     */
-    public function getSummary(): string
-    {
-        return '';
-    }
-
-    /**
      * Returns the toolbar envelope wrapping the panel's icon, items, and URL.
      *
-     * Renders the error envelope when {@see getError()} is non-`null`, the structured-items path when
-     * {@see getToolbarItems()} returns a non-empty list, and the legacy HTML summary fallback otherwise.
+     * Renders the error envelope when {@see getError()} is non-`null`; otherwise wraps the structured items from
+     * {@see getToolbarItems()}. Panels that yield no items are skipped.
      *
      * @return array<string, mixed> Toolbar envelope; `[]` to skip the panel.
      */
@@ -119,9 +109,9 @@ class Panel extends Component implements ViewContextInterface
             ];
         }
 
-        $items = $this->getToolbarItems();
+        $items = $this->getToolbarItems() ?? [];
 
-        if ($items === null) {
+        if ($items === []) {
             return [];
         }
 
@@ -136,19 +126,7 @@ class Panel extends Component implements ViewContextInterface
             $envelope['icon'] = $icon;
         }
 
-        if ($items !== []) {
-            $envelope['items'] = $items;
-
-            return $envelope;
-        }
-
-        $summary = $this->getSummary();
-
-        if ($summary === '') {
-            return [];
-        }
-
-        $envelope['html'] = $summary;
+        $envelope['items'] = $items;
 
         return $envelope;
     }
@@ -399,15 +377,14 @@ class Panel extends Component implements ViewContextInterface
     /**
      * Returns the structured items rendered on the debug toolbar for this panel.
      *
-     * Subclasses override this instead of {@see getToolbarData()}, which handles the error envelope, the
-     * title/url/items wrapping, and the legacy HTML summary fallback.
+     * Subclasses override this instead of {@see getToolbarData()}, which handles the error envelope and the
+     * title/url/items wrapping.
      *
      * Return value semantics:
      * - a non-empty list of item descriptors: rendered as structured metrics on the toolbar,
-     * - `[]` (the default): falls back to the legacy {@see getSummary()} HTML,
-     * - `null`: the panel is skipped entirely on the toolbar.
+     * - `[]` (the default) or `null`: the panel renders no toolbar chip.
      *
-     * @return array<int, array<string, mixed>>|null Structured items, or `null` to skip the panel.
+     * @return array<int, array<string, mixed>>|null Structured items, or `[]`/`null` to skip the panel.
      */
     protected function getToolbarItems(): array|null
     {

@@ -10,7 +10,7 @@ use Yii;
 use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfigException};
 use yii\caching\FileCache;
 use yii\debug\controllers\DefaultController;
-use yii\debug\{DebugAsset, LogTarget, Module, Panel};
+use yii\debug\{DebugAsset, LogTarget, Module, Panel, TimelineAsset};
 use yii\debug\panels\LogPanel;
 use yii\debug\tests\provider\ModuleProvider;
 use yii\debug\tests\support\TestCase;
@@ -99,7 +99,7 @@ final class ModuleTest extends TestCase
         );
     }
 
-    public function testBeforeActionReturnsFalseForToolbarRoutesUnderAccessDenial(): void
+    public function testBeforeActionReturnsFalseForToolbarDataRouteUnderAccessDenial(): void
     {
         $module = new Module('debug');
 
@@ -108,13 +108,13 @@ final class ModuleTest extends TestCase
 
         Yii::$app->setModule('debug', $module);
 
-        $action = new Action('toolbar', new Controller('default', $module));
+        $action = new Action('toolbar-data', new Controller('default', $module));
 
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
         self::assertFalse(
             $module->beforeAction($action),
-            "Denied access to the 'toolbar' action must return 'false' instead of throwing.",
+            "Denied access to the 'toolbar-data' action must return 'false' instead of throwing.",
         );
     }
 
@@ -273,6 +273,17 @@ final class ModuleTest extends TestCase
             ],
             $asset->js,
             'DebugAsset must ship the local core scripts: debug + theme-toggle + history-cursor.',
+        );
+    }
+
+    public function testDebugAssetShipsSingleMainStylesheet(): void
+    {
+        $asset = new DebugAsset();
+
+        self::assertSame(
+            ['dist/css/main.min.css'],
+            $asset->css,
+            'Only the main stylesheet must ship; the legacy toolbar CSS is gone.',
         );
     }
 
@@ -796,6 +807,24 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testThrowForbiddenHttpExceptionForRemovedToolbarActionUnderAccessDenial(): void
+    {
+        $module = new Module('debug');
+
+        $module->allowedIPs = ['10.0.0.1'];
+        $module->disableIpRestrictionWarning = true;
+
+        Yii::$app->setModule('debug', $module);
+
+        $action = new Action('toolbar', new Controller('default', $module));
+
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+        $this->expectException(ForbiddenHttpException::class);
+
+        $module->beforeAction($action);
+    }
+
     public function testThrowForbiddenHttpExceptionWhenAccessDeniedOnNonToolbarAction(): void
     {
         $module = new Module('debug');
@@ -853,6 +882,22 @@ final class ModuleTest extends TestCase
         );
 
         $module->getToolbarHtml();
+    }
+
+    public function testTimelineAssetShipsStylesOnly(): void
+    {
+        $asset = new TimelineAsset();
+
+        self::assertSame(
+            ['dist/css/timeline.min.css'],
+            $asset->css,
+            'Timeline bundle must ship the span chart stylesheet.',
+        );
+        self::assertSame(
+            [],
+            $asset->js,
+            'No scripts: the timeline markup is server-rendered.',
+        );
     }
 
     public function testToolbarDataActionExposesNewBrandKeys(): void

@@ -75,18 +75,6 @@ class RouterPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip.
-     */
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render(
-            'panels/router/summary',
-            ['panel' => $this],
-            $this,
-        );
-    }
-
-    /**
      * Returns the toolbar icon name.
      */
     public function getToolbarIcon(): string

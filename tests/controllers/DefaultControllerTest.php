@@ -266,46 +266,6 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
-    public function testActionToolbarRendersErrorBlockForPanelWithCapturedException(): void
-    {
-        $module = $this->bootDebugModule();
-
-        $error = new FlattenException(new \RuntimeException('Boom'));
-
-        $this->writeSnapshotWithExceptions($module, 'tag-toolbar-error', ['request' => $error]);
-
-        $controller = new DefaultController('default', $module);
-
-        Yii::$app->controller = $controller;
-
-        $html = $controller->actionToolbar('tag-toolbar-error');
-
-        self::assertStringContainsString(
-            'toolbar-label-error',
-            $html,
-            'Toolbar must render the error chip.',
-        );
-    }
-
-    public function testActionToolbarRendersPartialForKnownTag(): void
-    {
-        $module = $this->bootDebugModule();
-
-        $this->writeSnapshot($module, 'tag-toolbar-partial', ['request' => ['statusCode' => 200]]);
-
-        $controller = new DefaultController('default', $module);
-
-        Yii::$app->controller = $controller;
-
-        $html = $controller->actionToolbar('tag-toolbar-partial');
-
-        self::assertNotSame(
-            '',
-            $html,
-            'Toolbar partial must render markup.',
-        );
-    }
-
     public function testActionViewFallsBackToFirstTagWhenTagIsNull(): void
     {
         $module = $this->bootDebugModule();

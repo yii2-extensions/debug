@@ -340,39 +340,6 @@ class DbPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip with the query count, total query time, and excessive-caller indicator.
-     */
-    public function getSummary(): string
-    {
-        $timings = $this->calculateTimings();
-
-        $queryCount = count($timings);
-        $queryTime = number_format($this->getTotalQueryTime($timings) * 1000) . ' ms';
-
-        $excessiveCallerCount = $this->getExcessiveCallersCount();
-
-        return Yii::$app->view->render(
-            'panels/db/summary',
-            [
-                'excessiveCallerCount' => $excessiveCallerCount,
-                'panel' => $this,
-                'queryCount' => $queryCount,
-                'queryTime' => $queryTime,
-                'timings' => $timings,
-            ],
-            $this,
-        );
-    }
-
-    /**
-     * Returns the short panel name used in the toolbar summary chip.
-     */
-    public function getSummaryName(): string
-    {
-        return 'DB';
-    }
-
-    /**
      * Returns the toolbar icon name.
      */
     public function getToolbarIcon(): string

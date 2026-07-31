@@ -72,24 +72,6 @@ class AssetPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip.
-     */
-    public function getSummary(): string
-    {
-        $bundles = is_array($this->data) ? $this->data : [];
-
-        if ($bundles === []) {
-            return '';
-        }
-
-        return Yii::$app->view->render(
-            'panels/assets/summary',
-            ['panel' => $this],
-            $this,
-        );
-    }
-
-    /**
      * Returns the toolbar icon name.
      */
     public function getToolbarIcon(): string

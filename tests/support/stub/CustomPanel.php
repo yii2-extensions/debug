@@ -18,16 +18,10 @@ final class CustomPanel extends Panel
      */
     public array|null $stubItems = [];
     public string $stubName = '';
-    public string $stubSummary = '';
 
     public function getName(): string
     {
         return $this->stubName;
-    }
-
-    public function getSummary(): string
-    {
-        return $this->stubSummary;
     }
 
     public function getToolbarIcon(): string|null

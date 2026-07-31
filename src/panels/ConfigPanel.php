@@ -144,18 +144,6 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip.
-     */
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render(
-            'panels/config/summary',
-            ['panel' => $this],
-            $this,
-        );
-    }
-
-    /**
      * Returns the toolbar icon name.
      */
     public function getToolbarIcon(): string

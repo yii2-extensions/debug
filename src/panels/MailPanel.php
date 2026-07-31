@@ -89,27 +89,6 @@ class MailPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip with the captured message count.
-     */
-    public function getSummary(): string
-    {
-        $mailCount = count(self::normalizeMessages($this->data));
-
-        if ($mailCount === 0) {
-            return '';
-        }
-
-        return Yii::$app->view->render(
-            'panels/mail/summary',
-            [
-                'panel' => $this,
-                'mailCount' => $mailCount,
-            ],
-            $this,
-        );
-    }
-
-    /**
      * Returns the toolbar icon name.
      */
     public function getToolbarIcon(): string

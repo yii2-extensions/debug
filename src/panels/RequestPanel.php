@@ -80,18 +80,6 @@ class RequestPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip.
-     */
-    public function getSummary(): string
-    {
-        return Yii::$app->view->render(
-            'panels/request/summary',
-            ['panel' => $this],
-            $this,
-        );
-    }
-
-    /**
      * Returns the toolbar icon name.
      */
     public function getToolbarIcon(): string

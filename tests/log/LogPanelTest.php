@@ -310,46 +310,6 @@ final class LogPanelTest extends TestCase
         );
     }
 
-    public function testGetSummaryRendersChip(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $panel->data = [
-            'messages' => [['a', Logger::LEVEL_INFO, 'application', 0.0, []]],
-        ];
-
-        self::assertStringContainsString(
-            'Log',
-            $panel->getSummary(),
-            'Chip must render the panel label.',
-        );
-    }
-
-    public function testGetSummaryRendersErrorAndWarningChipLinksWhenLevelsArePresent(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $panel->data = [
-            'messages' => [
-                ['oops', Logger::LEVEL_ERROR, 'application', 1.0, []],
-                ['careful', Logger::LEVEL_WARNING, 'application', 2.0, []],
-            ],
-        ];
-
-        $html = $panel->getSummary();
-
-        self::assertStringContainsString(
-            'toolbar-label-important',
-            $html,
-            'Error chip must surface.',
-        );
-        self::assertStringContainsString(
-            'toolbar-label-warning',
-            $html,
-            'Warning chip must surface.',
-        );
-    }
-
     public function testGetToolbarItemsEmitsCountChipOnly(): void
     {
         $panel = $this->makePanel(LogPanel::class);

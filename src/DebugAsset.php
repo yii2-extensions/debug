@@ -7,8 +7,8 @@ namespace yii\debug;
 use yii\web\AssetBundle;
 
 /**
- * Asset bundle for the debugger pages: the main CSS theme, the toolbar styles, the panel interactivity, the dark/light
- * theme toggle, and the history-page cursor handling.
+ * Asset bundle for the debugger pages: the main CSS theme, the panel interactivity, the dark/light theme toggle, and
+ * the history-page cursor handling.
  *
  * Registered by the debugger layout (`views/layouts/main.php`) so every full-page debugger view inherits the same
  * styles and behaviors. The toolbar injected on the host application's pages does NOT use this bundle; it ships its own
@@ -21,7 +21,6 @@ class DebugAsset extends AssetBundle
      */
     public $css = [
         'dist/css/main.min.css',
-        'dist/css/toolbar.min.css',
     ];
     /**
      * JavaScript files registered with this bundle.

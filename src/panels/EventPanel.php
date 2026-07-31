@@ -71,27 +71,6 @@ class EventPanel extends Panel
     }
 
     /**
-     * Renders the toolbar summary chip with the total event count.
-     */
-    public function getSummary(): string
-    {
-        $eventCount = count(self::normalizeEvents($this->data));
-
-        if ($eventCount === 0) {
-            return '';
-        }
-
-        return Yii::$app->view->render(
-            'panels/event/summary',
-            [
-                'eventCount' => $eventCount,
-                'panel' => $this,
-            ],
-            $this,
-        );
-    }
-
-    /**
      * Returns the toolbar icon name.
      */
     public function getToolbarIcon(): string

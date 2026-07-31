@@ -760,10 +760,6 @@ YiiDebugToolbar.prototype.iconHtml = function (iconName, cls) {
 };
 
 YiiDebugToolbar.prototype.renderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class="panel legacy-panel">' + panel.html + "</div>";
-  }
-
   var metrics = "";
   var items = panel.items || [];
   var rawTitle =
@@ -885,12 +881,8 @@ YiiDebugToolbar.prototype.bindDelegatedEvents = function () {
   var self = this;
 
   root.addEventListener("click", function (event) {
-    var target =
-      closest(event.target, "[data-debug-url]") ||
-      closest(event.target, ".legacy-panel a[href]");
-    var url = target
-      ? target.getAttribute("data-debug-url") || target.getAttribute("href")
-      : null;
+    var target = closest(event.target, "[data-debug-url]");
+    var url = target ? target.getAttribute("data-debug-url") : null;
 
     if (!url || event.button === 1 || event.ctrlKey || event.metaKey) {
       return;
@@ -902,12 +894,8 @@ YiiDebugToolbar.prototype.bindDelegatedEvents = function () {
   });
 
   root.addEventListener("keydown", function (event) {
-    var target =
-      closest(event.target, "[data-debug-url]") ||
-      closest(event.target, ".legacy-panel a[href]");
-    var url = target
-      ? target.getAttribute("data-debug-url") || target.getAttribute("href")
-      : null;
+    var target = closest(event.target, "[data-debug-url]");
+    var url = target ? target.getAttribute("data-debug-url") : null;
 
     if (!url || (event.key !== "Enter" && event.key !== " ")) {
       return;
