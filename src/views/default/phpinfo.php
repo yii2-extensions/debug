@@ -15,10 +15,9 @@ $this->title = 'PHP Info';
 
 ob_start();
 phpinfo();
-$pinfo = ob_get_contents();
-ob_end_clean();
+$pinfo = ob_get_clean();
 
-$body = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo) ?? '';
+$body = $pinfo === false ? '' : preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo) ?? '';
 
 $view = PhpInfoDataNormalizer::fromOutput(
     body: $body,

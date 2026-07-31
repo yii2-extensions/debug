@@ -10,6 +10,8 @@ const cssShimEntries = ["css-main", "css-toolbar", "css-timeline"];
 
 export default defineConfig({
   root: here,
+  /* Relative asset URLs — the dist tree is published under a hashed path. */
+  base: "",
   build: {
     outDir: "src/assets/dist",
     emptyOutDir: true,
@@ -37,6 +39,9 @@ export default defineConfig({
           if (name.endsWith(".css")) {
             const base = name.replace(/^css-/, "").replace(/\.css$/, "");
             return `css/${base}.min.css`;
+          }
+          if (/\.(woff2?|ttf)$/.test(name)) {
+            return "fonts/[name][extname]";
           }
           return "[ext]/[name].[ext]";
         },

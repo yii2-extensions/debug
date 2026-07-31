@@ -25,15 +25,13 @@ $httpStatusText = Response::$httpStatuses[$statusCode] ?? '';
 
 $statusText = is_string($httpStatusText) ? $httpStatusText : '';
 ?>
-<?= Div::tag()
-    ->addDefaultProvider(ToolbarBlock::class)
+<?= Div::tag(ToolbarBlock::DEFINITION)
     ->html(
         A::tag()
             ->content('Status ')
             ->href($panel->getUrl())
             ->html(
-                Span::tag()
-                    ->addDefaultProvider(ToolbarLabel::class)
+                Span::tag(ToolbarLabel::DEFINITION)
                     ->class($class)
                     ->content((string) $statusCode),
             )

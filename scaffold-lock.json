@@ -1,11 +1,11 @@
 {
     "providers": {
         "php-forge/baseline": {
-            "version": "0.1.2",
+            "version": "0.1.7",
             "path": "vendor/php-forge/baseline"
         },
         "php-forge/coding-standard": {
-            "version": "0.3.2",
+            "version": "0.3.3",
             "path": "vendor/php-forge/coding-standard"
         }
     },
@@ -41,7 +41,7 @@
             "mode": "replace"
         },
         ".prettierrc.json": {
-            "hash": "sha256:4bf1ad096981736c7bd00136026e046f4b23fcefa1f8db84dcd0bacac19e97a2",
+            "hash": "sha256:a03ca958c95e39bbfd12af061402d0caab14bb4db2997e2b5279f1cd801c71e0",
             "provider": "php-forge/baseline",
             "source": "metadata/.prettierrc.json",
             "mode": "replace"

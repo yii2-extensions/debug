@@ -104,7 +104,8 @@ final class ShellDataNormalizer
     {
         $request = Yii::$app->getRequest();
 
-        $rawTheme = $request->get('yii_debug_theme', $request->getCookies()->getValue('yii-debug-toolbar-theme'));
+        /* Cookie first — the query param is a link-time snapshot and must not outrank a later client choice. */
+        $rawTheme = $request->getCookies()->getValue('yii-debug-toolbar-theme') ?? $request->get('yii_debug_theme');
 
         return is_string($rawTheme) ? strtolower($rawTheme) : '';
     }

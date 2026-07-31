@@ -56,6 +56,7 @@ $mailPanel = $panels['mail'] ?? null;
 <?= GridView::widget(
     [
         ...GridViewConfig::defaults(),
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-history'],
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'rowOptions' => static fn(mixed $model): array => HistoryRowRenderer::buildRowOptions(

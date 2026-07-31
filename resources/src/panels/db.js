@@ -84,7 +84,10 @@
     document.querySelectorAll(".yii-debug-db-explain-all a"),
     "click",
     function () {
-      var event = new MouseEvent("click", { cancelable: true, bubbles: true });
+      var event = new MouseEvent("click", {
+        cancelable: true,
+        bubbles: true,
+      });
       var toggles = document.querySelectorAll(".yii-debug-db-explain-toggle");
       var anyOpen =
         document.querySelectorAll(".yii-debug-db-explain.is-open").length > 0;

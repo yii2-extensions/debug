@@ -8,8 +8,8 @@
     "dev": "vite build --watch",
     "format": "prettier --write 'resources/src/**/*.js' 'vite.config.js' 'package.json'",
     "format:check": "prettier --check 'resources/src/**/*.js' 'vite.config.js' 'package.json'",
-    "lint:css": "stylelint --config .github/linters/.stylelintrc.json --config-basedir . 'resources/src/styles/*.css'",
-    "lint:css:fix": "stylelint --config .github/linters/.stylelintrc.json --config-basedir . --fix 'resources/src/styles/*.css'",
+    "lint:css": "stylelint --config .github/linters/.stylelintrc.json --config-basedir . 'resources/src/**/*.css'",
+    "lint:css:fix": "stylelint --config .github/linters/.stylelintrc.json --config-basedir . --fix 'resources/src/**/*.css'",
     "lint:js": "eslint --config .github/linters/eslint.config.mjs resources/src",
     "lint:js:fix": "eslint --config .github/linters/eslint.config.mjs --fix resources/src"
   },
@@ -17,6 +17,8 @@
     "node": ">=20.10"
   },
   "devDependencies": {
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "eslint": "^10.5.0",
     "prettier": "^3.8.4",
     "stylelint": "^17.14.0",

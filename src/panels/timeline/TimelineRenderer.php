@@ -33,7 +33,20 @@ use function sprintf;
 final class TimelineRenderer
 {
     /**
-     * Renders the timeline chart: ruler axis, per-span rows, and the optional memory footer.
+     * Legend label for every variant in the fixed timeline vocabulary, in display order.
+     */
+    private const array LEGEND_LABELS = [
+        'app' => 'Application',
+        'db' => 'Database',
+        'view' => 'View',
+        'cache' => 'Cache',
+        'mail' => 'Mail',
+        'queue' => 'Queue',
+        'other' => 'Other',
+    ];
+
+    /**
+     * Renders the timeline chart: ruler axis, category legend, per-span rows, and the optional memory footer.
      *
      * Returns `''` when the data provider has no spans, so the empty hint can take over without duplicate markup.
      */
@@ -44,10 +57,12 @@ final class TimelineRenderer
         }
 
         $svg = $panel->getSvg();
+        $spanRows = self::collectRows($dataProvider);
 
         $children = [
             self::renderAxis($dataProvider),
-            self::renderRows($dataProvider),
+            ...self::renderLegend($spanRows),
+            self::renderRows($spanRows),
         ];
 
         if ($svg->hasPoints()) {
@@ -176,6 +191,34 @@ final class TimelineRenderer
     }
 
     /**
+     * Narrows every captured model into a typed span row, skipping malformed entries.
+     *
+     * @return list<TimelineSpanRow> Typed rows in capture order.
+     */
+    private static function collectRows(DataProvider $dataProvider): array
+    {
+        $rows = [];
+
+        foreach ($dataProvider->models as $model) {
+            if (!is_array($model)) {
+                continue;
+            }
+
+            $stringKeyed = [];
+
+            foreach ($model as $key => $value) {
+                if (is_string($key)) {
+                    $stringKeyed[$key] = $value;
+                }
+            }
+
+            $rows[] = TimelineSpanRow::from($stringKeyed);
+        }
+
+        return $rows;
+    }
+
+    /**
      * Formats a numeric value as a percentage string with up to three decimals, dropping trailing zeros.
      */
     private static function percent(float|int|string $value): string
@@ -199,13 +242,56 @@ final class TimelineRenderer
         foreach ($dataProvider->getRulers() as $ms => $left) {
             $ticks[] = Span::tag()
                 ->class('yii-debug-tl-tick')
-                ->content(sprintf('%.1f ms', $ms))
+                ->content(sprintf('%d ms', $ms))
                 ->style(['left' => self::percent($left)]);
         }
 
         return Header::tag()
             ->class('yii-debug-tl-axis')
             ->html(...$ticks);
+    }
+
+    /**
+     * Renders the category legend with one dot+label chip per variant present in the capture.
+     *
+     * Returns `[]` when fewer than two distinct variants are present — a single-category chart needs no legend.
+     *
+     * @param list<TimelineSpanRow> $spanRows Typed rows in capture order.
+     *
+     * @return list<Div> Legend container, or empty when the legend is skipped.
+     */
+    private static function renderLegend(array $spanRows): array
+    {
+        $present = [];
+
+        foreach ($spanRows as $row) {
+            $present[$row->variant] = $row->variant;
+        }
+
+        if (count($present) < 2) {
+            return [];
+        }
+
+        $items = [];
+
+        foreach (self::LEGEND_LABELS as $variant => $label) {
+            if (isset($present[$variant]) === false) {
+                continue;
+            }
+
+            $items[] = Span::tag()
+                ->class("yii-debug-tl-legend-item yii-debug-tl-row-{$variant}")
+                ->html(
+                    Span::tag()->class('yii-debug-tl-dot')->addAttribute('aria-hidden', 'true'),
+                    Span::tag()->class('yii-debug-tl-legend-label')->content($label),
+                );
+        }
+
+        return [
+            Div::tag()
+                ->class('yii-debug-tl-legend')
+                ->html(...$items),
+        ];
     }
 
     /**
@@ -270,26 +356,16 @@ final class TimelineRenderer
     }
 
     /**
-     * Renders the span-rows container with one row per captured model.
+     * Renders the span-rows container with one row per typed span.
+     *
+     * @param list<TimelineSpanRow> $spanRows Typed rows in capture order.
      */
-    private static function renderRows(DataProvider $dataProvider): Div
+    private static function renderRows(array $spanRows): Div
     {
         $rows = [];
 
-        foreach ($dataProvider->models as $model) {
-            if (!is_array($model)) {
-                continue;
-            }
-
-            $stringKeyed = [];
-
-            foreach ($model as $key => $value) {
-                if (is_string($key)) {
-                    $stringKeyed[$key] = $value;
-                }
-            }
-
-            $rows[] = self::renderRow(TimelineSpanRow::from($stringKeyed));
+        foreach ($spanRows as $row) {
+            $rows[] = self::renderRow($row);
         }
 
         return Div::tag()

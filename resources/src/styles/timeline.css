@@ -235,29 +235,63 @@
   opacity: 1;
 }
 
-/* Variant colors — drive both the dot and the bar via `currentcolor`. */
-.yii-debug-tl-row-info {
-  color: var(--yii-debug-panel-info);
+/*
+ * Category colors — drive both the dot and the bar via `currentcolor`.
+ * Hues come from the validated `--yii-debug-cat-*` vocabulary in tokens.css.
+ */
+.yii-debug-tl-row-app {
+  color: var(--yii-debug-cat-app);
 }
 
-.yii-debug-tl-row-success {
-  color: var(--yii-debug-panel-success);
+.yii-debug-tl-row-db {
+  color: var(--yii-debug-cat-db);
 }
 
-.yii-debug-tl-row-warning {
-  color: var(--yii-debug-panel-warning);
+.yii-debug-tl-row-view {
+  color: var(--yii-debug-cat-view);
 }
 
-.yii-debug-tl-row-danger {
-  color: var(--yii-debug-panel-danger);
+.yii-debug-tl-row-cache {
+  color: var(--yii-debug-cat-cache);
 }
 
-.yii-debug-tl-row-muted {
+.yii-debug-tl-row-mail {
+  color: var(--yii-debug-cat-mail);
+}
+
+.yii-debug-tl-row-queue {
+  color: var(--yii-debug-cat-queue);
+}
+
+.yii-debug-tl-row-other {
   color: color-mix(
     in srgb,
-    var(--yii-debug-panel-muted),
+    var(--yii-debug-cat-other),
     var(--yii-debug-panel-text) 25%
   );
+}
+
+/* Category legend — one chip per variant present in the capture. */
+.yii-debug-tl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 10px 14px 2px;
+}
+
+.yii-debug-tl-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--yii-debug-fs-xs, 0.75rem);
+}
+
+.yii-debug-tl-legend-item .yii-debug-tl-dot {
+  flex: none;
+}
+
+.yii-debug-tl-legend-label {
+  color: var(--yii-debug-panel-muted);
 }
 
 /**

@@ -69,6 +69,27 @@ final class TimelineRendererTest extends TestCase
         );
     }
 
+    public function testRenderChartSkipsLegendForSingleCategoryCapture(): void
+    {
+        $panel = $this->stubPanel(100.0, 1048576);
+
+        $dataProvider = $this->makeDataProvider(
+            $panel,
+            [
+                ['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05],
+                ['category' => 'yii\\db\\Command::execute', 'timestamp' => 0.05, 'duration' => 0.03],
+            ],
+        );
+
+        $html = TimelineRenderer::renderChart($panel, $dataProvider);
+
+        self::assertStringNotContainsString(
+            'yii-debug-tl-legend',
+            $html,
+            'Single-category chart needs no legend.',
+        );
+    }
+
     public function testRenderChartWiresAxisTicksAndSpanRows(): void
     {
         $panel = $this->stubPanel(100.0, 1048576);
@@ -89,19 +110,49 @@ final class TimelineRendererTest extends TestCase
             'Chart must surface the ruler axis header.',
         );
         self::assertStringContainsString(
+            '0 ms',
+            $html,
+            'Axis must surface the origin tick label.',
+        );
+        self::assertStringContainsString(
+            "style='left: 0%;'",
+            $html,
+            'Ticks must be positioned via inline left offsets.',
+        );
+        self::assertStringContainsString(
             'class="yii-debug-tl-rows"',
             $html,
             'Chart must surface the rows container.',
         );
         self::assertStringContainsString(
-            'yii-debug-tl-row-info',
+            '--depth:',
             $html,
-            'DB span must carry the info variant.',
+            'Row labels must carry the depth custom property.',
         );
         self::assertStringContainsString(
-            'yii-debug-tl-row-warning',
+            "%; width: 50%;'",
             $html,
-            'View span must carry the warning variant.',
+            'Bars must carry exact percentage left/width styles.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-tl-row-db',
+            $html,
+            'DB span must carry the `db` variant.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-tl-row-view',
+            $html,
+            'View span must carry the `view` variant.',
+        );
+        self::assertStringContainsString(
+            'class="yii-debug-tl-legend"',
+            $html,
+            'Multi-category chart must surface the legend.',
+        );
+        self::assertStringContainsString(
+            'Database',
+            $html,
+            'Legend must name the `db` category.',
         );
     }
 

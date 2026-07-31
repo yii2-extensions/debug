@@ -61,7 +61,11 @@ class DefaultController extends Controller
 
         $filePath = Yii::getAlias($mailPanel->mailPath) . '/' . basename($file);
 
-        if ((mb_strpos($file, '\\') !== false || mb_strpos($file, '/') !== false) || !is_file($filePath)) {
+        if (
+            (mb_strpos($file, '\\') !== false
+            || mb_strpos($file, '/') !== false)
+            || !is_file($filePath)
+        ) {
             throw new NotFoundHttpException(
                 'Mail file not found',
             );
@@ -433,18 +437,23 @@ class DefaultController extends Controller
     {
         $request = Yii::$app->getRequest();
 
-        $raw = $request->get('yii_debug_theme');
+        /*
+         * The cookie is the client's LAST theme choice, while the query param is a snapshot frozen into links at render
+         * time; so the cookie must win, otherwise a stale `?yii_debug_theme=` link reverts a fresh pick. The param
+         * remains the entry path for deep links opened with no client state yet.
+         */
+        $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
+
+        if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
+            $candidate = $_COOKIE['yii-debug-toolbar-theme'];
+
+            if (is_string($candidate)) {
+                $raw = $candidate;
+            }
+        }
 
         if ($raw === null) {
-            $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
-
-            if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
-                $candidate = $_COOKIE['yii-debug-toolbar-theme'];
-
-                if (is_string($candidate)) {
-                    $raw = $candidate;
-                }
-            }
+            $raw = $request->get('yii_debug_theme');
         }
 
         $theme = is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';

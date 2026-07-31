@@ -13,15 +13,13 @@ $data = is_array($panel->data) ? $panel->data : [];
 $action = is_string($data['action'] ?? null) ? $data['action'] : '';
 $route = is_string($data['route'] ?? null) ? $data['route'] : '';
 ?>
-<?= Div::tag()
-    ->addDefaultProvider(ToolbarBlock::class)
+<?= Div::tag(ToolbarBlock::DEFINITION)
     ->html(
         A::tag()
             ->content('Route ')
             ->href($panel->getUrl())
             ->html(
-                Span::tag()
-                    ->addDefaultProvider(ToolbarLabel::class)
+                Span::tag(ToolbarLabel::DEFINITION)
                     ->content($route),
             )
             ->title("Action: {$action}"),

@@ -139,19 +139,20 @@
 
   function applyTheme() {
     // Priority is "what the client most recently chose, regardless of stack":
-    //   1. Explicit `?yii_debug_theme=` query (panel deep-links).
-    //   2. Cookie (last write — survives reloads + backend staleness).
+    //   1. Parent toolbar theme (drawer iframe) — the live authority NOW.
+    //   2. Cookie (last client write — survives reloads + backend staleness).
     //   3. localStorage fallback (cookie may be blocked in some sandboxes).
-    //   4. Parent toolbar theme (when this page is in the drawer iframe).
-    //   5. Server-rendered `data-yii-debug-theme` attribute (host's theme,
-    //      already settled by the time we run, but trumped by client-set
-    //      values above so a stale backend can't override our pick).
+    //   4. Explicit `?yii_debug_theme=` query — deep links with no client
+    //      state yet. The query is a snapshot frozen at link-render time,
+    //      so it must NEVER outrank a later client choice: that is exactly
+    //      how a stale `dark` link used to revert a fresh `light` pick.
+    //   5. Server-rendered `data-yii-debug-theme` attribute.
     //   6. `prefers-color-scheme` media query as the very last resort.
     var theme =
-      getUrlTheme() ||
+      getParentToolbarTheme() ||
       getCookieTheme() ||
       getStoredTheme() ||
-      getParentToolbarTheme() ||
+      getUrlTheme() ||
       normalizeTheme(
         document.documentElement.getAttribute("data-yii-debug-theme"),
       ) ||

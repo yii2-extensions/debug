@@ -4,30 +4,19 @@ declare(strict_types=1);
 
 namespace yii\debug\html\defaults;
 
-use UIAwesome\Html\Core\Base\BaseTag;
-use UIAwesome\Html\Core\Provider\DefaultsProviderInterface;
-
 /**
  * Supplies the shared `yii-debug-brand-chip` base class for brand-bar chips.
  *
  * Usage example:
  * ```php
- * \UIAwesome\Html\Palpable\A::tag()
- *     ->addDefaultProvider(\yii\debug\html\defaults\BrandChip::class)
+ * \UIAwesome\Html\Palpable\A::tag(\yii\debug\html\defaults\BrandChip::DEFINITION)
  *     ->class('yii-debug-brand-chip-config');
  * ```
  */
-final class BrandChip implements DefaultsProviderInterface
+final class BrandChip
 {
     /**
-     * Returns the base-class definition merged into the chip tag at render time.
-     *
-     * @param BaseTag $tag Tag the provider is decorating.
-     *
-     * @return array<string, mixed> Method-call definitions applied to the tag.
+     * Base-class definition applied as `tag()` defaults when building brand-bar chips.
      */
-    public function getDefaults(BaseTag $tag): array
-    {
-        return ['class' => 'yii-debug-brand-chip'];
-    }
+    public const array DEFINITION = ['class' => 'yii-debug-brand-chip'];
 }

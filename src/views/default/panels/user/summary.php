@@ -18,14 +18,12 @@ $data = is_array($panel->data) ? $panel->data : [];
 $id = $data['id'] ?? null;
 ?>
 <?php if ($id === null): ?>
-    <?= Div::tag()
-        ->addDefaultProvider(ToolbarBlock::class)
+    <?= Div::tag(ToolbarBlock::DEFINITION)
         ->html(
             A::tag()
                 ->href($panel->getUrl())
                 ->html(
-                    Span::tag()
-                        ->addDefaultProvider(ToolbarLabel::class)
+                    Span::tag(ToolbarLabel::DEFINITION)
                         ->content('Guest'),
                 ),
         ) ?>
@@ -44,8 +42,7 @@ $anchor = A::tag()
     ->content($panel->getName() . ($isGuest || $isMainUser ? ' ' : ' switching '))
     ->href($panel->getUrl())
     ->html(
-        Span::tag()
-            ->addDefaultProvider(ToolbarLabel::class)
+        Span::tag(ToolbarLabel::DEFINITION)
             ->class($isGuest || $isMainUser ? 'yii-debug-toolbar-label-info' : 'yii-debug-toolbar-label-warning')
             ->content($idLabel),
     );
@@ -58,6 +55,5 @@ if ($panel->canSwitchUser()) {
     );
 }
 ?>
-<?= Div::tag()
-    ->addDefaultProvider(ToolbarBlock::class)
+<?= Div::tag(ToolbarBlock::DEFINITION)
     ->html($anchor);

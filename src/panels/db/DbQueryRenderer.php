@@ -49,7 +49,7 @@ final class DbQueryRenderer
         bool $hasExplain,
         callable $explainUrlBuilder,
     ): string {
-        $children = [Div::tag()->class('yii-debug-db-sql')->content($row->query)];
+        $children = [Div::tag()->class('yii-debug-db-sql')->html(SqlHighlighter::highlight($row->query))];
 
         if ($row->trace !== []) {
             $items = array_map(

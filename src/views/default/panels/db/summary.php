@@ -35,8 +35,7 @@ if ($queryCount > 0) {
         ->href($panel->getUrl())
         ->html(
             $panel->getSummaryName() . ' ',
-            Span::tag()
-                ->addDefaultProvider(ToolbarLabel::class)
+            Span::tag(ToolbarLabel::DEFINITION)
                 ->class('yii-debug-toolbar-label-info')
                 ->content((string) $queryCount),
         )
@@ -49,13 +48,11 @@ if ($queryCount > 0) {
     }
 
     $anchor = $anchor->html(
-        Span::tag()
-            ->addDefaultProvider(ToolbarLabel::class)
+        Span::tag(ToolbarLabel::DEFINITION)
             ->content((string) $queryTime),
     );
 
-    $block = Div::tag()
-        ->addDefaultProvider(ToolbarBlock::class)
+    $block = Div::tag(ToolbarBlock::DEFINITION)
         ->html($anchor)
         ->render();
 }

@@ -37,8 +37,7 @@ $anchors = [
         ->title(implode(",\u{00A0}", $titles))
         ->content('Log ')
         ->html(
-            Span::tag()
-                ->addDefaultProvider(ToolbarLabel::class)
+            Span::tag(ToolbarLabel::DEFINITION)
                 ->content((string) count($messages)),
         ),
 ];
@@ -47,8 +46,7 @@ if ($errorCount > 0) {
     $anchors[] = A::tag()
         ->href($panel->getUrl(['Log[level]' => Logger::LEVEL_ERROR]))
         ->html(
-            Span::tag()
-                ->addDefaultProvider(ToolbarLabel::class)
+            Span::tag(ToolbarLabel::DEFINITION)
                 ->class('yii-debug-toolbar-label-important')
                 ->content((string) $errorCount),
         )
@@ -59,14 +57,12 @@ if ($warningCount > 0) {
     $anchors[] = A::tag()
         ->href($panel->getUrl(['Log[level]' => Logger::LEVEL_WARNING]))
         ->html(
-            Span::tag()
-                ->addDefaultProvider(ToolbarLabel::class)
+            Span::tag(ToolbarLabel::DEFINITION)
                 ->class('yii-debug-toolbar-label-warning')
                 ->content((string) $warningCount),
         )
         ->title($warningsTitle);
 }
 ?>
-<?= Div::tag()
-    ->addDefaultProvider(ToolbarBlock::class)
+<?= Div::tag(ToolbarBlock::DEFINITION)
     ->html(...$anchors);
