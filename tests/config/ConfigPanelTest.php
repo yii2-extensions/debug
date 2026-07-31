@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\config;
 
 use PHPUnit\Framework\Attributes\Group;
+use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\support\TestCase;
@@ -174,6 +175,19 @@ final class ConfigPanelTest extends TestCase
             'PHP',
             $html,
             "Captured output must mention 'PHP' (SAPI-agnostic anchor).",
+        );
+    }
+
+    public function testGetPhpInfoReturnsEmptyStringWhenOutputBufferCaptureFails(): void
+    {
+        MockerState::addCondition('yii\debug\panels', 'ob_start', [], true);
+        MockerState::addCondition('yii\debug\panels', 'phpinfo', [], true);
+        MockerState::addCondition('yii\debug\panels', 'ob_get_clean', [], false);
+
+        self::assertSame(
+            '',
+            (new ConfigPanel())->getPhpInfo(),
+            'Failed buffer capture must yield an empty string.',
         );
     }
 
