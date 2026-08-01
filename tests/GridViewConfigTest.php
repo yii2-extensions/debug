@@ -76,6 +76,7 @@ final class GridViewConfigTest extends TestCase
             "'tableOptions' must declare the 'yii-debug-table' class so the scoped Pico-style table styling applies.",
         );
     }
+
     public function testDefaultsUseAccessibleDataColumn(): void
     {
         self::assertSame(
