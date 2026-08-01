@@ -185,7 +185,7 @@ final class QueueSummaryNormalizerTest extends TestCase
             ],
         );
 
-        $classes = array_map(static fn(JobRecord $r): string => $r->jobClass, $summary->records);
+        $classes = array_map(static fn(JobRecord $record): string => $record->jobClass, $summary->records);
 
         self::assertSame(
             ['First', 'Second', 'Third'],
