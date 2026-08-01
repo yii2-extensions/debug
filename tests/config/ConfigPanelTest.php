@@ -246,11 +246,12 @@ final class ConfigPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsAlwaysReturnsNull(): void
+    public function testGetToolbarItemsAlwaysReturnsEmptyArray(): void
     {
         $panel = new ConfigPanel();
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke(
                 $panel,
                 'getToolbarItems',

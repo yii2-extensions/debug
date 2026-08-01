@@ -483,11 +483,12 @@ final class QueuePanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsReturnsNullWhenNoComponentAndNoRecords(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenNoComponentAndNoRecords(): void
     {
         $panel = $this->makePanel(QueuePanel::class);
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke(
                 $panel,
                 'getToolbarItems',

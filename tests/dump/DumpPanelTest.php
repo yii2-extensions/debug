@@ -20,6 +20,26 @@ use function is_string;
 #[Group('dump')]
 final class DumpPanelTest extends TestCase
 {
+    public function testGetDetailRendersEmptyStateWhenNoDumpsCaptured(): void
+    {
+        $panel = $this->makePanel(DumpPanel::class);
+
+        $panel->data = [];
+
+        $detail = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'yii-debug-empty-state',
+            $detail,
+            'Empty capture must render the empty-state card.',
+        );
+        self::assertStringContainsString(
+            'No variables dumped in this request',
+            $detail,
+            'Empty-state heading must explain the missing dumps.',
+        );
+    }
+
     public function testGetDetailRendersWithCapturedMessages(): void
     {
         $panel = $this->makePanel(DumpPanel::class);
@@ -28,9 +48,16 @@ final class DumpPanelTest extends TestCase
             ['<pre>42</pre>', Logger::LEVEL_TRACE, 'application', 0.001, []],
         ];
 
+        $detail = $panel->getDetail();
+
         self::assertNotEmpty(
-            $panel->getDetail(),
+            $detail,
             'Detail view must produce markup.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-grid-dump',
+            $detail,
+            'Grid must carry the dump variant class.',
         );
     }
 
@@ -239,11 +266,12 @@ final class DumpPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsReturnsNullWhenDataIsEmpty(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenDataIsEmpty(): void
     {
         $panel = $this->makePanel(DumpPanel::class);
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke(
                 $panel,
                 'getToolbarItems',
@@ -252,7 +280,7 @@ final class DumpPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsReturnsNullWhenDataIsNotArray(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenDataIsNotArray(): void
     {
         $panel = $this->makePanel(DumpPanel::class);
 
@@ -262,7 +290,8 @@ final class DumpPanelTest extends TestCase
             'corrupt',
         );
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke(
                 $panel,
                 'getToolbarItems',

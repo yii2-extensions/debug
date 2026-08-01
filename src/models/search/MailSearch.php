@@ -6,6 +6,7 @@ namespace yii\debug\models\search;
 
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
+use yii\debug\GridViewConfig;
 
 /**
  * Backs the filter form above the Mail panel grid of messages dispatched during the request.
@@ -84,7 +85,7 @@ class MailSearch extends Base
         $dataProvider = new ArrayDataProvider(
             [
                 'allModels' => $models,
-                'pagination' => ['pageSize' => 20],
+                'pagination' => GridViewConfig::paginationFromRequest(20),
                 'sort' => [
                     'attributes' => [
                         'from',

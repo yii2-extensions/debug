@@ -248,11 +248,11 @@ class ConfigPanel extends Panel
      * Suppresses the per-panel toolbar item: the configuration data is already surfaced through the Yii brand chip
      * (links to this panel) and the dedicated PHP chip (links to `php-info`).
      *
-     * @return array<int, array<string, mixed>>|null Always `null`.
+     * @return array<int, array<string, mixed>> Always `[]`.
      */
-    protected function getToolbarItems(): array|null
+    protected function getToolbarItems(): array
     {
-        return null;
+        return [];
     }
 
     /**

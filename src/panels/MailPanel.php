@@ -158,10 +158,10 @@ class MailPanel extends Panel
      * captured request and surfaces a `cross-request` chip pointing at its panel when it carries mail (handles the
      * Post-Redirect-Get flow where the mail was sent by the request before the redirect).
      *
-     * @return array<int, array<string, mixed>>|null Toolbar items, or `null` when neither the current nor the previous
+     * @return array<int, array<string, mixed>> Toolbar items, or `[]` when neither the current nor the previous
      * request captured any mail.
      */
-    protected function getToolbarItems(): array|null
+    protected function getToolbarItems(): array
     {
         if (!is_array($this->data)) {
             return [
@@ -181,7 +181,7 @@ class MailPanel extends Panel
         $previous = $this->findPreviousRequestWithMail();
 
         if ($previous === null) {
-            return null;
+            return [];
         }
 
         return [

@@ -215,15 +215,16 @@ final class AssetPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsReturnsNullWhenNoBundles(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenNoBundles(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
 
         $panel->data = [];
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke($panel, 'getToolbarItems'),
-            "Empty bundle list must collapse the toolbar chip to 'null'.",
+            'Empty bundle list must yield no toolbar chip.',
         );
     }
 

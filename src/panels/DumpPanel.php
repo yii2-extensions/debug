@@ -177,16 +177,16 @@ class DumpPanel extends Panel
     }
 
     /**
-     * Returns the toolbar item showing the number of dumped variables, or `null` when none were captured.
+     * Returns the toolbar item showing the number of dumped variables, or `[]` when none were captured.
      *
-     * @return array<int, array<string, mixed>>|null Single-element list with the `info` chip, or `null`.
+     * @return array<int, array<string, mixed>> Single-element list with the `info` chip, or `[]`.
      */
-    protected function getToolbarItems(): array|null
+    protected function getToolbarItems(): array
     {
         $messages = is_array($this->data) ? $this->data : [];
 
         if ($messages === []) {
-            return null;
+            return [];
         }
 
         return [

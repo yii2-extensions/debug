@@ -11,13 +11,40 @@ use yii\debug\panels\mail\MailMessageNormalizer;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see MailMessageNormalizer} covering payload narrowing, address splitting, time parsing and the
- * scalar-to-string coercion of header/body fields.
+ * Unit tests for {@see MailMessageNormalizer} covering payload narrowing, address splitting, time parsing, the
+ * scalar-to-string coercion of header/body fields, and the failed-send aggregate.
  */
 #[Group('panel')]
 #[Group('mail')]
 final class MailMessageNormalizerTest extends TestCase
 {
+    public function testFailedCountCountsUnsuccessfulMessages(): void
+    {
+        $count = MailMessageNormalizer::failedCount(
+            [
+                ['isSuccessful' => true],
+                ['isSuccessful' => false],
+                ['no-flag' => 'missing counts as failed'],
+                'not-an-array',
+            ],
+        );
+
+        self::assertSame(
+            3,
+            $count,
+            'Only strictly-`true` flags must count as sent.',
+        );
+    }
+
+    public function testFailedCountReturnsZeroForEmptyList(): void
+    {
+        self::assertSame(
+            0,
+            MailMessageNormalizer::failedCount([]),
+            'Empty list must yield zero.',
+        );
+    }
+
     public function testFromCoercesScalarHeaderFieldsToStrings(): void
     {
         $message = MailMessageNormalizer::from(

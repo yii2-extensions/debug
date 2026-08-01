@@ -26,6 +26,26 @@ use function strtotime;
 final class MailMessageNormalizer
 {
     /**
+     * Counts the messages whose capture reports a failed send.
+     *
+     * @param array<array-key, mixed> $models Raw models supplied by the data provider.
+     *
+     * @return int Number of messages normalized with `isSuccessful` `false`.
+     */
+    public static function failedCount(array $models): int
+    {
+        $failed = 0;
+
+        foreach ($models as $model) {
+            if (self::from($model)->isSuccessful === false) {
+                $failed++;
+            }
+        }
+
+        return $failed;
+    }
+
+    /**
      * Builds a {@see MailMessage} from an arbitrary value, falling back to defensible defaults for any field that is
      * missing or has the wrong type.
      *

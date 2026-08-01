@@ -561,11 +561,12 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsReturnsNullWhenNoQueriesCaptured(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenNoQueriesCaptured(): void
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke(
                 $panel,
                 'getToolbarItems',

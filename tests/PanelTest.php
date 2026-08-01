@@ -140,20 +140,6 @@ final class PanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarDataReturnsEmptyArrayWhenItemsAreNull(): void
-    {
-        $panel = $this->makeCustomPanel('silent');
-
-        $panel->stubName = 'Silent';
-        $panel->stubItems = null;
-
-        self::assertSame(
-            [],
-            $panel->getToolbarData(),
-            "Returning 'null' from 'getToolbarItems' hides the chip entirely.",
-        );
-    }
-
     public function testGetToolbarDataWrapsStructuredItems(): void
     {
         $panel = $this->makeCustomPanel('custom');

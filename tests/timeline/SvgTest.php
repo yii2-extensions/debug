@@ -19,8 +19,9 @@ use function count;
 
 /**
  * Unit tests for {@see Svg} covering the constructor branches (module-less / source-panel-less / invalid-messages),
- * `__toString` empty short-circuit, the points appended from valid log messages, the panel-clear `RuntimeException`,
- * and the early returns from `addPoints` when the panel memory or duration is non-positive.
+ * `__toString` empty short-circuit, the `currentColor` stroke and gradient-stop defaults, the points appended from
+ * valid log messages, the panel-clear `RuntimeException`, and the early returns from `addPoints` when the panel memory
+ * or duration is non-positive.
  */
 #[Group('timeline')]
 final class SvgTest extends TestCase
@@ -258,6 +259,32 @@ final class SvgTest extends TestCase
         $this->invoke($svg, 'addPoints', [[]]);
     }
 
+    public function testToStringEmitsCurrentColorOpacityStopsByDefault(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $svg = new Svg($panel);
+
+        $this->setInaccessibleProperty(
+            $svg,
+            'points',
+            [[0.0, 30.0], [100.0, 20.0]],
+        );
+
+        $markup = (string) $svg;
+
+        self::assertStringContainsString(
+            'stop-color="currentColor"',
+            $markup,
+            'Stops must paint with the inherited color.',
+        );
+        self::assertStringContainsString(
+            'stop-opacity=',
+            $markup,
+            'Stops must fade via `stop-opacity`.',
+        );
+    }
+
     public function testToStringEmitsPolygonAndPolylineWhenPointsExist(): void
     {
         $panel = $this->makeTimelinePanel();
@@ -294,6 +321,34 @@ final class SvgTest extends TestCase
         );
     }
 
+    public function testToStringKeepsHexStopColorWhenGradientValueIsString(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $svg = new Svg($panel);
+
+        $svg->gradient = [50 => '#ff0000'];
+
+        $this->setInaccessibleProperty(
+            $svg,
+            'points',
+            [[0.0, 30.0], [100.0, 20.0]],
+        );
+
+        $markup = (string) $svg;
+
+        self::assertStringContainsString(
+            'stop-color="#ff0000"',
+            $markup,
+            'Configured hex stop must be emitted verbatim.',
+        );
+        self::assertStringNotContainsString(
+            'stop-opacity',
+            $markup,
+            'Hex stops must not emit an opacity.',
+        );
+    }
+
     public function testToStringReturnsEmptyWhenNoPointsPlotted(): void
     {
         $panel = $this->makeTimelinePanel();
@@ -304,6 +359,51 @@ final class SvgTest extends TestCase
             '',
             (string) $svg,
             'Empty point list must collapse the SVG to an empty string.',
+        );
+    }
+
+    public function testToStringScopesGradientIdToMemoryChart(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $svg = new Svg($panel);
+
+        $this->setInaccessibleProperty(
+            $svg,
+            'points',
+            [[0.0, 30.0], [100.0, 20.0]],
+        );
+
+        $markup = (string) $svg;
+
+        self::assertStringContainsString(
+            'id="yii-debug-tl-memory-gradient"',
+            $markup,
+            'Gradient id must be namespaced.',
+        );
+        self::assertStringContainsString(
+            'url(#yii-debug-tl-memory-gradient)',
+            $markup,
+            'Polygon fill must reference the namespaced gradient.',
+        );
+    }
+
+    public function testToStringStrokesPolylineWithCurrentColorByDefault(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $svg = new Svg($panel);
+
+        $this->setInaccessibleProperty(
+            $svg,
+            'points',
+            [[0.0, 30.0], [100.0, 20.0]],
+        );
+
+        self::assertStringContainsString(
+            'stroke="currentColor"',
+            (string) $svg,
+            'Trace must inherit the CSS color.',
         );
     }
 

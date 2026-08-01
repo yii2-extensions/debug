@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Heading\H1;
-use UIAwesome\Html\Phrasing\{Span, Strong};
+use UIAwesome\Html\Flow\{Div, P, Pre};
+use UIAwesome\Html\Heading\{H1, H2};
+use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
@@ -18,29 +19,69 @@ use yii\grid\GridView;
  * @var DumpPanel $panel Panel providing the detail content.
  * @var LogSearch $searchModel Search model for filtering the dump grid.
  */
+$hasDumps = is_array($panel->data) && $panel->data !== [];
+
+$summaryItems = [
+    Span::tag()
+        ->html(
+            Strong::tag()->content((string) $dataProvider->getTotalCount()),
+            ' dumps captured',
+        ),
+];
+
+if ($hasDumps) {
+    $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
+}
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
     ->content('Dump') ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
-    ->html(
-        Span::tag()
-            ->html(
-                Strong::tag()->content((string) $dataProvider->getTotalCount()),
-                ' dumps captured',
-            ),
-        GridViewConfig::pageSizeSelectorHtml(),
-    ) ?>
+    ->html(...$summaryItems) ?>
+<?php if (!$hasDumps): ?>
+    <?= Div::tag()
+        ->class('yii-debug-empty-state')
+        ->html(
+            H2::tag()
+                ->content('No variables dumped in this request'),
+            P::tag()
+                ->html(
+                    'The dump panel collects the trace-level messages logged through ',
+                    Code::tag()->content('Yii::debug()'),
+                    ', so nothing was captured here.',
+                ),
+            P::tag()
+                ->content('To populate this view, dump values anywhere in the request cycle:'),
+            Pre::tag()
+                ->class('yii-debug-empty-state-code')
+                ->content("Yii::debug(\$user->attributes);\nYii::debug(\$query->createCommand()->getRawSql());"),
+            P::tag()
+                ->html(
+                    'Only messages in the configured categories are captured (the ',
+                    Code::tag()->content('application'),
+                    ' category by default — the ',
+                    Code::tag()->content('categories'),
+                    ' panel option widens the net).',
+                ),
+        ) ?>
+    <?php return; ?>
+<?php endif; ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
         [
             ...GridViewConfig::defaults(),
             'dataProvider' => $dataProvider,
             'id' => 'dump-panel-detailed-grid',
+            'options' => ['class' => 'yii-debug-grid yii-debug-grid-dump'],
             'filterModel' => $searchModel,
+            'filterUrl' => $panel->getUrl(),
             'columns' => [
-                'category',
+                [
+                    'attribute' => 'category',
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-muted yii-debug-nowrap'],
+                    'options' => ['width' => '20%'],
+                ],
                 [
                     'attribute' => 'message',
                     'value' => static fn(mixed $data, mixed $key, int $index): string => DumpCardRenderer::renderMessageCell(

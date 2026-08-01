@@ -109,7 +109,7 @@ class Panel extends Component implements ViewContextInterface
             ];
         }
 
-        $items = $this->getToolbarItems() ?? [];
+        $items = $this->getToolbarItems();
 
         if ($items === []) {
             return [];
@@ -382,11 +382,11 @@ class Panel extends Component implements ViewContextInterface
      *
      * Return value semantics:
      * - a non-empty list of item descriptors: rendered as structured metrics on the toolbar,
-     * - `[]` (the default) or `null`: the panel renders no toolbar chip.
+     * - `[]` (the default): the panel renders no toolbar chip.
      *
-     * @return array<int, array<string, mixed>>|null Structured items, or `[]`/`null` to skip the panel.
+     * @return array<int, array<string, mixed>> Structured items; `[]` to skip the panel.
      */
-    protected function getToolbarItems(): array|null
+    protected function getToolbarItems(): array
     {
         return [];
     }
