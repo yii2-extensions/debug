@@ -4423,6 +4423,16 @@
   }
 
   /**
+   * Event FQCNs already wrap mid-word through the inherited
+   * `overflow-wrap: anywhere`; releasing the GridView minimum width lets
+   * narrow viewports shrink the grid so long class names wrap in place
+   * instead of pushing the whole table sideways.
+   */
+  .yii-debug-grid-event .yii-debug-table {
+    min-width: 0;
+  }
+
+  /**
    * Numeric counters (Query / Mail) only ever hold a single number, so
    * they get a tight, center-aligned column to reclaim horizontal space
    * for the URL/method/status columns that actually need width.
