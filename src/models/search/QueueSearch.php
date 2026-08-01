@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 
@@ -36,6 +37,7 @@ class QueueSearch extends Base
      */
     public string $jobId = '';
 
+    #[Override]
     public function attributeLabels(): array
     {
         return [
@@ -47,6 +49,7 @@ class QueueSearch extends Base
         ];
     }
 
+    #[Override]
     public function rules(): array
     {
         return [

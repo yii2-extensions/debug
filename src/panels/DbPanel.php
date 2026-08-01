@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
+use PDO;
 use Yii;
 use yii\base\{Event, InvalidConfigException};
 use yii\data\Sort;
@@ -260,6 +262,7 @@ class DbPanel extends Panel
      *
      * @throws InvalidConfigException When the DB connection cannot be resolved.
      */
+    #[Override]
     public function getDetail(): string
     {
         $searchModel = new DbSearch();
@@ -320,6 +323,7 @@ class DbPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Database';
@@ -384,7 +388,7 @@ class DbPanel extends Panel
         }
 
         $apply = static function (Connection $conn): void {
-            $conn->pdo?->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [DebugPdoStatement::class, []]);
+            $conn->pdo?->setAttribute(PDO::ATTR_STATEMENT_CLASS, [DebugPdoStatement::class, []]);
         };
 
         if ($db->pdo !== null) {
@@ -404,11 +408,12 @@ class DbPanel extends Panel
     /**
      * Returns whether the panel can run: requires both a resolvable DB connection and the parent enable check.
      */
+    #[Override]
     public function isEnabled(): bool
     {
         try {
             $this->getDb();
-        } catch (InvalidConfigException $exception) {
+        } catch (InvalidConfigException) {
             return false;
         }
 
@@ -560,6 +565,7 @@ class DbPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no queries were captured.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $timings = $this->calculateTimings();
@@ -634,7 +640,7 @@ class DbPanel extends Panel
     {
         try {
             $db = $this->getDb();
-        } catch (InvalidConfigException $e) {
+        } catch (InvalidConfigException) {
             return false;
         }
 

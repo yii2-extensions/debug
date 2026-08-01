@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\timeline;
 
-use RuntimeException;
+use Stringable;
 use UIAwesome\Html\Svg\{Defs, G, LinearGradient, Polygon, Polyline, Stop, Svg as SvgBuilder};
 use yii\base\BaseObject;
 use yii\debug\panels\TimelinePanel;
@@ -21,7 +21,7 @@ use function is_string;
  * fill default to `currentColor`, so the surrounding CSS drives the chart color through per-stop opacities. The graph
  * is stringified through {@see __toString()} so the view can embed it inline.
  */
-class Svg extends BaseObject
+class Svg extends BaseObject implements Stringable
 {
     /**
      * Gradient stops keyed by percentage threshold of total memory.
@@ -58,8 +58,6 @@ class Svg extends BaseObject
      */
     public int $y = 40;
 
-    protected TimelinePanel|null $panel = null;
-
     /**
      * Plotted points, each entry an `[x, y]` coordinate pair.
      *
@@ -71,11 +69,9 @@ class Svg extends BaseObject
      * @param TimelinePanel $panel Panel providing total memory, request start, and total duration.
      * @param array<string, mixed> $config Standard {@see BaseObject} configuration.
      */
-    public function __construct(TimelinePanel $panel, array $config = [])
+    public function __construct(protected TimelinePanel $panel, array $config = [])
     {
         parent::__construct($config);
-
-        $this->panel = $panel;
 
         $module = $panel->module;
 
@@ -150,7 +146,7 @@ class Svg extends BaseObject
     protected function addPoints(array $messages): int
     {
         $hasPoints = $this->hasPoints();
-        $panelMemory = $this->panel()->getMemory();
+        $panelMemory = $this->panel->getMemory();
 
         if ($panelMemory <= 0 || $this->x <= 0) {
             return 0;
@@ -158,7 +154,7 @@ class Svg extends BaseObject
 
         $memory = $panelMemory / 100;
         $yOne = $this->y / 100;
-        $xOne = $this->panel()->getDuration() / $this->x;
+        $xOne = $this->panel->getDuration() / $this->x;
 
         if ($xOne <= 0) {
             return 0;
@@ -179,7 +175,7 @@ class Svg extends BaseObject
             ++$i;
 
             $this->points[] = [
-                ((float) $message[3] * 1000 - $this->panel()->getStart()) / $xOne,
+                ((float) $message[3] * 1000 - $this->panel->getStart()) / $xOne,
                 $this->y - ((float) $message[5] / $memory * $yOne),
             ];
         }
@@ -216,20 +212,6 @@ class Svg extends BaseObject
             ->y1(1)
             ->y2(0)
             ->html(...$stops);
-    }
-
-    /**
-     * Returns the bound {@see TimelinePanel}, asserting that the constructor wired it.
-     *
-     * @throws RuntimeException When the panel was somehow cleared after construction.
-     */
-    private function panel(): TimelinePanel
-    {
-        if ($this->panel === null) {
-            throw new RuntimeException('TimelinePanel has not been set on the SVG renderer.');
-        }
-
-        return $this->panel;
     }
 
     /**

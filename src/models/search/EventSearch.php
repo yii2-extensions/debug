@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
@@ -30,6 +31,7 @@ class EventSearch extends Base
      */
     public string $senderClass = '';
 
+    #[Override]
     public function attributeLabels(): array
     {
         return [
@@ -40,6 +42,7 @@ class EventSearch extends Base
         ];
     }
 
+    #[Override]
     public function rules(): array
     {
         return [

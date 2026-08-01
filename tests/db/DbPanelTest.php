@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\db;
 
+use PDO;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
+use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\db\Connection;
 use yii\debug\db\DebugPdoStatement;
@@ -700,7 +702,7 @@ final class DbPanelTest extends TestCase
         );
         self::assertSame(
             [DebugPdoStatement::class, []],
-            $db->pdo->getAttribute(\PDO::ATTR_STATEMENT_CLASS),
+            $db->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
             'PDO statement class must be set on connection opening after init.',
         );
 
@@ -725,7 +727,7 @@ final class DbPanelTest extends TestCase
         );
         self::assertSame(
             [DebugPdoStatement::class, []],
-            $db->pdo->getAttribute(\PDO::ATTR_STATEMENT_CLASS),
+            $db->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
             'PDO statement class must be set on a pre-opened connection.',
         );
 
@@ -987,7 +989,7 @@ final class DbPanelTest extends TestCase
     {
         $this->mockWebApplication(
             [
-                'components' => ['db' => ['class' => \yii\base\Component::class]],
+                'components' => ['db' => ['class' => Component::class]],
             ],
         );
 

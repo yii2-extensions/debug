@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use Override;
 use Yii;
 use yii\base\{Exception, InvalidConfigException};
 use yii\debug\helpers\Coerce;
@@ -51,10 +52,6 @@ use function unserialize;
 class LogTarget extends Target
 {
     /**
-     * Debug module owning this target.
-     */
-    public Module $module;
-    /**
      * Unique tag identifying the current request, generated in {@see __construct()}.
      */
     public string $tag = '';
@@ -65,11 +62,9 @@ class LogTarget extends Target
      * @param Module $module Debug module owning this target.
      * @param array<string, mixed> $config Target configuration forwarded to {@see Target::__construct()}.
      */
-    public function __construct(Module $module, array $config = [])
+    public function __construct(public Module $module, array $config = [])
     {
         parent::__construct($config);
-
-        $this->module = $module;
         $this->tag = uniqid();
     }
 
@@ -79,6 +74,7 @@ class LogTarget extends Target
      * @param array<array-key, mixed> $messages Log messages captured during the request.
      * @param bool $final `true` when this is the final flush at request end; triggers {@see export()}.
      */
+    #[Override]
     public function collect($messages, $final): void
     {
         $this->messages = [...$this->messages, ...$messages];
@@ -258,7 +254,7 @@ class LogTarget extends Target
             'url' => $request->getAbsoluteUrl(),
             'ajax' => (int) $request->getIsAjax(),
             'method' => $request->getMethod(),
-            'ip' => $userIP === null ? '' : $userIP,
+            'ip' => $userIP ?? '',
             'time' => $requestTime,
             'statusCode' => $response->statusCode,
             'sqlCount' => $this->getSqlTotalCount(),

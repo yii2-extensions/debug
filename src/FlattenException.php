@@ -6,9 +6,9 @@ namespace yii\debug;
 
 use __PHP_Incomplete_Class;
 use Exception;
+use Stringable;
 use yii\debug\helpers\Fqcn;
 
-use function get_class;
 use function get_object_vars;
 use function get_resource_type;
 use function is_array;
@@ -31,7 +31,7 @@ use function substr;
  *
  * Ported from Symfony components @see https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Debug/Exception/FlattenException.php
  */
-class FlattenException
+class FlattenException implements Stringable
 {
     /**
      * Exception code; native PHP exceptions allow non-int values (DOMException), so we keep the wider type.
@@ -86,7 +86,7 @@ class FlattenException
         $this->setLine($exception->getLine());
         $this->setTrace($exception->getTrace());
         $this->setToString($exception->__toString());
-        $this->setClass(get_class($exception));
+        $this->setClass($exception::class);
 
         $previous = $exception->getPrevious();
 
@@ -275,7 +275,7 @@ class FlattenException
             if ($value instanceof __PHP_Incomplete_Class) {
                 $result[$key] = ['incomplete-object', $this->getClassNameFromIncomplete($value)];
             } elseif (is_object($value)) {
-                $result[$key] = ['object', get_class($value)];
+                $result[$key] = ['object', $value::class];
             } elseif (is_array($value)) {
                 if ($level > 10) {
                     $result[$key] = ['array', '*DEEP NESTED ARRAY*'];

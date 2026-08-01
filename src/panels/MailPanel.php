@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use Stringable;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Part\{AbstractPart, TextPart};
@@ -45,6 +46,7 @@ class MailPanel extends Panel
     /**
      * Renders the detail view with the mail card list.
      */
+    #[Override]
     public function getDetail(): string
     {
         $searchModel = new MailSearch();
@@ -83,6 +85,7 @@ class MailPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Mail';
@@ -161,6 +164,7 @@ class MailPanel extends Panel
      * @return array<int, array<string, mixed>> Toolbar items, or `[]` when neither the current nor the previous
      * request captured any mail.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         if (!is_array($this->data)) {

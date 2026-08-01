@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+use Override;
 use yii\debug\components\search\Filter;
 use yii\debug\components\search\matchers\GreaterThanOrEqual;
 use yii\debug\models\timeline\DataProvider;
@@ -26,6 +27,7 @@ class TimelineSearch extends Base
     /**
      * @return array<string, string> Form labels keyed by attribute name.
      */
+    #[Override]
     public function attributeLabels(): array
     {
         return [
@@ -36,6 +38,7 @@ class TimelineSearch extends Base
     /**
      * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */
+    #[Override]
     public function rules(): array
     {
         return [

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
@@ -54,6 +55,7 @@ class MailSearch extends Base
      */
     public string $to = '';
 
+    #[Override]
     public function attributeLabels(): array
     {
         return [
@@ -67,6 +69,7 @@ class MailSearch extends Base
         ];
     }
 
+    #[Override]
     public function rules(): array
     {
         return [

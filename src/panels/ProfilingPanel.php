@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use Yii;
 use yii\debug\helpers\{Coerce, Format};
 use yii\debug\models\search\ProfileSearch;
@@ -41,6 +42,7 @@ class ProfilingPanel extends Panel
     /**
      * Renders the detail view with the profile grid, total time, peak memory, and the Timeline panel cross-link.
      */
+    #[Override]
     public function getDetail(): string
     {
         $profileData = $this->getProfileData();
@@ -77,6 +79,7 @@ class ProfilingPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Profiling';
@@ -87,6 +90,7 @@ class ProfilingPanel extends Panel
      *
      * @return array<string, mixed> Toolbar payload with the title blanked on success.
      */
+    #[Override]
     public function getToolbarData(): array
     {
         $data = parent::getToolbarData();
@@ -164,6 +168,7 @@ class ProfilingPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Toolbar items in display order.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $profileData = $this->getProfileData();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub;
 
+use Override;
 use yii\debug\Panel;
 
 /**
@@ -11,6 +12,7 @@ use yii\debug\Panel;
  */
 final class MinimalToolbarPanel extends Panel
 {
+    #[Override]
     public function getToolbarData(): array
     {
         return ['chip' => 'minimal'];

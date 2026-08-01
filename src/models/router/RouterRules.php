@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\router;
 
+use ReflectionClass;
 use ReflectionException;
 use Yii;
 use yii\base\Model;
@@ -90,7 +91,7 @@ class RouterRules extends Model
      */
     protected function scanRestRule(RestUrlRule $restRule): void
     {
-        $reflectionClass = new \ReflectionClass($restRule);
+        $reflectionClass = new ReflectionClass($restRule);
 
         $reflectionProperty = $reflectionClass->getProperty('rules');
         $rulesGroups = $reflectionProperty->getValue($restRule);
@@ -149,7 +150,7 @@ class RouterRules extends Model
                 $verb = $rule->verb;
                 $suffix = $rule->suffix;
             } else {
-                $name = get_class($rule);
+                $name = $rule::class;
             }
 
             $this->rules[] = [

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\components\search\Filter;
 
@@ -21,6 +22,7 @@ class DbSearch extends Base
      */
     public string $type = '';
 
+    #[Override]
     public function attributeLabels(): array
     {
         return [
@@ -29,6 +31,7 @@ class DbSearch extends Base
         ];
     }
 
+    #[Override]
     public function rules(): array
     {
         return [

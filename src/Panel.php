@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use Closure;
 use Throwable;
 use yii\base\{Component, InvalidConfigException, ViewContextInterface};
 use yii\debug\helpers\Coerce;
@@ -201,7 +202,7 @@ class Panel extends Component implements ViewContextInterface
         $options['line'] = $line;
         $options['text'] = $text;
 
-        $rawLink = $traceLine instanceof \Closure ? $traceLine($options, $this) : $traceLine;
+        $rawLink = $traceLine instanceof Closure ? $traceLine($options, $this) : $traceLine;
         $rawLinkString = Coerce::stringOrNull($rawLink);
 
         if ($rawLinkString === null) {

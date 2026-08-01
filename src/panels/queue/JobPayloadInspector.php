@@ -8,7 +8,6 @@ use ReflectionClass;
 use ReflectionProperty;
 use Throwable;
 
-use function get_class;
 use function get_resource_type;
 use function is_array;
 use function is_object;
@@ -122,7 +121,7 @@ final class JobPayloadInspector
      */
     private static function normalizeObject(object $value, int $depth): array
     {
-        $class = get_class($value);
+        $class = $value::class;
 
         if ($depth >= self::MAX_DEPTH) {
             return ['__class' => $class, '__truncated' => true];
@@ -163,7 +162,7 @@ final class JobPayloadInspector
      */
     private static function publicPropertiesOf(object $value): array
     {
-        $class = get_class($value);
+        $class = $value::class;
 
         if (!isset(self::$publicPropertiesByClass[$class])) {
             $reflection = new ReflectionClass($value);

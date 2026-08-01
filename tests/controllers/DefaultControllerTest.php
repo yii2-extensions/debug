@@ -6,6 +6,7 @@ namespace yii\debug\tests\controllers;
 
 use Exception;
 use PHPUnit\Framework\Attributes\Group;
+use RuntimeException;
 use UnexpectedValueException;
 use Yii;
 use yii\base\InvalidConfigException;
@@ -309,7 +310,7 @@ final class DefaultControllerTest extends TestCase
         $module = $this->bootDebugModule();
 
         // Persist an exception on the 'request' panel via the 'exceptions' channel of the snapshot.
-        $error = new FlattenException(new \RuntimeException('Boom'));
+        $error = new FlattenException(new RuntimeException('Boom'));
 
         $this->writeSnapshotWithExceptions($module, 'tag-view-error', ['request' => $error]);
 

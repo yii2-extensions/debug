@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use Yii;
 use yii\base\Event;
 use yii\debug\models\search\EventSearch;
 use yii\debug\Panel;
 
 use function count;
-use function get_class;
 use function is_array;
 use function is_object;
 use function is_string;
@@ -45,6 +45,7 @@ class EventPanel extends Panel
     /**
      * Renders the detail view with the events grid.
      */
+    #[Override]
     public function getDetail(): string
     {
         $searchModel = new EventSearch();
@@ -65,6 +66,7 @@ class EventPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Events';
@@ -90,10 +92,10 @@ class EventPanel extends Panel
             '*',
             function (Event $event): void {
                 $eventData = [
-                    'class' => get_class($event),
+                    'class' => $event::class,
                     'isStatic' => is_object($event->sender) ? '0' : '1',
                     'name' => $event->name,
-                    'senderClass' => is_object($event->sender) ? get_class($event->sender) : (string) $event->sender,
+                    'senderClass' => is_object($event->sender) ? $event->sender::class : (string) $event->sender,
                     'time' => microtime(true),
                 ];
 
@@ -123,6 +125,7 @@ class EventPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Single-element list with the count, or `[]`.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $eventCount = count(self::normalizeEvents($this->data));

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\timeline;
 
-use RuntimeException;
+use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\helpers\Format;
 use yii\debug\panels\TimelinePanel;
@@ -23,16 +23,12 @@ use function max;
  */
 class DataProvider extends ArrayDataProvider
 {
-    protected TimelinePanel|null $panel = null;
-
     /**
      * @param TimelinePanel $panel Panel providing the request start time, total duration, and color buckets.
      * @param array<string, mixed> $config Standard {@see ArrayDataProvider} configuration.
      */
-    public function __construct(TimelinePanel $panel, array $config = [])
+    public function __construct(protected TimelinePanel $panel, array $config = [])
     {
-        $this->panel = $panel;
-
         parent::__construct($config);
     }
 
@@ -45,7 +41,7 @@ class DataProvider extends ArrayDataProvider
     {
         $width = self::cssNumber($model, 'width') ?? $this->getWidth($model);
 
-        foreach ($this->panel()->getColors() as $percent => $color) {
+        foreach ($this->panel->getColors() as $percent => $color) {
             if ($width >= (float) $percent) {
                 return $color;
             }
@@ -74,7 +70,7 @@ class DataProvider extends ArrayDataProvider
      */
     public function getLeft(array $model): float
     {
-        return $this->getTime($model) / ($this->panel()->getDuration() / 100);
+        return $this->getTime($model) / ($this->panel->getDuration() / 100);
     }
 
     /**
@@ -100,7 +96,7 @@ class DataProvider extends ArrayDataProvider
 
         return [
             Format::bytesToMb($memoryFloat),
-            $memoryFloat / ($this->panel()->getMemory() / 100),
+            $memoryFloat / ($this->panel->getMemory() / 100),
         ];
     }
 
@@ -121,7 +117,7 @@ class DataProvider extends ArrayDataProvider
             return [];
         }
 
-        $duration = $this->panel()->getDuration();
+        $duration = $this->panel->getDuration();
 
         if ($duration <= 0.0) {
             return [];
@@ -158,7 +154,7 @@ class DataProvider extends ArrayDataProvider
     {
         $timestamp = $model['timestamp'] ?? 0;
 
-        return (is_numeric($timestamp) ? (float) $timestamp : 0.0) - $this->panel()->getStart();
+        return (is_numeric($timestamp) ? (float) $timestamp : 0.0) - $this->panel->getStart();
     }
 
     /**
@@ -170,7 +166,7 @@ class DataProvider extends ArrayDataProvider
     {
         $duration = $model['duration'] ?? 0;
 
-        return (is_numeric($duration) ? (float) $duration : 0.0) / ($this->panel()->getDuration() / 100);
+        return (is_numeric($duration) ? (float) $duration : 0.0) / ($this->panel->getDuration() / 100);
     }
 
     /**
@@ -179,6 +175,7 @@ class DataProvider extends ArrayDataProvider
      *
      * @return list<array<array-key, mixed>> Prepared rows ready for the data provider.
      */
+    #[Override]
     protected function prepareModels(): array
     {
         $rawModels = $this->allModels;
@@ -249,19 +246,5 @@ class DataProvider extends ArrayDataProvider
         $value = $css[$key] ?? null;
 
         return is_numeric($value) ? (float) $value : null;
-    }
-
-    /**
-     * Returns the bound {@see TimelinePanel}, asserting that the constructor wired it.
-     *
-     * @throws RuntimeException When the panel was somehow cleared after construction.
-     */
-    private function panel(): TimelinePanel
-    {
-        if ($this->panel === null) {
-            throw new RuntimeException('TimelinePanel has not been set on the data provider.');
-        }
-
-        return $this->panel;
     }
 }

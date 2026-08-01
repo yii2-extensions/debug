@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Closure;
+use Override;
 use UIAwesome\Html\Helper\Encode;
 use Yii;
 use yii\debug\helpers\Coerce;
@@ -59,6 +60,7 @@ class DumpPanel extends Panel
     /**
      * Renders the detail view with the dump grid powered by the Log search model.
      */
+    #[Override]
     public function getDetail(): string
     {
         $searchModel = new LogSearch();
@@ -79,6 +81,7 @@ class DumpPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Dump';
@@ -181,6 +184,7 @@ class DumpPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Single-element list with the `info` chip, or `[]`.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $messages = is_array($this->data) ? $this->data : [];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use Yii;
 use yii\base\InlineAction;
 use yii\debug\helpers\Coerce;
@@ -53,6 +54,7 @@ class RouterPanel extends Panel
     /**
      * Renders the detail view with the Current Route, Router Rules, and Action Routes tabs.
      */
+    #[Override]
     public function getDetail(): string
     {
         return Yii::$app->view->render(
@@ -69,6 +71,7 @@ class RouterPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Router';
@@ -129,6 +132,7 @@ class RouterPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Single-element list with the route chip.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $data = $this->getRouteData();

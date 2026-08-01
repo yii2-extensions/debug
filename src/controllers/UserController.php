@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\controllers;
 
+use Override;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\models\UserSwitch;
 use yii\web\{BadRequestHttpException, Controller, Response, User};
+use yii\web\IdentityInterface;
 
 use function is_int;
 use function is_string;
@@ -57,7 +59,7 @@ class UserController extends Controller
 
         $identityClass = Yii::$app->user->identityClass;
 
-        if (!is_subclass_of($identityClass, \yii\web\IdentityInterface::class)) {
+        if (!is_subclass_of($identityClass, IdentityInterface::class)) {
             throw new BadRequestHttpException(
                 'User component is not configured with an identity class.',
             );
@@ -83,6 +85,7 @@ class UserController extends Controller
      *
      * @throws BadRequestHttpException When the current request has no active session.
      */
+    #[Override]
     public function beforeAction($action): bool
     {
         Yii::$app->response->format = Response::FORMAT_JSON;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use Throwable;
 use Yii;
 use yii\base\Event;
@@ -15,7 +16,6 @@ use yii\debug\panels\queue\{JobPayloadInspector, JobRecord, QueueDriverDetector}
 use function array_values;
 use function class_exists;
 use function count;
-use function get_class;
 use function interface_exists;
 use function is_array;
 use function is_int;
@@ -81,6 +81,7 @@ class QueuePanel extends Panel
     /**
      * Renders the detail view with the queue cards list.
      */
+    #[Override]
     public function getDetail(): string
     {
         $searchModel = new QueueSearch();
@@ -101,6 +102,7 @@ class QueuePanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Queue';
@@ -137,6 +139,7 @@ class QueuePanel extends Panel
      * Always returns `true`: the panel is harmless without `yiisoft/yii2-queue` installed (the empty-state view kicks
      * in instead).
      */
+    #[Override]
     public function isEnabled(): bool
     {
         return true;
@@ -164,6 +167,7 @@ class QueuePanel extends Panel
      * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no queue component is configured and no
      * events were captured.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $records = $this->resolveRecords();
@@ -377,11 +381,11 @@ class QueuePanel extends Panel
 
         $job = is_object($props['job'] ?? null) ? $props['job'] : null;
 
-        $jobClass = $job === null ? '' : get_class($job);
+        $jobClass = $job === null ? '' : $job::class;
 
         $sender = $event->sender;
 
-        $driverClass = is_object($sender) ? get_class($sender) : '';
+        $driverClass = is_object($sender) ? $sender::class : '';
 
         [$driverName, $isAsync] = QueueDriverDetector::detect($driverClass);
 

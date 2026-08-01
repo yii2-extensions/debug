@@ -313,11 +313,7 @@ final class UserDataNormalizer
      */
     private static function labelFor(string $key, array $labels): string
     {
-        if (isset($labels[$key])) {
-            return $labels[$key];
-        }
-
-        return ucwords(str_replace(['_', '.'], ' ', $key));
+        return $labels[$key] ?? ucwords(str_replace(['_', '.'], ' ', $key));
     }
 
     /**

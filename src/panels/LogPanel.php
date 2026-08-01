@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use Yii;
 use yii\debug\helpers\Coerce;
 use yii\debug\models\search\LogSearch;
@@ -44,6 +45,7 @@ class LogPanel extends Panel
     /**
      * Renders the detail view with the logs grid.
      */
+    #[Override]
     public function getDetail(): string
     {
         $searchModel = new LogSearch();
@@ -64,6 +66,7 @@ class LogPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Logs';
@@ -173,6 +176,7 @@ class LogPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Toolbar items in display order.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $messages = $this->getSavedMessages();

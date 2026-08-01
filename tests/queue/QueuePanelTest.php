@@ -7,6 +7,7 @@ namespace yii\debug\tests\queue;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use stdClass;
+use Throwable;
 use Yii;
 use yii\base\{Component, Event};
 use yii\debug\panels\queue\JobRecord;
@@ -754,7 +755,7 @@ final class QueuePanelTest extends TestCase
 
     /**
      * @param object|null $job Job object exposed as the event's `job` public property.
-     * @param \Throwable|null $error Exception exposed as the event's `error` public property.
+     * @param Throwable|null $error Exception exposed as the event's `error` public property.
      */
     private function makeQueueEvent(
         object|null $job = null,

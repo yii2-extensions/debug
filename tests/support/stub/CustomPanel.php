@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub;
 
+use Override;
 use yii\debug\Panel;
 
 /**
@@ -19,6 +20,7 @@ final class CustomPanel extends Panel
     public array $stubItems = [];
     public string $stubName = '';
 
+    #[Override]
     public function getName(): string
     {
         return $this->stubName;
@@ -29,6 +31,7 @@ final class CustomPanel extends Panel
         return $this->stubIcon;
     }
 
+    #[Override]
     protected function getToolbarItems(): array
     {
         return $this->stubItems;

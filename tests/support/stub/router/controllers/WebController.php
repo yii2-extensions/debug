@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub\router\controllers;
 
+use Override;
 use yii\web\{Controller, ErrorAction};
 
 /**
@@ -19,6 +20,7 @@ final class WebController extends Controller
     /**
      * @return array<string, array{class: class-string}|class-string>
      */
+    #[Override]
     public function actions(): array
     {
         return [

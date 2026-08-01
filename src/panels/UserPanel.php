@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use Throwable;
 use Yii;
 use yii\base\{InvalidConfigException, Model};
@@ -147,6 +148,7 @@ class UserPanel extends Panel
     /**
      * Renders the detail view with the identity card and the user-switch GridView.
      */
+    #[Override]
     public function getDetail(): string
     {
         return Yii::$app->view->render(
@@ -159,6 +161,7 @@ class UserPanel extends Panel
     /**
      * Returns the panel display name (configurable via {@see $displayName}).
      */
+    #[Override]
     public function getName(): string
     {
         return $this->displayName;
@@ -243,6 +246,7 @@ class UserPanel extends Panel
     /**
      * Returns whether the user component is resolvable; the panel is harmless on apps with no user component.
      */
+    #[Override]
     public function isEnabled(): bool
     {
         try {
@@ -352,6 +356,7 @@ class UserPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Single-element list with the user chip.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $user = $this->getUser();

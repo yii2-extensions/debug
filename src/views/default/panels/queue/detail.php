@@ -196,7 +196,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                     'attribute' => 'jobClass',
                     'label' => 'Job',
                     'format' => 'raw',
-                    'value' => static fn(mixed $data, int $key) => QueueGridRenderer::renderJobCell(
+                    'value' => static fn(mixed $data, int $key): string => QueueGridRenderer::renderJobCell(
                         JobRecordNormalizer::from($data),
                         $jobUrlBuilder($key),
                     ),
