@@ -21,6 +21,21 @@ final class CellMoreTest extends TestCase
         $html = CellMore::wrap('body');
 
         self::assertStringContainsString(
+            '<button',
+            $html,
+            'Disclosure control must be a native button.',
+        );
+        self::assertStringContainsString(
+            'type="button"',
+            $html,
+            'Button must not submit surrounding forms.',
+        );
+        self::assertStringNotContainsString(
+            'javascript:',
+            $html,
+            'No `javascript:` URI may reach the markup.',
+        );
+        self::assertStringContainsString(
             'data-yii-debug-toggle="cell-more"',
             $html,
             'Toggle must carry the delegation attribute.',

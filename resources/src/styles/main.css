@@ -1307,10 +1307,13 @@
     padding: 2px 10px;
     border: var(--yii-debug-border);
     border-radius: var(--yii-debug-radius-pill);
+
+    /* Native `button` element: reset the UA chrome the pill styling replaces. */
+    background: transparent;
     color: var(--yii-debug-panel-link);
+    font-family: inherit;
     font-size: var(--yii-debug-fs-xs);
     font-weight: 600;
-    text-decoration: none;
     cursor: pointer;
   }
 

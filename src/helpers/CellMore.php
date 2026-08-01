@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\helpers;
 
 use UIAwesome\Html\Flow\Div;
-use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Form\Button;
+use UIAwesome\Html\Form\Values\ButtonType;
 
 /**
  * Wraps long grid-cell content in a collapsible clamp with an expand/collapse pill toggle.
@@ -34,12 +35,12 @@ final class CellMore
                 Div::tag()
                     ->class('yii-debug-cell-more-body')
                     ->html($content),
-                A::tag()
+                Button::tag()
                     ->addAriaAttribute('expanded', 'false')
                     ->addAttribute('data-yii-debug-toggle', 'cell-more')
                     ->class('yii-debug-cell-more-toggle')
                     ->content('[+] Show more')
-                    ->href('javascript:;'),
+                    ->type(ButtonType::BUTTON),
             )
             ->render();
     }

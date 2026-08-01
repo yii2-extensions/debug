@@ -9,7 +9,7 @@ use Override;
 use ReflectionException;
 use ReflectionMethod;
 use Yii;
-use yii\base\{Event, InvalidConfigException, View, ViewEvent};
+use yii\base\{InvalidConfigException, View, ViewEvent};
 use yii\debug\Panel;
 
 use function array_keys;
@@ -113,14 +113,15 @@ class InertiaPanel extends Panel
      * Registers the render listener that captures the Inertia page from the root-view render params.
      *
      * Inertia XHR visits expose the page on `Response::$data`, but full page loads only pass it to the root view —
-     * this listener records that object so {@see save()} covers both paths.
+     * this listener records that object so {@see save()} covers both paths. The handler binds to the application
+     * view instance rather than the `View` class, so it is released with the application instead of accumulating in
+     * the class-level event registry across requests of a long-running worker.
      */
     public function init(): void
     {
         parent::init();
 
-        Event::on(
-            View::class,
+        Yii::$app->getView()->on(
             View::EVENT_BEFORE_RENDER,
             function (ViewEvent $event): void {
                 $page = $event->params['page'] ?? null;
@@ -266,7 +267,11 @@ class InertiaPanel extends Panel
     }
 
     /**
-     * Returns the top-level shared-prop keys from the manager, resolved reflectively to avoid a package dependency.
+     * Returns the top-level shared-prop keys the manager exposes through its public `getShared()` accessor.
+     *
+     * The call goes through reflection because the manager is typed as `object` here — the panel refers to its class
+     * by name to stay dependency-free, so static analysis cannot resolve the method. Managers without the accessor
+     * raise a {@see ReflectionException} and simply yield no keys, leaving every prop labelled as page-specific.
      *
      * @return list<string> Shared keys, or `[]` when the manager is absent or exposes no shared props.
      */

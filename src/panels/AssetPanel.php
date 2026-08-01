@@ -242,31 +242,6 @@ class AssetPanel extends Panel
         $manifestPath = ArrayHelper::getValue($component, 'manifestPath');
         $manifestPath = is_string($manifestPath) ? (string) Yii::getAlias($manifestPath, false) : '';
 
-        $entries = [];
-
-        if ($manifestPath !== '' && is_file($manifestPath)) {
-            $decoded = json_decode((string) file_get_contents($manifestPath), true);
-
-            if (is_array($decoded)) {
-                foreach ($decoded as $name => $chunk) {
-                    if (!is_string($name) || !is_array($chunk)) {
-                        continue;
-                    }
-
-                    $css = is_array($chunk['css'] ?? null)
-                        ? array_values(array_filter($chunk['css'], is_string(...)))
-                        : [];
-
-                    $entries[$name] = [
-                        'css' => $css,
-                        'file' => is_string($chunk['file'] ?? null) ? $chunk['file'] : '',
-                        'imports' => is_array($chunk['imports'] ?? null) ? count($chunk['imports']) : 0,
-                        'isEntry' => ($chunk['isEntry'] ?? false) === true,
-                    ];
-                }
-            }
-        }
-
         $baseUrl = ArrayHelper::getValue($component, 'baseUrl');
         $devMode = ArrayHelper::getValue($component, 'devMode');
         $devServerUrl = ArrayHelper::getValue($component, 'devServerUrl');
@@ -276,12 +251,52 @@ class AssetPanel extends Panel
             'baseUrl' => is_string($baseUrl) ? $baseUrl : '',
             'devMode' => $devMode === true,
             'devServerUrl' => is_string($devServerUrl) ? $devServerUrl : null,
-            'entries' => $entries,
+            'entries' => self::manifestEntries($manifestPath),
             'entrypoints' => is_array($entrypoints)
                 ? array_values(array_filter($entrypoints, is_string(...)))
                 : [],
             'manifestPath' => $manifestPath,
         ];
+    }
+
+    /**
+     * Reads the Vite build manifest and narrows every chunk to the fields the panel renders.
+     *
+     * @param string $manifestPath Absolute path to the build manifest, already resolved from its alias.
+     *
+     * @return array<string, array{css: list<string>, file: string, imports: int, isEntry: bool}> Chunks indexed by
+     * source name; `[]` when the manifest is missing or unreadable (a dev-server run never writes one).
+     */
+    private static function manifestEntries(string $manifestPath): array
+    {
+        if ($manifestPath === '' || is_file($manifestPath) === false) {
+            return [];
+        }
+
+        $decoded = json_decode((string) file_get_contents($manifestPath), true);
+
+        if (is_array($decoded) === false) {
+            return [];
+        }
+
+        $entries = [];
+
+        foreach ($decoded as $name => $chunk) {
+            if (!is_string($name) || !is_array($chunk)) {
+                continue;
+            }
+
+            $entries[$name] = [
+                'css' => is_array($chunk['css'] ?? null)
+                    ? array_values(array_filter($chunk['css'], is_string(...)))
+                    : [],
+                'file' => is_string($chunk['file'] ?? null) ? $chunk['file'] : '',
+                'imports' => is_array($chunk['imports'] ?? null) ? count($chunk['imports']) : 0,
+                'isEntry' => ($chunk['isEntry'] ?? false) === true,
+            ];
+        }
+
+        return $entries;
     }
 
     /**
