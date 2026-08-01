@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Helper\{Attributes, Encode};
-use yii\debug\widgets\shell\ShellDataNormalizer;
+use yii\debug\widgets\shell\ShellContext;
+use yii\debug\widgets\sidebar\SidebarRenderer;
 use yii\helpers\Html;
 use yii\web\View;
 
@@ -13,22 +14,11 @@ use yii\web\View;
  */
 yii\debug\DebugAsset::register($this);
 
-// `debugTheme` is primed by DefaultController::primeThemeContext() and exposed via $this->params; we still fall back to
-// the request/cookie pair so direct hits on the layout (legacy/tests) keep working.
-$debugTheme = is_string($this->params['debugTheme'] ?? null) ? $this->params['debugTheme'] : '';
+$shellContext = $this->params['debugShell'] ?? null;
 
-if ($debugTheme === '') {
-    $debugTheme = ShellDataNormalizer::resolveThemeFromRequest();
+if (!$shellContext instanceof ShellContext) {
+    throw new LogicException('The debug layout requires a ShellContext.');
 }
-
-$controller = Yii::$app->controller;
-
-$shellContext = ShellDataNormalizer::fromParams(
-    $this->params['shellMode'] ?? 'bare',
-    $this->params['shellData'] ?? null,
-    $debugTheme,
-    $controller !== null ? $controller->module : null,
-);
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
@@ -63,18 +53,7 @@ $shellContext = ShellDataNormalizer::fromParams(
         ) ?>
 
         <div class="yii-debug-layout">
-            <?= $this->render(
-                '../default/_sidebar',
-                [
-                    'mode' => $shellContext->mode,
-                    'panels' => $shellContext->shellPanels,
-                    'manifest' => $shellContext->shellManifest,
-                    'activePanel' => $shellContext->activePanel,
-                    'tag' => $shellContext->activeTag,
-                    'summary' => $shellContext->shellSummary,
-                    'cursorInit' => $shellContext->cursorInit,
-                ],
-            ) ?>
+            <?= $shellContext->sidebar !== null ? SidebarRenderer::render($shellContext->sidebar) : '' ?>
 
             <main class="yii-debug-main yii-debug-card">
                 <?= $content ?>
@@ -82,7 +61,9 @@ $shellContext = ShellDataNormalizer::fromParams(
         </div>
     </div>
 <?php else: ?>
-    <?= $content ?>
+    <main class="yii-debug-main-bare">
+        <?= $content ?>
+    </main>
 <?php endif; ?>
 <?php $this->endBody() ?>
 </body>

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Flow\{Div, P, Pre};
-use UIAwesome\Html\Heading\{H1, H3};
+use UIAwesome\Html\Heading\{H1, H2};
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
@@ -118,23 +118,23 @@ if ($page !== null) {
 <?php
 $infoRows = [
     Tr::tag()->html(
-        Th::tag()->content('Component'),
+        Th::tag()->scope('row')->content('Component'),
         Td::tag()->content($component !== '' ? $component : '—'),
     ),
     Tr::tag()->html(
-        Th::tag()->content('URL'),
+        Th::tag()->scope('row')->content('URL'),
         Td::tag()->content($url !== '' ? $url : '—'),
     ),
     Tr::tag()->html(
-        Th::tag()->content('Version'),
+        Th::tag()->scope('row')->content('Version'),
         Td::tag()->content($version !== '' ? $version : '—'),
     ),
     Tr::tag()->html(
-        Th::tag()->content('Visit'),
+        Th::tag()->scope('row')->content('Visit'),
         Td::tag()->content($visit),
     ),
     Tr::tag()->html(
-        Th::tag()->content('Status'),
+        Th::tag()->scope('row')->content('Status'),
         Td::tag()->content((string) $statusCode),
     ),
 ];
@@ -145,7 +145,7 @@ foreach ($requestHeaders as $name => $value) {
     }
 
     $infoRows[] = Tr::tag()->html(
-        Th::tag()->content($name),
+        Th::tag()->scope('row')->content($name),
         Td::tag()->content($value),
     );
 }
@@ -196,7 +196,7 @@ if (strlen($pageJson) > 600) {
             ->class('yii-debug-table yii-debug-table-mono')
             ->html(Tbody::tag()->html(...$infoRows)),
     ) ?>
-<?= H3::tag()->content('Props') ?>
+<?= H2::tag()->content('Props') ?>
 <?php if ($propRows === []): ?>
     <?= P::tag()->content('The page rendered without props.') ?>
 <?php else: ?>
@@ -208,16 +208,16 @@ if (strlen($pageJson) > 600) {
                 ->html(
                     Thead::tag()->html(
                         Tr::tag()->html(
-                            Th::tag()->content('#'),
-                            Th::tag()->content('Prop'),
-                            Th::tag()->content('Origin'),
-                            Th::tag()->content('Type'),
-                            Th::tag()->content('Value'),
+                            Th::tag()->scope('col')->content('#'),
+                            Th::tag()->scope('col')->content('Prop'),
+                            Th::tag()->scope('col')->content('Origin'),
+                            Th::tag()->scope('col')->content('Type'),
+                            Th::tag()->scope('col')->content('Value'),
                         ),
                     ),
                     Tbody::tag()->html(...$propRows),
                 ),
         ) ?>
 <?php endif; ?>
-<?= H3::tag()->content('Raw payload') ?>
+<?= H2::tag()->content('Raw payload') ?>
 <?= $rawBlock;

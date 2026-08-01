@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Heading\H3;
+use UIAwesome\Html\Heading\H2;
 use yii\debug\GridViewConfig;
 use yii\debug\panels\UserPanel;
 use yii\grid\GridView;
@@ -24,7 +24,7 @@ $permissionsProvider = $data['permissionsProvider'] ?? null;
 
 ?>
 <?php if ($rolesProvider !== null): ?>
-    <?= H3::tag()->content('Roles') ?>
+    <?= H2::tag()->content('Roles') ?>
     <?= GridView::widget(
         [
             ...GridViewConfig::defaults(),
@@ -34,7 +34,7 @@ $permissionsProvider = $data['permissionsProvider'] ?? null;
     ) ?>
 <?php endif; ?>
 <?php if ($permissionsProvider !== null): ?>
-    <?= H3::tag()->content('Permissions') ?>
+    <?= H2::tag()->content('Permissions') ?>
     <?= GridView::widget(
         [
             ...GridViewConfig::defaults(),

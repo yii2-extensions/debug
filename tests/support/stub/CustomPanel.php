@@ -26,6 +26,7 @@ final class CustomPanel extends Panel
         return $this->stubName;
     }
 
+    #[Override]
     public function getToolbarIcon(): string|null
     {
         return $this->stubIcon;

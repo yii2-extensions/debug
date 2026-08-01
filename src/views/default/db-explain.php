@@ -39,7 +39,7 @@ if ($results === []) {
     $headerCells = [];
 
     foreach ($columns as $column) {
-        $headerCells[] = Th::tag()->content($column);
+        $headerCells[] = Th::tag()->scope('col')->content($column);
     }
 
     $bodyRows = [];

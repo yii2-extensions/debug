@@ -173,6 +173,30 @@ final class LogTargetTest extends TestCase
         $this->cleanupDataPath($module);
     }
 
+    public function testExportWritesVersionedSnapshotEnvelope(): void
+    {
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+        $logTarget = new LogTarget($module);
+
+        $logTarget->export();
+
+        $contents = file_get_contents("{$module->dataPath}/{$logTarget->tag}.data");
+
+        self::assertIsString($contents, 'Export must write a snapshot file.');
+
+        $snapshot = unserialize($contents);
+
+        self::assertIsArray($snapshot, 'Snapshot envelope must deserialize to an array.');
+        self::assertSame(2, $snapshot['version'] ?? null, 'Snapshot envelope must declare storage version 2.');
+        self::assertArrayHasKey('panels', $snapshot, 'Snapshot envelope must contain panel payloads.');
+        self::assertArrayHasKey('summary', $snapshot, 'Snapshot envelope must contain its summary.');
+        self::assertArrayHasKey('exceptions', $snapshot, 'Snapshot envelope must contain panel exceptions.');
+
+        $this->cleanupDataPath($module);
+    }
+
     public function testGcEvictsExcessManifestEntriesAndDeletesDataFiles(): void
     {
         $module = $this->newModuleWithIsolatedDataPath();
@@ -314,7 +338,7 @@ final class LogTargetTest extends TestCase
 
         file_put_contents(
             "{$module->dataPath}/{$logTarget->tag}.data",
-            serialize(['summary' => [], 'exceptions' => []]),
+            serialize(['version' => 2, 'panels' => [], 'summary' => [], 'exceptions' => []]),
         );
 
         $logTarget->loadTagToPanels($logTarget->tag);
@@ -323,6 +347,25 @@ final class LogTargetTest extends TestCase
             'orphan',
             $module->panels,
             'Panels missing from the payload and without exceptions must be evicted.',
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testLoadTagToPanelsRejectsVersionOneSnapshot(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+        $logTarget = new LogTarget($module);
+
+        file_put_contents(
+            "{$module->dataPath}/{$logTarget->tag}.data",
+            serialize(['version' => 1, 'panels' => [], 'summary' => [], 'exceptions' => []]),
+        );
+
+        self::assertSame(
+            [],
+            $logTarget->loadTagToPanels($logTarget->tag),
+            'Snapshots from storage version 1 must be rejected instead of being partially loaded.',
         );
 
         $this->cleanupDataPath($module);
@@ -497,7 +540,7 @@ final class LogTargetTest extends TestCase
 
         $module = $this->newModuleWithIsolatedDataPath();
 
-        // Seed `index.data` with a serialized scalar so `narrowManifestEntries()` hits its non-array branch.
+        // Seed `index.data` with an incompatible scalar so the writer resets the manifest.
         file_put_contents("{$module->dataPath}/index.data", serialize('not-an-array'));
 
         $logTarget = new LogTarget($module);

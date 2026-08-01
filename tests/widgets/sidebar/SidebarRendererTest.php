@@ -67,14 +67,14 @@ final class SidebarRendererTest extends TestCase
         $html = SidebarRenderer::render($view);
 
         self::assertStringContainsString(
-            'data-yii-debug-cursor="first"',
+            'data-yii-debug-cursor="newest"',
             $html,
-            'Cursor mode must emit the First cursor button.',
+            'Cursor mode must emit the Newest cursor button.',
         );
         self::assertStringContainsString(
-            'data-yii-debug-cursor="next"',
+            'data-yii-debug-cursor="older"',
             $html,
-            'Cursor mode must emit the Next cursor button.',
+            'Cursor mode must emit the Older cursor button.',
         );
         self::assertStringContainsString(
             '<button',
@@ -238,9 +238,9 @@ final class SidebarRendererTest extends TestCase
         $html = SidebarRenderer::render($view);
 
         self::assertStringContainsString(
-            'aria-label="First captured request"',
+            'aria-label="Newest captured request"',
             $html,
-            "Navigation mode must use the long 'aria-label' for First.",
+            "Navigation mode must use the long 'aria-label' for Newest.",
         );
         self::assertStringNotContainsString(
             'data-yii-debug-cursor=',
@@ -271,8 +271,8 @@ final class SidebarRendererTest extends TestCase
         string $cursorInitTag = '',
     ): SidebarSnapshot {
         return new SidebarSnapshot(
-            title: $isCursor ? 'Latest request' : 'Current request',
-            ariaLabel: $isCursor ? 'Latest captured request' : 'Current request',
+            title: $isCursor ? 'Newest request' : 'Current request',
+            ariaLabel: $isCursor ? 'Newest captured request' : 'Current request',
             method: 'GET',
             path: '/index.php',
             fullUrl: 'http://example.test/index.php',
@@ -282,14 +282,14 @@ final class SidebarRendererTest extends TestCase
             isAjax: $isAjax,
             isCursor: $isCursor,
             cursorInitTag: $cursorInitTag,
-            firstUrl: ['/debug/default/view'],
-            latestUrl: ['/debug/default/view', 'tag' => 'oldest'],
-            prevUrl: [],
-            nextUrl: ['/debug/default/view', 'tag' => 'older'],
-            onFirst: true,
-            onLatest: false,
-            hasPrev: false,
-            hasNext: true,
+            newestUrl: ['/debug/default/view'],
+            oldestUrl: ['/debug/default/view', 'tag' => 'oldest'],
+            newerUrl: [],
+            olderUrl: ['/debug/default/view', 'tag' => 'older'],
+            isNewest: true,
+            isOldest: false,
+            hasNewer: false,
+            hasOlder: true,
         );
     }
 }

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
-use yii\debug\components\search\Filter;
-use yii\debug\components\search\matchers\GreaterThanOrEqual;
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\panels\TimelinePanel;
 
@@ -72,17 +70,15 @@ class TimelineSearch extends Base
             return $dataProvider;
         }
 
-        $filter = new Filter();
-
-        $this->addCondition($filter, 'category', true);
+        $this->addCondition('category', true);
 
         $duration = (float) $this->duration;
 
         if ($duration > 0) {
-            $filter->addMatcher('duration', new GreaterThanOrEqual(['value' => $duration / 1000]));
+            $this->addMinimumCondition('duration', $duration / 1000);
         }
 
-        $dataProvider->allModels = $filter->filter($models);
+        $dataProvider->allModels = $this->filter($models);
 
         return $dataProvider;
     }

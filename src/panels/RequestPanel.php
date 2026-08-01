@@ -31,6 +31,9 @@ use function is_string;
  */
 class RequestPanel extends Panel
 {
+    protected const string ICON = 'request';
+    protected const string NAME = 'Request';
+
     /**
      * @var array<int, string> Variable names whose values should be replaced with `$censorString` in the captured
      * snapshot.
@@ -71,23 +74,6 @@ class RequestPanel extends Panel
             ['view' => $view],
             $this,
         );
-    }
-
-    /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Request';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'request';
     }
 
     /**

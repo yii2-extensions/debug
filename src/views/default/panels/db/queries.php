@@ -7,10 +7,10 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
-use yii\debug\{DbAsset, GridViewConfig};
+use yii\debug\GridViewConfig;
 use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\DbSearch;
-use yii\debug\panels\db\{DbQueryRenderer, QueryRowNormalizer};
+use yii\debug\panels\db\{DbQueryRenderer, QueryRow};
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -101,7 +101,7 @@ if ($hasQueries) {
                     'label' => 'Type',
                     'format' => 'raw',
                     'value' => static fn(mixed $data): string => DbQueryRenderer::renderTypeCell(
-                        QueryRowNormalizer::from($data),
+                        QueryRow::fromMixed($data),
                     ),
                     'filter' => $panel->getTypes(),
                     'options' => ['width' => '8%'],
@@ -110,7 +110,7 @@ if ($hasQueries) {
                     'attribute' => 'seq',
                     'label' => 'Time',
                     'value' => static fn(mixed $data): string => DbQueryRenderer::renderTimeCell(
-                        QueryRowNormalizer::from($data),
+                        QueryRow::fromMixed($data),
                     ),
                     'headerOptions' => ['class' => 'sort-numerical'],
                     'options' => ['width' => '10%'],
@@ -118,7 +118,7 @@ if ($hasQueries) {
                 [
                     'attribute' => 'duration',
                     'value' => static fn(mixed $data): string => DbQueryRenderer::renderDurationCell(
-                        QueryRowNormalizer::from($data),
+                        QueryRow::fromMixed($data),
                     ),
                     'options' => ['width' => '8%'],
                     'headerOptions' => ['class' => 'sort-numerical'],
@@ -127,7 +127,7 @@ if ($hasQueries) {
                     'attribute' => 'rows',
                     'label' => 'Rows',
                     'value' => static fn(mixed $data): string => DbQueryRenderer::renderRowsCell(
-                        QueryRowNormalizer::from($data),
+                        QueryRow::fromMixed($data),
                     ),
                     'options' => ['width' => '7%'],
                     'headerOptions' => ['class' => 'sort-numerical'],
@@ -141,7 +141,7 @@ if ($hasQueries) {
                 [
                     'attribute' => 'query',
                     'value' => static fn(mixed $data): string => DbQueryRenderer::renderQueryCell(
-                        QueryRowNormalizer::from($data),
+                        QueryRow::fromMixed($data),
                         $panel,
                         $hasExplain,
                         $explainUrlBuilder,
@@ -153,7 +153,6 @@ if ($hasQueries) {
         ],
     ) ?>
 <?php if ($hasExplain): ?>
-    <?php DbAsset::register($this); ?>
     <?= Div::tag()
         ->class('yii-debug-db-explain-all')
         ->html(

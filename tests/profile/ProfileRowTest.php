@@ -5,34 +5,34 @@ declare(strict_types=1);
 namespace yii\debug\tests\profile;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\profile\ProfileRowNormalizer;
+use yii\debug\panels\profile\ProfileRow;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see ProfileRowNormalizer} covering the narrowing of GridView callback arguments into a typed
+ * Unit tests for {@see ProfileRow} covering the narrowing of GridView callback arguments into a typed
  * {@see \yii\debug\panels\profile\ProfileRow}.
  */
 #[Group('panel')]
 #[Group('profile')]
-final class ProfileRowNormalizerTest extends TestCase
+final class ProfileRowTest extends TestCase
 {
     public function testFromClampsNegativeLevelToZero(): void
     {
         self::assertSame(
             0,
-            ProfileRowNormalizer::from(['level' => -3])->level,
+            ProfileRow::fromMixed(['level' => -3])->level,
             "Negative level must clamp to '0'.",
         );
         self::assertSame(
             0,
-            ProfileRowNormalizer::from(['level' => -1])->level,
+            ProfileRow::fromMixed(['level' => -1])->level,
             "Negative level must clamp to '0'.",
         );
     }
 
     public function testFromCoercesNumericStringsToFloatAndInt(): void
     {
-        $row = ProfileRowNormalizer::from(
+        $row = ProfileRow::fromMixed(
             [
                 'timestamp' => '1700000000500',
                 'duration' => '12.5',
@@ -65,7 +65,7 @@ final class ProfileRowNormalizerTest extends TestCase
 
     public function testFromFallsBackToEmptyStringWhenStringFieldsAreNotStrings(): void
     {
-        $row = ProfileRowNormalizer::from(
+        $row = ProfileRow::fromMixed(
             [
                 'category' => 42,
                 'info' => null,
@@ -86,7 +86,7 @@ final class ProfileRowNormalizerTest extends TestCase
 
     public function testFromFallsBackToZeroForNonNumericFields(): void
     {
-        $row = ProfileRowNormalizer::from(
+        $row = ProfileRow::fromMixed(
             [
                 'timestamp' => 'abc',
                 'duration' => null,
@@ -121,19 +121,19 @@ final class ProfileRowNormalizerTest extends TestCase
     {
         self::assertSame(
             0,
-            ProfileRowNormalizer::from(['level' => 0])->level,
+            ProfileRow::fromMixed(['level' => 0])->level,
             "'0' level must round-trip.",
         );
         self::assertSame(
             5,
-            ProfileRowNormalizer::from(['level' => 5])->level,
+            ProfileRow::fromMixed(['level' => 5])->level,
             "'5' level must round-trip.",
         );
     }
 
     public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
     {
-        $row = ProfileRowNormalizer::from(
+        $row = ProfileRow::fromMixed(
             'not an array',
         );
 
@@ -171,7 +171,7 @@ final class ProfileRowNormalizerTest extends TestCase
 
     public function testFromRoundTripsTypedRow(): void
     {
-        $row = ProfileRowNormalizer::from(
+        $row = ProfileRow::fromMixed(
             [
                 'timestamp' => 1_700_000_000_500.0,
                 'duration' => 12.5,
@@ -218,12 +218,12 @@ final class ProfileRowNormalizerTest extends TestCase
     {
         self::assertSame(
             0.0,
-            ProfileRowNormalizer::maxDuration([]),
+            ProfileRow::maxDuration([]),
             'Empty lists must report a `0.0` scale.',
         );
         self::assertSame(
             12.5,
-            ProfileRowNormalizer::maxDuration(
+            ProfileRow::maxDuration(
                 [
                     ['duration' => 3.0],
                     ['duration' => 12.5],

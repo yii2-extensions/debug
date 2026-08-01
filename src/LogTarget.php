@@ -13,6 +13,7 @@ use yii\helpers\FileHelper;
 use yii\log\Target;
 
 use function array_diff;
+use function array_key_exists;
 use function array_keys;
 use function array_reverse;
 use function chmod;
@@ -42,15 +43,17 @@ use function unserialize;
 /**
  * Per-request snapshot collector consumed by the debug toolbar.
  *
- * Serializes every registered panel's payload to a dedicated `<tag>.data` file under {@see Module::$dataPath} and
- * appends a summary row to the rolling `index.data` manifest. Old entries are evicted by {@see gc()} once the manifest
- * grows past {@see Module::$historySize}.
+ * Stores every registered panel payload in a versioned `<tag>.data` snapshot under {@see Module::$dataPath} and
+ * appends a summary row to the versioned `index.data` manifest. Old entries are evicted by {@see gc()} once the
+ * manifest grows past {@see Module::$historySize}.
  *
  * The unique request {@see $tag} generated in the constructor wires the active request to its data file and to the
  * toolbar reference rendered by {@see Module}.
  */
 class LogTarget extends Target
 {
+    private const int STORAGE_VERSION = 2;
+
     /**
      * Unique tag identifying the current request, generated in {@see __construct()}.
      */
@@ -102,7 +105,7 @@ class LogTarget extends Target
         $summary = $this->collectSummary();
 
         $dataFile = "{$path}/{$this->tag}.data";
-        $data = [];
+        $panels = [];
         $exceptions = [];
 
         foreach ($this->module->panels as $id => $panel) {
@@ -114,16 +117,20 @@ class LogTarget extends Target
                     $summary['processingTime'] = $panelData['time'] ?? 0.0;
                 }
 
-                $data[$id] = serialize($panelData);
+                $panels[$id] = $panelData;
             } catch (Exception $exception) {
                 $exceptions[$id] = new FlattenException($exception);
             }
         }
 
-        $data['summary'] = $summary;
-        $data['exceptions'] = $exceptions;
+        $snapshot = [
+            'version' => self::STORAGE_VERSION,
+            'panels' => $panels,
+            'summary' => $summary,
+            'exceptions' => $exceptions,
+        ];
 
-        file_put_contents($dataFile, serialize($data));
+        file_put_contents($dataFile, serialize($snapshot));
 
         if ($this->module->fileMode !== null) {
             @chmod($dataFile, $this->module->fileMode);
@@ -167,19 +174,19 @@ class LogTarget extends Target
             return [];
         }
 
-        $manifest = @unserialize($content);
+        $manifest = self::decodeManifest($content);
 
-        if (!is_array($manifest)) {
+        if ($manifest === null) {
             return [];
         }
 
-        return array_reverse(self::narrowManifestEntries($manifest), true);
+        return array_reverse($manifest, true);
     }
 
     /**
      * Hydrates the registered panels from a previously persisted `<tag>.data` file.
      *
-     * Each panel keyed in the saved payload receives its serialized data via {@see Panel::load()}; panels that
+     * Each panel keyed in the saved payload receives its data via {@see Panel::load()}; panels that
      * produced an exception during the original request are flagged via {@see Panel::setError()} so the controller can
      * render the error view. Panels neither present in the payload nor flagged with an exception are dropped from
      * {@see Module::$panels}, because they were added or removed between requests.
@@ -188,36 +195,32 @@ class LogTarget extends Target
      *
      * @param string $tag Request tag identifying the data file to load.
      *
-     * @return array<string, mixed> Raw deserialized payload keyed by panel id, plus the `summary` and `exceptions`
-     * entries.
+     * @return array{}|array{
+     *   panels: array<string, mixed>,
+     *   summary: array<string, mixed>,
+     *   exceptions: array<string, mixed>,
+     * } Decoded versioned snapshot, or `[]` when the snapshot is incompatible or corrupted.
      */
     public function loadTagToPanels(string $tag): array
     {
         $dataFile = $this->module->dataPath . "/{$tag}.data";
 
         $raw = @file_get_contents($dataFile);
-        $data = $raw === false ? [] : @unserialize($raw);
+        $snapshot = $raw === false ? null : self::decodeSnapshot($raw);
 
-        if (!is_array($data)) {
-            $data = [];
+        if ($snapshot === null) {
+            return [];
         }
 
-        $exceptions = is_array($data['exceptions'] ?? null) ? $data['exceptions'] : [];
-
-        $normalized = [];
-
-        foreach ($data as $key => $value) {
-            if (is_string($key)) {
-                $normalized[$key] = $value;
-            }
-        }
+        $panels = $snapshot['panels'];
+        $exceptions = $snapshot['exceptions'];
 
         foreach ($this->module->panels as $id => $panel) {
             $hasError = isset($exceptions[$id]) && $exceptions[$id] instanceof FlattenException;
 
-            if (isset($normalized[$id]) && is_string($normalized[$id])) {
+            if (array_key_exists($id, $panels)) {
                 $panel->tag = $tag;
-                $panel->load(@unserialize($normalized[$id]));
+                $panel->load($panels[$id]);
             } elseif ($hasError === false) {
                 unset($this->module->panels[$id]);
             }
@@ -227,7 +230,7 @@ class LogTarget extends Target
             }
         }
 
-        return $normalized;
+        return $snapshot;
     }
 
     /**
@@ -372,6 +375,56 @@ class LogTarget extends Target
     }
 
     /**
+     * Decodes a versioned manifest payload.
+     *
+     * @return array<string, array<string, mixed>>|null
+     */
+    private static function decodeManifest(string $serialized): array|null
+    {
+        $payload = @unserialize($serialized);
+
+        if (
+            !is_array($payload)
+            || ($payload['version'] ?? null) !== self::STORAGE_VERSION
+            || !is_array($payload['entries'] ?? null)
+        ) {
+            return null;
+        }
+
+        return self::narrowManifestEntries($payload['entries']);
+    }
+
+    /**
+     * Decodes a versioned request snapshot.
+     *
+     * @return array{
+     *   panels: array<string, mixed>,
+     *   summary: array<string, mixed>,
+     *   exceptions: array<string, mixed>,
+     * }|null
+     */
+    private static function decodeSnapshot(string $serialized): array|null
+    {
+        $payload = @unserialize($serialized);
+
+        if (
+            !is_array($payload)
+            || ($payload['version'] ?? null) !== self::STORAGE_VERSION
+            || !is_array($payload['panels'] ?? null)
+            || !is_array($payload['summary'] ?? null)
+            || !is_array($payload['exceptions'] ?? null)
+        ) {
+            return null;
+        }
+
+        return [
+            'panels' => Coerce::stringKeyedArray($payload['panels']),
+            'summary' => Coerce::stringKeyedArray($payload['summary']),
+            'exceptions' => Coerce::stringKeyedArray($payload['exceptions']),
+        ];
+    }
+
+    /**
      * Narrows a raw deserialized manifest into the typed `array<string, array<string, mixed>>` shape.
      *
      * Drops entries whose tag or inner key is non-string; returns `[]` when the input is not an array.
@@ -423,9 +476,16 @@ class LogTarget extends Target
         }
 
         $manifest = [];
+        $resetStorage = false;
 
         if (feof($fp) && $serialized !== '') {
-            $manifest = self::narrowManifestEntries(@unserialize($serialized));
+            $decoded = self::decodeManifest($serialized);
+
+            if ($decoded === null) {
+                $resetStorage = true;
+            } else {
+                $manifest = $decoded;
+            }
         }
 
         $manifest[$this->tag] = $summary;
@@ -434,12 +494,19 @@ class LogTarget extends Target
 
         ftruncate($fp, 0);
         rewind($fp);
-        fwrite($fp, serialize($manifest));
+        fwrite(
+            $fp,
+            serialize(['version' => self::STORAGE_VERSION, 'entries' => $manifest]),
+        );
         @flock($fp, LOCK_UN);
         @fclose($fp);
 
         if ($this->module->fileMode !== null) {
             @chmod($indexFile, $this->module->fileMode);
+        }
+
+        if ($resetStorage) {
+            $this->removeStaleDataFiles($manifest);
         }
     }
 }

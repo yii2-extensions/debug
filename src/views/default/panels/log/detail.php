@@ -8,7 +8,7 @@ use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\models\search\LogSearch;
-use yii\debug\panels\log\{LogCellRenderer, LogCountsNormalizer, LogRowNormalizer};
+use yii\debug\panels\log\{LogCellRenderer, LogCounts, LogRow};
 use yii\debug\panels\LogPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -19,7 +19,7 @@ use yii\log\Logger;
  * @var LogPanel $panel Panel providing the detail content.
  * @var LogSearch $searchModel Search model for filtering the log grid.
  */
-$counts = LogCountsNormalizer::fromPanelData($panel->data);
+$counts = LogCounts::fromPanelData($panel->data);
 
 $summaryItems = [
     Span::tag()
@@ -82,7 +82,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
             'filterModel' => $searchModel,
             'filterUrl' => $panel->getUrl(),
             'rowOptions' => static fn(mixed $model): array => LogCellRenderer::buildRowOptions(
-                LogRowNormalizer::from($model),
+                LogRow::fromMixed($model),
             ),
             'columns' => [
                 [
@@ -93,7 +93,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                 [
                     'attribute' => 'time',
                     'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeCell(
-                        LogRowNormalizer::from($data),
+                        LogRow::fromMixed($data),
                     ),
                     'headerOptions' => ['class' => 'sort-numerical'],
                     'contentOptions' => ['class' => 'yii-debug-nowrap'],
@@ -101,7 +101,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                 [
                     'attribute' => 'time_since_previous',
                     'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeSincePreviousCell(
-                        LogRowNormalizer::from($data),
+                        LogRow::fromMixed($data),
                     ),
                     'format' => 'raw',
                     'headerOptions' => ['class' => 'sort-numerical'],
@@ -109,7 +109,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                 [
                     'attribute' => 'level',
                     'value' => static fn(mixed $data): string => LogCellRenderer::renderLevelCell(
-                        LogRowNormalizer::from($data),
+                        LogRow::fromMixed($data),
                     ),
                     'format' => 'raw',
                     'filter' => [
@@ -122,7 +122,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                 [
                     'attribute' => 'category',
                     'value' => static fn(mixed $data): string => LogCellRenderer::renderCategoryCell(
-                        LogRowNormalizer::from($data),
+                        LogRow::fromMixed($data),
                     ),
                     'format' => 'raw',
                     'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
@@ -130,7 +130,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                 [
                     'attribute' => 'message',
                     'value' => static fn(mixed $data): string => LogCellRenderer::renderMessageCell(
-                        LogRowNormalizer::from($data),
+                        LogRow::fromMixed($data),
                         $panel
                     ),
                     'format' => 'raw',

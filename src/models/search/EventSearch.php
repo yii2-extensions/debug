@@ -6,7 +6,6 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
-use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
 
 /**
@@ -80,14 +79,12 @@ class EventSearch extends Base
             return $dataProvider;
         }
 
-        $filter = new Filter();
+        $this->addCondition('isStatic');
+        $this->addCondition('name', true);
+        $this->addCondition('class', true);
+        $this->addCondition('senderClass', true);
 
-        $this->addCondition($filter, 'isStatic');
-        $this->addCondition($filter, 'name', true);
-        $this->addCondition($filter, 'class', true);
-        $this->addCondition($filter, 'senderClass', true);
-
-        $dataProvider->allModels = $filter->filter($models);
+        $dataProvider->allModels = $this->filter($models);
 
         return $dataProvider;
     }

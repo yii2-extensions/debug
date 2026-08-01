@@ -31,6 +31,9 @@ use function is_string;
  */
 class EventPanel extends Panel
 {
+    protected const string ICON = 'events';
+    protected const string NAME = 'Events';
+
     /**
      * @var array<int, array{
      *   time: float,
@@ -61,23 +64,6 @@ class EventPanel extends Panel
             ],
             $this,
         );
-    }
-
-    /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Events';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'events';
     }
 
     /**

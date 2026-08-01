@@ -33,6 +33,9 @@ use function is_string;
  */
 class MailPanel extends Panel
 {
+    protected const string ICON = 'mail';
+    protected const string NAME = 'Mail';
+
     /**
      * Filesystem path (Yii alias) where every captured message is persisted as a `.eml` file.
      */
@@ -80,23 +83,6 @@ class MailPanel extends Panel
         }
 
         return $names;
-    }
-
-    /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Mail';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'mail';
     }
 
     /**
@@ -316,33 +302,7 @@ class MailPanel extends Panel
         }
 
         $summary = $manifest[$previousTag] ?? [];
-        $dataFile = "{$module->dataPath}/{$previousTag}.data";
-
-        if (!is_file($dataFile)) {
-            return null;
-        }
-
-        $blob = @unserialize((string) @file_get_contents($dataFile));
-
-        if (!is_array($blob)) {
-            return null;
-        }
-
-        $mailRaw = $blob['mail'] ?? null;
-
-        if (is_string($mailRaw)) {
-            $mailRaw = @unserialize($mailRaw);
-        }
-
-        $count = 0;
-
-        if (is_array($mailRaw)) {
-            foreach ($mailRaw as $entry) {
-                if (is_array($entry)) {
-                    $count++;
-                }
-            }
-        }
+        $count = is_numeric($summary['mailCount'] ?? null) ? (int) $summary['mailCount'] : 0;
 
         if ($count === 0) {
             return null;

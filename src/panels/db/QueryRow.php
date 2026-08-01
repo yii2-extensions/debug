@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\db;
 
+use yii\debug\helpers\Coerce;
+
+use function is_array;
+use function max;
+
 /**
  * Typed view-model for a single database query row consumed by the queries grid.
  *
@@ -50,4 +55,24 @@ final readonly class QueryRow
          */
         public int|null $rows,
     ) {}
+
+    /**
+     * Builds a typed query row from a data-provider value.
+     */
+    public static function fromMixed(mixed $data): self
+    {
+        $row = is_array($data) ? $data : [];
+
+        return new self(
+            type: Coerce::string($row['type'] ?? null),
+            query: Coerce::string($row['query'] ?? null),
+            duration: Coerce::float($row['duration'] ?? null),
+            trace: Coerce::traceFrames($row['trace'] ?? null),
+            traceHash: Coerce::string($row['traceHash'] ?? null),
+            timestamp: Coerce::float($row['timestamp'] ?? null),
+            seq: Coerce::int($row['seq'] ?? null),
+            duplicate: max(1, Coerce::int($row['duplicate'] ?? null)),
+            rows: Coerce::intOrNull($row['rows'] ?? null),
+        );
+    }
 }

@@ -1,34 +1,10 @@
 /**
  * Index-page client behavior:
- *   1. Row-click delegation — any click on a `.yii-debug-row-link` <tr>
- *      jumps to that request's view, except when the click started inside an
- *      interactive element (link, button, input).
- *   2. History cursor — peek at requests one by one without leaving the page.
+ * History cursor — peek at requests one by one without leaving the page.
  *      The sidebar's snapshot card mirrors whichever GridView row the cursor
- *      sits on; Prev/Next/Latest/First navigate the cursor; rows carry the
+ *      sits on; Newest/Newer/Older/Oldest navigate the cursor; rows carry the
  *      payload as `data-yii-debug-*` attrs so we don't need an extra JSON blob.
  */
-
-(function () {
-  document.addEventListener("click", function (event) {
-    var row = event.target.closest(".yii-debug-row-link");
-    if (!row) {
-      return;
-    }
-    if (event.target.closest("a, button, input, select, textarea, label")) {
-      return;
-    }
-    var href = row.getAttribute("data-href");
-    if (!href) {
-      return;
-    }
-    if (event.metaKey || event.ctrlKey || event.button === 1) {
-      window.open(href, "_blank", "noopener");
-      return;
-    }
-    window.location.href = href;
-  });
-})();
 
 (function () {
   var section = document.querySelector("[data-yii-debug-history-cursor]");
@@ -53,7 +29,7 @@
   /**
    * Honour `data-yii-debug-cursor-init` so the cursor lands on the tag the
    * user was inspecting when they clicked "History" from a panel view. Falls
-   * back to row 0 (latest capture) when the attribute is missing or the tag
+   * back to row 0 (newest capture) when the attribute is missing or the tag
    * isn't on this page.
    */
   var initTag = section.getAttribute("data-yii-debug-cursor-init") || "";
@@ -158,16 +134,16 @@
       );
     }
 
-    var firstBtn = section.querySelector('[data-yii-debug-cursor="first"]');
-    var prevBtn = section.querySelector('[data-yii-debug-cursor="prev"]');
-    var nextBtn = section.querySelector('[data-yii-debug-cursor="next"]');
-    var latestBtn = section.querySelector('[data-yii-debug-cursor="latest"]');
+    var newestBtn = section.querySelector('[data-yii-debug-cursor="newest"]');
+    var newerBtn = section.querySelector('[data-yii-debug-cursor="newer"]');
+    var olderBtn = section.querySelector('[data-yii-debug-cursor="older"]');
+    var oldestBtn = section.querySelector('[data-yii-debug-cursor="oldest"]');
     var atTop = cursor === 0;
     var atBottom = cursor === rows.length - 1;
-    if (firstBtn) firstBtn.classList.toggle("is-disabled", atTop);
-    if (prevBtn) prevBtn.classList.toggle("is-disabled", atTop);
-    if (nextBtn) nextBtn.classList.toggle("is-disabled", atBottom);
-    if (latestBtn) latestBtn.classList.toggle("is-disabled", atBottom);
+    if (newestBtn) newestBtn.disabled = atTop;
+    if (newerBtn) newerBtn.disabled = atTop;
+    if (olderBtn) olderBtn.disabled = atBottom;
+    if (oldestBtn) oldestBtn.disabled = atBottom;
   }
 
   function ensureVerticallyVisible(row) {
@@ -200,14 +176,14 @@
     var btn = event.target.closest("[data-yii-debug-cursor]");
     if (btn && section.contains(btn)) {
       event.preventDefault();
-      if (btn.classList.contains("is-disabled")) {
+      if (btn.disabled) {
         return;
       }
       var dir = btn.getAttribute("data-yii-debug-cursor");
-      if (dir === "prev") moveTo(cursor - 1);
-      else if (dir === "next") moveTo(cursor + 1);
-      else if (dir === "first") moveTo(0);
-      else if (dir === "latest") moveTo(rows.length - 1);
+      if (dir === "newer") moveTo(cursor - 1);
+      else if (dir === "older") moveTo(cursor + 1);
+      else if (dir === "newest") moveTo(0);
+      else if (dir === "oldest") moveTo(rows.length - 1);
     }
   });
 

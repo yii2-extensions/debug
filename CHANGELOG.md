@@ -7,64 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.2.0 Under development
 
-- refactor: Render the sidebar panel nav with the new `ui-awesome/html-core-component` `Menu` component.
-- refactor: Migrate the `default` debug views to `ui-awesome/html` builder components for consistent, escape-safe rendering.
-- fix: Update `yiisoft/yii2` and `yiisoft/yii2-symfonymailer` version constraints for compatibility.
-- docs: Update package badges and add social media links in `README.md`.
-- fix(ci): Remove unnecessary permissions and secrets from `linter.yml` workflow.
-- ci: migrate reusable workflows to pinned `v2.0.1` quality and security checks, updating project status badges.
+- refactor: render the sidebar panel nav with the new `Menu` component.
+- refactor: migrate the default debug views to escape-safe HTML builders.
+- fix: update the Yii and Symfony Mailer compatibility constraints.
+- docs: update package badges and social links.
+- fix(ci): remove unnecessary permissions and secrets from the linter workflow.
+- ci: pin the reusable quality and security workflows to v2.0.1.
+- chore: update frontend dependencies and reusable GitHub Actions workflows.
 - chore: update dependency versions and improve phpinfo output handling.
 - ci: exclude local agent and editor directories from quality checks.
-- chore!: require the `ui-awesome` 0.8 generation (`html ^0.6`, `html-core ^0.8`, `html-core-component ^0.4`, `html-svg ^0.6`).
-- feat!: redesign the debug UI with an instrument-panel identity: Yii-green `light-dark()` token system in `tokens.css`, semantic hue vocabulary for HTTP verbs, status classes, SQL tokens, and timeline categories, and a redesigned toolbar cluster. The timeline variant classes are renamed from severity (`info`/`success`/`warning`/`danger`/`muted`) to domain (`app`/`db`/`view`/`cache`/`mail`/`queue`/`other`).
-- feat: add server-side SQL syntax highlighting (`SqlHighlighter`) to the db panel queries grid and the EXPLAIN view.
-- feat: color timeline spans by domain category and add a chart legend; both palettes validated for color-vision accessibility.
-- feat: self-host the `JetBrains Mono` and `IBM Plex Sans` webfonts through the published asset bundle and drop the Google Fonts CDN links (removes `Major Mono Display`).
-- fix: prevent horizontal overflow in the history and db panel tables, keep statement-type pills and capture timestamps on one line.
-- fix: keep the client's latest theme choice authoritative; the `yii_debug_theme` query snapshot no longer outranks the theme cookie on the server or the client, so stale panel links cannot revert a fresh light/dark pick.
-- fix: make the toolbar follow the host application's theme; unmarked documents read as the host's light state, text-labeled theme switchers are detected, and SPA-mounted switchers are re-checked after page load.
-- refactor: move the toolbar shadow DOM styles from an inline JS string into `toolbar-shadow.css`, bundled with `?inline` and sharing the token system.
-- chore: keep the repository prettier configuration on two-space js/css/json indentation, overriding the `php-forge/baseline` `0.1.7` scaffold refresh (the scaffold lock now guards the file as user-modified).
-- refactor!: replace the removed `DefaultsProviderInterface` classes in `yii\debug\html\defaults` with `tag()` defaults definitions.
-- fix: keep the base `yii-debug-nav-link` class on the active sidebar entry now that `Menu::linkActiveClass()` replaces the link class list.
-- feat: wire the semantic hue vocabulary end to end; the History method/status cells, request hero, sidebar snapshot, toolbar status badge, and AJAX popover now consume the `verb-*`/`status-*` tokens through the new `Vocabulary` helper, with tinted "ink on paper" chips replacing solid fills. Status mapping is unified to `2xx`/`3xx`/`4xx`/`5xx`: 3xx responses now read amber (previously blue or muted depending on the surface) and 4xx gain their own orange, distinct from 5xx red.
-- feat: render log levels as tinted vocabulary chips (`error`/`warning`/`info`/`trace`/`profile`) backed by the new `--yii-debug-level-*` tokens, and map the db statement-type pills onto the REST verb hues (`SELECT` = get, `INSERT` = post, `UPDATE` = put, `DELETE` = delete).
-- feat: add server-side micro-gauge rails behind the History Duration/Memory readouts and the Profiling duration column, scaled to the visible capture maximum (new `Gauge` and `HistoryScale` helpers, no new JavaScript).
-- feat: make the timeline axis ticks adaptive; "nice" `{1, 2, 5} x 10^n` steps with second-scale labels (`1.5 s`) replace the ten fixed ticks that collided on long requests; `DataProvider::getRulers()` now treats its argument as a maximum tick count and defaults to `6`.
-- fix: restore the History status chips and the log row severity tinting; the renderers emitted BEM double-dash classes (`yii-debug-badge--*`, `yii-debug-row--*`) that no stylesheet defined, so both rendered neutral.
-- refactor!: remove `Panel::getSummary()` and the legacy HTML summary fallback from `Panel::getToolbarData()`; `getToolbarItems()` returning `[]` now skips the panel like `null`. Third-party panels must return structured items to surface a toolbar chip.
-- refactor!: remove `DefaultController::actionToolbar()`, the light-DOM `toolbar` view, and its `Module::beforeAction()` allowlist entry; the web-component toolbar consumes the `toolbar-data` JSON endpoint only.
-- refactor!: remove `DbPanel::getSummaryName()`, the eleven per-panel `summary` views, and the `ToolbarBlock`/`ToolbarLabel` HTML defaults.
-- refactor!: drop `toolbar.min.css` from `DebugAsset` and delete the legacy toolbar stylesheet; the user switch view now wears the tinted `yii-debug-level-chip` vocabulary.
-- refactor: delete the dead timeline hover script (its `.debug-timeline-*` selectors matched no markup); `TimelineAsset` ships CSS only.
-- refactor: remove the legacy `panel.html` render branch and the `.legacy-panel` styles from the toolbar web component; panel payloads render exclusively through the structured-items path.
-- refactor!: rename the `--yii-debug-panel-info` token to `--yii-debug-info` as the base informational accent; `--yii-debug-level-info` now aliases it.
-- feat: restyle the generic toolbar badges (`success`/`info`/`loading`/`warning`/`danger`/`cross-request`) with the tinted "ink on paper" vocabulary formula, removing the hardcoded white-on-solid hex pairs; add the missing `.badge` base rule so the AJAX popover status cells render as pills; tokenize the neutral pill fill as `--yii-debug-panel-pill`; the profiling time/memory metrics render as neutral readouts.
-- refactor!: rename the `--yii-debug-panel-success`/`--yii-debug-panel-warning`/`--yii-debug-panel-danger` tokens to `--yii-debug-success`/`--yii-debug-warning`/`--yii-debug-danger`, completing the verdict namespace started by `--yii-debug-info`; stylesheets overriding the old custom properties must adopt the new names.
-- refactor: alias `--yii-debug-sql-num` to `--yii-debug-info`, factor the toolbar's duplicated viridian washes into `--accent-wash-strong`/`--accent-wash-soft` shadow-root locals, and drop the stale `#d97706` `var()` fallbacks from `main.css`.
-- refactor!: narrow `Panel::getToolbarItems()` and its overrides to `: array`; `[]` replaces `null` as the "no toolbar chip" sentinel (the two were already indistinguishable in `getToolbarData()`). Subclasses overriding this protected method must change the signature from `array|null` to `array` and return `[]` instead of `null`.
-- fix: drive the timeline memory chart from the design tokens — the SVG polyline stroke and gradient stops now default to `currentColor` (the memory track sets `color: var(--yii-debug-panel-primary)`), replacing the hardcoded GitHub-green ramp whose trace stayed `#1e6823` in dark mode; numeric `Svg::$gradient` values now mean per-stop `stop-opacity` (string values remain verbatim stop colors), and the gradient id is namespaced to `yii-debug-tl-memory-gradient`.
-- feat: bring the Mail, Dump, and Events panels to the shared design system — Mail opens with the `.yii-debug-grid-summary` strip (message count, failed-count danger stat, working page-size selector) and its status pills and dot join the tinted vocabulary formula; Dump gains an empty-state card with a `Yii::debug()` usage snippet, the `yii-debug-grid-dump` variant, a filter-preserving `filterUrl`, a mono category column, and hue-driven type badges; Events gains an empty-state card, a summary strip (events/classes/static counts), FQCN cells split into muted namespace plus bold short name, a muted `static` badge, and a Yes/No filter dropdown, fixing its copy-pasted grid id and stale `@var` annotation.
+- feat!: migrate to the ui-awesome 0.8 generation and redesign the debug UI.
+- feat(ui): wire semantic vocabulary end to end, add micro-gauges, and make timeline ticks adaptive.
+- refactor!: purge the legacy toolbar and `getSummary()` pipeline and restyle toolbar badges.
+- feat(ui)!: polish the Mail, Dump, and Events panels and tokenize the timeline memory chart.
 - chore: apply the accumulated Rector backlog.
-- fix(ui): raise the timeline memory chart contrast (stronger opacity ramp, `1.5` stroke) and wrap long event FQCNs mid-word at narrow viewports.
-- refactor!: remove the dead timeline color API — `TimelinePanel::getColors()`/`setColors()` and `DataProvider::getColor()`/`getCssClass()`; bars are colored by domain category (`--yii-debug-cat-*` tokens) since the redesign, so the computed hex was never rendered. Configurations passing a `colors` key to the timeline panel now throw `UnknownPropertyException` and must drop it.
-- fix(ui): densify the Events grid header, filter, and body cell padding under the 768px breakpoint, removing the residual horizontal scroll left by classic desktop scrollbars at narrow viewports.
-- feat: highlight the SQL of `yii\db\Command::*` log entries in the Logs panel message column with the same `SqlHighlighter` token spans as the db panel queries grid.
-- fix(ui): always render the resolved route / dispatched action summary in the Router panel `Current Route` tab; the pane no longer renders empty when the routing pass left no trace messages, and a dedicated empty-state heading covers captures with no route data at all.
-- fix(ui): confine horizontal overflow to the table in every GridView panel (History, Logs, Database, Profiling, Queue, Dump, Events, User) by wrapping the grid items in the shared `.yii-debug-table-wrap` scroll container; the page never scrolls sideways anymore and the grids gain the same card frame as the Router/Request/Config tables.
-- fix(ui): hide the low-signal History `IP` and `MAIL` columns at laptop widths (`width <= 1366px`) so the History grid fits without an internal scrollbar; both columns return on wide desktops.
-- feat(ui): render the Logs and Profiling category columns with the shared two-tone treatment (muted namespace prefix, bold `Class::method`) instead of breaking FQCNs mid-word, keep the Profiling timestamp on one line, and add a full-date hover tooltip to the Profiling time column.
-- feat(ui): add contextual empty-state cards to the Database panel (zero queries no longer show a bare filter grid plus an orphan `[+] Explain all` link) and to the User panel (the guest state explains the missing identity and points to the `ruleUserSwitch` feature instead of the raw `Is guest.` text).
-- fix(ui): unify the empty-state convention — Queue and Asset Bundles now keep their summary strips visible in the empty state, matching Mail, Dump, Events, and Profiling; the rows-per-page selector hides whenever a grid has no rows.
-- refactor: extract the shared `EmptyState::card()` helper and the `Fqcn::renderLabel()` two-tone label used by the panel views and cell renderers.
-- feat(ui): render the Timeline span labels with the shared two-tone treatment and widen the label column to `32%` below wide-desktop widths, so long FQCNs no longer truncate while the chart half idles.
-- fix(ui): move the Router `Pretty URL` / `Strict Parsing` / `Global Suffix` badges out of the tab row into their own summary strip.
-- fix(ui): disable font ligatures in code snippets (`code`, `pre`) so JetBrains Mono renders `->` verbatim instead of an arrow glyph.
-- fix(ui): name the rows-per-page `<select>` (`per-page`) so it no longer triggers the DevTools "form field without id or name" issue.
-- feat(ui): clamp overly long messages in the Logs grid behind a `[+] Show more` pill toggle; the new `CellMore` helper and the `cell-more` delegation in `debug.min.js` are reusable by any grid cell.
-- feat: add an Inertia panel that captures the server-side page object (component, props, URL, asset version) for full page loads and Inertia XHR visits, renders the props as an origin-labeled grid (config-shared vs page props) with type and value preview plus the raw payload, surfaces the `X-Inertia-*` negotiation headers and partial reloads, and explains `409` version conflicts; the panel enables itself only when the application wires the `yii2-extensions/inertia` `Manager` under the `inertia` component id, and its sidebar entry activates per capture — plain non-Inertia requests do not list it.
-- feat: add `Panel::hasContent()` so integration panels can activate per capture; the sidebar nav skips panels that report no content for the loaded request in view mode.
-- feat: show Vite assets in the Asset Bundles panel — when the application wires the `yii2-extensions/inertia` Vite bridge, the panel captures the bridge configuration (mode, dev server, base URL, manifest path) and the build manifest chunks (output file, CSS count, imports, entry flag) alongside the Yii asset bundles.
+- fix(ui): improve timeline contrast and wrap long event class names on narrow viewports.
+- refactor!: remove the dead timeline color API and improve the Events grid on narrow viewports.
+- feat(ui): fix Router details, grid overflow, category labels, and panel empty states.
+- feat: add the Inertia panel, expose Vite assets, improve log messages, and polish panel navigation.
+- refactor!: simplify debug storage, normalization, assets, and accessible UI for `0.2`; see `UPGRADE.md` for migration details.
 
 ## 0.1.1 May 18, 2026
 

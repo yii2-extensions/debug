@@ -20,15 +20,13 @@ class DebugAsset extends AssetBundle
      * CSS files registered with this bundle.
      */
     public $css = [
-        'dist/css/main.min.css',
+        'dist/css/debug.min.css',
     ];
     /**
      * JavaScript files registered with this bundle.
      */
     public $js = [
         'dist/js/debug.min.js',
-        'dist/js/theme-toggle.min.js',
-        'dist/js/history-cursor.min.js',
     ];
     /**
      * Source path (Yii alias) under which the bundled assets live; published by the Asset Manager on first

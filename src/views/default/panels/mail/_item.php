@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use yii\debug\panels\mail\{MailCardRenderer, MailMessageNormalizer};
+use yii\debug\panels\mail\{MailCardRenderer, MailMessage};
 use yii\helpers\Url;
 
 /**
@@ -11,6 +11,6 @@ use yii\helpers\Url;
  */
 ?>
 <?= MailCardRenderer::renderItem(
-    MailMessageNormalizer::from($model),
+    MailMessage::fromMixed($model),
     static fn(string $file): string => Url::to(['download-mail', 'file' => $file]),
 );

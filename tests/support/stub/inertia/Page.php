@@ -9,7 +9,7 @@ use JsonSerializable;
 /**
  * Stand-in for the `yii2-extensions/inertia` page payload, loaded only when the real package is absent.
  */
-final class Page implements JsonSerializable
+final readonly class Page implements JsonSerializable
 {
     /**
      * @param string $component Component name rendered for the visit.
@@ -18,10 +18,10 @@ final class Page implements JsonSerializable
      * @param string $version Asset version fingerprint.
      */
     public function __construct(
-        private readonly string $component,
-        private readonly array $props,
-        private readonly string $url,
-        private readonly string $version,
+        private string $component,
+        private array $props,
+        private string $url,
+        private string $version,
     ) {}
 
     /**

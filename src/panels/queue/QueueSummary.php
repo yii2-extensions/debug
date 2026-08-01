@@ -7,6 +7,7 @@ namespace yii\debug\panels\queue;
 use function array_unique;
 use function array_values;
 use function count;
+use function is_array;
 
 /**
  * Typed aggregate view-model for the Queue panel detail view.
@@ -37,6 +38,27 @@ final readonly class QueueSummary
         }
 
         return array_values(array_unique($ids));
+    }
+
+    /**
+     * Builds a queue summary from a raw panel payload.
+     */
+    public static function fromPanelData(mixed $data): self
+    {
+        $payload = is_array($data) ? $data : [];
+        $rawRecords = $payload['records'] ?? null;
+
+        if (!is_array($rawRecords)) {
+            return new self([]);
+        }
+
+        $records = [];
+
+        foreach ($rawRecords as $row) {
+            $records[] = JobRecord::fromMixed($row);
+        }
+
+        return new self($records);
     }
 
     /**

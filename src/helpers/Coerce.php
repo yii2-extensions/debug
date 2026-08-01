@@ -22,11 +22,27 @@ use function is_string;
 final class Coerce
 {
     /**
+     * Returns a numeric value as a float or the supplied default.
+     */
+    public static function float(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    /**
      * Returns the value as a float when it is numeric, `null` otherwise.
      */
     public static function floatOrNull(mixed $value): float|null
     {
         return is_numeric($value) ? (float) $value : null;
+    }
+
+    /**
+     * Returns a numeric value as an int or the supplied default.
+     */
+    public static function int(mixed $value, int $default = 0): int
+    {
+        return self::intOrNull($value) ?? $default;
     }
 
     /**
@@ -39,6 +55,14 @@ final class Coerce
         }
 
         return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
+     * Returns a string value or the supplied default.
+     */
+    public static function string(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : $default;
     }
 
     /**

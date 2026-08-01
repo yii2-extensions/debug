@@ -15,9 +15,7 @@ use yii\debug\panels\DbPanel;
 use yii\helpers\Url;
 
 use function implode;
-use function is_string;
 use function number_format;
-use function trim;
 
 /**
  * Renders the History index summary header + the per-cell HTML consumed by the GridView columns and the typed
@@ -29,8 +27,8 @@ use function trim;
 final class HistoryRowRenderer
 {
     /**
-     * Builds the `rowOptions` attribute map for one captured-request row `class` carries the critical-status highlight
-     * + the JS row-link hook, and the `data-*` attributes feed the sidebar's history-cursor JS.
+     * Builds the `rowOptions` attribute map for one captured-request row. The `data-*` attributes feed the sidebar's
+     * history cursor.
      *
      * @return array<string, mixed>
      */
@@ -40,10 +38,6 @@ final class HistoryRowRenderer
             ? GridViewConfig::rowClassFor('danger')
             : [];
 
-        $rowClass = is_string($base['class'] ?? null) ? $base['class'] : '';
-
-        $base['class'] = trim($rowClass . ' yii-debug-row-link');
-        $base['data-href'] = Url::to(['view', 'tag' => $row->tag]);
         $base['data-yii-debug-tag'] = $row->tag;
         $base['data-yii-debug-method'] = $row->method;
         $base['data-yii-debug-url'] = $row->url;

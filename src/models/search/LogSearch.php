@@ -6,7 +6,6 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
-use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
 
 /**
@@ -75,13 +74,11 @@ class LogSearch extends Base
             return $dataProvider;
         }
 
-        $filter = new Filter();
+        $this->addCondition('level');
+        $this->addCondition('category', true);
+        $this->addCondition('message', true);
 
-        $this->addCondition($filter, 'level');
-        $this->addCondition($filter, 'category', true);
-        $this->addCondition($filter, 'message', true);
-
-        $dataProvider->allModels = $filter->filter($models);
+        $dataProvider->allModels = $this->filter($models);
 
         return $dataProvider;
     }

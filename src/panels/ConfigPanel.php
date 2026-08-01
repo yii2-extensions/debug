@@ -52,6 +52,9 @@ use function is_string;
  */
 class ConfigPanel extends Panel
 {
+    protected const string ICON = 'config';
+    protected const string NAME = 'Configuration';
+
     /**
      * Renders the detail view from the normalized configuration summary.
      */
@@ -96,62 +99,11 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Configuration';
-    }
-
-    /**
-     * Returns the `<body>` contents of the {@see phpinfo()} output, rewrapped so the panel's table styles apply.
-     */
-    public function getPhpInfo(): string
-    {
-        ob_start();
-        phpinfo();
-
-        $pinfo = ob_get_clean();
-
-        if ($pinfo === false) {
-            return '';
-        }
-
-        $phpinfo = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $pinfo) ?? $pinfo;
-
-        $phpinfo = str_replace(
-            '<table',
-            '<div class="yii-debug-table-wrap"><table class="yii-debug-table yii-debug-phpinfo__table" ',
-            $phpinfo,
-        );
-        $phpinfo = str_replace(
-            '</table>',
-            '</table></div>',
-            $phpinfo,
-        );
-
-        return str_replace(
-            '<div class="center">',
-            '<div class="yii-debug-phpinfo">',
-            $phpinfo,
-        );
-    }
-
-    /**
      * Returns the saved PHP version (`php.version`), or `null` when the snapshot is missing.
      */
     public function getPhpVersion(): string|null
     {
         return self::nestedScalar($this->data, 'php', 'version');
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'config';
     }
 
     /**

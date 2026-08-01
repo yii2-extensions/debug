@@ -27,6 +27,9 @@ use function is_int;
  */
 class ProfilingPanel extends Panel
 {
+    protected const string ICON = 'profiling';
+    protected const string NAME = 'Profiling';
+
     /**
      * @var array<int, array{
      *   duration: float,
@@ -77,15 +80,6 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Profiling';
-    }
-
-    /**
      * Hides the "Profiling" title from the toolbar; the gauge icon plus the time/memory metrics are self-explanatory.
      *
      * @return array<string, mixed> Toolbar payload with the title blanked on success.
@@ -100,14 +94,6 @@ class ProfilingPanel extends Panel
         }
 
         return $data;
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'profiling';
     }
 
     /**

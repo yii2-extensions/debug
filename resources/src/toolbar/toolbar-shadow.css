@@ -149,8 +149,11 @@
   align-items: center;
   gap: 6px;
   padding: 2px 6px;
+  border: 0;
   border-radius: 10px;
   color: var(--yii-debug-panel-text);
+  background: transparent;
+  font: inherit;
   text-decoration: none;
   cursor: pointer;
   transition: background 0.12s ease;
@@ -237,6 +240,7 @@
   white-space: nowrap;
   box-sizing: border-box;
   cursor: default;
+  font: inherit;
   box-shadow: 0 1px 0 light-dark(rgb(255 255 255 / 80%), rgb(255 255 255 / 6%))
     inset;
   transition:

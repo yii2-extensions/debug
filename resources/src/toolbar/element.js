@@ -526,7 +526,6 @@ YiiDebugToolbar.prototype.render = function () {
     '<div class="bar">' +
     (this.expanded
       ? this.renderBrand() +
-        this.renderPhpChip() +
         profilingChip +
         this.renderAjaxPanel() +
         this.renderPanels(["profiling"]) +
@@ -574,14 +573,14 @@ YiiDebugToolbar.prototype.renderBrand = function () {
     : "Open configuration";
 
   var yiiLink =
-    '<span class="brand-link brand-link-yii" role="button" tabindex="0"' +
+    '<button type="button" class="brand-link brand-link-yii"' +
     yiiAttr +
     ' title="' +
     escapeHtml(yiiTitle) +
     '">' +
     this.renderLogo() +
     yiiVersion +
-    "</span>";
+    "</button>";
 
   var phpLink = "";
   if (this.data.phpVersion) {
@@ -608,10 +607,6 @@ YiiDebugToolbar.prototype.renderBrand = function () {
     : "";
 
   return '<div class="brand">' + yiiLink + divider + phpLink + "</div>";
-};
-
-YiiDebugToolbar.prototype.renderPhpChip = function () {
-  return "";
 };
 
 /*
@@ -693,7 +688,9 @@ YiiDebugToolbar.prototype.renderAjaxPanel = function () {
   }
 
   return (
-    '<div class="panel ajax-panel">' +
+    '<div class="panel ajax-panel" role="group" tabindex="0" aria-label="AJAX requests: ' +
+    requests.length +
+    '">' +
     icon +
     '<span class="panel-title">AJAX</span>' +
     '<span class="metric"><span class="metric-value badge-' +
@@ -701,7 +698,7 @@ YiiDebugToolbar.prototype.renderAjaxPanel = function () {
     '">' +
     requests.length +
     "</span></span>" +
-    '<div class="ajax-popover"><table><thead><tr><th>Method</th><th>Status</th><th>URL</th><th>Time</th><th>Profile</th></tr></thead>' +
+    '<div class="ajax-popover"><table><thead><tr><th scope="col">Method</th><th scope="col">Status</th><th scope="col">URL</th><th scope="col">Time</th><th scope="col">Profile</th></tr></thead>' +
     "<tbody>" +
     rows +
     "</tbody></table></div></div>"
@@ -798,9 +795,9 @@ YiiDebugToolbar.prototype.renderPanel = function (panel) {
   var iconHtml = panel.icon ? this.iconHtml(panel.icon, "panel-icon") : "";
 
   return (
-    '<div class="panel' +
+    '<button type="button" class="panel' +
     panelClass +
-    '" role="button" tabindex="0" title="' +
+    '" title="' +
     escapeHtml(attrTitle) +
     '"' +
     url +
@@ -810,7 +807,7 @@ YiiDebugToolbar.prototype.renderPanel = function (panel) {
       ? '<span class="panel-title">' + escapeHtml(rawTitle) + "</span>"
       : "") +
     metrics +
-    "</div>"
+    "</button>"
   );
 };
 
@@ -819,7 +816,7 @@ YiiDebugToolbar.prototype.renderControls = function () {
     ? '<a class="control" href="' +
       escapeHtml(this.withTheme(this.activeUrl)) +
       '" target="_blank" rel="noopener" title="Open panel in a new tab">↗</a>'
-    : '<span class="control disabled" title="Open a panel first">↗</span>';
+    : '<button type="button" class="control disabled" title="Open a panel first" disabled>↗</button>';
   var drawer = this.drawerOpen
     ? '<button type="button" class="control close-drawer" title="Close panel" aria-label="Close panel">×</button>'
     : "";

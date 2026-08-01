@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace yii\debug\tests\config;
 
 use PHPUnit\Framework\Attributes\Group;
-use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\support\TestCase;
@@ -14,7 +13,7 @@ use function is_string;
 
 /**
  * Unit tests for {@see ConfigPanel} covering the configuration snapshot produced by `save()`, the extension roster
- * narrowing, the version pluck helpers, the toolbar-items short-circuit, and the typed phpinfo wrapper.
+ * narrowing, the version pluck helpers, and the toolbar-items short-circuit.
  */
 #[Group('panel')]
 #[Group('config')]
@@ -158,36 +157,6 @@ final class ConfigPanelTest extends TestCase
             'config',
             $panel->getToolbarIcon(),
             "Icon key must be 'config'.",
-        );
-    }
-
-    public function testGetPhpInfoReturnsCapturedOutput(): void
-    {
-        $panel = new ConfigPanel();
-
-        $html = $panel->getPhpInfo();
-
-        self::assertNotEmpty(
-            $html,
-            "Must capture 'phpinfo()' output.",
-        );
-        self::assertStringContainsString(
-            'PHP',
-            $html,
-            "Captured output must mention 'PHP' (SAPI-agnostic anchor).",
-        );
-    }
-
-    public function testGetPhpInfoReturnsEmptyStringWhenOutputBufferCaptureFails(): void
-    {
-        MockerState::addCondition('yii\debug\panels', 'ob_start', [], true);
-        MockerState::addCondition('yii\debug\panels', 'phpinfo', [], true);
-        MockerState::addCondition('yii\debug\panels', 'ob_get_clean', [], false);
-
-        self::assertSame(
-            '',
-            (new ConfigPanel())->getPhpInfo(),
-            'Failed buffer capture must yield an empty string.',
         );
     }
 

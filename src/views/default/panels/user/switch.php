@@ -5,9 +5,9 @@ declare(strict_types=1);
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Form\Button;
 use UIAwesome\Html\Form\Values\ButtonType;
-use UIAwesome\Html\Heading\H3;
+use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\Phrasing\Span;
-use yii\debug\{GridViewConfig, UserswitchAsset};
+use yii\debug\GridViewConfig;
 use yii\debug\panels\UserPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -19,11 +19,9 @@ use yii\widgets\ActiveForm;
  * @var UserPanel $panel User panel providing user-switch data.
  * @var View $this View component instance.
  */
-UserswitchAsset::register($this);
-
 $userSwitch = $panel->userSwitch;
 ?>
-<?= H3::tag()
+<?= H2::tag()
     ->content('Switch user') ?>
 <div class="yii-debug-grid-2">
     <?php if ($userSwitch !== null): ?>

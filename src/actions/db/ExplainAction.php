@@ -70,6 +70,7 @@ class ExplainAction extends Action
         $db = $this->panel->getDb();
         $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';
         $results = $db->createCommand("{$explainPrefix}{$query}")->queryAll();
+        $controller->prepareShell($this->panel, $tag);
 
         $params = ['query' => $query, 'results' => $results];
 

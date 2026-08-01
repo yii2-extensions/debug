@@ -38,6 +38,9 @@ use function json_encode;
  */
 class InertiaPanel extends Panel
 {
+    protected const string ICON = 'inertia';
+    protected const string NAME = 'Inertia';
+
     /**
      * Application component id under which the Inertia manager is registered.
      */
@@ -74,23 +77,6 @@ class InertiaPanel extends Panel
     public function getDetail(): string
     {
         return Yii::$app->view->render('panels/inertia/detail', ['panel' => $this], $this);
-    }
-
-    /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Inertia';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'inertia';
     }
 
     /**

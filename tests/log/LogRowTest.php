@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace yii\debug\tests\log;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\log\LogRowNormalizer;
+use yii\debug\panels\log\LogRow;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see LogRowNormalizer} covering the narrowing of GridView callback arguments into a typed
+ * Unit tests for {@see LogRow} covering the narrowing of GridView callback arguments into a typed
  * {@see \yii\debug\panels\log\LogRow}, including the `mixed` message exported via {@see \yii\helpers\VarDumper}.
  */
 #[Group('panel')]
 #[Group('log')]
-final class LogRowNormalizerTest extends TestCase
+final class LogRowTest extends TestCase
 {
     public function testFromCoercesNumericStringsToIntAndFloat(): void
     {
-        $row = LogRowNormalizer::from(
+        $row = LogRow::fromMixed(
             [
                 'id' => '7',
                 'level' => '4',
@@ -61,19 +61,19 @@ final class LogRowNormalizerTest extends TestCase
     {
         self::assertSame(
             [],
-            LogRowNormalizer::from(['trace' => 'not an array'])->trace,
+            LogRow::fromMixed(['trace' => 'not an array'])->trace,
             "Non-array trace must yield '[]'."
         );
         self::assertSame(
             [],
-            LogRowNormalizer::from(['trace' => null])->trace,
+            LogRow::fromMixed(['trace' => null])->trace,
             "Null trace must yield '[]'."
         );
     }
 
     public function testFromDropsNonArrayTraceFramesAndNonStringFrameKeys(): void
     {
-        $row = LogRowNormalizer::from(
+        $row = LogRow::fromMixed(
             [
                 'trace' => [
                     ['file' => '/a.php', 0 => 'numeric-key', 'line' => 5],
@@ -97,7 +97,7 @@ final class LogRowNormalizerTest extends TestCase
 
     public function testFromExportsNonStringMessageViaVarDumper(): void
     {
-        $arrayMessage = LogRowNormalizer::from(
+        $arrayMessage = LogRow::fromMixed(
             ['message' => ['foo' => 'bar']],
         )->message;
 
@@ -113,22 +113,22 @@ final class LogRowNormalizerTest extends TestCase
         );
         self::assertSame(
             '42',
-            LogRowNormalizer::from(['message' => 42])->message,
+            LogRow::fromMixed(['message' => 42])->message,
             'Integers must be exported as their literal representation.',
         );
         self::assertSame(
             'true',
-            LogRowNormalizer::from(['message' => true])->message,
+            LogRow::fromMixed(['message' => true])->message,
             'Booleans must be exported as `true` / `false` literals.',
         );
     }
 
     public function testFromKeepsIdOfPreviousAndNextNullWhenAbsentOrNonNumeric(): void
     {
-        $missing = LogRowNormalizer::from(
+        $missing = LogRow::fromMixed(
             [],
         );
-        $invalid = LogRowNormalizer::from(
+        $invalid = LogRow::fromMixed(
             [
                 'id_of_previous' => 'abc',
                 'id_of_next' => null,
@@ -155,7 +155,7 @@ final class LogRowNormalizerTest extends TestCase
 
     public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
     {
-        $row = LogRowNormalizer::from(
+        $row = LogRow::fromMixed(
             'not an array',
         );
 
@@ -206,7 +206,7 @@ final class LogRowNormalizerTest extends TestCase
 
     public function testFromRoundTripsTypedRow(): void
     {
-        $row = LogRowNormalizer::from(
+        $row = LogRow::fromMixed(
             [
                 'id' => 7,
                 'message' => 'Something happened',

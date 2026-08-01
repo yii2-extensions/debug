@@ -4,6 +4,18 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\mail;
 
+use DateTimeInterface;
+use yii\debug\helpers\Coerce;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function explode;
+use function is_array;
+use function is_int;
+use function is_string;
+use function strtotime;
+
 /**
  * Typed view-model for a single mail message rendered in the Mail panel detail view.
  *
@@ -63,4 +75,84 @@ final readonly class MailMessage
          */
         public int|null $time,
     ) {}
+
+    /**
+     * @param array<array-key, mixed> $models
+     */
+    public static function failedCount(array $models): int
+    {
+        $failed = 0;
+
+        foreach ($models as $model) {
+            if (!self::fromMixed($model)->isSuccessful) {
+                $failed++;
+            }
+        }
+
+        return $failed;
+    }
+
+    /**
+     * Builds a typed mail message from a data-provider value.
+     */
+    public static function fromMixed(mixed $data): self
+    {
+        $row = is_array($data) ? $data : [];
+
+        return new self(
+            from: self::scalar($row, 'from'),
+            to: self::splitAddresses(self::scalar($row, 'to')),
+            cc: self::splitAddresses(self::scalar($row, 'cc')),
+            bcc: self::splitAddresses(self::scalar($row, 'bcc')),
+            replyTo: self::splitAddresses(self::scalar($row, 'reply')),
+            subject: self::scalar($row, 'subject'),
+            body: self::scalar($row, 'body'),
+            headers: self::scalar($row, 'headers'),
+            charset: self::scalar($row, 'charset'),
+            file: Coerce::string($row['file'] ?? null),
+            isSuccessful: ($row['isSuccessful'] ?? false) === true,
+            time: self::normalizeTime($row['time'] ?? null),
+        );
+    }
+
+    private static function normalizeTime(mixed $value): int|null
+    {
+        if ($value instanceof DateTimeInterface) {
+            return $value->getTimestamp();
+        }
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && $value !== '') {
+            $parsed = strtotime($value);
+
+            return $parsed === false ? null : $parsed;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<array-key, mixed> $row
+     */
+    private static function scalar(array $row, string $key): string
+    {
+        return Coerce::stringOrNull($row[$key] ?? null) ?? '';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function splitAddresses(string $raw): array
+    {
+        if ($raw === '') {
+            return [];
+        }
+
+        $parts = array_map(trim(...), explode(',', $raw));
+
+        return array_values(array_filter($parts, static fn(string $address): bool => $address !== ''));
+    }
 }

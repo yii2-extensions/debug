@@ -10,7 +10,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\LogSearch;
-use yii\debug\panels\dump\{DumpCardRenderer, DumpRowNormalizer};
+use yii\debug\panels\dump\{DumpCardRenderer, DumpRow};
 use yii\debug\panels\DumpPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -83,7 +83,7 @@ if ($hasDumps) {
                 [
                     'attribute' => 'message',
                     'value' => static fn(mixed $data, mixed $key, int $index): string => DumpCardRenderer::renderMessageCell(
-                        DumpRowNormalizer::from($data),
+                        DumpRow::fromMixed($data),
                         $panel,
                         $index,
                     ),

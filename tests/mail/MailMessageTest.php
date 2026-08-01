@@ -7,20 +7,20 @@ namespace yii\debug\tests\mail;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\Group;
 use Stringable;
-use yii\debug\panels\mail\MailMessageNormalizer;
+use yii\debug\panels\mail\MailMessage;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see MailMessageNormalizer} covering payload narrowing, address splitting, time parsing, the
+ * Unit tests for {@see MailMessage} covering payload narrowing, address splitting, time parsing, the
  * scalar-to-string coercion of header/body fields, and the failed-send aggregate.
  */
 #[Group('panel')]
 #[Group('mail')]
-final class MailMessageNormalizerTest extends TestCase
+final class MailMessageTest extends TestCase
 {
     public function testFailedCountCountsUnsuccessfulMessages(): void
     {
-        $count = MailMessageNormalizer::failedCount(
+        $count = MailMessage::failedCount(
             [
                 ['isSuccessful' => true],
                 ['isSuccessful' => false],
@@ -40,14 +40,14 @@ final class MailMessageNormalizerTest extends TestCase
     {
         self::assertSame(
             0,
-            MailMessageNormalizer::failedCount([]),
+            MailMessage::failedCount([]),
             'Empty list must yield zero.',
         );
     }
 
     public function testFromCoercesScalarHeaderFieldsToStrings(): void
     {
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             ['from' => 42, 'subject' => true, 'charset' => 1.5],
         );
 
@@ -77,7 +77,7 @@ final class MailMessageNormalizerTest extends TestCase
             }
         };
 
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             ['subject' => $stringable],
         );
 
@@ -92,7 +92,7 @@ final class MailMessageNormalizerTest extends TestCase
     {
         self::assertSame(
             '',
-            MailMessageNormalizer::from(['file' => 42])->file,
+            MailMessage::fromMixed(['file' => 42])->file,
             "Non-string `file` must collapse to ''.",
         );
     }
@@ -100,26 +100,26 @@ final class MailMessageNormalizerTest extends TestCase
     public function testFromCollapsesUnparseableTimeToNull(): void
     {
         self::assertNull(
-            MailMessageNormalizer::from(['time' => 'not a date'])->time,
+            MailMessage::fromMixed(['time' => 'not a date'])->time,
             "Garbage string must collapse to 'null'.",
         );
         self::assertNull(
-            MailMessageNormalizer::from(['time' => ''])->time,
+            MailMessage::fromMixed(['time' => ''])->time,
             "Empty string must collapse to 'null'.",
         );
         self::assertNull(
-            MailMessageNormalizer::from(['time' => null])->time,
+            MailMessage::fromMixed(['time' => null])->time,
             "'null' must collapse to 'null'.",
         );
         self::assertNull(
-            MailMessageNormalizer::from(['time' => ['nested']])->time,
+            MailMessage::fromMixed(['time' => ['nested']])->time,
             "Array must collapse to 'null'.",
         );
     }
 
     public function testFromDropsEmptySegmentsBetweenCommas(): void
     {
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             ['to' => 'a@example.com,, ,b@example.com,'],
         );
 
@@ -132,7 +132,7 @@ final class MailMessageNormalizerTest extends TestCase
 
     public function testFromFallsBackToEmptyWhenStringFieldsAreNonScalar(): void
     {
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             [
                 'from' => ['nested'],
                 'subject' => null,
@@ -147,7 +147,7 @@ final class MailMessageNormalizerTest extends TestCase
     {
         self::assertSame(
             1_700_000_000,
-            MailMessageNormalizer::from(['time' => 1_700_000_000])->time,
+            MailMessage::fromMixed(['time' => 1_700_000_000])->time,
             'Int time must round-trip unchanged.',
         );
     }
@@ -155,23 +155,23 @@ final class MailMessageNormalizerTest extends TestCase
     public function testFromMapsTruthyIsSuccessfulOnlyWhenStrictlyTrue(): void
     {
         self::assertTrue(
-            MailMessageNormalizer::from(['isSuccessful' => true])->isSuccessful,
+            MailMessage::fromMixed(['isSuccessful' => true])->isSuccessful,
             "'true' must round-trip.",
         );
         self::assertFalse(
-            MailMessageNormalizer::from(['isSuccessful' => 1])->isSuccessful,
+            MailMessage::fromMixed(['isSuccessful' => 1])->isSuccessful,
             "'1' must not be accepted (strict comparison)."
         );
         self::assertFalse(
-            MailMessageNormalizer::from(['isSuccessful' => 'true'])->isSuccessful,
+            MailMessage::fromMixed(['isSuccessful' => 'true'])->isSuccessful,
             "'true' must not be accepted."
         );
         self::assertFalse(
-            MailMessageNormalizer::from(['isSuccessful' => false])->isSuccessful,
+            MailMessage::fromMixed(['isSuccessful' => false])->isSuccessful,
             "'false' must yield 'false'."
         );
         self::assertFalse(
-            MailMessageNormalizer::from([])->isSuccessful,
+            MailMessage::fromMixed([])->isSuccessful,
             "Missing flag must default to 'false'."
         );
     }
@@ -180,7 +180,7 @@ final class MailMessageNormalizerTest extends TestCase
     {
         $datetime = new DateTimeImmutable('2024-06-15T12:34:56+00:00');
 
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             ['time' => $datetime],
         );
 
@@ -193,7 +193,7 @@ final class MailMessageNormalizerTest extends TestCase
 
     public function testFromParsesStringTimeViaStrtotime(): void
     {
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             ['time' => '2024-06-15T12:34:56+00:00'],
         );
 
@@ -206,7 +206,7 @@ final class MailMessageNormalizerTest extends TestCase
 
     public function testFromReturnsAllEmptyDefaultsWhenInputIsNotArray(): void
     {
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             'not an array',
         );
 
@@ -272,7 +272,7 @@ final class MailMessageNormalizerTest extends TestCase
 
     public function testFromRoundTripsTypedFields(): void
     {
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             [
                 'from' => 'sender@example.com',
                 'subject' => 'Hello',
@@ -322,7 +322,7 @@ final class MailMessageNormalizerTest extends TestCase
 
     public function testFromSplitsCommaSeparatedRecipients(): void
     {
-        $message = MailMessageNormalizer::from(
+        $message = MailMessage::fromMixed(
             [
                 'to' => 'a@example.com, b@example.com,c@example.com',
                 'cc' => 'cc@example.com',

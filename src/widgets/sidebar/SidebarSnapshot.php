@@ -6,17 +6,17 @@ namespace yii\debug\widgets\sidebar;
 
 /**
  * Typed view-model for the snapshot card surfaced at the top of the debugger sidebar ('CURRENT REQUEST' /
- * 'LATEST REQUEST').
+ * 'NEWEST REQUEST').
  *
  * Pre-resolves every loose-array access on the request summary ('method', 'url', 'statusCode', 'time', 'ajax') plus
- * the navigation URLs ('First' / 'Prev' / 'Next' / 'Latest'), the status-pill variant, the path-only URL display, and
+ * the navigation URLs ('Newest' / 'Newer' / 'Older' / 'Oldest'), the status-pill variant, path-only URL display, and
  * the cursor-mode flag that the `index.php` JS bridge needs to wire the GridView highlight.
  */
 final readonly class SidebarSnapshot
 {
     public function __construct(
         /**
-         * Section heading shown above the snapshot card ('Current request' / 'Latest request').
+         * Section heading shown above the snapshot card ('Current request' / 'Newest request').
          */
         public string $title,
         /**
@@ -57,48 +57,48 @@ final readonly class SidebarSnapshot
         public bool $isCursor,
         /**
          * Optional tag the cursor JS should land on when the sidebar arrives from a panel view's History link
-         * (`?cursor=<tag>`). Empty string falls back to the latest captured request.
+         * (`?cursor=<tag>`). Empty string falls back to the newest captured request.
          */
         public string $cursorInitTag,
         /**
-         * First request URL parameters (top of list, newest captured).
+         * Newest request URL parameters (top of list).
          *
          * @var array<int|string, string>
          */
-        public array $firstUrl,
+        public array $newestUrl,
         /**
-         * Latest request URL parameters (bottom of list, oldest captured).
+         * Oldest request URL parameters (bottom of list).
          *
          * @var array<int|string, string>
          */
-        public array $latestUrl,
+        public array $oldestUrl,
         /**
-         * Previous (newer) request URL parameters; empty array when the snapshot is already on the first row.
+         * Newer request URL parameters; empty array when the snapshot is already on the newest row.
          *
          * @var array<int|string, string>
          */
-        public array $prevUrl,
+        public array $newerUrl,
         /**
-         * Next (older) request URL parameters; empty array when the snapshot is already on the last row.
+         * Older request URL parameters; empty array when the snapshot is already on the oldest row.
          *
          * @var array<int|string, string>
          */
-        public array $nextUrl,
+        public array $olderUrl,
         /**
-         * `true` when the snapshot is the first (newest) captured request; disables the First button.
+         * `true` when the snapshot is the newest captured request; disables the Newest button.
          */
-        public bool $onFirst,
+        public bool $isNewest,
         /**
-         * `true` when the snapshot is the latest (oldest) captured request; disables the Latest button.
+         * `true` when the snapshot is the oldest captured request; disables the Oldest button.
          */
-        public bool $onLatest,
+        public bool $isOldest,
         /**
-         * `true` when there is a previous (newer) request available; controls the Prev button.
+         * `true` when there is a newer request available; controls the Newer button.
          */
-        public bool $hasPrev,
+        public bool $hasNewer,
         /**
-         * `true` when there is a next (older) request available; controls the Next button.
+         * `true` when there is an older request available; controls the Older button.
          */
-        public bool $hasNext,
+        public bool $hasOlder,
     ) {}
 }

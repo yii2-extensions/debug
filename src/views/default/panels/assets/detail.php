@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Flow\{Div, P};
-use UIAwesome\Html\Heading\{H1, H3};
+use UIAwesome\Html\Heading\{H1, H2};
 use UIAwesome\Html\List\{Li, Ol};
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
@@ -91,7 +91,7 @@ foreach ($stats as [$kind, $icon, $value, $label]) {
         $viteIndex++;
     }
     ?>
-    <?= H3::tag()->content('Vite') ?>
+    <?= H2::tag()->content('Vite') ?>
     <?= Div::tag()
         ->class('yii-debug-table-wrap')
         ->html(
@@ -100,7 +100,7 @@ foreach ($stats as [$kind, $icon, $value, $label]) {
                 ->html(
                     Tbody::tag()->html(
                         Tr::tag()->html(
-                            Th::tag()->content('Mode'),
+                            Th::tag()->scope('row')->content('Mode'),
                             Td::tag()->content(
                                 $viteDevMode
                                     ? 'Dev server' . ($viteDevServer !== null ? " ({$viteDevServer})" : '')
@@ -108,11 +108,11 @@ foreach ($stats as [$kind, $icon, $value, $label]) {
                             ),
                         ),
                         Tr::tag()->html(
-                            Th::tag()->content('Base URL'),
+                            Th::tag()->scope('row')->content('Base URL'),
                             Td::tag()->content($viteBaseUrl !== '' ? $viteBaseUrl : '—'),
                         ),
                         Tr::tag()->html(
-                            Th::tag()->content('Manifest'),
+                            Th::tag()->scope('row')->content('Manifest'),
                             Td::tag()->content($viteManifest !== '' ? $viteManifest : '—'),
                         ),
                     ),
@@ -127,12 +127,12 @@ foreach ($stats as [$kind, $icon, $value, $label]) {
                     ->html(
                         Thead::tag()->html(
                             Tr::tag()->html(
-                                Th::tag()->content('#'),
-                                Th::tag()->content('Chunk'),
-                                Th::tag()->content('Output'),
-                                Th::tag()->content('CSS'),
-                                Th::tag()->content('Imports'),
-                                Th::tag()->content('Entry'),
+                                Th::tag()->scope('col')->content('#'),
+                                Th::tag()->scope('col')->content('Chunk'),
+                                Th::tag()->scope('col')->content('Output'),
+                                Th::tag()->scope('col')->content('CSS'),
+                                Th::tag()->scope('col')->content('Imports'),
+                                Th::tag()->scope('col')->content('Entry'),
                             ),
                         ),
                         Tbody::tag()->html(...$viteRows),

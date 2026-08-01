@@ -34,9 +34,9 @@ final class RouterRendererTest extends TestCase
         $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
 
         self::assertStringContainsString(
-            'id="r-tab-0"',
+            'id="router-panel-0"',
             $html,
-            "First panel must carry the 'r-tab-0' id.",
+            "First panel must carry the 'router-panel-0' id.",
         );
         self::assertStringContainsString(
             'yii-debug-tab-panel is-active',
@@ -53,7 +53,7 @@ final class RouterRendererTest extends TestCase
     public function testRenderTabsOmitsCurrentRouteHeadingWhenNoRulesTested(): void
     {
         self::assertDoesNotMatchRegularExpression(
-            '/<h3>\s*\.\s*<\/h3>/',
+            '/<h2>\s*\.\s*<\/h2>/',
             RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes()),
             "No rules tested must not surface a lone '.' heading.",
         );
@@ -115,7 +115,7 @@ final class RouterRendererTest extends TestCase
         $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), $actionRoutes);
 
         self::assertMatchesRegularExpression(
-            '/<th>\s*Action\s*<\/th>/',
+            '/<th scope="col">\s*Action\s*<\/th>/',
             $html,
             'Action Routes table must carry the Action column header.',
         );
@@ -152,7 +152,7 @@ final class RouterRendererTest extends TestCase
         $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
 
         self::assertMatchesRegularExpression(
-            '/<h3>\s*Tested 3 rules before match\.\s*<\/h3>/',
+            '/<h2>\s*Tested 3 rules before match\.\s*<\/h2>/',
             $html,
             'Tested rules must surface the count and the match suffix.',
         );
@@ -198,7 +198,7 @@ final class RouterRendererTest extends TestCase
         $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
 
         self::assertMatchesRegularExpression(
-            '/<th>\s*Rule\s*<\/th>/',
+            '/<th scope="col">\s*Rule\s*<\/th>/',
             $html,
             'Current-route logs table must carry the Rule column header.',
         );
@@ -271,7 +271,7 @@ final class RouterRendererTest extends TestCase
         $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), $rules, new ActionRoutes());
 
         self::assertMatchesRegularExpression(
-            '/<th>\s*Rule\s*<\/th>/',
+            '/<th scope="col">\s*Rule\s*<\/th>/',
             $html,
             'Router Rules table must carry the Rule column header.',
         );
@@ -367,17 +367,17 @@ final class RouterRendererTest extends TestCase
         $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
 
         self::assertStringContainsString(
-            'href="#r-tab-0"',
+            'href="#router-panel-0"',
             $html,
             'First tab must point to its panel.',
         );
         self::assertStringContainsString(
-            'href="#r-tab-1"',
+            'href="#router-panel-1"',
             $html,
             'Second tab must point to its panel.',
         );
         self::assertStringContainsString(
-            'href="#r-tab-2"',
+            'href="#router-panel-2"',
             $html,
             'Third tab must point to its panel.',
         );

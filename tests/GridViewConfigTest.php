@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use yii\debug\GridViewConfig;
 use yii\debug\tests\provider\GridViewConfigProvider;
 use yii\debug\tests\support\TestCase;
+use yii\debug\widgets\DebugDataColumn;
 
 /**
  * Unit tests for {@see GridViewConfig}, the static helper that drives consistent pager and table markup across every
@@ -73,6 +74,14 @@ final class GridViewConfigTest extends TestCase
             ['class' => 'yii-debug-table'],
             $defaults['tableOptions'],
             "'tableOptions' must declare the 'yii-debug-table' class so the scoped Pico-style table styling applies.",
+        );
+    }
+    public function testDefaultsUseAccessibleDataColumn(): void
+    {
+        self::assertSame(
+            DebugDataColumn::class,
+            GridViewConfig::defaults()['dataColumnClass'],
+            'Every debug grid must use the data column that labels filters and scopes headers.',
         );
     }
 

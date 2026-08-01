@@ -42,6 +42,9 @@ use function json_decode;
  */
 class AssetPanel extends Panel
 {
+    protected const string ICON = 'asset';
+    protected const string NAME = 'Asset Bundles';
+
     /**
      * Vite bridge FQCN from `yii2-extensions/inertia`, referenced as a string to avoid a hard package dependency.
      */
@@ -70,23 +73,6 @@ class AssetPanel extends Panel
             ['summary' => $summary, 'vite' => $vite],
             $this,
         );
-    }
-
-    /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Asset Bundles';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'asset';
     }
 
     /**

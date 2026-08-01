@@ -55,29 +55,6 @@ final class HistoryRowRendererTest extends TestCase
         );
     }
 
-    public function testBuildRowOptionsAlwaysCarriesRowLinkClass(): void
-    {
-        $options = HistoryRowRenderer::buildRowOptions(
-            HistoryRow::from([]),
-            new DebugSearch(),
-        );
-
-        self::assertArrayHasKey(
-            'class',
-            $options,
-            'Row options must carry a class entry.',
-        );
-        self::assertIsString(
-            $options['class'],
-            'class entry must be a string.',
-        );
-        self::assertStringContainsString(
-            'yii-debug-row-link',
-            $options['class'],
-            'class must include the JS row-link hook.',
-        );
-    }
-
     public function testBuildRowOptionsFlagsCriticalStatusCodesWithDangerHighlight(): void
     {
         $row = HistoryRow::from(
@@ -97,7 +74,7 @@ final class HistoryRowRendererTest extends TestCase
         self::assertStringContainsString(
             'yii-debug-row-danger',
             $options['class'],
-            'Critical status codes must surface the danger highlight class alongside the row-link hook.',
+            'Critical status codes must surface the danger highlight class.',
         );
     }
 

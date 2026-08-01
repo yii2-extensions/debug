@@ -30,6 +30,9 @@ use function is_string;
  */
 class RouterPanel extends Panel
 {
+    protected const string ICON = 'router';
+    protected const string NAME = 'Router';
+
     /**
      * @var array<int, string> Log categories scanned for routing trace messages; consumed by the Logs and Dump panels
      * to exclude the routing chatter from their captures.
@@ -66,23 +69,6 @@ class RouterPanel extends Panel
             ],
             $this,
         );
-    }
-
-    /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Router';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'router';
     }
 
     /**

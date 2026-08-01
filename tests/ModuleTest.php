@@ -10,7 +10,7 @@ use Yii;
 use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfigException};
 use yii\caching\FileCache;
 use yii\debug\controllers\DefaultController;
-use yii\debug\{DebugAsset, LogTarget, Module, Panel, TimelineAsset};
+use yii\debug\{DebugAsset, LogTarget, Module, Panel, VersionResolver};
 use yii\debug\panels\LogPanel;
 use yii\debug\tests\provider\ModuleProvider;
 use yii\debug\tests\support\stub\NotALogTarget;
@@ -300,13 +300,9 @@ final class ModuleTest extends TestCase
         $asset = new DebugAsset();
 
         self::assertSame(
-            [
-                'dist/js/debug.min.js',
-                'dist/js/theme-toggle.min.js',
-                'dist/js/history-cursor.min.js',
-            ],
+            ['dist/js/debug.min.js'],
             $asset->js,
-            'DebugAsset must ship the local core scripts: debug + theme-toggle + history-cursor.',
+            'DebugAsset must ship one consolidated panel script.',
         );
     }
 
@@ -315,9 +311,9 @@ final class ModuleTest extends TestCase
         $asset = new DebugAsset();
 
         self::assertSame(
-            ['dist/css/main.min.css'],
+            ['dist/css/debug.min.css'],
             $asset->css,
-            'Only the main stylesheet must ship; the legacy toolbar CSS is gone.',
+            'DebugAsset must ship one consolidated stylesheet.',
         );
     }
 
@@ -331,9 +327,9 @@ final class ModuleTest extends TestCase
         $module = new Module('debug');
 
         self::assertSame(
-            '0.1.0',
+            VersionResolver::forPackage('yii2-extensions/debug'),
             $module->getVersion(),
-            'Module version must read from the registered extension entry.',
+            'Module version must resolve from Composer package metadata.',
         );
     }
 
@@ -916,22 +912,6 @@ final class ModuleTest extends TestCase
         );
 
         $module->getToolbarHtml();
-    }
-
-    public function testTimelineAssetShipsStylesOnly(): void
-    {
-        $asset = new TimelineAsset();
-
-        self::assertSame(
-            ['dist/css/timeline.min.css'],
-            $asset->css,
-            'Timeline bundle must ship the span chart stylesheet.',
-        );
-        self::assertSame(
-            [],
-            $asset->js,
-            'No scripts: the timeline markup is server-rendered.',
-        );
     }
 
     public function testToolbarDataActionExposesNewBrandKeys(): void

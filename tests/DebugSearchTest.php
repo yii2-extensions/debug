@@ -169,6 +169,34 @@ final class DebugSearchTest extends TestCase
         );
     }
 
+    public function testSearchDoesNotParseEmbeddedOperatorsAsComparisons(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            ['url' => '/report >5 ms', 'sqlCount' => 0, 'mailCount' => 0],
+            ['url' => '/report/10', 'sqlCount' => 0, 'mailCount' => 0],
+        ];
+
+        $provider = (new DebugSearch())->search(['DebugSearch' => ['url' => 'report >5']], $records);
+
+        self::assertSame(1, $provider->getTotalCount(), 'Partial text fields must treat embedded operators as text.');
+    }
+
+    public function testSearchRejectsRowsWithoutTheFilteredAttribute(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            ['method' => 'GET', 'sqlCount' => 0, 'mailCount' => 0],
+            ['sqlCount' => 0, 'mailCount' => 0],
+        ];
+
+        $provider = (new DebugSearch())->search(['DebugSearch' => ['method' => 'GET']], $records);
+
+        self::assertSame(1, $provider->getTotalCount(), 'Rows without the filtered attribute must not match.');
+    }
+
     public function testSearchReturnsAllRowsWhenValidateShortCircuits(): void
     {
         $this->mockWebApplication();
@@ -217,5 +245,19 @@ final class DebugSearchTest extends TestCase
             $provider->getTotalCount(),
             'Empty filter params must yield the full record set.',
         );
+    }
+
+    public function testSearchTreatsZeroAsAValidNumericBoundary(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            ['sqlCount' => 0, 'mailCount' => 0],
+            ['sqlCount' => 1, 'mailCount' => 0],
+        ];
+
+        $provider = (new DebugSearch())->search(['DebugSearch' => ['sqlCount' => '>0']], $records);
+
+        self::assertSame(1, $provider->getTotalCount(), "'>0' must retain only positive values.");
     }
 }

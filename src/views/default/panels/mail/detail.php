@@ -12,7 +12,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\MailSearch;
-use yii\debug\panels\mail\MailMessageNormalizer;
+use yii\debug\panels\mail\MailMessage;
 use yii\debug\panels\MailPanel;
 use yii\widgets\{ActiveForm, ListView};
 
@@ -25,7 +25,7 @@ $totalCount = $dataProvider->getTotalCount();
 
 $hasMessages = $totalCount > 0;
 
-$failedCount = MailMessageNormalizer::failedCount($dataProvider->allModels);
+$failedCount = MailMessage::failedCount($dataProvider->allModels);
 
 $summaryItems = [
     Span::tag()

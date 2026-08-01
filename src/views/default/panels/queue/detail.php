@@ -10,7 +10,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\QueueSearch;
-use yii\debug\panels\queue\{JobRecordNormalizer, QueueCardRenderer, QueueGridRenderer, QueueSummaryNormalizer};
+use yii\debug\panels\queue\{JobRecord, QueueCardRenderer, QueueGridRenderer, QueueSummary};
 use yii\debug\panels\QueuePanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -21,7 +21,7 @@ use yii\helpers\Url;
  * @var QueuePanel $panel Panel providing the detail content.
  * @var QueueSearch $searchModel Search model for filtering the queue grid.
  */
-$summary = QueueSummaryNormalizer::fromPanelData($panel->data);
+$summary = QueueSummary::fromPanelData($panel->data);
 
 $totalRecords = $summary->totalEvents();
 $visibleRecords = $dataProvider->getTotalCount();
@@ -156,7 +156,7 @@ if ($totalRecords > 0) {
                     'label' => 'ID',
                     'format' => 'raw',
                     'value' => static fn(mixed $data): string => QueueGridRenderer::renderIdCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                     ),
                     'headerOptions' => ['class' => 'sort-numerical yii-debug-col-queue-id'],
                     'contentOptions' => ['class' => 'yii-debug-col-queue-id'],
@@ -167,7 +167,7 @@ if ($totalRecords > 0) {
                     'label' => 'Status',
                     'format' => 'raw',
                     'value' => static fn(mixed $data): string => QueueGridRenderer::renderStatusCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                     ),
                     'filter' => $eventTypeOptions,
                     'contentOptions' => ['class' => 'yii-debug-cell-pill'],
@@ -177,7 +177,7 @@ if ($totalRecords > 0) {
                     'label' => 'Driver',
                     'format' => 'raw',
                     'value' => static fn(mixed $data): string => QueueGridRenderer::renderDriverCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                     ),
                     'filter' => $driverOptions,
                     'contentOptions' => ['class' => 'yii-debug-cell-pill'],
@@ -186,7 +186,7 @@ if ($totalRecords > 0) {
                     'attribute' => 'componentId',
                     'label' => 'Component',
                     'value' => static fn(mixed $data): string => QueueGridRenderer::renderComponentCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                     ),
                     'filter' => $componentOptions,
                     'contentOptions' => ['class' => 'yii-debug-cell-nowrap'],
@@ -196,7 +196,7 @@ if ($totalRecords > 0) {
                     'label' => 'Job',
                     'format' => 'raw',
                     'value' => static fn(mixed $data, int $key): string => QueueGridRenderer::renderJobCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                         $jobUrlBuilder($key),
                     ),
                 ],
@@ -204,7 +204,7 @@ if ($totalRecords > 0) {
                     'attribute' => 'time',
                     'label' => 'Time',
                     'value' => static fn(mixed $data): string => QueueGridRenderer::renderTimeCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                     ),
                     'headerOptions' => ['class' => 'sort-numerical'],
                     'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-mono'],
@@ -213,7 +213,7 @@ if ($totalRecords > 0) {
                     'attribute' => 'duration',
                     'label' => 'Duration',
                     'value' => static fn(mixed $data): string => QueueGridRenderer::renderDurationCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                     ),
                     'headerOptions' => ['class' => 'sort-numerical'],
                     'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],
@@ -221,7 +221,7 @@ if ($totalRecords > 0) {
                 [
                     'label' => 'TTR',
                     'value' => static fn(mixed $data): string => QueueGridRenderer::renderTtrCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                     ),
                     'headerOptions' => ['class' => 'sort-numerical'],
                     'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],
@@ -229,7 +229,7 @@ if ($totalRecords > 0) {
                 [
                     'label' => 'Attempt',
                     'value' => static fn(mixed $data): string => QueueGridRenderer::renderAttemptCell(
-                        JobRecordNormalizer::from($data),
+                        JobRecord::fromMixed($data),
                     ),
                     'headerOptions' => ['class' => 'sort-numerical'],
                     'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],

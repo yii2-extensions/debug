@@ -6,7 +6,6 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
-use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
 
 /**
@@ -108,18 +107,16 @@ class MailSearch extends Base
             return $dataProvider;
         }
 
-        $filter = new Filter();
+        $this->addCondition('from', true);
+        $this->addCondition('to', true);
+        $this->addCondition('reply', true);
+        $this->addCondition('cc', true);
+        $this->addCondition('bcc', true);
+        $this->addCondition('subject', true);
+        $this->addCondition('body', true);
+        $this->addCondition('charset', true);
 
-        $this->addCondition($filter, 'from', true);
-        $this->addCondition($filter, 'to', true);
-        $this->addCondition($filter, 'reply', true);
-        $this->addCondition($filter, 'cc', true);
-        $this->addCondition($filter, 'bcc', true);
-        $this->addCondition($filter, 'subject', true);
-        $this->addCondition($filter, 'body', true);
-        $this->addCondition($filter, 'charset', true);
-
-        $dataProvider->allModels = $filter->filter($models);
+        $dataProvider->allModels = $this->filter($models);
 
         return $dataProvider;
     }

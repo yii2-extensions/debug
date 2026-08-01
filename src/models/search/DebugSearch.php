@@ -6,7 +6,6 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
-use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
 
 use function in_array;
@@ -60,11 +59,11 @@ class DebugSearch extends Base
             'tag' => 'Tag',
             'processingTime' => 'Processing Time',
             'peakMemory' => 'Peak Memory',
-            'ip' => 'Ip',
+            'ip' => 'IP',
             'method' => 'Method',
-            'ajax' => 'Ajax',
-            'url' => 'url',
-            'statusCode' => 'Status code',
+            'ajax' => 'AJAX',
+            'url' => 'URL',
+            'statusCode' => 'Status',
             'sqlCount' => 'Query Count',
             'mailCount' => 'Mail Count',
         ];
@@ -118,18 +117,16 @@ class DebugSearch extends Base
             return $dataProvider;
         }
 
-        $filter = new Filter();
+        $this->addCondition('tag', true);
+        $this->addCondition('ip', true);
+        $this->addCondition('method');
+        $this->addCondition('ajax');
+        $this->addCondition('url', true);
+        $this->addCondition('statusCode');
+        $this->addCondition('sqlCount');
+        $this->addCondition('mailCount');
 
-        $this->addCondition($filter, 'tag', true);
-        $this->addCondition($filter, 'ip', true);
-        $this->addCondition($filter, 'method');
-        $this->addCondition($filter, 'ajax');
-        $this->addCondition($filter, 'url', true);
-        $this->addCondition($filter, 'statusCode');
-        $this->addCondition($filter, 'sqlCount');
-        $this->addCondition($filter, 'mailCount');
-
-        $dataProvider->allModels = $filter->filter($models);
+        $dataProvider->allModels = $this->filter($models);
 
         return $dataProvider;
     }

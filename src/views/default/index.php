@@ -11,40 +11,16 @@ use yii\debug\widgets\FilterBanner;
 use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryScale, HistorySummary};
 use yii\grid\{GridView, SerialColumn};
 use yii\web\View;
+use UIAwesome\Html\Heading\H1;
 
 /**
  * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.
- * @var string $debugTheme Current debug theme ID.
  * @var array<int|string, mixed> $manifest Debug data manifest.
  * @var Panel[] $panels Debug panels.
  * @var DebugSearch $searchModel Search model for filtering debug data.
- * @var string $themeIconMoon Icon for the moon theme.
- * @var string $themeIconSun Icon for the sun theme.
  * @var View $this View component instance.
  */
 $this->title = 'Yii Debugger';
-
-// `cursor` query param lets a panel-view's "History" link preserve the active tag the inline JS reads
-// `data-yii-debug-cursor-init` and lands the cursor on that row instead of snapping back to the latest capture.
-$cursorInit = '';
-
-$rawCursor = Yii::$app->getRequest()->get('cursor');
-
-if (is_string($rawCursor) && $rawCursor !== '') {
-    $cursorInit = $rawCursor;
-}
-
-// Layout-driven shell: the layout reads `shellMode` + `shellData` and renders the brand bar + sidebar around our
-// content. We only emit the table area.
-$this->params['shellMode'] = 'index';
-$this->params['shellData'] = [
-    'panels' => $panels,
-    'manifest' => $manifest,
-    'debugTheme' => $debugTheme,
-    'themeIconSun' => $themeIconSun,
-    'themeIconMoon' => $themeIconMoon,
-    'cursorInit' => $cursorInit,
-];
 
 $summary = HistorySummary::fromManifest($manifest);
 $scale = HistoryScale::fromModels($dataProvider->getModels());
@@ -52,6 +28,7 @@ $scale = HistoryScale::fromModels($dataProvider->getModels());
 $dbPanel = $panels['db'] ?? null;
 $mailPanel = $panels['mail'] ?? null;
 ?>
+<?= H1::tag()->class('yii-debug-sr-only')->content('Request history') ?>
 <?= HistoryRowRenderer::renderSummary($summary) ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
@@ -68,7 +45,7 @@ $mailPanel = $panels['mail'] ?? null;
             [
                 [
                     'class' => SerialColumn::class,
-                    'headerOptions' => ['class' => 'yii-debug-col-num'],
+                    'headerOptions' => ['class' => 'yii-debug-col-num', 'scope' => 'col'],
                     'contentOptions' => ['class' => 'yii-debug-col-num'],
                     'filterOptions' => ['class' => 'yii-debug-col-num'],
                 ],

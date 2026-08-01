@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\queue;
 
+use yii\debug\helpers\Coerce;
+
+use function in_array;
+use function is_array;
+use function is_string;
+
 /**
  * Typed view-model for a single queue lifecycle event captured during the request (push, exec, or error).
  *
@@ -110,4 +116,34 @@ final readonly class JobRecord
          */
         public string $error,
     ) {}
+
+    /**
+     * Builds a typed queue record from a captured value.
+     */
+    public static function fromMixed(mixed $data): self
+    {
+        $row = is_array($data) ? $data : [];
+        $eventType = $row['eventType'] ?? null;
+        $payload = $row['payloadFields'] ?? null;
+
+        return new self(
+            eventType: is_string($eventType) && in_array($eventType, self::EVENT_TYPES, true)
+                ? $eventType
+                : self::TYPE_PUSH,
+            componentId: Coerce::string($row['componentId'] ?? null),
+            driverName: Coerce::string($row['driverName'] ?? null),
+            driverClass: Coerce::string($row['driverClass'] ?? null),
+            isAsync: ($row['isAsync'] ?? false) === true,
+            jobClass: Coerce::string($row['jobClass'] ?? null),
+            payloadFields: is_array($payload) ? Coerce::stringKeyedArray($payload) : [],
+            time: Coerce::float($row['time'] ?? null),
+            jobId: Coerce::string($row['jobId'] ?? null),
+            ttr: Coerce::intOrNull($row['ttr'] ?? null),
+            delay: Coerce::intOrNull($row['delay'] ?? null),
+            priority: Coerce::intOrNull($row['priority'] ?? null),
+            attempt: Coerce::intOrNull($row['attempt'] ?? null),
+            duration: Coerce::floatOrNull($row['duration'] ?? null),
+            error: Coerce::string($row['error'] ?? null),
+        );
+    }
 }

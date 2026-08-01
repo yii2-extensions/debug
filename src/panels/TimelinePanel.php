@@ -25,6 +25,9 @@ use function is_array;
  */
 class TimelinePanel extends Panel
 {
+    protected const string ICON = 'timeline';
+    protected const string NAME = 'Timeline';
+
     /**
      * Request duration in milliseconds (resolved from the Profiling panel when available, otherwise `end - start`).
      */
@@ -121,15 +124,6 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Timeline';
-    }
-
-    /**
      * Returns the request start timestamp in milliseconds since the Unix epoch.
      */
     public function getStart(): float
@@ -184,14 +178,6 @@ class TimelinePanel extends Panel
     public function getSvgOptions(): array
     {
         return $this->svgOptions;
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'timeline';
     }
 
     /**

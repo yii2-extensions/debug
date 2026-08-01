@@ -48,7 +48,7 @@
 ### Installation
 
 ```bash
-composer require yii2-extensions/debug:^0.1 --dev
+composer require yii2-extensions/debug:^0.2 --dev
 ```
 
 ### Basic Usage
@@ -66,6 +66,13 @@ if (YII_ENV_DEV) {
 ```
 
 The toolbar appears at the bottom of every rendered page; click any panel chip to open the full debugger.
+
+When upgrading from 0.1, review the [0.2 upgrade guide](UPGRADE.md) before deploying the package.
+
+### Browser support
+
+The debugger targets evergreen browsers with ES2022, Web Components, CSS custom properties, and native module
+support. Internet Explorer and other legacy browsers are not supported.
 
 ## Screenshots
 
@@ -236,6 +243,7 @@ The toolbar appears at the bottom of every rendered page; click any panel chip t
 For detailed configuration options and advanced usage.
 
 - 🧪 [Testing Guide](docs/testing.md)
+- [Upgrade Guide](UPGRADE.md)
 
 ## Package information
 

@@ -31,6 +31,7 @@ use yii\log\Dispatcher;
 use yii\rbac\BaseManager;
 use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
 
+use function array_diff_key;
 use function file_get_contents;
 use function gethostbyname;
 use function is_array;
@@ -58,11 +59,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * resolve into "open file at line".
      */
     public const string DEFAULT_IDE_TRACELINE = '<a href="ide://open?url=file://{file}&line={line}">{text}</a>';
-    /**
-     * Module version reported by {@see defaultVersion()}.
-     */
-    public const string VERSION = '0.1.0';
-
     /**
      * Hosts allowed to access this module. Each entry is resolved to an IP at runtime; useful for dynamic DNS.
      *
@@ -375,13 +371,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return;
         }
 
-        if (self::$toolbarScript === null || YII_DEBUG) {
-            $contents = file_get_contents(__DIR__ . '/assets/dist/js/toolbar.min.js');
-
-            self::$toolbarScript = $contents === false ? '' : $contents;
-        }
-
-        $injection = $this->getToolbarHtml() . '<script>' . self::$toolbarScript . '</script>';
+        $injection = $this->getToolbarHtml() . '<script>' . self::toolbarScript() . '</script>';
 
         if (str_contains($event->output, '</body>')) {
             $event->output = str_replace('</body>', $injection . '</body>', $event->output);
@@ -414,13 +404,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         echo $view->renderDynamic('return Yii::$app->getModule("' . $this->getUniqueId() . '")->getToolbarHtml();');
 
-        if (self::$toolbarScript === null || YII_DEBUG) {
-            $contents = file_get_contents(__DIR__ . '/assets/dist/js/toolbar.min.js');
-
-            self::$toolbarScript = $contents === false ? '' : $contents;
-        }
-
-        echo '<script>' . self::$toolbarScript . '</script>';
+        echo '<script>' . self::toolbarScript() . '</script>';
     }
 
     /**
@@ -510,25 +494,25 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * behind (side effects and served resources). `config` opens the list but is surfaced through the brand bar
      * rather than the panel nav.
      *
-     * @return array<string, array<string, mixed>> Panel configurations indexed by panel id.
+     * @return array<string, class-string<Panel>> Panel classes indexed by panel id.
      */
     protected function corePanels(): array
     {
         return [
-            'config' => ['class' => ConfigPanel::class],
-            'request' => ['class' => RequestPanel::class],
-            'router' => ['class' => RouterPanel::class],
-            'inertia' => ['class' => InertiaPanel::class],
-            'user' => ['class' => UserPanel::class],
-            'log' => ['class' => LogPanel::class],
-            'db' => ['class' => DbPanel::class],
-            'profiling' => ['class' => ProfilingPanel::class],
-            'timeline' => ['class' => TimelinePanel::class],
-            'event' => ['class' => EventPanel::class],
-            'mail' => ['class' => MailPanel::class],
-            'queue' => ['class' => QueuePanel::class],
-            'dump' => ['class' => DumpPanel::class],
-            'asset' => ['class' => AssetPanel::class],
+            'config' => ConfigPanel::class,
+            'request' => RequestPanel::class,
+            'router' => RouterPanel::class,
+            'inertia' => InertiaPanel::class,
+            'user' => UserPanel::class,
+            'log' => LogPanel::class,
+            'db' => DbPanel::class,
+            'profiling' => ProfilingPanel::class,
+            'timeline' => TimelinePanel::class,
+            'event' => EventPanel::class,
+            'mail' => MailPanel::class,
+            'queue' => QueuePanel::class,
+            'dump' => DumpPanel::class,
+            'asset' => AssetPanel::class,
         ];
     }
 
@@ -538,7 +522,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     #[Override]
     protected function defaultVersion(): string
     {
-        return self::VERSION;
+        return VersionResolver::forPackage('yii2-extensions/debug') ?? 'unknown';
     }
 
     /**
@@ -549,19 +533,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     protected function initPanels(): void
     {
-        if ($this->panels === []) {
-            $merged = $this->corePanels();
-        } else {
-            $corePanels = $this->corePanels();
-
-            foreach ($corePanels as $id => $config) {
-                if (isset($this->panels[$id])) {
-                    unset($corePanels[$id]);
-                }
-            }
-
-            $merged = [...$corePanels, ...$this->panels];
-        }
+        $merged = [...array_diff_key($this->corePanels(), $this->panels), ...$this->panels];
 
         $this->panels = [];
 
@@ -724,5 +696,19 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         return $target;
+    }
+
+    /**
+     * Returns the bundled toolbar script, refreshing it during debug requests.
+     */
+    private static function toolbarScript(): string
+    {
+        if (self::$toolbarScript === null || YII_DEBUG) {
+            $contents = file_get_contents(__DIR__ . '/assets/dist/js/toolbar.min.js');
+
+            self::$toolbarScript = $contents === false ? '' : $contents;
+        }
+
+        return self::$toolbarScript;
     }
 }

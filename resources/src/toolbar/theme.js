@@ -13,62 +13,25 @@ import { absoluteUrl, themeParam, themeStorageKey } from "./state.js";
  */
 
 export function normalizeTheme(value) {
-  var theme;
-  var tokens;
-  var darkAliases = ["dark", "night", "black"];
-  var lightAliases = ["light", "day", "white"];
-  var hasDark;
-  var hasLight;
-  var i;
-
   if (!value) {
     return null;
   }
 
-  theme = String(value).toLowerCase().trim();
+  var tokens = String(value).toLowerCase().trim().split(/\s+/);
+  var darkAliases = ["dark", "night", "black"];
+  var lightAliases = ["light", "day", "white"];
+  var hasDark = tokens.some(function (token) {
+    return darkAliases.indexOf(token) !== -1;
+  });
+  var hasLight = tokens.some(function (token) {
+    return lightAliases.indexOf(token) !== -1;
+  });
 
-  if (theme === "") {
+  if (hasDark === hasLight) {
     return null;
   }
 
-  /* Exact match (typical for explicit theme values like data-theme="dark"). */
-  if (darkAliases.indexOf(theme) !== -1) {
-    return "dark";
-  }
-
-  if (lightAliases.indexOf(theme) !== -1) {
-    return "light";
-  }
-
-  /**
-   * Token-based match — used for class lists. We must NOT use a substring
-   * search here, because frameworks like Tailwind emit modifier classes such
-   * as `dark:bg-gray-900` even in light mode; the modifier prefix means the
-   * class only applies WHEN the document is in dark mode, not that it IS
-   * dark. We only treat `dark` / `light` as a signal when they appear as a
-   * standalone class token.
-   */
-  tokens = theme.split(/\s+/);
-  hasDark = false;
-  hasLight = false;
-
-  for (i = 0; i < tokens.length; i++) {
-    if (darkAliases.indexOf(tokens[i]) !== -1) {
-      hasDark = true;
-    } else if (lightAliases.indexOf(tokens[i]) !== -1) {
-      hasLight = true;
-    }
-  }
-
-  if (hasDark && !hasLight) {
-    return "dark";
-  }
-
-  if (hasLight && !hasDark) {
-    return "light";
-  }
-
-  return null;
+  return hasDark ? "dark" : "light";
 }
 
 export function getElementTheme(element) {
@@ -202,7 +165,7 @@ export function hostHasThemeControl() {
 }
 
 /**
- * Persist the theme as a same-origin cookie so the backend (`primeThemeContext`)
+ * Persist the theme as a same-origin cookie so the backend (`resolveTheme`)
  * serves panel pages with the matching theme even when the URL doesn't carry
  * the `?yii_debug_theme=` query — e.g. when the host writes `localStorage.theme`
  * and the toolbar follows. Mirror writes from every theme mutation point
@@ -213,6 +176,7 @@ export function writeThemeCookie(theme) {
   if (!theme) {
     return;
   }
+
   try {
     document.cookie =
       themeStorageKey +
@@ -220,32 +184,23 @@ export function writeThemeCookie(theme) {
       encodeURIComponent(theme) +
       ";path=/;max-age=31536000;SameSite=Lax";
   } catch (_e) {
-    /* Cookie writes can be blocked (CSP, sandboxed iframe) — ignore silently. */
+    /* Cookie writes can be blocked by the browser or iframe sandbox. */
   }
 }
 
 export function addThemeToUrl(url, theme) {
   var parsed = absoluteUrl(url);
-  var routeParam;
 
-  if (!parsed || !theme) {
+  if (!parsed || !theme || parsed.origin !== window.location.origin) {
     return url;
   }
 
-  if (parsed.origin && parsed.origin !== window.location.origin) {
-    return url;
-  }
+  var route = parsed.searchParams.get("r") || "";
 
-  /**
-   * Only stamp debug routes — covers both URL conventions:
-   *   - Pretty URLs:  `/debug/default/...`            → pathname.
-   *   - Default Yii:  `/index.php?r=debug%2Fdefault…` → `r` query param.
-   */
-  routeParam = parsed.searchParams.get("r") || "";
   if (
     parsed.pathname.indexOf("/debug/") === -1 &&
-    routeParam.indexOf("debug/") !== 0 &&
-    routeParam.indexOf("debug%2F") !== 0
+    route.indexOf("debug/") !== 0 &&
+    route.indexOf("debug%2F") !== 0
   ) {
     return url;
   }

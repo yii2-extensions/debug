@@ -448,9 +448,16 @@ final class PhpInfoDataNormalizer
             return '';
         }
 
+        $rowHeaders = preg_replace(
+            '%<td class="e">(.*?)</td>%s',
+            '<th scope="row" class="e">$1</th>',
+            $modulesSrc,
+        );
+        $modulesSrc = $rowHeaders ?? $modulesSrc;
+
         $modulesSrc = str_replace(
             '<table',
-            '<div class="yii-debug-table-wrap"><table class="yii-debug-table yii-debug-phpinfo__table" ',
+            '<div class="yii-debug-table-wrap"><table aria-label="PHP configuration values" class="yii-debug-table yii-debug-phpinfo__table" ',
             $modulesSrc,
         );
         $modulesSrc = str_replace('</table>', '</table></div>', $modulesSrc);
@@ -470,7 +477,7 @@ final class PhpInfoDataNormalizer
                     . '" data-section="' . Encode::value($title) . '">'
                     . '<header class="yii-debug-phpinfo-module-head">'
                     . '<span class="yii-debug-phpinfo-module-dot" aria-hidden="true"></span>'
-                    . '<h2>' . Encode::content($title) . '</h2>'
+                    . '<h2 id="' . Encode::value($slug) . '-heading">' . Encode::content($title) . '</h2>'
                     . '</header>';
             },
             $modulesSrc,

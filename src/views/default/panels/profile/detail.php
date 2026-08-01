@@ -11,7 +11,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\ProfileSearch;
-use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRowNormalizer};
+use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRow};
 use yii\debug\panels\ProfilingPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -25,7 +25,7 @@ use yii\grid\GridView;
  * @var string $timelineUrl URL to the Timeline panel.
  */
 $hasProfileBlocks = $dataProvider->getTotalCount() > 0;
-$maxDuration = ProfileRowNormalizer::maxDuration($dataProvider->getModels());
+$maxDuration = ProfileRow::maxDuration($dataProvider->getModels());
 
 $summaryItems = [
     Span::tag()
@@ -97,7 +97,7 @@ if ($hasProfileBlocks) {
                     'attribute' => 'seq',
                     'label' => 'Time',
                     'value' => static fn(mixed $data): string => ProfileCellRenderer::renderTimeCell(
-                        ProfileRowNormalizer::from($data),
+                        ProfileRow::fromMixed($data),
                     ),
                     'format' => 'raw',
                     'headerOptions' => ['class' => 'sort-numerical'],
@@ -106,7 +106,7 @@ if ($hasProfileBlocks) {
                 [
                     'attribute' => 'duration',
                     'value' => static fn(mixed $data): string => ProfileCellRenderer::renderDurationCell(
-                        ProfileRowNormalizer::from($data),
+                        ProfileRow::fromMixed($data),
                         $maxDuration,
                     ),
                     'format' => 'raw',
@@ -116,7 +116,7 @@ if ($hasProfileBlocks) {
                 [
                     'attribute' => 'category',
                     'value' => static fn(mixed $data): string => ProfileCellRenderer::renderCategoryCell(
-                        ProfileRowNormalizer::from($data),
+                        ProfileRow::fromMixed($data),
                     ),
                     'format' => 'raw',
                     'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
@@ -124,7 +124,7 @@ if ($hasProfileBlocks) {
                 [
                     'attribute' => 'info',
                     'value' => static fn(mixed $data): string => ProfileCellRenderer::renderInfoCell(
-                        ProfileRowNormalizer::from($data),
+                        ProfileRow::fromMixed($data),
                     ),
                     'format' => 'html',
                     'options' => ['width' => '60%'],

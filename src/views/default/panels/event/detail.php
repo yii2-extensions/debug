@@ -10,7 +10,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\EventSearch;
-use yii\debug\panels\event\{EventCellRenderer, EventRowNormalizer};
+use yii\debug\panels\event\{EventCellRenderer, EventRow};
 use yii\debug\panels\EventPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -24,7 +24,7 @@ $hasEvents = is_array($panel->data) && $panel->data !== [];
 
 $models = $dataProvider->allModels;
 
-$staticCount = EventRowNormalizer::staticCount($models);
+$staticCount = EventRow::staticCount($models);
 
 $summaryItems = [
     Span::tag()->html(
@@ -35,7 +35,7 @@ $summaryItems = [
         ->class('yii-debug-grid-summary-sep')
         ->content('·'),
     Span::tag()->html(
-        Strong::tag()->content((string) EventRowNormalizer::distinctClassCount($models)),
+        Strong::tag()->content((string) EventRow::distinctClassCount($models)),
         ' classes',
     ),
 ];
@@ -89,7 +89,7 @@ if ($hasEvents) {
                 [
                     'attribute' => 'time',
                     'value' => static fn(mixed $data): string => EventCellRenderer::renderTimeCell(
-                        EventRowNormalizer::from($data),
+                        EventRow::fromMixed($data),
                     ),
                     'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
                     'headerOptions' => ['class' => 'sort-numerical'],
@@ -102,7 +102,7 @@ if ($hasEvents) {
                 [
                     'attribute' => 'class',
                     'value' => static fn(mixed $data): string => EventCellRenderer::renderClassCell(
-                        EventRowNormalizer::from($data),
+                        EventRow::fromMixed($data),
                     ),
                     'format' => 'raw',
                     'contentOptions' => ['class' => 'yii-debug-cell-mono'],
@@ -111,7 +111,7 @@ if ($hasEvents) {
                     'header' => 'Sender',
                     'attribute' => 'senderClass',
                     'value' => static fn(mixed $data): string => EventCellRenderer::renderSenderCell(
-                        EventRowNormalizer::from($data),
+                        EventRow::fromMixed($data),
                     ),
                     'format' => 'raw',
                     'contentOptions' => ['class' => 'yii-debug-cell-mono'],
@@ -120,7 +120,7 @@ if ($hasEvents) {
                     'header' => 'Static',
                     'attribute' => 'isStatic',
                     'value' => static fn(mixed $data): string => EventCellRenderer::renderStaticCell(
-                        EventRowNormalizer::from($data),
+                        EventRow::fromMixed($data),
                     ),
                     'format' => 'raw',
                     'filter' => ['1' => 'Yes', '0' => 'No'],
