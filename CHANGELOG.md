@@ -57,6 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(ui): add contextual empty-state cards to the Database panel (zero queries no longer show a bare filter grid plus an orphan `[+] Explain all` link) and to the User panel (the guest state explains the missing identity and points to the `ruleUserSwitch` feature instead of the raw `Is guest.` text).
 - fix(ui): unify the empty-state convention — Queue and Asset Bundles now keep their summary strips visible in the empty state, matching Mail, Dump, Events, and Profiling; the rows-per-page selector hides whenever a grid has no rows.
 - refactor: extract the shared `EmptyState::card()` helper and the `Fqcn::renderLabel()` two-tone label used by the panel views and cell renderers.
+- feat(ui): render the Timeline span labels with the shared two-tone treatment and widen the label column to `32%` below wide-desktop widths, so long FQCNs no longer truncate while the chart half idles.
+- fix(ui): move the Router `Pretty URL` / `Strict Parsing` / `Global Suffix` badges out of the tab row into their own summary strip.
+- fix(ui): disable font ligatures in code snippets (`code`, `pre`) so JetBrains Mono renders `->` verbatim instead of an arrow glyph.
+- fix(ui): name the rows-per-page `<select>` (`per-page`) so it no longer triggers the DevTools "form field without id or name" issue.
+- feat(ui): clamp overly long messages in the Logs grid behind a `[+] Show more` pill toggle; the new `CellMore` helper and the `cell-more` delegation in `debug.min.js` are reusable by any grid cell.
+- feat: add an Inertia panel that captures the server-side page object (component, props, URL, asset version) for full page loads and Inertia XHR visits, renders the props as an origin-labeled grid (config-shared vs page props) with type and value preview plus the raw payload, surfaces the `X-Inertia-*` negotiation headers and partial reloads, and explains `409` version conflicts; the panel enables itself only when the application wires the `yii2-extensions/inertia` `Manager` under the `inertia` component id, and its sidebar entry activates per capture — plain non-Inertia requests do not list it.
+- feat: add `Panel::hasContent()` so integration panels can activate per capture; the sidebar nav skips panels that report no content for the loaded request in view mode.
+- feat: show Vite assets in the Asset Bundles panel — when the application wires the `yii2-extensions/inertia` Vite bridge, the panel captures the bridge configuration (mode, dev server, base URL, manifest path) and the build manifest chunks (output file, CSS count, imports, entry flag) alongside the Yii asset bundles.
 
 ## 0.1.1 May 18, 2026
 

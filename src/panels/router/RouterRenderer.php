@@ -9,6 +9,7 @@ use UIAwesome\Html\Heading\H3;
 use UIAwesome\Html\List\{Dd, Dl, Dt, Li, Ul};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Code, Span};
+use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
 use Yii;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
@@ -25,8 +26,8 @@ use function count;
 final class RouterRenderer
 {
     /**
-     * Renders the entire Router panel detail: tab strip (Current Route / Router Rules / Action Routes plus the
-     * read-only badges for Pretty URL / Strict Parsing / Global Suffix) followed by the per-tab content panels.
+     * Renders the entire Router panel detail: the router-wide flags strip (Pretty URL / Strict Parsing / Global
+     * Suffix badges), the tab strip (Current Route / Router Rules / Action Routes), and the per-tab content panels.
      *
      * @param CurrentRoute $currentRoute Current-route resolver snapshot.
      * @param RouterRules $routerRules Flattened URL-rules snapshot.
@@ -37,7 +38,9 @@ final class RouterRenderer
         RouterRules $routerRules,
         ActionRoutes $actionRoutes,
     ): string {
-        return self::renderTabNav($routerRules) . self::renderTabPanels($currentRoute, $routerRules, $actionRoutes);
+        return self::renderFlagsStrip($routerRules)
+            . self::renderTabNav()
+            . self::renderTabPanels($currentRoute, $routerRules, $actionRoutes);
     }
 
     /**
@@ -90,21 +93,15 @@ final class RouterRenderer
     }
 
     /**
-     * Renders one read-only badge chip on the tab strip.
+     * Renders one read-only badge chip for the flags strip.
      *
      * Non-clickable; surfaces a router-wide flag (Pretty URL / Strict Parsing / Global Suffix).
      */
-    private static function renderBadgeChip(string $label, string $variant): Li
+    private static function renderBadgeChip(string $label, string $variant): Span
     {
-        $badgeClass = "yii-debug-badge yii-debug-badge-{$variant}";
-
-        return Li::tag()
-            ->class('yii-debug-tab')
-            ->html(
-                Span::tag()
-                    ->class('yii-debug-tab-link yii-debug-tab-link-badge')
-                    ->html(Span::tag()->class($badgeClass)->content($label)),
-            );
+        return Span::tag()
+            ->class("yii-debug-badge yii-debug-badge-{$variant}")
+            ->content($label);
     }
 
     /**
@@ -159,6 +156,35 @@ final class RouterRenderer
         return $body === ''
             ? H3::tag()->content('No route resolution captured.')->render()
             : $body;
+    }
+
+    /**
+     * Renders the router-wide flags strip: Pretty URL / Strict Parsing badges plus the optional Global Suffix badge.
+     *
+     * Reuses the shared `yii-debug-grid-summary` strip so the read-only flags sit above the tab row instead of
+     * competing with the navigable tabs.
+     */
+    private static function renderFlagsStrip(RouterRules $routerRules): string
+    {
+        $badges = [
+            self::renderBadgeChip(
+                'Pretty URL ' . ($routerRules->prettyUrl ? 'Enabled' : 'Disabled'),
+                $routerRules->prettyUrl ? 'success' : 'muted',
+            ),
+            self::renderBadgeChip(
+                'Strict Parsing ' . ($routerRules->strictParsing ? 'Enabled' : 'Disabled'),
+                $routerRules->strictParsing ? 'success' : 'muted',
+            ),
+        ];
+
+        if ($routerRules->suffix !== null && $routerRules->suffix !== '') {
+            $badges[] = self::renderBadgeChip("Global Suffix: {$routerRules->suffix}", 'warning');
+        }
+
+        return Header::tag()
+            ->class('yii-debug-grid-summary')
+            ->html(...$badges)
+            ->render();
     }
 
     /**
@@ -298,10 +324,9 @@ final class RouterRenderer
     }
 
     /**
-     * Renders the `<ul class="yii-debug-tabs">` strip: three navigable tabs plus the read-only badge chips for the
-     * router-wide Pretty URL / Strict Parsing / Global Suffix flags.
+     * Renders the `<ul class="yii-debug-tabs">` strip with the three navigable tabs.
      */
-    private static function renderTabNav(RouterRules $routerRules): string
+    private static function renderTabNav(): string
     {
         $labels = ['Current Route', 'Router Rules', 'Action Routes'];
 
@@ -322,19 +347,6 @@ final class RouterRenderer
                         ->content($label)
                         ->href('#r-tab-' . $k),
                 );
-        }
-
-        $items[] = self::renderBadgeChip(
-            'Pretty URL ' . ($routerRules->prettyUrl ? 'Enabled' : 'Disabled'),
-            $routerRules->prettyUrl ? 'success' : 'muted',
-        );
-        $items[] = self::renderBadgeChip(
-            'Strict Parsing ' . ($routerRules->strictParsing ? 'Enabled' : 'Disabled'),
-            $routerRules->strictParsing ? 'success' : 'muted',
-        );
-
-        if ($routerRules->suffix !== null && $routerRules->suffix !== '') {
-            $items[] = self::renderBadgeChip("Global Suffix: {$routerRules->suffix}", 'warning');
         }
 
         return Ul::tag()

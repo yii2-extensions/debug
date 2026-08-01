@@ -18,6 +18,7 @@ use yii\debug\tests\support\TestCase;
 use yii\log\{Dispatcher, Target as LogTargetBase};
 use yii\web\{AssetManager, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
 
+use function array_keys;
 use function is_array;
 use function is_string;
 
@@ -259,6 +260,38 @@ final class ModuleTest extends TestCase
         self::assertTrue(
             $this->invoke($module, 'checkAccess'),
             "'allowedHosts' must be resolved via DNS and matched against the requester IP.",
+        );
+    }
+
+    public function testCorePanelsFollowTheRequestFlowOrder(): void
+    {
+        $module = new Module('debug');
+
+        $corePanels = $this->invoke($module, 'corePanels');
+
+        self::assertIsArray(
+            $corePanels,
+            'Core panel configurations must be an array.',
+        );
+        self::assertSame(
+            [
+                'config',
+                'request',
+                'router',
+                'inertia',
+                'user',
+                'log',
+                'db',
+                'profiling',
+                'timeline',
+                'event',
+                'mail',
+                'queue',
+                'dump',
+                'asset',
+            ],
+            array_keys($corePanels),
+            'Order: dispatch, then diagnostics, then side effects.',
         );
     }
 

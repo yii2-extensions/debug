@@ -161,6 +161,27 @@ final class LogCellRendererTest extends TestCase
         );
     }
 
+    public function testRenderMessageCellClampsLongMessageBehindMoreToggle(): void
+    {
+        $panel = new LogPanel();
+
+        $html = LogCellRenderer::renderMessageCell(
+            self::makeRow(message: str_repeat('long message segment ', 40)),
+            $panel,
+        );
+
+        self::assertStringContainsString(
+            'yii-debug-cell-more',
+            $html,
+            'Long message must render inside the clamp.',
+        );
+        self::assertStringContainsString(
+            '[+] Show more',
+            $html,
+            'Clamp must expose the expand toggle.',
+        );
+    }
+
     public function testRenderMessageCellEscapesPlainMessageWhenTraceIsEmpty(): void
     {
         $html = LogCellRenderer::renderMessageCell(
@@ -210,6 +231,17 @@ final class LogCellRendererTest extends TestCase
             'SELECT 1',
             $html,
             'Non-DB categories must stay plain text.',
+        );
+    }
+
+    public function testRenderMessageCellLeavesShortMessageUnclamped(): void
+    {
+        $panel = new LogPanel();
+
+        self::assertStringNotContainsString(
+            'yii-debug-cell-more',
+            LogCellRenderer::renderMessageCell(self::makeRow(message: 'short message'), $panel),
+            'Short message must not render the clamp.',
         );
     }
 

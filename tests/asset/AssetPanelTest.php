@@ -10,6 +10,7 @@ use Yii;
 use yii\debug\{DebugAsset, LogTarget, Module};
 use yii\debug\panels\AssetPanel;
 use yii\debug\tests\support\TestCase;
+use yii\inertia\Vite;
 use yii\web\AssetBundle;
 
 /**
@@ -171,6 +172,52 @@ final class AssetPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailRendersViteSectionAlongsideEmptyBundles(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $panel->data = [
+            '@vite' => [
+                'baseUrl' => '@web/build',
+                'devMode' => false,
+                'devServerUrl' => null,
+                'entries' => [
+                    'resources/js/app.js' => [
+                        'css' => ['assets/app-abc.css'],
+                        'file' => 'assets/app-def.js',
+                        'imports' => 2,
+                        'isEntry' => true,
+                    ],
+                ],
+                'entrypoints' => ['resources/js/app.js'],
+                'manifestPath' => '/tmp/manifest.json',
+            ],
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'Vite',
+            $html,
+            'Vite section heading must be present.',
+        );
+        self::assertStringContainsString(
+            'resources/js/app.js',
+            $html,
+            'Chunk name must surface in the grid.',
+        );
+        self::assertStringContainsString(
+            'assets/app-def.js',
+            $html,
+            'Output file must surface in the grid.',
+        );
+        self::assertStringContainsString(
+            'No asset bundles loaded',
+            $html,
+            'Bundle empty state must still render.',
+        );
+    }
+
     public function testGetNameAndIconReturnConstantsForToolbar(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
@@ -264,6 +311,88 @@ final class AssetPanelTest extends TestCase
         );
     }
 
+    public function testSaveCapturesViteManifestWhenBridgeIsRegistered(): void
+    {
+        $manifestPath = dirname(__DIR__, 2) . '/runtime/vite-manifest-test.json';
+
+        @mkdir(dirname($manifestPath), 0o777, true);
+
+        file_put_contents(
+            $manifestPath,
+            json_encode(
+                [
+                    'resources/js/app.js' => [
+                        'css' => ['assets/app-abc.css'],
+                        'file' => 'assets/app-def.js',
+                        'imports' => ['_shared-xyz.js'],
+                        'isEntry' => true,
+                    ],
+                ],
+            ),
+        );
+
+        $panel = $this->makePanel(
+            AssetPanel::class,
+            [
+                'inertiaVue' => [
+                    'class' => Vite::class,
+                    'entrypoints' => ['resources/js/app.js'],
+                    'manifestPath' => $manifestPath,
+                ],
+            ],
+        );
+
+        $saved = $panel->save();
+
+        $vite = $saved['@vite'] ?? null;
+
+        self::assertIsArray(
+            $vite,
+            'Vite snapshot must be captured under the reserved key.',
+        );
+
+        $entries = $vite['entries'] ?? null;
+
+        self::assertIsArray(
+            $entries,
+            'Manifest entries must be captured.',
+        );
+
+        $entry = $entries['resources/js/app.js'] ?? null;
+
+        self::assertIsArray(
+            $entry,
+            'Manifest chunk must be captured by name.',
+        );
+        self::assertSame(
+            'assets/app-def.js',
+            $entry['file'] ?? null,
+            'Manifest chunk output file must be captured.',
+        );
+        self::assertSame(
+            1,
+            $entry['imports'] ?? null,
+            'Import count must be captured.',
+        );
+        self::assertTrue(
+            $entry['isEntry'] ?? null,
+            'Entry flag must be captured.',
+        );
+
+        @unlink($manifestPath);
+    }
+
+    public function testSaveOmitsViteKeyWithoutBridgeComponent(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        self::assertArrayNotHasKey(
+            '@vite',
+            $panel->save(),
+            'No bridge component must mean no reserved key.',
+        );
+    }
+
     public function testSaveReturnsEmptyArrayWhenNoBundlesRegistered(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
@@ -303,18 +432,25 @@ final class AssetPanelTest extends TestCase
             $snapshot,
             'Snapshot must include the registered bundle.',
         );
+
+        $publishOptions = $snapshot['debug']['publishOptions'] ?? null;
+
+        self::assertIsArray(
+            $publishOptions,
+            'Publish options must be captured.',
+        );
         self::assertSame(
             '\Closure',
-            $snapshot['debug']['publishOptions']['beforeCopy'] ?? null,
+            $publishOptions['beforeCopy'] ?? null,
             "'beforeCopy' closure must be replaced with the '\\Closure' label.",
         );
         self::assertSame(
             '\Closure',
-            $snapshot['debug']['publishOptions']['afterCopy'] ?? null,
+            $publishOptions['afterCopy'] ?? null,
             "'afterCopy' closure must be replaced with the '\\Closure' label.",
         );
         self::assertTrue(
-            $snapshot['debug']['publishOptions']['forceCopy'] ?? false,
+            $publishOptions['forceCopy'] ?? false,
             'Non-closure publishOptions entries must round-trip verbatim.',
         );
     }

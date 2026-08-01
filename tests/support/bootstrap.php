@@ -27,3 +27,11 @@ require_once($vendorRoot . '/yiisoft/yii2/Yii.php');
 
 Yii::setAlias('@yii/debug/tests', dirname(__DIR__));
 Yii::setAlias('@yii/debug', "{$rootPath}/src");
+
+// Stand-ins for the optional `yii2-extensions/inertia` package (not a dev dependency); the InertiaPanel and
+// AssetPanel tests exercise the real class names without pulling the package in.
+if (class_exists(yii\inertia\Manager::class) === false) {
+    require_once __DIR__ . '/stub/inertia/Manager.php';
+    require_once __DIR__ . '/stub/inertia/Page.php';
+    require_once __DIR__ . '/stub/inertia/Vite.php';
+}

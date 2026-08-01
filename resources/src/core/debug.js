@@ -323,10 +323,25 @@
     var tab = findToggle(event.target, "tab");
     var dropdown = findToggle(event.target, "dropdown");
     var collapse = findToggle(event.target, "collapse");
+    var cellMore = findToggle(event.target, "cell-more");
 
     if (tab) {
       event.preventDefault();
       activateTab(tab);
+      return;
+    }
+
+    if (cellMore) {
+      var moreBox = closest(cellMore, ".yii-debug-cell-more");
+      event.preventDefault();
+
+      if (!moreBox) {
+        return;
+      }
+
+      var moreOpen = moreBox.classList.toggle("is-open");
+      cellMore.setAttribute("aria-expanded", moreOpen ? "true" : "false");
+      cellMore.textContent = moreOpen ? "[-] Show less" : "[+] Show more";
       return;
     }
 

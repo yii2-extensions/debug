@@ -10,7 +10,7 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Em, Label, Span, Strong};
 use UIAwesome\Html\Root\{Footer, Header};
 use UIAwesome\Html\Sectioning\Section;
-use yii\debug\helpers\Format;
+use yii\debug\helpers\{Format, Fqcn};
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\{DataProvider, Svg};
 use yii\debug\panels\TimelinePanel;
@@ -344,7 +344,7 @@ final class TimelineRenderer
                     ->style(['--depth' => (string) $row->depth])
                     ->html(
                         Span::tag()->class('yii-debug-tl-dot')->addAttribute('aria-hidden', 'true'),
-                        Span::tag()->class('yii-debug-tl-name')->content($row->category),
+                        Span::tag()->class('yii-debug-tl-name')->html(Fqcn::renderLabel($row->category)),
                     ),
                 Div::tag()
                     ->class('yii-debug-tl-track')

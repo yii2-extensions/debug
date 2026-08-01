@@ -172,6 +172,10 @@ final class SidebarDataNormalizer
                 continue;
             }
 
+            if ($mode === 'view' && $panel->hasContent() === false) {
+                continue;
+            }
+
             $iconKey = $panel->getToolbarIcon();
             $iconSvg = is_string($iconKey) && $iconKey !== '' ? Icon::render($iconKey) : '';
 

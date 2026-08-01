@@ -79,7 +79,8 @@ final class GridViewConfig
 
         $select = Select::tag()
             ->addDataAttribute('yii-debug-pagesize', true)
-            ->class('yii-debug-grid-pagesize-select');
+            ->class('yii-debug-grid-pagesize-select')
+            ->name('per-page');
 
         $rows = ['10', '25', '50', '100', 'all'];
 

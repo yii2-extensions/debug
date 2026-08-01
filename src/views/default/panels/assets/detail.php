@@ -3,14 +3,18 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Flow\{Div, P};
-use UIAwesome\Html\Heading\H1;
+use UIAwesome\Html\Heading\{H1, H3};
 use UIAwesome\Html\List\{Li, Ol};
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
+use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
 use yii\debug\helpers\{EmptyState, Icon};
 use yii\debug\panels\asset\{AssetCardRenderer, AssetSummary};
 
-/** @var AssetSummary $summary Typed asset bundle summary. */
+/**
+ * @var AssetSummary $summary Typed asset bundle summary.
+ * @var array<string, mixed>|null $vite Vite manifest snapshot, or `null` when no Vite bridge is registered.
+ */
 $stats = [
     ['bundles', 'asset', $summary->totalBundles, 'bundle' . ($summary->totalBundles === 1 ? '' : 's')],
     ['css', 'brand-css3', $summary->totalCss, 'css'],
@@ -44,6 +48,100 @@ foreach ($stats as [$kind, $icon, $value, $label]) {
 <?= Header::tag()
     ->class('yii-debug-asset-stats')
     ->html(...$statBlocks) ?>
+
+<?php if (is_array($vite)): ?>
+    <?php
+    $viteEntries = is_array($vite['entries'] ?? null) ? $vite['entries'] : [];
+    $viteDevMode = ($vite['devMode'] ?? false) === true;
+    $viteDevServer = is_string($vite['devServerUrl'] ?? null) ? $vite['devServerUrl'] : null;
+    $viteBaseUrl = is_string($vite['baseUrl'] ?? null) ? $vite['baseUrl'] : '';
+    $viteManifest = is_string($vite['manifestPath'] ?? null) ? $vite['manifestPath'] : '';
+
+    $viteRows = [];
+    $viteIndex = 1;
+
+    foreach ($viteEntries as $chunkName => $chunk) {
+        if (!is_string($chunkName) || !is_array($chunk)) {
+            continue;
+        }
+
+        $entryBadge = ($chunk['isEntry'] ?? false) === true
+            ? Span::tag()->class('yii-debug-badge yii-debug-badge-success')->content('entry')->render()
+            : '—';
+
+        $viteRows[] = Tr::tag()->html(
+            Td::tag()->content((string) $viteIndex),
+            Td::tag()
+                ->class('yii-debug-cell-mono')
+                ->html(Strong::tag()->content($chunkName)),
+            Td::tag()
+                ->class('yii-debug-cell-mono')
+                ->content(is_string($chunk['file'] ?? null) ? $chunk['file'] : '—'),
+            Td::tag()
+                ->class('yii-debug-cell-numeric')
+                ->content((string) (is_array($chunk['css'] ?? null) ? count($chunk['css']) : 0)),
+            Td::tag()
+                ->class('yii-debug-cell-numeric')
+                ->content((string) (is_int($chunk['imports'] ?? null) ? $chunk['imports'] : 0)),
+            Td::tag()
+                ->class('yii-debug-cell-pill')
+                ->html($entryBadge),
+        );
+
+        $viteIndex++;
+    }
+    ?>
+    <?= H3::tag()->content('Vite') ?>
+    <?= Div::tag()
+        ->class('yii-debug-table-wrap')
+        ->html(
+            Table::tag()
+                ->class('yii-debug-table yii-debug-table-mono')
+                ->html(
+                    Tbody::tag()->html(
+                        Tr::tag()->html(
+                            Th::tag()->content('Mode'),
+                            Td::tag()->content(
+                                $viteDevMode
+                                    ? 'Dev server' . ($viteDevServer !== null ? " ({$viteDevServer})" : '')
+                                    : 'Build manifest',
+                            ),
+                        ),
+                        Tr::tag()->html(
+                            Th::tag()->content('Base URL'),
+                            Td::tag()->content($viteBaseUrl !== '' ? $viteBaseUrl : '—'),
+                        ),
+                        Tr::tag()->html(
+                            Th::tag()->content('Manifest'),
+                            Td::tag()->content($viteManifest !== '' ? $viteManifest : '—'),
+                        ),
+                    ),
+                ),
+        ) ?>
+    <?php if ($viteRows !== []): ?>
+        <?= Div::tag()
+            ->class('yii-debug-table-wrap')
+            ->html(
+                Table::tag()
+                    ->class('yii-debug-table')
+                    ->html(
+                        Thead::tag()->html(
+                            Tr::tag()->html(
+                                Th::tag()->content('#'),
+                                Th::tag()->content('Chunk'),
+                                Th::tag()->content('Output'),
+                                Th::tag()->content('CSS'),
+                                Th::tag()->content('Imports'),
+                                Th::tag()->content('Entry'),
+                            ),
+                        ),
+                        Tbody::tag()->html(...$viteRows),
+                    ),
+            ) ?>
+    <?php elseif ($viteDevMode === false): ?>
+        <?= P::tag()->content('The Vite manifest is missing or empty — run the front-end build to populate it.') ?>
+    <?php endif; ?>
+<?php endif; ?>
 
 <?php if ($summary->isEmpty()): ?>
     <?= EmptyState::card(

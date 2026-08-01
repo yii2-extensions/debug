@@ -16,6 +16,7 @@ use yii\debug\panels\{
     DbPanel,
     DumpPanel,
     EventPanel,
+    InertiaPanel,
     LogPanel,
     MailPanel,
     ProfilingPanel,
@@ -502,9 +503,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Returns the built-in panel configurations, ordered by their importance in a typical request-debugging workflow
-     * (identity → request → routing → logs → DB → perf → events → auth → side effects → dev-time helpers →
-     * infrastructure).
+     * Returns the built-in panel configurations, ordered as the request itself unfolds.
+     *
+     * Three groups follow one another: what came in and how it was dispatched (request, routing, page render,
+     * identity), what the application did while handling it (logs, queries, timings, events), and what it left
+     * behind (side effects and served resources). `config` opens the list but is surfaced through the brand bar
+     * rather than the panel nav.
      *
      * @return array<string, array<string, mixed>> Panel configurations indexed by panel id.
      */
@@ -514,12 +518,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'config' => ['class' => ConfigPanel::class],
             'request' => ['class' => RequestPanel::class],
             'router' => ['class' => RouterPanel::class],
+            'inertia' => ['class' => InertiaPanel::class],
+            'user' => ['class' => UserPanel::class],
             'log' => ['class' => LogPanel::class],
             'db' => ['class' => DbPanel::class],
             'profiling' => ['class' => ProfilingPanel::class],
             'timeline' => ['class' => TimelinePanel::class],
             'event' => ['class' => EventPanel::class],
-            'user' => ['class' => UserPanel::class],
             'mail' => ['class' => MailPanel::class],
             'queue' => ['class' => QueuePanel::class],
             'dump' => ['class' => DumpPanel::class],

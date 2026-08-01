@@ -243,6 +243,18 @@ class Panel extends Component implements ViewContextInterface
     }
 
     /**
+     * Returns whether the panel captured content for the loaded request.
+     *
+     * The sidebar nav skips panels that report `false` for the active capture, so integration panels can activate
+     * per request — the way the AJAX flag only surfaces on XHR captures. Returns `true` by default, keeping every
+     * core panel listed on every capture.
+     */
+    public function hasContent(): bool
+    {
+        return true;
+    }
+
+    /**
      * Returns `true` when {@see setError()} captured a {@see FlattenException} during {@see save()}.
      */
     public function hasError(): bool
