@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\event;
 
-use UIAwesome\Html\Phrasing\{Span, Strong};
+use UIAwesome\Html\Phrasing\Span;
 use yii\debug\helpers\Fqcn;
 
 use function date;
@@ -14,8 +14,8 @@ use function sprintf;
  * Renders the typed cells of the events grid for the Event debug panel.
  *
  * Stateless static helpers: every method takes a typed {@see EventRow} and returns the rendered cell string, keeping
- * the GridView column closures in `panels/event/detail.php` free of `mixed` narrowing. Class cells split the FQCN into
- * a muted namespace prefix and a bold short name, mirroring the asset and queue renderers.
+ * the GridView column closures in `panels/event/detail.php` free of `mixed` narrowing. Class cells render the shared
+ * {@see Fqcn::renderLabel()} two-tone treatment, mirroring the asset, log, profile, and queue renderers.
  */
 final class EventCellRenderer
 {
@@ -24,7 +24,7 @@ final class EventCellRenderer
      */
     public static function renderClassCell(EventRow $row): string
     {
-        return self::renderFqcn($row->class);
+        return Fqcn::renderLabel($row->class);
     }
 
     /**
@@ -32,7 +32,7 @@ final class EventCellRenderer
      */
     public static function renderSenderCell(EventRow $row): string
     {
-        return self::renderFqcn($row->senderClass);
+        return Fqcn::renderLabel($row->senderClass);
     }
 
     /**
@@ -59,30 +59,5 @@ final class EventCellRenderer
         $millis = (int) (($row->time - $seconds) * 1000);
 
         return date('H:i:s.', $seconds) . sprintf('%03d', $millis);
-    }
-
-    /**
-     * Splits `$fqcn` into a muted namespace prefix and a bold short name, keeping the full FQCN in the `title`
-     * attribute for hover inspection (`—` when empty).
-     */
-    private static function renderFqcn(string $fqcn): string
-    {
-        if ($fqcn === '') {
-            return '—';
-        }
-
-        $namespace = Fqcn::namespacePart($fqcn);
-
-        return Span::tag()
-            ->title($fqcn)
-            ->html(
-                $namespace !== ''
-                    ? Span::tag()
-                        ->class('yii-debug-muted')
-                        ->content("{$namespace}\\")
-                    : '',
-                Strong::tag()->content(Fqcn::shortName($fqcn)),
-            )
-            ->render();
     }
 }

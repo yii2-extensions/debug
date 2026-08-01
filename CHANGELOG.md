@@ -50,6 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor!: remove the dead timeline color API — `TimelinePanel::getColors()`/`setColors()` and `DataProvider::getColor()`/`getCssClass()`; bars are colored by domain category (`--yii-debug-cat-*` tokens) since the redesign, so the computed hex was never rendered. Configurations passing a `colors` key to the timeline panel now throw `UnknownPropertyException` and must drop it.
 - fix(ui): densify the Events grid header, filter, and body cell padding under the 768px breakpoint, removing the residual horizontal scroll left by classic desktop scrollbars at narrow viewports.
 - feat: highlight the SQL of `yii\db\Command::*` log entries in the Logs panel message column with the same `SqlHighlighter` token spans as the db panel queries grid.
+- fix(ui): always render the resolved route / dispatched action summary in the Router panel `Current Route` tab; the pane no longer renders empty when the routing pass left no trace messages, and a dedicated empty-state heading covers captures with no route data at all.
+- fix(ui): confine horizontal overflow to the table in every GridView panel (History, Logs, Database, Profiling, Queue, Dump, Events, User) by wrapping the grid items in the shared `.yii-debug-table-wrap` scroll container; the page never scrolls sideways anymore and the grids gain the same card frame as the Router/Request/Config tables.
+- fix(ui): hide the low-signal History `IP` and `MAIL` columns at laptop widths (`width <= 1366px`) so the History grid fits without an internal scrollbar; both columns return on wide desktops.
+- feat(ui): render the Logs and Profiling category columns with the shared two-tone treatment (muted namespace prefix, bold `Class::method`) instead of breaking FQCNs mid-word, keep the Profiling timestamp on one line, and add a full-date hover tooltip to the Profiling time column.
+- feat(ui): add contextual empty-state cards to the Database panel (zero queries no longer show a bare filter grid plus an orphan `[+] Explain all` link) and to the User panel (the guest state explains the missing identity and points to the `ruleUserSwitch` feature instead of the raw `Is guest.` text).
+- fix(ui): unify the empty-state convention — Queue and Asset Bundles now keep their summary strips visible in the empty state, matching Mail, Dump, Events, and Profiling; the rows-per-page selector hides whenever a grid has no rows.
+- refactor: extract the shared `EmptyState::card()` helper and the `Fqcn::renderLabel()` two-tone label used by the panel views and cell renderers.
 
 ## 0.1.1 May 18, 2026
 

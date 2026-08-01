@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Flow\{Div, P, Pre};
-use UIAwesome\Html\Heading\{H1, H2};
+use UIAwesome\Html\Flow\{P, Pre};
+use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
+use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\EventSearch;
 use yii\debug\panels\event\{EventCellRenderer, EventRowNormalizer};
 use yii\debug\panels\EventPanel;
@@ -60,22 +61,19 @@ if ($hasEvents) {
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>
 <?php if (!$hasEvents): ?>
-    <?= Div::tag()
-        ->class('yii-debug-empty-state')
-        ->html(
-            H2::tag()
-                ->content('No events triggered in this request'),
-            P::tag()
-                ->content(
-                    'The event panel records every event the framework or the application fires through a wildcard '
-                    . 'listener, so this request completed without triggering any.',
-                ),
-            P::tag()
-                ->content('Any component that attaches a handler and triggers an event populates this view:'),
-            Pre::tag()
-                ->class('yii-debug-empty-state-code')
-                ->content("\$component->on('myEvent', \$handler);\n\$component->trigger('myEvent');"),
-        ) ?>
+    <?= EmptyState::card(
+        'No events triggered in this request',
+        P::tag()
+            ->content(
+                'The event panel records every event the framework or the application fires through a wildcard '
+                . 'listener, so this request completed without triggering any.',
+            ),
+        P::tag()
+            ->content('Any component that attaches a handler and triggers an event populates this view:'),
+        Pre::tag()
+            ->class('yii-debug-empty-state-code')
+            ->content("\$component->on('myEvent', \$handler);\n\$component->trigger('myEvent');"),
+    ) ?>
     <?php return; ?>
 <?php endif; ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
@@ -100,7 +98,7 @@ if ($hasEvents) {
                 [
                     'attribute' => 'name',
                     'contentOptions' => ['class' => 'yii-debug-cell-mono'],
-                    ],
+                ],
                 [
                     'attribute' => 'class',
                     'value' => static fn(mixed $data): string => EventCellRenderer::renderClassCell(
@@ -108,7 +106,7 @@ if ($hasEvents) {
                     ),
                     'format' => 'raw',
                     'contentOptions' => ['class' => 'yii-debug-cell-mono'],
-                    ],
+                ],
                 [
                     'header' => 'Sender',
                     'attribute' => 'senderClass',
@@ -117,7 +115,7 @@ if ($hasEvents) {
                     ),
                     'format' => 'raw',
                     'contentOptions' => ['class' => 'yii-debug-cell-mono'],
-                    ],
+                ],
                 [
                     'header' => 'Static',
                     'attribute' => 'isStatic',
@@ -128,7 +126,7 @@ if ($hasEvents) {
                     'filter' => ['1' => 'Yes', '0' => 'No'],
                     'contentOptions' => ['class' => 'yii-debug-cell-pill'],
                     'options' => ['width' => '8%'],
-                    ],
+                ],
             ],
         ],
     );

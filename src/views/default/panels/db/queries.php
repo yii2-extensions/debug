@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Palpable\A;
-use UIAwesome\Html\Phrasing\{Span, Strong};
+use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\{DbAsset, GridViewConfig};
+use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\DbSearch;
 use yii\debug\panels\db\{DbQueryRenderer, QueryRowNormalizer};
 use yii\debug\panels\DbPanel;
@@ -25,6 +26,8 @@ use yii\web\View;
  * @var View $this View component instance.
  */
 $timings = $panel->calculateTimings();
+
+$hasQueries = $timings !== [];
 
 $totalMs = number_format(array_sum(array_column($timings, 'duration')) * 1000, 3);
 
@@ -60,11 +63,29 @@ if ($sumDuplicates > 0) {
         );
 }
 
-$summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
+if ($hasQueries) {
+    $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
+}
 ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>
+<?php if (!$hasQueries): ?>
+    <?= EmptyState::card(
+        'No database queries in this request',
+        P::tag()
+            ->content('This request completed without executing SQL through a Yii DB connection, so the query log is empty.'),
+        P::tag()
+            ->html(
+                'Queries are captured from the profiling messages logged by ',
+                Code::tag()->content('yii\db\Command'),
+                ' — connections must keep ',
+                Code::tag()->content('enableProfiling'),
+                ' enabled (the default). After a redirect the queries usually belong to the previous request — open it from the History panel.',
+            ),
+    ) ?>
+    <?php return; ?>
+<?php endif; ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
         [

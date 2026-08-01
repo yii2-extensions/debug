@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Flow\{Div, P};
-use UIAwesome\Html\Heading\{H1, H2};
+use UIAwesome\Html\Flow\P;
+use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
+use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\QueueSearch;
 use yii\debug\panels\queue\{JobRecordNormalizer, QueueCardRenderer, QueueGridRenderer, QueueSummaryNormalizer};
 use yii\debug\panels\QueuePanel;
@@ -50,40 +51,7 @@ $driverOptions = ['' => 'All'] + array_combine($driverNames, $driverNames);
 $tag = $panel->tag;
 
 $jobUrlBuilder = static fn(int $seq): string => Url::to(['queue-job', 'seq' => $seq, 'tag' => $tag]);
-?>
-<?= H1::tag()
-    ->class('yii-debug-sr-only')
-    ->content('Queue') ?>
-<?php if ($totalRecords === 0): ?>
-    <?= Div::tag()
-        ->class('yii-debug-empty-state')
-        ->html(
-            H2::tag()
-                ->content('No jobs queued in this request'),
-            P::tag()
-                ->content(
-                    'This request did not push any jobs through a configured queue component, so the inventory is empty.',
-                ),
-            P::tag()
-                ->html(
-                    'The Queue panel listens for ',
-                    Code::tag()->content('afterPush'),
-                    ', ',
-                    Code::tag()->content('afterExec'),
-                    ' and ',
-                    Code::tag()->content('afterError'),
-                    ' events emitted by any class extending ',
-                    Code::tag()->content('yii\\queue\\Queue'),
-                    ' (the abstract base from ',
-                    Code::tag()->content('yiisoft/yii2-queue'),
-                    '). Configure a queue component (sync, db, redis, ...) and call ',
-                    Code::tag()->content('$queue->push($job)'),
-                    ' to populate this view.',
-                ),
-        ) ?>
-    <?php return; ?>
-<?php endif; ?>
-<?php
+
 $summaryItems = [
     Span::tag()
         ->html(
@@ -128,11 +96,42 @@ if ($summary->hasErrors()) {
         );
 }
 
-$summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
+if ($totalRecords > 0) {
+    $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
+}
 ?>
+<?= H1::tag()
+    ->class('yii-debug-sr-only')
+    ->content('Queue') ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>
+<?php if ($totalRecords === 0): ?>
+    <?= EmptyState::card(
+        'No jobs queued in this request',
+        P::tag()
+            ->content(
+                'This request did not push any jobs through a configured queue component, so the inventory is empty.',
+            ),
+        P::tag()
+            ->html(
+                'The Queue panel listens for ',
+                Code::tag()->content('afterPush'),
+                ', ',
+                Code::tag()->content('afterExec'),
+                ' and ',
+                Code::tag()->content('afterError'),
+                ' events emitted by any class extending ',
+                Code::tag()->content('yii\\queue\\Queue'),
+                ' (the abstract base from ',
+                Code::tag()->content('yiisoft/yii2-queue'),
+                '). Configure a queue component (sync, db, redis, ...) and call ',
+                Code::tag()->content('$queue->push($job)'),
+                ' to populate this view.',
+            ),
+    ) ?>
+    <?php return; ?>
+<?php endif; ?>
 
     <?php if ($asyncHint !== null): ?>
         <?= $asyncHint ?>

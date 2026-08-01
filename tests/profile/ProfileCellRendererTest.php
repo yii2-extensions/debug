@@ -10,12 +10,54 @@ use yii\debug\tests\support\TestCase;
 
 /**
  * Unit tests for {@see ProfileCellRenderer} covering the typed cell renderers used by the profile grid (time
- * formatting, duration formatting, indented info cell with HTML-escaped content).
+ * formatting with the hover tooltip, duration formatting, two-tone category label, indented info cell with
+ * HTML-escaped content).
  */
 #[Group('panel')]
 #[Group('profile')]
 final class ProfileCellRendererTest extends TestCase
 {
+    public function testRenderCategoryCellKeepsMethodSuffixInsideStrongShortName(): void
+    {
+        self::assertStringContainsString(
+            '<strong>Command::query</strong>',
+            ProfileCellRenderer::renderCategoryCell(self::makeRow(category: 'yii\\db\\Command::query')),
+            'Method pair must render bold as one segment.',
+        );
+    }
+
+    public function testRenderCategoryCellRendersPlainCategoryWithoutMutedPrefix(): void
+    {
+        $cell = ProfileCellRenderer::renderCategoryCell(self::makeRow(category: 'application'));
+
+        self::assertStringContainsString(
+            '<strong>application</strong>',
+            $cell,
+            'Plain category must render bold.',
+        );
+        self::assertStringNotContainsString(
+            'yii-debug-muted',
+            $cell,
+            'Plain categories must not emit a namespace prefix.',
+        );
+    }
+
+    public function testRenderCategoryCellSplitsFqcnCategoryIntoMutedNamespaceAndStrongShortName(): void
+    {
+        $cell = ProfileCellRenderer::renderCategoryCell(self::makeRow(category: 'yii\\db\\Command::query'));
+
+        self::assertStringContainsString(
+            'yii-debug-muted',
+            $cell,
+            'Namespace prefix must render muted.',
+        );
+        self::assertStringContainsString(
+            'title="yii\db\Command::query"',
+            $cell,
+            'Full category must sit in the `title` attribute.',
+        );
+    }
+
     public function testRenderDurationCellFormatsDurationToOneDecimalMillisecond(): void
     {
         self::assertSame(
@@ -99,6 +141,17 @@ final class ProfileCellRendererTest extends TestCase
         );
     }
 
+    public function testRenderTimeCellExposesFullTimestampInTitleAttribute(): void
+    {
+        $expected = date('Y-m-d H:i:s', 1_700_000_000) . '.789';
+
+        self::assertStringContainsString(
+            "title=\"{$expected}\"",
+            ProfileCellRenderer::renderTimeCell(self::makeRow(timestamp: 1_700_000_000_789.0)),
+            'Full timestamp must sit in the `title` attribute.',
+        );
+    }
+
     public function testRenderTimeCellFormatsMillisecondTimestampAsHmsWithMillis(): void
     {
         $expected = date('H:i:s', 1_700_000_000) . '.789';
@@ -107,10 +160,10 @@ final class ProfileCellRendererTest extends TestCase
             self::makeRow(timestamp: 1_700_000_000_789.0),
         );
 
-        self::assertSame(
-            $expected,
+        self::assertStringContainsString(
+            ">{$expected}</span>",
             $html,
-            "Timestamp must format as 'H:i:s.mmm'.",
+            "Visible text must format as 'H:i:s.mmm'.",
         );
     }
 
@@ -122,8 +175,8 @@ final class ProfileCellRendererTest extends TestCase
             self::makeRow(timestamp: 1_700_000_000_005.0),
         );
 
-        self::assertSame(
-            $expected,
+        self::assertStringContainsString(
+            ">{$expected}</span>",
             $html,
             "Milliseconds below '100' must be zero-padded to three digits.",
         );

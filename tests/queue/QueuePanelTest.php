@@ -260,6 +260,11 @@ final class QueuePanelTest extends TestCase
             $html,
             'Empty queue panel must surface the empty-state hint.',
         );
+        self::assertStringContainsString(
+            'yii-debug-grid-summary',
+            $html,
+            'Summary strip must render alongside the card.',
+        );
     }
 
     public function testGetDetailRendersExecutedAndErrorStatsAndAsyncHint(): void

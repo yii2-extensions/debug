@@ -169,10 +169,17 @@ final class UserPanelTest extends TestCase
 
         $this->setInaccessibleProperty($panel, 'data', ['id' => null, 'identity' => null]);
 
+        $detail = $panel->getDetail();
+
         self::assertStringContainsString(
-            'Is guest',
-            $panel->getDetail(),
-            "Missing identity must render the 'Is guest' fallback.",
+            'yii-debug-empty-state',
+            $detail,
+            'Guest state must render the empty-state card.',
+        );
+        self::assertStringContainsString(
+            'No user authenticated in this request',
+            $detail,
+            'Card headline must describe the guest state.',
         );
     }
 
