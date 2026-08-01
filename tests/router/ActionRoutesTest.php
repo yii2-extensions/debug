@@ -272,6 +272,28 @@ final class ActionRoutesTest extends TestCase
         );
     }
 
+    public function testScanSkipsFilesWithoutControllerSuffix(): void
+    {
+        $this->mockWebApplication(
+            [
+                'controllerNamespace' => 'yii\debug\tests\support\stub\router\controllers',
+            ],
+        );
+
+        $routes = (new ActionRoutes())->routes;
+
+        self::assertArrayHasKey(
+            'yii\debug\tests\support\stub\router\controllers\WebController::actionFirst()',
+            $routes,
+            'Suffixed controllers must surface.',
+        );
+        self::assertArrayNotHasKey(
+            'yii\debug\tests\support\stub\router\controllers\WebHelper::actionHidden()',
+            $routes,
+            'Filename guard must drop the non-suffixed class.',
+        );
+    }
+
     public function testScanSkipsModuleEntryWhenGetModuleReturnsNull(): void
     {
         $this->mockWebApplication(
