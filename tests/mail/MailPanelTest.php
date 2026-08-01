@@ -335,9 +335,16 @@ final class MailPanelTest extends TestCase
             ],
         ];
 
+        $detail = $panel->getDetail();
+
         self::assertNotEmpty(
-            $panel->getDetail(),
+            $detail,
             'Detail view must produce markup.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-grid-summary',
+            $detail,
+            'Detail must open with the shared summary strip.',
         );
     }
 
@@ -584,13 +591,14 @@ final class MailPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsReturnsNullWhenNoCurrentOrPreviousMail(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenNoCurrentOrPreviousMail(): void
     {
         $panel = $this->makePanel(MailPanel::class);
 
         $panel->data = [];
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke(
                 $panel,
                 'getToolbarItems',

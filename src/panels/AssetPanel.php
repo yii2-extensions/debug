@@ -192,14 +192,14 @@ class AssetPanel extends Panel
     }
 
     /**
-     * Returns the toolbar item showing the count of registered bundles, or `null` when none were captured.
+     * Returns the toolbar item showing the count of registered bundles, or `[]` when none were captured.
      *
-     * @return array<int, array<string, mixed>>|null Single-element list with the `info` chip, or `null`.
+     * @return array<int, array<string, mixed>> Single-element list with the `info` chip, or `[]`.
      */
-    protected function getToolbarItems(): array|null
+    protected function getToolbarItems(): array
     {
         if (!is_array($this->data) || $this->data === []) {
-            return null;
+            return [];
         }
 
         return [

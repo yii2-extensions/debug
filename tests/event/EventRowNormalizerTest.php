@@ -10,12 +10,40 @@ use yii\debug\tests\support\TestCase;
 
 /**
  * Unit tests for {@see EventRowNormalizer} covering the narrowing of GridView callback arguments into a typed
- * {@see \yii\debug\panels\event\EventRow}.
+ * {@see \yii\debug\panels\event\EventRow} and the summary-strip aggregates.
  */
 #[Group('panel')]
 #[Group('event')]
 final class EventRowNormalizerTest extends TestCase
 {
+    public function testDistinctClassCountCountsUniqueClassNames(): void
+    {
+        $count = EventRowNormalizer::distinctClassCount(
+            [
+                ['class' => 'yii\\base\\Event'],
+                ['class' => 'yii\\base\\Event'],
+                ['class' => 'yii\\web\\Application'],
+                ['class' => ''],
+                'not-an-array',
+            ],
+        );
+
+        self::assertSame(
+            2,
+            $count,
+            'Duplicates and empty classes must not inflate the count.',
+        );
+    }
+
+    public function testDistinctClassCountReturnsZeroForEmptyList(): void
+    {
+        self::assertSame(
+            0,
+            EventRowNormalizer::distinctClassCount([]),
+            'Empty list must yield zero.',
+        );
+    }
+
     public function testFromCoercesNumericStringToFloatTime(): void
     {
         $row = EventRowNormalizer::from(
@@ -191,6 +219,34 @@ final class EventRowNormalizerTest extends TestCase
             'yii\\web\\Application',
             $row->senderClass,
             'senderClass must round-trip.',
+        );
+    }
+
+    public function testStaticCountCountsRowsFlaggedStatic(): void
+    {
+        $count = EventRowNormalizer::staticCount(
+            [
+                ['isStatic' => '1'],
+                ['isStatic' => 1],
+                ['isStatic' => '0'],
+                ['isStatic' => 'truthy'],
+                'not-an-array',
+            ],
+        );
+
+        self::assertSame(
+            2,
+            $count,
+            'Only canonical static flags must count.',
+        );
+    }
+
+    public function testStaticCountReturnsZeroForEmptyList(): void
+    {
+        self::assertSame(
+            0,
+            EventRowNormalizer::staticCount([]),
+            'Empty list must yield zero.',
         );
     }
 }

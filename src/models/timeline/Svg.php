@@ -12,25 +12,30 @@ use yii\helpers\StringHelper;
 
 use function is_array;
 use function is_numeric;
+use function is_string;
 
 /**
  * Renders the timeline panel's memory-usage graph as an inline SVG.
  *
- * Plots memory samples drawn from the log and profiling panels onto a polyline/polygon pair, with a gradient fill keyed
- * by percentage thresholds. The graph is stringified through {@see __toString()} so the view can embed it inline.
+ * Plots memory samples drawn from the log and profiling panels onto a polyline/polygon pair whose stroke and gradient
+ * fill default to `currentColor`, so the surrounding CSS drives the chart color through per-stop opacities. The graph
+ * is stringified through {@see __toString()} so the view can embed it inline.
  */
 class Svg extends BaseObject
 {
     /**
-     * Gradient color stops keyed by percentage threshold of total memory.
+     * Gradient stops keyed by percentage threshold of total memory.
      *
-     * @var array<int, string>
+     * A numeric value emits a `currentColor` stop with that `stop-opacity`, so the fill fades along the chart color
+     * provided by CSS. A string value is emitted verbatim as the `stop-color` (fixed color ramps).
+     *
+     * @var array<int, float|int|string>
      */
     public array $gradient = [
-        10 => '#d6e685',
-        60 => '#8cc665',
-        90 => '#44a340',
-        100 => '#1e6823',
+        10 => 0.1,
+        60 => 0.35,
+        90 => 0.55,
+        100 => 0.8,
     ];
     /**
      * Panel IDs whose log messages feed the graph.
@@ -40,8 +45,10 @@ class Svg extends BaseObject
     public array $listenMessages = ['log', 'profiling'];
     /**
      * Stroke color for the rendered polyline.
+     *
+     * Defaults to `currentColor`, so the trace inherits the CSS `color` of the memory track.
      */
-    public string $stroke = '#1e6823';
+    public string $stroke = 'currentColor';
     /**
      * Canvas width in user units.
      */
@@ -107,7 +114,7 @@ class Svg extends BaseObject
                 G::tag()->html(
                     Polygon::tag()
                         ->points($this->polygonPoints())
-                        ->fill('url(#gradient)'),
+                        ->fill('url(#yii-debug-tl-memory-gradient)'),
                     Polyline::tag()
                         ->points($this->polylinePoints())
                         ->fill('none')
@@ -185,20 +192,25 @@ class Svg extends BaseObject
     }
 
     /**
-     * Builds the gradient definition wrapped in a `<linearGradient id="gradient">` element.
+     * Builds the gradient definition wrapped in a `<linearGradient id="yii-debug-tl-memory-gradient">` element.
+     *
+     * Numeric {@see $gradient} values become `currentColor` stops with the value as `stop-opacity`; string values are
+     * emitted verbatim as fixed `stop-color` entries.
      */
     private function buildGradient(): LinearGradient
     {
         $stops = [];
 
-        foreach ($this->gradient as $percent => $color) {
-            $stops[] = Stop::tag()
-                ->offset(StringHelper::normalizeNumber($percent) . '%')
-                ->stopColor($color);
+        foreach ($this->gradient as $percent => $stop) {
+            $tag = Stop::tag()->offset(StringHelper::normalizeNumber($percent) . '%');
+
+            $stops[] = is_string($stop)
+                ? $tag->stopColor($stop)
+                : $tag->stopColor('currentColor')->stopOpacity(StringHelper::normalizeNumber($stop));
         }
 
         return LinearGradient::tag()
-            ->id('gradient')
+            ->id('yii-debug-tl-memory-gradient')
             ->x1(0)
             ->x2(0)
             ->y1(1)

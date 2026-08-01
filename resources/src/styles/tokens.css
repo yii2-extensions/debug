@@ -56,9 +56,9 @@
   --yii-debug-panel-link-hover: light-dark(#0e8a5f, #7fe4b8);
   --yii-debug-panel-primary: light-dark(#0e7a55, #2fd08c);
   --yii-debug-panel-primary-strong: light-dark(#0a5c40, #17a673);
-  --yii-debug-panel-success: light-dark(#128a50, #34c97e);
-  --yii-debug-panel-warning: light-dark(#b26a00, #e8a33d);
-  --yii-debug-panel-danger: light-dark(#c93838, #f16a6a);
+  --yii-debug-success: light-dark(#128a50, #34c97e);
+  --yii-debug-warning: light-dark(#b26a00, #e8a33d);
+  --yii-debug-danger: light-dark(#c93838, #f16a6a);
 
   /* Base informational accent shared by chips, callouts, and metadata highlights. */
   --yii-debug-info: light-dark(#2467a8, #5fa8e8);
@@ -79,10 +79,10 @@
   --yii-debug-verb-other: var(--yii-debug-panel-muted);
 
   /* Semantic hue vocabulary — HTTP status classes. */
-  --yii-debug-status-2xx: var(--yii-debug-panel-success);
-  --yii-debug-status-3xx: var(--yii-debug-panel-warning);
+  --yii-debug-status-2xx: var(--yii-debug-success);
+  --yii-debug-status-3xx: var(--yii-debug-warning);
   --yii-debug-status-4xx: light-dark(#c2410c, #fb923c);
-  --yii-debug-status-5xx: var(--yii-debug-panel-danger);
+  --yii-debug-status-5xx: var(--yii-debug-danger);
 
   /*
      * Semantic hue vocabulary — log levels.
@@ -93,8 +93,8 @@
      * level name as text. The error/warning pair shares the traffic-light
      * confusion axis by design and relies on the same text labels.
      */
-  --yii-debug-level-error: var(--yii-debug-panel-danger);
-  --yii-debug-level-warning: var(--yii-debug-panel-warning);
+  --yii-debug-level-error: var(--yii-debug-danger);
+  --yii-debug-level-warning: var(--yii-debug-warning);
   --yii-debug-level-info: var(--yii-debug-info);
   --yii-debug-level-trace: var(--yii-debug-panel-muted);
   --yii-debug-level-profile: light-dark(#9333ea, #b16be8);
@@ -110,7 +110,7 @@
   /* Semantic hue vocabulary — SQL tokens. */
   --yii-debug-sql-kw: light-dark(#0a5c40, #4fd39a);
   --yii-debug-sql-str: light-dark(#8f4e00, #e8a33d);
-  --yii-debug-sql-num: light-dark(#2467a8, #5fa8e8);
+  --yii-debug-sql-num: var(--yii-debug-info);
   --yii-debug-sql-comment: var(--yii-debug-panel-muted);
   --yii-debug-sql-param: light-dark(#6941c6, #a78bfa);
 

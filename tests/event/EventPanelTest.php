@@ -18,6 +18,42 @@ use yii\debug\tests\support\TestCase;
 #[Group('event')]
 final class EventPanelTest extends TestCase
 {
+    public function testGetDetailRendersEmptyStateWhenNoEventsCaptured(): void
+    {
+        $panel = $this->makePanel(EventPanel::class);
+
+        $panel->data = [];
+
+        $detail = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'yii-debug-empty-state',
+            $detail,
+            'Empty capture must render the empty-state card.',
+        );
+        self::assertStringContainsString(
+            'No events triggered in this request',
+            $detail,
+            'Empty-state heading must explain the missing events.',
+        );
+    }
+
+    public function testGetDetailRendersStaticCountStatWhenStaticEventsPresent(): void
+    {
+        $panel = $this->makePanel(EventPanel::class);
+
+        $panel->data = [
+            ['time' => 1.0, 'name' => 'init', 'class' => Event::class, 'isStatic' => '1', 'senderClass' => 'App'],
+            ['time' => 2.0, 'name' => 'afterSave', 'class' => Event::class, 'isStatic' => '0', 'senderClass' => 'App'],
+        ];
+
+        self::assertStringContainsString(
+            '<strong>1</strong> static',
+            $panel->getDetail(),
+            'Strip must count the static events.',
+        );
+    }
+
     public function testGetDetailRendersWithCapturedEvents(): void
     {
         $panel = $this->makePanel(EventPanel::class);
@@ -26,9 +62,16 @@ final class EventPanelTest extends TestCase
             ['time' => 1.0, 'name' => 'afterSave', 'class' => Event::class, 'isStatic' => '0', 'senderClass' => 'App'],
         ];
 
+        $detail = $panel->getDetail();
+
         self::assertNotEmpty(
-            $panel->getDetail(),
+            $detail,
             'Detail view must produce markup.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-grid-event',
+            $detail,
+            'Grid must carry the event variant class.',
         );
     }
 
@@ -80,7 +123,7 @@ final class EventPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsReturnsNullWhenDataIsCorrupt(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenDataIsCorrupt(): void
     {
         $panel = $this->makePanel(EventPanel::class);
 
@@ -90,7 +133,8 @@ final class EventPanelTest extends TestCase
             'corrupt',
         );
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke(
                 $panel,
                 'getToolbarItems',
@@ -99,11 +143,12 @@ final class EventPanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsReturnsNullWhenEventsAreEmpty(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenEventsAreEmpty(): void
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        self::assertNull(
+        self::assertSame(
+            [],
             $this->invoke(
                 $panel,
                 'getToolbarItems',

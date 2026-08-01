@@ -558,16 +558,16 @@ class DbPanel extends Panel
      * Builds the toolbar items: the query-count chip (flipped to a warning when the count is critical or callers are
      * excessive) and the total-query-time chip.
      *
-     * @return array<int, array<string, mixed>>|null Toolbar items, or `null` when no queries were captured.
+     * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no queries were captured.
      */
-    protected function getToolbarItems(): array|null
+    protected function getToolbarItems(): array
     {
         $timings = $this->calculateTimings();
 
         $queryCount = count($timings);
 
         if ($queryCount === 0) {
-            return null;
+            return [];
         }
 
         $excessiveCallerCount = $this->getExcessiveCallersCount();

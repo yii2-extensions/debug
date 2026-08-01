@@ -316,6 +316,7 @@
   letter-spacing: 0.06em;
 }
 
+/* The SVG chart paints itself via `currentColor`, so this `color` is the single source of the chart hue. */
 .yii-debug-tl-memory-track {
   position: relative;
   width: 100%;
@@ -326,22 +327,12 @@
     var(--yii-debug-panel-surface),
     transparent 50%
   );
+  color: var(--yii-debug-panel-primary);
 
   svg {
     display: block;
     width: 100%;
     height: 100%;
-
-    /**
-         * Recolor the legacy SVG renderer's hardcoded green so it matches the
-         * design system — no need to rewrite Svg.php.
-         */
-    path,
-    polygon {
-      fill: color-mix(in srgb, var(--yii-debug-panel-primary), transparent 60%);
-      stroke: var(--yii-debug-panel-primary);
-      stroke-width: 1.5;
-    }
   }
 }
 

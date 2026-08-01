@@ -6,6 +6,7 @@ namespace yii\debug\panels\event;
 
 use yii\debug\helpers\RowField;
 
+use function count;
 use function in_array;
 use function is_array;
 
@@ -17,6 +18,28 @@ use function is_array;
  */
 final class EventRowNormalizer
 {
+    /**
+     * Counts the distinct event classes across the given rows, ignoring rows without a class.
+     *
+     * @param array<array-key, mixed> $models Raw rows supplied by the data provider.
+     *
+     * @return int Number of unique non-empty `class` values.
+     */
+    public static function distinctClassCount(array $models): int
+    {
+        $classes = [];
+
+        foreach ($models as $model) {
+            $class = self::from($model)->class;
+
+            if ($class !== '') {
+                $classes[$class] = true;
+            }
+        }
+
+        return count($classes);
+    }
+
     /**
      * Builds an {@see EventRow} from an arbitrary value, falling back to defensible defaults for any field that is
      * missing or has the wrong type.
@@ -34,6 +57,26 @@ final class EventRowNormalizer
             isStatic: self::isStaticField($row),
             senderClass: RowField::stringField($row, 'senderClass'),
         );
+    }
+
+    /**
+     * Counts the rows flagged as class-level (static) events.
+     *
+     * @param array<array-key, mixed> $models Raw rows supplied by the data provider.
+     *
+     * @return int Number of rows normalized with `isStatic` `'1'`.
+     */
+    public static function staticCount(array $models): int
+    {
+        $static = 0;
+
+        foreach ($models as $model) {
+            if (self::from($model)->isStatic === '1') {
+                $static++;
+            }
+        }
+
+        return $static;
     }
 
     /**

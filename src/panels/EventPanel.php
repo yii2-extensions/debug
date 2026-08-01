@@ -119,16 +119,16 @@ class EventPanel extends Panel
     }
 
     /**
-     * Returns the toolbar item showing the total event count, or `null` when none were captured.
+     * Returns the toolbar item showing the total event count, or `[]` when none were captured.
      *
-     * @return array<int, array<string, mixed>>|null Single-element list with the count, or `null`.
+     * @return array<int, array<string, mixed>> Single-element list with the count, or `[]`.
      */
-    protected function getToolbarItems(): array|null
+    protected function getToolbarItems(): array
     {
         $eventCount = count(self::normalizeEvents($this->data));
 
         if ($eventCount === 0) {
-            return null;
+            return [];
         }
 
         return [['value' => $eventCount]];

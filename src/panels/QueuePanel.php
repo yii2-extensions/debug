@@ -161,15 +161,15 @@ class QueuePanel extends Panel
      * don't configure any queue component, and surfaces an `Errors` chip in `danger` when at least one error event was
      * captured.
      *
-     * @return array<int, array<string, mixed>>|null Toolbar items, or `null` when no queue component is configured and
-     * no events were captured.
+     * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no queue component is configured and no
+     * events were captured.
      */
-    protected function getToolbarItems(): array|null
+    protected function getToolbarItems(): array
     {
         $records = $this->resolveRecords();
 
         if ($records === [] && $this->hasQueueComponentConfigured() === false) {
-            return null;
+            return [];
         }
 
         $errors = 0;

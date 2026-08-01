@@ -12,6 +12,10 @@
 :host {
   --yii-debug-toolbar-drawer-height: 50vh;
 
+  /* Shared viridian washes: brand tint plus focus/active rings. */
+  --accent-wash-strong: light-dark(rgb(14 122 85 / 14%), rgb(47 208 140 / 16%));
+  --accent-wash-soft: light-dark(rgb(14 122 85 / 10%), rgb(47 208 140 / 10%));
+
   all: initial;
   color-scheme: light dark;
   direction: ltr;
@@ -83,7 +87,7 @@
   color: var(--yii-debug-panel-text);
   background: linear-gradient(
     135deg,
-    light-dark(rgb(14 122 85 / 14%), rgb(47 208 140 / 16%)),
+    var(--accent-wash-strong),
     light-dark(rgb(255 255 255 / 92%), rgb(16 24 19 / 88%)) 55%
   );
   text-decoration: none;
@@ -129,7 +133,7 @@
   background: linear-gradient(
     135deg,
     var(--yii-debug-panel-primary),
-    var(--yii-debug-panel-success)
+    var(--yii-debug-success)
   );
   color: #fff;
   font-weight: 800;
@@ -253,7 +257,7 @@
   outline: 0;
   box-shadow:
     0 1px 0 light-dark(rgb(255 255 255 / 86%), rgb(255 255 255 / 8%)) inset,
-    0 0 0 3px light-dark(rgb(14 122 85 / 10%), rgb(47 208 140 / 10%));
+    0 0 0 3px var(--accent-wash-soft);
 }
 
 .panel-active {
@@ -349,7 +353,7 @@
 .metric[data-debug-url]:focus .metric-value,
 .metric-active .metric-value {
   box-shadow:
-    0 0 0 3px light-dark(rgb(14 122 85 / 14%), rgb(47 208 140 / 16%)),
+    0 0 0 3px var(--accent-wash-strong),
     0 1px 0 light-dark(rgb(255 255 255 / 82%), rgb(255 255 255 / 8%)) inset;
 }
 
@@ -383,11 +387,11 @@
 }
 
 .badge-warning {
-  --badge-hue: var(--yii-debug-panel-warning);
+  --badge-hue: var(--yii-debug-warning);
 }
 
 .badge-danger {
-  --badge-hue: var(--yii-debug-panel-danger);
+  --badge-hue: var(--yii-debug-danger);
 }
 
 .badge-cross-request {
@@ -557,7 +561,7 @@
   background: light-dark(rgb(14 122 85 / 10%), rgb(47 208 140 / 14%));
   box-shadow:
     0 1px 0 light-dark(rgb(255 255 255 / 88%), rgb(255 255 255 / 8%)) inset,
-    0 0 0 3px light-dark(rgb(14 122 85 / 10%), rgb(47 208 140 / 10%));
+    0 0 0 3px var(--accent-wash-soft);
   outline: 0;
 }
 
@@ -622,7 +626,7 @@
     90deg,
     transparent,
     var(--yii-debug-panel-primary) 30%,
-    var(--yii-debug-panel-success) 70%,
+    var(--yii-debug-success) 70%,
     transparent
   );
   opacity: 0.55;
@@ -637,7 +641,7 @@
 
 .error-message {
   margin-left: 8px;
-  color: var(--yii-debug-panel-danger);
+  color: var(--yii-debug-danger);
 }
 
 .loading .brand {

@@ -9,8 +9,9 @@ use UIAwesome\Html\Heading\{H1, H2};
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
-use yii\debug\helpers\Icon;
+use yii\debug\GridViewConfig;
 use yii\debug\models\search\MailSearch;
+use yii\debug\panels\mail\MailMessageNormalizer;
 use yii\debug\panels\MailPanel;
 use yii\widgets\{ActiveForm, ListView};
 
@@ -23,23 +24,30 @@ $totalCount = $dataProvider->getTotalCount();
 
 $hasMessages = $totalCount > 0;
 
-$headerItems = [
-    Div::tag()
-        ->class('yii-debug-mail-header-stat')
+$failedCount = MailMessageNormalizer::failedCount($dataProvider->allModels);
+
+$summaryItems = [
+    Span::tag()
         ->html(
-            Span::tag()
-                ->addAriaAttribute('hidden', 'true')
-                ->class('yii-debug-mail-header-icon')
-                ->html(Icon::render('envelope')),
-            Strong::tag()
-                ->content((string) $totalCount),
-            Span::tag()
-                ->content(($totalCount === 1 ? 'message' : 'messages') . ' captured'),
+            Strong::tag()->content((string) $totalCount),
+            $totalCount === 1 ? ' message' : ' messages',
         ),
 ];
 
+if ($failedCount > 0) {
+    $summaryItems[] = Span::tag()
+        ->class('yii-debug-grid-summary-sep')
+        ->content('·');
+    $summaryItems[] = Span::tag()
+        ->class('yii-debug-grid-summary-stat-danger')
+        ->html(
+            Strong::tag()->content((string) $failedCount),
+            ' failed',
+        );
+}
+
 if ($hasMessages) {
-    $headerItems[] = Button::tag()
+    $summaryItems[] = Button::tag()
         ->addAriaAttribute('controls', 'email-form')
         ->addAriaAttribute('expanded', 'false')
         ->addAttribute('data-target', '#email-form')
@@ -47,14 +55,15 @@ if ($hasMessages) {
         ->class('yii-debug-btn yii-debug-btn-ghost yii-debug-mail-filter-toggle')
         ->content('Filter')
         ->type(ButtonType::BUTTON);
+    $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
 }
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
     ->content('Email messages') ?>
 <?= Header::tag()
-    ->class('yii-debug-mail-header')
-    ->html(...$headerItems) ?>
+    ->class('yii-debug-grid-summary')
+    ->html(...$summaryItems) ?>
 
 <?php if ($hasMessages): ?>
     <div id="email-form" class="yii-debug-collapsible">
