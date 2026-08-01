@@ -38,6 +38,22 @@ final class EventPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailRendersStaticCountStatWhenStaticEventsPresent(): void
+    {
+        $panel = $this->makePanel(EventPanel::class);
+
+        $panel->data = [
+            ['time' => 1.0, 'name' => 'init', 'class' => Event::class, 'isStatic' => '1', 'senderClass' => 'App'],
+            ['time' => 2.0, 'name' => 'afterSave', 'class' => Event::class, 'isStatic' => '0', 'senderClass' => 'App'],
+        ];
+
+        self::assertStringContainsString(
+            '<strong>1</strong> static',
+            $panel->getDetail(),
+            'Strip must count the static events.',
+        );
+    }
+
     public function testGetDetailRendersWithCapturedEvents(): void
     {
         $panel = $this->makePanel(EventPanel::class);
