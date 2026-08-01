@@ -11,8 +11,8 @@ use yii\debug\tests\support\TestCase;
 
 /**
  * Unit tests for {@see RouterRenderer} covering the tab strip (three navigable tabs + the read-only badge chips for
- * Pretty URL / Strict Parsing / Global Suffix), the callout block in the Current Route panel and the empty-state
- * headings for the Router Rules and Action Routes tables.
+ * Pretty URL / Strict Parsing / Global Suffix), the route summary and callout block in the Current Route panel, and
+ * the empty-state headings for the three section panes.
  */
 #[Group('panel')]
 #[Group('router')]
@@ -26,27 +26,6 @@ final class RouterRendererTest extends TestCase
             'No actions configured.',
             $html,
             'Empty actions list must show the dedicated heading.',
-        );
-    }
-
-    public function testRenderTabsCalloutOmitsResolvedDlWhenMatchSucceeded(): void
-    {
-        $current = new CurrentRoute();
-
-        $current->hasMatch = true;
-        $current->message = 'Matched site/index.';
-
-        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
-
-        self::assertStringContainsString(
-            'yii-debug-router-callout',
-            $html,
-            'Callout block must surface when a message is present.',
-        );
-        self::assertStringNotContainsString(
-            'Resolved route',
-            $html,
-            "Successful matches must NOT render the 'Resolved route' row.",
         );
     }
 
@@ -95,6 +74,27 @@ final class RouterRendererTest extends TestCase
         );
     }
 
+    public function testRenderTabsOmitsRouteSummaryWhenRouteAndActionAreEmpty(): void
+    {
+        $current = new CurrentRoute();
+
+        $current->hasMatch = true;
+        $current->message = 'Matched site/index.';
+
+        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+
+        self::assertStringContainsString(
+            'yii-debug-router-callout',
+            $html,
+            'Callout block must surface when a message is present.',
+        );
+        self::assertStringNotContainsString(
+            'yii-debug-router-summary',
+            $html,
+            'Empty route and action must not surface the summary.',
+        );
+    }
+
     public function testRenderTabsRendersActionRoutesTableWithDiscoveredRows(): void
     {
         $actionRoutes = new ActionRoutes();
@@ -131,36 +131,14 @@ final class RouterRendererTest extends TestCase
         );
     }
 
-    public function testRenderTabsRendersCalloutWithResolvedRouteWhenMatchFailed(): void
+    public function testRenderTabsRendersCurrentRouteEmptyStateWhenNothingCaptured(): void
     {
-        $current = new CurrentRoute();
-
-        $current->hasMatch = false;
-        $current->message = 'No matching route.';
-        $current->route = 'site/index';
-        $current->action = 'app\\controllers\\SiteController::actionIndex()';
-
-        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
 
         self::assertStringContainsString(
-            'yii-debug-router-callout',
+            'No route resolution captured.',
             $html,
-            'Message must surface as a callout block.',
-        );
-        self::assertStringContainsString(
-            'Resolved route',
-            $html,
-            'Failed match must expose the resolved route row.',
-        );
-        self::assertStringContainsString(
-            'Dispatched action',
-            $html,
-            'Failed match must expose the dispatched action row.',
-        );
-        self::assertStringContainsString(
-            'site/index',
-            $html,
-            'Resolved route value must render inside the callout.',
+            'Bare capture must show the dedicated heading.',
         );
     }
 
@@ -306,6 +284,65 @@ final class RouterRendererTest extends TestCase
             '/<td>\s*parsing only\s*<\/td>/',
             $html,
             "Mode column must surface 'parsing only' for the parsing-only rule.",
+        );
+    }
+
+    public function testRenderTabsRendersRouteSummaryAlongsideCalloutWhenMatchFailed(): void
+    {
+        $current = new CurrentRoute();
+
+        $current->hasMatch = false;
+        $current->message = 'No matching route.';
+        $current->route = 'site/index';
+        $current->action = 'app\\controllers\\SiteController::actionIndex()';
+
+        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+
+        self::assertStringContainsString(
+            'yii-debug-router-callout',
+            $html,
+            'Message must surface as a callout block.',
+        );
+        self::assertStringContainsString(
+            'Resolved route',
+            $html,
+            'Summary must expose the resolved route row.',
+        );
+        self::assertStringContainsString(
+            'Dispatched action',
+            $html,
+            'Summary must expose the dispatched action row.',
+        );
+        self::assertStringContainsString(
+            'site/index',
+            $html,
+            'Resolved route value must render inside the summary.',
+        );
+    }
+
+    public function testRenderTabsRendersRouteSummaryWhenNoTraceMessagesCaptured(): void
+    {
+        $current = new CurrentRoute();
+
+        $current->action = 'app\\controllers\\SiteController::actionIndex()';
+        $current->route = 'site/index';
+
+        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+
+        self::assertStringContainsString(
+            'yii-debug-router-summary',
+            $html,
+            'Summary must render without trace messages.',
+        );
+        self::assertStringContainsString(
+            'site/index',
+            $html,
+            'Resolved route value must surface in the pane.',
+        );
+        self::assertStringNotContainsString(
+            'yii-debug-router-callout',
+            $html,
+            "'null' message must not surface the callout block.",
         );
     }
 

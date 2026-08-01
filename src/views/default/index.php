@@ -108,7 +108,12 @@ $mailPanel = $panels['mail'] ?? null;
                     ),
                     'format' => 'raw',
                 ],
-                'ip',
+                [
+                    'attribute' => 'ip',
+                    'headerOptions' => ['class' => 'yii-debug-col-ip'],
+                    'contentOptions' => ['class' => 'yii-debug-col-ip'],
+                    'filterOptions' => ['class' => 'yii-debug-col-ip'],
+                ],
                 $dbPanel instanceof DbPanel ? [
                     'attribute' => 'sqlCount',
                     'label' => 'Query',
@@ -124,9 +129,9 @@ $mailPanel = $panels['mail'] ?? null;
                 $mailPanel !== null ? [
                     'attribute' => 'mailCount',
                     'label' => 'Mail',
-                    'headerOptions' => ['class' => 'yii-debug-col-num'],
-                    'contentOptions' => ['class' => 'yii-debug-col-num'],
-                    'filterOptions' => ['class' => 'yii-debug-col-num'],
+                    'headerOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
+                    'contentOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
+                    'filterOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
                 ] : null,
                 [
                     'attribute' => 'method',

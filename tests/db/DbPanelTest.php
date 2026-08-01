@@ -212,6 +212,19 @@ final class DbPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailOmitsExplainAllWhenNoQueriesCaptured(): void
+    {
+        $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
+
+        $panel->data = ['messages' => []];
+
+        self::assertStringNotContainsString(
+            'Explain all',
+            $panel->getDetail(),
+            'Explain toggle must not render without queries.',
+        );
+    }
+
     public function testGetDetailRendersDuplicatedCounterWhenSameQueryRepeats(): void
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
@@ -229,6 +242,31 @@ final class DbPanelTest extends TestCase
             'duplicated',
             $html,
             "Repeated queries must surface the 'duplicated' chip.",
+        );
+    }
+
+    public function testGetDetailRendersEmptyStateWhenNoQueriesCaptured(): void
+    {
+        $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
+
+        $panel->data = ['messages' => []];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'yii-debug-empty-state',
+            $html,
+            'Zero queries must render the empty-state card.',
+        );
+        self::assertStringContainsString(
+            'No database queries in this request',
+            $html,
+            'Card headline must describe the empty capture.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-grid-summary',
+            $html,
+            'Summary strip must render alongside the card.',
         );
     }
 

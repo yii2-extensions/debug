@@ -12,7 +12,8 @@ use yii\log\Logger;
 
 /**
  * Unit tests for {@see LogCellRenderer} covering the typed cell renderers used by the logs grid (time, level,
- * time-since-previous navigation, message + trace, SQL highlighting for DB command entries, row options).
+ * two-tone category label, time-since-previous navigation, message + trace, SQL highlighting for DB command entries,
+ * row options).
  */
 #[Group('panel')]
 #[Group('log')]
@@ -65,6 +66,47 @@ final class LogCellRendererTest extends TestCase
             'class',
             $options,
             'Trace level must not attach a row class.',
+        );
+    }
+
+    public function testRenderCategoryCellKeepsMethodSuffixInsideStrongShortName(): void
+    {
+        self::assertStringContainsString(
+            '<strong>Command::query</strong>',
+            LogCellRenderer::renderCategoryCell(self::makeRow(category: 'yii\\db\\Command::query')),
+            'Method pair must render bold as one segment.',
+        );
+    }
+
+    public function testRenderCategoryCellRendersPlainCategoryWithoutMutedPrefix(): void
+    {
+        $cell = LogCellRenderer::renderCategoryCell(self::makeRow(category: 'application'));
+
+        self::assertStringContainsString(
+            '<strong>application</strong>',
+            $cell,
+            'Plain category must render bold.',
+        );
+        self::assertStringNotContainsString(
+            'yii-debug-muted',
+            $cell,
+            'Plain categories must not emit a namespace prefix.',
+        );
+    }
+
+    public function testRenderCategoryCellSplitsFqcnCategoryIntoMutedNamespaceAndStrongShortName(): void
+    {
+        $cell = LogCellRenderer::renderCategoryCell(self::makeRow(category: 'yii\\web\\UrlManager::parseRequest'));
+
+        self::assertStringContainsString(
+            'yii-debug-muted',
+            $cell,
+            'Namespace prefix must render muted.',
+        );
+        self::assertStringContainsString(
+            'title="yii\web\UrlManager::parseRequest"',
+            $cell,
+            'Full category must sit in the `title` attribute.',
         );
     }
 

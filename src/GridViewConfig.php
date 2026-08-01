@@ -25,8 +25,9 @@ final class GridViewConfig
      * Returns the default GridView options for the debug UI.
      *
      * Carries the namespaced `yii-debug-*` CSS classes (so the debug styles never clash with the host application's
-     * grid styles), the custom layout that wraps the summary and pager into a single footer, and the pager's
-     * active/disabled CSS modifiers used by the debug stylesheet.
+     * grid styles), the custom layout that confines the table to a `.yii-debug-table-wrap` scroll container and
+     * wraps the summary and pager into a single footer, and the pager's active/disabled CSS modifiers used by the
+     * debug stylesheet.
      *
      * @return array{
      *   tableOptions: array{class: string},
@@ -48,7 +49,8 @@ final class GridViewConfig
         return [
             'tableOptions' => ['class' => 'yii-debug-table'],
             'options' => ['class' => 'yii-debug-grid'],
-            'layout' => "{items}\n<div class=\"yii-debug-grid-footer\">{summary}\n{pager}\n</div>",
+            'layout' => "<div class=\"yii-debug-table-wrap\">{items}</div>\n"
+                . "<div class=\"yii-debug-grid-footer\">{summary}\n{pager}\n</div>",
             'summaryOptions' => ['class' => 'summary yii-debug-grid-count'],
             'pager' => [
                 'options' => ['class' => 'yii-debug-pager'],

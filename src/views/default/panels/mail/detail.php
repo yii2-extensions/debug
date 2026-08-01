@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Flow\{Div, P};
+use UIAwesome\Html\Flow\P;
 use UIAwesome\Html\Form\Button;
 use UIAwesome\Html\Form\Values\ButtonType;
-use UIAwesome\Html\Heading\{H1, H2};
+use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
+use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\MailSearch;
 use yii\debug\panels\mail\MailMessageNormalizer;
 use yii\debug\panels\MailPanel;
@@ -135,23 +136,20 @@ if ($hasMessages) {
 <?php endif; ?>
 
 <?php if (!$hasMessages): ?>
-    <?= Div::tag()
-        ->class('yii-debug-empty-state')
-        ->html(
-            H2::tag()
-                ->content('No emails sent in this request'),
-            P::tag()
-                ->content('This request did not dispatch any messages through the Yii mailer, so the inbox is empty.'),
-            P::tag()
-                ->html(
-                    'The mail panel listens for ',
-                    Code::tag()->content('BaseMailer::EVENT_AFTER_SEND'),
-                    '; only requests that actually call ',
-                    Code::tag()->content('$mailer->send()'),
-                    ' populate this view. After a Post-Redirect-Get flow, the mail typically lives in the previous (POST) '
-                    . 'request — open it from the history sidebar.',
-                ),
-        ) ?>
+    <?= EmptyState::card(
+        'No emails sent in this request',
+        P::tag()
+            ->content('This request did not dispatch any messages through the Yii mailer, so the inbox is empty.'),
+        P::tag()
+            ->html(
+                'The mail panel listens for ',
+                Code::tag()->content('BaseMailer::EVENT_AFTER_SEND'),
+                '; only requests that actually call ',
+                Code::tag()->content('$mailer->send()'),
+                ' populate this view. After a Post-Redirect-Get flow, the mail typically lives in the previous (POST) '
+                . 'request — open it from the history sidebar.',
+            ),
+    ) ?>
 <?php else: ?>
     <?= ListView::widget(
         [

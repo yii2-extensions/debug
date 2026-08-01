@@ -9,7 +9,7 @@ use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
-use yii\debug\helpers\Vocabulary;
+use yii\debug\helpers\{Fqcn, Vocabulary};
 use yii\debug\panels\db\SqlHighlighter;
 use yii\debug\panels\LogPanel;
 use yii\log\Logger;
@@ -60,6 +60,15 @@ final class LogCellRenderer
         }
 
         return $options;
+    }
+
+    /**
+     * Renders the category as the shared {@see Fqcn::renderLabel()} two-tone label: muted namespace prefix plus a
+     * bold `Class::method` pair, with the full category preserved in the `title` attribute.
+     */
+    public static function renderCategoryCell(LogRow $row): string
+    {
+        return Fqcn::renderLabel($row->category);
     }
 
     /**

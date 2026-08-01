@@ -119,7 +119,14 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                         Logger::LEVEL_ERROR => ' Error ',
                     ],
                 ],
-                'category',
+                [
+                    'attribute' => 'category',
+                    'value' => static fn(mixed $data): string => LogCellRenderer::renderCategoryCell(
+                        LogRowNormalizer::from($data),
+                    ),
+                    'format' => 'raw',
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
+                ],
                 [
                     'attribute' => 'message',
                     'value' => static fn(mixed $data): string => LogCellRenderer::renderMessageCell(

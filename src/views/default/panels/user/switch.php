@@ -95,8 +95,6 @@ $userSwitch = $panel->userSwitch;
                     'filterModel' => $usersFilterModel,
                     'tableOptions' => ['class' => 'yii-debug-table yii-debug-table-pointer yii-debug-table-userswitch'],
                     'columns' => $panel->filterColumns,
-                    'layout' => "<div class=\"yii-debug-table-wrap\">{items}</div>\n"
-                        . "<div class=\"yii-debug-grid-footer\">{summary}\n{pager}\n</div>",
                 ],
             ),
         )

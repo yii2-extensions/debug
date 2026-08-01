@@ -110,8 +110,7 @@ final class RouterRenderer
     /**
      * Renders the callout block surfaced by {@see CurrentRoute::$message}.
      *
-     * Shows an info banner with the resolver explanation, plus the resolved-route / dispatched-action `<dl>` when the
-     * resolver did not match.
+     * Shows an info banner with the resolver explanation captured for the routing pass.
      */
     private static function renderCalloutBlock(CurrentRoute $currentRoute): string
     {
@@ -119,45 +118,20 @@ final class RouterRenderer
             return '';
         }
 
-        $callout = [
-            P::tag()
-                ->class('yii-debug-router-callout-message')
-                ->content($currentRoute->message),
-        ];
-
-        $showResolved = $currentRoute->hasMatch === false
-            && ($currentRoute->route !== '' || $currentRoute->action !== '');
-
-        if ($showResolved) {
-            $resolved = [];
-
-            if ($currentRoute->route !== '') {
-                $resolved[] = Dt::tag()
-                    ->content('Resolved route');
-                $resolved[] = Dd::tag()
-                    ->html(Code::tag()->content($currentRoute->route));
-            }
-
-            if ($currentRoute->action !== '') {
-                $resolved[] = Dt::tag()
-                    ->content('Dispatched action');
-                $resolved[] = Dd::tag()
-                    ->html(Code::tag()->content($currentRoute->action));
-            }
-
-            $callout[] = Dl::tag()
-                ->class('yii-debug-router-callout-resolved')
-                ->html(...$resolved);
-        }
-
         return Div::tag()
             ->class('yii-debug-callout yii-debug-callout-info yii-debug-router-callout')
-            ->html(...$callout)
+            ->html(
+                P::tag()
+                    ->class('yii-debug-router-callout-message')
+                    ->content($currentRoute->message),
+            )
             ->render();
     }
 
     /**
-     * Renders the Current Route section: heading, callout block, and rules-tested log table.
+     * Renders the Current Route section: route summary, heading, callout block, and rules-tested log table.
+     *
+     * Falls back to a dedicated empty-state heading when no route resolution data was captured for the request.
      */
     private static function renderCurrentRoutePanel(CurrentRoute $currentRoute): string
     {
@@ -177,7 +151,14 @@ final class RouterRenderer
                 )
                 ->render();
 
-        return $heading . self::renderCalloutBlock($currentRoute) . self::renderLogsTable($currentRoute);
+        $body = self::renderRouteSummary($currentRoute)
+            . $heading
+            . self::renderCalloutBlock($currentRoute)
+            . self::renderLogsTable($currentRoute);
+
+        return $body === ''
+            ? H3::tag()->content('No route resolution captured.')->render()
+            : $body;
     }
 
     /**
@@ -279,6 +260,40 @@ final class RouterRenderer
                         Tbody::tag()->html(...$rows),
                     ),
             )
+            ->render();
+    }
+
+    /**
+     * Renders the resolved-route / dispatched-action summary `<dl>` for the Current Route section.
+     *
+     * Surfaces the captured route and action unconditionally, so the pane stays informative when the resolver left no
+     * trace messages to replay.
+     */
+    private static function renderRouteSummary(CurrentRoute $currentRoute): string
+    {
+        if ($currentRoute->route === '' && $currentRoute->action === '') {
+            return '';
+        }
+
+        $items = [];
+
+        if ($currentRoute->route !== '') {
+            $items[] = Dt::tag()
+                ->content('Resolved route');
+            $items[] = Dd::tag()
+                ->html(Code::tag()->content($currentRoute->route));
+        }
+
+        if ($currentRoute->action !== '') {
+            $items[] = Dt::tag()
+                ->content('Dispatched action');
+            $items[] = Dd::tag()
+                ->html(Code::tag()->content($currentRoute->action));
+        }
+
+        return Dl::tag()
+            ->class('yii-debug-router-summary')
+            ->html(...$items)
             ->render();
     }
 

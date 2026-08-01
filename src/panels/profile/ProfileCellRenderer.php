@@ -6,7 +6,7 @@ namespace yii\debug\panels\profile;
 
 use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Phrasing\Span;
-use yii\debug\helpers\Gauge;
+use yii\debug\helpers\{Fqcn, Gauge};
 
 use function date;
 use function sprintf;
@@ -20,6 +20,15 @@ use function str_repeat;
  */
 final class ProfileCellRenderer
 {
+    /**
+     * Renders the category as the shared {@see Fqcn::renderLabel()} two-tone label: muted namespace prefix plus a
+     * bold `Class::method` pair, with the full category preserved in the `title` attribute.
+     */
+    public static function renderCategoryCell(ProfileRow $row): string
+    {
+        return Fqcn::renderLabel($row->category);
+    }
+
     /**
      * Renders the block duration formatted as `N.N ms`, with a micro-gauge rail scaled against the capture maximum
      * when one exists.
@@ -50,7 +59,8 @@ final class ProfileCellRenderer
     }
 
     /**
-     * Renders the capture time as `H:i:s.mmm`, derived from the row's millisecond timestamp.
+     * Renders the capture time as `H:i:s.mmm` with a full `Y-m-d H:i:s.mmm` hover tooltip, derived from the row's
+     * millisecond timestamp.
      */
     public static function renderTimeCell(ProfileRow $row): string
     {
@@ -58,6 +68,11 @@ final class ProfileCellRenderer
 
         $millis = (int) (($seconds - (int) $seconds) * 1000);
 
-        return date('H:i:s.', (int) $seconds) . sprintf('%03d', $millis);
+        $suffix = sprintf('%03d', $millis);
+
+        return Span::tag()
+            ->title(date('Y-m-d H:i:s.', (int) $seconds) . $suffix)
+            ->content(date('H:i:s.', (int) $seconds) . $suffix)
+            ->render();
     }
 }

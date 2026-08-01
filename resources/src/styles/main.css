@@ -1055,9 +1055,8 @@
   }
 
   /**
-   * Router-specific callout — when no rule matched, surface the route Yii's
-   * default parsing fell back to (and the dispatched action) so the developer
-   * sees where the request actually landed instead of just "no match".
+   * Router-specific callout — surfaces the resolver explanation captured for
+   * the routing pass (for example the "no matching rule" trace message).
    */
   .yii-debug-router-callout {
     flex-direction: column;
@@ -1067,11 +1066,16 @@
     margin: 0;
   }
 
-  .yii-debug-router-callout-resolved {
+  /**
+   * Always-on resolved route / dispatched action readout at the top of the
+   * Current Route pane — keeps the pane informative even when the resolver
+   * left no trace messages to replay.
+   */
+  .yii-debug-router-summary {
     display: grid;
     grid-template-columns: max-content 1fr;
     gap: 4px var(--yii-debug-space-3);
-    margin: var(--yii-debug-space-2) 0 0;
+    margin: 0 0 var(--yii-debug-space-3);
     font-size: var(--yii-debug-fs-sm);
 
     dt {
@@ -1253,6 +1257,15 @@
   .yii-debug-grid td.yii-debug-cell-numeric,
   .yii-debug-grid td.yii-debug-cell-pill {
     white-space: nowrap;
+  }
+
+  /**
+   * FQCN label cells hold their segments together: lines break at the
+   * `<wbr>` namespace boundary emitted by the two-tone label helper, never
+   * mid-word inside a class or method name.
+   */
+  .yii-debug-grid td.yii-debug-cell-fqcn {
+    overflow-wrap: normal;
   }
 
   .yii-debug-grid td.yii-debug-cell-mono {
@@ -4419,6 +4432,28 @@
     tbody th {
       padding: 8px 10px;
       white-space: nowrap;
+    }
+  }
+
+  /**
+   * IP and MAIL are low-signal on laptop viewports (IP reads `::1` for
+   * every local capture, MAIL is almost always `0`) — hiding them at mid
+   * widths keeps the History grid inside its scroll wrap without an
+   * internal scrollbar. Both columns return on wide desktops.
+   */
+  @media (width <= 1366px) {
+    .yii-debug-grid-history .yii-debug-col-ip,
+    .yii-debug-grid-history .yii-debug-col-mail {
+      display: none;
+    }
+
+    /**
+     * The URL preview yields first: a tighter ellipsis cap lets the
+     * remaining instrument columns fit the scroll wrap without an
+     * internal scrollbar at laptop widths.
+     */
+    .yii-debug-grid-history .yii-debug-url-cell {
+      max-width: 200px;
     }
   }
 

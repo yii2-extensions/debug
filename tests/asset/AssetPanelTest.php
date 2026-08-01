@@ -164,6 +164,11 @@ final class AssetPanelTest extends TestCase
             $html,
             'Empty state must surface the headline.',
         );
+        self::assertStringContainsString(
+            'yii-debug-asset-stats',
+            $html,
+            'Stats strip must render alongside the card.',
+        );
     }
 
     public function testGetNameAndIconReturnConstantsForToolbar(): void

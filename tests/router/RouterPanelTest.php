@@ -47,9 +47,22 @@ final class RouterPanelTest extends TestCase
             'route' => 'site/index',
         ];
 
-        self::assertNotEmpty(
-            $panel->getDetail(),
-            'Detail view must produce markup.',
+        $detail = $panel->getDetail();
+
+        self::assertMatchesRegularExpression(
+            '~id="r-tab-0"(?:(?!id="r-tab-1").)*site/index~s',
+            $detail,
+            'Route must render inside the active pane.',
+        );
+        self::assertStringContainsString(
+            'Resolved route',
+            $detail,
+            'Summary label must surface in the detail.',
+        );
+        self::assertStringContainsString(
+            'Dispatched action',
+            $detail,
+            'Action label must surface in the detail.',
         );
     }
 
