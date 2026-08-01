@@ -70,6 +70,36 @@ final class DebugSearchTest extends TestCase
             "'mailCount' label must be defined.",
         );
     }
+    public function testFilterRejectsMalformedInternalConditions(): void
+    {
+        $this->mockWebApplication();
+
+        $search = new DebugSearch();
+
+        $this->setInaccessibleProperty(
+            $search,
+            'conditions',
+            [['attribute' => 'value', 'operator' => '>', 'value' => '5']],
+        );
+
+        self::assertSame(
+            [],
+            $this->invoke($search, 'filter', [[['value' => 6]]]),
+            'Numeric conditions with a non-float boundary must reject the row.',
+        );
+
+        $this->setInaccessibleProperty(
+            $search,
+            'conditions',
+            [['attribute' => 'value', 'operator' => 'same', 'value' => 5.0]],
+        );
+
+        self::assertSame(
+            [],
+            $this->invoke($search, 'filter', [[['value' => '5']]]),
+            'Text conditions with a non-string boundary must reject the row.',
+        );
+    }
 
     public function testIsCodeCriticalFlagsConfiguredHttpStatusCodes(): void
     {
@@ -181,6 +211,21 @@ final class DebugSearchTest extends TestCase
         $provider = (new DebugSearch())->search(['DebugSearch' => ['url' => 'report >5']], $records);
 
         self::assertSame(1, $provider->getTotalCount(), 'Partial text fields must treat embedded operators as text.');
+    }
+
+    public function testSearchRejectsNonNumericCandidatesForNumericConditions(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            ['sqlCount' => 'not-numeric', 'mailCount' => 0],
+            ['sqlCount' => [], 'mailCount' => 0],
+            ['sqlCount' => 6, 'mailCount' => 0],
+        ];
+
+        $provider = (new DebugSearch())->search(['DebugSearch' => ['sqlCount' => '>5']], $records);
+
+        self::assertSame(1, $provider->getTotalCount(), 'Numeric comparisons must reject non-numeric candidates.');
     }
 
     public function testSearchRejectsRowsWithoutTheFilteredAttribute(): void

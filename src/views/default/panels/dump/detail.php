@@ -67,29 +67,29 @@ if ($hasDumps) {
 <?php endif; ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
-        [
-            ...GridViewConfig::defaults(),
-            'dataProvider' => $dataProvider,
-            'id' => 'dump-panel-detailed-grid',
-            'options' => ['class' => 'yii-debug-grid yii-debug-grid-dump'],
-            'filterModel' => $searchModel,
-            'filterUrl' => $panel->getUrl(),
-            'columns' => [
-                [
-                    'attribute' => 'category',
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-muted yii-debug-nowrap'],
-                    'options' => ['width' => '20%'],
-                ],
-                [
-                    'attribute' => 'message',
-                    'value' => static fn(mixed $data, mixed $key, int $index): string => DumpCardRenderer::renderMessageCell(
-                        DumpRow::fromMixed($data),
-                        $panel,
-                        $index,
-                    ),
-                    'format' => 'raw',
-                    'options' => ['width' => '80%'],
-                ],
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $dataProvider,
+        'id' => 'dump-panel-detailed-grid',
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-dump'],
+        'filterModel' => $searchModel,
+        'filterUrl' => $panel->getUrl(),
+        'columns' => [
+            [
+                'attribute' => 'category',
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-muted yii-debug-nowrap'],
+                'options' => ['width' => '20%'],
+            ],
+            [
+                'attribute' => 'message',
+                'value' => static fn(mixed $data, mixed $key, int $index): string => DumpCardRenderer::renderMessageCell(
+                    DumpRow::fromMixed($data),
+                    $panel,
+                    $index,
+                ),
+                'format' => 'raw',
+                'options' => ['width' => '80%'],
             ],
         ],
-    );
+    ],
+);

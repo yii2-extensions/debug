@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace yii\debug\tests\controllers;
 
 use Exception;
+use LogicException;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use Yii;
-use yii\base\InvalidConfigException;
+use yii\base\{ActionEvent, InvalidConfigException};
 use yii\db\Connection;
 use yii\debug\controllers\DefaultController;
 use yii\debug\{FlattenException, LogTarget, Module};
 use yii\debug\panels\MailPanel;
 use yii\debug\tests\support\stub\MinimalToolbarPanel;
 use yii\debug\tests\support\TestCase;
+use yii\debug\widgets\shell\ShellContext;
+use yii\debug\widgets\sidebar\SidebarView;
 use yii\web\{AssetManager, NotFoundHttpException, Response};
 
 /**
@@ -353,6 +356,43 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
+    public function testBeforeActionReturnsFalseWhenParentGuardRejectsAction(): void
+    {
+        $module = $this->bootDebugModule();
+        $controller = new DefaultController('default', $module);
+        $action = $controller->createAction('index');
+
+        self::assertNotNull($action, "'index' must resolve to an action object.");
+
+        $controller->on(
+            DefaultController::EVENT_BEFORE_ACTION,
+            static function (ActionEvent $event): void {
+                $event->isValid = false;
+            },
+        );
+
+        self::assertFalse(
+            $controller->beforeAction($action), // @phpstan-ignore argument.type
+            'The debug controller must preserve a parent action rejection.',
+        );
+    }
+
+    public function testCreateShellContextSupportsEmptyManifestAndNumericPeakMemory(): void
+    {
+        $module = $this->bootDebugModule();
+        $controller = new DefaultController('default', $module);
+
+        $context = $this->invoke(
+            $controller,
+            'createShellContext',
+            [ShellContext::MODE_INDEX, [], null, ['peakMemory' => 1_048_576], new SidebarView(null, [])],
+        );
+
+        self::assertInstanceOf(ShellContext::class, $context, 'The factory must return a typed shell context.');
+        self::assertNull($context->configUrl, 'An empty manifest must disable the configuration link.');
+        self::assertNotNull($context->peakMemory, 'Numeric peak memory must be formatted for the shell header.');
+    }
+
     public function testGetManifestCachesResultAndReloadsOnForce(): void
     {
         $module = $this->bootDebugModule();
@@ -403,6 +443,23 @@ final class DefaultControllerTest extends TestCase
             'tag-load',
             $controller->summary['tag'] ?? null,
             'Loaded summary must echo the active tag.',
+        );
+    }
+
+    public function testMainLayoutRequiresShellContext(): void
+    {
+        $module = $this->bootDebugModule();
+        $controller = new DefaultController('default', $module);
+
+        unset(Yii::$app->view->params['debugShell']);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('The debug layout requires a ShellContext.');
+
+        Yii::$app->view->renderFile(
+            dirname(__DIR__, 2) . '/src/views/layouts/main.php',
+            ['content' => ''],
+            $controller,
         );
     }
 

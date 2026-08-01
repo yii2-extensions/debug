@@ -344,7 +344,6 @@ class AssetPanel extends Panel
                 is_object($definition) && !$definition instanceof Closure => $definition::class,
                 is_string($definition) => $definition,
                 is_array($definition) && is_string($definition['class'] ?? null) => $definition['class'],
-                is_array($definition) && is_string($definition['__class'] ?? null) => $definition['__class'],
                 default => null,
             };
 

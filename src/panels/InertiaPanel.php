@@ -6,7 +6,6 @@ namespace yii\debug\panels;
 
 use JsonSerializable;
 use Override;
-use ReflectionException;
 use ReflectionMethod;
 use Yii;
 use yii\base\{InvalidConfigException, View, ViewEvent};
@@ -256,8 +255,7 @@ class InertiaPanel extends Panel
      * Returns the top-level shared-prop keys the manager exposes through its public `getShared()` accessor.
      *
      * The call goes through reflection because the manager is typed as `object` here — the panel refers to its class
-     * by name to stay dependency-free, so static analysis cannot resolve the method. Managers without the accessor
-     * raise a {@see ReflectionException} and simply yield no keys, leaving every prop labelled as page-specific.
+     * by name to stay dependency-free, so static analysis cannot resolve the method.
      *
      * @return list<string> Shared keys, or `[]` when the manager is absent or exposes no shared props.
      */
@@ -273,19 +271,11 @@ class InertiaPanel extends Panel
             return [];
         }
 
-        try {
-            $shared = (new ReflectionMethod($component, 'getShared'))->invoke($component);
-        } catch (ReflectionException) {
-            return [];
-        }
-
-        if (!is_array($shared)) {
-            return [];
-        }
+        $shared = (new ReflectionMethod($component, 'getShared'))->invoke($component);
 
         $keys = [];
 
-        foreach (array_keys($shared) as $key) {
+        foreach (array_keys(is_array($shared) ? $shared : []) as $key) {
             $keys[] = (string) $key;
         }
 

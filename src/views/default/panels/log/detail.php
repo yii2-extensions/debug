@@ -74,68 +74,68 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
     ->html(...$summaryItems) ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
-        [
-            ...GridViewConfig::defaults(),
-            'dataProvider' => $dataProvider,
-            'id' => 'log-panel-detailed-grid',
-            'options' => ['class' => 'yii-debug-grid yii-debug-grid-log'],
-            'filterModel' => $searchModel,
-            'filterUrl' => $panel->getUrl(),
-            'rowOptions' => static fn(mixed $model): array => LogCellRenderer::buildRowOptions(
-                LogRow::fromMixed($model),
-            ),
-            'columns' => [
-                [
-                    'attribute' => 'id',
-                    'label' => '#',
-                    'contentOptions' => ['class' => 'yii-debug-nowrap'],
-                ],
-                [
-                    'attribute' => 'time',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeCell(
-                        LogRow::fromMixed($data),
-                    ),
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'contentOptions' => ['class' => 'yii-debug-nowrap'],
-                ],
-                [
-                    'attribute' => 'time_since_previous',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeSincePreviousCell(
-                        LogRow::fromMixed($data),
-                    ),
-                    'format' => 'raw',
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                ],
-                [
-                    'attribute' => 'level',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderLevelCell(
-                        LogRow::fromMixed($data),
-                    ),
-                    'format' => 'raw',
-                    'filter' => [
-                        Logger::LEVEL_TRACE => ' Trace ',
-                        Logger::LEVEL_INFO => ' Info ',
-                        Logger::LEVEL_WARNING => ' Warning ',
-                        Logger::LEVEL_ERROR => ' Error ',
-                    ],
-                ],
-                [
-                    'attribute' => 'category',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderCategoryCell(
-                        LogRow::fromMixed($data),
-                    ),
-                    'format' => 'raw',
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
-                ],
-                [
-                    'attribute' => 'message',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderMessageCell(
-                        LogRow::fromMixed($data),
-                        $panel
-                    ),
-                    'format' => 'raw',
-                    'options' => ['width' => '50%'],
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $dataProvider,
+        'id' => 'log-panel-detailed-grid',
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-log'],
+        'filterModel' => $searchModel,
+        'filterUrl' => $panel->getUrl(),
+        'rowOptions' => static fn(mixed $model): array => LogCellRenderer::buildRowOptions(
+            LogRow::fromMixed($model),
+        ),
+        'columns' => [
+            [
+                'attribute' => 'id',
+                'label' => '#',
+                'contentOptions' => ['class' => 'yii-debug-nowrap'],
+            ],
+            [
+                'attribute' => 'time',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeCell(
+                    LogRow::fromMixed($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-nowrap'],
+            ],
+            [
+                'attribute' => 'time_since_previous',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeSincePreviousCell(
+                    LogRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'headerOptions' => ['class' => 'sort-numerical'],
+            ],
+            [
+                'attribute' => 'level',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderLevelCell(
+                    LogRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'filter' => [
+                    Logger::LEVEL_TRACE => ' Trace ',
+                    Logger::LEVEL_INFO => ' Info ',
+                    Logger::LEVEL_WARNING => ' Warning ',
+                    Logger::LEVEL_ERROR => ' Error ',
                 ],
             ],
+            [
+                'attribute' => 'category',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderCategoryCell(
+                    LogRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
+            ],
+            [
+                'attribute' => 'message',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderMessageCell(
+                    LogRow::fromMixed($data),
+                    $panel
+                ),
+                'format' => 'raw',
+                'options' => ['width' => '50%'],
+            ],
         ],
-    );
+    ],
+);

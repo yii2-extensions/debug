@@ -133,107 +133,107 @@ if ($totalRecords > 0) {
     <?php return; ?>
 <?php endif; ?>
 
-    <?php if ($asyncHint !== null): ?>
-        <?= $asyncHint ?>
-    <?php endif; ?>
+<?php if ($asyncHint !== null): ?>
+    <?= $asyncHint ?>
+<?php endif; ?>
 
-    <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
-    <?= GridView::widget(
-        [
-            ...GridViewConfig::defaults(),
-            'dataProvider' => $dataProvider,
-            'id' => 'queue-panel-events-grid',
-            'options' => ['class' => 'yii-debug-grid yii-debug-grid-queue'],
-            'filterModel' => $searchModel,
-            'filterUrl' => $panel->getUrl(),
-            'rowOptions' => static fn(array $model, int $key): array => [
-                'class' => 'yii-debug-row-link',
-                'data-href' => $jobUrlBuilder($key),
+<?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
+<?= GridView::widget(
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $dataProvider,
+        'id' => 'queue-panel-events-grid',
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-queue'],
+        'filterModel' => $searchModel,
+        'filterUrl' => $panel->getUrl(),
+        'rowOptions' => static fn(array $model, int $key): array => [
+            'class' => 'yii-debug-row-link',
+            'data-href' => $jobUrlBuilder($key),
+        ],
+        'columns' => [
+            [
+                'attribute' => 'jobId',
+                'label' => 'ID',
+                'format' => 'raw',
+                'value' => static fn(mixed $data): string => QueueGridRenderer::renderIdCell(
+                    JobRecord::fromMixed($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical yii-debug-col-queue-id'],
+                'contentOptions' => ['class' => 'yii-debug-col-queue-id'],
+                'filterInputOptions' => ['class' => 'yii-debug-input yii-debug-col-queue-id-input'],
             ],
-            'columns' => [
-                [
-                    'attribute' => 'jobId',
-                    'label' => 'ID',
-                    'format' => 'raw',
-                    'value' => static fn(mixed $data): string => QueueGridRenderer::renderIdCell(
-                        JobRecord::fromMixed($data),
-                    ),
-                    'headerOptions' => ['class' => 'sort-numerical yii-debug-col-queue-id'],
-                    'contentOptions' => ['class' => 'yii-debug-col-queue-id'],
-                    'filterInputOptions' => ['class' => 'yii-debug-input yii-debug-col-queue-id-input'],
-                ],
-                [
-                    'attribute' => 'eventType',
-                    'label' => 'Status',
-                    'format' => 'raw',
-                    'value' => static fn(mixed $data): string => QueueGridRenderer::renderStatusCell(
-                        JobRecord::fromMixed($data),
-                    ),
-                    'filter' => $eventTypeOptions,
-                    'contentOptions' => ['class' => 'yii-debug-cell-pill'],
-                ],
-                [
-                    'attribute' => 'driverName',
-                    'label' => 'Driver',
-                    'format' => 'raw',
-                    'value' => static fn(mixed $data): string => QueueGridRenderer::renderDriverCell(
-                        JobRecord::fromMixed($data),
-                    ),
-                    'filter' => $driverOptions,
-                    'contentOptions' => ['class' => 'yii-debug-cell-pill'],
-                ],
-                [
-                    'attribute' => 'componentId',
-                    'label' => 'Component',
-                    'value' => static fn(mixed $data): string => QueueGridRenderer::renderComponentCell(
-                        JobRecord::fromMixed($data),
-                    ),
-                    'filter' => $componentOptions,
-                    'contentOptions' => ['class' => 'yii-debug-cell-nowrap'],
-                ],
-                [
-                    'attribute' => 'jobClass',
-                    'label' => 'Job',
-                    'format' => 'raw',
-                    'value' => static fn(mixed $data, int $key): string => QueueGridRenderer::renderJobCell(
-                        JobRecord::fromMixed($data),
-                        $jobUrlBuilder($key),
-                    ),
-                ],
-                [
-                    'attribute' => 'time',
-                    'label' => 'Time',
-                    'value' => static fn(mixed $data): string => QueueGridRenderer::renderTimeCell(
-                        JobRecord::fromMixed($data),
-                    ),
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-mono'],
-                ],
-                [
-                    'attribute' => 'duration',
-                    'label' => 'Duration',
-                    'value' => static fn(mixed $data): string => QueueGridRenderer::renderDurationCell(
-                        JobRecord::fromMixed($data),
-                    ),
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],
-                ],
-                [
-                    'label' => 'TTR',
-                    'value' => static fn(mixed $data): string => QueueGridRenderer::renderTtrCell(
-                        JobRecord::fromMixed($data),
-                    ),
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],
-                ],
-                [
-                    'label' => 'Attempt',
-                    'value' => static fn(mixed $data): string => QueueGridRenderer::renderAttemptCell(
-                        JobRecord::fromMixed($data),
-                    ),
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],
-                ],
+            [
+                'attribute' => 'eventType',
+                'label' => 'Status',
+                'format' => 'raw',
+                'value' => static fn(mixed $data): string => QueueGridRenderer::renderStatusCell(
+                    JobRecord::fromMixed($data),
+                ),
+                'filter' => $eventTypeOptions,
+                'contentOptions' => ['class' => 'yii-debug-cell-pill'],
+            ],
+            [
+                'attribute' => 'driverName',
+                'label' => 'Driver',
+                'format' => 'raw',
+                'value' => static fn(mixed $data): string => QueueGridRenderer::renderDriverCell(
+                    JobRecord::fromMixed($data),
+                ),
+                'filter' => $driverOptions,
+                'contentOptions' => ['class' => 'yii-debug-cell-pill'],
+            ],
+            [
+                'attribute' => 'componentId',
+                'label' => 'Component',
+                'value' => static fn(mixed $data): string => QueueGridRenderer::renderComponentCell(
+                    JobRecord::fromMixed($data),
+                ),
+                'filter' => $componentOptions,
+                'contentOptions' => ['class' => 'yii-debug-cell-nowrap'],
+            ],
+            [
+                'attribute' => 'jobClass',
+                'label' => 'Job',
+                'format' => 'raw',
+                'value' => static fn(mixed $data, int $key): string => QueueGridRenderer::renderJobCell(
+                    JobRecord::fromMixed($data),
+                    $jobUrlBuilder($key),
+                ),
+            ],
+            [
+                'attribute' => 'time',
+                'label' => 'Time',
+                'value' => static fn(mixed $data): string => QueueGridRenderer::renderTimeCell(
+                    JobRecord::fromMixed($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-mono'],
+            ],
+            [
+                'attribute' => 'duration',
+                'label' => 'Duration',
+                'value' => static fn(mixed $data): string => QueueGridRenderer::renderDurationCell(
+                    JobRecord::fromMixed($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],
+            ],
+            [
+                'label' => 'TTR',
+                'value' => static fn(mixed $data): string => QueueGridRenderer::renderTtrCell(
+                    JobRecord::fromMixed($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],
+            ],
+            [
+                'label' => 'Attempt',
+                'value' => static fn(mixed $data): string => QueueGridRenderer::renderAttemptCell(
+                    JobRecord::fromMixed($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-cell-nowrap yii-debug-cell-numeric'],
             ],
         ],
-    );
+    ],
+);

@@ -427,18 +427,14 @@ class LogTarget extends Target
     /**
      * Narrows a raw deserialized manifest into the typed `array<string, array<string, mixed>>` shape.
      *
-     * Drops entries whose tag or inner key is non-string; returns `[]` when the input is not an array.
+     * Drops entries whose tag or inner key is non-string.
      *
-     * @param mixed $manifest Raw value returned by {@see unserialize()}.
+     * @param array<mixed> $manifest Raw manifest entries validated by {@see decodeManifest()}.
      *
      * @return array<string, array<string, mixed>> Typed manifest safe to iterate.
      */
-    private static function narrowManifestEntries(mixed $manifest): array
+    private static function narrowManifestEntries(array $manifest): array
     {
-        if (!is_array($manifest)) {
-            return [];
-        }
-
         $normalized = [];
 
         foreach ($manifest as $tag => $entry) {

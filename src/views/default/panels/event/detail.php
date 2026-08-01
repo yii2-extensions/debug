@@ -78,55 +78,55 @@ if ($hasEvents) {
 <?php endif; ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
-        [
-            ...GridViewConfig::defaults(),
-            'dataProvider' => $dataProvider,
-            'id' => 'event-panel-detailed-grid',
-            'options' => ['class' => 'yii-debug-grid yii-debug-grid-event'],
-            'filterModel' => $searchModel,
-            'filterUrl' => $panel->getUrl(),
-            'columns' => [
-                [
-                    'attribute' => 'time',
-                    'value' => static fn(mixed $data): string => EventCellRenderer::renderTimeCell(
-                        EventRow::fromMixed($data),
-                    ),
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'options' => ['width' => '10%'],
-                ],
-                [
-                    'attribute' => 'name',
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono'],
-                ],
-                [
-                    'attribute' => 'class',
-                    'value' => static fn(mixed $data): string => EventCellRenderer::renderClassCell(
-                        EventRow::fromMixed($data),
-                    ),
-                    'format' => 'raw',
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono'],
-                ],
-                [
-                    'header' => 'Sender',
-                    'attribute' => 'senderClass',
-                    'value' => static fn(mixed $data): string => EventCellRenderer::renderSenderCell(
-                        EventRow::fromMixed($data),
-                    ),
-                    'format' => 'raw',
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono'],
-                ],
-                [
-                    'header' => 'Static',
-                    'attribute' => 'isStatic',
-                    'value' => static fn(mixed $data): string => EventCellRenderer::renderStaticCell(
-                        EventRow::fromMixed($data),
-                    ),
-                    'format' => 'raw',
-                    'filter' => ['1' => 'Yes', '0' => 'No'],
-                    'contentOptions' => ['class' => 'yii-debug-cell-pill'],
-                    'options' => ['width' => '8%'],
-                ],
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $dataProvider,
+        'id' => 'event-panel-detailed-grid',
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-event'],
+        'filterModel' => $searchModel,
+        'filterUrl' => $panel->getUrl(),
+        'columns' => [
+            [
+                'attribute' => 'time',
+                'value' => static fn(mixed $data): string => EventCellRenderer::renderTimeCell(
+                    EventRow::fromMixed($data),
+                ),
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'options' => ['width' => '10%'],
+            ],
+            [
+                'attribute' => 'name',
+                'contentOptions' => ['class' => 'yii-debug-cell-mono'],
+            ],
+            [
+                'attribute' => 'class',
+                'value' => static fn(mixed $data): string => EventCellRenderer::renderClassCell(
+                    EventRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'yii-debug-cell-mono'],
+            ],
+            [
+                'header' => 'Sender',
+                'attribute' => 'senderClass',
+                'value' => static fn(mixed $data): string => EventCellRenderer::renderSenderCell(
+                    EventRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'yii-debug-cell-mono'],
+            ],
+            [
+                'header' => 'Static',
+                'attribute' => 'isStatic',
+                'value' => static fn(mixed $data): string => EventCellRenderer::renderStaticCell(
+                    EventRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'filter' => ['1' => 'Yes', '0' => 'No'],
+                'contentOptions' => ['class' => 'yii-debug-cell-pill'],
+                'options' => ['width' => '8%'],
             ],
         ],
-    );
+    ],
+);
