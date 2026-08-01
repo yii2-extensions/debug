@@ -329,5 +329,4 @@ final class RouterRenderer
             ->html(...$items)
             ->render();
     }
-
 }
