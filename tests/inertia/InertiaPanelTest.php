@@ -1,0 +1,387 @@
+<?php
+
+declare(strict_types=1);
+
+namespace yii\debug\tests\inertia;
+
+use PHPUnit\Framework\Attributes\Group;
+use Yii;
+use yii\base\{View, ViewEvent};
+use yii\debug\panels\InertiaPanel;
+use yii\debug\tests\support\TestCase;
+use yii\inertia\{Manager, Page};
+
+/**
+ * Unit tests for {@see InertiaPanel} covering the component-gated enablement, the per-capture sidebar activation,
+ * the page capture from the response and the root-view render params, the `X-Inertia-*` header snapshot, the
+ * shared-prop keys, and the detail/toolbar rendering.
+ */
+#[Group('panel')]
+#[Group('inertia')]
+final class InertiaPanelTest extends TestCase
+{
+    public function testGetDetailMarksSharedAndPageProps(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => [
+                'component' => 'site/index',
+                'props' => ['auth' => ['isGuest' => true], 'post' => ['id' => 7]],
+                'url' => '/site/index',
+                'version' => 'v1',
+            ],
+            'requestHeaders' => [],
+            'sharedKeys' => ['auth'],
+            'statusCode' => 200,
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            '>shared</span>',
+            $html,
+            "Config-shared props must wear the 'shared' badge.",
+        );
+        self::assertStringContainsString(
+            '>page</span>',
+            $html,
+            "Page-specific props must wear the 'page' badge.",
+        );
+    }
+
+    public function testGetDetailRendersComponentAndProps(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => [
+                'component' => 'site/index',
+                'props' => ['user' => ['id' => 1]],
+                'url' => '/site/index',
+                'version' => 'v1',
+            ],
+            'requestHeaders' => ['X-Inertia' => 'true'],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'site/index',
+            $html,
+            'Component name must surface in the detail.',
+        );
+        self::assertStringContainsString(
+            'Props',
+            $html,
+            'Props section heading must be present.',
+        );
+        self::assertStringContainsString(
+            '"user"',
+            $html,
+            'Prop keys must surface in the JSON block.',
+        );
+        self::assertStringContainsString(
+            'Inertia visit',
+            $html,
+            "XHR captures must read as 'Inertia visit'.",
+        );
+    }
+
+    public function testGetDetailRendersEmptyStateWhenPageMissing(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => null,
+            'requestHeaders' => [],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'yii-debug-empty-state',
+            $html,
+            'Missing page must render the empty-state card.',
+        );
+        self::assertStringContainsString(
+            'No Inertia page in this request',
+            $html,
+            'Card headline must describe the missing page.',
+        );
+    }
+
+    public function testGetDetailRendersVersionConflictWhenStatusIs409(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => 'http://example.test/site/index',
+            'page' => null,
+            'requestHeaders' => ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'],
+            'sharedKeys' => [],
+            'statusCode' => 409,
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'Version conflict interrupted this visit',
+            $html,
+            'Conflict headline must surface.',
+        );
+        self::assertStringContainsString(
+            'http://example.test/site/index',
+            $html,
+            'Reload target must echo the `X-Inertia-Location` header.',
+        );
+    }
+
+    public function testGetNameAndIcon(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        self::assertSame(
+            'Inertia',
+            $panel->getName(),
+            "Display name must be 'Inertia'.",
+        );
+        self::assertSame(
+            'inertia',
+            $panel->getToolbarIcon(),
+            "Icon key must be 'inertia'.",
+        );
+    }
+
+    public function testGetToolbarItemsCarryComponentName(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => [
+                'component' => 'site/index',
+                'props' => [],
+                'url' => '/site/index',
+                'version' => 'v1',
+            ],
+            'requestHeaders' => [],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        $items = $this->invoke($panel, 'getToolbarItems');
+
+        self::assertSame(
+            [
+                [
+                    'title' => 'Inertia component',
+                    'value' => 'site/index',
+                ],
+            ],
+            $items,
+            'Chip must carry the component name.',
+        );
+    }
+
+    public function testGetToolbarItemsReturnEmptyListWithoutCapturedPage(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => null,
+            'requestHeaders' => [],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        self::assertSame(
+            [],
+            $this->invoke($panel, 'getToolbarItems'),
+            'Missing page must skip the toolbar chip.',
+        );
+    }
+
+    public function testHasContentReturnsFalseForPlainCapture(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => null,
+            'requestHeaders' => [],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        self::assertFalse(
+            $panel->hasContent(),
+            'Plain captures must hide the sidebar entry.',
+        );
+    }
+
+    public function testHasContentReturnsTrueForCapturedPage(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'],
+            'requestHeaders' => [],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        self::assertTrue(
+            $panel->hasContent(),
+            'Captured page must surface the sidebar entry.',
+        );
+    }
+
+    public function testHasContentReturnsTrueForInertiaXhrWithoutPage(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => 'http://example.test/',
+            'page' => null,
+            'requestHeaders' => ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'],
+            'sharedKeys' => [],
+            'statusCode' => 409,
+        ];
+
+        self::assertTrue(
+            $panel->hasContent(),
+            'Version-conflict XHR must surface the sidebar entry.',
+        );
+    }
+
+    public function testIsEnabledReturnsFalseWithoutInertiaComponent(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        self::assertFalse(
+            $panel->isEnabled(),
+            'Missing `inertia` component must disable the panel.',
+        );
+    }
+
+    public function testIsEnabledReturnsTrueWhenManagerIsRegistered(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        self::assertTrue(
+            $panel->isEnabled(),
+            'Registered manager must enable the panel.',
+        );
+    }
+
+    public function testSaveCapturesPageFromResponseData(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        Yii::$app->response->data = new Page('site/index', ['user' => ['id' => 1]], '/site/index', 'v1');
+
+        $saved = $panel->save();
+
+        self::assertSame(
+            'site/index',
+            $saved['page']['component'] ?? null,
+            'Component must come from the response page object.',
+        );
+        self::assertSame(
+            ['user' => ['id' => 1]],
+            $saved['page']['props'] ?? null,
+            'Props must round-trip through JSON intact.',
+        );
+        self::assertSame(
+            'v1',
+            $saved['page']['version'] ?? null,
+            'Version must be preserved.',
+        );
+    }
+
+    public function testSaveCapturesPageFromRootViewRenderParams(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        $page = new Page('site/about', [], '/site/about', 'v2');
+
+        Yii::$app->view->trigger(
+            View::EVENT_BEFORE_RENDER,
+            new ViewEvent(['params' => ['page' => $page], 'viewFile' => __FILE__]),
+        );
+
+        $saved = $panel->save();
+
+        self::assertSame(
+            'site/about',
+            $saved['page']['component'] ?? null,
+            'Component must come from the render params.',
+        );
+    }
+
+    public function testSaveCapturesPartialReloadHeaders(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        Yii::$app->request->headers->set('X-Inertia', 'true');
+        Yii::$app->request->headers->set('X-Inertia-Partial-Data', 'user,notifications');
+        Yii::$app->request->headers->set('X-Inertia-Partial-Component', 'site/index');
+
+        $saved = $panel->save();
+
+        self::assertSame(
+            [
+                'X-Inertia' => 'true',
+                'X-Inertia-Partial-Component' => 'site/index',
+                'X-Inertia-Partial-Data' => 'user,notifications',
+            ],
+            $saved['requestHeaders'],
+            'Negotiation headers must be captured in display order.',
+        );
+    }
+
+    public function testSaveCapturesSharedPropKeys(): void
+    {
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+            ['inertia' => ['class' => Manager::class, 'shared' => ['auth' => 1, 'appName' => 'demo']]],
+        );
+
+        $saved = $panel->save();
+
+        self::assertSame(
+            ['auth', 'appName'],
+            $saved['sharedKeys'],
+            'Top-level shared keys must be captured.',
+        );
+    }
+
+    public function testSaveReturnsNullPageForNonInertiaResponse(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        Yii::$app->response->data = ['plain' => true];
+
+        $saved = $panel->save();
+
+        self::assertNull(
+            $saved['page'],
+            'Non-Inertia response must yield a `null` page.',
+        );
+        self::assertSame(
+            200,
+            $saved['statusCode'],
+            'Status code must be captured.',
+        );
+    }
+}

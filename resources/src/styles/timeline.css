@@ -92,14 +92,24 @@
 
 /* Main chart container. */
 .yii-debug-tl {
+  --yii-debug-tl-label-col: 22%;
+
   display: grid;
-  grid-template-columns: minmax(180px, 22%) 1fr;
+  grid-template-columns: minmax(180px, var(--yii-debug-tl-label-col)) 1fr;
   grid-template-rows: auto 1fr auto;
   gap: 0;
   border: var(--yii-debug-border);
   border-radius: var(--yii-debug-radius-md);
   background: var(--yii-debug-panel-surface);
   overflow: hidden;
+
+  /**
+   * Below wide-desktop widths the FQCN labels truncate while the chart half
+   * often idles — hand the label column a third of the width instead.
+   */
+  @media (width <= 1440px) {
+    --yii-debug-tl-label-col: 32%;
+  }
 }
 
 /**
@@ -142,13 +152,13 @@
 .yii-debug-tl-rows {
   grid-column: 1 / 3;
   display: grid;
-  grid-template-columns: minmax(180px, 22%) 1fr;
+  grid-template-columns: minmax(180px, var(--yii-debug-tl-label-col)) 1fr;
   background: linear-gradient(
     to right,
-    transparent calc(22% - 1px),
-    var(--yii-debug-panel-border) calc(22% - 1px),
-    var(--yii-debug-panel-border) 22%,
-    transparent 22%
+    transparent calc(var(--yii-debug-tl-label-col) - 1px),
+    var(--yii-debug-panel-border) calc(var(--yii-debug-tl-label-col) - 1px),
+    var(--yii-debug-panel-border) var(--yii-debug-tl-label-col),
+    transparent var(--yii-debug-tl-label-col)
   );
 }
 
@@ -300,7 +310,9 @@
  */
 .yii-debug-tl-memory {
   display: grid;
-  grid-template-columns: minmax(180px, 22%) 1fr auto;
+
+  /* Shares the rows' label column so the memory trace keeps the chart's time origin. */
+  grid-template-columns: minmax(180px, var(--yii-debug-tl-label-col)) 1fr auto;
   align-items: center;
   grid-column: 1 / 3;
   padding: var(--yii-debug-space-2) var(--yii-debug-space-3);

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\tests\widgets\sidebar;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\{ConfigPanel, RequestPanel};
+use yii\debug\panels\{ConfigPanel, InertiaPanel, RequestPanel};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\sidebar\SidebarDataNormalizer;
+
+use function array_map;
 
 /**
  * Unit tests for {@see SidebarDataNormalizer} covering the narrowing of `_sidebar.php` inputs (panels + manifest +
@@ -492,6 +494,45 @@ final class SidebarDataNormalizerTest extends TestCase
             'Configuration',
             $ids,
             'Config panel must be skipped in the sidebar nav.',
+        );
+    }
+
+    public function testFromViewSkipsPanelsWithoutContentForTheCapture(): void
+    {
+        $this->mockWebApplication();
+
+        $active = new RequestPanel();
+        $active->id = 'request';
+
+        $inertia = new InertiaPanel();
+        $inertia->id = 'inertia';
+        $inertia->data = [
+            'location' => null,
+            'page' => null,
+            'requestHeaders' => [],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        $view = SidebarDataNormalizer::fromView(
+            ['request' => $active, 'inertia' => $inertia],
+            ['tag-1' => ['method' => 'GET', 'statusCode' => 200]],
+            $active,
+            'tag-1',
+            ['method' => 'GET', 'statusCode' => 200],
+        );
+
+        $labels = array_map(static fn($item): string => $item->label, $view->navItems);
+
+        self::assertContains(
+            'Request',
+            $labels,
+            'Panels with content must stay listed.',
+        );
+        self::assertNotContains(
+            'Inertia',
+            $labels,
+            'Content-less panels must be skipped in view mode.',
         );
     }
 

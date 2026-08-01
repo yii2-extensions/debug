@@ -13,13 +13,21 @@ use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\Panel;
 use yii\debug\panels\asset\AssetBundleNormalizer;
+use yii\helpers\ArrayHelper;
 use yii\web\{AssetBundle, AssetManager};
 use yii\web\View;
 
+use function array_filter;
+use function array_values;
 use function count;
+use function file_get_contents;
+use function is_a;
 use function is_array;
+use function is_file;
+use function is_object;
 use function is_scalar;
 use function is_string;
+use function json_decode;
 
 /**
  * Captures the asset bundles registered on the request and renders them in the Asset Bundles panel.
@@ -30,38 +38,36 @@ use function is_string;
  * @phpstan-import-type RegisterJsFileOptions from View
  * @phpstan-import-type RegisterCssFileOptions from View
  *
- * @extends Panel<
- *   array<
- *     string,
- *     array{
- *       basePath?: string|null,
- *       baseUrl?: string|null,
- *       css?: array<array-key, string|array<array-key, mixed>>,
- *       cssOptions?: RegisterCssFileOptions,
- *       depends?: array<class-string>,
- *       js?: array<array-key, string|array<array-key, mixed>>,
- *       jsOptions?: RegisterJsFileOptions,
- *       publishOptions?: array<string, mixed>,
- *       sourcePath?: string|null,
- *     }
- *   >
- * >
+ * @extends Panel<array<string, array<string, mixed>>>
  */
 class AssetPanel extends Panel
 {
     /**
-     * Renders the detail view from the normalized bundle summary.
+     * Vite bridge FQCN from `yii2-extensions/inertia`, referenced as a string to avoid a hard package dependency.
+     */
+    private const string VITE_CLASS = 'yii\inertia\Vite';
+    /**
+     * Reserved panel-data key holding the Vite manifest snapshot; never a valid bundle FQCN.
+     */
+    private const string VITE_KEY = '@vite';
+
+    /**
+     * Renders the detail view from the normalized bundle summary and the optional Vite manifest snapshot.
      */
     #[Override]
     public function getDetail(): string
     {
         $data = is_array($this->data) ? $this->data : [];
 
+        $vite = is_array($data[self::VITE_KEY] ?? null) ? $data[self::VITE_KEY] : null;
+
+        unset($data[self::VITE_KEY]);
+
         $summary = (new AssetBundleNormalizer())->normalize($data);
 
         return Yii::$app->view->render(
             'panels/assets/detail',
-            ['summary' => $summary],
+            ['summary' => $summary, 'vite' => $vite],
             $this,
         );
     }
@@ -97,36 +103,32 @@ class AssetPanel extends Panel
     }
 
     /**
-     * Serializes every registered asset bundle into the panel-data shape consumed by the detail view.
+     * Serializes every registered asset bundle — plus the Vite manifest snapshot when the application wires the
+     * `yii2-extensions/inertia` Vite bridge — into the panel-data shape consumed by the detail view.
      *
-     * @return array<string, array{
-     *   basePath?: string|null,
-     *   baseUrl?: string|null,
-     *   css?: array<array-key, string|array<array-key, mixed>>,
-     *   cssOptions?: RegisterCssFileOptions,
-     *   depends?: array<class-string>,
-     *   js?: array<array-key, string|array<array-key, mixed>>,
-     *   jsOptions?: RegisterJsFileOptions,
-     *   publishOptions?: array<string, mixed>,
-     *   sourcePath?: string|null,
-     * }> Serialized bundles indexed by FQCN, or `[]` when no bundles were registered.
+     * @return array<string, array<string, mixed>> Serialized bundles indexed by FQCN, with the optional Vite
+     * snapshot under the reserved `@vite` key; `[]` when nothing was captured.
      */
     public function save(): array
     {
         $bundles = Yii::$app->getAssetManager()->bundles;
 
-        if ($bundles === false || $bundles === []) {
-            return [];
-        }
-
         $data = [];
 
-        foreach ($bundles as $name => $bundle) {
-            if (!is_string($name) || !$bundle instanceof AssetBundle) {
-                continue;
-            }
+        if (is_array($bundles)) {
+            foreach ($bundles as $name => $bundle) {
+                if (!is_string($name) || !$bundle instanceof AssetBundle) {
+                    continue;
+                }
 
-            $data[$name] = $this->serializeBundle($bundle);
+                $data[$name] = $this->serializeBundle($bundle);
+            }
+        }
+
+        $vite = self::captureVite();
+
+        if ($vite !== null) {
+            $data[self::VITE_KEY] = $vite;
         }
 
         return $data;
@@ -218,6 +220,86 @@ class AssetPanel extends Panel
     }
 
     /**
+     * Captures the Vite bridge configuration and its build manifest when the application wires one.
+     *
+     * @return array{
+     *   baseUrl: string,
+     *   devMode: bool,
+     *   devServerUrl: string|null,
+     *   entries: array<string, array{css: list<string>, file: string, imports: int, isEntry: bool}>,
+     *   entrypoints: list<string>,
+     *   manifestPath: string,
+     * }|null Vite snapshot, or `null` when no Vite component is registered.
+     */
+    private static function captureVite(): array|null
+    {
+        $component = self::viteComponent();
+
+        if ($component === null) {
+            return null;
+        }
+
+        $manifestPath = ArrayHelper::getValue($component, 'manifestPath');
+        $manifestPath = is_string($manifestPath) ? (string) Yii::getAlias($manifestPath, false) : '';
+
+        $baseUrl = ArrayHelper::getValue($component, 'baseUrl');
+        $devMode = ArrayHelper::getValue($component, 'devMode');
+        $devServerUrl = ArrayHelper::getValue($component, 'devServerUrl');
+        $entrypoints = ArrayHelper::getValue($component, 'entrypoints');
+
+        return [
+            'baseUrl' => is_string($baseUrl) ? $baseUrl : '',
+            'devMode' => $devMode === true,
+            'devServerUrl' => is_string($devServerUrl) ? $devServerUrl : null,
+            'entries' => self::manifestEntries($manifestPath),
+            'entrypoints' => is_array($entrypoints)
+                ? array_values(array_filter($entrypoints, is_string(...)))
+                : [],
+            'manifestPath' => $manifestPath,
+        ];
+    }
+
+    /**
+     * Reads the Vite build manifest and narrows every chunk to the fields the panel renders.
+     *
+     * @param string $manifestPath Absolute path to the build manifest, already resolved from its alias.
+     *
+     * @return array<string, array{css: list<string>, file: string, imports: int, isEntry: bool}> Chunks indexed by
+     * source name; `[]` when the manifest is missing or unreadable (a dev-server run never writes one).
+     */
+    private static function manifestEntries(string $manifestPath): array
+    {
+        if ($manifestPath === '' || is_file($manifestPath) === false) {
+            return [];
+        }
+
+        $decoded = json_decode((string) file_get_contents($manifestPath), true);
+
+        if (is_array($decoded) === false) {
+            return [];
+        }
+
+        $entries = [];
+
+        foreach ($decoded as $name => $chunk) {
+            if (!is_string($name) || !is_array($chunk)) {
+                continue;
+            }
+
+            $entries[$name] = [
+                'css' => is_array($chunk['css'] ?? null)
+                    ? array_values(array_filter($chunk['css'], is_string(...)))
+                    : [],
+                'file' => is_string($chunk['file'] ?? null) ? $chunk['file'] : '',
+                'imports' => is_array($chunk['imports'] ?? null) ? count($chunk['imports']) : 0,
+                'isEntry' => ($chunk['isEntry'] ?? false) === true,
+            ];
+        }
+
+        return $entries;
+    }
+
+    /**
      * Snapshots the bundle properties consumed by the detail view (paths, files, options, dependencies).
      *
      * @return array{
@@ -264,5 +346,35 @@ class AssetPanel extends Panel
         }
 
         return $options;
+    }
+
+    /**
+     * Resolves the first registered application component whose definition points at the Vite bridge.
+     */
+    private static function viteComponent(): object|null
+    {
+        foreach (Yii::$app->getComponents() as $id => $definition) {
+            $class = match (true) {
+                is_object($definition) && !$definition instanceof Closure => $definition::class,
+                is_string($definition) => $definition,
+                is_array($definition) && is_string($definition['class'] ?? null) => $definition['class'],
+                is_array($definition) && is_string($definition['__class'] ?? null) => $definition['__class'],
+                default => null,
+            };
+
+            if ($class === null || is_a($class, self::VITE_CLASS, true) === false) {
+                continue;
+            }
+
+            try {
+                $component = Yii::$app->get((string) $id);
+            } catch (InvalidConfigException) {
+                continue;
+            }
+
+            return is_object($component) ? $component : null;
+        }
+
+        return null;
     }
 }

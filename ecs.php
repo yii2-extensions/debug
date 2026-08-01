@@ -17,6 +17,7 @@ return $builder
     )
     ->withSkip(
         [
+            __DIR__ . '/src/views',
             HeredocIndentationFixer::class,
             RemoveDeadVarThisFixer::class => [__DIR__ . '/src/views'],
         ],

@@ -9,7 +9,7 @@ use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
-use yii\debug\helpers\{Fqcn, Vocabulary};
+use yii\debug\helpers\{CellMore, Fqcn, Vocabulary};
 use yii\debug\panels\db\SqlHighlighter;
 use yii\debug\panels\LogPanel;
 use yii\log\Logger;
@@ -19,6 +19,7 @@ use function date;
 use function implode;
 use function sprintf;
 use function str_starts_with;
+use function strlen;
 
 /**
  * Renders the typed cells of the logs grid for the Log debug panel.
@@ -36,6 +37,10 @@ final class LogCellRenderer
         Logger::LEVEL_WARNING => 'warning',
         Logger::LEVEL_INFO => 'info',
     ];
+    /**
+     * Message length (bytes) beyond which the message cell collapses behind the {@see CellMore} clamp.
+     */
+    private const int LONG_MESSAGE_THRESHOLD = 600;
     /**
      * Category prefix of the DB command log entries whose message is a raw SQL statement
      * ({@see \yii\debug\panels\DbPanel::$dbEventNames} defaults).
@@ -87,7 +92,8 @@ final class LogCellRenderer
      *
      * The row holds the message as a display string (already exported when the source was non-string), so the renderer
      * escapes it once — except for DB command entries, whose raw SQL message renders through
-     * {@see SqlHighlighter::highlight()} with the same token spans as the db panel queries grid.
+     * {@see SqlHighlighter::highlight()} with the same token spans as the db panel queries grid. Messages longer than
+     * {@see LONG_MESSAGE_THRESHOLD} bytes collapse behind the {@see CellMore} clamp.
      *
      * @param LogRow $row Typed log record.
      * @param LogPanel $panel Panel used to render each trace line.
@@ -97,6 +103,10 @@ final class LogCellRenderer
         $body = str_starts_with($row->category, self::SQL_CATEGORY_PREFIX)
             ? Div::tag()->class('yii-debug-db-sql')->html(SqlHighlighter::highlight($row->message))->render()
             : Encode::content($row->message);
+
+        if (strlen($row->message) > self::LONG_MESSAGE_THRESHOLD) {
+            $body = CellMore::wrap($body);
+        }
 
         if ($row->trace === []) {
             return $body;
