@@ -6,6 +6,7 @@ namespace yii\debug\models\search;
 
 use yii\base\Model;
 use yii\debug\components\search\{Filter, matchers};
+use yii\debug\components\search\matchers\{GreaterThan, LowerThan, SameAs};
 
 use function is_scalar;
 
@@ -36,13 +37,13 @@ class Base extends Model
         if (mb_strpos($value, '>') !== false) {
             $value = (int) str_replace('>', '', $value);
 
-            $filter->addMatcher($attribute, new matchers\GreaterThan(['value' => $value]));
+            $filter->addMatcher($attribute, new GreaterThan(['value' => $value]));
         } elseif (mb_strpos($value, '<') !== false) {
             $value = (int) str_replace('<', '', $value);
 
-            $filter->addMatcher($attribute, new matchers\LowerThan(['value' => $value]));
+            $filter->addMatcher($attribute, new LowerThan(['value' => $value]));
         } else {
-            $filter->addMatcher($attribute, new matchers\SameAs(['value' => $value, 'partial' => $partial]));
+            $filter->addMatcher($attribute, new SameAs(['value' => $value, 'partial' => $partial]));
         }
     }
 }

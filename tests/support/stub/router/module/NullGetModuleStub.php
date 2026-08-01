@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub\router\module;
 
+use Override;
 use yii\base\Module;
 
 /**
@@ -14,6 +15,7 @@ final class NullGetModuleStub extends Module
 {
     public $controllerNamespace = 'yii\\not_a_real_namespace\\controllers';
 
+    #[Override]
     public function getModule($id, $load = true): Module|null
     {
         return null;
@@ -22,6 +24,7 @@ final class NullGetModuleStub extends Module
     /**
      * @return array<string, mixed>
      */
+    #[Override]
     public function getModules($loadedOnly = false): array
     {
         return ['nonexistent' => 'stub'];

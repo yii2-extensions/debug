@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\controllers;
 
+use Override;
+use Throwable;
 use UnexpectedValueException;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
@@ -13,6 +15,7 @@ use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\{ConfigPanel, MailPanel};
 use yii\helpers\Url;
+use yii\web\BadRequestHttpException;
 use yii\web\{Controller, NotFoundHttpException};
 
 use function is_array;
@@ -135,6 +138,7 @@ class DefaultController extends Controller
      *
      * @return array<array-key, array{class: class-string, ...}|class-string> Action map indexed by action ID.
      */
+    #[Override]
     public function actions(): array
     {
         $actions = [];
@@ -227,7 +231,7 @@ class DefaultController extends Controller
             if (is_string($publishedUrl)) {
                 $iconBaseUrl = rtrim($publishedUrl, '/') . '/svg/';
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable) {
             // Asset manager not configured (for example, unit test environment) keep empty so the toolbar JS falls back
             // to the bundled PNG logo and skips chip icons.
         }
@@ -329,8 +333,9 @@ class DefaultController extends Controller
     /**
      * Forces the response format to HTML before delegating to the parent guard.
      *
-     * @throws \yii\web\BadRequestHttpException When the parent guard rejects the request.
+     * @throws BadRequestHttpException When the parent guard rejects the request.
      */
+    #[Override]
     public function beforeAction($action): bool
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_HTML;

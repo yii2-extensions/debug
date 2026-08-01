@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
+use Override;
 use Yii;
 use yii\base\{InvalidConfigException, Model};
 use yii\data\{ActiveDataProvider, ArrayDataProvider, DataProviderInterface};
@@ -22,6 +23,7 @@ class UserSearch extends Model implements UserSearchInterface
      */
     public Model|null $identityImplement = null;
 
+    #[Override]
     public function __get($name): mixed
     {
         if ($this->identityImplement === null) {
@@ -31,6 +33,7 @@ class UserSearch extends Model implements UserSearchInterface
         return $this->identityImplement->__get($name);
     }
 
+    #[Override]
     public function __set($name, $value): void
     {
         if ($this->identityImplement === null) {
@@ -40,6 +43,7 @@ class UserSearch extends Model implements UserSearchInterface
         $this->identityImplement->__set($name, $value);
     }
 
+    #[Override]
     public function attributes(): array
     {
         if ($this->identityImplement === null) {
@@ -64,6 +68,7 @@ class UserSearch extends Model implements UserSearchInterface
         parent::init();
     }
 
+    #[Override]
     public function rules(): array
     {
         if ($this->identityImplement === null) {

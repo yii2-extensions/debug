@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\mail;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use Stringable;
@@ -331,7 +332,7 @@ final class MailPanelTest extends TestCase
                 'from' => 'a@x.com',
                 'to' => 'b@x.com',
                 'subject' => 'Hello',
-                'time' => new \DateTimeImmutable('2026-01-01'),
+                'time' => new DateTimeImmutable('2026-01-01'),
             ],
         ];
 

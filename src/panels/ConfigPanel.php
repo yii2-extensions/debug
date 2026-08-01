@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use ReflectionClass;
 use Yii;
 use yii\base\Application;
@@ -54,6 +55,7 @@ class ConfigPanel extends Panel
     /**
      * Renders the detail view from the normalized configuration summary.
      */
+    #[Override]
     public function getDetail(): string
     {
         $data = is_array($this->data) ? $this->data : [];
@@ -96,6 +98,7 @@ class ConfigPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Configuration';
@@ -250,6 +253,7 @@ class ConfigPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Always `[]`.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         return [];

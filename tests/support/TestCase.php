@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\support;
 
 use ReflectionClass;
+use ReflectionProperty;
 use Yii;
 use yii\base\Application;
 use yii\debug\{LogTarget, Module, Panel};
@@ -194,7 +195,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         $_GET = [];
     }
 
-    private function resolveReflectionProperty(object $object, string $propertyName): \ReflectionProperty
+    private function resolveReflectionProperty(object $object, string $propertyName): ReflectionProperty
     {
         $class = new ReflectionClass($object);
 

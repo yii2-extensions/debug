@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets;
 
+use Override;
 use UIAwesome\Html\Palpable\A;
 use yii\base\Widget;
 use yii\debug\Panel;
@@ -56,6 +57,7 @@ class NavigationButton extends Widget
      */
     private string $lastTag = '';
 
+    #[Override]
     public function beforeRun(): bool
     {
         $manifestKeys = array_keys($this->manifest);

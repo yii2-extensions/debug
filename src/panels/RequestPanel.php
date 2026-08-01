@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use Yii;
 use yii\base\InlineAction;
 use yii\debug\controllers\DefaultController;
@@ -56,6 +57,7 @@ class RequestPanel extends Panel
     /**
      * Renders the detail view with the request hero header and the per-tab sections.
      */
+    #[Override]
     public function getDetail(): string
     {
         $controller = Yii::$app->controller;
@@ -74,6 +76,7 @@ class RequestPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Request';
@@ -180,7 +183,7 @@ class RequestPanel extends Panel
             if (ArrayHelper::getValue($data, $key) !== null) {
                 ArrayHelper::setValue($data, $key, $this->censorString);
 
-                if (strpos($key, 'requestBody') === 0) {
+                if (str_starts_with($key, 'requestBody')) {
                     ArrayHelper::setValue($data, 'requestBody.Raw', $this->censorString);
                 }
             }
@@ -226,6 +229,7 @@ class RequestPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Single-element list with the status chip.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         $statusCode = $this->getStatusCode();

@@ -6,6 +6,7 @@ namespace yii\debug\tests\user;
 
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
+use stdClass;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\models\UserSwitch;
@@ -267,7 +268,7 @@ final class UserSwitchTest extends TestCase
     {
         $this->bootApp();
 
-        Yii::$app->set('weirdcomponent', new \stdClass());
+        Yii::$app->set('weirdcomponent', new stdClass());
 
         $switch = new UserSwitch(['userComponent' => 'weirdcomponent']);
 

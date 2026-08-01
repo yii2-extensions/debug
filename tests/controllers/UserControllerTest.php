@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\controllers;
 
 use PHPUnit\Framework\Attributes\Group;
+use stdClass;
 use Yii;
 use yii\base\Module;
 use yii\debug\controllers\UserController;
@@ -120,7 +121,7 @@ final class UserControllerTest extends TestCase
                 'components' => [
                     'user' => [
                         'class' => User::class,
-                        'identityClass' => \stdClass::class,
+                        'identityClass' => stdClass::class,
                         'enableSession' => true,
                         'enableAutoLogin' => false,
                     ],

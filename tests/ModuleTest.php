@@ -13,6 +13,7 @@ use yii\debug\controllers\DefaultController;
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, TimelineAsset};
 use yii\debug\panels\LogPanel;
 use yii\debug\tests\provider\ModuleProvider;
+use yii\debug\tests\support\stub\NotALogTarget;
 use yii\debug\tests\support\TestCase;
 use yii\log\{Dispatcher, Target as LogTargetBase};
 use yii\web\{AssetManager, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
@@ -849,7 +850,7 @@ final class ModuleTest extends TestCase
     public function testThrowInvalidConfigExceptionWhenLogTargetClassDoesNotResolveToLogTarget(): void
     {
         $module = new Module('debug');
-        $module->logTarget = \yii\debug\tests\support\stub\NotALogTarget::class;
+        $module->logTarget = NotALogTarget::class;
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
@@ -1041,6 +1042,6 @@ final class ModuleTest extends TestCase
      */
     private function silenceLogger(): void
     {
-        Yii::getLogger()->dispatcher = self::createStub(\yii\log\Dispatcher::class);
+        Yii::getLogger()->dispatcher = self::createStub(Dispatcher::class);
     }
 }

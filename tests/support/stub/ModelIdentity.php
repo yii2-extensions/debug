@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub;
 
+use Override;
 use yii\base\Model;
 use yii\web\IdentityInterface;
 
@@ -15,6 +16,7 @@ final class ModelIdentity extends Model implements IdentityInterface
     public int $id = 1;
     public string $username = 'wilmer';
 
+    #[Override]
     public function attributeLabels(): array
     {
         return ['id' => 'Id', 'username' => 'Username'];

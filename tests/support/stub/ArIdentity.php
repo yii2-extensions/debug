@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub;
 
+use Override;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
 
@@ -32,6 +33,7 @@ final class ArIdentity extends ActiveRecord implements IdentityInterface
         return 1;
     }
 
+    #[Override]
     public static function tableName(): string
     {
         return 'stub_users';

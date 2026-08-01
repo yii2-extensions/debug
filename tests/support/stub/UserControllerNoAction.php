@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub;
 
+use Override;
 use yii\base\Action;
 use yii\debug\controllers\UserController;
 
@@ -13,6 +14,7 @@ use yii\debug\controllers\UserController;
  */
 final class UserControllerNoAction extends UserController
 {
+    #[Override]
     public function createAction($id): Action|null
     {
         return null;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models;
 
+use Override;
 use RuntimeException;
 use Yii;
 use yii\base\{InvalidConfigException, Model};
@@ -38,6 +39,7 @@ class UserSwitch extends Model
     /**
      * @return array<string, string> Form labels keyed by attribute name.
      */
+    #[Override]
     public function attributeLabels(): array
     {
         return [
@@ -141,6 +143,7 @@ class UserSwitch extends Model
     /**
      * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */
+    #[Override]
     public function rules(): array
     {
         return [

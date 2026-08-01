@@ -33,7 +33,7 @@ use function time;
  */
 final class MailCardRenderer
 {
-    private const BODY_PREVIEW_LIMIT = 140;
+    private const int BODY_PREVIEW_LIMIT = 140;
 
     /**
      * Recipient groups rendered when at least one of the lists is non-empty.

@@ -97,7 +97,7 @@ final class MailMessageNormalizer
             return [];
         }
 
-        $parts = array_map('trim', explode(',', $raw));
+        $parts = array_map(trim(...), explode(',', $raw));
 
         return array_values(array_filter($parts, static fn(string $address): bool => $address !== ''));
     }

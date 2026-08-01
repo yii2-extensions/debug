@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\asset;
 
 use PHPUnit\Framework\Attributes\Group;
+use stdClass;
 use Yii;
 use yii\debug\{DebugAsset, LogTarget, Module};
 use yii\debug\panels\AssetPanel;
@@ -325,7 +326,7 @@ final class AssetPanelTest extends TestCase
         Yii::$app->getAssetManager()->bundles = [
             'debug' => $bundle,
             0 => $bundle,                 // non-string key, must be skipped
-            'invalid' => new \stdClass(), // non-AssetBundle value, must be skipped
+            'invalid' => new stdClass(), // non-AssetBundle value, must be skipped
         ];
 
         $snapshot = $panel->save();

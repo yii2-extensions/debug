@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Closure;
+use Override;
 use Stringable;
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Strong;
@@ -13,6 +14,7 @@ use yii\base\InvalidConfigException;
 use yii\debug\Panel;
 use yii\debug\panels\asset\AssetBundleNormalizer;
 use yii\web\{AssetBundle, AssetManager};
+use yii\web\View;
 
 use function count;
 use function is_array;
@@ -25,8 +27,8 @@ use function is_string;
  * Stores the serialized bundle map (with `Closure` callbacks turned into label markers) so the detail view can render
  * each bundle's source path, base path, base URL, CSS/JS files, and dependency tree from a static snapshot.
  *
- * @phpstan-import-type RegisterJsFileOptions from \yii\web\View
- * @phpstan-import-type RegisterCssFileOptions from \yii\web\View
+ * @phpstan-import-type RegisterJsFileOptions from View
+ * @phpstan-import-type RegisterCssFileOptions from View
  *
  * @extends Panel<
  *   array<
@@ -50,6 +52,7 @@ class AssetPanel extends Panel
     /**
      * Renders the detail view from the normalized bundle summary.
      */
+    #[Override]
     public function getDetail(): string
     {
         $data = is_array($this->data) ? $this->data : [];
@@ -66,6 +69,7 @@ class AssetPanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Asset Bundles';
@@ -82,11 +86,12 @@ class AssetPanel extends Panel
     /**
      * Returns whether the application exposes an `assetManager` component the panel can read.
      */
+    #[Override]
     public function isEnabled(): bool
     {
         try {
             return Yii::$app->get('assetManager') instanceof AssetManager;
-        } catch (InvalidConfigException $exception) {
+        } catch (InvalidConfigException) {
             return false;
         }
     }
@@ -196,6 +201,7 @@ class AssetPanel extends Panel
      *
      * @return array<int, array<string, mixed>> Single-element list with the `info` chip, or `[]`.
      */
+    #[Override]
     protected function getToolbarItems(): array
     {
         if (!is_array($this->data) || $this->data === []) {

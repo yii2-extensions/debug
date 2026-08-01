@@ -4,11 +4,27 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use Override;
 use Throwable;
 use UIAwesome\Html\Helper\Attributes;
 use Yii;
 use yii\base\{Action, Application, BootstrapInterface, Event, InvalidConfigException};
 use yii\debug\helpers\Icon;
+use yii\debug\panels\{
+    AssetPanel,
+    ConfigPanel,
+    DbPanel,
+    DumpPanel,
+    EventPanel,
+    LogPanel,
+    MailPanel,
+    ProfilingPanel,
+    QueuePanel,
+    RequestPanel,
+    RouterPanel,
+    TimelinePanel,
+    UserPanel,
+};
 use yii\helpers\{IpHelper, Json, Url};
 use yii\log\Dispatcher;
 use yii\rbac\BaseManager;
@@ -175,6 +191,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * @throws InvalidConfigException When the log component cannot be resolved.
      * @throws ForbiddenHttpException When the caller fails the access check on a non-toolbar route.
      */
+    #[Override]
     public function beforeAction($action): bool
     {
         if (!$this->enableDebugLogs) {
@@ -333,6 +350,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * @throws InvalidConfigException When a panel configuration cannot be resolved into a {@see Panel} instance.
      */
+    #[Override]
     public function init(): void
     {
         parent::init();
@@ -493,25 +511,26 @@ class Module extends \yii\base\Module implements BootstrapInterface
     protected function corePanels(): array
     {
         return [
-            'config' => ['class' => \yii\debug\panels\ConfigPanel::class],
-            'request' => ['class' => \yii\debug\panels\RequestPanel::class],
-            'router' => ['class' => \yii\debug\panels\RouterPanel::class],
-            'log' => ['class' => \yii\debug\panels\LogPanel::class],
-            'db' => ['class' => \yii\debug\panels\DbPanel::class],
-            'profiling' => ['class' => \yii\debug\panels\ProfilingPanel::class],
-            'timeline' => ['class' => \yii\debug\panels\TimelinePanel::class],
-            'event' => ['class' => \yii\debug\panels\EventPanel::class],
-            'user' => ['class' => \yii\debug\panels\UserPanel::class],
-            'mail' => ['class' => \yii\debug\panels\MailPanel::class],
-            'queue' => ['class' => \yii\debug\panels\QueuePanel::class],
-            'dump' => ['class' => \yii\debug\panels\DumpPanel::class],
-            'asset' => ['class' => \yii\debug\panels\AssetPanel::class],
+            'config' => ['class' => ConfigPanel::class],
+            'request' => ['class' => RequestPanel::class],
+            'router' => ['class' => RouterPanel::class],
+            'log' => ['class' => LogPanel::class],
+            'db' => ['class' => DbPanel::class],
+            'profiling' => ['class' => ProfilingPanel::class],
+            'timeline' => ['class' => TimelinePanel::class],
+            'event' => ['class' => EventPanel::class],
+            'user' => ['class' => UserPanel::class],
+            'mail' => ['class' => MailPanel::class],
+            'queue' => ['class' => QueuePanel::class],
+            'dump' => ['class' => DumpPanel::class],
+            'asset' => ['class' => AssetPanel::class],
         ];
     }
 
     /**
      * Returns the default module version string.
      */
+    #[Override]
     protected function defaultVersion(): string
     {
         return self::VERSION;
@@ -653,7 +672,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 return true;
             }
 
-            if (strpos($filter, '/') !== false && IpHelper::inRange($ip, $filter)) {
+            if (str_contains($filter, '/') && IpHelper::inRange($ip, $filter)) {
                 return true;
             }
         }

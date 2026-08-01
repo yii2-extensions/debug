@@ -316,7 +316,7 @@ final class FlattenExceptionTest extends TestCase
             'Trace frame must carry the throw-site namespace.',
         );
         self::assertSame(
-            __CLASS__,
+            self::class,
             $frame['class'],
             'Trace frame must carry the FQCN of the throw site.',
         );

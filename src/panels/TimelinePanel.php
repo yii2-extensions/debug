@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use Override;
 use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
@@ -79,6 +80,7 @@ class TimelinePanel extends Panel
     /**
      * Renders the detail view with the timeline chart and the filter form.
      */
+    #[Override]
     public function getDetail(): string
     {
         $searchModel = new TimelineSearch();
@@ -142,6 +144,7 @@ class TimelinePanel extends Panel
     /**
      * Returns the panel display name.
      */
+    #[Override]
     public function getName(): string
     {
         return 'Timeline';
@@ -240,6 +243,7 @@ class TimelinePanel extends Panel
      *
      * @throws RuntimeException When any of `start`, `end`, `memory`, or the derived `duration` is missing or invalid.
      */
+    #[Override]
     public function load(mixed $data): void
     {
         if (!is_array($data)) {

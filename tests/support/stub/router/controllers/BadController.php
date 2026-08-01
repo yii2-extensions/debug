@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\support\stub\router\controllers;
 
 use Exception;
+use Override;
 use yii\web\Controller;
 
 /**
@@ -24,11 +25,13 @@ final class BadController extends Controller
      *
      * @return array<array-key, array{class: class-string, ...}|class-string>
      */
+    #[Override]
     public function actions(): array
     {
         return [];
     }
 
+    #[Override]
     public function init(): void
     {
         throw new Exception('Simulates problem with controller when initialing');

@@ -12,12 +12,8 @@ use yii\debug\Module;
  */
 final class NotALogTarget extends BaseObject
 {
-    public Module|null $module = null;
-
-    public function __construct(Module $module, array $config = [])
+    public function __construct(public Module $module, array $config = [])
     {
-        $this->module = $module;
-
         parent::__construct($config);
     }
 }

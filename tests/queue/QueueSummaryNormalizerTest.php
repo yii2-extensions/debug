@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\queue;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\queue\QueueSummaryNormalizer;
+use yii\debug\panels\queue\{JobRecord, QueueSummaryNormalizer};
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -185,7 +185,7 @@ final class QueueSummaryNormalizerTest extends TestCase
             ],
         );
 
-        $classes = array_map(static fn($r) => $r->jobClass, $summary->records);
+        $classes = array_map(static fn(JobRecord $record): string => $record->jobClass, $summary->records);
 
         self::assertSame(
             ['First', 'Second', 'Third'],

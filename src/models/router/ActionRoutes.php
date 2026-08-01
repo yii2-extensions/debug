@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\models\router;
 
+use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
@@ -92,7 +93,7 @@ class ActionRoutes extends Model
 
             if ($name === 'actions') {
                 $actions[] = '__ACTIONS__';
-            } elseif ($method->isPublic() && !$method->isStatic() && strncmp($name, 'action', 6) === 0) {
+            } elseif ($method->isPublic() && !$method->isStatic() && str_starts_with($name, 'action')) {
                 $actions[] = $name;
             }
         }
@@ -205,7 +206,7 @@ class ActionRoutes extends Model
 
             if (is_dir($controllerPath)) {
                 $iterator = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($controllerPath, RecursiveDirectoryIterator::KEY_AS_PATHNAME),
+                    new RecursiveDirectoryIterator($controllerPath, RecursiveDirectoryIterator::KEY_AS_PATHNAME | FilesystemIterator::SKIP_DOTS),
                 );
 
                 /** @var SplFileInfo $fileInfo */

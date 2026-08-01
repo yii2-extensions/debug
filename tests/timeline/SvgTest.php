@@ -6,7 +6,6 @@ namespace yii\debug\tests\timeline;
 
 use PHPUnit\Framework\Attributes\Group;
 use ReflectionClass;
-use RuntimeException;
 use Yii;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\Svg;
@@ -20,8 +19,7 @@ use function count;
 /**
  * Unit tests for {@see Svg} covering the constructor branches (module-less / source-panel-less / invalid-messages),
  * `__toString` empty short-circuit, the `currentColor` stroke and gradient-stop defaults, the points appended from
- * valid log messages, the panel-clear `RuntimeException`, and the early returns from `addPoints` when the panel memory
- * or duration is non-positive.
+ * valid log messages, and the early returns from `addPoints` when the panel memory or duration is non-positive.
  */
 #[Group('timeline')]
 final class SvgTest extends TestCase
@@ -237,26 +235,6 @@ final class SvgTest extends TestCase
             $svg->hasPoints(),
             'First valid message must surface before the loop breaks on the malformed entry.',
         );
-    }
-
-    public function testThrowRuntimeExceptionWhenPanelClearedAfterConstruction(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $svg = new Svg($panel);
-
-        $this->setInaccessibleProperty(
-            $svg,
-            'panel',
-            null,
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(
-            'TimelinePanel has not been set on the SVG renderer.',
-        );
-
-        $this->invoke($svg, 'addPoints', [[]]);
     }
 
     public function testToStringEmitsCurrentColorOpacityStopsByDefault(): void

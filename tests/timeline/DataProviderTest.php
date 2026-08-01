@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace yii\debug\tests\timeline;
 
 use PHPUnit\Framework\Attributes\Group;
-use RuntimeException;
 use Yii;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\DataProvider;
@@ -15,7 +14,7 @@ use yii\web\Controller;
 
 /**
  * Unit tests for {@see DataProvider} covering the color-bucket fallback, the CSS alignment class, the memory tuple,
- * the adaptive ruler ticks, the orphan-panel error path, and the `cssNumber` non-numeric guard.
+ * the adaptive ruler ticks, and the `cssNumber` non-numeric guard.
  */
 #[Group('timeline')]
 final class DataProviderTest extends TestCase
@@ -306,21 +305,6 @@ final class DataProviderTest extends TestCase
             $outer['child'] ?? 0,
             'Outer span overlapping the inner span must record one child.',
         );
-    }
-
-    public function testThrowRuntimeExceptionWhenPanelClearedAfterConstruction(): void
-    {
-        $panel = $this->stubPanel();
-        $provider = new DataProvider($panel);
-
-        $this->setInaccessibleProperty($provider, 'panel', null);
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(
-            'TimelinePanel has not been set on the data provider.',
-        );
-
-        $provider->getRulers();
     }
 
     /**

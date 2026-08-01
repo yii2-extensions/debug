@@ -429,7 +429,7 @@ final class PhpInfoDataNormalizer
     {
         return array_values(
             array_filter(
-                array_map('trim', explode($separator, $value)),
+                array_map(trim(...), explode($separator, $value)),
                 static fn(string $entry): bool => $entry !== '',
             ),
         );
