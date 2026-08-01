@@ -1077,7 +1077,7 @@
    */
   .yii-debug-router-summary {
     display: grid;
-    grid-template-columns: max-content 1fr;
+    grid-template-columns: max-content minmax(0, 1fr);
     gap: 4px var(--yii-debug-space-3);
     margin: 0 0 var(--yii-debug-space-3);
     font-size: var(--yii-debug-fs-sm);
@@ -1092,16 +1092,21 @@
     }
 
     dd {
+      min-width: 0;
       margin: 0;
+      overflow-wrap: anywhere;
     }
 
     code {
+      display: inline;
+      min-width: 0;
       padding: 1px 8px;
       border-radius: var(--yii-debug-radius-sm);
       background: var(--yii-debug-panel-surface);
       color: var(--yii-debug-panel-text);
       font-family: var(--yii-debug-font-mono);
       font-size: var(--yii-debug-fs-sm);
+      overflow-wrap: anywhere;
     }
   }
 
@@ -4269,25 +4274,6 @@
   }
 
   /**
-   * Each request row in the index is a giant click target — the JS
-   * handler navigates to the corresponding view when the click does
-   * NOT land on an interactive element. The cursor + hover background
-   * tell the developer the whole row is reachable.
-   */
-  .yii-debug-row-link {
-    cursor: pointer;
-    transition: background-color 120ms ease;
-
-    &:hover {
-      background: color-mix(
-        in srgb,
-        var(--yii-debug-panel-primary),
-        transparent 92%
-      );
-    }
-  }
-
-  /**
    * History-cursor highlight — the row currently mirrored by the sidebar
    * snapshot card on the index page. Subtle tinted background plus a left
    * accent bar so the link between "this row" and "the card on the left"
@@ -5928,6 +5914,36 @@
 
     .yii-debug-card {
       padding: var(--yii-debug-space-3);
+    }
+
+    .yii-debug-sidebar {
+      min-width: 0;
+    }
+
+    .yii-debug-nav {
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+    }
+
+    .yii-debug-nav ul {
+      flex-direction: row;
+      width: max-content;
+      min-width: 100%;
+      gap: var(--yii-debug-space-1);
+    }
+
+    .yii-debug-nav-link {
+      min-height: 40px;
+      white-space: nowrap;
+
+      &::after {
+        display: none;
+      }
+    }
+
+    .yii-debug-nav-link-icon {
+      margin-right: var(--yii-debug-space-1);
     }
   }
 }

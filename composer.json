@@ -74,12 +74,6 @@
         "branch-alias": {
             "dev-main": "0.2.x-dev"
         },
-        "config-plugin-options": {
-            "source-directory": "config"
-        },
-        "config-plugin": {
-            "yii2-debug": "extension.php"
-        },
         "scaffold": {
             "allowed-packages": [
                 "php-forge/baseline",

@@ -13,7 +13,7 @@ use yii\helpers\Url;
 use yii\web\View;
 
 /**
- * @var string|null $configUrl URL to the Configuration panel for the active (or latest) request, or `null` when the
+ * @var string|null $configUrl URL to the Configuration panel for the active (or newest) request, or `null` when the
  * manifest is empty the chip then renders disabled with a hint.
  * @var string $debugTheme Resolved theme key, `'light'` or `'dark'`.
  * @var string|null $peakMemory Optional formatted peak-memory chip (for example, `1.21 MB`); pass `null` to omit the

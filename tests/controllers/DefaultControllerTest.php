@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace yii\debug\tests\controllers;
 
 use Exception;
+use LogicException;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
-use UnexpectedValueException;
 use Yii;
-use yii\base\InvalidConfigException;
+use yii\base\{ActionEvent, InvalidConfigException};
 use yii\db\Connection;
 use yii\debug\controllers\DefaultController;
 use yii\debug\{FlattenException, LogTarget, Module};
 use yii\debug\panels\MailPanel;
 use yii\debug\tests\support\stub\MinimalToolbarPanel;
 use yii\debug\tests\support\TestCase;
+use yii\debug\widgets\shell\ShellContext;
+use yii\debug\widgets\sidebar\SidebarView;
 use yii\web\{AssetManager, NotFoundHttpException, Response};
 
 /**
@@ -354,6 +356,43 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
+    public function testBeforeActionReturnsFalseWhenParentGuardRejectsAction(): void
+    {
+        $module = $this->bootDebugModule();
+        $controller = new DefaultController('default', $module);
+        $action = $controller->createAction('index');
+
+        self::assertNotNull($action, "'index' must resolve to an action object.");
+
+        $controller->on(
+            DefaultController::EVENT_BEFORE_ACTION,
+            static function (ActionEvent $event): void {
+                $event->isValid = false;
+            },
+        );
+
+        self::assertFalse(
+            $controller->beforeAction($action), // @phpstan-ignore argument.type
+            'The debug controller must preserve a parent action rejection.',
+        );
+    }
+
+    public function testCreateShellContextSupportsEmptyManifestAndNumericPeakMemory(): void
+    {
+        $module = $this->bootDebugModule();
+        $controller = new DefaultController('default', $module);
+
+        $context = $this->invoke(
+            $controller,
+            'createShellContext',
+            [ShellContext::MODE_INDEX, [], null, ['peakMemory' => 1_048_576], new SidebarView(null, [])],
+        );
+
+        self::assertInstanceOf(ShellContext::class, $context, 'The factory must return a typed shell context.');
+        self::assertNull($context->configUrl, 'An empty manifest must disable the configuration link.');
+        self::assertNotNull($context->peakMemory, 'Numeric peak memory must be formatted for the shell header.');
+    }
+
     public function testGetManifestCachesResultAndReloadsOnForce(): void
     {
         $module = $this->bootDebugModule();
@@ -390,25 +429,6 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
-    public function testInvokeNormalizeManifestNarrowsRawArrayPayload(): void
-    {
-        $module = $this->bootDebugModule();
-
-        $controller = new DefaultController('default', $module);
-
-        $normalized = $this->invokeStatic(
-            DefaultController::class,
-            'normalizeManifest',
-            [['tag-a' => ['url' => '/a']]],
-        );
-
-        self::assertSame(
-            ['tag-a' => ['url' => '/a']],
-            $normalized,
-            'Normalized manifest must round-trip a well-shaped entry verbatim.',
-        );
-    }
-
     public function testLoadDataPopulatesSummaryWhenTagIsKnown(): void
     {
         $module = $this->bootDebugModule();
@@ -426,6 +446,23 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
+    public function testMainLayoutRequiresShellContext(): void
+    {
+        $module = $this->bootDebugModule();
+        $controller = new DefaultController('default', $module);
+
+        unset(Yii::$app->view->params['debugShell']);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('The debug layout requires a ShellContext.');
+
+        Yii::$app->view->renderFile(
+            dirname(__DIR__, 2) . '/src/views/layouts/main.php',
+            ['content' => ''],
+            $controller,
+        );
+    }
+
     public function testPrimeThemeContextResolvesDarkFromGlobalCookieFallback(): void
     {
         $module = $this->bootDebugModule();
@@ -435,14 +472,14 @@ final class DefaultControllerTest extends TestCase
 
         try {
             $controller = new DefaultController('default', $module);
-            $context = $controller->primeThemeContext();
+            $theme = $this->invoke($controller, 'resolveTheme');
         } finally {
             unset($_COOKIE['yii-debug-toolbar-theme']);
         }
 
         self::assertSame(
             'dark',
-            $context['theme'],
+            $theme,
             '$_COOKIE fallback must seed the dark theme.',
         );
     }
@@ -455,22 +492,12 @@ final class DefaultControllerTest extends TestCase
 
         $controller = new DefaultController('default', $module);
 
-        $context = $controller->primeThemeContext();
+        $theme = $this->invoke($controller, 'resolveTheme');
 
         self::assertSame(
             'dark',
-            $context['theme'],
+            $theme,
             "'yii_debug_theme=dark' must select the dark theme.",
-        );
-        self::assertNotSame(
-            '',
-            $context['sun'],
-            'Sun glyph must surface as SVG markup.',
-        );
-        self::assertNotSame(
-            '',
-            $context['moon'],
-            'Moon glyph must surface as SVG markup.',
         );
     }
 
@@ -480,11 +507,11 @@ final class DefaultControllerTest extends TestCase
 
         $controller = new DefaultController('default', $module);
 
-        $context = $controller->primeThemeContext();
+        $theme = $this->invoke($controller, 'resolveTheme');
 
         self::assertSame(
             'light',
-            $context['theme'],
+            $theme,
             "Missing theme inputs must default to 'light'.",
         );
     }
@@ -576,7 +603,7 @@ final class DefaultControllerTest extends TestCase
 
         @mkdir($dataPath, 0o777, true);
 
-        // Write a manifest entry but a payload that has no 'summary' key.
+        // Write a manifest entry but an incompatible snapshot without a summary.
         $tag = 'tag-no-summary';
         $payload = ['exceptions' => []];
 
@@ -586,7 +613,7 @@ final class DefaultControllerTest extends TestCase
         );
         file_put_contents(
             "{$dataPath}/index.data",
-            serialize([$tag => ['tag' => $tag, 'url' => 'dummy']]),
+            serialize(['version' => 2, 'entries' => [$tag => ['tag' => $tag, 'url' => 'dummy']]]),
         );
 
         $controller = new DefaultController('default', $module);
@@ -695,62 +722,6 @@ final class DefaultControllerTest extends TestCase
         $controller->loadData('tag-rotated');
     }
 
-    public function testThrowUnexpectedValueExceptionForManifestEntryWithNonArrayValue(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage(
-            'contains an invalid entry',
-        );
-
-        $this->invokeStatic(
-            DefaultController::class,
-            'normalizeManifest',
-            [['tag-a' => 'not-an-array']],
-        );
-    }
-
-    public function testThrowUnexpectedValueExceptionForManifestEntryWithNonStringKey(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage(
-            'contains an invalid entry',
-        );
-
-        $this->invokeStatic(
-            DefaultController::class,
-            'normalizeManifest',
-            [[0 => ['url' => '/a']]],
-        );
-    }
-
-    public function testThrowUnexpectedValueExceptionWhenManifestPayloadIsNotArray(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage(
-            'manifest must be an array',
-        );
-
-        $this->invokeStatic(
-            DefaultController::class,
-            'normalizeManifest',
-            ['not-an-array'],
-        );
-    }
-
-    public function testThrowUnexpectedValueExceptionWhenStringKeyMapHasNonStringKey(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage(
-            'non-string key',
-        );
-
-        $this->invokeStatic(
-            DefaultController::class,
-            'normalizeStringKeyArray',
-            [[0 => 'value']],
-        );
-    }
-
     private function bootDebugModule(): Module
     {
         $this->mockWebApplication(
@@ -809,13 +780,7 @@ final class DefaultControllerTest extends TestCase
 
         @mkdir($dataPath, 0o777, true);
 
-        $payload = [];
-
-        foreach ($panelData as $id => $data) {
-            $payload[$id] = serialize($data);
-        }
-
-        $payload['summary'] = [
+        $summary = [
             'tag' => $tag,
             'url' => 'dummy',
             'method' => 'GET',
@@ -823,10 +788,15 @@ final class DefaultControllerTest extends TestCase
             'ip' => '127.0.0.1',
             'statusCode' => 200,
         ];
-        $payload['exceptions'] = [];
 
-        file_put_contents("{$dataPath}/{$tag}.data", serialize($payload));
-        file_put_contents("{$dataPath}/index.data", serialize([$tag => $payload['summary']]));
+        file_put_contents(
+            "{$dataPath}/{$tag}.data",
+            serialize(['version' => 2, 'panels' => $panelData, 'summary' => $summary, 'exceptions' => []]),
+        );
+        file_put_contents(
+            "{$dataPath}/index.data",
+            serialize(['version' => 2, 'entries' => [$tag => $summary]]),
+        );
     }
 
     /**
@@ -848,19 +818,22 @@ final class DefaultControllerTest extends TestCase
 
         @mkdir($dataPath, 0o777, true);
 
-        $payload = [
-            'summary' => [
-                'tag' => $tag,
-                'url' => 'dummy',
-                'method' => 'GET',
-                'time' => 1_700_000_000.0,
-                'ip' => '127.0.0.1',
-                'statusCode' => 200,
-            ],
-            'exceptions' => $exceptions,
+        $summary = [
+            'tag' => $tag,
+            'url' => 'dummy',
+            'method' => 'GET',
+            'time' => 1_700_000_000.0,
+            'ip' => '127.0.0.1',
+            'statusCode' => 200,
         ];
 
-        file_put_contents("{$dataPath}/{$tag}.data", serialize($payload));
-        file_put_contents("{$dataPath}/index.data", serialize([$tag => $payload['summary']]));
+        file_put_contents(
+            "{$dataPath}/{$tag}.data",
+            serialize(['version' => 2, 'panels' => [], 'summary' => $summary, 'exceptions' => $exceptions]),
+        );
+        file_put_contents(
+            "{$dataPath}/index.data",
+            serialize(['version' => 2, 'entries' => [$tag => $summary]]),
+        );
     }
 }

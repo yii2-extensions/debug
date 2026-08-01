@@ -27,6 +27,15 @@ use function strlen;
 class Panel extends Component implements ViewContextInterface
 {
     /**
+     * SVG icon key used by the toolbar.
+     */
+    protected const string|null ICON = null;
+    /**
+     * Panel display name.
+     */
+    protected const string NAME = '';
+
+    /**
      * @var array<array-key, array{class: class-string, ...}|class-string> Extra actions merged into the debug module's
      * default controller. See {@see \yii\base\Controller::actions()} for the accepted shape.
      */
@@ -80,7 +89,7 @@ class Panel extends Component implements ViewContextInterface
      */
     public function getName(): string
     {
-        return '';
+        return static::NAME;
     }
 
     /**
@@ -142,7 +151,7 @@ class Panel extends Component implements ViewContextInterface
      */
     public function getToolbarIcon(): string|null
     {
-        return null;
+        return static::ICON;
     }
 
     /**

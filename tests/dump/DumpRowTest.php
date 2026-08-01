@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace yii\debug\tests\dump;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\dump\DumpRowNormalizer;
+use yii\debug\panels\dump\DumpRow;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see DumpRowNormalizer} covering the narrowing of GridView callback arguments into a typed
+ * Unit tests for {@see DumpRow} covering the narrowing of GridView callback arguments into a typed
  * {@see \yii\debug\panels\dump\DumpRow}.
  */
 #[Group('panel')]
 #[Group('dump')]
-final class DumpRowNormalizerTest extends TestCase
+final class DumpRowTest extends TestCase
 {
     public function testFromCoercesNumericStringToFloatTime(): void
     {
-        $row = DumpRowNormalizer::from(
+        $row = DumpRow::fromMixed(
             ['time' => '1700000000.5'],
         );
 
@@ -31,7 +31,7 @@ final class DumpRowNormalizerTest extends TestCase
 
     public function testFromCollapsesNonArrayTraceFieldToEmptyList(): void
     {
-        $row = DumpRowNormalizer::from(
+        $row = DumpRow::fromMixed(
             ['trace' => 'not an array'],
         );
 
@@ -44,7 +44,7 @@ final class DumpRowNormalizerTest extends TestCase
 
     public function testFromDropsNonArrayTraceFrames(): void
     {
-        $row = DumpRowNormalizer::from(
+        $row = DumpRow::fromMixed(
             [
                 'trace' => [
                     ['file' => '/a.php'],
@@ -73,7 +73,7 @@ final class DumpRowNormalizerTest extends TestCase
 
     public function testFromDropsNonStringFrameKeys(): void
     {
-        $row = DumpRowNormalizer::from(
+        $row = DumpRow::fromMixed(
             [
                 'trace' => [
                     [
@@ -95,7 +95,7 @@ final class DumpRowNormalizerTest extends TestCase
 
     public function testFromFallsBackToEmptyStringWhenScalarFieldsAreNotStrings(): void
     {
-        $row = DumpRowNormalizer::from(
+        $row = DumpRow::fromMixed(
             ['message' => 42, 'category' => null],
         );
 
@@ -113,7 +113,7 @@ final class DumpRowNormalizerTest extends TestCase
 
     public function testFromFallsBackToZeroWhenTimeIsNotNumeric(): void
     {
-        $row = DumpRowNormalizer::from(
+        $row = DumpRow::fromMixed(
             ['time' => 'abc'],
         );
 
@@ -126,7 +126,7 @@ final class DumpRowNormalizerTest extends TestCase
 
     public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
     {
-        $row = DumpRowNormalizer::from(
+        $row = DumpRow::fromMixed(
             'not an array',
         );
 
@@ -154,7 +154,7 @@ final class DumpRowNormalizerTest extends TestCase
 
     public function testFromRoundTripsTypedRow(): void
     {
-        $row = DumpRowNormalizer::from(
+        $row = DumpRow::fromMixed(
             [
                 'message' => '<?php "hello"',
                 'category' => 'application',

@@ -9,7 +9,7 @@ use UIAwesome\Html\Form\InputSearch;
 use UIAwesome\Html\Interactive\{Details, Summary};
 use UIAwesome\Html\List\{Dd, Dl, Dt, Li, Ul};
 use UIAwesome\Html\Palpable\A;
-use UIAwesome\Html\Phrasing\{Code, Span, Strong};
+use UIAwesome\Html\Phrasing\{Code, Label, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Aside, Section};
 use yii\debug\helpers\Icon;
@@ -105,11 +105,17 @@ final class PhpInfoRenderer
         return Div::tag()
             ->class('yii-debug-phpinfo-search')
             ->html(
+                Label::tag()
+                    ->class('yii-debug-sr-only')
+                    ->for('yii-debug-phpinfo-filter')
+                    ->content('Filter PHP modules and directives'),
                 Span::tag()
                     ->addAttribute('aria-hidden', 'true')
                     ->class('yii-debug-phpinfo-search-icon')
                     ->html(Icon::render('search')),
                 InputSearch::tag()
+                    ->id('yii-debug-phpinfo-filter')
+                    ->name('phpinfo-filter')
                     ->addAttribute('autocomplete', 'off')
                     ->addAttribute('spellcheck', 'false')
                     ->addDataAttribute('yii-debug-phpinfo-search', true)

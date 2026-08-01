@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\inertia;
 
+use JsonSerializable;
 use PHPUnit\Framework\Attributes\Group;
+use stdClass;
 use Yii;
 use yii\base\{View, ViewEvent};
 use yii\debug\panels\InertiaPanel;
@@ -116,6 +118,63 @@ final class InertiaPanelTest extends TestCase
             $html,
             'Card headline must describe the missing page.',
         );
+    }
+
+    public function testGetDetailRendersMessageWhenPageHasNoProps(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'],
+            'requestHeaders' => [],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        self::assertStringContainsString(
+            'The page rendered without props.',
+            $panel->getDetail(),
+            'An empty page payload must render the no-props message.',
+        );
+    }
+
+    public function testGetDetailRendersScalarPropTypesHeadersAndLongPayload(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $panel->data = [
+            'location' => null,
+            'page' => [
+                'component' => 'site/index',
+                'props' => [
+                    'string' => str_repeat('a', 700),
+                    'integer' => 7,
+                    'float' => 1.5,
+                    'boolean' => true,
+                    'null' => null,
+                ],
+                'url' => '/site/index',
+                'version' => 'v1',
+            ],
+            'requestHeaders' => [
+                'X-Inertia' => 'true',
+                'X-Inertia-Partial-Data' => 'string,integer',
+            ],
+            'sharedKeys' => [],
+            'statusCode' => 200,
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString('Partial reload', $html, 'Partial request headers must classify the visit.');
+        self::assertStringContainsString('X-Inertia-Partial-Data', $html, 'Negotiation headers must be listed.');
+        self::assertStringContainsString('string(700)', $html, 'String props must include their length.');
+        self::assertMatchesRegularExpression('/>\s*int\s*</', $html, 'Integer props must expose their type.');
+        self::assertMatchesRegularExpression('/>\s*float\s*</', $html, 'Float props must expose their type.');
+        self::assertMatchesRegularExpression('/>\s*bool\s*</', $html, 'Boolean props must expose their type.');
+        self::assertMatchesRegularExpression('/>\s*null\s*</', $html, 'Null props must expose their type.');
+        self::assertStringContainsString('yii-debug-cell-more', $html, 'Long raw payloads must use the expandable wrapper.');
     }
 
     public function testGetDetailRendersVersionConflictWhenStatusIs409(): void
@@ -264,6 +323,16 @@ final class InertiaPanelTest extends TestCase
         );
     }
 
+    public function testIsEnabledReturnsFalseWhenInertiaComponentCannotBeCreated(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => 'missing\\InertiaManager']]);
+
+        self::assertFalse(
+            $panel->isEnabled(),
+            'An invalid Inertia component definition must disable the panel.',
+        );
+    }
+
     public function testIsEnabledReturnsFalseWithoutInertiaComponent(): void
     {
         $panel = $this->makePanel(InertiaPanel::class);
@@ -281,6 +350,31 @@ final class InertiaPanelTest extends TestCase
         self::assertTrue(
             $panel->isEnabled(),
             'Registered manager must enable the panel.',
+        );
+    }
+
+    public function testNormalizePageReturnsNullForInvalidJsonAndScalarPayloads(): void
+    {
+        $invalidJson = new class implements JsonSerializable {
+            public function jsonSerialize(): string
+            {
+                return "\xB1\x31";
+            }
+        };
+        $scalar = new class implements JsonSerializable {
+            public function jsonSerialize(): string
+            {
+                return 'scalar';
+            }
+        };
+
+        self::assertNull(
+            $this->invokeStatic(InertiaPanel::class, 'normalizePage', [$invalidJson]),
+            'A page that cannot be JSON encoded must normalize to null.',
+        );
+        self::assertNull(
+            $this->invokeStatic(InertiaPanel::class, 'normalizePage', [$scalar]),
+            'A scalar JSON payload must normalize to null.',
         );
     }
 
@@ -382,6 +476,25 @@ final class InertiaPanelTest extends TestCase
             200,
             $saved['statusCode'],
             'Status code must be captured.',
+        );
+    }
+
+    public function testSharedKeysReturnsEmptyListForMissingAndNonManagerComponents(): void
+    {
+        $this->makePanel(InertiaPanel::class);
+
+        self::assertSame(
+            [],
+            $this->invokeStatic(InertiaPanel::class, 'sharedKeys'),
+            'A missing manager must yield no shared keys.',
+        );
+
+        Yii::$app->set('inertia', new stdClass());
+
+        self::assertSame(
+            [],
+            $this->invokeStatic(InertiaPanel::class, 'sharedKeys'),
+            'A non-manager component must yield no shared keys.',
         );
     }
 }

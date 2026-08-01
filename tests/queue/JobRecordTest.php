@@ -5,39 +5,39 @@ declare(strict_types=1);
 namespace yii\debug\tests\queue;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\queue\JobRecordNormalizer;
+use yii\debug\panels\queue\JobRecord;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see JobRecordNormalizer} covering the narrowing of saved queue rows into a typed
+ * Unit tests for {@see JobRecord} covering the narrowing of saved queue rows into a typed
  * {@see \yii\debug\panels\queue\JobRecord}.
  */
 #[Group('panel')]
 #[Group('queue')]
-final class JobRecordNormalizerTest extends TestCase
+final class JobRecordTest extends TestCase
 {
     public function testFromAcceptsEachKnownEventType(): void
     {
         self::assertSame(
             'push',
-            JobRecordNormalizer::from(['eventType' => 'push'])->eventType,
+            JobRecord::fromMixed(['eventType' => 'push'])->eventType,
             "'push' must round-trip.",
         );
         self::assertSame(
             'exec',
-            JobRecordNormalizer::from(['eventType' => 'exec'])->eventType,
+            JobRecord::fromMixed(['eventType' => 'exec'])->eventType,
             "'exec' must round-trip.",
         );
         self::assertSame(
             'error',
-            JobRecordNormalizer::from(['eventType' => 'error'])->eventType,
+            JobRecord::fromMixed(['eventType' => 'error'])->eventType,
             "'error' must round-trip.",
         );
     }
 
     public function testFromCoercesNumericStringsToFloatAndInt(): void
     {
-        $record = JobRecordNormalizer::from(
+        $record = JobRecord::fromMixed(
             [
                 'time' => '1700000000.5',
                 'ttr' => '30',
@@ -82,7 +82,7 @@ final class JobRecordNormalizerTest extends TestCase
 
     public function testFromCollapsesUnknownEventTypeToPush(): void
     {
-        $record = JobRecordNormalizer::from(
+        $record = JobRecord::fromMixed(
             ['eventType' => 'cancelled'],
         );
 
@@ -95,7 +95,7 @@ final class JobRecordNormalizerTest extends TestCase
 
     public function testFromFallsBackToEmptyStringWhenStringFieldsAreNotStrings(): void
     {
-        $record = JobRecordNormalizer::from(
+        $record = JobRecord::fromMixed(
             [
                 'componentId' => 42,
                 'jobClass' => null,
@@ -134,7 +134,7 @@ final class JobRecordNormalizerTest extends TestCase
 
     public function testFromKeepsNullableNumericFieldsAsNullWhenAbsent(): void
     {
-        $record = JobRecordNormalizer::from(
+        $record = JobRecord::fromMixed(
             [],
         );
 
@@ -162,7 +162,7 @@ final class JobRecordNormalizerTest extends TestCase
 
     public function testFromReturnsAllEmptyDefaultsWhenInputIsNotArray(): void
     {
-        $record = JobRecordNormalizer::from(
+        $record = JobRecord::fromMixed(
             'not an array',
         );
 
@@ -239,7 +239,7 @@ final class JobRecordNormalizerTest extends TestCase
 
     public function testFromRoundTripsTypedRow(): void
     {
-        $record = JobRecordNormalizer::from(
+        $record = JobRecord::fromMixed(
             [
                 'eventType' => 'exec',
                 'componentId' => 'queueEmail',

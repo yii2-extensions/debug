@@ -29,6 +29,9 @@ use function is_string;
  */
 class DumpPanel extends Panel
 {
+    protected const string ICON = 'dump';
+    protected const string NAME = 'Dump';
+
     /**
      * @var array<int, string> Message categories to capture; an empty list captures every category.
      */
@@ -76,23 +79,6 @@ class DumpPanel extends Panel
             ],
             $this,
         );
-    }
-
-    /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Dump';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'dump';
     }
 
     /**

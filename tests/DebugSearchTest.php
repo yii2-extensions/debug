@@ -71,6 +71,37 @@ final class DebugSearchTest extends TestCase
         );
     }
 
+    public function testFilterRejectsMalformedInternalConditions(): void
+    {
+        $this->mockWebApplication();
+
+        $search = new DebugSearch();
+
+        $this->setInaccessibleProperty(
+            $search,
+            'conditions',
+            [['attribute' => 'value', 'operator' => '>', 'value' => '5']],
+        );
+
+        self::assertSame(
+            [],
+            $this->invoke($search, 'filter', [[['value' => 6]]]),
+            'Numeric conditions with a non-float boundary must reject the row.',
+        );
+
+        $this->setInaccessibleProperty(
+            $search,
+            'conditions',
+            [['attribute' => 'value', 'operator' => 'same', 'value' => 5.0]],
+        );
+
+        self::assertSame(
+            [],
+            $this->invoke($search, 'filter', [[['value' => '5']]]),
+            'Text conditions with a non-string boundary must reject the row.',
+        );
+    }
+
     public function testIsCodeCriticalFlagsConfiguredHttpStatusCodes(): void
     {
         $search = new DebugSearch();
@@ -169,6 +200,49 @@ final class DebugSearchTest extends TestCase
         );
     }
 
+    public function testSearchDoesNotParseEmbeddedOperatorsAsComparisons(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            ['url' => '/report >5 ms', 'sqlCount' => 0, 'mailCount' => 0],
+            ['url' => '/report/10', 'sqlCount' => 0, 'mailCount' => 0],
+        ];
+
+        $provider = (new DebugSearch())->search(['DebugSearch' => ['url' => 'report >5']], $records);
+
+        self::assertSame(1, $provider->getTotalCount(), 'Partial text fields must treat embedded operators as text.');
+    }
+
+    public function testSearchRejectsNonNumericCandidatesForNumericConditions(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            ['sqlCount' => 'not-numeric', 'mailCount' => 0],
+            ['sqlCount' => [], 'mailCount' => 0],
+            ['sqlCount' => 6, 'mailCount' => 0],
+        ];
+
+        $provider = (new DebugSearch())->search(['DebugSearch' => ['sqlCount' => '>5']], $records);
+
+        self::assertSame(1, $provider->getTotalCount(), 'Numeric comparisons must reject non-numeric candidates.');
+    }
+
+    public function testSearchRejectsRowsWithoutTheFilteredAttribute(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            ['method' => 'GET', 'sqlCount' => 0, 'mailCount' => 0],
+            ['sqlCount' => 0, 'mailCount' => 0],
+        ];
+
+        $provider = (new DebugSearch())->search(['DebugSearch' => ['method' => 'GET']], $records);
+
+        self::assertSame(1, $provider->getTotalCount(), 'Rows without the filtered attribute must not match.');
+    }
+
     public function testSearchReturnsAllRowsWhenValidateShortCircuits(): void
     {
         $this->mockWebApplication();
@@ -217,5 +291,19 @@ final class DebugSearchTest extends TestCase
             $provider->getTotalCount(),
             'Empty filter params must yield the full record set.',
         );
+    }
+
+    public function testSearchTreatsZeroAsAValidNumericBoundary(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            ['sqlCount' => 0, 'mailCount' => 0],
+            ['sqlCount' => 1, 'mailCount' => 0],
+        ];
+
+        $provider = (new DebugSearch())->search(['DebugSearch' => ['sqlCount' => '>0']], $records);
+
+        self::assertSame(1, $provider->getTotalCount(), "'>0' must retain only positive values.");
     }
 }

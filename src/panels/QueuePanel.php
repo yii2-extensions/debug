@@ -37,6 +37,9 @@ use function spl_object_id;
  */
 class QueuePanel extends Panel
 {
+    protected const string ICON = 'queue';
+    protected const string NAME = 'Queue';
+
     /**
      * Queue base class whose events are listened on; the abstract base `yii\queue\Queue` from `yiisoft/yii2-queue`
      * that every concrete driver extends.
@@ -100,23 +103,6 @@ class QueuePanel extends Panel
     }
 
     /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Queue';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'queue';
-    }
-
-    /**
      * Registers the `queue-job` action and subscribes to the four queue lifecycle events (`afterPush`, `beforeExec`,
      * `afterExec`, `afterError`).
      */
@@ -133,16 +119,6 @@ class QueuePanel extends Panel
         Event::on(self::QUEUE_BASE_CLASS, 'beforeExec', $this->onBeforeExec(...));
         Event::on(self::QUEUE_BASE_CLASS, 'afterExec', $this->onAfterExec(...));
         Event::on(self::QUEUE_BASE_CLASS, 'afterError', $this->onAfterError(...));
-    }
-
-    /**
-     * Always returns `true`: the panel is harmless without `yiisoft/yii2-queue` installed (the empty-state view kicks
-     * in instead).
-     */
-    #[Override]
-    public function isEnabled(): bool
-    {
-        return true;
     }
 
     /**

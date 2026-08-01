@@ -6,14 +6,13 @@ namespace yii\debug\panels\request;
 
 use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Form\InputSearch;
-use UIAwesome\Html\Heading\H3;
-use UIAwesome\Html\List\{Li, Ul};
-use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
 use Yii;
 use yii\debug\helpers\Vocabulary;
+use yii\debug\widgets\Tabs;
 use yii\helpers\VarDumper;
 
 use function htmlspecialchars;
@@ -104,7 +103,19 @@ final class RequestSectionRenderer
      */
     public static function renderTabs(array $tabs): string
     {
-        return self::renderTabNav($tabs) . self::renderTabPanels($tabs);
+        $items = [];
+
+        foreach ($tabs as $tab) {
+            $content = '';
+
+            foreach ($tab->sections as $section) {
+                $content .= self::renderSection($section);
+            }
+
+            $items[] = ['label' => $tab->label, 'content' => $content];
+        }
+
+        return Tabs::render('request', 'Request data', $items);
     }
 
     /**
@@ -124,7 +135,7 @@ final class RequestSectionRenderer
 
         return Tr::tag()
             ->html(
-                Th::tag()->content((string) $name),
+                Th::tag()->scope('row')->content((string) $name),
                 Td::tag()->html($escaped),
             );
     }
@@ -134,7 +145,7 @@ final class RequestSectionRenderer
      */
     private static function renderSectionHeader(RequestSection $section): string
     {
-        $children = [H3::tag()->content($section->caption)];
+        $children = [H2::tag()->content($section->caption)];
 
         if ($section->filterable && $section->entries !== []) {
             $children[] = InputSearch::tag()
@@ -174,72 +185,15 @@ final class RequestSectionRenderer
                     ->class('yii-debug-table yii-debug-table-mono')
                     ->style(['table-layout' => 'fixed'])
                     ->html(
-                        Thead::tag()->html(Tr::tag()->html(Th::tag()->content('Name'), Th::tag()->content('Value'))),
+                        Thead::tag()->html(
+                            Tr::tag()->html(
+                                Th::tag()->scope('col')->content('Name'),
+                                Th::tag()->scope('col')->content('Value'),
+                            ),
+                        ),
                         Tbody::tag()->html(...$rows),
                     ),
             )
-            ->render();
-    }
-
-    /**
-     * Renders the `<ul class="yii-debug-tabs">` strip with one `<li>`/`<a>` per tab.
-     *
-     * @param list<RequestTab> $tabs Tabs in display order; the first tab is rendered active.
-     */
-    private static function renderTabNav(array $tabs): string
-    {
-        $items = [];
-
-        foreach ($tabs as $k => $tab) {
-            $isActive = $k === 0;
-
-            $items[] = Li::tag()
-                ->class('yii-debug-tab')
-                ->html(
-                    A::tag()
-                        ->addAttribute('aria-controls', "r-tab-{$k}")
-                        ->addAttribute('aria-selected', $isActive ? 'true' : 'false')
-                        ->addAttribute('data-yii-debug-toggle', 'tab')
-                        ->addAttribute('role', 'tab')
-                        ->class($isActive ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link')
-                        ->content($tab->label)
-                        ->href("#r-tab-{$k}"),
-                );
-        }
-
-        return Ul::tag()
-            ->class('yii-debug-tabs')
-            ->html(...$items)
-            ->render();
-    }
-
-    /**
-     * Renders the per-tab content panels.
-     *
-     * The first tab is marked active; the rest are hidden until the toggle JS activates them.
-     *
-     * @param list<RequestTab> $tabs Tabs in display order.
-     */
-    private static function renderTabPanels(array $tabs): string
-    {
-        $panels = [];
-
-        foreach ($tabs as $k => $tab) {
-            $sectionsHtml = '';
-
-            foreach ($tab->sections as $section) {
-                $sectionsHtml .= self::renderSection($section);
-            }
-
-            $panels[] = Div::tag()
-                ->class($k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel')
-                ->id("r-tab-{$k}")
-                ->html($sectionsHtml);
-        }
-
-        return Div::tag()
-            ->class('yii-debug-tab-content')
-            ->html(...$panels)
             ->render();
     }
 }

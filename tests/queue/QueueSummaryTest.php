@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace yii\debug\tests\queue;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\queue\{JobRecord, QueueSummaryNormalizer};
+use yii\debug\panels\queue\{JobRecord, QueueSummary};
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see QueueSummaryNormalizer} covering the narrowing of `$panel->data` into typed
+ * Unit tests for {@see QueueSummary} covering the narrowing of `$panel->data` into typed
  * {@see \yii\debug\panels\queue\QueueSummary} aggregates.
  */
 #[Group('panel')]
 #[Group('queue')]
-final class QueueSummaryNormalizerTest extends TestCase
+final class QueueSummaryTest extends TestCase
 {
     public function testFromPanelDataAggregatesEventTypeCounts(): void
     {
-        $summary = QueueSummaryNormalizer::fromPanelData(
+        $summary = QueueSummary::fromPanelData(
             [
                 'records' => [
                     [
@@ -73,7 +73,7 @@ final class QueueSummaryNormalizerTest extends TestCase
 
     public function testFromPanelDataDropsRecordsThatAreNotArrays(): void
     {
-        $summary = QueueSummaryNormalizer::fromPanelData(
+        $summary = QueueSummary::fromPanelData(
             [
                 'records' => [
                     ['eventType' => 'push', 'componentId' => 'queue'],
@@ -87,7 +87,7 @@ final class QueueSummaryNormalizerTest extends TestCase
         self::assertSame(
             4,
             $summary->totalEvents(),
-            "'JobRecordNormalizer' accepts non-array as defaults so totalEvents reflects every entry.",
+            "'JobRecord::fromMixed()' accepts non-array defaults so totalEvents reflects every entry.",
         );
         self::assertSame(
             3,
@@ -98,7 +98,7 @@ final class QueueSummaryNormalizerTest extends TestCase
 
     public function testFromPanelDataExposesDistinctComponentIdsInFirstSeenOrder(): void
     {
-        $summary = QueueSummaryNormalizer::fromPanelData(
+        $summary = QueueSummary::fromPanelData(
             [
                 'records' => [
                     ['eventType' => 'push', 'componentId' => 'queueEmail'],
@@ -117,7 +117,7 @@ final class QueueSummaryNormalizerTest extends TestCase
 
     public function testFromPanelDataFiltersRecordsByComponent(): void
     {
-        $summary = QueueSummaryNormalizer::fromPanelData(
+        $summary = QueueSummary::fromPanelData(
             [
                 'records' => [
                     ['eventType' => 'push', 'componentId' => 'queue', 'jobClass' => 'A'],
@@ -146,7 +146,7 @@ final class QueueSummaryNormalizerTest extends TestCase
 
     public function testFromPanelDataReturnsEmptySummaryWhenInputIsNotArray(): void
     {
-        $summary = QueueSummaryNormalizer::fromPanelData(
+        $summary = QueueSummary::fromPanelData(
             'not an array',
         );
 
@@ -163,7 +163,7 @@ final class QueueSummaryNormalizerTest extends TestCase
 
     public function testFromPanelDataReturnsEmptySummaryWhenRecordsAreMissing(): void
     {
-        $summary = QueueSummaryNormalizer::fromPanelData(
+        $summary = QueueSummary::fromPanelData(
             [],
         );
 
@@ -175,7 +175,7 @@ final class QueueSummaryNormalizerTest extends TestCase
 
     public function testFromPanelDataReturnsRecordsInOriginalOrder(): void
     {
-        $summary = QueueSummaryNormalizer::fromPanelData(
+        $summary = QueueSummary::fromPanelData(
             [
                 'records' => [
                     ['eventType' => 'push', 'jobClass' => 'First'],

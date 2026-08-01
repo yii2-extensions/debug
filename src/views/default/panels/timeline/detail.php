@@ -7,7 +7,6 @@ use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\panels\timeline\TimelineRenderer;
 use yii\debug\panels\TimelinePanel;
-use yii\debug\TimelineAsset;
 use yii\web\View;
 
 /**
@@ -16,7 +15,6 @@ use yii\web\View;
  * @var TimelineSearch $searchModel Search model for filtering the timeline grid.
  * @var View $this View component instance.
  */
-TimelineAsset::register($this);
 ?>
 <?= H1::tag()->class('yii-debug-sr-only')->content('Timeline') ?>
 <?= TimelineRenderer::renderSummary($panel, $dataProvider) ?>

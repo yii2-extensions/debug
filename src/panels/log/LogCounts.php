@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\log;
 
+use yii\log\Logger;
+
+use function is_array;
+use function is_numeric;
+
 /**
  * Typed view-model for the log-level totals shown in the detail view's summary header.
  *
@@ -30,6 +35,43 @@ final readonly class LogCounts
          */
         public int $info,
     ) {}
+
+    /**
+     * Builds log-level totals from a raw panel payload.
+     */
+    public static function fromPanelData(mixed $data): self
+    {
+        $payload = is_array($data) ? $data : [];
+        $messages = $payload['messages'] ?? null;
+
+        if (!is_array($messages)) {
+            return new self(0, 0, 0, 0);
+        }
+
+        $total = 0;
+        $errors = 0;
+        $warnings = 0;
+        $info = 0;
+
+        foreach ($messages as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $total++;
+            $rawLevel = $entry[1] ?? null;
+            $level = is_numeric($rawLevel) ? (int) $rawLevel : 0;
+
+            match ($level) {
+                Logger::LEVEL_ERROR => $errors++,
+                Logger::LEVEL_WARNING => $warnings++,
+                Logger::LEVEL_INFO => $info++,
+                default => null,
+            };
+        }
+
+        return new self($total, $errors, $warnings, $info);
+    }
 
     /**
      * Returns whether at least one `error`-level message was captured.

@@ -20,8 +20,8 @@ use yii\helpers\Url;
  *
  * Stateless static helpers: the public entry point takes a typed {@see SidebarView} and returns ready-to-echo HTML.
  *
- * The snapshot card (top section) and the panel-list nav (bottom section) are built by private helpers, so the
- * `_sidebar.php` partial collapses to a single call.
+ * The snapshot card (top section) and panel-list nav (bottom section) are built by private helpers and rendered
+ * directly by the shared layout.
  */
 final class SidebarRenderer
 {
@@ -124,14 +124,16 @@ final class SidebarRenderer
     ): A|Button {
         $class = self::ICON_BTN_CLASS . ($isDisabled ? ' is-disabled' : '');
 
-        if ($isCursor) {
-            return Button::tag()
+        if ($isCursor || $isDisabled) {
+            $button = Button::tag()
                 ->type('button')
                 ->class($class)
-                ->addDataAttribute('yii-debug-cursor', $cursorTarget)
+                ->disabled($isDisabled)
                 ->title($title)
                 ->addAriaAttribute('label', $ariaLabel)
                 ->html($icon);
+
+            return $isCursor ? $button->addDataAttribute('yii-debug-cursor', $cursorTarget) : $button;
         }
 
         return A::tag()
@@ -143,15 +145,15 @@ final class SidebarRenderer
     }
 
     /**
-     * Renders the navigator row (First | Prev | Next | Latest), branching between cursor-mode buttons and
+     * Renders the navigator row (Newest | Newer | Older | Oldest), branching between cursor-mode buttons and
      * navigation-mode anchor links.
      */
     private static function renderNavRow(SidebarSnapshot $snapshot): Div
     {
-        $iconFirst = Icon::render('chevrons-up');
-        $iconPrev = Icon::render('chevron-up');
-        $iconNext = Icon::render('chevron-down');
-        $iconLatest = Icon::render('chevrons-down');
+        $iconNewest = Icon::render('chevrons-up');
+        $iconNewer = Icon::render('chevron-up');
+        $iconOlder = Icon::render('chevron-down');
+        $iconOldest = Icon::render('chevrons-down');
 
         return Div::tag()
             ->class('yii-debug-request-nav-row')
@@ -159,39 +161,39 @@ final class SidebarRenderer
             ->html(
                 self::renderNavButton(
                     $snapshot->isCursor,
-                    'first',
-                    $snapshot->isCursor || $snapshot->onFirst,
-                    $snapshot->firstUrl,
-                    'First (top of list)',
-                    $snapshot->isCursor ? 'First (top of list)' : 'First captured request',
-                    $iconFirst,
+                    'newest',
+                    $snapshot->isNewest,
+                    $snapshot->newestUrl,
+                    'Newest request',
+                    'Newest captured request',
+                    $iconNewest,
                 ),
                 self::renderNavButton(
                     $snapshot->isCursor,
-                    'prev',
-                    $snapshot->isCursor ? true : $snapshot->hasPrev === false,
-                    $snapshot->prevUrl,
-                    'Previous (newer)',
-                    $snapshot->isCursor ? 'Previous (newer)' : 'Previous request',
-                    $iconPrev,
+                    'newer',
+                    $snapshot->hasNewer === false,
+                    $snapshot->newerUrl,
+                    'Newer request',
+                    'Newer captured request',
+                    $iconNewer,
                 ),
                 self::renderNavButton(
                     $snapshot->isCursor,
-                    'next',
-                    $snapshot->isCursor ? false : $snapshot->hasNext === false,
-                    $snapshot->nextUrl,
-                    'Next (older)',
-                    $snapshot->isCursor ? 'Next (older)' : 'Next request',
-                    $iconNext,
+                    'older',
+                    $snapshot->hasOlder === false,
+                    $snapshot->olderUrl,
+                    'Older request',
+                    'Older captured request',
+                    $iconOlder,
                 ),
                 self::renderNavButton(
                     $snapshot->isCursor,
-                    'latest',
-                    $snapshot->isCursor ? false : $snapshot->onLatest,
-                    $snapshot->latestUrl,
-                    'Latest (bottom of list)',
-                    $snapshot->isCursor ? 'Latest (bottom of list)' : 'Latest captured request',
-                    $iconLatest,
+                    'oldest',
+                    $snapshot->isOldest,
+                    $snapshot->oldestUrl,
+                    'Oldest request',
+                    'Oldest captured request',
+                    $iconOldest,
                 ),
             );
     }

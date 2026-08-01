@@ -7,6 +7,7 @@ namespace yii\debug\tests\asset;
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
+use yii\base\InvalidConfigException;
 use yii\debug\{DebugAsset, LogTarget, Module};
 use yii\debug\panels\AssetPanel;
 use yii\debug\tests\support\TestCase;
@@ -172,6 +173,35 @@ final class AssetPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailRendersViteDevServerWithoutManifestEntries(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $panel->data = [
+            '@vite' => [
+                'baseUrl' => '@web/build',
+                'devMode' => true,
+                'devServerUrl' => 'http://localhost:5173',
+                'entries' => [],
+                'entrypoints' => [],
+                'manifestPath' => '',
+            ],
+        ];
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'Dev server (http://localhost:5173)',
+            $html,
+            'Development mode must surface the configured Vite server.',
+        );
+        self::assertStringNotContainsString(
+            'The Vite manifest is missing or empty',
+            $html,
+            'Development mode must not request a build manifest.',
+        );
+    }
+
     public function testGetDetailRendersViteSectionAlongsideEmptyBundles(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
@@ -187,6 +217,12 @@ final class AssetPanelTest extends TestCase
                         'file' => 'assets/app-def.js',
                         'imports' => 2,
                         'isEntry' => true,
+                    ],
+                    'resources/js/admin.js' => [
+                        'css' => [],
+                        'file' => 'assets/admin-def.js',
+                        'imports' => 0,
+                        'isEntry' => false,
                     ],
                 ],
                 'entrypoints' => ['resources/js/app.js'],
@@ -215,6 +251,28 @@ final class AssetPanelTest extends TestCase
             'No asset bundles loaded',
             $html,
             'Bundle empty state must still render.',
+        );
+    }
+
+    public function testGetDetailReportsMissingViteBuildManifest(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $panel->data = [
+            '@vite' => [
+                'baseUrl' => '',
+                'devMode' => false,
+                'devServerUrl' => null,
+                'entries' => [],
+                'entrypoints' => [],
+                'manifestPath' => '/tmp/missing-manifest.json',
+            ],
+        ];
+
+        self::assertStringContainsString(
+            'The Vite manifest is missing or empty',
+            $panel->getDetail(),
+            'Build mode without chunks must explain how to populate the manifest.',
         );
     }
 
@@ -311,6 +369,17 @@ final class AssetPanelTest extends TestCase
         );
     }
 
+    public function testSaveCapturesViteComponentDeclaredWithClassAliasKey(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class, ['inertiaVue' => ['__class' => Vite::class]]);
+
+        self::assertArrayHasKey(
+            '@vite',
+            $panel->save(),
+            "A Vite component declared with '__class' must be discovered.",
+        );
+    }
+
     public function testSaveCapturesViteManifestWhenBridgeIsRegistered(): void
     {
         $manifestPath = dirname(__DIR__, 2) . '/runtime/vite-manifest-test.json';
@@ -380,6 +449,40 @@ final class AssetPanelTest extends TestCase
         );
 
         @unlink($manifestPath);
+    }
+
+    public function testSaveIgnoresClosureComponentDefinitions(): void
+    {
+        $panel = $this->makePanel(
+            AssetPanel::class,
+            ['factory' => static fn(): stdClass => new stdClass()],
+        );
+
+        self::assertArrayNotHasKey(
+            '@vite',
+            $panel->save(),
+            'Unrelated closure component definitions must be ignored.',
+        );
+    }
+
+    public function testSaveIgnoresInvalidViteComponentDefinition(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class, ['inertiaVue' => Vite::class]);
+
+        Yii::$container->set(
+            Vite::class,
+            static fn(): never => throw new InvalidConfigException('Invalid Vite fixture.'),
+        );
+
+        try {
+            self::assertArrayNotHasKey(
+                '@vite',
+                $panel->save(),
+                'An invalid Vite component definition must be ignored.',
+            );
+        } finally {
+            Yii::$container->clear(Vite::class);
+        }
     }
 
     public function testSaveOmitsViteKeyWithoutBridgeComponent(): void
@@ -487,5 +590,27 @@ final class AssetPanelTest extends TestCase
             $snapshot,
             "Non-'AssetBundle' values must be filtered out.",
         );
+    }
+
+    public function testSaveTreatsMalformedViteManifestAsEmpty(): void
+    {
+        $manifestPath = dirname(__DIR__, 2) . '/runtime/vite-manifest-invalid.json';
+
+        file_put_contents($manifestPath, '{not-json');
+
+        $panel = $this->makePanel(
+            AssetPanel::class,
+            ['inertiaVue' => ['class' => Vite::class, 'manifestPath' => $manifestPath]],
+        );
+
+        try {
+            self::assertSame(
+                [],
+                $panel->save()['@vite']['entries'] ?? null,
+                'Malformed Vite manifests must produce an empty chunk list.',
+            );
+        } finally {
+            @unlink($manifestPath);
+        }
     }
 }

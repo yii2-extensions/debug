@@ -6,14 +6,15 @@ namespace yii\debug\controllers;
 
 use Override;
 use Throwable;
-use UnexpectedValueException;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
 use yii\debug\{FlattenException, LogTarget};
-use yii\debug\helpers\Icon;
+use yii\debug\helpers\{Format, Icon};
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\{ConfigPanel, MailPanel};
+use yii\debug\widgets\shell\ShellContext;
+use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarView};
 use yii\helpers\Url;
 use yii\web\BadRequestHttpException;
 use yii\web\{Controller, NotFoundHttpException};
@@ -102,18 +103,18 @@ class DefaultController extends Controller
 
         $this->loadData($tag);
 
-        $themeContext = $this->primeThemeContext();
+        $cursor = Yii::$app->getRequest()->get('cursor');
+        $cursor = is_string($cursor) ? $cursor : '';
+
+        $this->prepareIndexShell($manifest, $cursor);
 
         return $this->render(
             'index',
             [
                 'dataProvider' => $dataProvider,
-                'manifest' => $this->getManifest(),
+                'manifest' => $manifest,
                 'panels' => $this->module->panels,
                 'searchModel' => $searchModel,
-                'debugTheme' => $themeContext['theme'],
-                'themeIconSun' => $themeContext['sun'],
-                'themeIconMoon' => $themeContext['moon'],
             ],
         );
     }
@@ -128,7 +129,7 @@ class DefaultController extends Controller
      */
     public function actionPhpInfo(): string
     {
-        $this->primeThemeContext();
+        $this->view->params['debugShell'] = $this->createBareShellContext();
 
         return $this->render('phpinfo');
     }
@@ -313,7 +314,7 @@ class DefaultController extends Controller
             return $this->renderPanelError($error);
         }
 
-        $themeContext = $this->primeThemeContext();
+        $this->prepareShell($activePanel, $tag);
 
         return $this->render(
             'view',
@@ -323,9 +324,6 @@ class DefaultController extends Controller
                 'panels' => $this->module->panels,
                 'summary' => $this->summary,
                 'tag' => $tag,
-                'debugTheme' => $themeContext['theme'],
-                'themeIconSun' => $themeContext['sun'],
-                'themeIconMoon' => $themeContext['moon'],
             ],
         );
     }
@@ -340,7 +338,13 @@ class DefaultController extends Controller
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_HTML;
 
-        return parent::beforeAction($action);
+        if (!parent::beforeAction($action)) {
+            return false;
+        }
+
+        $this->view->params['debugShell'] = $this->createBareShellContext();
+
+        return true;
     }
 
     /**
@@ -357,7 +361,7 @@ class DefaultController extends Controller
                 clearstatcache();
             }
 
-            $this->manifest = self::normalizeManifest($this->getLogTarget()->loadManifest());
+            $this->manifest = $this->getLogTarget()->loadManifest();
         }
 
         return $this->manifest;
@@ -393,7 +397,7 @@ class DefaultController extends Controller
                     );
                 }
 
-                $this->summary = self::normalizeStringKeyArray($summary);
+                $this->summary = $summary;
 
                 return;
             }
@@ -405,53 +409,92 @@ class DefaultController extends Controller
     }
 
     /**
-     * Resolves the active theme and theme-toggle SVG glyphs and exposes them to the view layer.
-     *
-     * The resolved values are pushed into `Yii::$app->view->params['debugTheme']` so the layout can pick them up
-     * without re-reading the request; the returned associative array carries the same data so individual actions can
-     * pass the SVGs as render params and avoid inline filesystem reads in templates.
-     *
-     * @return array{theme: string, sun: string, moon: string} Theme name (`'dark'` or `'light'`) and the inline SVG
-     * markup for both toggle icons.
+     * Prepares the shared shell for a request panel or nested panel action.
      */
-    public function primeThemeContext(): array
+    public function prepareShell(Panel $activePanel, string $tag): void
     {
-        $request = Yii::$app->getRequest();
+        $manifest = $this->getManifest();
+        $sidebar = SidebarDataNormalizer::fromView(
+            $this->module->panels,
+            $manifest,
+            $activePanel,
+            $tag,
+            $this->summary,
+        );
 
-        /*
-         * The cookie is the client's LAST theme choice, while the query param is a snapshot frozen into links at render
-         * time; so the cookie must win, otherwise a stale `?yii_debug_theme=` link reverts a fresh pick. The param
-         * remains the entry path for deep links opened with no client state yet.
-         */
-        $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
+        $this->view->params['debugShell'] = $this->createShellContext(
+            ShellContext::MODE_VIEW,
+            $manifest,
+            $tag,
+            $this->summary,
+            $sidebar,
+        );
+    }
 
-        if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
-            $candidate = $_COOKIE['yii-debug-toolbar-theme'];
+    /**
+     * Builds the bare shell installed by {@see beforeAction()}.
+     */
+    private function createBareShellContext(): ShellContext
+    {
+        $theme = $this->resolveTheme();
 
-            if (is_string($candidate)) {
-                $raw = $candidate;
-            }
-        }
+        return new ShellContext(
+            mode: ShellContext::MODE_BARE,
+            useShell: false,
+            title: $this->module->htmlTitle(),
+            debugThemeAttributes: ['lang' => 'en', 'data-yii-debug-theme' => $theme],
+            resolvedTheme: $theme,
+            themeIconSun: '',
+            themeIconMoon: '',
+            yiiVersion: '',
+            phpVersion: '',
+            peakMemory: null,
+            configUrl: null,
+            sidebar: null,
+        );
+    }
 
-        if ($raw === null) {
-            $raw = $request->get('yii_debug_theme');
-        }
+    /**
+     * @param array<string, array<string, mixed>> $manifest
+     * @param array<string, mixed>|null $summary
+     */
+    private function createShellContext(
+        string $mode,
+        array $manifest,
+        string|null $activeTag,
+        array|null $summary,
+        SidebarView $sidebar,
+    ): ShellContext {
+        $theme = $this->resolveTheme();
+        $configPanel = $this->module->panels['config'] ?? null;
+        $yiiVersion = $configPanel instanceof ConfigPanel ? $configPanel->getYiiVersion() : null;
+        $phpVersion = $configPanel instanceof ConfigPanel ? $configPanel->getPhpVersion() : null;
+        $configTag = $activeTag ?? array_key_first($manifest);
+        $configUrl = $configTag === null
+            ? null
+            : Url::to([
+                '/' . $this->module->getUniqueId() . '/default/view',
+                'panel' => 'config',
+                'tag' => $configTag,
+            ]);
+        $peakMemory = is_numeric($summary['peakMemory'] ?? null)
+            ? Format::bytesToMb((float) $summary['peakMemory'])
+            : null;
 
-        $theme = is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
-
-        $context = [
-            'theme' => $theme,
-            'sun' => Icon::render('sun'),
-            'moon' => Icon::render('moon'),
-        ];
-
-        $view = $this->view;
-
-        $view->params['debugTheme'] = $theme;
-        $view->params['themeIconSun'] = $context['sun'];
-        $view->params['themeIconMoon'] = $context['moon'];
-
-        return $context;
+        return new ShellContext(
+            mode: $mode,
+            useShell: true,
+            title: $this->module->htmlTitle(),
+            debugThemeAttributes: ['lang' => 'en', 'data-yii-debug-theme' => $theme],
+            resolvedTheme: $theme,
+            themeIconSun: Icon::render('sun'),
+            themeIconMoon: Icon::render('moon'),
+            yiiVersion: $yiiVersion ?? Yii::getVersion(),
+            phpVersion: $phpVersion ?? PHP_VERSION,
+            peakMemory: $peakMemory,
+            configUrl: $configUrl,
+            sidebar: $sidebar,
+        );
     }
 
     /**
@@ -515,61 +558,19 @@ class DefaultController extends Controller
     }
 
     /**
-     * Narrows the manifest payload returned by the log target into a strictly typed map.
-     *
-     * @param mixed $manifest Raw manifest value read from the log target.
-     *
-     * @throws UnexpectedValueException When the payload is not an array of string-keyed entries.
-     *
-     * @return array<string, array<string, mixed>> Manifest entries indexed by tag.
+     * @param array<string, array<string, mixed>> $manifest
      */
-    private static function normalizeManifest(mixed $manifest): array
+    private function prepareIndexShell(array $manifest, string $cursor): void
     {
-        if (!is_array($manifest)) {
-            throw new UnexpectedValueException(
-                'Debug manifest must be an array.',
-            );
-        }
+        $sidebar = SidebarDataNormalizer::fromIndex($this->module->panels, $manifest, $cursor);
 
-        $normalized = [];
-
-        foreach ($manifest as $tag => $entry) {
-            if (!is_string($tag) || !is_array($entry)) {
-                throw new UnexpectedValueException(
-                    'Debug manifest contains an invalid entry.',
-                );
-            }
-
-            $normalized[$tag] = self::normalizeStringKeyArray($entry);
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Narrows an arbitrarily keyed array into a string-keyed map, failing fast on any non-string key.
-     *
-     * @param array<array-key, mixed> $data Source array (typically a manifest entry or summary block).
-     *
-     * @throws UnexpectedValueException When any key is not a string.
-     *
-     * @return array<string, mixed> Map suitable for views and JSON responses that expect string keys.
-     */
-    private static function normalizeStringKeyArray(array $data): array
-    {
-        $normalized = [];
-
-        foreach ($data as $key => $value) {
-            if (!is_string($key)) {
-                throw new UnexpectedValueException(
-                    'Debug data contains a non-string key.',
-                );
-            }
-
-            $normalized[$key] = $value;
-        }
-
-        return $normalized;
+        $this->view->params['debugShell'] = $this->createShellContext(
+            ShellContext::MODE_INDEX,
+            $manifest,
+            null,
+            null,
+            $sidebar,
+        );
     }
 
     /**
@@ -594,5 +595,22 @@ class DefaultController extends Controller
             '@yii/views/errorHandler/exception.php',
             ['exception' => $error],
         );
+    }
+
+    /**
+     * Resolves the effective light or dark theme.
+     */
+    private function resolveTheme(): string
+    {
+        $request = Yii::$app->getRequest();
+        $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
+
+        if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
+            $raw = $_COOKIE['yii-debug-toolbar-theme'];
+        }
+
+        $raw ??= $request->get('yii_debug_theme');
+
+        return is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
     }
 }

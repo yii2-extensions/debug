@@ -117,44 +117,6 @@ final class MailPanelTest extends TestCase
         );
     }
 
-    public function testFindPreviousRequestWithMailReturnsNullWhenDataFileCannotUnserializeToArray(): void
-    {
-        $panel = $this->makePanel(MailPanel::class);
-
-        $module = $panel->module ?? self::fail('Module must be wired.');
-
-        $dataPath = sys_get_temp_dir() . '/debug-mail-corrupt-' . uniqid();
-
-        mkdir($dataPath, 0o777, true);
-
-        $module->dataPath = $dataPath;
-
-        $previousTag = 'previous-corrupt';
-
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize([$previousTag => ['method' => 'POST', 'url' => '/x']]),
-        );
-        file_put_contents(
-            "{$dataPath}/{$previousTag}.data",
-            'not-a-serialized-array',
-        );
-
-        $panel->tag = 'current-tag';
-
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'findPreviousRequestWithMail',
-            ),
-            "Corrupt '<tag>.data' must collapse to 'null'.",
-        );
-
-        unlink("{$dataPath}/index.data");
-        unlink("{$dataPath}/{$previousTag}.data");
-        rmdir($dataPath);
-    }
-
     public function testFindPreviousRequestWithMailReturnsNullWhenLoadManifestThrows(): void
     {
         $panel = $this->makePanel(MailPanel::class);
@@ -258,7 +220,7 @@ final class MailPanelTest extends TestCase
 
         file_put_contents(
             "{$dataPath}/index.data",
-            serialize([$tag => ['method' => 'GET', 'url' => '/']]),
+            serialize(['version' => 2, 'entries' => [$tag => ['method' => 'GET', 'url' => '/', 'mailCount' => 0]]]),
         );
 
         $panel->tag = $tag;
@@ -269,39 +231,6 @@ final class MailPanelTest extends TestCase
                 'findPreviousRequestWithMail',
             ),
             "Single-tag manifest matching current must collapse to 'null'.",
-        );
-
-        unlink("{$dataPath}/index.data");
-        rmdir($dataPath);
-    }
-
-    public function testFindPreviousRequestWithMailReturnsNullWhenPreviousDataFileIsMissing(): void
-    {
-        $panel = $this->makePanel(MailPanel::class);
-
-        $module = $panel->module ?? self::fail('Module must be wired.');
-
-        $dataPath = sys_get_temp_dir() . '/debug-mail-nofile-' . uniqid();
-
-        mkdir($dataPath, 0o777, true);
-
-        $module->dataPath = $dataPath;
-
-        $previousTag = 'previous-no-file';
-
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize([$previousTag => ['method' => 'POST', 'url' => '/x']]),
-        );
-
-        $panel->tag = 'current-tag';
-
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'findPreviousRequestWithMail',
-            ),
-            "Missing '<tag>.data' must collapse to 'null'.",
         );
 
         unlink("{$dataPath}/index.data");
@@ -437,17 +366,17 @@ final class MailPanelTest extends TestCase
         // 'loadManifest()' reverses the on-disk order; writing 'previous' first then 'current' produces a
         // load-time manifest of [current, previous] so the loop hits the `$found` branch on iteration 2.
         $manifest = [
-            $previousTag => ['method' => 'POST', 'url' => 'https://example.com/send-mail'],
-            $currentTag => ['method' => 'GET', 'url' => 'https://example.com/current'],
+            $previousTag => [
+                'method' => 'POST',
+                'url' => 'https://example.com/send-mail',
+                'mailCount' => 1,
+            ],
+            $currentTag => ['method' => 'GET', 'url' => 'https://example.com/current', 'mailCount' => 0],
         ];
 
         file_put_contents(
             "{$dataPath}/index.data",
-            serialize($manifest),
-        );
-        file_put_contents(
-            "{$dataPath}/{$previousTag}.data",
-            serialize(['mail' => serialize([['subject' => 'previous one']])]),
+            serialize(['version' => 2, 'entries' => $manifest]),
         );
 
         $panel->tag = $currentTag;
@@ -476,7 +405,6 @@ final class MailPanelTest extends TestCase
         );
 
         unlink("{$dataPath}/index.data");
-        unlink("{$dataPath}/{$previousTag}.data");
         rmdir($dataPath);
     }
 
@@ -495,16 +423,16 @@ final class MailPanelTest extends TestCase
         $previousTag = 'previous-tag';
 
         $manifest = [
-            $previousTag => ['method' => 'POST', 'url' => 'https://example.com/send-mail'],
+            $previousTag => [
+                'method' => 'POST',
+                'url' => 'https://example.com/send-mail',
+                'mailCount' => 1,
+            ],
         ];
 
         file_put_contents(
             "{$dataPath}/index.data",
-            serialize($manifest),
-        );
-        file_put_contents(
-            "{$dataPath}/{$previousTag}.data",
-            serialize(['mail' => serialize([['subject' => 'previous one']])]),
+            serialize(['version' => 2, 'entries' => $manifest]),
         );
 
         $panel->tag = 'current-tag';
@@ -550,7 +478,6 @@ final class MailPanelTest extends TestCase
         );
 
         unlink("{$dataPath}/index.data");
-        unlink("{$dataPath}/{$previousTag}.data");
         rmdir($dataPath);
     }
 

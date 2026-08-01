@@ -6,7 +6,6 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
-use yii\debug\components\search\Filter;
 
 /**
  * Backs the filter form above the Database panel's query grid.
@@ -69,12 +68,10 @@ class DbSearch extends Base
             return $dataProvider;
         }
 
-        $filter = new Filter();
+        $this->addCondition('type', true);
+        $this->addCondition('query', true);
 
-        $this->addCondition($filter, 'type', true);
-        $this->addCondition($filter, 'query', true);
-
-        $dataProvider->allModels = $filter->filter($models);
+        $dataProvider->allModels = $this->filter($models);
 
         return $dataProvider;
     }

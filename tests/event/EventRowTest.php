@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace yii\debug\tests\event;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\event\EventRowNormalizer;
+use yii\debug\panels\event\EventRow;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see EventRowNormalizer} covering the narrowing of GridView callback arguments into a typed
+ * Unit tests for {@see EventRow} covering the narrowing of GridView callback arguments into a typed
  * {@see \yii\debug\panels\event\EventRow} and the summary-strip aggregates.
  */
 #[Group('panel')]
 #[Group('event')]
-final class EventRowNormalizerTest extends TestCase
+final class EventRowTest extends TestCase
 {
     public function testDistinctClassCountCountsUniqueClassNames(): void
     {
-        $count = EventRowNormalizer::distinctClassCount(
+        $count = EventRow::distinctClassCount(
             [
                 ['class' => 'yii\\base\\Event'],
                 ['class' => 'yii\\base\\Event'],
@@ -39,14 +39,14 @@ final class EventRowNormalizerTest extends TestCase
     {
         self::assertSame(
             0,
-            EventRowNormalizer::distinctClassCount([]),
+            EventRow::distinctClassCount([]),
             'Empty list must yield zero.',
         );
     }
 
     public function testFromCoercesNumericStringToFloatTime(): void
     {
-        $row = EventRowNormalizer::from(
+        $row = EventRow::fromMixed(
             ['time' => '1700000000.5'],
         );
 
@@ -59,7 +59,7 @@ final class EventRowNormalizerTest extends TestCase
 
     public function testFromFallsBackToEmptyStringWhenStringFieldsAreNotStrings(): void
     {
-        $row = EventRowNormalizer::from(
+        $row = EventRow::fromMixed(
             [
                 'name' => 42,
                 'class' => null,
@@ -86,7 +86,7 @@ final class EventRowNormalizerTest extends TestCase
 
     public function testFromFallsBackToZeroWhenTimeIsNotNumeric(): void
     {
-        $row = EventRowNormalizer::from(
+        $row = EventRow::fromMixed(
             ['time' => 'abc'],
         );
 
@@ -101,32 +101,32 @@ final class EventRowNormalizerTest extends TestCase
     {
         self::assertSame(
             '0',
-            EventRowNormalizer::from(['isStatic' => '0'])->isStatic,
+            EventRow::fromMixed(['isStatic' => '0'])->isStatic,
             "String '0' must map to '0'.",
         );
         self::assertSame(
             '0',
-            EventRowNormalizer::from(['isStatic' => 0])->isStatic,
+            EventRow::fromMixed(['isStatic' => 0])->isStatic,
             "Int '0' must map to '0'.",
         );
         self::assertSame(
             '0',
-            EventRowNormalizer::from(['isStatic' => false])->isStatic,
+            EventRow::fromMixed(['isStatic' => false])->isStatic,
             "'false' must map to '0'.",
         );
         self::assertSame(
             '0',
-            EventRowNormalizer::from(['isStatic' => null])->isStatic,
+            EventRow::fromMixed(['isStatic' => null])->isStatic,
             "'null' must map to '0'.",
         );
         self::assertSame(
             '0',
-            EventRowNormalizer::from(['isStatic' => 'truthy'])->isStatic,
+            EventRow::fromMixed(['isStatic' => 'truthy'])->isStatic,
             "Arbitrary string must map to '0'.",
         );
         self::assertSame(
             '0',
-            EventRowNormalizer::from([])->isStatic,
+            EventRow::fromMixed([])->isStatic,
             "Missing 'isStatic' must default to '0'.",
         );
     }
@@ -135,24 +135,24 @@ final class EventRowNormalizerTest extends TestCase
     {
         self::assertSame(
             '1',
-            EventRowNormalizer::from(['isStatic' => '1'])->isStatic,
+            EventRow::fromMixed(['isStatic' => '1'])->isStatic,
             "String '1' must map to '1'.",
         );
         self::assertSame(
             '1',
-            EventRowNormalizer::from(['isStatic' => 1])->isStatic,
+            EventRow::fromMixed(['isStatic' => 1])->isStatic,
             "Int '1' must map to '1'.",
         );
         self::assertSame(
             '1',
-            EventRowNormalizer::from(['isStatic' => true])->isStatic,
+            EventRow::fromMixed(['isStatic' => true])->isStatic,
             "'true' must map to '1'.",
         );
     }
 
     public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
     {
-        $row = EventRowNormalizer::from(
+        $row = EventRow::fromMixed(
             'not an array',
         );
 
@@ -185,7 +185,7 @@ final class EventRowNormalizerTest extends TestCase
 
     public function testFromRoundTripsTypedRow(): void
     {
-        $row = EventRowNormalizer::from(
+        $row = EventRow::fromMixed(
             [
                 'time' => 1_700_000_000.789,
                 'name' => 'EVENT_AFTER_REQUEST',
@@ -224,7 +224,7 @@ final class EventRowNormalizerTest extends TestCase
 
     public function testStaticCountCountsRowsFlaggedStatic(): void
     {
-        $count = EventRowNormalizer::staticCount(
+        $count = EventRow::staticCount(
             [
                 ['isStatic' => '1'],
                 ['isStatic' => 1],
@@ -245,7 +245,7 @@ final class EventRowNormalizerTest extends TestCase
     {
         self::assertSame(
             0,
-            EventRowNormalizer::staticCount([]),
+            EventRow::staticCount([]),
             'Empty list must yield zero.',
         );
     }

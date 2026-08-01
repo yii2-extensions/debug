@@ -245,13 +245,7 @@ final class JobActionTest extends TestCase
 
         @mkdir($dataPath, 0o777, true);
 
-        $payload = [];
-
-        foreach ($panelData as $id => $data) {
-            $payload[$id] = serialize($data);
-        }
-
-        $payload['summary'] = [
+        $summary = [
             'tag' => $tag,
             'url' => 'dummy',
             'method' => 'GET',
@@ -259,9 +253,14 @@ final class JobActionTest extends TestCase
             'ip' => '127.0.0.1',
             'statusCode' => 200,
         ];
-        $payload['exceptions'] = [];
 
-        file_put_contents("{$dataPath}/{$tag}.data", serialize($payload));
-        file_put_contents("{$dataPath}/index.data", serialize([$tag => $payload['summary']]));
+        file_put_contents(
+            "{$dataPath}/{$tag}.data",
+            serialize(['version' => 2, 'panels' => $panelData, 'summary' => $summary, 'exceptions' => []]),
+        );
+        file_put_contents(
+            "{$dataPath}/index.data",
+            serialize(['version' => 2, 'entries' => [$tag => $summary]]),
+        );
     }
 }

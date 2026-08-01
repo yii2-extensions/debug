@@ -5,26 +5,26 @@ declare(strict_types=1);
 namespace yii\debug\tests\db;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\db\QueryRowNormalizer;
+use yii\debug\panels\db\QueryRow;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see QueryRowNormalizer} covering the narrowing of GridView callback arguments into a typed
+ * Unit tests for {@see QueryRow} covering the narrowing of GridView callback arguments into a typed
  * {@see \yii\debug\panels\db\QueryRow}.
  */
 #[Group('panel')]
 #[Group('db')]
-final class QueryRowNormalizerTest extends TestCase
+final class QueryRowTest extends TestCase
 {
     public function testFromClampsDuplicateToMinimumOfOne(): void
     {
-        $zero = QueryRowNormalizer::from(
+        $zero = QueryRow::fromMixed(
             ['duplicate' => 0],
         );
-        $negative = QueryRowNormalizer::from(
+        $negative = QueryRow::fromMixed(
             ['duplicate' => -5],
         );
-        $missing = QueryRowNormalizer::from(
+        $missing = QueryRow::fromMixed(
             [],
         );
 
@@ -47,7 +47,7 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromCoercesNumericStringsToFloatAndInt(): void
     {
-        $row = QueryRowNormalizer::from(
+        $row = QueryRow::fromMixed(
             [
                 'duration' => '12.5',
                 'timestamp' => '1700000000.123',
@@ -86,7 +86,7 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromCollapsesNonArrayTraceFieldToEmptyList(): void
     {
-        $row = QueryRowNormalizer::from(['trace' => 'not an array']);
+        $row = QueryRow::fromMixed(['trace' => 'not an array']);
 
         self::assertSame(
             [],
@@ -97,7 +97,7 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromDropsNonArrayTraceFrames(): void
     {
-        $row = QueryRowNormalizer::from(
+        $row = QueryRow::fromMixed(
             [
                 'trace' => [
                     ['file' => '/a.php'],
@@ -127,7 +127,7 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromDropsNonStringFrameKeys(): void
     {
-        $row = QueryRowNormalizer::from(
+        $row = QueryRow::fromMixed(
             [
                 'trace' => [
                     [
@@ -153,7 +153,7 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromFallsBackToEmptyStringWhenStringFieldsAreNotStrings(): void
     {
-        $row = QueryRowNormalizer::from(
+        $row = QueryRow::fromMixed(
             [
                 'type' => 42,
                 'query' => null,
@@ -180,7 +180,7 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromFallsBackToZeroForNonNumericNumericFields(): void
     {
-        $row = QueryRowNormalizer::from(
+        $row = QueryRow::fromMixed(
             [
                 'duration' => 'abc',
                 'timestamp' => null,
@@ -207,13 +207,13 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromKeepsRowsAsNullWhenAbsentOrNonNumeric(): void
     {
-        $missing = QueryRowNormalizer::from(
+        $missing = QueryRow::fromMixed(
             ['type' => 'SELECT'],
         );
-        $string = QueryRowNormalizer::from(
+        $string = QueryRow::fromMixed(
             ['rows' => 'abc'],
         );
-        $nullValue = QueryRowNormalizer::from(
+        $nullValue = QueryRow::fromMixed(
             ['rows' => null],
         );
 
@@ -233,7 +233,7 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
     {
-        $row = QueryRowNormalizer::from(
+        $row = QueryRow::fromMixed(
             'not an array',
         );
 
@@ -285,7 +285,7 @@ final class QueryRowNormalizerTest extends TestCase
 
     public function testFromRoundTripsTypedRow(): void
     {
-        $row = QueryRowNormalizer::from(
+        $row = QueryRow::fromMixed(
             [
                 'type' => 'SELECT',
                 'query' => 'SELECT 1',

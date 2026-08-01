@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace yii\debug\tests\log;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\log\LogCountsNormalizer;
+use yii\debug\panels\log\LogCounts;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see LogCountsNormalizer} covering level totals derived from raw `$panel->data['messages']`.
+ * Unit tests for {@see LogCounts} covering level totals derived from raw `$panel->data['messages']`.
  */
 #[Group('panel')]
 #[Group('log')]
-final class LogCountsNormalizerTest extends TestCase
+final class LogCountsTest extends TestCase
 {
     public function testFromPanelDataAggregatesLevelsCorrectly(): void
     {
-        $counts = LogCountsNormalizer::fromPanelData(
+        $counts = LogCounts::fromPanelData(
             [
                 'messages' => [
                     ['ok', Logger::LEVEL_INFO, 'app', 1.0],
@@ -54,7 +54,7 @@ final class LogCountsNormalizerTest extends TestCase
 
     public function testFromPanelDataCoercesNumericStringLevels(): void
     {
-        $counts = LogCountsNormalizer::fromPanelData(
+        $counts = LogCounts::fromPanelData(
             [
                 'messages' => [
                     [
@@ -76,7 +76,7 @@ final class LogCountsNormalizerTest extends TestCase
 
     public function testFromPanelDataExposesHasFlagsForNonZeroCounts(): void
     {
-        $counts = LogCountsNormalizer::fromPanelData(
+        $counts = LogCounts::fromPanelData(
             [
                 'messages' => [
                     [
@@ -105,7 +105,7 @@ final class LogCountsNormalizerTest extends TestCase
 
     public function testFromPanelDataReturnsAllZeroCountsWhenInputIsNotArray(): void
     {
-        $counts = LogCountsNormalizer::fromPanelData(
+        $counts = LogCounts::fromPanelData(
             'not an array',
         );
 
@@ -133,7 +133,7 @@ final class LogCountsNormalizerTest extends TestCase
 
     public function testFromPanelDataReturnsAllZeroCountsWhenMessagesAreMissing(): void
     {
-        $counts = LogCountsNormalizer::fromPanelData(
+        $counts = LogCounts::fromPanelData(
             [],
         );
 
@@ -146,7 +146,7 @@ final class LogCountsNormalizerTest extends TestCase
 
     public function testFromPanelDataSkipsNonArrayEntries(): void
     {
-        $counts = LogCountsNormalizer::fromPanelData(
+        $counts = LogCounts::fromPanelData(
             [
                 'messages' => [
                     ['ok', Logger::LEVEL_INFO, 'app', 1.0],

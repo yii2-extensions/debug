@@ -2,22 +2,18 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Flow\{Div, P};
+use UIAwesome\Html\Flow\P;
 use UIAwesome\Html\Heading\H1;
-use UIAwesome\Html\Helper\Encode;
-use UIAwesome\Html\List\{Li, Ul};
-use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Code;
 use yii\debug\helpers\EmptyState;
 use yii\debug\panels\UserPanel;
+use yii\debug\widgets\Tabs;
 use yii\web\View;
 
 /**
  * @var UserPanel $panel Panel providing the detail content.
  * @var View $this View component instance.
  */
-$encodedName = Encode::content($panel->getName());
-
 $panelData = is_array($panel->data) ? $panel->data : [];
 
 $identity = $panelData['identity'] ?? null;
@@ -44,10 +40,10 @@ $identity = $panelData['identity'] ?? null;
     <?php return; ?>
 <?php endif; ?>
 <?php
-$items = [
-    'nav' => [$encodedName],
-    'content' => [
-        $this->render(
+$tabs = [
+    [
+        'label' => $panel->getName(),
+        'content' => $this->render(
             '_identity',
             [
                 'attributes' => $panelData['attributes'] ?? null,
@@ -58,52 +54,17 @@ $items = [
 ];
 
 if (($panelData['rolesProvider'] ?? null) !== null || ($panelData['permissionsProvider'] ?? null) !== null) {
-    $items['nav'][] = 'Roles and Permissions';
-
-    $items['content'][] = $this->render(
-        'roles',
-        ['panel' => $panel],
-    );
+    $tabs[] = [
+        'label' => 'Roles and Permissions',
+        'content' => $this->render('roles', ['panel' => $panel]),
+    ];
 }
 
 if ($panel->canSwitchUser()) {
-    $items['nav'][] = "Switch {$encodedName}";
-
-    $items['content'][] = $this->render(
-        'switch',
-        ['panel' => $panel],
-    );
-}
-
-$navItems = [];
-
-foreach ($items['nav'] as $k => $item) {
-    $navItems[] = Li::tag()
-        ->class('yii-debug-tab')
-        ->html(
-            A::tag()
-                ->addAriaAttribute('controls', "u-tab-{$k}")
-                ->addAriaAttribute('selected', $k === 0 ? 'true' : 'false')
-                ->addAttribute('data-yii-debug-toggle', 'tab')
-                ->addAttribute('role', 'tab')
-                ->class($k === 0 ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link')
-                ->href("#u-tab-{$k}")
-                ->html($item),
-        );
-}
-
-$contentPanels = [];
-
-foreach ($items['content'] as $k => $item) {
-    $contentPanels[] = Div::tag()
-        ->class($k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel')
-        ->html($item)
-        ->id("u-tab-{$k}");
+    $tabs[] = [
+        'label' => 'Switch ' . $panel->getName(),
+        'content' => $this->render('switch', ['panel' => $panel]),
+    ];
 }
 ?>
-<?= Ul::tag()
-    ->class('yii-debug-tabs')
-    ->html(...$navItems) ?>
-<?= Div::tag()
-    ->class('yii-debug-tab-content')
-    ->html(...$contentPanels);
+<?= Tabs::render('user', 'User data', $tabs);

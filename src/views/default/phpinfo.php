@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use yii\debug\PhpInfoAsset;
 use yii\debug\widgets\phpinfo\{PhpInfoDataNormalizer, PhpInfoRenderer};
 use yii\web\View;
 
 /**
  * @var View $this View component instance.
  */
-PhpInfoAsset::register($this);
-
 $this->title = 'PHP Info';
 
 ob_start();

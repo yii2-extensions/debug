@@ -26,6 +26,9 @@ use function is_string;
  */
 class LogPanel extends Panel
 {
+    protected const string ICON = 'logs';
+    protected const string NAME = 'Logs';
+
     /**
      * @var array<int, array{
      *   id: int,
@@ -61,23 +64,6 @@ class LogPanel extends Panel
             ],
             $this,
         );
-    }
-
-    /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Logs';
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'logs';
     }
 
     /**

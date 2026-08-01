@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\log;
 
+use yii\debug\helpers\Coerce;
+use yii\helpers\VarDumper;
+
+use function is_array;
+use function is_string;
+
 /**
  * Typed view-model for a single log row consumed by the logs grid.
  *
@@ -51,4 +57,25 @@ final readonly class LogRow
          */
         public array $trace,
     ) {}
+
+    /**
+     * Builds a typed log row from a data-provider value.
+     */
+    public static function fromMixed(mixed $data): self
+    {
+        $row = is_array($data) ? $data : [];
+        $message = $row['message'] ?? null;
+
+        return new self(
+            id: Coerce::int($row['id'] ?? null),
+            message: is_string($message) ? $message : VarDumper::export($message),
+            level: Coerce::int($row['level'] ?? null),
+            category: Coerce::string($row['category'] ?? null),
+            time: Coerce::float($row['time'] ?? null),
+            timeOfPrevious: Coerce::float($row['time_of_previous'] ?? null),
+            idOfPrevious: Coerce::intOrNull($row['id_of_previous'] ?? null),
+            idOfNext: Coerce::intOrNull($row['id_of_next'] ?? null),
+            trace: Coerce::traceFrames($row['trace'] ?? null),
+        );
+    }
 }

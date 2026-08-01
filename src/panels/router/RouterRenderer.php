@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace yii\debug\panels\router;
 
 use UIAwesome\Html\Flow\{Div, P};
-use UIAwesome\Html\Heading\H3;
-use UIAwesome\Html\List\{Dd, Dl, Dt, Li, Ul};
-use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Heading\H2;
+use UIAwesome\Html\List\{Dd, Dl, Dt};
 use UIAwesome\Html\Phrasing\{Code, Span};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
 use Yii;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
+use yii\debug\widgets\Tabs;
 
 use function count;
 
@@ -39,8 +39,15 @@ final class RouterRenderer
         ActionRoutes $actionRoutes,
     ): string {
         return self::renderFlagsStrip($routerRules)
-            . self::renderTabNav()
-            . self::renderTabPanels($currentRoute, $routerRules, $actionRoutes);
+            . Tabs::render(
+                'router',
+                'Router data',
+                [
+                    ['label' => 'Current Route', 'content' => self::renderCurrentRoutePanel($currentRoute)],
+                    ['label' => 'Router Rules', 'content' => self::renderRouterRulesPanel($routerRules)],
+                    ['label' => 'Action Routes', 'content' => self::renderActionRoutesPanel($actionRoutes)],
+                ],
+            );
     }
 
     /**
@@ -49,7 +56,7 @@ final class RouterRenderer
     private static function renderActionRoutesPanel(ActionRoutes $actionRoutes): string
     {
         if ($actionRoutes->routes === []) {
-            return H3::tag()->content('No actions configured.')->render();
+            return H2::tag()->content('No actions configured.')->render();
         }
 
         $rows = [];
@@ -79,11 +86,11 @@ final class RouterRenderer
                         Thead::tag()
                             ->html(
                                 Tr::tag()->html(
-                                    Th::tag()->content('#'),
-                                    Th::tag()->content('Action'),
-                                    Th::tag()->content('Route'),
-                                    Th::tag()->content('First Matching Rule'),
-                                    Th::tag()->content('Rules Tested'),
+                                    Th::tag()->scope('col')->content('#'),
+                                    Th::tag()->scope('col')->content('Action'),
+                                    Th::tag()->scope('col')->content('Route'),
+                                    Th::tag()->scope('col')->content('First Matching Rule'),
+                                    Th::tag()->scope('col')->content('Rules Tested'),
                                 ),
                             ),
                         Tbody::tag()->html(...$rows),
@@ -134,7 +141,7 @@ final class RouterRenderer
     {
         $heading = $currentRoute->count === 0
             ? ''
-            : H3::tag()
+            : H2::tag()
                 ->content(
                     Yii::$app->i18n->format(
                         '{rulesTested, plural, =1{Tested # rule} other{Tested # rules}}'
@@ -154,7 +161,7 @@ final class RouterRenderer
             . self::renderLogsTable($currentRoute);
 
         return $body === ''
-            ? H3::tag()->content('No route resolution captured.')->render()
+            ? H2::tag()->content('No route resolution captured.')->render()
             : $body;
     }
 
@@ -226,9 +233,9 @@ final class RouterRenderer
                         Thead::tag()
                             ->html(
                                 Tr::tag()->html(
-                                    Th::tag()->content('#'),
-                                    Th::tag()->content('Rule'),
-                                    Th::tag()->content('Parent'),
+                                    Th::tag()->scope('col')->content('#'),
+                                    Th::tag()->scope('col')->content('Rule'),
+                                    Th::tag()->scope('col')->content('Parent'),
                                 ),
                             ),
                         Tbody::tag()->html(...$rows),
@@ -243,7 +250,7 @@ final class RouterRenderer
     private static function renderRouterRulesPanel(RouterRules $routerRules): string
     {
         if (count($routerRules->rules) === 0) {
-            return H3::tag()
+            return H2::tag()
                 ->content('No routing rules configured.')
                 ->render();
         }
@@ -274,13 +281,13 @@ final class RouterRenderer
                         Thead::tag()
                             ->html(
                                 Tr::tag()->html(
-                                    Th::tag()->content('#'),
-                                    Th::tag()->content('Rule'),
-                                    Th::tag()->content('Target'),
-                                    Th::tag()->content('Verb'),
-                                    Th::tag()->content('Suffix'),
-                                    Th::tag()->content('Mode'),
-                                    Th::tag()->content('Type'),
+                                    Th::tag()->scope('col')->content('#'),
+                                    Th::tag()->scope('col')->content('Rule'),
+                                    Th::tag()->scope('col')->content('Target'),
+                                    Th::tag()->scope('col')->content('Verb'),
+                                    Th::tag()->scope('col')->content('Suffix'),
+                                    Th::tag()->scope('col')->content('Mode'),
+                                    Th::tag()->scope('col')->content('Type'),
                                 ),
                             ),
                         Tbody::tag()->html(...$rows),
@@ -320,68 +327,6 @@ final class RouterRenderer
         return Dl::tag()
             ->class('yii-debug-router-summary')
             ->html(...$items)
-            ->render();
-    }
-
-    /**
-     * Renders the `<ul class="yii-debug-tabs">` strip with the three navigable tabs.
-     */
-    private static function renderTabNav(): string
-    {
-        $labels = ['Current Route', 'Router Rules', 'Action Routes'];
-
-        $items = [];
-
-        foreach ($labels as $k => $label) {
-            $isActive = $k === 0;
-
-            $items[] = Li::tag()
-                ->class('yii-debug-tab')
-                ->html(
-                    A::tag()
-                        ->addAttribute('aria-controls', 'r-tab-' . $k)
-                        ->addAttribute('aria-selected', $isActive ? 'true' : 'false')
-                        ->addAttribute('data-yii-debug-toggle', 'tab')
-                        ->addAttribute('role', 'tab')
-                        ->class($isActive ? 'yii-debug-tab-link is-active' : 'yii-debug-tab-link')
-                        ->content($label)
-                        ->href('#r-tab-' . $k),
-                );
-        }
-
-        return Ul::tag()
-            ->class('yii-debug-tabs')
-            ->html(...$items)->render();
-    }
-
-    /**
-     * Renders the per-tab content panels.
-     *
-     * `Current Route` is rendered active; the rest stay hidden until the toggle JS activates them.
-     */
-    private static function renderTabPanels(
-        CurrentRoute $currentRoute,
-        RouterRules $routerRules,
-        ActionRoutes $actionRoutes,
-    ): string {
-        $panels = [
-            self::renderCurrentRoutePanel($currentRoute),
-            self::renderRouterRulesPanel($routerRules),
-            self::renderActionRoutesPanel($actionRoutes),
-        ];
-
-        $children = [];
-
-        foreach ($panels as $k => $body) {
-            $children[] = Div::tag()
-                ->class($k === 0 ? 'yii-debug-tab-panel is-active' : 'yii-debug-tab-panel')
-                ->id('r-tab-' . $k)
-                ->html($body);
-        }
-
-        return Div::tag()
-            ->class('yii-debug-tab-content')
-            ->html(...$children)
             ->render();
     }
 }

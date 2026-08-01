@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use yii\inertia\Manager;
+
 // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
 // ensure we get report on all possible php errors
 error_reporting(-1);
@@ -30,7 +32,7 @@ Yii::setAlias('@yii/debug', "{$rootPath}/src");
 
 // Stand-ins for the optional `yii2-extensions/inertia` package (not a dev dependency); the InertiaPanel and
 // AssetPanel tests exercise the real class names without pulling the package in.
-if (class_exists(yii\inertia\Manager::class) === false) {
+if (class_exists(Manager::class) === false) {
     require_once __DIR__ . '/stub/inertia/Manager.php';
     require_once __DIR__ . '/stub/inertia/Page.php';
     require_once __DIR__ . '/stub/inertia/Vite.php';

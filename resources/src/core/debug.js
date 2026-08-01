@@ -1,37 +1,20 @@
+import "../styles/main.css";
+import "../styles/timeline.css";
+import "./history-cursor.js";
+import "../panels/db.js";
+import "../panels/phpinfo-search.js";
+import "../panels/userswitch.js";
+import {
+  addThemeToDebugUrl,
+  normalizeTheme,
+  readStoredTheme,
+  readThemeCookie,
+  THEME_PARAM,
+  writeTheme,
+} from "./theme.js";
+
 (function () {
   "use strict";
-
-  var themeParam = "yii_debug_theme";
-  var themeStorageKey = "yii-debug-toolbar-theme";
-  var legacyToggleWarned = false;
-
-  function normalizeTheme(value) {
-    var theme;
-
-    if (!value) {
-      return null;
-    }
-
-    theme = String(value).toLowerCase();
-
-    if (theme === "dark" || theme === "night" || theme === "black") {
-      return "dark";
-    }
-
-    if (theme === "light" || theme === "day" || theme === "white") {
-      return "light";
-    }
-
-    if (theme.indexOf("dark") !== -1 && theme.indexOf("light") === -1) {
-      return "dark";
-    }
-
-    if (theme.indexOf("light") !== -1 && theme.indexOf("dark") === -1) {
-      return "light";
-    }
-
-    return null;
-  }
 
   function getParentToolbarTheme() {
     var root;
@@ -53,88 +36,14 @@
     }
   }
 
-  function getStoredTheme() {
-    if (!window.localStorage) {
-      return null;
-    }
-
-    return normalizeTheme(localStorage.getItem(themeStorageKey));
-  }
-
-  // Read the theme from the same-origin cookie that every theme mutation
-  // writes (toolbar toggle, debug.js applyTheme, _shell_header IIFE). This is
-  // the last write the client made and is therefore authoritative — it lets
-  // the page survive a backend that hasn't been restarted (so it still serves
-  // the wrong `data-yii-debug-theme` attribute), or a host stack that doesn't
-  // use the same theme conventions Yii expects (Tailwind class, Bootstrap
-  // data-bs-theme, Vue/Inertia, etc.).
-  function getCookieTheme() {
-    var raw = (document.cookie || "")
-      .split(";")
-      .map(function (chunk) {
-        return chunk.trim();
-      })
-      .find(function (chunk) {
-        return chunk.indexOf(themeStorageKey + "=") === 0;
-      });
-
-    if (!raw) {
-      return null;
-    }
-
-    var value = raw.substring(themeStorageKey.length + 1);
-    try {
-      value = decodeURIComponent(value);
-    } catch (_e) {
-      // Malformed cookie — ignore.
-    }
-
-    return normalizeTheme(value);
-  }
-
   function getUrlTheme() {
     try {
       return normalizeTheme(
-        new URL(window.location.href).searchParams.get(themeParam),
+        new URL(window.location.href).searchParams.get(THEME_PARAM),
       );
     } catch {
       return null;
     }
-  }
-
-  function addThemeToUrl(url, theme) {
-    var parsed;
-    var routeParam;
-
-    if (!theme) {
-      return url;
-    }
-
-    try {
-      parsed = new URL(url, window.location.href);
-    } catch {
-      return url;
-    }
-
-    if (parsed.origin !== window.location.origin) {
-      return url;
-    }
-
-    // Only target debug routes, but support both URL conventions:
-    //   - Pretty URLs:  `/debug/default/view?...`        → pathname matches.
-    //   - Default Yii:  `/index.php?r=debug%2Fdefault%2Fview&...` → r param.
-    routeParam = parsed.searchParams.get("r") || "";
-    if (
-      parsed.pathname.indexOf("/debug/") === -1 &&
-      routeParam.indexOf("debug/") !== 0 &&
-      routeParam.indexOf("debug%2F") !== 0
-    ) {
-      return url;
-    }
-
-    parsed.searchParams.set(themeParam, theme);
-
-    return parsed.href;
   }
 
   function applyTheme() {
@@ -150,8 +59,8 @@
     //   6. `prefers-color-scheme` media query as the very last resort.
     var theme =
       getParentToolbarTheme() ||
-      getCookieTheme() ||
-      getStoredTheme() ||
+      readThemeCookie() ||
+      readStoredTheme() ||
       getUrlTheme() ||
       normalizeTheme(
         document.documentElement.getAttribute("data-yii-debug-theme"),
@@ -163,18 +72,7 @@
 
     document.documentElement.setAttribute("data-yii-debug-theme", theme);
 
-    if (window.localStorage) {
-      localStorage.setItem(themeStorageKey, theme);
-    }
-
-    // Persistent cookie (1 year) so the backend's `primeThemeContext` keeps the
-    // theme across hard reloads, new tabs, and toolbar-driven navigations even
-    // when the URL doesn't carry the `?yii_debug_theme=` query.
-    document.cookie =
-      themeStorageKey +
-      "=" +
-      encodeURIComponent(theme) +
-      "; path=/; max-age=31536000; SameSite=Lax";
+    writeTheme(theme);
 
     return theme;
   }
@@ -188,14 +86,14 @@
     for (i = 0; i < links.length; i++) {
       var href = links[i].getAttribute("href");
       if (href && href.charAt(0) !== "#" && href.indexOf("javascript:") !== 0) {
-        links[i].setAttribute("href", addThemeToUrl(href, theme));
+        links[i].setAttribute("href", addThemeToDebugUrl(href, theme));
       }
     }
 
     for (i = 0; i < forms.length; i++) {
       forms[i].setAttribute(
         "action",
-        addThemeToUrl(
+        addThemeToDebugUrl(
           forms[i].getAttribute("action") || window.location.href,
           theme,
         ),
@@ -205,15 +103,51 @@
         continue;
       }
 
-      input = forms[i].querySelector('input[name="' + themeParam + '"]');
+      input = forms[i].querySelector('input[name="' + THEME_PARAM + '"]');
       if (!input) {
         input = document.createElement("input");
         input.type = "hidden";
-        input.name = themeParam;
+        input.name = THEME_PARAM;
         forms[i].appendChild(input);
       }
       input.value = theme;
     }
+  }
+
+  function bindThemeToggle() {
+    var button = document.querySelector("[data-yii-debug-theme-toggle]");
+
+    if (!button) {
+      return;
+    }
+
+    var icon = button.querySelector(".yii-debug-brand-icon");
+
+    button.addEventListener("click", function () {
+      var current =
+        normalizeTheme(
+          document.documentElement.getAttribute("data-yii-debug-theme"),
+        ) || "light";
+      var next = current === "dark" ? "light" : "dark";
+
+      document.documentElement.setAttribute("data-yii-debug-theme", next);
+      button.setAttribute("data-current-theme", next);
+      writeTheme(next);
+
+      if (icon) {
+        icon.innerHTML =
+          next === "dark"
+            ? button.getAttribute("data-icon-sun")
+            : button.getAttribute("data-icon-moon");
+      }
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          { source: "yii-debug-toolbar", type: "theme", theme: next },
+          window.location.origin,
+        );
+      }
+    });
   }
 
   function closest(element, selector) {
@@ -232,32 +166,7 @@
   }
 
   function findToggle(node, kind) {
-    var current = node && node.nodeType !== 1 ? node.parentElement : node;
-
-    while (current && current.nodeType === 1) {
-      if (current.getAttribute) {
-        if (current.getAttribute("data-yii-debug-toggle") === kind) {
-          return current;
-        }
-
-        if (current.getAttribute("data-toggle") === kind) {
-          if (
-            !legacyToggleWarned &&
-            typeof console !== "undefined" &&
-            console.warn
-          ) {
-            console.warn(
-              "[yii-debug] `data-toggle` is deprecated; use `data-yii-debug-toggle`.",
-            );
-            legacyToggleWarned = true;
-          }
-          return current;
-        }
-      }
-      current = current.parentElement;
-    }
-
-    return null;
+    return closest(node, '[data-yii-debug-toggle="' + kind + '"]');
   }
 
   function hideDropdowns(except) {
@@ -269,7 +178,7 @@
       }
       wrappers[i].classList.remove("is-open");
       var trigger = wrappers[i].querySelector(
-        '[data-yii-debug-toggle="dropdown"], [data-toggle="dropdown"]',
+        '[data-yii-debug-toggle="dropdown"]',
       );
       if (trigger) {
         trigger.setAttribute("aria-expanded", "false");
@@ -291,9 +200,7 @@
     var list = closest(link, ".yii-debug-tabs");
     var content = target.parentElement;
     var links = list
-      ? list.querySelectorAll(
-          '[data-yii-debug-toggle="tab"], [data-toggle="tab"]',
-        )
+      ? list.querySelectorAll('[data-yii-debug-toggle="tab"]')
       : [];
     var panes = content ? content.children : [];
     var i;
@@ -301,6 +208,7 @@
     for (i = 0; i < links.length; i++) {
       links[i].classList.remove("is-active");
       links[i].setAttribute("aria-selected", "false");
+      links[i].setAttribute("tabindex", "-1");
     }
 
     for (i = 0; i < panes.length; i++) {
@@ -309,15 +217,19 @@
         panes[i].classList.contains("yii-debug-tab-panel")
       ) {
         panes[i].classList.remove("is-active");
+        panes[i].hidden = true;
       }
     }
 
     link.classList.add("is-active");
     link.setAttribute("aria-selected", "true");
+    link.setAttribute("tabindex", "0");
     target.classList.add("is-active");
+    target.hidden = false;
   }
 
   preserveThemeInLinks(applyTheme());
+  bindThemeToggle();
 
   document.addEventListener("click", function (event) {
     var tab = findToggle(event.target, "tab");
@@ -386,6 +298,38 @@
   });
 
   document.addEventListener("keydown", function (event) {
+    var tab = findToggle(event.target, "tab");
+
+    if (
+      tab &&
+      ["ArrowLeft", "ArrowRight", "Home", "End"].indexOf(event.key) !== -1
+    ) {
+      var tabList = closest(tab, '[role="tablist"]');
+      var tabs = tabList
+        ? Array.from(tabList.querySelectorAll('[data-yii-debug-toggle="tab"]'))
+        : [];
+      var current = tabs.indexOf(tab);
+      var next = current;
+
+      if (event.key === "Home") {
+        next = 0;
+      } else if (event.key === "End") {
+        next = tabs.length - 1;
+      } else if (event.key === "ArrowLeft") {
+        next = (current - 1 + tabs.length) % tabs.length;
+      } else if (event.key === "ArrowRight") {
+        next = (current + 1) % tabs.length;
+      }
+
+      if (tabs[next]) {
+        event.preventDefault();
+        activateTab(tabs[next]);
+        tabs[next].focus();
+      }
+
+      return;
+    }
+
     if (event.key === "Escape") {
       hideDropdowns(null);
     }

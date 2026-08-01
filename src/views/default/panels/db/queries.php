@@ -7,10 +7,10 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
-use yii\debug\{DbAsset, GridViewConfig};
+use yii\debug\GridViewConfig;
 use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\DbSearch;
-use yii\debug\panels\db\{DbQueryRenderer, QueryRowNormalizer};
+use yii\debug\panels\db\{DbQueryRenderer, QueryRow};
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -88,72 +88,71 @@ if ($hasQueries) {
 <?php endif; ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
-        [
-            ...GridViewConfig::defaults(),
-            'dataProvider' => $queryDataProvider,
-            'id' => 'db-panel-detailed-queries-grid',
-            'options' => ['class' => 'yii-debug-grid yii-debug-grid-db'],
-            'filterModel' => $searchModel,
-            'filterUrl' => $panel->getUrl(),
-            'columns' => [
-                [
-                    'attribute' => 'type',
-                    'label' => 'Type',
-                    'format' => 'raw',
-                    'value' => static fn(mixed $data): string => DbQueryRenderer::renderTypeCell(
-                        QueryRowNormalizer::from($data),
-                    ),
-                    'filter' => $panel->getTypes(),
-                    'options' => ['width' => '8%'],
-                ],
-                [
-                    'attribute' => 'seq',
-                    'label' => 'Time',
-                    'value' => static fn(mixed $data): string => DbQueryRenderer::renderTimeCell(
-                        QueryRowNormalizer::from($data),
-                    ),
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'options' => ['width' => '10%'],
-                ],
-                [
-                    'attribute' => 'duration',
-                    'value' => static fn(mixed $data): string => DbQueryRenderer::renderDurationCell(
-                        QueryRowNormalizer::from($data),
-                    ),
-                    'options' => ['width' => '8%'],
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                ],
-                [
-                    'attribute' => 'rows',
-                    'label' => 'Rows',
-                    'value' => static fn(mixed $data): string => DbQueryRenderer::renderRowsCell(
-                        QueryRowNormalizer::from($data),
-                    ),
-                    'options' => ['width' => '7%'],
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                ],
-                [
-                    'attribute' => 'duplicate',
-                    'label' => 'Dup',
-                    'options' => ['width' => '5%'],
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                ],
-                [
-                    'attribute' => 'query',
-                    'value' => static fn(mixed $data): string => DbQueryRenderer::renderQueryCell(
-                        QueryRowNormalizer::from($data),
-                        $panel,
-                        $hasExplain,
-                        $explainUrlBuilder,
-                    ),
-                    'format' => 'raw',
-                    'options' => ['width' => '60%'],
-                ],
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $queryDataProvider,
+        'id' => 'db-panel-detailed-queries-grid',
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-db'],
+        'filterModel' => $searchModel,
+        'filterUrl' => $panel->getUrl(),
+        'columns' => [
+            [
+                'attribute' => 'type',
+                'label' => 'Type',
+                'format' => 'raw',
+                'value' => static fn(mixed $data): string => DbQueryRenderer::renderTypeCell(
+                    QueryRow::fromMixed($data),
+                ),
+                'filter' => $panel->getTypes(),
+                'options' => ['width' => '8%'],
+            ],
+            [
+                'attribute' => 'seq',
+                'label' => 'Time',
+                'value' => static fn(mixed $data): string => DbQueryRenderer::renderTimeCell(
+                    QueryRow::fromMixed($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'options' => ['width' => '10%'],
+            ],
+            [
+                'attribute' => 'duration',
+                'value' => static fn(mixed $data): string => DbQueryRenderer::renderDurationCell(
+                    QueryRow::fromMixed($data),
+                ),
+                'options' => ['width' => '8%'],
+                'headerOptions' => ['class' => 'sort-numerical'],
+            ],
+            [
+                'attribute' => 'rows',
+                'label' => 'Rows',
+                'value' => static fn(mixed $data): string => DbQueryRenderer::renderRowsCell(
+                    QueryRow::fromMixed($data),
+                ),
+                'options' => ['width' => '7%'],
+                'headerOptions' => ['class' => 'sort-numerical'],
+            ],
+            [
+                'attribute' => 'duplicate',
+                'label' => 'Dup',
+                'options' => ['width' => '5%'],
+                'headerOptions' => ['class' => 'sort-numerical'],
+            ],
+            [
+                'attribute' => 'query',
+                'value' => static fn(mixed $data): string => DbQueryRenderer::renderQueryCell(
+                    QueryRow::fromMixed($data),
+                    $panel,
+                    $hasExplain,
+                    $explainUrlBuilder,
+                ),
+                'format' => 'raw',
+                'options' => ['width' => '60%'],
             ],
         ],
-    ) ?>
+    ],
+) ?>
 <?php if ($hasExplain): ?>
-    <?php DbAsset::register($this); ?>
     <?= Div::tag()
         ->class('yii-debug-db-explain-all')
         ->html(

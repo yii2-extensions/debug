@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\profile;
 
+use yii\debug\helpers\Coerce;
+
+use function is_array;
+use function max;
+
 /**
  * Typed view-model for a single profile block consumed by the profile grid.
  *
@@ -38,4 +43,35 @@ final readonly class ProfileRow
          */
         public int $seq,
     ) {}
+
+    /**
+     * Builds a typed profile row from a data-provider value.
+     */
+    public static function fromMixed(mixed $data): self
+    {
+        $row = is_array($data) ? $data : [];
+
+        return new self(
+            timestamp: Coerce::float($row['timestamp'] ?? null),
+            duration: Coerce::float($row['duration'] ?? null),
+            category: Coerce::string($row['category'] ?? null),
+            info: Coerce::string($row['info'] ?? null),
+            level: max(0, Coerce::int($row['level'] ?? null)),
+            seq: Coerce::int($row['seq'] ?? null),
+        );
+    }
+
+    /**
+     * @param array<array-key, mixed> $models
+     */
+    public static function maxDuration(array $models): float
+    {
+        $maximum = 0.0;
+
+        foreach ($models as $model) {
+            $maximum = max($maximum, self::fromMixed($model)->duration);
+        }
+
+        return $maximum;
+    }
 }

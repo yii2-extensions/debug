@@ -7,7 +7,7 @@ namespace yii\debug\actions\queue;
 use Yii;
 use yii\base\Action;
 use yii\debug\controllers\DefaultController;
-use yii\debug\panels\queue\JobRecordNormalizer;
+use yii\debug\panels\queue\JobRecord;
 use yii\debug\panels\QueuePanel;
 use yii\web\HttpException;
 
@@ -70,20 +70,17 @@ class JobAction extends Action
             );
         }
 
-        $record = JobRecordNormalizer::from($records[$seqKey]);
-        $themeContext = $controller->primeThemeContext();
+        $record = JobRecord::fromMixed($records[$seqKey]);
+        $controller->prepareShell($this->panel, $tag);
 
         $params = [
             'activePanel' => $this->panel,
-            'debugTheme' => $themeContext['theme'],
             'manifest' => $controller->getManifest(),
             'panel' => $this->panel,
             'panels' => $controller->module->panels,
             'record' => $record,
             'summary' => $controller->summary,
             'tag' => $tag,
-            'themeIconMoon' => $themeContext['moon'],
-            'themeIconSun' => $themeContext['sun'],
         ];
 
         return Yii::$app->request->isAjax

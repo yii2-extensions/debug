@@ -203,17 +203,17 @@ final class RequestSectionRendererTest extends TestCase
         $html = RequestSectionRenderer::renderTabs($tabs);
 
         self::assertStringContainsString(
-            'href="#r-tab-0"',
+            'href="#request-panel-0"',
             $html,
-            "First tab 'href' must point to 'r-tab-0'.",
+            "First tab 'href' must point to 'request-panel-0'.",
         );
         self::assertStringContainsString(
-            'aria-controls="r-tab-1"',
+            'aria-controls="request-panel-1"',
             $html,
             "Second tab 'aria-controls' must match its panel id.",
         );
         self::assertStringContainsString(
-            'id="r-tab-0"',
+            'id="request-panel-0"',
             $html,
             "First panel 'id' must match its tab href.",
         );

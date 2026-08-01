@@ -36,6 +36,9 @@ use function is_string;
  */
 class DbPanel extends Panel
 {
+    protected const string ICON = 'db';
+    protected const string NAME = 'Database';
+
     /**
      * Critical-query-count threshold; when the captured query count exceeds this value the toolbar item flips to a
      * warning state. `null` disables the check.
@@ -321,15 +324,6 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns the panel display name.
-     */
-    #[Override]
-    public function getName(): string
-    {
-        return 'Database';
-    }
-
-    /**
      * Returns the profile log entries scanned for query timings (categories listed in {@see $dbEventNames}).
      *
      * @return array<int, array<int|string, mixed>> Profile log entries in capture order.
@@ -341,14 +335,6 @@ class DbPanel extends Panel
         }
 
         return $this->profileLogs;
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'db';
     }
 
     /**

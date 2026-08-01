@@ -50,7 +50,7 @@ final class RouterPanelTest extends TestCase
         $detail = $panel->getDetail();
 
         self::assertMatchesRegularExpression(
-            '~id="r-tab-0"(?:(?!id="r-tab-1").)*site/index~s',
+            '~id="router-panel-0"(?:(?!id="router-panel-1").)*site/index~s',
             $detail,
             'Route must render inside the active pane.',
         );

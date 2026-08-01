@@ -39,15 +39,20 @@ jobs:
       - name: Install dependencies.
         run: npm ci
 
+      - name: Check formatting.
+        run: npm run format:check
+
+      - name: Lint JavaScript.
+        run: npm run lint:js
+
+      - name: Lint stylesheets.
+        run: npm run lint:css
+
+      - name: Test JavaScript.
+        run: npm run test:js
+
       - name: Build assets.
         run: npm run build
 
-      # Surface drift between resources/src/ edits and the committed dist/ as a warning while the pipeline stabilises.
-      # Promote to a hard failure (drop continue-on-error) once a full release cycle confirms reproducibility.
       - name: Detect dist drift.
-        continue-on-error: true
-        run: |
-          if ! git diff --exit-code src/assets/dist/; then
-            echo "::warning::src/assets/dist/ output differs from committed bundle. Run 'npm run build' and commit the result."
-            exit 1
-          fi
+        run: git diff --exit-code src/assets/dist/

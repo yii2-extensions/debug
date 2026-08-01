@@ -7,6 +7,7 @@ namespace yii\debug;
 use UIAwesome\Html\Form\{Option, Select};
 use UIAwesome\Html\Phrasing\{Label, Span};
 use Yii;
+use yii\debug\widgets\DebugDataColumn;
 
 use function in_array;
 use function is_float;
@@ -30,6 +31,7 @@ final class GridViewConfig
      * debug stylesheet.
      *
      * @return array{
+     *   dataColumnClass: class-string<DebugDataColumn>,
      *   tableOptions: array{class: string},
      *   options: array{class: string},
      *   layout: string,
@@ -47,6 +49,7 @@ final class GridViewConfig
     public static function defaults(): array
     {
         return [
+            'dataColumnClass' => DebugDataColumn::class,
             'tableOptions' => ['class' => 'yii-debug-table'],
             'options' => ['class' => 'yii-debug-grid'],
             'layout' => "<div class=\"yii-debug-table-wrap\">{items}</div>\n"

@@ -8,7 +8,7 @@ use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\models\search\LogSearch;
-use yii\debug\panels\log\{LogCellRenderer, LogCountsNormalizer, LogRowNormalizer};
+use yii\debug\panels\log\{LogCellRenderer, LogCounts, LogRow};
 use yii\debug\panels\LogPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -19,7 +19,7 @@ use yii\log\Logger;
  * @var LogPanel $panel Panel providing the detail content.
  * @var LogSearch $searchModel Search model for filtering the log grid.
  */
-$counts = LogCountsNormalizer::fromPanelData($panel->data);
+$counts = LogCounts::fromPanelData($panel->data);
 
 $summaryItems = [
     Span::tag()
@@ -74,68 +74,68 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
     ->html(...$summaryItems) ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
-        [
-            ...GridViewConfig::defaults(),
-            'dataProvider' => $dataProvider,
-            'id' => 'log-panel-detailed-grid',
-            'options' => ['class' => 'yii-debug-grid yii-debug-grid-log'],
-            'filterModel' => $searchModel,
-            'filterUrl' => $panel->getUrl(),
-            'rowOptions' => static fn(mixed $model): array => LogCellRenderer::buildRowOptions(
-                LogRowNormalizer::from($model),
-            ),
-            'columns' => [
-                [
-                    'attribute' => 'id',
-                    'label' => '#',
-                    'contentOptions' => ['class' => 'yii-debug-nowrap'],
-                ],
-                [
-                    'attribute' => 'time',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeCell(
-                        LogRowNormalizer::from($data),
-                    ),
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'contentOptions' => ['class' => 'yii-debug-nowrap'],
-                ],
-                [
-                    'attribute' => 'time_since_previous',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeSincePreviousCell(
-                        LogRowNormalizer::from($data),
-                    ),
-                    'format' => 'raw',
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                ],
-                [
-                    'attribute' => 'level',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderLevelCell(
-                        LogRowNormalizer::from($data),
-                    ),
-                    'format' => 'raw',
-                    'filter' => [
-                        Logger::LEVEL_TRACE => ' Trace ',
-                        Logger::LEVEL_INFO => ' Info ',
-                        Logger::LEVEL_WARNING => ' Warning ',
-                        Logger::LEVEL_ERROR => ' Error ',
-                    ],
-                ],
-                [
-                    'attribute' => 'category',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderCategoryCell(
-                        LogRowNormalizer::from($data),
-                    ),
-                    'format' => 'raw',
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
-                ],
-                [
-                    'attribute' => 'message',
-                    'value' => static fn(mixed $data): string => LogCellRenderer::renderMessageCell(
-                        LogRowNormalizer::from($data),
-                        $panel
-                    ),
-                    'format' => 'raw',
-                    'options' => ['width' => '50%'],
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $dataProvider,
+        'id' => 'log-panel-detailed-grid',
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-log'],
+        'filterModel' => $searchModel,
+        'filterUrl' => $panel->getUrl(),
+        'rowOptions' => static fn(mixed $model): array => LogCellRenderer::buildRowOptions(
+            LogRow::fromMixed($model),
+        ),
+        'columns' => [
+            [
+                'attribute' => 'id',
+                'label' => '#',
+                'contentOptions' => ['class' => 'yii-debug-nowrap'],
+            ],
+            [
+                'attribute' => 'time',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeCell(
+                    LogRow::fromMixed($data),
+                ),
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-nowrap'],
+            ],
+            [
+                'attribute' => 'time_since_previous',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderTimeSincePreviousCell(
+                    LogRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'headerOptions' => ['class' => 'sort-numerical'],
+            ],
+            [
+                'attribute' => 'level',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderLevelCell(
+                    LogRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'filter' => [
+                    Logger::LEVEL_TRACE => ' Trace ',
+                    Logger::LEVEL_INFO => ' Info ',
+                    Logger::LEVEL_WARNING => ' Warning ',
+                    Logger::LEVEL_ERROR => ' Error ',
                 ],
             ],
+            [
+                'attribute' => 'category',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderCategoryCell(
+                    LogRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
+            ],
+            [
+                'attribute' => 'message',
+                'value' => static fn(mixed $data): string => LogCellRenderer::renderMessageCell(
+                    LogRow::fromMixed($data),
+                    $panel
+                ),
+                'format' => 'raw',
+                'options' => ['width' => '50%'],
+            ],
         ],
-    );
+    ],
+);

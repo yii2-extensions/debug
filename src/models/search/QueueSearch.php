@@ -6,7 +6,6 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
-use yii\debug\components\search\Filter;
 
 /**
  * Backs the filter form above the Queue panel's cards list of captured job events.
@@ -89,15 +88,13 @@ class QueueSearch extends Base
             return $dataProvider;
         }
 
-        $filter = new Filter();
+        $this->addCondition('eventType');
+        $this->addCondition('componentId');
+        $this->addCondition('driverName', true);
+        $this->addCondition('jobClass', true);
+        $this->addCondition('jobId', true);
 
-        $this->addCondition($filter, 'eventType', false);
-        $this->addCondition($filter, 'componentId', false);
-        $this->addCondition($filter, 'driverName', true);
-        $this->addCondition($filter, 'jobClass', true);
-        $this->addCondition($filter, 'jobId', true);
-
-        $dataProvider->allModels = $filter->filter($models);
+        $dataProvider->allModels = $this->filter($models);
 
         return $dataProvider;
     }

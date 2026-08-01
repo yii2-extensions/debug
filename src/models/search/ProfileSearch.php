@@ -6,7 +6,6 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
-use yii\debug\components\search\Filter;
 use yii\debug\GridViewConfig;
 
 /**
@@ -68,12 +67,10 @@ class ProfileSearch extends Base
             return $dataProvider;
         }
 
-        $filter = new Filter();
+        $this->addCondition('category', true);
+        $this->addCondition('info', true);
 
-        $this->addCondition($filter, 'category', true);
-        $this->addCondition($filter, 'info', true);
-
-        $dataProvider->allModels = $filter->filter($models);
+        $dataProvider->allModels = $this->filter($models);
 
         return $dataProvider;
     }

@@ -44,6 +44,8 @@ use function is_string;
  */
 class UserPanel extends Panel
 {
+    protected const string ICON = 'user';
+
     /**
      * Display name shown in the panel header and the toolbar chip.
      */
@@ -165,14 +167,6 @@ class UserPanel extends Panel
     public function getName(): string
     {
         return $this->displayName;
-    }
-
-    /**
-     * Returns the toolbar icon name.
-     */
-    public function getToolbarIcon(): string
-    {
-        return 'user';
     }
 
     /**

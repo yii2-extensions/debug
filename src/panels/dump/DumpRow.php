@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\dump;
 
+use yii\debug\helpers\Coerce;
+
+use function is_array;
+
 /**
  * Typed view-model for a single dump row consumed by the dumps grid.
  *
@@ -30,4 +34,19 @@ final readonly class DumpRow
          */
         public array $trace,
     ) {}
+
+    /**
+     * Builds a typed dump row from a data-provider value.
+     */
+    public static function fromMixed(mixed $data): self
+    {
+        $row = is_array($data) ? $data : [];
+
+        return new self(
+            message: Coerce::string($row['message'] ?? null),
+            category: Coerce::string($row['category'] ?? null),
+            time: Coerce::float($row['time'] ?? null),
+            trace: Coerce::traceFrames($row['trace'] ?? null),
+        );
+    }
 }

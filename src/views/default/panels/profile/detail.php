@@ -11,7 +11,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\helpers\EmptyState;
 use yii\debug\models\search\ProfileSearch;
-use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRowNormalizer};
+use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRow};
 use yii\debug\panels\ProfilingPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -25,7 +25,7 @@ use yii\grid\GridView;
  * @var string $timelineUrl URL to the Timeline panel.
  */
 $hasProfileBlocks = $dataProvider->getTotalCount() > 0;
-$maxDuration = ProfileRowNormalizer::maxDuration($dataProvider->getModels());
+$maxDuration = ProfileRow::maxDuration($dataProvider->getModels());
 
 $summaryItems = [
     Span::tag()
@@ -86,49 +86,49 @@ if ($hasProfileBlocks) {
 <?php endif; ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
-        [
-            ...GridViewConfig::defaults(),
-            'dataProvider' => $dataProvider,
-            'id' => 'profile-panel-detailed-grid',
-            'filterModel' => $searchModel,
-            'filterUrl' => $panel->getUrl(),
-            'columns' => [
-                [
-                    'attribute' => 'seq',
-                    'label' => 'Time',
-                    'value' => static fn(mixed $data): string => ProfileCellRenderer::renderTimeCell(
-                        ProfileRowNormalizer::from($data),
-                    ),
-                    'format' => 'raw',
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
-                ],
-                [
-                    'attribute' => 'duration',
-                    'value' => static fn(mixed $data): string => ProfileCellRenderer::renderDurationCell(
-                        ProfileRowNormalizer::from($data),
-                        $maxDuration,
-                    ),
-                    'format' => 'raw',
-                    'options' => ['width' => '10%'],
-                    'headerOptions' => ['class' => 'sort-numerical'],
-                ],
-                [
-                    'attribute' => 'category',
-                    'value' => static fn(mixed $data): string => ProfileCellRenderer::renderCategoryCell(
-                        ProfileRowNormalizer::from($data),
-                    ),
-                    'format' => 'raw',
-                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
-                ],
-                [
-                    'attribute' => 'info',
-                    'value' => static fn(mixed $data): string => ProfileCellRenderer::renderInfoCell(
-                        ProfileRowNormalizer::from($data),
-                    ),
-                    'format' => 'html',
-                    'options' => ['width' => '60%'],
-                ],
+    [
+        ...GridViewConfig::defaults(),
+        'dataProvider' => $dataProvider,
+        'id' => 'profile-panel-detailed-grid',
+        'filterModel' => $searchModel,
+        'filterUrl' => $panel->getUrl(),
+        'columns' => [
+            [
+                'attribute' => 'seq',
+                'label' => 'Time',
+                'value' => static fn(mixed $data): string => ProfileCellRenderer::renderTimeCell(
+                    ProfileRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+            ],
+            [
+                'attribute' => 'duration',
+                'value' => static fn(mixed $data): string => ProfileCellRenderer::renderDurationCell(
+                    ProfileRow::fromMixed($data),
+                    $maxDuration,
+                ),
+                'format' => 'raw',
+                'options' => ['width' => '10%'],
+                'headerOptions' => ['class' => 'sort-numerical'],
+            ],
+            [
+                'attribute' => 'category',
+                'value' => static fn(mixed $data): string => ProfileCellRenderer::renderCategoryCell(
+                    ProfileRow::fromMixed($data),
+                ),
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
+            ],
+            [
+                'attribute' => 'info',
+                'value' => static fn(mixed $data): string => ProfileCellRenderer::renderInfoCell(
+                    ProfileRow::fromMixed($data),
+                ),
+                'format' => 'html',
+                'options' => ['width' => '60%'],
             ],
         ],
-    );
+    ],
+);

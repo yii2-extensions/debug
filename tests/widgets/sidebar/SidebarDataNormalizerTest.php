@@ -7,19 +7,19 @@ namespace yii\debug\tests\widgets\sidebar;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\{ConfigPanel, InertiaPanel, RequestPanel};
 use yii\debug\tests\support\TestCase;
-use yii\debug\widgets\sidebar\SidebarDataNormalizer;
+use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarNavItem};
 
 use function array_map;
 
 /**
- * Unit tests for {@see SidebarDataNormalizer} covering the narrowing of `_sidebar.php` inputs (panels + manifest +
- * activePanel + summary) into the typed view-model. Validates the 'fromShell', 'fromView', and 'fromIndex' factories.
+ * Unit tests for {@see SidebarDataNormalizer} covering panel, manifest, and summary narrowing into the typed
+ * view-model through the `fromView()` and `fromIndex()` factories.
  */
 #[Group('panel')]
 #[Group('sidebar')]
 final class SidebarDataNormalizerTest extends TestCase
 {
-    public function testFromIndexBuildsNavItemsForLatestTagWhenManifestNonEmpty(): void
+    public function testFromIndexBuildsNavItemsForNewestTagWhenManifestNonEmpty(): void
     {
         $this->mockWebApplication();
 
@@ -44,12 +44,12 @@ final class SidebarDataNormalizerTest extends TestCase
         self::assertContains(
             'tag-newest',
             $panelItem->url,
-            'Index-mode panel link must carry the latest tag.',
+            'Index-mode panel link must carry the newest tag.',
         );
         self::assertSame(
-            'Open this panel on the latest request',
+            'Open this panel on the newest request',
             $panelItem->tooltip,
-            'Index-mode panel tooltip must invite picking the latest request.',
+            'Index-mode panel tooltip must invite picking the newest request.',
         );
     }
 
@@ -156,13 +156,13 @@ final class SidebarDataNormalizerTest extends TestCase
             "'cursorInit' must surface on the DTO.",
         );
         self::assertSame(
-            'Latest request',
+            'Newest request',
             $view->snapshot->title,
-            "Index mode must use the 'Latest request' heading.",
+            "Index mode must use the 'Newest request' heading.",
         );
     }
 
-    public function testFromIndexSurfacesLatestTagAsSnapshot(): void
+    public function testFromIndexSurfacesNewestTagAsSnapshot(): void
     {
         $manifest = [
             'tag-newest' => ['method' => 'GET', 'statusCode' => 200, 'url' => 'http://example.test/'],
@@ -188,62 +188,6 @@ final class SidebarDataNormalizerTest extends TestCase
             200,
             $view->snapshot->statusCode,
             'Status must come from the newest entry.',
-        );
-    }
-
-    public function testFromShellDispatchesToViewWhenTagIsNonEmpty(): void
-    {
-        $this->mockWebApplication();
-
-        $panel = new RequestPanel();
-
-        $panel->id = 'request';
-
-        $view = SidebarDataNormalizer::fromShell(
-            'view',
-            ['request' => $panel],
-            ['tag-1' => ['method' => 'GET']],
-            $panel,
-            'tag-1',
-            ['method' => 'GET', 'statusCode' => 200],
-        );
-
-        self::assertNotNull(
-            $view->snapshot,
-            'Snapshot must surface.',
-        );
-        self::assertSame(
-            'Current request',
-            $view->snapshot->title,
-            'Valid view request must dispatch to view mode.',
-        );
-    }
-
-    public function testFromShellFallsBackToIndexWhenTagIsEmpty(): void
-    {
-        $this->mockWebApplication();
-
-        $panel = new RequestPanel();
-
-        $panel->id = 'request';
-
-        $view = SidebarDataNormalizer::fromShell(
-            'view',
-            ['request' => $panel],
-            ['tag-1' => ['method' => 'GET']],
-            $panel,
-            '',
-            ['method' => 'GET', 'statusCode' => 200],
-        );
-
-        self::assertNotNull(
-            $view->snapshot,
-            'Snapshot must surface.',
-        );
-        self::assertSame(
-            'Latest request',
-            $view->snapshot->title,
-            'Empty tag must fall back to index mode.',
         );
     }
 
@@ -401,12 +345,12 @@ final class SidebarDataNormalizerTest extends TestCase
             'Snapshot must surface.',
         );
         self::assertTrue(
-            $view->snapshot->hasPrev,
-            'Middle-tag snapshot must expose a previous navigator.',
+            $view->snapshot->hasNewer,
+            'Middle-tag snapshot must expose a newer navigator.',
         );
         self::assertTrue(
-            $view->snapshot->hasNext,
-            'Middle-tag snapshot must expose a next navigator.',
+            $view->snapshot->hasOlder,
+            'Middle-tag snapshot must expose a older navigator.',
         );
     }
 
@@ -522,7 +466,7 @@ final class SidebarDataNormalizerTest extends TestCase
             ['method' => 'GET', 'statusCode' => 200],
         );
 
-        $labels = array_map(static fn($item): string => $item->label, $view->navItems);
+        $labels = array_map(static fn(SidebarNavItem $item): string => $item->label, $view->navItems);
 
         self::assertContains(
             'Request',

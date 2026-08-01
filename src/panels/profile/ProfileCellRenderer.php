@@ -34,7 +34,7 @@ final class ProfileCellRenderer
      * when one exists.
      *
      * @param ProfileRow $row Typed profile row.
-     * @param float $maxDuration Capture maximum in milliseconds ({@see ProfileRowNormalizer::maxDuration()}).
+     * @param float $maxDuration Capture maximum in milliseconds ({@see ProfileRow::maxDuration()}).
      */
     public static function renderDurationCell(ProfileRow $row, float $maxDuration): string
     {

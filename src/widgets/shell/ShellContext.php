@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\shell;
 
-use yii\debug\Panel;
+use yii\debug\widgets\sidebar\SidebarView;
 
 /**
  * Typed view-model for the debugger shell (brand bar + sidebar + main wrapper).
  *
- * The `$mode` discriminator picks the shell layout: 'view'` (panel detail), 'index'` (history grid) or 'bare' (no shell
- * phpinfo / db-explain). Every loose-array access on the `$shellData` payload that the layout would do inline lives
- * here once: panels map, manifest, summary, theme icons, version strings, Configuration chip URL.
+ * The `$mode` discriminator picks the panel, history, or bare layout. The controller supplies fully normalized header
+ * and sidebar data so the layout only renders this object.
  */
 final readonly class ShellContext
 {
@@ -34,8 +33,7 @@ final readonly class ShellContext
          */
         public string $title,
         /**
-         * Theme attribute map applied to the `<html>` tag (`['data-yii-debug-theme' => 'dark'|'light']`); empty array
-         * when the theme is neither dark nor light (defaults to system preference via CSS).
+         * Document attributes applied to `<html>`, including the language and resolved light/dark theme.
          *
          * @var array<string, string>
          */
@@ -69,34 +67,8 @@ final readonly class ShellContext
          */
         public string|null $configUrl,
         /**
-         * Panels keyed by id; consumed by the sidebar partial when `$useShell` is true.
-         *
-         * @var array<string, Panel>
+         * Sidebar view-model, or `null` for bare pages.
          */
-        public array $shellPanels,
-        /**
-         * Manifest entries (reverse-ordered, newest first) consumed by the sidebar.
-         *
-         * @var array<string, array<string, mixed>>
-         */
-        public array $shellManifest,
-        /**
-         * Active panel highlighted in the sidebar nav; `null` in index/bare mode.
-         */
-        public Panel|null $activePanel,
-        /**
-         * Active request tag; `null` in index/bare mode.
-         */
-        public string|null $activeTag,
-        /**
-         * Active request summary ('method/url/status/time/ajax'); `null` in index/bare mode.
-         *
-         * @var array<string, mixed>|null
-         */
-        public array|null $shellSummary,
-        /**
-         * Optional cursor-init tag (`?cursor=<tag>`) the index JS should land on.
-         */
-        public string $cursorInit,
+        public SidebarView|null $sidebar,
     ) {}
 }
