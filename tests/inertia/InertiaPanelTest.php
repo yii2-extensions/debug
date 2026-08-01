@@ -50,6 +50,7 @@ final class InertiaPanelTest extends TestCase
             "Page-specific props must wear the 'page' badge.",
         );
     }
+
     public function testGetDetailRendersComponentAndProps(): void
     {
         $panel = $this->makePanel(InertiaPanel::class);
