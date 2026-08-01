@@ -12,7 +12,7 @@ use yii\log\Logger;
 
 /**
  * Unit tests for {@see LogCellRenderer} covering the typed cell renderers used by the logs grid (time, level,
- * time-since-previous navigation, message + trace, row options).
+ * time-since-previous navigation, message + trace, SQL highlighting for DB command entries, row options).
  */
 #[Group('panel')]
 #[Group('log')]
@@ -135,6 +135,39 @@ final class LogCellRendererTest extends TestCase
             'yii-debug-trace',
             $html,
             'Empty trace must omit the trace list.',
+        );
+    }
+
+    public function testRenderMessageCellHighlightsSqlForDbCommandCategory(): void
+    {
+        $html = LogCellRenderer::renderMessageCell(
+            self::makeRow(message: 'SELECT * FROM `user` WHERE id = 1', category: 'yii\db\Command::query'),
+            $this->makePanel(LogPanel::class),
+        );
+
+        self::assertStringContainsString(
+            'class="yii-debug-db-sql"',
+            $html,
+            'SQL body must wear the mono wrapper.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-sql-kw">SELECT</span>',
+            $html,
+            'Keywords must be token-wrapped.',
+        );
+    }
+
+    public function testRenderMessageCellKeepsPlainEscapingForNonDbCategory(): void
+    {
+        $html = LogCellRenderer::renderMessageCell(
+            self::makeRow(message: 'SELECT 1', category: 'app'),
+            $this->makePanel(LogPanel::class),
+        );
+
+        self::assertSame(
+            'SELECT 1',
+            $html,
+            'Non-DB categories must stay plain text.',
         );
     }
 

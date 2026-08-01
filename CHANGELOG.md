@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(ui): raise the timeline memory chart contrast (stronger opacity ramp, `1.5` stroke) and wrap long event FQCNs mid-word at narrow viewports.
 - refactor!: remove the dead timeline color API — `TimelinePanel::getColors()`/`setColors()` and `DataProvider::getColor()`/`getCssClass()`; bars are colored by domain category (`--yii-debug-cat-*` tokens) since the redesign, so the computed hex was never rendered. Configurations passing a `colors` key to the timeline panel now throw `UnknownPropertyException` and must drop it.
 - fix(ui): densify the Events grid header, filter, and body cell padding under the 768px breakpoint, removing the residual horizontal scroll left by classic desktop scrollbars at narrow viewports.
+- feat: highlight the SQL of `yii\db\Command::*` log entries in the Logs panel message column with the same `SqlHighlighter` token spans as the db panel queries grid.
 
 ## 0.1.1 May 18, 2026
 

@@ -10,6 +10,7 @@ use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use yii\debug\helpers\Vocabulary;
+use yii\debug\panels\db\SqlHighlighter;
 use yii\debug\panels\LogPanel;
 use yii\log\Logger;
 
@@ -17,6 +18,7 @@ use function array_map;
 use function date;
 use function implode;
 use function sprintf;
+use function str_starts_with;
 
 /**
  * Renders the typed cells of the logs grid for the Log debug panel.
@@ -34,6 +36,11 @@ final class LogCellRenderer
         Logger::LEVEL_WARNING => 'warning',
         Logger::LEVEL_INFO => 'info',
     ];
+    /**
+     * Category prefix of the DB command log entries whose message is a raw SQL statement
+     * ({@see \yii\debug\panels\DbPanel::$dbEventNames} defaults).
+     */
+    private const string SQL_CATEGORY_PREFIX = 'yii\db\Command::';
 
     /**
      * Builds the GridView `rowOptions` array for the row: anchor id (`log-{N}`) and severity-driven CSS class.
@@ -70,14 +77,17 @@ final class LogCellRenderer
      * Renders the message cell, followed by the optional trace list.
      *
      * The row holds the message as a display string (already exported when the source was non-string), so the renderer
-     * just escapes it once.
+     * escapes it once — except for DB command entries, whose raw SQL message renders through
+     * {@see SqlHighlighter::highlight()} with the same token spans as the db panel queries grid.
      *
      * @param LogRow $row Typed log record.
      * @param LogPanel $panel Panel used to render each trace line.
      */
     public static function renderMessageCell(LogRow $row, LogPanel $panel): string
     {
-        $body = Encode::content($row->message);
+        $body = str_starts_with($row->category, self::SQL_CATEGORY_PREFIX)
+            ? Div::tag()->class('yii-debug-db-sql')->html(SqlHighlighter::highlight($row->message))->render()
+            : Encode::content($row->message);
 
         if ($row->trace === []) {
             return $body;
