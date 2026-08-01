@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.1.2 Under development
+## 0.2.0 Under development
 
 - refactor: Render the sidebar panel nav with the new `ui-awesome/html-core-component` `Menu` component.
 - refactor: Migrate the `default` debug views to `ui-awesome/html` builder components for consistent, escape-safe rendering.
@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: bring the Mail, Dump, and Events panels to the shared design system — Mail opens with the `.yii-debug-grid-summary` strip (message count, failed-count danger stat, working page-size selector) and its status pills and dot join the tinted vocabulary formula; Dump gains an empty-state card with a `Yii::debug()` usage snippet, the `yii-debug-grid-dump` variant, a filter-preserving `filterUrl`, a mono category column, and hue-driven type badges; Events gains an empty-state card, a summary strip (events/classes/static counts), FQCN cells split into muted namespace plus bold short name, a muted `static` badge, and a Yes/No filter dropdown, fixing its copy-pasted grid id and stale `@var` annotation.
 - chore: apply the accumulated Rector backlog.
 - fix(ui): raise the timeline memory chart contrast (stronger opacity ramp, `1.5` stroke) and wrap long event FQCNs mid-word at narrow viewports.
+- refactor!: remove the dead timeline color API — `TimelinePanel::getColors()`/`setColors()` and `DataProvider::getColor()`/`getCssClass()`; bars are colored by domain category (`--yii-debug-cat-*` tokens) since the redesign, so the computed hex was never rendered. Configurations passing a `colors` key to the timeline panel now throw `UnknownPropertyException` and must drop it.
+- fix(ui): densify the Events grid header, filter, and body cell padding under the 768px breakpoint, removing the residual horizontal scroll left by classic desktop scrollbars at narrow viewports.
 
 ## 0.1.1 May 18, 2026
 
