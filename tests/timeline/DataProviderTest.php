@@ -13,71 +13,12 @@ use yii\debug\tests\support\TestCase;
 use yii\web\Controller;
 
 /**
- * Unit tests for {@see DataProvider} covering the color-bucket fallback, the CSS alignment class, the memory tuple,
- * the adaptive ruler ticks, and the `cssNumber` non-numeric guard.
+ * Unit tests for {@see DataProvider} covering the memory tuple, the adaptive ruler ticks, and the child-overlap
+ * tracking.
  */
 #[Group('timeline')]
 final class DataProviderTest extends TestCase
 {
-    public function testCssNumberFallsBackToNullForNonNumericValues(): void
-    {
-        $panel = $this->stubPanel();
-        $provider = new DataProvider($panel);
-
-        // 'css.width' is a string here → 'cssNumber' falls back to `null` → 'getColor' fetches width via `getWidth`.
-        $result = $provider->getColor(['css' => ['width' => 'not-a-number'], 'duration' => 0.05]);
-
-        self::assertStringStartsWith(
-            '#',
-            $result,
-            "Non-numeric 'css.width' must fall back through 'getWidth' and still produce a hex color.",
-        );
-    }
-
-    public function testGetColorReturnsFallbackWhenNoBucketMatches(): void
-    {
-        $panel = $this->stubPanel();
-
-        $provider = new DataProvider($panel);
-
-        // Force the bucket lookup to miss by passing a 'css.width' of `-1` (below every configured threshold).
-        self::assertSame(
-            '#d6e685',
-            $provider->getColor(['css' => ['width' => -1.0]]),
-            'Sub-threshold widths must surface the fallback green hex.',
-        );
-    }
-
-    public function testGetCssClassAlignsLeftForLeftBars(): void
-    {
-        $panel = $this->stubPanel();
-
-        $provider = new DataProvider($panel);
-
-        $result = $provider->getCssClass(['css' => ['left' => 0.0, 'width' => 30.0]]);
-
-        self::assertStringContainsString(
-            'left',
-            $result,
-            'Bars sitting before the 15% threshold must align left.',
-        );
-    }
-
-    public function testGetCssClassAlignsRightForFarRightBars(): void
-    {
-        $panel = $this->stubPanel();
-
-        $provider = new DataProvider($panel);
-
-        $result = $provider->getCssClass(['css' => ['left' => 60.0, 'width' => 30.0]]);
-
-        self::assertStringContainsString(
-            'right',
-            $result,
-            "Bars sitting beyond the 50% midpoint must align 'right' to avoid label clipping.",
-        );
-    }
-
     public function testGetMemoryReturnsFormattedTupleForPositiveValue(): void
     {
         $panel = $this->stubPanel();

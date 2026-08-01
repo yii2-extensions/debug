@@ -18,23 +18,12 @@ use yii\web\Controller;
 
 /**
  * Unit tests for {@see TimelinePanel} covering the snapshot capture, the strict `load()` validation, the SVG renderer
- * lazy factory, the color-threshold normalization, the cached span rows, and the toolbar metadata.
+ * lazy factory, the cached span rows, and the toolbar metadata.
  */
 #[Group('panel')]
 #[Group('timeline')]
 final class TimelinePanelTest extends TestCase
 {
-    public function testGetColorsReturnsDefaultsSortedDescending(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        self::assertSame(
-            [1 => '#8cc665', 10 => '#44a340', 20 => '#1e6823'],
-            $panel->getColors(),
-            'Default colors must keep the original insertion order.',
-        );
-    }
-
     public function testGetDetailRendersWithProfilingMessages(): void
     {
         $panel = $this->makeTimelinePanel();
@@ -387,19 +376,6 @@ final class TimelinePanelTest extends TestCase
             $after,
             $saved['start'],
             'Start must not jump past the call site.',
-        );
-    }
-
-    public function testSetColorsFiltersNonStringEntriesAndSortsDescending(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $panel->setColors([5 => '#aaa', 50 => '#bbb', 25 => 42, 75 => '#ccc']);
-
-        self::assertSame(
-            [75 => '#ccc', 50 => '#bbb', 5 => '#aaa'],
-            $panel->getColors(),
-            'Non-string values must be dropped; remaining keys must sort descending.',
         );
     }
 

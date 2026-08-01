@@ -14,28 +14,17 @@ use yii\debug\models\timeline\Svg;
 use yii\debug\Panel;
 
 use function is_array;
-use function is_string;
 
 /**
  * Captures the request's profile spans and renders them as a horizontal timeline chart.
  *
  * Joins the request start/end captured at `save()` time with the profile messages from {@see ProfilingPanel} to build
- * the per-span timeline, color-codes each bar based on its share of the total duration, and exposes an inline SVG
- * memory-usage line through {@see getSvg()}.
+ * the per-span timeline and exposes an inline SVG memory-usage line through {@see getSvg()}.
  *
  * @extends Panel<array{start?: mixed, end?: mixed, memory?: mixed}>
  */
 class TimelinePanel extends Panel
 {
-    /**
-     * @var array<int, string> Color indicators keyed by percentage threshold of total request time, valued by hex
-     * color; bars whose width is greater than or equal to the threshold render in that color.
-     */
-    private array $colors = [
-        1 => '#8cc665',
-        10 => '#44a340',
-        20 => '#1e6823',
-    ];
     /**
      * Request duration in milliseconds (resolved from the Profiling panel when available, otherwise `end - start`).
      */
@@ -66,16 +55,6 @@ class TimelinePanel extends Panel
     private array $svgOptions = [
         'class' => Svg::class,
     ];
-
-    /**
-     * Returns the color indicators keyed by percentage threshold and valued by hex color.
-     *
-     * @return array<int, string> Color map in `percent => #hex` order.
-     */
-    public function getColors(): array
-    {
-        return $this->colors;
-    }
 
     /**
      * Renders the detail view with the timeline chart and the filter form.
@@ -313,17 +292,6 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Sets the color indicators map (`percent => #hex`), sorted in descending percentage order on assignment so
-     * {@see getColors()} returns the most specific threshold first.
-     *
-     * @param array<int|string, mixed> $colors Color map to apply; non-string values are dropped.
-     */
-    public function setColors(array $colors): void
-    {
-        $this->colors = self::normalizeColors($colors);
-    }
-
-    /**
      * Merges the given options into {@see $svgOptions} and resets the memoized renderer, so the next {@see getSvg()}
      * call rebuilds it with the updated configuration.
      *
@@ -371,29 +339,6 @@ class TimelinePanel extends Panel
         }
 
         return Coerce::floatOrNull($profilingPanel->data['time'] ?? null);
-    }
-
-    /**
-     * Narrows the input map to `int => string` entries and sorts by descending percentage so the most specific
-     * threshold sits first.
-     *
-     * @param array<int|string, mixed> $colors Raw color map.
-     *
-     * @return array<int, string> Sorted color map keyed by percentage threshold.
-     */
-    private static function normalizeColors(array $colors): array
-    {
-        $normalized = [];
-
-        foreach ($colors as $percent => $color) {
-            if (is_string($color)) {
-                $normalized[(int) $percent] = $color;
-            }
-        }
-
-        krsort($normalized);
-
-        return $normalized;
     }
 
     /**

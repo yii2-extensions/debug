@@ -18,49 +18,18 @@ use function max;
 /**
  * Wraps the timeline records as a sortable provider that derives per-row CSS layout fields for the timeline view.
  *
- * Computes each row's left offset, width, color band, and child-count overlap relative to the bound
- * {@see TimelinePanel} so the view can render every bar without recomputing geometry on every callback.
+ * Computes each row's left offset, width, and child-count overlap relative to the bound {@see TimelinePanel} so the
+ * view can render every bar without recomputing geometry on every callback.
  */
 class DataProvider extends ArrayDataProvider
 {
     /**
-     * @param TimelinePanel $panel Panel providing the request start time, total duration, and color buckets.
+     * @param TimelinePanel $panel Panel providing the request start time, total duration, and peak memory.
      * @param array<string, mixed> $config Standard {@see ArrayDataProvider} configuration.
      */
     public function __construct(protected TimelinePanel $panel, array $config = [])
     {
         parent::__construct($config);
-    }
-
-    /**
-     * Returns the HEX color associated with the model's duration bucket.
-     *
-     * @param array<array-key, mixed> $model Timeline row carrying a `css.width` percentage.
-     */
-    public function getColor(array $model): string
-    {
-        $width = self::cssNumber($model, 'width') ?? $this->getWidth($model);
-
-        foreach ($this->panel->getColors() as $percent => $color) {
-            if ($width >= (float) $percent) {
-                return $color;
-            }
-        }
-
-        return '#d6e685';
-    }
-
-    /**
-     * Returns the CSS class describing the row's left/right alignment within the timeline.
-     *
-     * @param array<array-key, mixed> $model Timeline row carrying `css.left` and `css.width` percentages.
-     */
-    public function getCssClass(array $model): string
-    {
-        $left = self::cssNumber($model, 'left') ?? 0.0;
-        $width = self::cssNumber($model, 'width') ?? 0.0;
-
-        return 'time' . (($left > 15) && ($left + $width > 50) ? ' right' : ' left');
     }
 
     /**
@@ -208,7 +177,6 @@ class DataProvider extends ArrayDataProvider
             $model['css'] = [
                 'width' => $this->getWidth($model),
                 'left' => $this->getLeft($model),
-                'color' => $this->getColor($model),
             ];
 
             foreach ($child as $id => $closesAt) {
@@ -227,24 +195,5 @@ class DataProvider extends ArrayDataProvider
         unset($model);
 
         return array_values($models);
-    }
-
-    /**
-     * Returns a numeric value from `$model['css'][$key]`, or `null` when the entry is missing or non-numeric.
-     *
-     * @param array<array-key, mixed> $model Timeline row whose `css` sub-array is read.
-     * @param string $key Key inside `css` to coerce to a float.
-     */
-    private static function cssNumber(array $model, string $key): float|null
-    {
-        $css = $model['css'] ?? null;
-
-        if (!is_array($css)) {
-            return null;
-        }
-
-        $value = $css[$key] ?? null;
-
-        return is_numeric($value) ? (float) $value : null;
     }
 }
