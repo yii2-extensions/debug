@@ -32,10 +32,10 @@ class Svg extends BaseObject implements Stringable
      * @var array<int, float|int|string>
      */
     public array $gradient = [
-        10 => 0.1,
-        60 => 0.35,
-        90 => 0.55,
-        100 => 0.8,
+        10 => 0.18,
+        60 => 0.45,
+        90 => 0.65,
+        100 => 0.85,
     ];
     /**
      * Panel IDs whose log messages feed the graph.
@@ -115,7 +115,7 @@ class Svg extends BaseObject implements Stringable
                         ->points($this->polylinePoints())
                         ->fill('none')
                         ->stroke($this->stroke)
-                        ->strokeWidth(1),
+                        ->strokeWidth('1.5'),
                 ),
             )
             ->preserveAspectRatio('none')

@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: drive the timeline memory chart from the design tokens — the SVG polyline stroke and gradient stops now default to `currentColor` (the memory track sets `color: var(--yii-debug-panel-primary)`), replacing the hardcoded GitHub-green ramp whose trace stayed `#1e6823` in dark mode; numeric `Svg::$gradient` values now mean per-stop `stop-opacity` (string values remain verbatim stop colors), and the gradient id is namespaced to `yii-debug-tl-memory-gradient`.
 - feat: bring the Mail, Dump, and Events panels to the shared design system — Mail opens with the `.yii-debug-grid-summary` strip (message count, failed-count danger stat, working page-size selector) and its status pills and dot join the tinted vocabulary formula; Dump gains an empty-state card with a `Yii::debug()` usage snippet, the `yii-debug-grid-dump` variant, a filter-preserving `filterUrl`, a mono category column, and hue-driven type badges; Events gains an empty-state card, a summary strip (events/classes/static counts), FQCN cells split into muted namespace plus bold short name, a muted `static` badge, and a Yes/No filter dropdown, fixing its copy-pasted grid id and stale `@var` annotation.
 - chore: apply the accumulated Rector backlog.
+- fix(ui): raise the timeline memory chart contrast (stronger opacity ramp, `1.5` stroke) and wrap long event FQCNs mid-word at narrow viewports.
 
 ## 0.1.1 May 18, 2026
 
