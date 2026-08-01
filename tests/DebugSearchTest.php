@@ -70,6 +70,7 @@ final class DebugSearchTest extends TestCase
             "'mailCount' label must be defined.",
         );
     }
+
     public function testFilterRejectsMalformedInternalConditions(): void
     {
         $this->mockWebApplication();
