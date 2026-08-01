@@ -83,34 +83,30 @@ if ($page !== null) {
     <?php if ($statusCode === 409): ?>
         <?= EmptyState::card(
             'Version conflict interrupted this visit',
-            P::tag()
-                                ->html(
-                                    'The client asset version sent in ',
-                                    Code::tag()->content('X-Inertia-Version'),
-                                    ' no longer matches the server version, so Inertia answered ',
-                                    Code::tag()->content('409'),
-                                    ' and asked the client to reload the full page.',
-                                ),
-            P::tag()
-                                ->html(
-                                    'Reload target: ',
-                                    Code::tag()->content($location ?? '—'),
-                                ),
+            P::tag()->html(
+                'The client asset version sent in ',
+                Code::tag()->content('X-Inertia-Version'),
+                ' no longer matches the server version, so Inertia answered ',
+                Code::tag()->content('409'),
+                ' and asked the client to reload the full page.',
+            ),
+            P::tag()->html(
+                'Reload target: ',
+                Code::tag()->content($location ?? '—'),
+            ),
         ) ?>
     <?php else: ?>
         <?= EmptyState::card(
             'No Inertia page in this request',
-            P::tag()
-                                ->html(
-                                    'This response was not produced by ',
-                                    Code::tag()->content('Inertia::render()'),
-                                    ', so there is no page object to inspect.',
-                                ),
-            P::tag()
-                                ->content(
-                                    'Both full page loads and Inertia XHR visits populate this view; plain JSON endpoints, '
-                                    . 'redirects, and asset requests do not.',
-                                ),
+            P::tag()->html(
+                'This response was not produced by ',
+                Code::tag()->content('Inertia::render()'),
+                ', so there is no page object to inspect.',
+            ),
+            P::tag()->content(
+                'Both full page loads and Inertia XHR visits populate this view; plain JSON endpoints, '
+                    . 'redirects, and asset requests do not.',
+            ),
         ) ?>
     <?php endif; ?>
     <?php return; ?>
