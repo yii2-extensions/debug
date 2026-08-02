@@ -226,6 +226,37 @@ final class AssetPanelTest extends TestCase
         );
     }
 
+    public function testCaptureSkipsManifestEntriesThatAreNotNamedChunkDescriptors(): void
+    {
+        $manifestPath = dirname(__DIR__, 2) . '/runtime/vite-manifest-malformed.json';
+
+        @mkdir(dirname($manifestPath), 0o777, true);
+        file_put_contents(
+            $manifestPath,
+            // A numeric key decodes to an `int`, and a scalar value is not a chunk descriptor; both must be skipped.
+            '{"0":{"file":"assets/numeric.js"},"broken.js":"not-a-descriptor","resources/js/app.js":{"file":"a.js"}}',
+        );
+
+        $panel = $this->makePanel(
+            AssetPanel::class,
+            ['inertiaVue' => ['class' => Vite::class, 'manifestPath' => $manifestPath]],
+        );
+
+        try {
+            $vite = $panel->capture()->vite();
+
+            self::assertNotNull($vite, 'The Vite bridge must still be captured.');
+            self::assertCount(1, $vite->chunks, 'Only the well-formed named descriptor survives.');
+            self::assertSame(
+                'resources/js/app.js',
+                $vite->chunks[0]->name,
+                'The surviving chunk keeps its source name.',
+            );
+        } finally {
+            @unlink($manifestPath);
+        }
+    }
+
     public function testCaptureSkipsNonStringKeysAndNonAssetBundleEntries(): void
     {
         $panel = $this->makePanel(AssetPanel::class);

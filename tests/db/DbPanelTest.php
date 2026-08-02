@@ -51,10 +51,18 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
+        // The category must be one of `dbEventNames`, otherwise the pair never survives the profile-log filter and the
+        // assertion below would hold vacuously, without the timing loop ever running.
         $this->primeDbPanel($panel, [
-            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_BEGIN, 'cat', 0.0, [], 0],
-            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_END, 'cat', 0.001, [], 0],
+            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', 0.0, [], 0],
+            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', 0.001, [], 0],
         ], []);
+
+        self::assertCount(
+            2,
+            $panel->getProfileLogs(),
+            'Both profile messages must reach the timing loop.',
+        );
 
         self::assertSame(
             [],
