@@ -34,6 +34,7 @@ final class QueueSummaryTest extends TestCase
         self::assertSame(2, $summary->totalEvents(), 'Non-array entries must be dropped at capture.');
         self::assertSame(1, $summary->totalPushed(), 'Only the explicit push survives.');
     }
+
     public function testFromRecordsAggregatesEventTypeCounts(): void
     {
         $summary = QueueSummary::fromRecords(self::records([
@@ -114,7 +115,6 @@ final class QueueSummaryTest extends TestCase
             "Total events must be '0'.",
         );
     }
-
 
     public function testFromRecordsReturnsRecordsInOriginalOrder(): void
     {

@@ -271,6 +271,7 @@ final class AssetPanelTest extends TestCase
             @unlink($manifestPath);
         }
     }
+
     public function testFormatOptionsStringifiesScalarsAndDebugTypesOtherValues(): void
     {
         $panel = $this->makePanel(AssetPanel::class);

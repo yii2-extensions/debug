@@ -27,6 +27,7 @@ final class PanelTest extends TestCase
             'Base Panel records nothing by default.',
         );
     }
+
     public function testGetDetailDefaultsToEmptyString(): void
     {
         self::assertSame(

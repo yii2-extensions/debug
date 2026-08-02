@@ -34,6 +34,7 @@ final class DebugValueTest extends TestCase
         self::assertSame('object', $value->type, 'The value stays a tagged object.');
         self::assertStringContainsString('Stringable@anonymous', (string) $value->value, 'The class name is the fallback.');
     }
+
     public function testCaptureLabelsAClosedResourceAsUnsupported(): void
     {
         $handle = fopen('php://memory', 'r');
@@ -141,6 +142,7 @@ final class DebugValueTest extends TestCase
 
         DebugValue::fromArray(['type' => 'null', 'unexpected' => true]);
     }
+
     public function testRoundTripPreservesJsonSafeValuesAndLabelsUnsafeValues(): void
     {
         $object = new stdClass();

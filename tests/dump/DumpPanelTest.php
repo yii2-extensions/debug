@@ -318,7 +318,6 @@ final class DumpPanelTest extends TestCase
         );
     }
 
-
     public function testVarDumpDelegatesToCallbackWhenSet(): void
     {
         $panel = $this->makePanel(DumpPanel::class);

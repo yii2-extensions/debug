@@ -148,5 +148,4 @@ class LogPanel extends Panel implements ProvidesMemorySamples
 
         return $items;
     }
-
 }

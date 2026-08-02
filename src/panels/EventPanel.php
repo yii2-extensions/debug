@@ -120,6 +120,4 @@ class EventPanel extends Panel
 
         return [['value' => $eventCount]];
     }
-
-
 }
