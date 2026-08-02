@@ -12,7 +12,6 @@ use yii\rest\UrlRule as RestUrlRule;
 use yii\web\GroupUrlRule;
 use yii\web\UrlRule as WebUrlRule;
 
-use function is_iterable;
 use function is_object;
 
 /**

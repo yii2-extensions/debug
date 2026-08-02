@@ -16,15 +16,12 @@ use yii\helpers\Inflector;
 use yii\web\{GroupUrlRule, UrlRule, UrlRuleInterface};
 
 use function class_exists;
-use function count;
 use function is_array;
-use function is_string;
 use function is_subclass_of;
 use function ksort;
 use function ltrim;
 use function mb_strtolower;
 use function pathinfo;
-use function preg_replace;
 use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
