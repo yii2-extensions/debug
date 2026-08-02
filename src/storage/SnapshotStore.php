@@ -17,7 +17,6 @@ use function count;
 use function fclose;
 use function file_get_contents;
 use function flock;
-use function fopen;
 use function glob;
 use function is_file;
 use function is_string;
@@ -25,7 +24,6 @@ use function json_decode;
 use function json_encode;
 use function pathinfo;
 use function preg_match;
-use function rename;
 use function unlink;
 
 /**

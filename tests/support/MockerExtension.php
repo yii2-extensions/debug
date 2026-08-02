@@ -56,6 +56,8 @@ final class MockerExtension implements Extension
             ['namespace' => 'yii\debug\panels', 'name' => 'phpinfo'],
             ['namespace' => 'yii\debug\panels', 'name' => 'ob_get_clean'],
             ['namespace' => 'yii\debug\storage', 'name' => 'file_put_contents'],
+            ['namespace' => 'yii\debug\storage', 'name' => 'fopen'],
+            ['namespace' => 'yii\debug\storage', 'name' => 'rename'],
             ['namespace' => 'yii\debug\storage', 'name' => 'tempnam'],
         ];
 

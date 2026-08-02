@@ -32,18 +32,17 @@ final class SnapshotStoreTest extends TestCase
 
     public function testLoadManifestReturnsNothingWhenTheLockFileCannotBeOpened(): void
     {
-        FileHelper::createDirectory($this->path);
-        chmod($this->path, 0o555);
+        $store = $this->store();
 
-        try {
-            self::assertSame(
-                [],
-                $this->store()->loadManifest(),
-                'An unwritable directory must yield an empty manifest instead of throwing.',
-            );
-        } finally {
-            chmod($this->path, 0o777);
-        }
+        $store->updateManifest($this->summary('tag-1', 1_700_000_000.0), 10);
+
+        MockerState::addCondition('yii\\debug\\storage', 'fopen', [], false, true);
+
+        self::assertSame(
+            [],
+            $store->loadManifest(),
+            'An unopenable lock file must yield an empty manifest instead of throwing.',
+        );
     }
 
     public function testReadSnapshotReturnsNullForATagThatWasNeverWritten(): void
@@ -105,20 +104,15 @@ final class SnapshotStoreTest extends TestCase
 
     public function testThrowInvalidConfigExceptionWhenTheSnapshotCannotBeMovedIntoPlace(): void
     {
-        FileHelper::createDirectory($this->path);
-        chmod($this->path, 0o555);
+        MockerState::addCondition('yii\\debug\\storage', 'rename', [], false, true);
 
-        try {
-            $this->expectException(InvalidConfigException::class);
-            $this->expectExceptionMessage('Unable to replace debug data file');
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage('Unable to replace debug data file');
 
-            $this->store()->writeSnapshot(
-                'blocked',
-                new DebugSnapshot($this->summary('blocked', 1_700_000_000.0), [], []),
-            );
-        } finally {
-            chmod($this->path, 0o777);
-        }
+        $this->store()->writeSnapshot(
+            'blocked',
+            new DebugSnapshot($this->summary('blocked', 1_700_000_000.0), [], []),
+        );
     }
 
     public function testThrowInvalidConfigExceptionWhenTheTemporaryFileCannotBeCreated(): void
