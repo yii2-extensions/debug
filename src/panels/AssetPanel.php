@@ -212,11 +212,11 @@ class AssetPanel extends Panel
             return null;
         }
 
-        $manifestPath = ArrayHelper::getValue($component, 'manifestPath');
-
-        $manifestPath = is_string($manifestPath)
-            ? (string) Yii::getAlias($manifestPath, false)
-            : '';
+        // A bridge that declares no manifest path coerces to '', which Yii::getAlias() returns unchanged.
+        $manifestPath = (string) Yii::getAlias(
+            Coerce::string(ArrayHelper::getValue($component, 'manifestPath')),
+            false,
+        );
 
         $devServerUrl = ArrayHelper::getValue($component, 'devServerUrl');
 

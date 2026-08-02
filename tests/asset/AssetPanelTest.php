@@ -141,6 +141,17 @@ final class AssetPanelTest extends TestCase
         }
     }
 
+    public function testCaptureLeavesTheManifestPathEmptyWhenTheBridgeDeclaresNone(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class, ['inertiaVue' => ['class' => Vite::class]]);
+
+        $vite = $panel->capture()->vite();
+
+        self::assertNotNull($vite, 'The Vite bridge must still be captured.');
+        self::assertSame('', $vite->manifestPath, 'A bridge without a manifest path reports an empty path.');
+        self::assertSame([], $vite->chunks, 'No manifest means no chunks.');
+    }
+
     public function testCaptureOmitsViteKeyWithoutBridgeComponent(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
