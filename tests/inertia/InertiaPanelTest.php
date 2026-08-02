@@ -129,6 +129,7 @@ final class InertiaPanelTest extends TestCase
             'Status code must be captured.',
         );
     }
+
     public function testGetDetailMarksSharedAndPageProps(): void
     {
         $panel = $this->makePanel(InertiaPanel::class);

@@ -89,6 +89,10 @@ final readonly class QueryRow implements PanelRow
     /**
      * Builds a typed row from one resolved logger timing.
      *
+     * @param string $type Uppercase SQL command verb extracted from the statement.
+     * @param int $seq Zero-based sequence index.
+     * @param int $duplicate Number of times the same statement was emitted in this request.
+     * @param int|null $rows Rows reported by the driver, or `null` when it reported none.
      * @param array{
      *   info: string,
      *   category: string,
@@ -100,10 +104,6 @@ final readonly class QueryRow implements PanelRow
      *   memoryDiff: int,
      *   traceHash: string
      * } $timing Resolved timing.
-     * @param string $type Uppercase SQL command verb extracted from the statement.
-     * @param int $seq Zero-based sequence index.
-     * @param int $duplicate Number of times the same statement was emitted in this request.
-     * @param int|null $rows Rows reported by the driver, or `null` when it reported none.
      */
     public static function fromTiming(array $timing, string $type, int $seq, int $duplicate, int|null $rows): self
     {

@@ -34,6 +34,7 @@ final class LogPanelTest extends TestCase
             'Non-array entries must be dropped at capture.',
         );
     }
+
     public function testCaptureExcludesCategoriesOwnedByRouterPanel(): void
     {
         $panel = $this->makePanel(LogPanel::class);

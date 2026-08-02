@@ -41,6 +41,7 @@ final class SidebarDataNormalizerTest extends TestCase
             'A console invocation has no host portion to strip.',
         );
     }
+
     public function testFromIndexBuildsNavItemsForNewestTagWhenManifestNonEmpty(): void
     {
         $this->mockWebApplication();

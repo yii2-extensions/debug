@@ -39,6 +39,7 @@ final class ProfilingPanelTest extends TestCase
         self::assertSame([], $snapshot->entries(), 'Empty log target yields no profile blocks.');
         self::assertSame([], $snapshot->samples(), 'Empty log target yields no memory samples.');
     }
+
     public function testGetDetailFallsBackToHashTimelineUrlWhenModuleIsMissing(): void
     {
         $panel = $this->makePanel(ProfilingPanel::class);
@@ -131,8 +132,6 @@ final class ProfilingPanelTest extends TestCase
             "Icon key must be 'profiling'.",
         );
     }
-
-
 
     public function testGetToolbarDataBlanksTitleOnSuccess(): void
     {
@@ -236,8 +235,4 @@ final class ProfilingPanelTest extends TestCase
             "Memory chip must carry the 'Peak' title.",
         );
     }
-
-
-
-
 }

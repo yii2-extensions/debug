@@ -75,6 +75,7 @@ final class TimelinePanelTest extends TestCase
             'Start must not jump past the call site.',
         );
     }
+
     public function testGetDetailRendersWithProfilingMessages(): void
     {
         $panel = $this->makeTimelinePanel();
@@ -324,8 +325,6 @@ final class TimelinePanelTest extends TestCase
             'Profiling time must override the start/end delta.',
         );
     }
-
-
 
     public function testSetSvgOptionsMergesAndResetsMemoizedRenderer(): void
     {

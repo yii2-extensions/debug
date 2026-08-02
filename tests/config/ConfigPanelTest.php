@@ -91,6 +91,7 @@ final class ConfigPanelTest extends TestCase
             "'debug' must match the 'YII_DEBUG' constant.",
         );
     }
+
     public function testGetApplicationReturnsNullWhenYiiAppIsUnset(): void
     {
         $panel = new ConfigPanel();

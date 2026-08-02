@@ -116,6 +116,7 @@ final class RouterPanelTest extends TestCase
             "Route must fall back to 'requestedRoute'.",
         );
     }
+
     public function testGetCategoriesReturnsDefaultCategories(): void
     {
         $panel = $this->makePanel(RouterPanel::class);
@@ -172,10 +173,6 @@ final class RouterPanelTest extends TestCase
             "Icon key must be 'router'.",
         );
     }
-
-
-
-
 
     public function testGetToolbarItemsFormatsTitleAndValue(): void
     {
@@ -277,9 +274,6 @@ final class RouterPanelTest extends TestCase
         self::assertTrue($row->match, 'Match flag must round-trip.');
         self::assertTrue($restored->hasMatch(), 'A matching rule must raise the snapshot flag.');
     }
-
-
-
 
     public function testSetCategoriesAppendsArrayValues(): void
     {

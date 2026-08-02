@@ -618,8 +618,6 @@ final class MailPanelTest extends TestCase
         Event::offAll();
     }
 
-
-
     private function cleanupDataPath(string $dataPath): void
     {
         $files = glob("{$dataPath}/*");

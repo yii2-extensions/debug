@@ -31,6 +31,7 @@ final class EventPanelTest extends TestCase
 
         Event::offAll();
     }
+
     public function testGetDetailRendersEmptyStateWhenNoEventsCaptured(): void
     {
         $panel = $this->makePanel(EventPanel::class);
@@ -226,6 +227,4 @@ final class EventPanelTest extends TestCase
 
         Event::offAll();
     }
-
-
 }

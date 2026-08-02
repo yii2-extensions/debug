@@ -286,5 +286,4 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
 
         return $class->getProperty($propertyName);
     }
-
 }

@@ -23,6 +23,7 @@ final class ExceptionSnapshotTest extends TestCase
 
         ExceptionSnapshot::fromArray($payload);
     }
+
     public function testThrowableRoundTripsThroughJson(): void
     {
         $throwable = new RuntimeException('outer failure', 42, new LogicException('inner failure', 7));

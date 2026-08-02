@@ -210,6 +210,7 @@ final class RequestPanelTest extends TestCase
             'Configured displayVar must surface under its trimmed key.',
         );
     }
+
     public function testCensorArrayLeavesUnmatchedKeysUntouched(): void
     {
         $panel = $this->makePanel(RequestPanel::class);
