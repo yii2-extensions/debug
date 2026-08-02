@@ -55,6 +55,7 @@ final class BaseTest extends TestCase
             'An array candidate must be matched against its dumped representation.',
         );
     }
+
     public function testRowsMissingTheFilteredAttributeAreRejected(): void
     {
         $this->mockWebApplication();

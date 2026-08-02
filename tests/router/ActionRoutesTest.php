@@ -49,6 +49,7 @@ final class ActionRoutesTest extends TestCase
         self::assertSame(1, $first['count'], 'The rule still matches, so the counter advances.');
         self::assertNull($first['rule'], 'A non-string rule name must surface as `null`.');
     }
+
     public function testScanResolvesControllerMapArrayConfigWithClassKey(): void
     {
         $this->mockWebApplication(
