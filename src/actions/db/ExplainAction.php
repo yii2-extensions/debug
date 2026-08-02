@@ -14,7 +14,7 @@ use yii\web\HttpException;
  * Renders the EXPLAIN plan for a single captured SQL query.
  *
  * Maps to the `db-explain` route registered by {@see DbPanel::getActions()}; consumes `tag` (request snapshot) and
- * `seq` (index into the panel's timings array) to locate the SQL statement and execute the driver-appropriate EXPLAIN
+ * `seq` (index into the panel's captured rows) to locate the SQL statement and execute the driver-appropriate EXPLAIN
  * command.
  *
  * SQLite uses `EXPLAIN QUERY PLAN`; MySQL and PostgreSQL use plain `EXPLAIN`.
@@ -57,15 +57,15 @@ class ExplainAction extends Action
 
         $controller->loadData($tag);
 
-        $timings = $this->panel->calculateTimings();
+        $rows = $this->panel->getRows();
 
         $seqKey = (int) $seq;
 
-        if (!isset($timings[$seqKey])) {
+        if (!isset($rows[$seqKey])) {
             throw new HttpException(404, 'Log message not found.');
         }
 
-        $query = $timings[$seqKey]['info'];
+        $query = $rows[$seqKey]->query;
 
         $db = $this->panel->getDb();
         $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';

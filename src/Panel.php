@@ -8,6 +8,7 @@ use Closure;
 use Throwable;
 use yii\base\{Component, InvalidConfigException, ViewContextInterface};
 use yii\debug\helpers\Coerce;
+use yii\debug\storage\{ExceptionSnapshot, HydrationException, PanelSnapshot};
 use yii\helpers\{ArrayHelper, StringHelper, Url, VarDumper};
 
 use function array_key_exists;
@@ -18,11 +19,9 @@ use function strlen;
 /**
  * Base class for debug toolbar panels.
  *
- * Defines the contract every panel implements: how request data is captured on `save()`, rehydrated on `load()`, and
+ * Defines the contract every panel implements: how request data is captured, hydrated, and
  * surfaced on the toolbar and detail views. The container {@see Module} wires {@see $id}, {@see $module}, and
  * {@see $tag} automatically on registration.
- *
- * @template TData of mixed = mixed
  */
 class Panel extends Component implements ViewContextInterface
 {
@@ -41,12 +40,6 @@ class Panel extends Component implements ViewContextInterface
      */
     public array $actions = [];
     /**
-     * Captured panel payload as produced by {@see save()} and rehydrated by {@see load()}.
-     *
-     * @var TData|null
-     */
-    public mixed $data = null;
-    /**
      * Panel unique identifier, assigned by the container module on registration.
      */
     public string $id = '';
@@ -60,9 +53,22 @@ class Panel extends Component implements ViewContextInterface
     public string $tag = '';
 
     /**
-     * Exception captured during {@see save()}, when the panel failed to produce its payload.
+     * Exception captured when the panel failed to produce or hydrate its snapshot.
      */
-    protected FlattenException|null $error = null;
+    protected ExceptionSnapshot|null $error = null;
+
+    /**
+     * Captures the panel payload for the current request.
+     *
+     * Invoked by {@see LogTarget::export()} at request end; the DTO is encoded into the request's versioned JSON
+     * snapshot and rehydrated through {@see hydrate()} on read-back.
+     *
+     * @return PanelSnapshot|null Typed payload to persist; `null` when the panel records nothing.
+     */
+    public function capture(): PanelSnapshot|null
+    {
+        return null;
+    }
 
     /**
      * Returns the detail view markup rendered when the user opens the panel.
@@ -77,7 +83,7 @@ class Panel extends Component implements ViewContextInterface
     /**
      * Returns the exception captured while collecting the panel payload, if any.
      */
-    public function getError(): FlattenException|null
+    public function getError(): ExceptionSnapshot|null
     {
         return $this->error;
     }
@@ -264,7 +270,7 @@ class Panel extends Component implements ViewContextInterface
     }
 
     /**
-     * Returns `true` when {@see setError()} captured a {@see FlattenException} during {@see save()}.
+     * Returns `true` when {@see setError()} captured an exception during panel capture or hydration.
      */
     public function hasError(): bool
     {
@@ -272,14 +278,15 @@ class Panel extends Component implements ViewContextInterface
     }
 
     /**
-     * Indicates whether the detail view exposes the Prev/Next/All/Latest/Last-10 navigation across captured requests.
+     * Hydrates the panel from the JSON payload previously produced by {@see capture()}.
      *
-     * Returns `true` by default. Override to `false` on panels whose data is request-agnostic (for example,
-     * configuration snapshots), where stepping between request tags does not change what the user sees.
+     * Invoked by {@see LogTarget::loadTagToPanels()} when the user opens a captured request.
+     *
+     * @param array<string, mixed> $payload Panel-specific JSON object.
      */
-    public function hasRequestNavigation(): bool
+    public function hydrate(array $payload): void
     {
-        return true;
+        throw HydrationException::at("$.panels.{$this->id}", 'a payload supported by this panel');
     }
 
     /**
@@ -291,34 +298,9 @@ class Panel extends Component implements ViewContextInterface
     }
 
     /**
-     * Hydrates the panel from the payload previously produced by {@see save()}.
-     *
-     * Invoked by {@see LogTarget::loadTagToPanels()} when the user opens a captured request.
-     *
-     * @param TData $data Payload returned by {@see save()}; format is panel-specific.
+     * Records an exception thrown during capture or hydration so {@see LogTarget} can surface it in the UI.
      */
-    public function load(mixed $data): void
-    {
-        $this->data = $data;
-    }
-
-    /**
-     * Captures the panel payload for the current request.
-     *
-     * Invoked by {@see LogTarget::export()} at request end; the return value is serialized into the `<tag>.data` file
-     * and rehydrated by {@see load()} on read-back.
-     *
-     * @return TData|null Payload to persist; `null` when the panel records nothing.
-     */
-    public function save(): mixed
-    {
-        return null;
-    }
-
-    /**
-     * Records an exception thrown by {@see save()} so {@see LogTarget} can surface it on the toolbar and detail view.
-     */
-    public function setError(FlattenException $error): void
+    public function setError(ExceptionSnapshot $error): void
     {
         $this->error = $error;
     }

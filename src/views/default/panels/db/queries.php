@@ -100,35 +100,27 @@ if ($hasQueries) {
                 'attribute' => 'type',
                 'label' => 'Type',
                 'format' => 'raw',
-                'value' => static fn(mixed $data): string => DbQueryRenderer::renderTypeCell(
-                    QueryRow::fromMixed($data),
-                ),
+                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderTypeCell($data),
                 'filter' => $panel->getTypes(),
                 'options' => ['width' => '8%'],
             ],
             [
                 'attribute' => 'seq',
                 'label' => 'Time',
-                'value' => static fn(mixed $data): string => DbQueryRenderer::renderTimeCell(
-                    QueryRow::fromMixed($data),
-                ),
+                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderTimeCell($data),
                 'headerOptions' => ['class' => 'sort-numerical'],
                 'options' => ['width' => '10%'],
             ],
             [
                 'attribute' => 'duration',
-                'value' => static fn(mixed $data): string => DbQueryRenderer::renderDurationCell(
-                    QueryRow::fromMixed($data),
-                ),
+                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderDurationCell($data),
                 'options' => ['width' => '8%'],
                 'headerOptions' => ['class' => 'sort-numerical'],
             ],
             [
                 'attribute' => 'rows',
                 'label' => 'Rows',
-                'value' => static fn(mixed $data): string => DbQueryRenderer::renderRowsCell(
-                    QueryRow::fromMixed($data),
-                ),
+                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderRowsCell($data),
                 'options' => ['width' => '7%'],
                 'headerOptions' => ['class' => 'sort-numerical'],
             ],
@@ -140,8 +132,8 @@ if ($hasQueries) {
             ],
             [
                 'attribute' => 'query',
-                'value' => static fn(mixed $data): string => DbQueryRenderer::renderQueryCell(
-                    QueryRow::fromMixed($data),
+                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderQueryCell(
+                    $data,
                     $panel,
                     $hasExplain,
                     $explainUrlBuilder,

@@ -12,16 +12,14 @@ use yii\debug\helpers\Coerce;
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\Svg;
 use yii\debug\Panel;
-
-use function is_array;
+use yii\debug\panels\profile\ProfileRow;
+use yii\debug\panels\timeline\TimelineSnapshot;
 
 /**
  * Captures the request's profile spans and renders them as a horizontal timeline chart.
  *
- * Joins the request start/end captured at `save()` time with the profile messages from {@see ProfilingPanel} to build
+ * Joins the request start/end captured by {@see capture()} with the profile messages from {@see ProfilingPanel} to build
  * the per-span timeline and exposes an inline SVG memory-usage line through {@see getSvg()}.
- *
- * @extends Panel<array{start?: mixed, end?: mixed, memory?: mixed}>
  */
 class TimelinePanel extends Panel
 {
@@ -41,9 +39,9 @@ class TimelinePanel extends Panel
      */
     private int $memory = 0;
     /**
-     * @var array<int, array<string, mixed>>|null Cached typed span rows consumed by the timeline chart.
+     * Profiling panel resolved by {@see init()}, providing the spans and the authoritative request duration.
      */
-    private array|null $models = null;
+    private ProfilingPanel|null $profilingPanel = null;
     /**
      * Request start timestamp, in milliseconds since the Unix epoch.
      */
@@ -58,6 +56,19 @@ class TimelinePanel extends Panel
     private array $svgOptions = [
         'class' => Svg::class,
     ];
+
+    /**
+     * Snapshots the request start (`$_SERVER['REQUEST_TIME_FLOAT']` with `microtime(true)` fallback), end, and peak
+     * memory.
+     */
+    public function capture(): TimelineSnapshot
+    {
+        return new TimelineSnapshot(
+            start: Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? microtime(true),
+            end: microtime(true),
+            memory: memory_get_peak_usage(),
+        );
+    }
 
     /**
      * Renders the detail view with the timeline chart and the filter form.
@@ -96,31 +107,13 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Builds and caches the typed span rows consumed by the timeline chart.
+     * Returns the profile blocks the chart renders, resolved once by the {@see ProfilingPanel} at capture time.
      *
-     * Suitable for {@see \yii\data\ArrayDataProvider}.
-     *
-     * @param bool $refresh `true` to rebuild the cache from the profile messages.
-     *
-     * @return array<int, array<string, mixed>> Span rows in capture order.
+     * @return list<ProfileRow> Blocks in capture order.
      */
-    public function getModels(bool $refresh = false): array
+    public function getModels(): array
     {
-        if ($this->models === null || $refresh) {
-            $this->models = [];
-
-            $rawTimings = Yii::getLogger()->calculateTimings($this->getProfilingMessages());
-
-            foreach ($rawTimings as $rawTiming) {
-                $timing = self::normalizeTiming($rawTiming);
-
-                if ($timing !== null) {
-                    $this->models[] = $timing;
-                }
-            }
-        }
-
-        return $this->models;
+        return $this->profilingPanel?->getModels() ?? [];
     }
 
     /**
@@ -181,45 +174,19 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Verifies that the {@see ProfilingPanel} is registered before delegating to the parent initializer.
-     *
-     * @throws InvalidConfigException When the profiling panel is not registered on the module.
-     */
-    public function init(): void
-    {
-        if ($this->module === null || !isset($this->module->panels['profiling'])) {
-            throw new InvalidConfigException(
-                'Unable to determine the profiling panel',
-            );
-        }
-
-        parent::init();
-    }
-
-    /**
      * Hydrates the panel from the saved snapshot: resolves the request start/end, computes the duration (preferring
      * the Profiling panel's authoritative time when available), and records the peak memory.
-     *
-     * The parameter is intentionally widened to `mixed` (vs. the parent's typed `TData`) because the runtime feed comes
-     * straight out of {@see \yii\debug\LogTarget::loadTagToPanels()}, where the value is whatever `@unserialize()`
-     * returned including `false` on a corrupt snapshot.
-     *
-     * @param mixed $data Raw payload returned by `@unserialize()` of a captured request snapshot.
      *
      * @throws RuntimeException When any of `start`, `end`, `memory`, or the derived `duration` is missing or invalid.
      */
     #[Override]
-    public function load(mixed $data): void
+    public function hydrate(array $payload): void
     {
-        if (!is_array($data)) {
-            throw new RuntimeException(
-                'Unable to load timeline data',
-            );
-        }
+        $snapshot = TimelineSnapshot::fromArray($payload, "$.panels.{$this->id}");
 
-        $start = Coerce::floatOrNull($data['start'] ?? null);
+        $start = $snapshot->start;
 
-        if ($start === null || $start <= 0) {
+        if ($start <= 0) {
             throw new RuntimeException(
                 'Unable to determine request start time',
             );
@@ -227,9 +194,9 @@ class TimelinePanel extends Panel
 
         $this->start = $start * 1000;
 
-        $end = Coerce::floatOrNull($data['end'] ?? null);
+        $end = $snapshot->end;
 
-        if ($end === null || $end <= 0) {
+        if ($end <= 0) {
             throw new RuntimeException(
                 'Unable to determine request end time',
             );
@@ -237,7 +204,7 @@ class TimelinePanel extends Panel
 
         $this->end = $end * 1000;
 
-        $profilingTime = $this->getProfilingTime();
+        $profilingTime = $this->profilingPanel?->getProcessingTime();
 
         if ($profilingTime !== null) {
             $this->duration = $profilingTime * 1000;
@@ -251,9 +218,9 @@ class TimelinePanel extends Panel
             );
         }
 
-        $memory = Coerce::intOrNull($data['memory'] ?? null);
+        $memory = $snapshot->memory;
 
-        if ($memory === null || $memory <= 0) {
+        if ($memory <= 0) {
             throw new RuntimeException(
                 'Unable to determine used memory in request',
             );
@@ -263,18 +230,25 @@ class TimelinePanel extends Panel
     }
 
     /**
-     * Snapshots the request start (`$_SERVER['REQUEST_TIME_FLOAT']` with `microtime(true)` fallback), end, and peak
-     * memory.
+     * Resolves the {@see ProfilingPanel} the timeline reads its spans and duration from, before delegating to the
+     * parent initializer.
      *
-     * @return array{start: float, end: float, memory: int} Captured payload consumed by {@see load()} on read-back.
+     * @throws InvalidConfigException When the module registers no `profiling` panel, or registers one that is not a
+     * {@see ProfilingPanel}.
      */
-    public function save(): array
+    public function init(): void
     {
-        return [
-            'start' => Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? microtime(true),
-            'end' => microtime(true),
-            'memory' => memory_get_peak_usage(),
-        ];
+        $profilingPanel = $this->module?->panels['profiling'] ?? null;
+
+        if (!$profilingPanel instanceof ProfilingPanel) {
+            throw new InvalidConfigException(
+                'Unable to determine the profiling panel',
+            );
+        }
+
+        $this->profilingPanel = $profilingPanel;
+
+        parent::init();
     }
 
     /**
@@ -292,95 +266,6 @@ class TimelinePanel extends Panel
         $this->svgOptions = [
             ...$this->svgOptions,
             ...$options,
-        ];
-    }
-
-    /**
-     * Returns the saved profile messages from the {@see ProfilingPanel}, used to build the timeline spans.
-     *
-     * @return array<int, array<int|string, mixed>> Profile messages in capture order, or `[]` when the panel is not
-     * registered or has no captured data.
-     */
-    private function getProfilingMessages(): array
-    {
-        $profilingPanel = $this->module?->panels['profiling'] ?? null;
-
-        if (!$profilingPanel instanceof Panel || !is_array($profilingPanel->data)) {
-            return [];
-        }
-
-        return self::normalizeMessages($profilingPanel->data['messages'] ?? []);
-    }
-
-    /**
-     * Returns the authoritative request duration captured by the {@see ProfilingPanel}, in seconds, or `null` when
-     * unavailable.
-     */
-    private function getProfilingTime(): float|null
-    {
-        $profilingPanel = $this->module?->panels['profiling'] ?? null;
-
-        if (!$profilingPanel instanceof Panel || !is_array($profilingPanel->data)) {
-            return null;
-        }
-
-        return Coerce::floatOrNull($profilingPanel->data['time'] ?? null);
-    }
-
-    /**
-     * Filters the raw profile messages to keep only array entries.
-     *
-     * @param mixed $messages Raw profiling messages.
-     *
-     * @return array<int, array<int|string, mixed>> Reindexed list of message arrays.
-     */
-    private static function normalizeMessages(mixed $messages): array
-    {
-        if (!is_array($messages)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($messages as $message) {
-            if (is_array($message)) {
-                $normalized[] = $message;
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Narrows a raw timing returned by the Yii logger into the typed span-row shape, returning `null` when either
-     * `timestamp` or `duration` is missing or non-numeric.
-     *
-     * @param mixed $timing Raw timing returned by Yii logger.
-     *
-     * @return array<string, mixed>|null Normalized span row, or `null` when the input was incomplete.
-     */
-    private static function normalizeTiming(mixed $timing): array|null
-    {
-        if (!is_array($timing)) {
-            return null;
-        }
-
-        $timestamp = Coerce::floatOrNull($timing['timestamp'] ?? null);
-        $duration = Coerce::floatOrNull($timing['duration'] ?? null);
-
-        if ($timestamp === null || $duration === null) {
-            return null;
-        }
-
-        return [
-            'category' => Coerce::stringOrNull($timing['category'] ?? null) ?? '',
-            'duration' => $duration,
-            'info' => Coerce::stringOrNull($timing['info'] ?? null) ?? '',
-            'level' => Coerce::intOrNull($timing['level'] ?? null) ?? 0,
-            'memory' => Coerce::intOrNull($timing['memory'] ?? null) ?? 0,
-            'memoryDiff' => Coerce::intOrNull($timing['memoryDiff'] ?? null) ?? 0,
-            'timestamp' => $timestamp,
-            'trace' => Coerce::traceFrames($timing['trace'] ?? []),
         ];
     }
 }

@@ -10,12 +10,12 @@ use RuntimeException;
 use Stringable;
 use yii\base\Event;
 use yii\debug\LogTarget;
+use yii\debug\panels\mail\MailSnapshot;
 use yii\debug\panels\MailPanel;
 use yii\debug\tests\support\TestCase;
 use yii\mail\{BaseMailer, MailEvent, MessageInterface};
 use yii\symfonymailer\Mailer;
 
-use function file_put_contents;
 use function mkdir;
 use function rmdir;
 use function sys_get_temp_dir;
@@ -60,6 +60,17 @@ final class MailPanelTest extends TestCase
             'time',
             $messageData,
             "Non-Symfony path must not add a 'time' slot.",
+        );
+    }
+
+    public function testCaptureReturnsEmptyArrayWhenNoMessagesCaptured(): void
+    {
+        $panel = $this->makePanel(MailPanel::class);
+
+        self::assertSame(
+            [],
+            $panel->capture()->entries(),
+            'Fresh panel must produce an empty payload.',
         );
     }
 
@@ -186,7 +197,7 @@ final class MailPanelTest extends TestCase
             "Empty manifest must collapse to 'null'.",
         );
 
-        rmdir($dataPath);
+        $this->cleanupDataPath($dataPath);
     }
 
     public function testFindPreviousRequestWithMailReturnsNullWhenModuleIsMissing(): void
@@ -218,9 +229,11 @@ final class MailPanelTest extends TestCase
 
         $tag = 'only-tag';
 
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize(['version' => 2, 'entries' => [$tag => ['method' => 'GET', 'url' => '/', 'mailCount' => 0]]]),
+        $this->writeDebugSnapshot(
+            $module,
+            $tag,
+            [],
+            ['method' => 'GET', 'url' => '/', 'mailCount' => 0],
         );
 
         $panel->tag = $tag;
@@ -233,15 +246,14 @@ final class MailPanelTest extends TestCase
             "Single-tag manifest matching current must collapse to 'null'.",
         );
 
-        unlink("{$dataPath}/index.data");
-        rmdir($dataPath);
+        $this->cleanupDataPath($dataPath);
     }
 
     public function testGetDetailRendersEmptyStateWhenNoMessagesCaptured(): void
     {
         $panel = $this->makePanel(MailPanel::class);
 
-        $panel->data = [];
+        $this->hydratePanel($panel, MailSnapshot::capture([]));
 
         $html = $panel->getDetail();
 
@@ -256,14 +268,14 @@ final class MailPanelTest extends TestCase
     {
         $panel = $this->makePanel(MailPanel::class);
 
-        $panel->data = [
+        $this->hydratePanel($panel, MailSnapshot::capture([
             [
                 'from' => 'a@x.com',
                 'to' => 'b@x.com',
                 'subject' => 'Hello',
                 'time' => new DateTimeImmutable('2026-01-01'),
             ],
-        ];
+        ]));
 
         $detail = $panel->getDetail();
 
@@ -320,10 +332,10 @@ final class MailPanelTest extends TestCase
     {
         $panel = $this->makePanel(MailPanel::class);
 
-        $panel->data = [
+        $this->hydratePanel($panel, MailSnapshot::capture([
             ['subject' => 'one'],
             ['subject' => 'two'],
-        ];
+        ]));
 
         $items = $this->invoke(
             $panel,
@@ -365,22 +377,21 @@ final class MailPanelTest extends TestCase
 
         // 'loadManifest()' reverses the on-disk order; writing 'previous' first then 'current' produces a
         // load-time manifest of [current, previous] so the loop hits the `$found` branch on iteration 2.
-        $manifest = [
-            $previousTag => [
-                'method' => 'POST',
-                'url' => 'https://example.com/send-mail',
-                'mailCount' => 1,
-            ],
-            $currentTag => ['method' => 'GET', 'url' => 'https://example.com/current', 'mailCount' => 0],
-        ];
-
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize(['version' => 2, 'entries' => $manifest]),
+        $this->writeDebugSnapshot(
+            $module,
+            $previousTag,
+            [],
+            ['method' => 'POST', 'url' => 'https://example.com/send-mail', 'mailCount' => 1],
+        );
+        $this->writeDebugSnapshot(
+            $module,
+            $currentTag,
+            [],
+            ['method' => 'GET', 'url' => 'https://example.com/current', 'mailCount' => 0],
         );
 
         $panel->tag = $currentTag;
-        $panel->data = [];
+        $this->hydratePanel($panel, MailSnapshot::capture([]));
 
         $items = $this->invoke(
             $panel,
@@ -404,8 +415,7 @@ final class MailPanelTest extends TestCase
             'Status must be cross-request when the manifest has a tag after current.',
         );
 
-        unlink("{$dataPath}/index.data");
-        rmdir($dataPath);
+        $this->cleanupDataPath($dataPath);
     }
 
     public function testGetToolbarItemsEmitsCrossRequestChipWhenPreviousRequestHasMail(): void
@@ -422,21 +432,15 @@ final class MailPanelTest extends TestCase
 
         $previousTag = 'previous-tag';
 
-        $manifest = [
-            $previousTag => [
-                'method' => 'POST',
-                'url' => 'https://example.com/send-mail',
-                'mailCount' => 1,
-            ],
-        ];
-
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize(['version' => 2, 'entries' => $manifest]),
+        $this->writeDebugSnapshot(
+            $module,
+            $previousTag,
+            [],
+            ['method' => 'POST', 'url' => 'https://example.com/send-mail', 'mailCount' => 1],
         );
 
         $panel->tag = 'current-tag';
-        $panel->data = [];
+        $this->hydratePanel($panel, MailSnapshot::capture([]));
 
         $items = $this->invoke(
             $panel,
@@ -477,19 +481,12 @@ final class MailPanelTest extends TestCase
             'Title must include the previous request short URL.',
         );
 
-        unlink("{$dataPath}/index.data");
-        rmdir($dataPath);
+        $this->cleanupDataPath($dataPath);
     }
 
-    public function testGetToolbarItemsEmitsWarningChipWhenDataIsCorrupt(): void
+    public function testGetToolbarItemsEmitsWarningChipWhenSnapshotIsMissing(): void
     {
         $panel = $this->makePanel(MailPanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            'corrupt',
-        );
 
         $items = $this->invoke(
             $panel,
@@ -523,7 +520,7 @@ final class MailPanelTest extends TestCase
     {
         $panel = $this->makePanel(MailPanel::class);
 
-        $panel->data = [];
+        $this->hydratePanel($panel, MailSnapshot::capture([]));
 
         self::assertSame(
             [],
@@ -567,33 +564,30 @@ final class MailPanelTest extends TestCase
             $event,
         );
 
-        $saved = $panel->save();
+        $saved = $panel->capture()->entries();
 
         $captured = $saved[0] ?? self::fail('Expected one captured message.');
 
         self::assertSame(
             'from@example.com',
-            $captured['from'] ?? null,
+            $captured->from,
             'FROM must round-trip.',
         );
         self::assertSame(
-            'to@example.com',
-            $captured['to'] ?? null,
+            ['to@example.com'],
+            $captured->to,
             'TO must round-trip.',
         );
         self::assertSame(
             'Hello',
-            $captured['subject'] ?? null,
+            $captured->subject,
             'SUBJECT must round-trip.',
         );
         self::assertTrue(
-            $captured['isSuccessful'] ?? null,
+            $captured->isSuccessful,
             'IS_SUCCESSFUL must round-trip.',
         );
-        self::assertIsString(
-            $captured['file'] ?? null,
-            'FILE must be assigned.',
-        );
+        self::assertNotSame('', $captured->file, 'FILE must be assigned.');
 
         Event::offAll();
     }
@@ -617,75 +611,21 @@ final class MailPanelTest extends TestCase
 
         self::assertSame(
             [],
-            $panel->save(),
+            $panel->capture()->entries(),
             'Non-mailer sender must short-circuit before capture.',
         );
 
         Event::offAll();
     }
 
-    public function testNormalizeMessagesDropsNonArrayEntriesAndNonStringKeys(): void
+    private function cleanupDataPath(string $dataPath): void
     {
-        $panel = $this->makePanel(MailPanel::class);
+        $files = glob("{$dataPath}/*");
 
-        $normalized = $this->invoke(
-            $panel,
-            'normalizeMessages',
-            [
-                [
-                    ['subject' => 'kept', 0 => 'dropped-int-key'],
-                    'invalid',
-                    ['subject' => 'kept-2'],
-                ],
-            ],
-        );
+        foreach (is_array($files) ? $files : [] as $file) {
+            @unlink($file);
+        }
 
-        self::assertIsArray(
-            $normalized,
-            'Normalized must be an array.',
-        );
-        self::assertCount(
-            2,
-            $normalized,
-            'Non-array entries must be dropped.',
-        );
-
-        $first = $normalized[0] ?? self::fail('Expected one row.');
-
-        self::assertIsArray(
-            $first,
-            'Row must be an array.',
-        );
-        self::assertArrayNotHasKey(
-            0,
-            $first,
-            'Int keys must be filtered out.',
-        );
-    }
-
-    public function testNormalizeMessagesReturnsEmptyForNonArrayInput(): void
-    {
-        $panel = $this->makePanel(MailPanel::class);
-
-        self::assertSame(
-            [],
-            $this->invoke(
-                $panel,
-                'normalizeMessages',
-                ['not-an-array'],
-            ),
-            "Non-array input must collapse to '[]'.",
-        );
-    }
-
-    public function testSaveReturnsEmptyArrayWhenNoMessagesCaptured(): void
-    {
-        $panel = $this->makePanel(MailPanel::class);
-
-        self::assertSame(
-            [],
-            $panel->save(),
-            'Fresh panel must produce an empty payload.',
-        );
+        @rmdir($dataPath);
     }
 }

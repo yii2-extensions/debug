@@ -4,23 +4,18 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\event;
 
-use yii\debug\helpers\Coerce;
+use yii\debug\storage\{PanelRow, Payload};
 
 use function count;
-use function in_array;
-use function is_array;
 
 /**
- * Typed view-model for a single event row consumed by the events grid.
- *
- * Mirrors the shape produced by {@see \yii\debug\panels\EventPanel::save()} after every value has been narrowed, so
- * GridView callbacks read typed properties without further `mixed` narrowing at the data-provider boundary.
+ * Typed event row recorded by the wildcard listener and persisted in that form.
  */
-final readonly class EventRow
+final readonly class EventRow implements PanelRow
 {
     public function __construct(
         /**
-         * Capture timestamp in seconds since the Unix epoch (`0.0` when the original payload had no time).
+         * Capture timestamp in seconds since the Unix epoch.
          */
         public float $time,
         /**
@@ -34,7 +29,7 @@ final readonly class EventRow
         /**
          * `'1'` when the event was triggered statically (no sender), `'0'` otherwise.
          *
-         * Stored as string so the value round-trips through the search model's `boolean` rule.
+         * Stored as a string so the value round-trips through the search model's `boolean` rule.
          */
         public string $isStatic,
         /**
@@ -44,48 +39,61 @@ final readonly class EventRow
     ) {}
 
     /**
-     * @param array<array-key, mixed> $models
+     * Returns how many distinct event classes the given rows cover.
+     *
+     * @param list<self> $rows Captured event rows.
      */
-    public static function distinctClassCount(array $models): int
+    public static function distinctClassCount(array $rows): int
     {
         $classes = [];
 
-        foreach ($models as $model) {
-            $class = self::fromMixed($model)->class;
-
-            if ($class !== '') {
-                $classes[$class] = true;
+        foreach ($rows as $row) {
+            if ($row->class !== '') {
+                $classes[$row->class] = true;
             }
         }
 
         return count($classes);
     }
 
-    /**
-     * Builds a typed event row from a data-provider value.
-     */
-    public static function fromMixed(mixed $data): self
+    public static function fromArray(mixed $data, string $path): self
     {
-        $row = is_array($data) ? $data : [];
+        $payload = Payload::object($data, $path)->shape(['time', 'name', 'class', 'isStatic', 'senderClass']);
 
         return new self(
-            time: Coerce::float($row['time'] ?? null),
-            name: Coerce::string($row['name'] ?? null),
-            class: Coerce::string($row['class'] ?? null),
-            isStatic: in_array($row['isStatic'] ?? null, ['1', 1, true], true) ? '1' : '0',
-            senderClass: Coerce::string($row['senderClass'] ?? null),
+            time: $payload->number('time'),
+            name: $payload->string('name'),
+            class: $payload->string('class'),
+            isStatic: $payload->string('isStatic'),
+            senderClass: $payload->string('senderClass'),
         );
     }
 
     /**
-     * @param array<array-key, mixed> $models
+     * @return array<string, mixed>
      */
-    public static function staticCount(array $models): int
+    public function jsonSerialize(): array
+    {
+        return [
+            'time' => $this->time,
+            'name' => $this->name,
+            'class' => $this->class,
+            'isStatic' => $this->isStatic,
+            'senderClass' => $this->senderClass,
+        ];
+    }
+
+    /**
+     * Returns how many of the given rows were triggered statically.
+     *
+     * @param list<self> $rows Captured event rows.
+     */
+    public static function staticCount(array $rows): int
     {
         $static = 0;
 
-        foreach ($models as $model) {
-            if (self::fromMixed($model)->isStatic === '1') {
+        foreach ($rows as $row) {
+            if ($row->isStatic === '1') {
                 $static++;
             }
         }

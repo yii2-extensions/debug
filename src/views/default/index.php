@@ -7,6 +7,7 @@ use yii\debug\GridViewConfig;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\DbPanel;
+use yii\debug\storage\RequestSummary;
 use yii\debug\widgets\FilterBanner;
 use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryScale, HistorySummary};
 use yii\grid\{GridView, SerialColumn};
@@ -15,7 +16,7 @@ use UIAwesome\Html\Heading\H1;
 
 /**
  * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.
- * @var array<int|string, mixed> $manifest Debug data manifest.
+ * @var array<string, RequestSummary> $manifest Debug data manifest, newest first.
  * @var Panel[] $panels Debug panels.
  * @var DebugSearch $searchModel Search model for filtering debug data.
  * @var View $this View component instance.
@@ -23,7 +24,9 @@ use UIAwesome\Html\Heading\H1;
 $this->title = 'Yii Debugger';
 
 $summary = HistorySummary::fromManifest($manifest);
-$scale = HistoryScale::fromModels($dataProvider->getModels());
+$scale = HistoryScale::fromModels(
+    array_values(array_filter($dataProvider->getModels(), static fn(mixed $row): bool => $row instanceof HistoryRow)),
+);
 
 $dbPanel = $panels['db'] ?? null;
 $mailPanel = $panels['mail'] ?? null;
@@ -37,8 +40,8 @@ $mailPanel = $panels['mail'] ?? null;
         'options' => ['class' => 'yii-debug-grid yii-debug-grid-history'],
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'rowOptions' => static fn(mixed $model): array => HistoryRowRenderer::buildRowOptions(
-            HistoryRow::fromMixed($model),
+        'rowOptions' => static fn(HistoryRow $model): array => HistoryRowRenderer::buildRowOptions(
+            $model,
             $searchModel,
         ),
         'columns' => array_filter(
@@ -52,9 +55,7 @@ $mailPanel = $panels['mail'] ?? null;
                 [
                     'attribute' => 'tag',
                     'label' => 'ID',
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderTagCell(
-                        HistoryRow::fromMixed($data),
-                    ),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderTagCell($data),
                     'format' => 'raw',
                     'headerOptions' => ['class' => 'yii-debug-col-id'],
                     'contentOptions' => ['class' => 'yii-debug-col-id'],
@@ -62,16 +63,14 @@ $mailPanel = $panels['mail'] ?? null;
                 ],
                 [
                     'attribute' => 'time',
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderTimeCell(
-                        HistoryRow::fromMixed($data),
-                    ),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderTimeCell($data),
                     'format' => 'raw',
                 ],
                 [
                     'attribute' => 'processingTime',
                     'label' => 'Duration',
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderDurationCell(
-                        HistoryRow::fromMixed($data),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderDurationCell(
+                        $data,
                         $scale->maxProcessingTime,
                     ),
                     'format' => 'raw',
@@ -79,8 +78,8 @@ $mailPanel = $panels['mail'] ?? null;
                 [
                     'attribute' => 'peakMemory',
                     'label' => 'Memory',
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderMemoryCell(
-                        HistoryRow::fromMixed($data),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderMemoryCell(
+                        $data,
                         $scale->maxPeakMemory,
                     ),
                     'format' => 'raw',
@@ -97,8 +96,8 @@ $mailPanel = $panels['mail'] ?? null;
                     'headerOptions' => ['class' => 'yii-debug-col-num'],
                     'contentOptions' => ['class' => 'yii-debug-col-num'],
                     'filterOptions' => ['class' => 'yii-debug-col-num'],
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderSqlCountCell(
-                        HistoryRow::fromMixed($data),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderSqlCountCell(
+                        $data,
                         $dbPanel,
                     ),
                     'format' => 'raw',
@@ -112,9 +111,7 @@ $mailPanel = $panels['mail'] ?? null;
                 ] : null,
                 [
                     'attribute' => 'method',
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderMethodCell(
-                        HistoryRow::fromMixed($data),
-                    ),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderMethodCell($data),
                     'format' => 'raw',
                     'filter' => [
                         'get' => 'GET',
@@ -127,24 +124,18 @@ $mailPanel = $panels['mail'] ?? null;
                 ],
                 [
                     'attribute' => 'ajax',
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderAjaxCell(
-                        HistoryRow::fromMixed($data),
-                    ),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderAjaxCell($data),
                     'filter' => ['No', 'Yes'],
                 ],
                 [
                     'attribute' => 'url',
                     'label' => 'URL',
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderUrlCell(
-                        HistoryRow::fromMixed($data),
-                    ),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderUrlCell($data),
                     'format' => 'raw',
                 ],
                 [
                     'attribute' => 'statusCode',
-                    'value' => static fn(mixed $data): string => HistoryRowRenderer::renderStatusCell(
-                        HistoryRow::fromMixed($data),
-                    ),
+                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderStatusCell($data),
                     'format' => 'raw',
                     'filter' => $summary->statusCodeFilter,
                     'label' => 'Status',

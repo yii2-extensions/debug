@@ -8,6 +8,9 @@ use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\DataProvider;
+use yii\debug\panels\profile\ProfileRow;
+use yii\debug\panels\timeline\TimelineSnapshot;
+use yii\debug\panels\timeline\TimelineSpanRow;
 use yii\debug\panels\TimelinePanel;
 use yii\debug\tests\support\TestCase;
 use yii\web\Controller;
@@ -19,49 +22,6 @@ use yii\web\Controller;
 #[Group('timeline')]
 final class DataProviderTest extends TestCase
 {
-    public function testGetMemoryReturnsFormattedTupleForPositiveValue(): void
-    {
-        $panel = $this->stubPanel();
-
-        $provider = new DataProvider($panel);
-
-        $tuple = $provider->getMemory(['memory' => 1_048_576]);
-
-        self::assertIsArray(
-            $tuple,
-            "Numeric memory must yield a '[formatted, y]' tuple.",
-        );
-        self::assertStringContainsString(
-            'MB',
-            $tuple[0],
-            "Formatted slot must surface the 'MB' suffix.",
-        );
-    }
-
-    public function testGetMemoryReturnsNullForNonNumericValue(): void
-    {
-        $panel = $this->stubPanel();
-
-        $provider = new DataProvider($panel);
-
-        self::assertNull(
-            $provider->getMemory(['memory' => 'not-numeric']),
-            "Non-numeric memory must collapse to 'null'.",
-        );
-    }
-
-    public function testGetMemoryReturnsNullForNonPositiveValue(): void
-    {
-        $panel = $this->stubPanel();
-
-        $provider = new DataProvider($panel);
-
-        self::assertNull(
-            $provider->getMemory(['memory' => 0]),
-            "Zero or negative memory must collapse to 'null'.",
-        );
-    }
-
     public function testGetRulersDropsTickCrowdingTheRightEdge(): void
     {
         self::assertSame(
@@ -216,8 +176,8 @@ final class DataProviderTest extends TestCase
             $panel,
             [
                 'allModels' => [
-                    ['category' => 'outer', 'timestamp' => 0.0, 'duration' => 0.05],
-                    ['category' => 'inner', 'timestamp' => 0.001, 'duration' => 0.02],
+                    new ProfileRow(0.0, 50.0, 'outer', '', 0, 0, 0, 0, []),
+                    new ProfileRow(1.0, 20.0, 'inner', '', 0, 1, 0, 0, []),
                 ],
             ],
         );
@@ -235,21 +195,14 @@ final class DataProviderTest extends TestCase
             'Prepared models must expose the first slot.',
         );
 
-        $outer = $models[0];
+        $outer = $models[0] ?? self::fail('Expected the outer span row.');
 
-        self::assertIsArray(
-            $outer,
-            'Prepared rows must be arrays.',
-        );
-        self::assertSame(
-            1,
-            $outer['child'] ?? 0,
-            'Outer span overlapping the inner span must record one child.',
-        );
+        self::assertInstanceOf(TimelineSpanRow::class, $outer, 'Prepared rows must be typed span rows.');
+        self::assertSame(1, $outer->depth, 'Outer span overlapping the inner span must record one child.');
     }
 
     /**
-     * Builds a provider whose panel reports the exact duration (bypassing `load()` epoch float noise) and returns its
+     * Builds a provider whose panel reports the exact duration (bypassing hydration epoch float noise) and returns its
      * ruler ticks; `$line` of `null` exercises the default tick target.
      *
      * @return array<int, float>
@@ -276,7 +229,7 @@ final class DataProviderTest extends TestCase
 
         $panel = new TimelinePanel(['id' => 'timeline', 'module' => $module]);
 
-        $panel->load(['start' => 1_700_000_000.0, 'end' => 1_700_000_000.1, 'memory' => 1_048_576]);
+        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1_048_576));
 
         return $panel;
     }

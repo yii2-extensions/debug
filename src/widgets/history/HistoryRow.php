@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
+use yii\debug\storage\RequestSummary;
+
 use function date;
-use function is_array;
-use function is_numeric;
-use function is_string;
 
 /**
  * Typed view-model for one captured-request row in the History GridView.
  *
- * Narrows the loose `array<string, mixed>` entry produced by {@see \yii\debug\models\search\DebugSearch::search()}
- * into typed properties, so the GridView column closures stay free of {@see is_array()} / {@see is_numeric()}
- * narrowing on every cell access.
+ * Projects the manifest's {@see RequestSummary} into the shape the grid renders, adding only the pre-formatted clock
+ * time; every value is already typed, so no narrowing happens per cell.
  */
 final readonly class HistoryRow
 {
@@ -70,65 +68,28 @@ final readonly class HistoryRow
         /**
          * `true` when the captured request was an AJAX request.
          */
-        public bool $isAjax,
+        public bool $ajax,
     ) {}
 
     /**
-     * Narrows the loose array shape into a typed row.
-     *
-     * @param array<int|string, mixed> $row
+     * Projects a manifest entry into the row the History grid renders.
      */
-    public static function from(array $row): self
+    public static function fromSummary(RequestSummary $summary): self
     {
-        $time = self::asFloat($row['time'] ?? 0.0);
-
         return new self(
-            tag: self::asString($row['tag'] ?? ''),
-            method: self::asString($row['method'] ?? ''),
-            url: self::asString($row['url'] ?? ''),
-            statusCode: self::asInt($row['statusCode'] ?? 0),
-            time: $time,
-            timeCompact: $time > 0 ? date('H:i:s', (int) $time) : '',
-            processingTime: is_numeric($row['processingTime'] ?? null) ? (float) $row['processingTime'] : null,
-            peakMemory: is_numeric($row['peakMemory'] ?? null) ? (int) $row['peakMemory'] : null,
-            ip: self::asString($row['ip'] ?? ''),
-            sqlCount: self::asInt($row['sqlCount'] ?? 0),
-            mailCount: self::asInt($row['mailCount'] ?? 0),
-            excessiveCallersCount: self::asInt($row['excessiveCallersCount'] ?? 0),
-            isAjax: self::isTruthy($row['ajax'] ?? false),
+            tag: $summary->tag,
+            method: $summary->method,
+            url: $summary->url,
+            statusCode: $summary->statusCode,
+            time: $summary->time,
+            timeCompact: $summary->time > 0 ? date('H:i:s', (int) $summary->time) : '',
+            processingTime: $summary->processingTime,
+            peakMemory: $summary->peakMemory,
+            ip: $summary->ip,
+            sqlCount: $summary->sqlCount,
+            mailCount: $summary->mailCount,
+            excessiveCallersCount: $summary->excessiveCallersCount,
+            ajax: $summary->ajax,
         );
-    }
-
-    /**
-     * Narrows a `mixed` value into a typed `HistoryRow`, accepting either an already-typed instance or an array
-     * payload produced by the data provider.
-     */
-    public static function fromMixed(mixed $value): self
-    {
-        if ($value instanceof self) {
-            return $value;
-        }
-
-        return self::from(is_array($value) ? $value : []);
-    }
-
-    private static function asFloat(mixed $value): float
-    {
-        return is_numeric($value) ? (float) $value : 0.0;
-    }
-
-    private static function asInt(mixed $value): int
-    {
-        return is_numeric($value) ? (int) $value : 0;
-    }
-
-    private static function asString(mixed $value): string
-    {
-        return is_string($value) ? $value : '';
-    }
-
-    private static function isTruthy(mixed $value): bool
-    {
-        return $value !== false && $value !== null && $value !== 0 && $value !== '' && $value !== '0';
     }
 }

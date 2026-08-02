@@ -8,9 +8,9 @@ use Override;
 use Yii;
 use yii\base\InlineAction;
 use yii\debug\controllers\DefaultController;
-use yii\debug\helpers\Vocabulary;
+use yii\debug\helpers\{Coerce, Vocabulary};
 use yii\debug\Panel;
-use yii\debug\panels\request\RequestDataNormalizer;
+use yii\debug\panels\request\{RequestDataNormalizer, RequestSnapshot};
 use yii\helpers\ArrayHelper;
 use yii\web\{Response, Session};
 
@@ -18,7 +18,6 @@ use function array_key_exists;
 use function count;
 use function in_array;
 use function is_array;
-use function is_int;
 use function is_string;
 
 /**
@@ -26,8 +25,6 @@ use function is_string;
  *
  * Snapshots the routing target, request/response headers, status code, body, flash messages, and the configured PHP
  * superglobals, with optional value censoring for sensitive keys.
- *
- * @extends Panel<array<string, mixed>>
  */
 class RequestPanel extends Panel
 {
@@ -57,24 +54,7 @@ class RequestPanel extends Panel
         '_SESSION',
     ];
 
-    /**
-     * Renders the detail view with the request hero header and the per-tab sections.
-     */
-    #[Override]
-    public function getDetail(): string
-    {
-        $controller = Yii::$app->controller;
-
-        $summary = $controller instanceof DefaultController ? $controller->summary : [];
-
-        $view = RequestDataNormalizer::fromPanelData($this->data, $summary);
-
-        return Yii::$app->view->render(
-            'panels/request/detail',
-            ['view' => $view],
-            $this,
-        );
-    }
+    private RequestSnapshot|null $snapshot = null;
 
     /**
      * Snapshots the request/response state: action, route, headers, body, status code, flash messages, and the
@@ -82,10 +62,8 @@ class RequestPanel extends Panel
      *
      * Header names listed in {@see $censoredVariableNames} are emitted with {@see $censorString} instead of their real
      * value; the same masking is applied to top-level keys in the captured payload via {@see censorArray()}.
-     *
-     * @return array<string, mixed> Captured request payload consumed by the detail view.
      */
-    public function save(): array
+    public function capture(): RequestSnapshot
     {
         $headers = Yii::$app->getRequest()->getHeaders();
 
@@ -143,7 +121,35 @@ class RequestPanel extends Panel
             $data[trim($name, '_')] = self::normalizeGlobalValue($GLOBALS[$name] ?? null);
         }
 
-        return $this->censorArray($data);
+        return RequestSnapshot::capture($this->censorArray($data));
+    }
+
+    /**
+     * Renders the detail view with the request hero header and the per-tab sections.
+     */
+    #[Override]
+    public function getDetail(): string
+    {
+        $controller = Yii::$app->controller;
+
+        $summary = $controller instanceof DefaultController ? $controller->summary : null;
+
+        $view = RequestDataNormalizer::fromPanelData($this->payload(), $summary);
+
+        return Yii::$app->view->render(
+            'panels/request/detail',
+            ['view' => $view],
+            $this,
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = RequestSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -224,9 +230,7 @@ class RequestPanel extends Panel
 
         $status = $statusClass === 'none' ? 'default' : "status-{$statusClass}";
 
-        $statusText = Response::$httpStatuses[$statusCode] ?? '';
-
-        $statusText = is_string($statusText) ? $statusText : '';
+        $statusText = Coerce::string(Response::$httpStatuses[$statusCode] ?? null);
 
         return [
             [
@@ -283,19 +287,7 @@ class RequestPanel extends Panel
      */
     private function getStatusCode(): int
     {
-        $data = is_array($this->data) ? $this->data : [];
-
-        $statusCode = $data['statusCode'] ?? 200;
-
-        if (is_int($statusCode)) {
-            return $statusCode;
-        }
-
-        if (is_numeric($statusCode)) {
-            return (int) $statusCode;
-        }
-
-        return 200;
+        return $this->snapshot === null ? 200 : $this->snapshot->statusCode;
     }
 
     /**
@@ -330,5 +322,13 @@ class RequestPanel extends Panel
         }
 
         return $normalized;
+    }
+
+    /**
+     * @return array<array-key, mixed>
+     */
+    private function payload(): array
+    {
+        return $this->snapshot?->data() ?? [];
     }
 }

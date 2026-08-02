@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\tests\asset;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\asset\{AssetBundleNormalizer, AssetCardRenderer};
+use yii\debug\panels\asset\{AssetBundleNormalizer, AssetBundleRow, AssetCardRenderer};
 use yii\debug\tests\support\TestCase;
+
+use function is_array;
+use function is_string;
 
 /**
  * Unit tests for {@see AssetCardRenderer} covering anchor resolution, chip pluralization, and the rendered article
@@ -18,9 +21,10 @@ final class AssetCardRendererTest extends TestCase
 {
     public function testRenderCardEmitsArticleWithBundleAnchorId(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['app\\AppAsset' => ['css' => ['style.css']]],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['app\\AppAsset' => ['css' => ['style.css']]]),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -40,9 +44,10 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardEmitsJsFilesListAndChipForJsOnlyBundle(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['app\\AppAsset' => ['js' => ['app.js']]],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['app\\AppAsset' => ['js' => ['app.js']]]),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -67,17 +72,20 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardEmitsPluralChipForMultipleDependencies(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => [
-                    'depends' => [
-                        'app\\A',
-                        'app\\B',
-                        'app\\C',
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\AppAsset' => [
+                            'depends' => [
+                                'app\\A',
+                                'app\\B',
+                                'app\\C',
+                            ],
+                        ],
                     ],
-                ],
-            ],
-        );
+                ),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -92,9 +100,10 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardEmitsShortNameAndNamespacePrefix(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['vendor\\package\\AppAsset' => []],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['vendor\\package\\AppAsset' => []]),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -114,9 +123,10 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardEmitsSingularChipForOneDependency(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['app\\AppAsset' => ['depends' => ['app\\Other']]],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['app\\AppAsset' => ['depends' => ['app\\Other']]]),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -136,14 +146,17 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardEmitsTwoColumnLayoutWhenFilesAndWiringPresent(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => [
-                    'css' => ['app.css'],
-                    'sourcePath' => '@app/assets',
-                ],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\AppAsset' => [
+                            'css' => ['app.css'],
+                            'sourcePath' => '@app/assets',
+                        ],
+                    ],
+                ),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -168,12 +181,15 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardLinksDependencyToRegisteredAnchor(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => ['depends' => ['app\\Target']],
-                'app\\Target' => [],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\AppAsset' => ['depends' => ['app\\Target']],
+                        'app\\Target' => [],
+                    ],
+                ),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected the source bundle.');
         $target = $summary->bundles[1] ?? self::fail('Expected the target bundle.');
@@ -199,9 +215,10 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardOmitsBodyWhenBundleHasNoFilesOrWiringOrDeps(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['app\\BareAsset' => []],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['app\\BareAsset' => []]),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -221,9 +238,10 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardWiringRendersBasePathRow(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['app\\AppAsset' => ['basePath' => '@webroot/assets']],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['app\\AppAsset' => ['basePath' => '@webroot/assets']]),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -243,9 +261,10 @@ final class AssetCardRendererTest extends TestCase
 
     public function testRenderCardWiringRendersOnlyPopulatedFields(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['app\\AppAsset' => ['baseUrl' => '/assets']],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['app\\AppAsset' => ['baseUrl' => '/assets']]),
+            );
 
         $bundle = $summary->bundles[0] ?? self::fail('Expected one bundle.');
 
@@ -275,9 +294,10 @@ final class AssetCardRendererTest extends TestCase
 
     public function testResolveAnchorFallsBackToCamel2idForUnregisteredDep(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['app\\AppAsset' => []],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['app\\AppAsset' => []]),
+            );
 
         self::assertSame(
             'unknown\\package\\-stranger-asset',
@@ -288,12 +308,15 @@ final class AssetCardRendererTest extends TestCase
 
     public function testResolveAnchorReturnsRegisteredBundleId(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => [],
-                'app\\OtherAsset' => [],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\AppAsset' => [],
+                        'app\\OtherAsset' => [],
+                    ],
+                ),
+            );
 
         $bundle = $summary->bundles[1] ?? self::fail('Expected a second bundle.');
 
@@ -302,5 +325,23 @@ final class AssetCardRendererTest extends TestCase
             AssetCardRenderer::resolveAnchor('app\\OtherAsset', $summary),
             'Registered deps must resolve to the matching card id.',
         );
+    }
+
+    /**
+     * @param array<array-key, mixed> $bundles
+     *
+     * @return list<AssetBundleRow>
+     */
+    private static function rows(array $bundles): array
+    {
+        $rows = [];
+
+        foreach ($bundles as $name => $bundle) {
+            if (is_string($name) && is_array($bundle)) {
+                $rows[] = AssetBundleRow::fromBundle($name, $bundle);
+            }
+        }
+
+        return $rows;
     }
 }

@@ -197,6 +197,9 @@ final class ProfileCellRendererTest extends TestCase
             info: $info,
             level: $level,
             seq: $seq,
+            memory: 0,
+            memoryDiff: 0,
+            trace: [],
         );
     }
 }

@@ -21,6 +21,35 @@ use yii\web\GroupUrlRule;
 #[Group('router')]
 final class ActionRoutesTest extends TestCase
 {
+    public function testScanLeavesTheMatchedRuleNullWhenItsNameIsNotAString(): void
+    {
+        MockerState::addCondition(
+            'yii\\debug\\models\\router',
+            'is_string',
+            ['<controller>/<action>'],
+            false,
+        );
+
+        $this->mockWebApplication(
+            [
+                'controllerMap' => ['mapped' => WebController::class],
+                'components' => [
+                    'urlManager' => [
+                        'enablePrettyUrl' => true,
+                        'rules' => ['<controller>/<action>' => '<controller>/<action>'],
+                    ],
+                ],
+            ],
+        );
+
+        $routes = (new ActionRoutes())->routes;
+        $first = $routes['yii\\debug\\tests\\support\\stub\\router\\controllers\\WebController::actionFirst()']
+            ?? self::fail('Expected the mapped action to be scanned.');
+
+        self::assertSame(1, $first['count'], 'The rule still matches, so the counter advances.');
+        self::assertNull($first['rule'], 'A non-string rule name must surface as `null`.');
+    }
+
     public function testScanResolvesControllerMapArrayConfigWithClassKey(): void
     {
         $this->mockWebApplication(

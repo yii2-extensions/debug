@@ -26,16 +26,14 @@ final readonly class HistoryScale
     /**
      * Scans the visible models (ignoring rows without a captured value) and returns the page maxima.
      *
-     * @param array<array-key, mixed> $models Rows as supplied by the data provider.
+     * @param list<HistoryRow> $models Rows as supplied by the data provider.
      */
     public static function fromModels(array $models): self
     {
         $maxProcessingTime = 0.0;
         $maxPeakMemory = 0;
 
-        foreach ($models as $model) {
-            $row = HistoryRow::fromMixed($model);
-
+        foreach ($models as $row) {
             if ($row->processingTime !== null) {
                 $maxProcessingTime = max($maxProcessingTime, $row->processingTime);
             }

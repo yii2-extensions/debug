@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace yii\debug\tests\asset;
 
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
-use yii\debug\panels\asset\{AssetBundleNormalizer, AssetBundleView, AssetSummary};
+use yii\debug\panels\asset\{AssetBundleNormalizer, AssetBundleRow, AssetBundleView, AssetSummary};
 use yii\debug\tests\provider\AssetBundleNormalizerProvider;
 use yii\debug\tests\support\TestCase;
+
+use function is_array;
+use function is_string;
 
 /**
  * Unit tests for {@see AssetBundleNormalizer} covering payload narrowing, aggregate counters, FQCN splitting,
@@ -21,25 +24,28 @@ final class AssetBundleNormalizerTest extends TestCase
 {
     public function testNormalizeAggregatesTotalsAcrossBundles(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\A' => [
-                    'css' => ['a.css'],
-                    'js' => ['a.js'],
-                    'depends' => ['app\\B'],
-                ],
-                'app\\B' => [
-                    'css' => ['b.css', 'c.css'],
-                    'js' => [],
-                    'depends' => [],
-                ],
-                'app\\C' => [
-                    'css' => [],
-                    'js' => ['c.js'],
-                    'depends' => ['app\\A', 'app\\B'],
-                ],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\A' => [
+                            'css' => ['a.css'],
+                            'js' => ['a.js'],
+                            'depends' => ['app\\B'],
+                        ],
+                        'app\\B' => [
+                            'css' => ['b.css', 'c.css'],
+                            'js' => [],
+                            'depends' => [],
+                        ],
+                        'app\\C' => [
+                            'css' => [],
+                            'js' => ['c.js'],
+                            'depends' => ['app\\A', 'app\\B'],
+                        ],
+                    ],
+                ),
+            );
 
         self::assertSame(
             3,
@@ -66,10 +72,16 @@ final class AssetBundleNormalizerTest extends TestCase
     public function testNormalizeAssignsCamelCaseAnchorId(): void
     {
         $simple = $this->firstBundle(
-            (new AssetBundleNormalizer())->normalize(['MyCoolAsset' => []]),
+            (new AssetBundleNormalizer())
+                ->normalize(
+                    self::rows(['MyCoolAsset' => []]),
+                ),
         );
         $namespaced = $this->firstBundle(
-            (new AssetBundleNormalizer())->normalize(['app\\assets\\MyCoolAsset' => []]),
+            (new AssetBundleNormalizer())
+                ->normalize(
+                    self::rows(['app\\assets\\MyCoolAsset' => []]),
+                ),
         );
 
         self::assertSame(
@@ -90,9 +102,10 @@ final class AssetBundleNormalizerTest extends TestCase
     #[DataProviderExternal(AssetBundleNormalizerProvider::class, 'bodyColsCases')]
     public function testNormalizeComputesBodyCols(array $bundle, int $expected, string $message): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            ['app\\AppAsset' => $bundle],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(['app\\AppAsset' => $bundle]),
+            );
 
         self::assertSame(
             $expected,
@@ -103,19 +116,22 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeDropsNonStringDependEntries(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => [
-                    'depends' => [
-                        'app\\B',
-                        42,
-                        null,
-                        'app\\C',
-                        false,
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\AppAsset' => [
+                            'depends' => [
+                                'app\\B',
+                                42,
+                                null,
+                                'app\\C',
+                                false,
+                            ],
+                        ],
                     ],
-                ],
-            ],
-        );
+                ),
+            );
 
         $bundle = $this->firstBundle($summary);
 
@@ -133,15 +149,18 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeFallsBackToEmptyArrayWhenCssIsNotAnArray(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => [
-                    'css' => 'invalid',
-                    'js' => null,
-                    'depends' => 42,
-                ],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\AppAsset' => [
+                            'css' => 'invalid',
+                            'js' => null,
+                            'depends' => 42,
+                        ],
+                    ],
+                ),
+            );
 
         $bundle = $this->firstBundle($summary);
 
@@ -164,15 +183,18 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeFallsBackToEmptyStringWhenWiringFieldsAreNotStrings(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => [
-                    'sourcePath' => 12,
-                    'basePath' => null,
-                    'baseUrl' => false,
-                ],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\AppAsset' => [
+                            'sourcePath' => 12,
+                            'basePath' => null,
+                            'baseUrl' => false,
+                        ],
+                    ],
+                ),
+            );
 
         $bundle = $this->firstBundle($summary);
 
@@ -200,19 +222,22 @@ final class AssetBundleNormalizerTest extends TestCase
     public function testNormalizeFlagsHasFilesWhenAnyFilePresent(): void
     {
         $cssOnly = $this->firstBundle(
-            (new AssetBundleNormalizer())->normalize(
-                ['app\\AppAsset' => ['css' => ['a.css']]],
-            ),
+            (new AssetBundleNormalizer())
+                ->normalize(
+                    self::rows(['app\\AppAsset' => ['css' => ['a.css']]]),
+                ),
         );
         $jsOnly = $this->firstBundle(
-            (new AssetBundleNormalizer())->normalize(
-                ['app\\AppAsset' => ['js' => ['a.js']]],
-            ),
+            (new AssetBundleNormalizer())
+                ->normalize(
+                    self::rows(['app\\AppAsset' => ['js' => ['a.js']]]),
+                ),
         );
         $empty = $this->firstBundle(
-            (new AssetBundleNormalizer())->normalize(
-                ['app\\AppAsset' => []],
-            ),
+            (new AssetBundleNormalizer())
+                ->normalize(
+                    self::rows(['app\\AppAsset' => []]),
+                ),
         );
 
         self::assertTrue(
@@ -231,13 +256,16 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeKeepsBundleOrderFromInput(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'z\\Zebra' => [],
-                'a\\Apple' => [],
-                'm\\Mango' => [],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'z\\Zebra' => [],
+                        'a\\Apple' => [],
+                        'm\\Mango' => [],
+                    ],
+                ),
+            );
 
         self::assertSame(
             ['z\\Zebra', 'a\\Apple', 'm\\Mango'],
@@ -248,9 +276,10 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeReturnsEmptySummaryWhenDataIsEmpty(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows([]),
+            );
 
         self::assertTrue(
             $summary->isEmpty(),
@@ -265,12 +294,15 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeSkipsEntriesWithNonArrayBundle(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\BadAsset' => 'not an array',
-                'app\\AppAsset' => ['css' => ['app.css']],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\BadAsset' => 'not an array',
+                        'app\\AppAsset' => ['css' => ['app.css']],
+                    ],
+                ),
+            );
 
         $bundle = $this->firstBundle($summary);
 
@@ -288,12 +320,15 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeSkipsEntriesWithNonStringName(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                0 => ['css' => ['style.css']],
-                'app\\AppAsset' => ['css' => ['app.css']],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        0 => ['css' => ['style.css']],
+                        'app\\AppAsset' => ['css' => ['app.css']],
+                    ],
+                ),
+            );
 
         $bundle = $this->firstBundle($summary);
 
@@ -311,12 +346,15 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeSplitsFqcnIntoShortNameAndNamespace(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'vendor\\package\\sub\\MyAsset' => [],
-                'Standalone' => [],
-            ],
-        );
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'vendor\\package\\sub\\MyAsset' => [],
+                        'Standalone' => [],
+                    ],
+                ),
+            );
 
         $first = $summary->bundles[0] ?? self::fail('First bundle must exist.');
         $second = $summary->bundles[1] ?? self::fail('Second bundle must exist.');
@@ -345,23 +383,26 @@ final class AssetBundleNormalizerTest extends TestCase
 
     public function testNormalizeUnwrapsArrayFileEntriesViaFirstElement(): void
     {
-        $summary = (new AssetBundleNormalizer())->normalize(
-            [
-                'app\\AppAsset' => [
-                    'css' => [
-                        'plain.css',
-                        [
-                            '<a href="x">wrapped.css</a>',
-                            'extra-ignored',
+        $summary = (new AssetBundleNormalizer())
+            ->normalize(
+                self::rows(
+                    [
+                        'app\\AppAsset' => [
+                            'css' => [
+                                'plain.css',
+                                [
+                                    '<a href="x">wrapped.css</a>',
+                                    'extra-ignored',
+                                ],
+                            ],
+                            'js' => [
+                                [],
+                                'plain.js',
+                            ],
                         ],
                     ],
-                    'js' => [
-                        [],
-                        'plain.js',
-                    ],
-                ],
-            ],
-        );
+                ),
+            );
 
         $bundle = $this->firstBundle($summary);
 
@@ -386,5 +427,23 @@ final class AssetBundleNormalizerTest extends TestCase
     private function firstBundle(AssetSummary $summary): AssetBundleView
     {
         return $summary->bundles[0] ?? self::fail('Expected at least one bundle in the summary.');
+    }
+
+    /**
+     * @param array<array-key, mixed> $bundles
+     *
+     * @return list<AssetBundleRow>
+     */
+    private static function rows(array $bundles): array
+    {
+        $rows = [];
+
+        foreach ($bundles as $name => $bundle) {
+            if (is_string($name) && is_array($bundle)) {
+                $rows[] = AssetBundleRow::fromBundle($name, $bundle);
+            }
+        }
+
+        return $rows;
     }
 }

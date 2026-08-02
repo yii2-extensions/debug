@@ -10,6 +10,7 @@ use yii\debug\controllers\DefaultController;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
+use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryStatusBucket, HistorySummary};
 
@@ -23,16 +24,14 @@ final class HistoryRowRendererTest extends TestCase
 {
     public function testBuildRowOptionsAddsDataAttributesForCursorJs(): void
     {
-        $row = HistoryRow::from(
-            [
-                'tag' => 'abc',
-                'method' => 'GET',
-                'url' => '/path',
-                'statusCode' => 200,
-                'time' => 1_700_000_000,
-                'ajax' => true,
-            ],
-        );
+        $row = self::row([
+            'tag' => 'abc',
+            'method' => 'GET',
+            'url' => '/path',
+            'statusCode' => 200,
+            'time' => 1_700_000_000,
+            'ajax' => true,
+        ]);
 
         $options = HistoryRowRenderer::buildRowOptions($row, new DebugSearch());
 
@@ -57,12 +56,10 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testBuildRowOptionsFlagsCriticalStatusCodesWithDangerHighlight(): void
     {
-        $row = HistoryRow::from(
-            [
-                'tag' => 'critical',
-                'statusCode' => 500,
-            ],
-        );
+        $row = self::row([
+            'tag' => 'critical',
+            'statusCode' => 500,
+        ]);
 
         $searchModel = new DebugSearch();
         $options = HistoryRowRenderer::buildRowOptions($row, $searchModel);
@@ -82,12 +79,12 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertSame(
             'Yes',
-            HistoryRowRenderer::renderAjaxCell(HistoryRow::from(['ajax' => true])),
+            HistoryRowRenderer::renderAjaxCell(self::row(['ajax' => true])),
             "Boolean ajax value must map to 'Yes'.",
         );
         self::assertSame(
             'No',
-            HistoryRowRenderer::renderAjaxCell(HistoryRow::from(['ajax' => false])),
+            HistoryRowRenderer::renderAjaxCell(self::row(['ajax' => false])),
             "Boolean ajax value must map to 'No'.",
         );
     }
@@ -96,19 +93,19 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertSame(
             '125 ms',
-            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.125]), 0.0),
+            HistoryRowRenderer::renderDurationCell(self::row(['processingTime' => 0.125]), 0.0),
             "Seconds must format as 'X ms'.",
         );
         self::assertSame(
             '2,000 ms',
-            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 2.0]), 0.0),
+            HistoryRowRenderer::renderDurationCell(self::row(['processingTime' => 2.0]), 0.0),
             'Second-scale durations must keep the thousands separator.',
         );
     }
 
     public function testRenderDurationCellScalesGaugeAgainstPageMaximum(): void
     {
-        $html = HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.125]), 0.25);
+        $html = HistoryRowRenderer::renderDurationCell(self::row(['processingTime' => 0.125]), 0.25);
 
         self::assertSame(
             '<span class="yii-debug-gauge" style=\'--yii-debug-gauge: 50%;\'>'
@@ -120,19 +117,19 @@ final class HistoryRowRendererTest extends TestCase
         );
         self::assertStringContainsString(
             '--yii-debug-gauge: 100%;',
-            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.25]), 0.25),
+            HistoryRowRenderer::renderDurationCell(self::row(['processingTime' => 0.25]), 0.25),
             'The slowest row must fill its rail.',
         );
         self::assertStringContainsString(
             '--yii-debug-gauge: 0%;',
-            HistoryRowRenderer::renderDurationCell(HistoryRow::from(['processingTime' => 0.0]), 0.25),
+            HistoryRowRenderer::renderDurationCell(self::row(['processingTime' => 0.0]), 0.25),
             'A zero measurement must show an empty rail.',
         );
     }
 
     public function testRenderDurationCellShowsNotSetWhenMissing(): void
     {
-        $html = HistoryRowRenderer::renderDurationCell(HistoryRow::from([]), 0.25);
+        $html = HistoryRowRenderer::renderDurationCell(self::row([]), 0.25);
 
         self::assertStringContainsString(
             '(not set)',
@@ -150,14 +147,14 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertSame(
             '2.000 MB',
-            HistoryRowRenderer::renderMemoryCell(HistoryRow::from(['peakMemory' => 2097152]), 0),
+            HistoryRowRenderer::renderMemoryCell(self::row(['peakMemory' => 2097152]), 0),
             "Bytes must format as 'X.XXX MB'.",
         );
     }
 
     public function testRenderMemoryCellScalesGaugeAgainstPageMaximum(): void
     {
-        $html = HistoryRowRenderer::renderMemoryCell(HistoryRow::from(['peakMemory' => 2097152]), 4194304);
+        $html = HistoryRowRenderer::renderMemoryCell(self::row(['peakMemory' => 2097152]), 4194304);
 
         self::assertStringContainsString(
             '--yii-debug-gauge: 50%;',
@@ -174,7 +171,7 @@ final class HistoryRowRendererTest extends TestCase
     public function testRenderMemoryCellShowsNotSetWhenMissing(): void
     {
         $html = HistoryRowRenderer::renderMemoryCell(
-            HistoryRow::from([]),
+            self::row([]),
             4194304,
         );
 
@@ -194,17 +191,17 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertSame(
             '<span class="yii-debug-method yii-debug-verb-get">GET</span>',
-            HistoryRowRenderer::renderMethodCell(HistoryRow::from(['method' => 'GET'])),
+            HistoryRowRenderer::renderMethodCell(self::row(['method' => 'GET'])),
             "GET must wear the 'get' verb class.",
         );
         self::assertStringContainsString(
             'yii-debug-verb-put',
-            HistoryRowRenderer::renderMethodCell(HistoryRow::from(['method' => 'PATCH'])),
+            HistoryRowRenderer::renderMethodCell(self::row(['method' => 'PATCH'])),
             "PATCH must share the 'put' verb hue.",
         );
         self::assertStringContainsString(
             'yii-debug-verb-other',
-            HistoryRowRenderer::renderMethodCell(HistoryRow::from(['method' => 'COMMAND'])),
+            HistoryRowRenderer::renderMethodCell(self::row(['method' => 'COMMAND'])),
             "COMMAND must fall back to the 'other' verb.",
         );
     }
@@ -213,20 +210,18 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertSame(
             '',
-            HistoryRowRenderer::renderMethodCell(HistoryRow::from([])),
+            HistoryRowRenderer::renderMethodCell(self::row(['method' => ''])),
             'An uncaptured method must render nothing.',
         );
     }
 
     public function testRenderSqlCountCellEmitsWarningGlyphWhenAboveThreshold(): void
     {
-        $row = HistoryRow::from(
-            [
-                'tag' => 'flood',
-                'sqlCount' => 500,
-                'excessiveCallersCount' => 0,
-            ],
-        );
+        $row = self::row([
+            'tag' => 'flood',
+            'sqlCount' => 500,
+            'excessiveCallersCount' => 0,
+        ]);
 
         $dbPanel = new DbPanel();
 
@@ -248,13 +243,11 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderSqlCountCellPluralizesExcessiveCallersCount(): void
     {
-        $row = HistoryRow::from(
-            [
-                'tag' => 'flood',
-                'sqlCount' => 10,
-                'excessiveCallersCount' => 4,
-            ],
-        );
+        $row = self::row([
+            'tag' => 'flood',
+            'sqlCount' => 10,
+            'excessiveCallersCount' => 4,
+        ]);
 
         $dbPanel = new DbPanel();
 
@@ -271,13 +264,11 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderSqlCountCellRendersPlainCountWhenBelowThreshold(): void
     {
-        $row = HistoryRow::from(
-            [
-                'tag' => 'low',
-                'sqlCount' => 3,
-                'excessiveCallersCount' => 0,
-            ],
-        );
+        $row = self::row([
+            'tag' => 'low',
+            'sqlCount' => 3,
+            'excessiveCallersCount' => 0,
+        ]);
 
         $dbPanel = new DbPanel();
 
@@ -299,13 +290,11 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderSqlCountCellSingularizesSingleExcessiveCaller(): void
     {
-        $row = HistoryRow::from(
-            [
-                'tag' => 'flood',
-                'sqlCount' => 10,
-                'excessiveCallersCount' => 1,
-            ],
-        );
+        $row = self::row([
+            'tag' => 'flood',
+            'sqlCount' => 10,
+            'excessiveCallersCount' => 1,
+        ]);
 
         $dbPanel = new DbPanel();
 
@@ -324,7 +313,7 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertStringContainsString(
             'yii-debug-status-2xx',
-            HistoryRowRenderer::renderStatusCell(HistoryRow::from(['method' => 'COMMAND', 'statusCode' => 0])),
+            HistoryRowRenderer::renderStatusCell(self::row(['method' => 'COMMAND', 'statusCode' => 0])),
             "COMMAND with status '0' must display as a '2xx'.",
         );
     }
@@ -333,22 +322,22 @@ final class HistoryRowRendererTest extends TestCase
     {
         self::assertStringContainsString(
             'yii-debug-badge yii-debug-status-2xx',
-            HistoryRowRenderer::renderStatusCell(HistoryRow::from(['statusCode' => 200])),
+            HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 200])),
             "Status code '200' must map to '2xx'.",
         );
         self::assertStringContainsString(
             'yii-debug-status-3xx',
-            HistoryRowRenderer::renderStatusCell(HistoryRow::from(['statusCode' => 301])),
+            HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 301])),
             "Status code '301' must map to '3xx'.",
         );
         self::assertStringContainsString(
             'yii-debug-status-4xx',
-            HistoryRowRenderer::renderStatusCell(HistoryRow::from(['statusCode' => 404])),
+            HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 404])),
             "Status code '404' must map to '4xx'.",
         );
         self::assertStringContainsString(
             'yii-debug-status-5xx',
-            HistoryRowRenderer::renderStatusCell(HistoryRow::from(['statusCode' => 500])),
+            HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 500])),
             "Status code '500' must map to '5xx'.",
         );
     }
@@ -405,7 +394,7 @@ final class HistoryRowRendererTest extends TestCase
     public function testRenderTagCellLinksToPanelView(): void
     {
         $html = HistoryRowRenderer::renderTagCell(
-            HistoryRow::from(['tag' => 'abc']),
+            self::row(['tag' => 'abc']),
         );
 
         self::assertStringContainsString(
@@ -418,11 +407,9 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderTimeCellRendersCompactClockWithFullTooltip(): void
     {
-        $row = HistoryRow::from(
-            [
-                'time' => 1_700_000_000,
-            ],
-        );
+        $row = self::row([
+            'time' => 1_700_000_000,
+        ]);
 
         $html = HistoryRowRenderer::renderTimeCell($row);
 
@@ -441,7 +428,7 @@ final class HistoryRowRendererTest extends TestCase
     public function testRenderTimeCellShowsNotSetForZeroTimestamp(): void
     {
         $html = HistoryRowRenderer::renderTimeCell(
-            HistoryRow::from(['time' => 0]),
+            self::row(['time' => 0]),
         );
 
         self::assertStringContainsString(
@@ -454,7 +441,7 @@ final class HistoryRowRendererTest extends TestCase
     public function testRenderUrlCellWrapsUrlInTitleSpan(): void
     {
         $html = HistoryRowRenderer::renderUrlCell(
-            HistoryRow::from(['url' => 'http://example.test/path']),
+            self::row(['url' => 'http://example.test/path']),
         );
 
         self::assertStringContainsString(
@@ -491,5 +478,32 @@ final class HistoryRowRendererTest extends TestCase
         $this->destroyApplication();
 
         parent::tearDown();
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private static function row(array $overrides = []): HistoryRow
+    {
+        return HistoryRow::fromSummary(
+            RequestSummary::fromArray(
+                [
+                    'tag' => 'tag-1',
+                    'url' => 'https://example.test/',
+                    'ajax' => false,
+                    'method' => 'GET',
+                    'ip' => '127.0.0.1',
+                    'time' => 1_700_000_000.0,
+                    'statusCode' => 200,
+                    'sqlCount' => 0,
+                    'excessiveCallersCount' => 0,
+                    'mailCount' => 0,
+                    'mailFiles' => [],
+                    'processingTime' => null,
+                    'peakMemory' => null,
+                    ...$overrides,
+                ],
+            ),
+        );
     }
 }

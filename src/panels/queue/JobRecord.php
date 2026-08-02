@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels\queue;
 
 use yii\debug\helpers\Coerce;
+use yii\debug\storage\{HydrationException, PanelRow, Payload};
 
 use function in_array;
 use function is_array;
@@ -16,7 +17,7 @@ use function is_string;
  * Mirrors the relevant subset of Yii Queue `JobEvent` after every value has been narrowed, so the consuming view
  * iterates and reads typed properties without inspecting the original event object.
  */
-final readonly class JobRecord
+final readonly class JobRecord implements PanelRow
 {
     /**
      * @var list<string> Allowed event-type strings, in canonical order.
@@ -117,12 +118,61 @@ final readonly class JobRecord
         public string $error,
     ) {}
 
-    /**
-     * Builds a typed queue record from a captured value.
-     */
-    public static function fromMixed(mixed $data): self
+    public static function fromArray(mixed $data, string $path): self
     {
-        $row = is_array($data) ? $data : [];
+        $payload = Payload::object($data, $path)
+            ->shape(
+                [
+                    'eventType',
+                    'componentId',
+                    'driverName',
+                    'driverClass',
+                    'isAsync',
+                    'jobClass',
+                    'payloadFields',
+                    'time',
+                    'jobId',
+                    'ttr',
+                    'delay',
+                    'priority',
+                    'attempt',
+                    'duration',
+                    'error',
+                ],
+            );
+
+        $eventType = $payload->string('eventType');
+
+        if (!in_array($eventType, self::EVENT_TYPES, true)) {
+            throw HydrationException::at("{$path}.eventType", 'a known queue event type');
+        }
+
+        return new self(
+            eventType: $eventType,
+            componentId: $payload->string('componentId'),
+            driverName: $payload->string('driverName'),
+            driverClass: $payload->string('driverClass'),
+            isAsync: $payload->bool('isAsync'),
+            jobClass: $payload->string('jobClass'),
+            payloadFields: $payload->map('payloadFields'),
+            time: $payload->number('time'),
+            jobId: $payload->string('jobId'),
+            ttr: $payload->nullableInt('ttr'),
+            delay: $payload->nullableInt('delay'),
+            priority: $payload->nullableInt('priority'),
+            attempt: $payload->nullableInt('attempt'),
+            duration: $payload->nullableNumber('duration'),
+            error: $payload->string('error'),
+        );
+    }
+
+    /**
+     * Narrows one captured queue-event payload into a typed record.
+     *
+     * @param array<array-key, mixed> $row Captured payload.
+     */
+    public static function fromCapture(array $row): self
+    {
         $eventType = $row['eventType'] ?? null;
         $payload = $row['payloadFields'] ?? null;
 
@@ -145,5 +195,29 @@ final readonly class JobRecord
             duration: Coerce::floatOrNull($row['duration'] ?? null),
             error: Coerce::string($row['error'] ?? null),
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'eventType' => $this->eventType,
+            'componentId' => $this->componentId,
+            'driverName' => $this->driverName,
+            'driverClass' => $this->driverClass,
+            'isAsync' => $this->isAsync,
+            'jobClass' => $this->jobClass,
+            'payloadFields' => $this->payloadFields,
+            'time' => $this->time,
+            'jobId' => $this->jobId,
+            'ttr' => $this->ttr,
+            'delay' => $this->delay,
+            'priority' => $this->priority,
+            'attempt' => $this->attempt,
+            'duration' => $this->duration,
+            'error' => $this->error,
+        ];
     }
 }

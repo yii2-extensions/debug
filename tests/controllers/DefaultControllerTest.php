@@ -12,13 +12,21 @@ use Yii;
 use yii\base\{ActionEvent, InvalidConfigException};
 use yii\db\Connection;
 use yii\debug\controllers\DefaultController;
-use yii\debug\{FlattenException, LogTarget, Module};
+use yii\debug\{LogTarget, Module};
+use yii\debug\panels\config\ConfigSnapshot;
+use yii\debug\panels\db\DbSnapshot;
+use yii\debug\panels\log\LogSnapshot;
 use yii\debug\panels\MailPanel;
-use yii\debug\tests\support\stub\MinimalToolbarPanel;
+use yii\debug\panels\request\RequestSnapshot;
+use yii\debug\storage\{PanelSnapshot, RequestSummary};
+use yii\debug\tests\support\stub\{MinimalToolbarPanel, StubSnapshot};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarView;
 use yii\web\{AssetManager, NotFoundHttpException, Response};
+
+use function file_put_contents;
+use function mkdir;
 
 /**
  * Unit tests for {@see DefaultController} covering every public action.
@@ -62,7 +70,11 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-index-cursor', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-index-cursor',
+            [],
+        );
 
         $_GET['cursor'] = 'tag-index-cursor';
 
@@ -83,7 +95,11 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-index', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-index',
+            [],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -139,14 +155,18 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-toolbar-stub', ['stub' => []]);
-
         // Wire a panel whose 'getToolbarData()' omits 'id', 'title', and 'url' so the controller's defaults kick in.
         $stub = new MinimalToolbarPanel();
 
         $stub->id = 'stub';
         $stub->module = $module;
         $module->panels['stub'] = $stub;
+
+        $this->writeSnapshot(
+            $module,
+            'tag-toolbar-stub',
+            ['stub' => StubSnapshot::capture([])],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -191,7 +211,11 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-toolbar', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-toolbar',
+            [],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -220,10 +244,10 @@ final class DefaultControllerTest extends TestCase
             $module,
             'tag-toolbar-ok',
             [
-                'config' => [],
-                'db' => ['messages' => []],
-                'log' => ['messages' => []],
-                'request' => ['method' => 'GET'],
+                'config' => ConfigSnapshot::capture([]),
+                'db' => new DbSnapshot([]),
+                'log' => LogSnapshot::capture([]),
+                'request' => RequestSnapshot::capture(['statusCode' => 200]),
             ],
         );
 
@@ -248,7 +272,11 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-asset-fail', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-asset-fail',
+            ['config' => ConfigSnapshot::capture([])],
+        );
 
         // Replace the asset manager with one whose 'basePath' points at a non-writable path so 'publish()' throws.
         Yii::$app->set(
@@ -273,7 +301,11 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-view-first', ['log' => ['messages' => []]]);
+        $this->writeSnapshot(
+            $module,
+            'tag-view-first',
+            ['log' => LogSnapshot::capture([])],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -292,7 +324,11 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-view-panel', ['request' => ['method' => 'GET']]);
+        $this->writeSnapshot(
+            $module,
+            'tag-view-panel',
+            ['request' => RequestSnapshot::capture(['statusCode' => 200])],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -311,10 +347,14 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        // Persist an exception on the 'request' panel via the 'exceptions' channel of the snapshot.
-        $error = new FlattenException(new RuntimeException('Boom'));
+        // Persist an exception on the 'request' panel via the failure channel of the snapshot.
+        $error = new RuntimeException('Boom');
 
-        $this->writeSnapshotWithExceptions($module, 'tag-view-error', ['request' => $error]);
+        $this->writeSnapshotWithExceptions(
+            $module,
+            'tag-view-error',
+            ['request' => $error],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -359,10 +399,15 @@ final class DefaultControllerTest extends TestCase
     public function testBeforeActionReturnsFalseWhenParentGuardRejectsAction(): void
     {
         $module = $this->bootDebugModule();
+
         $controller = new DefaultController('default', $module);
+
         $action = $controller->createAction('index');
 
-        self::assertNotNull($action, "'index' must resolve to an action object.");
+        self::assertNotNull(
+            $action,
+            "'index' must resolve to an action object.",
+        );
 
         $controller->on(
             DefaultController::EVENT_BEFORE_ACTION,
@@ -380,24 +425,59 @@ final class DefaultControllerTest extends TestCase
     public function testCreateShellContextSupportsEmptyManifestAndNumericPeakMemory(): void
     {
         $module = $this->bootDebugModule();
+
         $controller = new DefaultController('default', $module);
 
         $context = $this->invoke(
             $controller,
             'createShellContext',
-            [ShellContext::MODE_INDEX, [], null, ['peakMemory' => 1_048_576], new SidebarView(null, [])],
+            [
+                ShellContext::MODE_INDEX,
+                [],
+                null,
+                new RequestSummary(
+                    tag: 'tag-shell',
+                    url: 'dummy',
+                    ajax: false,
+                    method: 'GET',
+                    ip: '127.0.0.1',
+                    time: 1_700_000_000.0,
+                    statusCode: 200,
+                    sqlCount: 0,
+                    excessiveCallersCount: 0,
+                    mailCount: 0,
+                    mailFiles: [],
+                    processingTime: null,
+                    peakMemory: 1_048_576,
+                ),
+                new SidebarView(null, []),
+            ],
         );
 
-        self::assertInstanceOf(ShellContext::class, $context, 'The factory must return a typed shell context.');
-        self::assertNull($context->configUrl, 'An empty manifest must disable the configuration link.');
-        self::assertNotNull($context->peakMemory, 'Numeric peak memory must be formatted for the shell header.');
+        self::assertInstanceOf(
+            ShellContext::class,
+            $context,
+            'The factory must return a typed shell context.',
+        );
+        self::assertNull(
+            $context->configUrl,
+            'An empty manifest must disable the configuration link.',
+        );
+        self::assertNotNull(
+            $context->peakMemory,
+            'Numeric peak memory must be formatted for the shell header.',
+        );
     }
 
     public function testGetManifestCachesResultAndReloadsOnForce(): void
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-first', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-first',
+            [],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -409,7 +489,11 @@ final class DefaultControllerTest extends TestCase
             "Initial manifest must include 'tag-first'.",
         );
 
-        $this->writeSnapshot($module, 'tag-second', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-second',
+            [],
+        );
 
         // Without forceReload the cached manifest must persist.
         $cached = $controller->getManifest();
@@ -433,7 +517,11 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-load', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-load',
+            [],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -441,7 +529,7 @@ final class DefaultControllerTest extends TestCase
 
         self::assertSame(
             'tag-load',
-            $controller->summary['tag'] ?? null,
+            $controller->summary?->tag,
             'Loaded summary must echo the active tag.',
         );
     }
@@ -449,6 +537,7 @@ final class DefaultControllerTest extends TestCase
     public function testMainLayoutRequiresShellContext(): void
     {
         $module = $this->bootDebugModule();
+
         $controller = new DefaultController('default', $module);
 
         unset(Yii::$app->view->params['debugShell']);
@@ -603,18 +692,15 @@ final class DefaultControllerTest extends TestCase
 
         @mkdir($dataPath, 0o777, true);
 
-        // Write a manifest entry but an incompatible snapshot without a summary.
         $tag = 'tag-no-summary';
-        $payload = ['exceptions' => []];
 
-        file_put_contents(
-            "{$dataPath}/{$tag}.data",
-            serialize($payload),
+        $this->writeDebugSnapshot(
+            $module,
+            $tag,
+            [],
         );
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize(['version' => 2, 'entries' => [$tag => ['tag' => $tag, 'url' => 'dummy']]]),
-        );
+
+        file_put_contents("{$dataPath}/{$tag}.json", '{"version":3,"panels":{},"failures":{}}');
 
         $controller = new DefaultController('default', $module);
 
@@ -752,7 +838,7 @@ final class DefaultControllerTest extends TestCase
 
         @mkdir($dataPath, 0o777, true);
 
-        $files = glob("{$dataPath}/*.data");
+        $files = glob("{$dataPath}/*.json");
 
         foreach ($files === false ? [] : $files as $file) {
             @unlink($file);
@@ -762,78 +848,18 @@ final class DefaultControllerTest extends TestCase
     }
 
     /**
-     * @param array<string, array<string, mixed>> $panelData Per-panel data shapes, keyed by panel id.
+     * @param array<string, PanelSnapshot> $panels
      */
-    private function writeSnapshot(Module $module, string $tag, array $panelData): void
+    private function writeSnapshot(Module $module, string $tag, array $panels): void
     {
-        $logTarget = $module->logTarget;
-
-        self::assertInstanceOf(
-            LogTarget::class,
-            $logTarget,
-            "'logTarget' must be wired by bootstrap.",
-        );
-
-        $logTarget->tag = $tag;
-
-        $dataPath = Yii::getAlias($module->dataPath);
-
-        @mkdir($dataPath, 0o777, true);
-
-        $summary = [
-            'tag' => $tag,
-            'url' => 'dummy',
-            'method' => 'GET',
-            'time' => 1_700_000_000.0,
-            'ip' => '127.0.0.1',
-            'statusCode' => 200,
-        ];
-
-        file_put_contents(
-            "{$dataPath}/{$tag}.data",
-            serialize(['version' => 2, 'panels' => $panelData, 'summary' => $summary, 'exceptions' => []]),
-        );
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize(['version' => 2, 'entries' => [$tag => $summary]]),
-        );
+        $this->writeDebugSnapshot($module, $tag, $panels);
     }
 
     /**
-     * @param array<string, FlattenException> $exceptions Per-panel exception map keyed by panel id.
+     * @param array<string, \Throwable> $exceptions Per-panel exception map keyed by panel id.
      */
     private function writeSnapshotWithExceptions(Module $module, string $tag, array $exceptions): void
     {
-        $logTarget = $module->logTarget;
-
-        self::assertInstanceOf(
-            LogTarget::class,
-            $logTarget,
-            "'logTarget' must be wired by bootstrap.",
-        );
-
-        $logTarget->tag = $tag;
-
-        $dataPath = Yii::getAlias($module->dataPath);
-
-        @mkdir($dataPath, 0o777, true);
-
-        $summary = [
-            'tag' => $tag,
-            'url' => 'dummy',
-            'method' => 'GET',
-            'time' => 1_700_000_000.0,
-            'ip' => '127.0.0.1',
-            'statusCode' => 200,
-        ];
-
-        file_put_contents(
-            "{$dataPath}/{$tag}.data",
-            serialize(['version' => 2, 'panels' => [], 'summary' => $summary, 'exceptions' => $exceptions]),
-        );
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize(['version' => 2, 'entries' => [$tag => $summary]]),
-        );
+        $this->writeDebugSnapshot($module, $tag, [], failures: $exceptions);
     }
 }

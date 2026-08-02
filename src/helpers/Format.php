@@ -31,6 +31,6 @@ final class Format
         $rendered = rtrim($rendered, '0');
         $rendered = rtrim($rendered, '.');
 
-        return $rendered . '%';
+        return "{$rendered}%";
     }
 }

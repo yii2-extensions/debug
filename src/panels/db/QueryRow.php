@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\db;
 
-use yii\debug\helpers\Coerce;
+use yii\debug\storage\{PanelRow, Payload};
 
-use function is_array;
+use function array_values;
 use function max;
 
 /**
  * Typed view-model for a single database query row consumed by the queries grid.
  *
- * Mirrors the shape produced by {@see \yii\debug\panels\DbPanel} after every value has been narrowed, so GridView
- * callbacks read typed properties without further `mixed` narrowing.
+ * Resolved once at capture time from the logger timings, then persisted in that form: the SQL verb, the statement,
+ * its duration, the backtrace and its hash, the duplicate count, and the reported row count.
  */
-final readonly class QueryRow
+final readonly class QueryRow implements PanelRow
 {
     public function __construct(
         /**
@@ -56,23 +56,85 @@ final readonly class QueryRow
         public int|null $rows,
     ) {}
 
-    /**
-     * Builds a typed query row from a data-provider value.
-     */
-    public static function fromMixed(mixed $data): self
+    public static function fromArray(mixed $data, string $path): self
     {
-        $row = is_array($data) ? $data : [];
+        $payload = Payload::object($data, $path)
+            ->shape(
+                [
+                    'type',
+                    'query',
+                    'duration',
+                    'trace',
+                    'traceHash',
+                    'timestamp',
+                    'seq',
+                    'duplicate',
+                    'rows',
+                ],
+            );
 
         return new self(
-            type: Coerce::string($row['type'] ?? null),
-            query: Coerce::string($row['query'] ?? null),
-            duration: Coerce::float($row['duration'] ?? null),
-            trace: Coerce::traceFrames($row['trace'] ?? null),
-            traceHash: Coerce::string($row['traceHash'] ?? null),
-            timestamp: Coerce::float($row['timestamp'] ?? null),
-            seq: Coerce::int($row['seq'] ?? null),
-            duplicate: max(1, Coerce::int($row['duplicate'] ?? null)),
-            rows: Coerce::intOrNull($row['rows'] ?? null),
+            type: $payload->string('type'),
+            query: $payload->string('query'),
+            duration: $payload->number('duration'),
+            trace: $payload->rows('trace'),
+            traceHash: $payload->string('traceHash'),
+            timestamp: $payload->number('timestamp'),
+            seq: $payload->int('seq'),
+            duplicate: max(1, $payload->int('duplicate')),
+            rows: $payload->nullableInt('rows'),
         );
+    }
+
+    /**
+     * Builds a typed row from one resolved logger timing.
+     *
+     * @param string $type Uppercase SQL command verb extracted from the statement.
+     * @param int $seq Zero-based sequence index.
+     * @param int $duplicate Number of times the same statement was emitted in this request.
+     * @param int|null $rows Rows reported by the driver, or `null` when it reported none.
+     * @param array{
+     *   info: string,
+     *   category: string,
+     *   timestamp: float,
+     *   trace: array<int, array<string, mixed>>,
+     *   level: int,
+     *   duration: float,
+     *   memory: int,
+     *   memoryDiff: int,
+     *   traceHash: string
+     * } $timing Resolved timing.
+     */
+    public static function fromTiming(array $timing, string $type, int $seq, int $duplicate, int|null $rows): self
+    {
+        return new self(
+            type: $type,
+            query: $timing['info'],
+            duration: $timing['duration'] * 1000,
+            trace: array_values($timing['trace']),
+            traceHash: $timing['traceHash'],
+            timestamp: $timing['timestamp'] * 1000,
+            seq: $seq,
+            duplicate: max(1, $duplicate),
+            rows: $rows,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'type' => $this->type,
+            'query' => $this->query,
+            'duration' => $this->duration,
+            'trace' => $this->trace,
+            'traceHash' => $this->traceHash,
+            'timestamp' => $this->timestamp,
+            'seq' => $this->seq,
+            'duplicate' => $this->duplicate,
+            'rows' => $this->rows,
+        ];
     }
 }

@@ -10,10 +10,11 @@ use yii\base\Controller as BaseController;
 use yii\db\Connection;
 use yii\debug\actions\db\ExplainAction;
 use yii\debug\controllers\DefaultController;
-use yii\debug\{LogTarget, Module};
+use yii\debug\Module;
+use yii\debug\panels\db\{DbSnapshot, QueryRow};
 use yii\debug\panels\DbPanel;
+use yii\debug\storage\PanelSnapshot;
 use yii\debug\tests\support\TestCase;
-use yii\log\Logger;
 use yii\web\AssetManager;
 use yii\web\HttpException;
 
@@ -33,7 +34,13 @@ final class ExplainActionTest extends TestCase
 
         Yii::$app->controller = $controller;
 
-        $html = $controller->renderPartial('db-explain', ['query' => 'SELECT 1', 'results' => []]);
+        $html = $controller->renderPartial(
+            'db-explain',
+            [
+                'query' => 'SELECT 1',
+                'results' => [],
+            ],
+        );
 
         self::assertStringContainsString(
             'EXPLAIN returned no rows.',
@@ -61,7 +68,7 @@ final class ExplainActionTest extends TestCase
         self::assertSame(
             1,
             substr_count($html, '<em>NULL</em>'),
-            "Only the `null` cell may render the 'NULL' placeholder; `''` must stay an empty cell.",
+            "Only the 'null' cell may render the 'NULL' placeholder; '' must stay an empty cell.",
         );
     }
 
@@ -77,12 +84,11 @@ final class ExplainActionTest extends TestCase
             'DB panel must be wired in the bootstrap.',
         );
 
-        $messages = [
-            ['SELECT 1', Logger::LEVEL_PROFILE_BEGIN, 'yii\\db\\Command::query', 1_700_000_000.0, [], 1024],
-            ['SELECT 1', Logger::LEVEL_PROFILE_END, 'yii\\db\\Command::query', 1_700_000_000.05, [], 2048],
-        ];
-
-        $this->writeSnapshot($module, 'tag-ajax', ['db' => ['messages' => $messages]]);
+        $this->writeSnapshot(
+            $module,
+            'tag-ajax',
+            ['db' => new DbSnapshot([self::queryRow('SELECT 1')])],
+        );
 
         $controller = new DefaultController('default', $module);
         $action = new ExplainAction('db-explain', $controller, ['panel' => $dbPanel]);
@@ -118,17 +124,17 @@ final class ExplainActionTest extends TestCase
             'DB panel must be wired in the bootstrap.',
         );
 
-        $messages = [
-            ['SELECT 1', Logger::LEVEL_PROFILE_BEGIN, 'yii\\db\\Command::query', 1_700_000_000.0, [], 1024],
-            ['SELECT 1', Logger::LEVEL_PROFILE_END, 'yii\\db\\Command::query', 1_700_000_000.05, [], 2048],
-        ];
-
-        $this->writeSnapshot($module, 'tag-explain', ['db' => ['messages' => $messages]]);
+        $this->writeSnapshot(
+            $module,
+            'tag-explain',
+            ['db' => new DbSnapshot([self::queryRow('SELECT 1')])],
+        );
 
         $controller = new DefaultController('default', $module);
         $action = new ExplainAction('db-explain', $controller, ['panel' => $dbPanel]);
 
         Yii::$app->controller = $controller;
+
         Yii::$app->getRequest()->setUrl('dummy');
         Yii::$app->getRequest()->setBodyParams([]);
 
@@ -153,7 +159,11 @@ final class ExplainActionTest extends TestCase
             'DB panel must be wired in the bootstrap.',
         );
 
-        $this->writeSnapshot($module, 'tag-empty', ['db' => ['messages' => []]]);
+        $this->writeSnapshot(
+            $module,
+            'tag-empty',
+            ['db' => new DbSnapshot([])],
+        );
 
         $controller = new DefaultController('default', $module);
         $action = new ExplainAction('db-explain', $controller, ['panel' => $dbPanel]);
@@ -224,41 +234,26 @@ final class ExplainActionTest extends TestCase
         return $module;
     }
 
-    /**
-     * @param array<string, array<string, mixed>> $panelData Per-panel data shapes, keyed by panel id.
-     */
-    private function writeSnapshot(Module $module, string $tag, array $panelData): void
+    private static function queryRow(string $query): QueryRow
     {
-        $logTarget = $module->logTarget;
-
-        self::assertInstanceOf(
-            LogTarget::class,
-            $logTarget,
-            'logTarget must be wired by bootstrap.',
+        return new QueryRow(
+            type: 'SELECT',
+            query: $query,
+            duration: 50.0,
+            trace: [],
+            traceHash: 'hash',
+            timestamp: 1_700_000_000_000.0,
+            seq: 0,
+            duplicate: 1,
+            rows: null,
         );
+    }
 
-        $logTarget->tag = $tag;
-
-        $dataPath = Yii::getAlias($module->dataPath);
-
-        @mkdir($dataPath, 0o777, true);
-
-        $summary = [
-            'tag' => $tag,
-            'url' => 'dummy',
-            'method' => 'GET',
-            'time' => 1_700_000_000.0,
-            'ip' => '127.0.0.1',
-            'statusCode' => 200,
-        ];
-
-        file_put_contents(
-            "{$dataPath}/{$tag}.data",
-            serialize(['version' => 2, 'panels' => $panelData, 'summary' => $summary, 'exceptions' => []]),
-        );
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize(['version' => 2, 'entries' => [$tag => $summary]]),
-        );
+    /**
+     * @param array<string, PanelSnapshot> $panels
+     */
+    private function writeSnapshot(Module $module, string $tag, array $panels): void
+    {
+        $this->writeDebugSnapshot($module, $tag, $panels);
     }
 }

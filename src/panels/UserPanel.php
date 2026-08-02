@@ -14,6 +14,7 @@ use yii\debug\controllers\UserController;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
 use yii\debug\Panel;
+use yii\debug\panels\user\UserSnapshot;
 use yii\di\Instance;
 use yii\filters\{AccessControl, AccessRule};
 use yii\helpers\VarDumper;
@@ -33,14 +34,6 @@ use function is_string;
  * Captures the identity's attributes, RBAC roles, and permissions; surfaces them through the detail view with `Reveal`
  * buttons on sensitive fields; and (when the configured access rule allows) lists candidate identities in a GridView so
  * the developer can impersonate one with a single click.
- *
- * @extends Panel<array{
- *   id: int|string|null,
- *   identity: array<string, string>,
- *   attributes: array<int, array{attribute: string, label: string}>|null,
- *   rolesProvider: ArrayDataProvider|null,
- *   permissionsProvider: ArrayDataProvider|null,
- * }>
  */
 class UserPanel extends Panel
 {
@@ -105,6 +98,8 @@ class UserPanel extends Panel
      */
     public UserSwitch|null $userSwitch = null;
 
+    private UserSnapshot|null $snapshot = null;
+
     /**
      * Returns whether the user-switch search affordance is available (the filter model exposes a `search()` method).
      */
@@ -148,6 +143,71 @@ class UserPanel extends Panel
     }
 
     /**
+     * Snapshots the identity attributes, the RBAC roles, and the permissions for the active user.
+     *
+     * Returns `null` when there is no resolvable identity, so the detail view falls back to its empty state.
+     */
+    public function capture(): UserSnapshot|null
+    {
+        $user = $this->getUser();
+
+        if ($user === null || !$user->identity instanceof IdentityInterface) {
+            return null;
+        }
+
+        $identity = $user->identity;
+
+        $userId = $user->getId();
+
+        $roles = null;
+        $permissions = null;
+
+        $module = $this->module;
+
+        if ($module !== null && $userId !== null) {
+            try {
+                $authManager = Instance::ensure($module->authManager, BaseManager::class);
+
+                $roles = $this->normalizeRbacItems($authManager->getRolesByUser($userId));
+                $permissions = $this->normalizeRbacItems($authManager->getPermissionsByUser($userId));
+            } catch (Throwable) {
+                // Ignore auth manager misconfiguration so the identity panel remains available.
+            }
+        }
+
+        $rawIdentityData = $this->identityData($identity);
+
+        $identityData = [];
+
+        foreach ($rawIdentityData as $key => $value) {
+            $identityData[$key] = VarDumper::dumpAsString($value);
+        }
+
+        // If the identity is a model, let it specify the attribute labels
+        if ($identity instanceof Model) {
+            $attributes = [];
+
+            foreach (array_keys($identityData) as $attribute) {
+                $attributes[] = [
+                    'attribute' => $attribute,
+                    'label' => $identity->getAttributeLabel($attribute),
+                ];
+            }
+        } else {
+            // Let the DetailView widget figure the labels out
+            $attributes = null;
+        }
+
+        return UserSnapshot::capture([
+            'id' => $identity->getId(),
+            'identity' => $identityData,
+            'attributes' => $attributes,
+            'roles' => $roles,
+            'permissions' => $permissions,
+        ]);
+    }
+
+    /**
      * Renders the detail view with the identity card and the user-switch GridView.
      */
     #[Override]
@@ -167,6 +227,24 @@ class UserPanel extends Panel
     public function getName(): string
     {
         return $this->displayName;
+    }
+
+    public function getPermissionsProvider(): ArrayDataProvider|null
+    {
+        return $this->rbacProvider('permissions');
+    }
+
+    public function getRolesProvider(): ArrayDataProvider|null
+    {
+        return $this->rbacProvider('roles');
+    }
+
+    /**
+     * @return array<array-key, mixed>
+     */
+    public function getSnapshotData(): array
+    {
+        return $this->snapshot?->data() ?? [];
     }
 
     /**
@@ -214,6 +292,15 @@ class UserPanel extends Panel
     }
 
     /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = UserSnapshot::fromArray($payload, "$.panels.{$this->id}");
+    }
+
+    /**
      * Wires the user-switch model, the access rules, and the filter model when the user component resolves to a
      * non-guest identity.
      *
@@ -251,88 +338,6 @@ class UserPanel extends Panel
     }
 
     /**
-     * Snapshots the identity attributes, the RBAC roles, and the permissions for the active user.
-     *
-     * Returns `null` when there is no resolvable identity, so the detail view falls back to its empty state.
-     *
-     * @return array{
-     *   id: int|string|null,
-     *   identity: array<string, string>,
-     *   attributes: array<int, array{attribute: string, label: string}>|null,
-     *   rolesProvider: ArrayDataProvider|null,
-     *   permissionsProvider: ArrayDataProvider|null
-     * }|null Captured payload consumed by the detail view, or `null` when no identity is bound.
-     */
-    public function save(): array|null
-    {
-        $user = $this->getUser();
-
-        if ($user === null || !$user->identity instanceof IdentityInterface) {
-            return null;
-        }
-
-        $identity = $user->identity;
-
-        $userId = $user->getId();
-
-        $rolesProvider = null;
-        $permissionsProvider = null;
-
-        $module = $this->module;
-
-        if ($module !== null && $userId !== null) {
-            try {
-                $authManager = Instance::ensure($module->authManager, BaseManager::class);
-
-                $rolesProvider = new ArrayDataProvider(
-                    [
-                        'allModels' => $this->normalizeRbacItems($authManager->getRolesByUser($userId)),
-                    ],
-                );
-
-                $permissionsProvider = new ArrayDataProvider(
-                    [
-                        'allModels' => $this->normalizeRbacItems($authManager->getPermissionsByUser($userId)),
-                    ],
-                );
-            } catch (Throwable) {
-                // Ignore auth manager misconfiguration so the identity panel remains available.
-            }
-        }
-
-        $rawIdentityData = $this->identityData($identity);
-
-        $identityData = [];
-
-        foreach ($rawIdentityData as $key => $value) {
-            $identityData[$key] = VarDumper::dumpAsString($value);
-        }
-
-        // If the identity is a model, let it specify the attribute labels
-        if ($identity instanceof Model) {
-            $attributes = [];
-
-            foreach (array_keys($identityData) as $attribute) {
-                $attributes[] = [
-                    'attribute' => $attribute,
-                    'label' => $identity->getAttributeLabel($attribute),
-                ];
-            }
-        } else {
-            // Let the DetailView widget figure the labels out
-            $attributes = null;
-        }
-
-        return [
-            'id' => $identity->getId(),
-            'identity' => $identityData,
-            'attributes' => $attributes,
-            'rolesProvider' => $rolesProvider,
-            'permissionsProvider' => $permissionsProvider,
-        ];
-    }
-
-    /**
      * Returns the value when it is already a string, otherwise renders it with {@see VarDumper::export()}.
      */
     protected function dataToString(mixed $data): string
@@ -355,7 +360,7 @@ class UserPanel extends Panel
     {
         $user = $this->getUser();
 
-        $data = is_array($this->data) ? $this->data : [];
+        $data = $this->getSnapshotData();
 
         $id = $data['id'] ?? null;
 
@@ -536,5 +541,12 @@ class UserPanel extends Panel
         }
 
         return $normalized;
+    }
+
+    private function rbacProvider(string $key): ArrayDataProvider|null
+    {
+        $rows = $this->getSnapshotData()[$key] ?? null;
+
+        return is_array($rows) ? new ArrayDataProvider(['allModels' => $rows]) : null;
     }
 }

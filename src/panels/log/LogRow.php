@@ -5,26 +5,26 @@ declare(strict_types=1);
 namespace yii\debug\panels\log;
 
 use yii\debug\helpers\Coerce;
+use yii\debug\storage\{PanelRow, Payload};
 use yii\helpers\VarDumper;
 
-use function is_array;
 use function is_string;
 
 /**
- * Typed view-model for a single log row consumed by the logs grid.
+ * Typed log row narrowed once from the Yii logger tuple and persisted in that form.
  *
- * Mirrors the shape produced by {@see \yii\debug\panels\LogPanel::getModels()} after every value has been narrowed,
- * including the originally-`mixed` message converted to a display string at normalize time.
+ * The grid, the search model, and the timeline memory chart all read these properties directly, so no `mixed` value
+ * survives past capture.
  */
-final readonly class LogRow
+final readonly class LogRow implements PanelRow
 {
     public function __construct(
         /**
-         * One-based row id assigned by the panel.
+         * One-based row id assigned in capture order.
          */
         public int $id,
         /**
-         * Display string for the log payload (already `VarDumper::export()`ed when the source was non-string).
+         * Display string for the log payload, exported via {@see VarDumper::export()} when the source was not a string.
          */
         public string $message,
         /**
@@ -40,42 +40,117 @@ final readonly class LogRow
          */
         public float $time,
         /**
-         * Capture timestamp of the previous log row (also in milliseconds), or the same value as `$time` for the first
-         * row of the request.
+         * Capture timestamp of the previous row in milliseconds, or this row's own time for the first row.
          */
         public float $timeOfPrevious,
         /**
-         * Row id of the previous log entry, or `null` for the first row of the request.
+         * Seconds elapsed between the previous row and this one.
+         */
+        public float $timeSincePrevious,
+        /**
+         * Row id of the previous entry, or `null` for the first row of the request.
          */
         public int|null $idOfPrevious,
         /**
-         * Row id of the next log entry, or `null` for the last row of the request.
+         * Row id of the next entry, or `null` for the last row of the request.
          */
         public int|null $idOfNext,
+        /**
+         * Memory usage in bytes reported by the logger, or `0` when the logger omitted it.
+         */
+        public int $memory,
         /**
          * @var list<array<string, mixed>> Backtrace frames captured at the log call site.
          */
         public array $trace,
     ) {}
 
-    /**
-     * Builds a typed log row from a data-provider value.
-     */
-    public static function fromMixed(mixed $data): self
+    public static function fromArray(mixed $data, string $path): self
     {
-        $row = is_array($data) ? $data : [];
-        $message = $row['message'] ?? null;
+        $payload = Payload::object($data, $path)
+            ->shape(
+                [
+                    'id',
+                    'message',
+                    'level',
+                    'category',
+                    'time',
+                    'timeOfPrevious',
+                    'timeSincePrevious',
+                    'idOfPrevious',
+                    'idOfNext',
+                    'memory',
+                    'trace',
+                ],
+            );
 
         return new self(
-            id: Coerce::int($row['id'] ?? null),
-            message: is_string($message) ? $message : VarDumper::export($message),
-            level: Coerce::int($row['level'] ?? null),
-            category: Coerce::string($row['category'] ?? null),
-            time: Coerce::float($row['time'] ?? null),
-            timeOfPrevious: Coerce::float($row['time_of_previous'] ?? null),
-            idOfPrevious: Coerce::intOrNull($row['id_of_previous'] ?? null),
-            idOfNext: Coerce::intOrNull($row['id_of_next'] ?? null),
-            trace: Coerce::traceFrames($row['trace'] ?? null),
+            id: $payload->int('id'),
+            message: $payload->string('message'),
+            level: $payload->int('level'),
+            category: $payload->string('category'),
+            time: $payload->number('time'),
+            timeOfPrevious: $payload->number('timeOfPrevious'),
+            timeSincePrevious: $payload->number('timeSincePrevious'),
+            idOfPrevious: $payload->nullableInt('idOfPrevious'),
+            idOfNext: $payload->nullableInt('idOfNext'),
+            memory: $payload->int('memory'),
+            trace: $payload->rows('trace'),
         );
+    }
+
+    /**
+     * Narrows one raw Yii logger tuple into a typed row.
+     *
+     * @param array<int|string, mixed> $message Logger tuple `[message, level, category, timestamp, traces, memory]`.
+     * @param int $id One-based row id assigned in capture order.
+     * @param float $timeOfPrevious Timestamp of the previous row in seconds; this row's own timestamp for the first.
+     * @param int|null $idOfPrevious Row id preceding this one, or `null` for the first row.
+     * @param int|null $idOfNext Row id following this one, or `null` for the last row.
+     */
+    public static function fromLoggerTuple(
+        array $message,
+        int $id,
+        float $timeOfPrevious,
+        int|null $idOfPrevious,
+        int|null $idOfNext,
+    ): self {
+        $payload = $message[0] ?? null;
+
+        $timestamp = Coerce::floatOrNull($message[3] ?? null) ?? 0.0;
+
+        return new self(
+            id: $id,
+            message: is_string($payload) ? $payload : VarDumper::export($payload),
+            level: Coerce::intOrNull($message[1] ?? null) ?? 0,
+            category: Coerce::stringOrNull($message[2] ?? null) ?? '',
+            time: $timestamp * 1000,
+            timeOfPrevious: $timeOfPrevious * 1000,
+            timeSincePrevious: $timestamp - $timeOfPrevious,
+            idOfPrevious: $idOfPrevious,
+            idOfNext: $idOfNext,
+            memory: Coerce::intOrNull($message[5] ?? null) ?? 0,
+            trace: Coerce::traceFrames($message[4] ?? []),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->id,
+            'message' => $this->message,
+            'level' => $this->level,
+            'category' => $this->category,
+            'time' => $this->time,
+            'timeOfPrevious' => $this->timeOfPrevious,
+            'timeSincePrevious' => $this->timeSincePrevious,
+            'idOfPrevious' => $this->idOfPrevious,
+            'idOfNext' => $this->idOfNext,
+            'memory' => $this->memory,
+            'trace' => $this->trace,
+        ];
     }
 }

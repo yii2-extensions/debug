@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\router;
 
-use function is_int;
-use function is_numeric;
-use function is_string;
+use yii\debug\helpers\Coerce;
 
 /**
  * Typed view-model for one row in the Action Routes table.
@@ -45,29 +43,9 @@ final readonly class ActionRouteRow
     {
         return new self(
             action: $action,
-            route: self::asString($row['route'] ?? ''),
-            rule: self::asString($row['rule'] ?? ''),
-            count: self::asInt($row['count'] ?? 0),
+            route: Coerce::string($row['route'] ?? null),
+            rule: Coerce::string($row['rule'] ?? null),
+            count: Coerce::int($row['count'] ?? null),
         );
-    }
-
-    /**
-     * Coerces the value to an int, falling back to `0` when it is neither an int nor a numeric string.
-     */
-    private static function asInt(mixed $value): int
-    {
-        if (is_int($value)) {
-            return $value;
-        }
-
-        return is_numeric($value) ? (int) $value : 0;
-    }
-
-    /**
-     * Returns the value when it is already a string, falling back to `''` otherwise.
-     */
-    private static function asString(mixed $value): string
-    {
-        return is_string($value) ? $value : '';
     }
 }

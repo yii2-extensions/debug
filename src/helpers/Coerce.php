@@ -15,9 +15,9 @@ use function is_string;
 /**
  * Narrows arbitrary mixed payloads into the typed scalars debug-panel renderers expect.
  *
- * Snapshots and event payloads cross the mixed boundary repeatedly (saved files, GridView callbacks, panel `$data`
- * arrays). Every panel used to keep a private {@see self::stringOrNull()} helper for the same narrowing pattern; this
- * class centralises that logic so the same coercion behaves identically across panels.
+ * Framework callbacks, logger entries, request parameters, and renderer rows remain mixed even though persisted
+ * snapshots use strict JSON DTOs. This helper is limited to those external runtime boundaries; snapshot hydration is
+ * handled by {@see \yii\debug\storage\Payload} without scalar coercion.
  */
 final class Coerce
 {
@@ -26,7 +26,7 @@ final class Coerce
      */
     public static function float(mixed $value, float $default = 0.0): float
     {
-        return is_numeric($value) ? (float) $value : $default;
+        return self::floatOrNull($value) ?? $default;
     }
 
     /**
@@ -86,6 +86,30 @@ final class Coerce
         }
 
         return $normalized;
+    }
+
+    /**
+     * Returns only the string entries of a raw list, preserving order.
+     *
+     * @param mixed $values Raw list, typically a user-configured category list.
+     *
+     * @return list<string> String entries in original order, possibly empty.
+     */
+    public static function stringList(mixed $values): array
+    {
+        if (!is_array($values)) {
+            return [];
+        }
+
+        $strings = [];
+
+        foreach ($values as $value) {
+            if (is_string($value)) {
+                $strings[] = $value;
+            }
+        }
+
+        return $strings;
     }
 
     /**

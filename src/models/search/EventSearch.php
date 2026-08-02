@@ -7,6 +7,7 @@ namespace yii\debug\models\search;
 use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
+use yii\debug\panels\event\EventRow;
 
 /**
  * Backs the filter form above the Event panel grid of captured framework events.
@@ -55,7 +56,7 @@ class EventSearch extends Base
      * Returns an {@see ArrayDataProvider} over the captured events, applying the loaded filter values.
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
-     * @param array<int, array<string, mixed>> $models Captured event records to wrap and filter.
+     * @param list<EventRow> $models Captured event rows to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

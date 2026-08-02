@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
-use yii\debug\helpers\{Icon, Vocabulary};
+use yii\debug\helpers\{Coerce, Icon, Vocabulary};
 use yii\debug\Panel;
+use yii\debug\storage\RequestSummary;
 
 use function array_key_first;
 use function array_key_last;
@@ -13,9 +14,7 @@ use function array_keys;
 use function array_search;
 use function count;
 use function date;
-use function is_array;
 use function is_int;
-use function is_numeric;
 use function is_string;
 use function parse_url;
 use function reset;
@@ -35,7 +34,7 @@ final class SidebarDataNormalizer
      * snapshot, marks the History entry as active, and wires the navigator buttons as a GridView cursor.
      *
      * @param array<string, Panel> $panels
-     * @param array<string, array<string, mixed>> $manifest
+     * @param array<string, RequestSummary> $manifest
      */
     public static function fromIndex(array $panels, array $manifest, string $cursorInit = ''): SidebarView
     {
@@ -49,7 +48,7 @@ final class SidebarDataNormalizer
             manifest: $manifest,
             activePanel: null,
             snapshotTag: $newestTag,
-            snapshotSummary: is_array($snapshotSummary) ? $snapshotSummary : null,
+            snapshotSummary: $snapshotSummary,
             cursorInit: $cursorInit,
         );
 
@@ -70,15 +69,14 @@ final class SidebarDataNormalizer
      * highlights the active panel in the nav.
      *
      * @param array<string, Panel> $panels
-     * @param array<string, array<string, mixed>> $manifest
-     * @param array<string, mixed> $summary
+     * @param array<string, RequestSummary> $manifest
      */
     public static function fromView(
         array $panels,
         array $manifest,
         Panel $activePanel,
         string $tag,
-        array $summary,
+        RequestSummary $summary,
     ): SidebarView {
         $snapshot = self::buildSnapshot(
             mode: 'view',
@@ -107,7 +105,7 @@ final class SidebarDataNormalizer
      * brand bar keeps the only Config CTA.
      *
      * @param array<string, Panel> $panels
-     * @param array<string, array<string, mixed>> $manifest
+     * @param array<string, RequestSummary> $manifest
      *
      * @return list<SidebarNavItem>
      */
@@ -145,8 +143,8 @@ final class SidebarDataNormalizer
                 continue;
             }
 
-            $iconKey = $panel->getToolbarIcon();
-            $iconSvg = is_string($iconKey) && $iconKey !== '' ? Icon::render($iconKey) : '';
+            $iconKey = Coerce::string($panel->getToolbarIcon());
+            $iconSvg = $iconKey !== '' ? Icon::render($iconKey) : '';
 
             $isActive = $mode === 'view' && $panel === $activePanel;
 
@@ -179,8 +177,7 @@ final class SidebarDataNormalizer
      * altogether by the renderer).
      *
      * @param array<string, Panel> $panels
-     * @param array<string, array<string, mixed>> $manifest
-     * @param array<string, mixed>|null $snapshotSummary
+     * @param array<string, RequestSummary> $manifest
      */
     private static function buildSnapshot(
         string $mode,
@@ -188,7 +185,7 @@ final class SidebarDataNormalizer
         array $manifest,
         Panel|null $activePanel,
         string|null $snapshotTag,
-        array|null $snapshotSummary,
+        RequestSummary|null $snapshotSummary,
         string $cursorInit,
     ): SidebarSnapshot|null {
         if ($snapshotTag === null || $snapshotSummary === null) {
@@ -201,17 +198,11 @@ final class SidebarDataNormalizer
 
         $snapshotPanelId = $navPanel !== null ? $navPanel->id : null;
 
-        $statusCode = is_numeric($snapshotSummary['statusCode'] ?? null)
-            ? (int) $snapshotSummary['statusCode']
-            : 0;
-
-        $method = is_string($snapshotSummary['method'] ?? null) ? $snapshotSummary['method'] : '';
-        $fullUrl = is_string($snapshotSummary['url'] ?? null) ? $snapshotSummary['url'] : '';
-
-        $time = self::formatTime($snapshotSummary['time'] ?? null);
-
-        $ajaxValue = $snapshotSummary['ajax'] ?? null;
-        $isAjax = $ajaxValue !== null && $ajaxValue !== false && $ajaxValue !== 0 && $ajaxValue !== '';
+        $statusCode = $snapshotSummary->statusCode;
+        $method = $snapshotSummary->method;
+        $fullUrl = $snapshotSummary->url;
+        $time = self::formatTime($snapshotSummary->time);
+        $isAjax = $snapshotSummary->ajax;
 
         $topTag = self::newestTag($manifest);
 
@@ -269,19 +260,15 @@ final class SidebarDataNormalizer
         return $url;
     }
 
-    private static function formatTime(mixed $time): string
+    private static function formatTime(float $time): string
     {
-        if (!is_numeric($time)) {
-            return '';
-        }
-
         $unix = (int) $time;
 
         return $unix > 0 ? date('H:i:s', $unix) : '';
     }
 
     /**
-     * @param array<string, array<string, mixed>> $manifest
+     * @param array<string, RequestSummary> $manifest
      */
     private static function newestTag(array $manifest): string|null
     {

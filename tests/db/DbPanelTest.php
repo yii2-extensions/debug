@@ -11,6 +11,8 @@ use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\db\Connection;
 use yii\debug\db\DebugPdoStatement;
+use yii\debug\LogTarget;
+use yii\debug\panels\db\QueryRow;
 use yii\debug\panels\DbPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -19,7 +21,7 @@ use function is_string;
 
 /**
  * Unit tests for {@see DbPanel} covering query timing aggregation, EXPLAIN gating, threshold checks, the SQL command
- * verb extractor, the badge variant mapping, toolbar/summary rendering, and the saved-payload narrowing.
+ * verb extractor, the badge variant mapping, toolbar/summary rendering, and snapshot hydration.
  */
 #[Group('panel')]
 #[Group('db')]
@@ -29,9 +31,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => $this->fakeMessages(2),
-        ];
+        $this->primeDbPanel($panel, $this->fakeMessages(2), []);
 
         $first = $panel->calculateTimings();
 
@@ -51,12 +51,18 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                [['non', 'string', 'token'], Logger::LEVEL_PROFILE_BEGIN, 'cat', 0.0, [], 0],
-                [['non', 'string', 'token'], Logger::LEVEL_PROFILE_END, 'cat', 0.001, [], 0],
-            ],
-        ];
+        // The category must be one of `dbEventNames`, otherwise the pair never survives the profile-log filter and the
+        // assertion below would hold vacuously, without the timing loop ever running.
+        $this->primeDbPanel($panel, [
+            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', 0.0, [], 0],
+            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', 0.001, [], 0],
+        ], []);
+
+        self::assertCount(
+            2,
+            $panel->getProfileLogs(),
+            'Both profile messages must reach the timing loop.',
+        );
 
         self::assertSame(
             [],
@@ -69,19 +75,17 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                ...$this->makeMessage(
-                    'SELECT 1',
-                    0.001,
-                    0.0,
-                    trace: [
-                        ['file' => 123, 'line' => 1],
-                        ['file' => '/keep/bar.php', 'line' => 2],
-                    ],
-                ),
-            ],
-        ];
+        $this->primeDbPanel($panel, [
+            ...$this->makeMessage(
+                'SELECT 1',
+                0.001,
+                0.0,
+                trace: [
+                    ['file' => 123, 'line' => 1],
+                    ['file' => '/keep/bar.php', 'line' => 2],
+                ],
+            ),
+        ], []);
         $panel->ignoredPathsInBacktrace = ['/x'];
 
         $timings = $panel->calculateTimings();
@@ -99,19 +103,17 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                ...$this->makeMessage(
-                    'SELECT 1',
-                    0.001,
-                    0.0,
-                    trace: [
-                        ['file' => '/tmp/ignored/foo.php', 'line' => 1],
-                        ['file' => '/tmp/kept/bar.php', 'line' => 2],
-                    ],
-                ),
-            ],
-        ];
+        $this->primeDbPanel($panel, [
+            ...$this->makeMessage(
+                'SELECT 1',
+                0.001,
+                0.0,
+                trace: [
+                    ['file' => '/tmp/ignored/foo.php', 'line' => 1],
+                    ['file' => '/tmp/kept/bar.php', 'line' => 2],
+                ],
+            ),
+        ], []);
         $panel->ignoredPathsInBacktrace = ['/tmp/ignored'];
 
         $timings = $panel->calculateTimings();
@@ -157,13 +159,22 @@ final class DbPanelTest extends TestCase
         }
     }
 
+    public function testCaptureReturnsNoRowsWithoutProfileLogs(): void
+    {
+        DebugPdoStatement::$rowCounts = [3, 7];
+
+        $panel = $this->makePanel(DbPanel::class);
+
+        self::assertSame([], $panel->capture()->entries(), 'An empty profile log yields no query rows.');
+
+        DebugPdoStatement::$rowCounts = [];
+    }
+
     public function testCountCallerCalsGroupsByTraceHash(): void
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => $this->fakeMessages(3),
-        ];
+        $this->primeDbPanel($panel, $this->fakeMessages(3), []);
 
         $counts = $panel->countCallerCals();
 
@@ -216,7 +227,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $panel->data = ['messages' => []];
+        $this->primeDbPanel($panel, [], []);
 
         self::assertStringNotContainsString(
             'Explain all',
@@ -229,12 +240,10 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $panel->data = [
-            'messages' => [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0),
-                ...$this->makeMessage('SELECT 1', 0.001, 0.001),
-            ],
-        ];
+        $this->primeDbPanel($panel, [
+            ...$this->makeMessage('SELECT 1', 0.001, 0.0),
+            ...$this->makeMessage('SELECT 1', 0.001, 0.001),
+        ], []);
 
         $html = $panel->getDetail();
 
@@ -249,7 +258,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $panel->data = ['messages' => []];
+        $this->primeDbPanel($panel, [], []);
 
         $html = $panel->getDetail();
 
@@ -274,9 +283,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $panel->data = [
-            'messages' => [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
-        ];
+        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
 
         $html = $panel->getDetail();
 
@@ -290,9 +297,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => $this->fakeMessages(3),
-        ];
+        $this->primeDbPanel($panel, $this->fakeMessages(3), []);
 
         $panel->excessiveCallerThreshold = 2;
 
@@ -312,9 +317,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => $this->fakeMessages(5),
-        ];
+        $this->primeDbPanel($panel, $this->fakeMessages(5), []);
 
         self::assertSame(
             [],
@@ -328,95 +331,53 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testGetMessagesForTimingsFallsBackWhenSavedDataIsNotArray(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            'not an array',
-        );
-
-        $messages = $this->invoke(
-            $panel,
-            'getMessagesForTimings',
-        );
-
-        self::assertSame(
-            [],
-            $messages,
-            'Non-array data must fall back to the empty live profile log.',
-        );
-    }
-
     public function testGetModelsAssemblesTimingsWithMillisecondScaling(): void
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [...$this->makeMessage('SELECT * FROM t', 0.005, 0.010)],
-            'rowCounts' => [42],
-        ];
+        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT * FROM t', 0.005, 0.010)], [42]);
 
         $models = $this->invoke($panel, 'getModels');
 
-        self::assertIsArray(
-            $models,
-            'Must produce an array.',
-        );
+        self::assertIsArray($models, 'Must produce a list of rows.');
 
         $row = $models[0] ?? self::fail('Expected one row.');
 
-        self::assertIsArray(
-            $row,
-            'Row must be an array.',
-        );
+        self::assertInstanceOf(QueryRow::class, $row, 'Rows must be typed.');
         self::assertSame(
             'SELECT',
-            $row['type'] ?? null,
+            $row->type,
             'Verb must be uppercased.',
         );
         self::assertEqualsWithDelta(
             5.0,
-            $row['duration'] ?? null,
+            $row->duration,
             1e-9,
             'Duration must be scaled to milliseconds.',
         );
         self::assertEqualsWithDelta(
             10.0,
-            $row['timestamp'] ?? null,
+            $row->timestamp,
             1e-9,
             'Timestamp must be scaled to milliseconds.',
         );
         self::assertSame(
             42,
-            $row['rows'] ?? null,
+            $row->rows,
             'Saved row count must round-trip.',
         );
     }
 
-    public function testGetModelsCachesResult(): void
+    public function testGetModelsResolvesStableRows(): void
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
-        ];
+        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
 
-        $first = $this->invoke(
-            $panel,
-            'getModels',
-        );
-        $second = $this->invoke(
-            $panel,
-            'getModels',
-        );
-
-        self::assertSame(
-            $first,
-            $second,
-            'Must return the cached list on subsequent calls.',
+        self::assertEquals(
+            $this->invoke($panel, 'getModels'),
+            $this->invoke($panel, 'getModels'),
+            'Repeated reads must resolve the same rows.',
         );
     }
 
@@ -483,86 +444,14 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testGetSavedRowCountsFallsBackToLiveListWhenMissing(): void
-    {
-        DebugPdoStatement::$rowCounts = [42];
-
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            'corrupt',
-        );
-
-        $rowCounts = $this->invoke(
-            $panel,
-            'getSavedRowCounts',
-        );
-
-        self::assertSame(
-            [42],
-            $rowCounts,
-            'Non-array data must fall back to the live row-count list.',
-        );
-
-        DebugPdoStatement::$rowCounts = [];
-    }
-
-    public function testGetSavedRowCountsKeepsOnlyIntEntries(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $panel->data = [
-            'rowCounts' => [1, '2', null, 3.5, 4, -1],
-        ];
-
-        $rowCounts = $this->invoke(
-            $panel,
-            'getSavedRowCounts',
-        );
-
-        self::assertSame(
-            [1, 4, -1],
-            $rowCounts,
-            'Non-int entries must be dropped from the row-count list.',
-        );
-    }
-
-    public function testGetSavedRowCountsReturnsLiveListWhenSavedIsNotArray(): void
-    {
-        DebugPdoStatement::$rowCounts = [99];
-
-        $panel = $this->makePanel(DbPanel::class);
-
-        $panel->data = [
-            'rowCounts' => 'invalid',
-        ];
-
-        $rowCounts = $this->invoke(
-            $panel,
-            'getSavedRowCounts',
-        );
-
-        self::assertSame(
-            [99],
-            $rowCounts,
-            'Non-array rowCounts must trigger the live-list fallback.',
-        );
-
-        DebugPdoStatement::$rowCounts = [];
-    }
-
     public function testGetToolbarItemsEmitsWarningForExcessiveCallers(): void
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
-                ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 1]]),
-            ],
-        ];
+        $this->primeDbPanel($panel, [
+            ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
+            ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 1]]),
+        ], []);
         $panel->excessiveCallerThreshold = 0;
 
         $first = $this->firstToolbarItem($panel);
@@ -587,9 +476,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
-        ];
+        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
         $panel->criticalQueryThreshold = 0;
 
         $first = $this->firstToolbarItem($panel);
@@ -619,9 +506,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
-        ];
+        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
         $panel->excessiveCallerThreshold = 0;
 
         $first = $this->firstToolbarItem($panel);
@@ -641,20 +526,17 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $timings = [
-            $this->makeTiming('SELECT 1', duration: 0.001),
-            $this->makeTiming('SELECT 2', duration: 0.002),
-        ];
+        $rows = [$this->makeRowWithDuration(1.0), $this->makeRowWithDuration(2.0)];
 
         self::assertEqualsWithDelta(
-            0.003,
+            3.0,
             $this->invoke(
                 $panel,
                 'getTotalQueryTime',
-                [$timings],
+                [$rows],
             ),
             1e-9,
-            'Total query time must equal the sum of durations.',
+            'Total query time must equal the sum of durations, in milliseconds.',
         );
     }
 
@@ -662,13 +544,11 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                ...$this->makeMessage('SELECT * FROM t', 0.001, 0.0),
-                ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.002, 0.001),
-                ...$this->makeMessage('SELECT id FROM t', 0.003, 0.003),
-            ],
-        ];
+        $this->primeDbPanel($panel, [
+            ...$this->makeMessage('SELECT * FROM t', 0.001, 0.0),
+            ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.002, 0.001),
+            ...$this->makeMessage('SELECT id FROM t', 0.003, 0.003),
+        ], []);
 
         $types = $panel->getTypes();
 
@@ -832,27 +712,6 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testIsNumberOfCallsExcessiveRespectsThreshold(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        self::assertFalse(
-            $panel->isNumberOfCallsExcessive(100),
-            "'null' threshold must never flag a call count as excessive.",
-        );
-
-        $panel->excessiveCallerThreshold = 5;
-
-        self::assertFalse(
-            $panel->isNumberOfCallsExcessive(5),
-            'Count equal to threshold must not be flagged.',
-        );
-        self::assertTrue(
-            $panel->isNumberOfCallsExcessive(6),
-            'Count above threshold must be flagged.',
-        );
-    }
-
     public function testIsQueryCountCriticalRespectsThreshold(): void
     {
         $panel = $this->makePanel(DbPanel::class);
@@ -965,28 +824,6 @@ final class DbPanelTest extends TestCase
             ),
             "Missing 'duration' must yield 'null'.",
         );
-    }
-
-    public function testSaveReturnsMessagesAndRowCountsKeys(): void
-    {
-        DebugPdoStatement::$rowCounts = [3, 7];
-
-        $panel = $this->makePanel(DbPanel::class);
-
-        $payload = $panel->save();
-
-        self::assertSame(
-            [],
-            $payload['messages'],
-            "Payload must expose 'messages'.",
-        );
-        self::assertSame(
-            [3, 7],
-            $payload['rowCounts'],
-            'Row counts must round-trip from DebugPdoStatement.',
-        );
-
-        DebugPdoStatement::$rowCounts = [];
     }
 
     public function testSumDuplicateQueriesCountsRowsWithDuplicateGreaterThanOne(): void
@@ -1175,25 +1012,34 @@ final class DbPanelTest extends TestCase
         ];
     }
 
-    /**
-     * @return array{
-     *   type: string, query: string, duration: float, trace: array<int, array<string, mixed>>,
-     *   traceHash: string, timestamp: float, seq: int, duplicate: int, rows: int|null
-     * }
-     */
-    private function makeRow(int $duplicate = 1): array
+    private function makeRow(int $duplicate = 1): QueryRow
     {
-        return [
-            'type' => 'SELECT',
-            'query' => 'SELECT 1',
-            'duration' => 0.0,
-            'trace' => [],
-            'traceHash' => 'h',
-            'timestamp' => 0.0,
-            'seq' => 0,
-            'duplicate' => $duplicate,
-            'rows' => null,
-        ];
+        return new QueryRow(
+            type: 'SELECT',
+            query: 'SELECT 1',
+            duration: 0.0,
+            trace: [],
+            traceHash: 'h',
+            timestamp: 0.0,
+            seq: 0,
+            duplicate: $duplicate,
+            rows: null,
+        );
+    }
+
+    private function makeRowWithDuration(float $duration): QueryRow
+    {
+        return new QueryRow(
+            type: 'SELECT',
+            query: 'SELECT 1',
+            duration: $duration,
+            trace: [],
+            traceHash: 'h',
+            timestamp: 0.0,
+            seq: 0,
+            duplicate: 1,
+            rows: null,
+        );
     }
 
     private function makeSqliteConnection(): Connection
@@ -1220,5 +1066,22 @@ final class DbPanelTest extends TestCase
             'memoryDiff' => 0,
             'traceHash' => '',
         ];
+    }
+
+    /**
+     * Primes the panel's live sources so the pre-capture path resolves the given queries.
+     *
+     * @param array<int, array<int|string, mixed>> $messages Raw profile tuples.
+     * @param array<int, int> $rowCounts Row counts reported by the driver, in execution order.
+     */
+    private function primeDbPanel(DbPanel $panel, array $messages, array $rowCounts): void
+    {
+        $module = $panel->module ?? self::fail('Module must be wired.');
+        $logTarget = $module->logTarget;
+
+        self::assertInstanceOf(LogTarget::class, $logTarget, 'Log target must be wired.');
+
+        $logTarget->messages = $messages;
+        DebugPdoStatement::$rowCounts = $rowCounts;
     }
 }

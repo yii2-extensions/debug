@@ -6,6 +6,7 @@ namespace yii\debug\tests\log;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\LogSearch;
+use yii\debug\panels\log\LogRow;
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -36,9 +37,9 @@ final class LogSearchTest extends TestCase
             "'message' label must be defined.",
         );
         self::assertArrayHasKey(
-            'time_since_previous',
+            'timeSincePrevious',
             $labels,
-            "'time_since_previous' label must be defined.",
+            "'timeSincePrevious' label must be defined.",
         );
     }
 
@@ -62,21 +63,9 @@ final class LogSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'level' => '1',
-                'category' => 'application',
-                'message' => 'boot',
-            ],
-            [
-                'level' => '2',
-                'category' => 'database',
-                'message' => 'query',
-            ],
-            [
-                'level' => '1',
-                'category' => 'app.user',
-                'message' => 'login',
-            ],
+            self::row(category: 'application', message: 'boot'),
+            self::row(level: 2, category: 'database', message: 'query'),
+            self::row(category: 'app.user', message: 'login'),
         ];
 
         $search = new LogSearch();
@@ -95,16 +84,8 @@ final class LogSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'level' => '1',
-                'category' => 'a',
-                'message' => 'x',
-            ],
-            [
-                'level' => '2',
-                'category' => 'b',
-                'message' => 'y',
-            ],
+            self::row(category: 'a', message: 'x'),
+            self::row(level: 2, category: 'b', message: 'y'),
         ];
 
         self::assertSame(
@@ -119,16 +100,8 @@ final class LogSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'level' => '1',
-                'category' => 'a',
-                'message' => 'x',
-            ],
-            [
-                'level' => '2',
-                'category' => 'b',
-                'message' => 'y',
-            ],
+            self::row(category: 'a', message: 'x'),
+            self::row(level: 2, category: 'b', message: 'y'),
         ];
 
         $search = new class extends LogSearch {
@@ -147,6 +120,23 @@ final class LogSearchTest extends TestCase
             2,
             $search->search(['LogSearch' => ['category' => 'a']], $records)->getTotalCount(),
             'Failed validation must short-circuit filtering.',
+        );
+    }
+
+    private static function row(int $level = 1, string $category = 'app', string $message = 'msg'): LogRow
+    {
+        return new LogRow(
+            id: 1,
+            message: $message,
+            level: $level,
+            category: $category,
+            time: 0.0,
+            timeOfPrevious: 0.0,
+            timeSincePrevious: 0.0,
+            idOfPrevious: null,
+            idOfNext: null,
+            memory: 0,
+            trace: [],
         );
     }
 }

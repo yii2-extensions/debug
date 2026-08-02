@@ -9,7 +9,9 @@ use Override;
 use ReflectionMethod;
 use Yii;
 use yii\base\{InvalidConfigException, View, ViewEvent};
+use yii\debug\helpers\Coerce;
 use yii\debug\Panel;
+use yii\debug\panels\inertia\InertiaSnapshot;
 
 use function array_keys;
 use function is_a;
@@ -26,14 +28,6 @@ use function json_encode;
  * XHR visits, together with the `X-Inertia-*` negotiation headers, so partial reloads and version conflicts can be
  * inspected per capture. The panel enables itself only when the application wires the `yii2-extensions/inertia`
  * `Manager` under the `inertia` component id.
- *
- * @extends Panel<array{
- *   location: string|null,
- *   page: array<string, mixed>|null,
- *   requestHeaders: array<string, string>,
- *   sharedKeys: list<string>,
- *   statusCode: int,
- * }>
  */
 class InertiaPanel extends Panel
 {
@@ -68,6 +62,35 @@ class InertiaPanel extends Panel
      * Page object captured from the root-view render params on full page loads, when present.
      */
     private JsonSerializable|null $page = null;
+    private InertiaSnapshot|null $snapshot = null;
+
+    /**
+     * Captures the page payload, the `X-Inertia-*` request headers, the shared-prop keys, and the response status.
+     */
+    public function capture(): InertiaSnapshot
+    {
+        $response = Yii::$app->getResponse();
+
+        $page = $this->page;
+
+        if ($page === null) {
+            $data = $response->data;
+
+            if ($data instanceof JsonSerializable && is_a($data, self::PAGE_CLASS)) {
+                $page = $data;
+            }
+        }
+
+        $location = $response->getHeaders()->get('X-Inertia-Location');
+
+        return InertiaSnapshot::capture(
+            location: is_string($location) ? $location : null,
+            page: self::normalizePage($page),
+            requestHeaders: self::requestHeaders(),
+            sharedKeys: self::sharedKeys(),
+            statusCode: $response->getStatusCode(),
+        );
+    }
 
     /**
      * Renders the detail view from the captured page payload.
@@ -79,6 +102,30 @@ class InertiaPanel extends Panel
     }
 
     /**
+     * Returns the `X-Inertia-Location` redirect target captured for the request, or `null` when there was none.
+     */
+    public function getLocation(): string|null
+    {
+        return $this->snapshot?->location;
+    }
+
+    /**
+     * @return array<array-key, mixed>
+     */
+    public function getSnapshotData(): array
+    {
+        return $this->snapshot?->data() ?? [];
+    }
+
+    /**
+     * Returns the response status code captured alongside the Inertia page.
+     */
+    public function getStatusCode(): int
+    {
+        return $this->snapshot === null ? 0 : $this->snapshot->statusCode;
+    }
+
+    /**
      * Returns whether the loaded capture carries Inertia activity (a rendered page or an `X-Inertia` XHR).
      *
      * Keeps the sidebar entry per-capture: plain requests (assets, JSON endpoints, redirects) do not list the panel.
@@ -86,7 +133,7 @@ class InertiaPanel extends Panel
     #[Override]
     public function hasContent(): bool
     {
-        $data = is_array($this->data) ? $this->data : [];
+        $data = $this->getSnapshotData();
 
         $requestHeaders = $data['requestHeaders'] ?? null;
 
@@ -95,10 +142,19 @@ class InertiaPanel extends Panel
     }
 
     /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = InertiaSnapshot::fromArray($payload, "$.panels.{$this->id}");
+    }
+
+    /**
      * Registers the render listener that captures the Inertia page from the root-view render params.
      *
      * Inertia XHR visits expose the page on `Response::$data`, but full page loads only pass it to the root view —
-     * this listener records that object so {@see save()} covers both paths. The handler binds to the application
+     * this listener records that object so {@see capture()} covers both paths. The handler binds to the application
      * view instance rather than the `View` class, so it is released with the application instead of accumulating in
      * the class-level event registry across requests of a long-running worker.
      */
@@ -138,52 +194,16 @@ class InertiaPanel extends Panel
     }
 
     /**
-     * Captures the page payload, the `X-Inertia-*` request headers, the shared-prop keys, and the response status.
-     *
-     * @return array{
-     *   location: string|null,
-     *   page: array<string, mixed>|null,
-     *   requestHeaders: array<string, string>,
-     *   sharedKeys: list<string>,
-     *   statusCode: int,
-     * } Captured Inertia snapshot; `page` is `null` when the response was not rendered through Inertia.
-     */
-    public function save(): array
-    {
-        $response = Yii::$app->getResponse();
-
-        $page = $this->page;
-
-        if ($page === null) {
-            $data = $response->data;
-
-            if ($data instanceof JsonSerializable && is_a($data, self::PAGE_CLASS)) {
-                $page = $data;
-            }
-        }
-
-        $location = $response->getHeaders()->get('X-Inertia-Location');
-
-        return [
-            'location' => is_string($location) ? $location : null,
-            'page' => self::normalizePage($page),
-            'requestHeaders' => self::requestHeaders(),
-            'sharedKeys' => self::sharedKeys(),
-            'statusCode' => $response->getStatusCode(),
-        ];
-    }
-
-    /**
      * Returns the toolbar chip carrying the rendered component name, or `[]` when no page was captured.
      */
     #[Override]
     protected function getToolbarItems(): array
     {
-        $data = is_array($this->data) ? $this->data : [];
+        $data = $this->getSnapshotData();
 
         $page = $data['page'] ?? null;
 
-        $component = is_array($page) && is_string($page['component'] ?? null) ? $page['component'] : '';
+        $component = is_array($page) ? Coerce::string($page['component'] ?? null) : '';
 
         if ($component === '') {
             return [];

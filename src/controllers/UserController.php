@@ -13,6 +13,7 @@ use yii\web\IdentityInterface;
 
 use function is_int;
 use function is_string;
+use function is_subclass_of;
 
 /**
  * Drives the user-impersonation workflow exposed by the User Switch debug panel.

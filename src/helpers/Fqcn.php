@@ -12,8 +12,8 @@ use function substr;
 /**
  * Splits a fully-qualified class name into its short name and namespace prefix.
  *
- * Multiple renderers (asset, event, log, profile, queue) display the short class name next to a muted namespace
- * prefix; this helper keeps every view aligned on the same splitting rules and on the shared two-tone label markup.
+ * Multiple renderers (asset, event, log, profile, queue) display the short class name next to a muted namespace prefix;
+ * this helper keeps every view aligned on the same splitting rules and on the shared two-tone label markup.
  */
 final class Fqcn
 {
@@ -25,7 +25,9 @@ final class Fqcn
     {
         $position = strrpos($fqcn, '\\');
 
-        return $position === false ? '' : substr($fqcn, 0, $position);
+        return $position === false
+            ? ''
+            : substr($fqcn, 0, $position);
     }
 
     /**
@@ -75,6 +77,8 @@ final class Fqcn
     {
         $position = strrpos($fqcn, '\\');
 
-        return $position === false ? $fqcn : substr($fqcn, $position + 1);
+        return $position === false
+            ? $fqcn
+            : substr($fqcn, $position + 1);
     }
 }

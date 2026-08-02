@@ -17,10 +17,8 @@ $columns = [
     'updatedAt:datetime',
 ];
 
-$data = is_array($panel->data) ? $panel->data : [];
-
-$rolesProvider = $data['rolesProvider'] ?? null;
-$permissionsProvider = $data['permissionsProvider'] ?? null;
+$rolesProvider = $panel->getRolesProvider();
+$permissionsProvider = $panel->getPermissionsProvider();
 
 ?>
 <?php if ($rolesProvider !== null): ?>

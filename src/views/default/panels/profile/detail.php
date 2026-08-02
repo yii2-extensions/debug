@@ -25,7 +25,7 @@ use yii\grid\GridView;
  * @var string $timelineUrl URL to the Timeline panel.
  */
 $hasProfileBlocks = $dataProvider->getTotalCount() > 0;
-$maxDuration = ProfileRow::maxDuration($dataProvider->getModels());
+$maxDuration = ProfileRow::maxDuration($panel->getModels());
 
 $summaryItems = [
     Span::tag()
@@ -96,17 +96,15 @@ if ($hasProfileBlocks) {
             [
                 'attribute' => 'seq',
                 'label' => 'Time',
-                'value' => static fn(mixed $data): string => ProfileCellRenderer::renderTimeCell(
-                    ProfileRow::fromMixed($data),
-                ),
+                'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderTimeCell($data),
                 'format' => 'raw',
                 'headerOptions' => ['class' => 'sort-numerical'],
                 'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
             ],
             [
                 'attribute' => 'duration',
-                'value' => static fn(mixed $data): string => ProfileCellRenderer::renderDurationCell(
-                    ProfileRow::fromMixed($data),
+                'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderDurationCell(
+                    $data,
                     $maxDuration,
                 ),
                 'format' => 'raw',
@@ -115,17 +113,13 @@ if ($hasProfileBlocks) {
             ],
             [
                 'attribute' => 'category',
-                'value' => static fn(mixed $data): string => ProfileCellRenderer::renderCategoryCell(
-                    ProfileRow::fromMixed($data),
-                ),
+                'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderCategoryCell($data),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
             ],
             [
                 'attribute' => 'info',
-                'value' => static fn(mixed $data): string => ProfileCellRenderer::renderInfoCell(
-                    ProfileRow::fromMixed($data),
-                ),
+                'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderInfoCell($data),
                 'format' => 'html',
                 'options' => ['width' => '60%'],
             ],

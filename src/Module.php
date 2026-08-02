@@ -9,7 +9,7 @@ use Throwable;
 use UIAwesome\Html\Helper\Attributes;
 use Yii;
 use yii\base\{Action, Application, BootstrapInterface, Event, InvalidConfigException};
-use yii\debug\helpers\Icon;
+use yii\debug\helpers\{Coerce, Icon};
 use yii\debug\panels\{
     AssetPanel,
     ConfigPanel,
@@ -36,7 +36,6 @@ use function file_get_contents;
 use function gethostbyname;
 use function is_array;
 use function is_callable;
-use function is_numeric;
 use function is_string;
 use function microtime;
 use function number_format;
@@ -433,7 +432,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         $rawStart = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
-        $requestStart = is_numeric($rawStart) ? (float) $rawStart : microtime(true);
+        $requestStart = Coerce::floatOrNull($rawStart) ?? microtime(true);
 
         $sender->getHeaders()
             ->set('X-Debug-Tag', $logTarget->tag)

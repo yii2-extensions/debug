@@ -6,6 +6,7 @@ namespace yii\debug\tests\widgets\sidebar;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\{ConfigPanel, InertiaPanel, RequestPanel};
+use yii\debug\panels\inertia\InertiaSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarNavItem};
 
@@ -19,6 +20,28 @@ use function array_map;
 #[Group('sidebar')]
 final class SidebarDataNormalizerTest extends TestCase
 {
+    public function testConsoleInvocationUrlIsShownVerbatim(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+        $summary = $this->requestSummary('tag-1', ['url' => 'php yii migrate/up']);
+
+        $view = SidebarDataNormalizer::fromView(
+            ['request' => $panel],
+            ['tag-1' => $summary],
+            $panel,
+            'tag-1',
+            $summary,
+        );
+
+        $snapshot = $view->snapshot ?? self::fail('The view must carry a snapshot.');
+
+        self::assertSame(
+            'php yii migrate/up',
+            $snapshot->path,
+            'A console invocation has no host portion to strip.',
+        );
+    }
+
     public function testFromIndexBuildsNavItemsForNewestTagWhenManifestNonEmpty(): void
     {
         $this->mockWebApplication();
@@ -29,7 +52,7 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromIndex(
             ['request' => $panel],
-            ['tag-newest' => ['method' => 'GET']],
+            ['tag-newest' => $this->requestSummary('tag-newest')],
             '',
         );
 
@@ -105,12 +128,7 @@ final class SidebarDataNormalizerTest extends TestCase
     {
         $view = SidebarDataNormalizer::fromIndex(
             [],
-            [
-                'tag-1' => [
-                    'method' => 'GET',
-                    'statusCode' => 200,
-                ],
-            ],
+            ['tag-1' => $this->requestSummary()],
             '',
         );
 
@@ -133,12 +151,7 @@ final class SidebarDataNormalizerTest extends TestCase
     {
         $view = SidebarDataNormalizer::fromIndex(
             [],
-            [
-                'tag-1' => [
-                    'method' => 'GET',
-                    'statusCode' => 200,
-                ],
-            ],
+            ['tag-1' => $this->requestSummary()],
             'init-tag',
         );
 
@@ -165,8 +178,11 @@ final class SidebarDataNormalizerTest extends TestCase
     public function testFromIndexSurfacesNewestTagAsSnapshot(): void
     {
         $manifest = [
-            'tag-newest' => ['method' => 'GET', 'statusCode' => 200, 'url' => 'http://example.test/'],
-            'tag-older' => ['method' => 'POST', 'statusCode' => 201, 'url' => 'http://example.test/x'],
+            'tag-newest' => $this->requestSummary('tag-newest', ['url' => 'http://example.test/']),
+            'tag-older' => $this->requestSummary(
+                'tag-older',
+                ['method' => 'POST', 'statusCode' => 201, 'url' => 'http://example.test/x'],
+            ),
         ];
 
         $view = SidebarDataNormalizer::fromIndex(
@@ -200,18 +216,10 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
-            [
-                'tag-1' => [
-                    'method' => 'GET',
-                    'statusCode' => 200,
-                ],
-            ],
+            ['tag-1' => $this->requestSummary()],
             $panel,
             'tag-1',
-            [
-                'method' => 'GET',
-                'statusCode' => 200,
-            ],
+            $this->requestSummary(),
         );
 
         self::assertArrayHasKey(
@@ -236,10 +244,10 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
-            ['tag-1' => []],
+            ['tag-1' => $this->requestSummary('tag-1', ['time' => 0.0])],
             $panel,
             'tag-1',
-            ['time' => 'not-a-number'],
+            $this->requestSummary('tag-1', ['time' => 0.0]),
         );
 
         self::assertNotNull(
@@ -263,14 +271,10 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
-            ['tag-1' => []],
+            ['tag-1' => $this->requestSummary()],
             $panel,
             'tag-1',
-            [
-                'method' => 'GET',
-                'statusCode' => 200,
-                'url' => 'http://example.test/',
-            ],
+            $this->requestSummary('tag-1', ['url' => 'http://example.test/']),
         );
 
         self::assertNotNull(
@@ -294,13 +298,10 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
-            ['tag-1' => []],
+            ['tag-1' => $this->requestSummary()],
             $panel,
             'tag-1',
-            [
-                'method' => 'GET',
-                'statusCode' => 200,
-            ],
+            $this->requestSummary(),
         );
 
         self::assertNotNull(
@@ -327,9 +328,9 @@ final class SidebarDataNormalizerTest extends TestCase
         $panel->id = 'request';
 
         $manifest = [
-            'tag-newest' => ['method' => 'GET'],
-            'tag-middle' => ['method' => 'GET'],
-            'tag-oldest' => ['method' => 'GET'],
+            'tag-newest' => $this->requestSummary('tag-newest'),
+            'tag-middle' => $this->requestSummary('tag-middle'),
+            'tag-oldest' => $this->requestSummary('tag-oldest'),
         ];
 
         $view = SidebarDataNormalizer::fromView(
@@ -337,7 +338,7 @@ final class SidebarDataNormalizerTest extends TestCase
             $manifest,
             $panel,
             'tag-middle',
-            ['method' => 'GET'],
+            $this->requestSummary('tag-middle'),
         );
 
         self::assertNotNull(
@@ -364,10 +365,10 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
-            ['tag-1' => []],
+            ['tag-1' => $this->requestSummary()],
             $panel,
             'tag-1',
-            ['time' => 1700000000],
+            $this->requestSummary('tag-1', ['time' => 1_700_000_000.0]),
         );
 
         self::assertNotNull(
@@ -391,10 +392,10 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
-            ['tag-1' => []],
+            ['tag-1' => $this->requestSummary('tag-1', ['url' => 'http://:80/'])],
             $panel,
             'tag-1',
-            ['method' => 'GET', 'url' => 'http://:80/', 'statusCode' => 200],
+            $this->requestSummary('tag-1', ['url' => 'http://:80/']),
         );
 
         self::assertNotNull(
@@ -422,10 +423,10 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromView(
             ['config' => $config, 'request' => $request],
-            ['tag-1' => []],
+            ['tag-1' => $this->requestSummary()],
             $request,
             'tag-1',
-            [],
+            $this->requestSummary(),
         );
 
         $ids = [];
@@ -450,20 +451,14 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $inertia = new InertiaPanel();
         $inertia->id = 'inertia';
-        $inertia->data = [
-            'location' => null,
-            'page' => null,
-            'requestHeaders' => [],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($inertia, InertiaSnapshot::capture(null, null, [], [], 200));
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $active, 'inertia' => $inertia],
-            ['tag-1' => ['method' => 'GET', 'statusCode' => 200]],
+            ['tag-1' => $this->requestSummary()],
             $active,
             'tag-1',
-            ['method' => 'GET', 'statusCode' => 200],
+            $this->requestSummary(),
         );
 
         $labels = array_map(static fn(SidebarNavItem $item): string => $item->label, $view->navItems);
@@ -499,10 +494,10 @@ final class SidebarDataNormalizerTest extends TestCase
         foreach ($codes as $code => $expected) {
             $view = SidebarDataNormalizer::fromView(
                 ['request' => $panel],
-                ['tag-1' => []],
+                ['tag-1' => $this->requestSummary('tag-1', ['statusCode' => $code])],
                 $panel,
                 'tag-1',
-                ['statusCode' => $code],
+                $this->requestSummary('tag-1', ['statusCode' => $code]),
             );
 
             self::assertNotNull(
@@ -527,14 +522,15 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
-            ['tag-1' => []],
+            [
+                'tag-1' => $this->requestSummary(
+                    'tag-1',
+                    ['url' => 'http://example.test:8080/foo?bar=1#baz'],
+                ),
+            ],
             $panel,
             'tag-1',
-            [
-                'method' => 'GET',
-                'url' => 'http://example.test:8080/foo?bar=1#baz',
-                'statusCode' => 200,
-            ],
+            $this->requestSummary('tag-1', ['url' => 'http://example.test:8080/foo?bar=1#baz']),
         );
 
         self::assertNotNull(

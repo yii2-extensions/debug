@@ -6,7 +6,7 @@ namespace yii\debug\tests\router;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
-use yii\debug\panels\router\RouterRenderer;
+use yii\debug\panels\router\{CurrentRouteLogRow, RouterRenderer};
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -183,16 +183,8 @@ final class RouterRendererTest extends TestCase
         $current = new CurrentRoute();
 
         $current->logs = [
-            [
-                'rule' => 'home',
-                'match' => true,
-                'parent' => '',
-            ],
-            [
-                'rule' => 'about',
-                'match' => false,
-                'parent' => 'admin',
-            ],
+            new CurrentRouteLogRow('home', '', true),
+            new CurrentRouteLogRow('about', 'admin', false),
         ];
 
         $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());

@@ -6,6 +6,7 @@ namespace yii\debug\tests\profile;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\ProfileSearch;
+use yii\debug\panels\profile\ProfileRow;
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -52,18 +53,8 @@ final class ProfileSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'category' => 'db',
-                'info' => 'SELECT',
-                'duration' => 0.1,
-                'seq' => 0,
-            ],
-            [
-                'category' => 'app',
-                'info' => 'boot',
-                'duration' => 0.2,
-                'seq' => 1,
-            ],
+            self::block('db', 'SELECT', 0.1, 0),
+            self::block('app', 'boot', 0.2, 1),
         ];
 
         $search = new ProfileSearch();
@@ -82,18 +73,8 @@ final class ProfileSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'category' => 'a',
-                'info' => 'x',
-                'duration' => 0.1,
-                'seq' => 0,
-            ],
-            [
-                'category' => 'b',
-                'info' => 'y',
-                'duration' => 0.2,
-                'seq' => 1,
-            ],
+            self::block('a', 'x', 0.1, 0),
+            self::block('b', 'y', 0.2, 1),
         ];
 
         self::assertSame(
@@ -108,18 +89,8 @@ final class ProfileSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'category' => 'a',
-                'info' => 'x',
-                'duration' => 0.1,
-                'seq' => 0,
-            ],
-            [
-                'category' => 'b',
-                'info' => 'y',
-                'duration' => 0.2,
-                'seq' => 1,
-            ],
+            self::block('a', 'x', 0.1, 0),
+            self::block('b', 'y', 0.2, 1),
         ];
 
         $search = new class extends ProfileSearch {
@@ -139,5 +110,10 @@ final class ProfileSearchTest extends TestCase
             $search->search(['ProfileSearch' => ['category' => 'a']], $records)->getTotalCount(),
             'Failed validation must short-circuit filtering.',
         );
+    }
+
+    private static function block(string $category, string $info, float $duration, int $seq): ProfileRow
+    {
+        return new ProfileRow(0.0, $duration, $category, $info, 0, $seq, 0, 0, []);
     }
 }

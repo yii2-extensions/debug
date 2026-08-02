@@ -7,18 +7,14 @@ namespace yii\debug\actions\queue;
 use Yii;
 use yii\base\Action;
 use yii\debug\controllers\DefaultController;
-use yii\debug\panels\queue\JobRecord;
 use yii\debug\panels\QueuePanel;
 use yii\web\HttpException;
-
-use function array_values;
-use function is_array;
 
 /**
  * Renders the detail page for a single captured queue record.
  *
  * Maps to the `queue-job` route registered by {@see QueuePanel::init()}; consumes `tag` (request snapshot) and `seq`
- * (zero-based index into `$panel->data['records']`).
+ * (zero-based index into the Queue panel snapshot records).
  */
 class JobAction extends Action
 {
@@ -57,31 +53,23 @@ class JobAction extends Action
         }
 
         $controller->loadData($tag);
-        $records = is_array($this->panel->data) && is_array($this->panel->data['records'] ?? null)
-            ? array_values($this->panel->data['records'])
-            : [];
+
+        $records = $this->panel->getRecords();
 
         $seqKey = (int) $seq;
 
-        if (!isset($records[$seqKey]) || !is_array($records[$seqKey])) {
+        if (!isset($records[$seqKey])) {
             throw new HttpException(
                 404,
                 'Queue job record not found.',
             );
         }
 
-        $record = JobRecord::fromMixed($records[$seqKey]);
+        $record = $records[$seqKey];
+
         $controller->prepareShell($this->panel, $tag);
 
-        $params = [
-            'activePanel' => $this->panel,
-            'manifest' => $controller->getManifest(),
-            'panel' => $this->panel,
-            'panels' => $controller->module->panels,
-            'record' => $record,
-            'summary' => $controller->summary,
-            'tag' => $tag,
-        ];
+        $params = ['record' => $record, 'tag' => $tag];
 
         return Yii::$app->request->isAjax
             ? $controller->renderPartial('queue-job', $params)

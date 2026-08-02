@@ -50,31 +50,29 @@ final class RouterRowsTest extends TestCase
         );
     }
 
-    public function testCurrentRouteLogRowMatchFlagIsTrueOnlyForLiteralTrue(): void
+    public function testCurrentRouteLogRowIsBuiltOnlyFromLiteralBooleanMatch(): void
     {
-        self::assertTrue(
-            CurrentRouteLogRow::from(['rule' => 'r', 'match' => true])->match,
-            "Literal 'true' must mark a row as matched."
+        $matched = CurrentRouteLogRow::fromLogMessage(['rule' => 'r', 'match' => true]);
+
+        self::assertNotNull($matched, 'A literal boolean match yields a row.');
+        self::assertTrue($matched->match, "Literal 'true' must mark a row as matched.");
+        self::assertNull(
+            CurrentRouteLogRow::fromLogMessage(['rule' => 'r', 'match' => 1]),
+            'Truthy non-bool must be rejected outright.',
         );
-        self::assertFalse(
-            CurrentRouteLogRow::from(['rule' => 'r', 'match' => 1])->match,
-            'Truthy non-bool must NOT mark the row as matched.'
-        );
-        self::assertFalse(
-            CurrentRouteLogRow::from(['rule' => 'r'])->match,
-            "Missing match must default to 'false'."
+        self::assertNull(
+            CurrentRouteLogRow::fromLogMessage(['rule' => 'r']),
+            'A missing match must be rejected outright.',
         );
     }
 
     public function testCurrentRouteLogRowParentFallsBackToEmptyWhenMissing(): void
     {
-        $row = CurrentRouteLogRow::from(['rule' => 'app\\rules\\Home']);
+        $row = CurrentRouteLogRow::fromLogMessage(['rule' => 'app\\rules\\Home', 'match' => false]);
 
-        self::assertSame(
-            '',
-            $row->parent,
-            'Missing parent must default to empty string.',
-        );
+        self::assertNotNull($row, 'A well-formed payload yields a row.');
+        self::assertSame('app\\rules\\Home', $row->rule, 'Rule name must round-trip.');
+        self::assertSame('', $row->parent, 'A missing parent must fall back to an empty string.');
     }
 
     public function testRouterRuleRowFallsBackToEmptyStringsOnMissingKeys(): void

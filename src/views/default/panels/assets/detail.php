@@ -8,12 +8,12 @@ use UIAwesome\Html\List\{Li, Ol};
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
-use yii\debug\helpers\{EmptyState, Icon};
-use yii\debug\panels\asset\{AssetCardRenderer, AssetSummary};
+use yii\debug\helpers\{Coerce, EmptyState, Icon};
+use yii\debug\panels\asset\{AssetCardRenderer, AssetSummary, ViteManifest};
 
 /**
  * @var AssetSummary $summary Typed asset bundle summary.
- * @var array<string, mixed>|null $vite Vite manifest snapshot, or `null` when no Vite bridge is registered.
+ * @var ViteManifest|null $vite Vite manifest snapshot, or `null` when no Vite bridge is registered.
  */
 $stats = [
     ['bundles', 'asset', $summary->totalBundles, 'bundle' . ($summary->totalBundles === 1 ? '' : 's')],
@@ -49,23 +49,19 @@ foreach ($stats as [$kind, $icon, $value, $label]) {
     ->class('yii-debug-asset-stats')
     ->html(...$statBlocks) ?>
 
-<?php if (is_array($vite)): ?>
+<?php if ($vite !== null): ?>
     <?php
-    $viteEntries = is_array($vite['entries'] ?? null) ? $vite['entries'] : [];
-    $viteDevMode = ($vite['devMode'] ?? false) === true;
-    $viteDevServer = is_string($vite['devServerUrl'] ?? null) ? $vite['devServerUrl'] : null;
-    $viteBaseUrl = is_string($vite['baseUrl'] ?? null) ? $vite['baseUrl'] : '';
-    $viteManifest = is_string($vite['manifestPath'] ?? null) ? $vite['manifestPath'] : '';
+    $viteEntries = $vite->chunks;
+    $viteDevMode = $vite->devMode;
+    $viteDevServer = $vite->devServerUrl;
+    $viteBaseUrl = $vite->baseUrl;
+    $viteManifest = $vite->manifestPath;
 
     $viteRows = [];
     $viteIndex = 1;
 
-    foreach ($viteEntries as $chunkName => $chunk) {
-        if (!is_string($chunkName) || !is_array($chunk)) {
-            continue;
-        }
-
-        $entryBadge = ($chunk['isEntry'] ?? false) === true
+    foreach ($viteEntries as $chunk) {
+        $entryBadge = $chunk->isEntry
             ? Span::tag()->class('yii-debug-badge yii-debug-badge-success')->content('entry')->render()
             : '—';
 
@@ -73,16 +69,16 @@ foreach ($stats as [$kind, $icon, $value, $label]) {
             Td::tag()->content((string) $viteIndex),
             Td::tag()
                 ->class('yii-debug-cell-mono')
-                ->html(Strong::tag()->content($chunkName)),
+                ->html(Strong::tag()->content($chunk->name)),
             Td::tag()
                 ->class('yii-debug-cell-mono')
-                ->content(is_string($chunk['file'] ?? null) ? $chunk['file'] : '—'),
+                ->content($chunk->file !== '' ? $chunk->file : '—'),
             Td::tag()
                 ->class('yii-debug-cell-numeric')
-                ->content((string) (is_array($chunk['css'] ?? null) ? count($chunk['css']) : 0)),
+                ->content((string) $chunk->cssCount),
             Td::tag()
                 ->class('yii-debug-cell-numeric')
-                ->content((string) (is_int($chunk['imports'] ?? null) ? $chunk['imports'] : 0)),
+                ->content((string) $chunk->imports),
             Td::tag()
                 ->class('yii-debug-cell-pill')
                 ->html($entryBadge),

@@ -7,7 +7,7 @@ namespace yii\debug\panels\config;
 /**
  * Typed view-model for the PHP runtime section of the Configuration panel.
  *
- * Mirrors the `php` slice of {@see \yii\debug\panels\ConfigPanel::save()} after every value has been narrowed to its
+ * Mirrors the `php` slice of {@see \yii\debug\panels\ConfigPanel::capture()} after every value has been narrowed to its
  * declared scalar type.
  */
 final readonly class PhpConfig

@@ -15,6 +15,7 @@ use yii\debug\helpers\{Avatar, Fqcn};
 use function array_is_list;
 use function count;
 use function date;
+use function implode;
 use function in_array;
 use function is_array;
 use function is_bool;
@@ -105,48 +106,6 @@ final class QueueCardRenderer
 
         return Article::tag()
             ->class('yii-debug-queue-card')
-            ->html(...$children);
-    }
-
-    /**
-     * Renders the summary header with pushed/executed counts and an optional `failed` chip when at least one job
-     * failed.
-     */
-    public static function renderSummaryHeader(QueueSummary $summary): Div
-    {
-        $children = [
-            Span::tag()
-                ->html(
-                    Strong::tag()->content((string) $summary->totalPushed()),
-                    ' pushed',
-                ),
-        ];
-
-        if ($summary->totalExecuted() > 0) {
-            $children[] = Span::tag()
-                ->class('yii-debug-grid-summary-sep')
-                ->content('·');
-            $children[] = Span::tag()
-                ->html(
-                    Strong::tag()->content((string) $summary->totalExecuted()),
-                    ' executed',
-                );
-        }
-
-        if ($summary->hasErrors()) {
-            $children[] = Span::tag()
-                ->class('yii-debug-grid-summary-sep')
-                ->content('·');
-            $children[] = Span::tag()
-                ->class('yii-debug-grid-summary-stat-danger')
-                ->html(
-                    Strong::tag()->content((string) $summary->totalErrors()),
-                    ' failed',
-                );
-        }
-
-        return Div::tag()
-            ->class('yii-debug-grid-summary')
             ->html(...$children);
     }
 

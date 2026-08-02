@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace yii\debug\panels\dump;
 
 use yii\debug\helpers\Coerce;
-
-use function is_array;
+use yii\debug\storage\{PanelRow, Payload};
 
 /**
- * Typed view-model for a single dump row consumed by the dumps grid.
+ * Typed dump row narrowed once from the Yii logger tuple and persisted in that form.
  *
- * Mirrors the shape produced by {@see \yii\debug\panels\DumpPanel::save()} after every value has been narrowed to its
- * declared scalar/array type, so cell renderers can read typed properties without further `mixed` checks.
+ * The payload is already rendered by {@see \yii\debug\panels\DumpPanel::varDump()} at capture time, so the detail view
+ * renders it without re-serializing.
  */
-final readonly class DumpRow
+final readonly class DumpRow implements PanelRow
 {
     public function __construct(
         /**
@@ -22,11 +21,15 @@ final readonly class DumpRow
          */
         public string $message,
         /**
+         * Logger level constant ({@see \yii\log\Logger}).
+         */
+        public int $level,
+        /**
          * Log category attached to the dump call.
          */
         public string $category,
         /**
-         * Capture timestamp in seconds since the Unix epoch (`0.0` when the original payload had no time).
+         * Capture timestamp in milliseconds since the Unix epoch.
          */
         public float $time,
         /**
@@ -35,18 +38,46 @@ final readonly class DumpRow
         public array $trace,
     ) {}
 
-    /**
-     * Builds a typed dump row from a data-provider value.
-     */
-    public static function fromMixed(mixed $data): self
+    public static function fromArray(mixed $data, string $path): self
     {
-        $row = is_array($data) ? $data : [];
+        $payload = Payload::object($data, $path)->shape(['message', 'level', 'category', 'time', 'trace']);
 
         return new self(
-            message: Coerce::string($row['message'] ?? null),
-            category: Coerce::string($row['category'] ?? null),
-            time: Coerce::float($row['time'] ?? null),
-            trace: Coerce::traceFrames($row['trace'] ?? null),
+            message: $payload->string('message'),
+            level: $payload->int('level'),
+            category: $payload->string('category'),
+            time: $payload->number('time'),
+            trace: $payload->rows('trace'),
         );
+    }
+
+    /**
+     * Narrows one raw Yii logger tuple into a typed row.
+     *
+     * @param array<int|string, mixed> $message Logger tuple `[message, level, category, timestamp, traces]`.
+     */
+    public static function fromLoggerTuple(array $message): self
+    {
+        return new self(
+            message: Coerce::stringOrNull($message[0] ?? null) ?? '',
+            level: Coerce::intOrNull($message[1] ?? null) ?? 0,
+            category: Coerce::stringOrNull($message[2] ?? null) ?? '',
+            time: (Coerce::floatOrNull($message[3] ?? null) ?? 0.0) * 1000,
+            trace: Coerce::traceFrames($message[4] ?? []),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'message' => $this->message,
+            'level' => $this->level,
+            'category' => $this->category,
+            'time' => $this->time,
+            'trace' => $this->trace,
+        ];
     }
 }

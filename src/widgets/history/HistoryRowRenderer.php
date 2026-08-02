@@ -43,7 +43,7 @@ final class HistoryRowRenderer
         $base['data-yii-debug-url'] = $row->url;
         $base['data-yii-debug-status'] = (string) $row->statusCode;
         $base['data-yii-debug-time'] = $row->timeCompact;
-        $base['data-yii-debug-ajax'] = $row->isAjax ? '1' : '';
+        $base['data-yii-debug-ajax'] = $row->ajax ? '1' : '';
 
         return $base;
     }
@@ -53,7 +53,7 @@ final class HistoryRowRenderer
      */
     public static function renderAjaxCell(HistoryRow $row): string
     {
-        return $row->isAjax ? 'Yes' : 'No';
+        return $row->ajax ? 'Yes' : 'No';
     }
 
     /**

@@ -14,7 +14,7 @@ use yii\web\View;
  * @var UserPanel $panel Panel providing the detail content.
  * @var View $this View component instance.
  */
-$panelData = is_array($panel->data) ? $panel->data : [];
+$panelData = $panel->getSnapshotData();
 
 $identity = $panelData['identity'] ?? null;
 ?>
@@ -53,7 +53,7 @@ $tabs = [
     ],
 ];
 
-if (($panelData['rolesProvider'] ?? null) !== null || ($panelData['permissionsProvider'] ?? null) !== null) {
+if ($panel->getRolesProvider() !== null || $panel->getPermissionsProvider() !== null) {
     $tabs[] = [
         'label' => 'Roles and Permissions',
         'content' => $this->render('roles', ['panel' => $panel]),

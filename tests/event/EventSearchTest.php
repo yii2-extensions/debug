@@ -6,6 +6,7 @@ namespace yii\debug\tests\event;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\EventSearch;
+use yii\debug\panels\event\EventRow;
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -54,18 +55,8 @@ final class EventSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'name' => 'beforeAction',
-                'class' => 'yii\\web\\Application',
-                'senderClass' => 'app\\Foo',
-                'isStatic' => false,
-            ],
-            [
-                'name' => 'afterAction',
-                'class' => 'yii\\base\\Module',
-                'senderClass' => 'app\\Bar',
-                'isStatic' => false,
-            ],
+            self::row(name: 'beforeAction', class: 'yii\\web\\Application', senderClass: 'app\\Foo', isStatic: '0'),
+            self::row(name: 'afterAction', class: 'yii\\base\\Module', senderClass: 'app\\Bar', isStatic: '0'),
         ];
 
         $search = new EventSearch();
@@ -84,18 +75,8 @@ final class EventSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'name' => 'a',
-                'class' => 'X',
-                'senderClass' => 'Y',
-                'isStatic' => false,
-            ],
-            [
-                'name' => 'b',
-                'class' => 'X',
-                'senderClass' => 'Y',
-                'isStatic' => true,
-            ],
+            self::row(name: 'a', class: 'X', senderClass: 'Y', isStatic: '0'),
+            self::row(name: 'b', class: 'X', senderClass: 'Y', isStatic: '1'),
         ];
 
         $search = new EventSearch();
@@ -112,18 +93,8 @@ final class EventSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'name' => 'a',
-                'class' => 'X',
-                'senderClass' => 'Y',
-                'isStatic' => false,
-            ],
-            [
-                'name' => 'b',
-                'class' => 'X',
-                'senderClass' => 'Y',
-                'isStatic' => true,
-            ],
+            self::row(name: 'a', class: 'X', senderClass: 'Y', isStatic: '0'),
+            self::row(name: 'b', class: 'X', senderClass: 'Y', isStatic: '1'),
         ];
 
         $search = new class extends EventSearch {
@@ -143,5 +114,14 @@ final class EventSearchTest extends TestCase
             $search->search(['EventSearch' => ['class' => 'X']], $records)->getTotalCount(),
             'Failed validation must short-circuit filtering.',
         );
+    }
+
+    private static function row(
+        string $name = 'init',
+        string $class = 'yii\\base\\Event',
+        string $senderClass = 'App',
+        string $isStatic = '0',
+    ): EventRow {
+        return new EventRow(1.0, $name, $class, $isStatic, $senderClass);
     }
 }

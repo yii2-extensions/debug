@@ -6,6 +6,7 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
+use yii\debug\panels\queue\JobRecord;
 
 /**
  * Backs the filter form above the Queue panel's cards list of captured job events.
@@ -61,7 +62,7 @@ class QueueSearch extends Base
      * validated.
      *
      * @param array<int|string, mixed> $params An array of parameter values indexed by parameter names.
-     * @param array<int, array<string, mixed>> $models Data to return provider for.
+     * @param list<JobRecord> $models Captured job events to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

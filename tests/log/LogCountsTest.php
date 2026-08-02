@@ -5,167 +5,70 @@ declare(strict_types=1);
 namespace yii\debug\tests\log;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\log\LogCounts;
+use yii\debug\panels\log\{LogCounts, LogRow};
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see LogCounts} covering level totals derived from raw `$panel->data['messages']`.
+ * Unit tests for {@see LogCounts} covering the level totals derived from the captured rows.
+ *
+ * @since 0.2
  */
 #[Group('panel')]
 #[Group('log')]
 final class LogCountsTest extends TestCase
 {
-    public function testFromPanelDataAggregatesLevelsCorrectly(): void
+    public function testFromRowsAggregatesLevelsCorrectly(): void
     {
-        $counts = LogCounts::fromPanelData(
+        $counts = LogCounts::fromRows(
             [
-                'messages' => [
-                    ['ok', Logger::LEVEL_INFO, 'app', 1.0],
-                    ['boom', Logger::LEVEL_ERROR, 'app', 1.1],
-                    ['careful', Logger::LEVEL_WARNING, 'app', 1.2],
-                    ['boom2', Logger::LEVEL_ERROR, 'app', 1.3],
-                    ['trace', Logger::LEVEL_TRACE, 'app', 1.4],
-                ],
+                self::row(Logger::LEVEL_INFO),
+                self::row(Logger::LEVEL_ERROR),
+                self::row(Logger::LEVEL_WARNING),
+                self::row(Logger::LEVEL_ERROR),
+                self::row(Logger::LEVEL_TRACE),
             ],
         );
 
-        self::assertSame(
-            5,
-            $counts->total,
-            'Total must reflect every entry regardless of level.',
-        );
-        self::assertSame(
-            2,
-            $counts->errors,
-            "Error count must reflect 'LEVEL_ERROR' entries.",
-        );
-        self::assertSame(
-            1,
-            $counts->warnings,
-            "Warning count must reflect 'LEVEL_WARNING' entries.",
-        );
-        self::assertSame(
-            1,
-            $counts->info,
-            "Info count must reflect 'LEVEL_INFO' entries.",
-        );
+        self::assertSame(5, $counts->total, 'Total must span every level.');
+        self::assertSame(2, $counts->errors, 'Two rows are at error level.');
+        self::assertSame(1, $counts->warnings, 'One row is at warning level.');
+        self::assertSame(1, $counts->info, 'One row is at info level.');
     }
 
-    public function testFromPanelDataCoercesNumericStringLevels(): void
+    public function testFromRowsExposesHasFlagsForNonZeroCounts(): void
     {
-        $counts = LogCounts::fromPanelData(
-            [
-                'messages' => [
-                    [
-                        'ok',
-                        (string) Logger::LEVEL_ERROR,
-                        'app',
-                        1.0,
-                    ],
-                ],
-            ],
-        );
+        $counts = LogCounts::fromRows([self::row(Logger::LEVEL_ERROR)]);
 
-        self::assertSame(
-            1,
-            $counts->errors,
-            'Numeric-string level must coerce to int.',
-        );
+        self::assertTrue($counts->hasErrors(), 'A captured error must raise the flag.');
+        self::assertFalse($counts->hasWarnings(), 'No warning was captured.');
+        self::assertFalse($counts->hasInfo(), 'No info entry was captured.');
     }
 
-    public function testFromPanelDataExposesHasFlagsForNonZeroCounts(): void
+    public function testFromRowsReturnsAllZeroCountsWhenNoRowsWereCaptured(): void
     {
-        $counts = LogCounts::fromPanelData(
-            [
-                'messages' => [
-                    [
-                        'boom',
-                        Logger::LEVEL_ERROR,
-                        'app',
-                        1.0,
-                    ],
-                ],
-            ],
-        );
+        $counts = LogCounts::fromRows([]);
 
-        self::assertTrue(
-            $counts->hasErrors(),
-            "'hasErrors' must reflect a non-zero error count.",
-        );
-        self::assertFalse(
-            $counts->hasWarnings(),
-            "'hasWarnings' must remain 'false' when no warnings were captured.",
-        );
-        self::assertFalse(
-            $counts->hasInfo(),
-            "'hasInfo' must remain 'false' when no info entries were captured.",
-        );
+        self::assertSame(0, $counts->total, 'Empty capture must total zero.');
+        self::assertFalse($counts->hasErrors(), 'Empty capture must report no errors.');
+        self::assertFalse($counts->hasWarnings(), 'Empty capture must report no warnings.');
+        self::assertFalse($counts->hasInfo(), 'Empty capture must report no info entries.');
     }
 
-    public function testFromPanelDataReturnsAllZeroCountsWhenInputIsNotArray(): void
+    private static function row(int $level): LogRow
     {
-        $counts = LogCounts::fromPanelData(
-            'not an array',
-        );
-
-        self::assertSame(
-            0,
-            $counts->total,
-            "Non-array input must yield zero 'total'.",
-        );
-        self::assertSame(
-            0,
-            $counts->errors,
-            "Non-array input must yield zero 'errors'.",
-        );
-        self::assertSame(
-            0,
-            $counts->warnings,
-            "Non-array input must yield zero 'warnings'.",
-        );
-        self::assertSame(
-            0,
-            $counts->info,
-            "Non-array input must yield zero 'info'.",
-        );
-    }
-
-    public function testFromPanelDataReturnsAllZeroCountsWhenMessagesAreMissing(): void
-    {
-        $counts = LogCounts::fromPanelData(
-            [],
-        );
-
-        self::assertSame(
-            0,
-            $counts->total,
-            "Missing 'messages' key must yield zero 'total'.",
-        );
-    }
-
-    public function testFromPanelDataSkipsNonArrayEntries(): void
-    {
-        $counts = LogCounts::fromPanelData(
-            [
-                'messages' => [
-                    ['ok', Logger::LEVEL_INFO, 'app', 1.0],
-                    'invalid entry',
-                    42,
-                    ['boom', Logger::LEVEL_ERROR, 'app', 1.1],
-                ],
-            ],
-        );
-
-        self::assertSame(
-            2,
-            $counts->total,
-            'Non-array entries must be skipped.',
-        );
-        self::assertSame(
-            1,
-            $counts->errors,
-            'Surviving error entry must be counted.',
+        return new LogRow(
+            id: 1,
+            message: 'message',
+            level: $level,
+            category: 'app',
+            time: 1_000.0,
+            timeOfPrevious: 1_000.0,
+            timeSincePrevious: 0.0,
+            idOfPrevious: null,
+            idOfNext: null,
+            memory: 0,
+            trace: [],
         );
     }
 }

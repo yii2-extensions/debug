@@ -11,19 +11,71 @@ use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\Svg;
+use yii\debug\panels\profile\ProfilingSnapshot;
 use yii\debug\panels\{ProfilingPanel, TimelinePanel};
+use yii\debug\panels\timeline\TimelineSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
 
 /**
- * Unit tests for {@see TimelinePanel} covering the snapshot capture, the strict `load()` validation, the SVG renderer
+ * Unit tests for {@see TimelinePanel} covering the snapshot capture, the strict `hydrate()` validation, the SVG renderer
  * lazy factory, the cached span rows, and the toolbar metadata.
  */
 #[Group('panel')]
 #[Group('timeline')]
 final class TimelinePanelTest extends TestCase
 {
+    public function testCaptureCapturesStartEndAndMemory(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $_SERVER['REQUEST_TIME_FLOAT'] = 1_700_000_000.0;
+
+        $snapshot = $panel->capture();
+
+        self::assertEqualsWithDelta(
+            1_700_000_000.0,
+            $snapshot->start,
+            1e-3,
+            'Start must echo the request time.',
+        );
+        self::assertGreaterThanOrEqual(
+            $snapshot->start,
+            $snapshot->end,
+            'End must be greater than or equal to start.',
+        );
+        self::assertGreaterThan(
+            0,
+            $snapshot->memory,
+            'Memory peak must be positive.',
+        );
+    }
+
+    public function testCaptureFallsBackToMicrotimeWhenRequestTimeFloatMissing(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        unset($_SERVER['REQUEST_TIME_FLOAT']);
+
+        $before = microtime(true);
+
+        $snapshot = $panel->capture();
+
+        $after = microtime(true);
+
+        self::assertGreaterThanOrEqual(
+            $before,
+            $snapshot->start,
+            "Start must fall back to 'microtime(true)'.",
+        );
+        self::assertLessThanOrEqual(
+            $after,
+            $snapshot->start,
+            'Start must not jump past the call site.',
+        );
+    }
+
     public function testGetDetailRendersWithProfilingMessages(): void
     {
         $panel = $this->makeTimelinePanel();
@@ -35,7 +87,7 @@ final class TimelinePanelTest extends TestCase
             ['time' => 0.1, 'messages' => []],
         );
 
-        $panel->load(['start' => $start, 'end' => $start + 0.1, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.1, 1024));
 
 
         self::assertNotEmpty(
@@ -50,7 +102,7 @@ final class TimelinePanelTest extends TestCase
 
         $start = 1_700_000_000.0;
 
-        $panel->load(['start' => $start, 'end' => $start + 0.5, 'memory' => 2048]);
+        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.5, 2048));
 
         self::assertEqualsWithDelta(
             500.0,
@@ -86,7 +138,7 @@ final class TimelinePanelTest extends TestCase
             ],
         );
 
-        $panel->load(['start' => 1_700_000_000.0, 'end' => 1_700_000_000.1, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
 
         $models = $panel->getModels();
 
@@ -96,18 +148,14 @@ final class TimelinePanelTest extends TestCase
             'Begin/End pair must produce one span row.',
         );
 
-        $row = $models[0] ?? self::fail('Expected one span row.');
+        $row = $models[0];
 
-        self::assertSame(
-            'app\\db',
-            $row['category'] ?? null,
-            'Category must round-trip.',
-        );
+        self::assertSame('app\\db', $row->category, 'Category must round-trip.');
         self::assertEqualsWithDelta(
-            0.05,
-            $row['duration'] ?? null,
-            1e-3,
-            'Duration must reflect the end-begin delta in seconds.',
+            50.0,
+            $row->duration,
+            1e-1,
+            'Duration must reflect the end-begin delta in milliseconds.',
         );
     }
 
@@ -120,7 +168,7 @@ final class TimelinePanelTest extends TestCase
             [],
         );
 
-        $panel->load(['start' => 1_700_000_000.0, 'end' => 1_700_000_000.1, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
 
         $first = $panel->getModels();
         $second = $panel->getModels();
@@ -133,7 +181,7 @@ final class TimelinePanelTest extends TestCase
 
         self::assertSame(
             [],
-            $panel->getModels(true),
+            $panel->getModels(),
             "Refresh with no profiling messages must yield '[]'.",
         );
     }
@@ -155,7 +203,7 @@ final class TimelinePanelTest extends TestCase
             ],
         );
 
-        $panel->load(['start' => 1_700_000_000.0, 'end' => 1_700_000_000.1, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
 
         self::assertCount(
             1,
@@ -173,7 +221,7 @@ final class TimelinePanelTest extends TestCase
             [],
         );
 
-        $panel->load(['start' => 1_700_000_000.0, 'end' => 1_700_000_000.1, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
 
         self::assertSame(
             [],
@@ -186,7 +234,7 @@ final class TimelinePanelTest extends TestCase
     {
         $panel = $this->makeTimelinePanel();
 
-        $panel->load(['start' => 1_700_000_000.0, 'end' => 1_700_000_000.1, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
 
         self::assertSame(
             [],
@@ -236,7 +284,7 @@ final class TimelinePanelTest extends TestCase
         );
     }
 
-    public function testLoadFallsBackToEndMinusStartWhenProfilingTimeMissing(): void
+    public function testHydrateFallsBackToEndMinusStartWhenProfilingTimeMissing(): void
     {
         $panel = $this->makeTimelinePanel();
 
@@ -247,7 +295,7 @@ final class TimelinePanelTest extends TestCase
 
         $start = 1_700_000_000.0;
 
-        $panel->load(['start' => $start, 'end' => $start + 0.25, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.25, 1024));
 
         self::assertEqualsWithDelta(
             250.0,
@@ -257,7 +305,7 @@ final class TimelinePanelTest extends TestCase
         );
     }
 
-    public function testLoadUsesProfilingTimeWhenAvailable(): void
+    public function testHydrateUsesProfilingTimeWhenAvailable(): void
     {
         $panel = $this->makeTimelinePanel();
 
@@ -268,114 +316,13 @@ final class TimelinePanelTest extends TestCase
 
         $start = 1_700_000_000.0;
 
-        $panel->load(['start' => $start, 'end' => $start + 0.1, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.1, 1024));
 
         self::assertEqualsWithDelta(
             500.0,
             $panel->getDuration(),
             1e-9,
             'Profiling time must override the start/end delta.',
-        );
-    }
-
-    public function testNormalizeMessagesReturnsEmptyArrayForNonArrayInput(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        self::assertSame(
-            [],
-            $this->invoke(
-                $panel,
-                'normalizeMessages',
-                ['not-an-array'],
-            ),
-            "Non-array input must collapse to '[]'.",
-        );
-    }
-
-    public function testNormalizeTimingReturnsNullForNonArrayInput(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'normalizeTiming',
-                ['not-an-array'],
-            ),
-            "Non-array timing must collapse to 'null'.",
-        );
-    }
-
-    public function testNormalizeTimingReturnsNullWhenTimestampOrDurationMissing(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'normalizeTiming',
-                [['duration' => 1.0]],
-            ),
-            "Missing timestamp must yield 'null'.",
-        );
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'normalizeTiming',
-                [['timestamp' => 1.0]],
-            ),
-            "Missing duration must yield 'null'.",
-        );
-    }
-
-    public function testSaveCapturesStartEndAndMemory(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $_SERVER['REQUEST_TIME_FLOAT'] = 1_700_000_000.0;
-
-        $saved = $panel->save();
-
-        self::assertEqualsWithDelta(
-            1_700_000_000.0,
-            $saved['start'],
-            1e-3,
-            'Start must echo the request time.',
-        );
-        self::assertGreaterThanOrEqual(
-            $saved['start'],
-            $saved['end'],
-            'End must be greater than or equal to start.',
-        );
-        self::assertGreaterThan(
-            0,
-            $saved['memory'],
-            'Memory peak must be positive.',
-        );
-    }
-
-    public function testSaveFallsBackToMicrotimeWhenRequestTimeFloatMissing(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        unset($_SERVER['REQUEST_TIME_FLOAT']);
-
-        $before = microtime(true);
-
-        $saved = $panel->save();
-
-        $after = microtime(true);
-
-        self::assertGreaterThanOrEqual(
-            $before,
-            $saved['start'],
-            "Start must fall back to 'microtime(true)'.",
-        );
-        self::assertLessThanOrEqual(
-            $after,
-            $saved['start'],
-            'Start must not jump past the call site.',
         );
     }
 
@@ -457,10 +404,10 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'Unable to load timeline data',
+            'expected an object',
         );
 
-        $panel->load('not-an-array');
+        TimelineSnapshot::fromArray('not-an-array', '$.panels.timeline');
     }
 
     public function testThrowRuntimeExceptionWhenLoadDurationIsZero(): void
@@ -474,7 +421,7 @@ final class TimelinePanelTest extends TestCase
             'Duration cannot be zero',
         );
 
-        $panel->load(['start' => $start, 'end' => $start, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot($start, $start, 1024));
     }
 
     public function testThrowRuntimeExceptionWhenLoadEndIsMissing(): void
@@ -483,10 +430,10 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'Unable to determine request end time',
+            '$.panels.timeline.end',
         );
 
-        $panel->load(['start' => 1_700_000_000.0, 'memory' => 1024]);
+        $panel->hydrate(['start' => 1_700_000_000.0, 'memory' => 1024]);
     }
 
     public function testThrowRuntimeExceptionWhenLoadMemoryIsMissing(): void
@@ -497,10 +444,10 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'Unable to determine used memory in request',
+            '$.panels.timeline.memory',
         );
 
-        $panel->load(['start' => $start, 'end' => $start + 0.1]);
+        $panel->hydrate(['start' => $start, 'end' => $start + 0.1]);
     }
 
     public function testThrowRuntimeExceptionWhenLoadMemoryIsNonPositive(): void
@@ -514,7 +461,7 @@ final class TimelinePanelTest extends TestCase
             'Unable to determine used memory in request',
         );
 
-        $panel->load(['start' => $start, 'end' => $start + 0.1, 'memory' => 0]);
+        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.1, 0));
     }
 
     public function testThrowRuntimeExceptionWhenLoadStartIsMissing(): void
@@ -523,10 +470,10 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'Unable to determine request start time',
+            '$.panels.timeline.start',
         );
 
-        $panel->load(['end' => 1_700_000_000.1, 'memory' => 1024]);
+        $panel->hydrate(['end' => 1_700_000_000.1, 'memory' => 1024]);
     }
 
     public function testThrowRuntimeExceptionWhenLoadStartIsNonPositive(): void
@@ -538,7 +485,16 @@ final class TimelinePanelTest extends TestCase
             'Unable to determine request start time',
         );
 
-        $panel->load(['start' => 0, 'end' => 1.0, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot(0, 1.0, 1024));
+    }
+
+    public function testThrowRuntimeExceptionWhenTheCapturedEndTimeIsNotPositive(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $this->expectExceptionMessage('Unable to determine request end time');
+
+        $panel->hydrate((new TimelineSnapshot(1_700_000_000.0, 0.0, 1024))->jsonSerialize());
     }
 
     /**
@@ -575,8 +531,7 @@ final class TimelinePanelTest extends TestCase
     }
 
     /**
-     * Sets the {@see ProfilingPanel::$data} payload backing the profiling lookups (`time` for duration override,
-     * `messages` for the span rows).
+     * Hydrates the profiling panel used for the duration override and span rows.
      *
      * @param array{memory?: mixed, time?: mixed, messages?: mixed} $data Profiling payload to inject.
      */
@@ -592,6 +547,16 @@ final class TimelinePanelTest extends TestCase
             'Profiling panel must be wired.',
         );
 
-        $profiling->data = $data;
+        if (!array_key_exists('time', $data)) {
+            return;
+        }
+
+        $time = $data['time'];
+        $messages = $data['messages'] ?? [];
+
+        self::assertIsFloat($time);
+        self::assertIsArray($messages);
+
+        $this->hydratePanel($profiling, ProfilingSnapshot::capture(0, $time, $messages));
     }
 }

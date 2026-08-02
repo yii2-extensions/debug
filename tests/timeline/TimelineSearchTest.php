@@ -8,7 +8,9 @@ use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\search\TimelineSearch;
+use yii\debug\panels\profile\ProfilingSnapshot;
 use yii\debug\panels\{ProfilingPanel, TimelinePanel};
+use yii\debug\panels\timeline\TimelineSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
@@ -129,21 +131,18 @@ final class TimelineSearchTest extends TestCase
 
         $profiling = new ProfilingPanel(['id' => 'profiling', 'module' => $module]);
 
-        $profiling->data = [
-            'time' => 0.1,
-            'messages' => [
-                ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.000, [], 1024],
-                ['t1', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.010, [], 2048],
-                ['t2', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.020, [], 2048],
-                ['t2', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.080, [], 4096],
-            ],
-        ];
+        $this->hydratePanel($profiling, ProfilingSnapshot::capture(0, 0.1, [
+            ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.000, [], 1024],
+            ['t1', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.010, [], 2048],
+            ['t2', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.020, [], 2048],
+            ['t2', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.080, [], 4096],
+        ]));
 
         $module->panels['profiling'] = $profiling;
 
         $panel = new TimelinePanel(['id' => 'timeline', 'module' => $module]);
 
-        $panel->load(['start' => 1_700_000_000.0, 'end' => 1_700_000_000.1, 'memory' => 1024]);
+        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
 
         return $panel;
     }

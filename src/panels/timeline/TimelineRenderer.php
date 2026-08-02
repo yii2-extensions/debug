@@ -17,8 +17,6 @@ use yii\debug\panels\TimelinePanel;
 use yii\helpers\Url;
 
 use function count;
-use function is_array;
-use function is_string;
 use function number_format;
 use function rtrim;
 use function sprintf;
@@ -200,19 +198,9 @@ final class TimelineRenderer
         $rows = [];
 
         foreach ($dataProvider->models as $model) {
-            if (!is_array($model)) {
-                continue;
+            if ($model instanceof TimelineSpanRow) {
+                $rows[] = $model;
             }
-
-            $stringKeyed = [];
-
-            foreach ($model as $key => $value) {
-                if (is_string($key)) {
-                    $stringKeyed[$key] = $value;
-                }
-            }
-
-            $rows[] = TimelineSpanRow::from($stringKeyed);
         }
 
         return $rows;
@@ -224,14 +212,14 @@ final class TimelineRenderer
     private static function formatTickLabel(int $ms): string
     {
         if ($ms < 1000) {
-            return $ms . ' ms';
+            return "{$ms} ms";
         }
 
         $seconds = sprintf('%.1f', $ms / 1000);
         $seconds = rtrim($seconds, '0');
         $seconds = rtrim($seconds, '.');
 
-        return $seconds . ' s';
+        return "{$seconds} s";
     }
 
     /**
