@@ -7,20 +7,20 @@ use UIAwesome\Html\Heading\{H1, H2};
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
-use yii\debug\helpers\{CellMore, EmptyState};
+use yii\debug\helpers\{CellMore, Coerce, EmptyState};
 use yii\debug\panels\InertiaPanel;
 
 /** @var InertiaPanel $panel Panel providing the detail content. */
-$data = is_array($panel->data) ? $panel->data : [];
+$data = $panel->getSnapshotData();
 
 $page = is_array($data['page'] ?? null) ? $data['page'] : null;
 $requestHeaders = is_array($data['requestHeaders'] ?? null) ? $data['requestHeaders'] : [];
 $sharedKeys = is_array($data['sharedKeys'] ?? null) ? $data['sharedKeys'] : [];
-$statusCode = is_int($data['statusCode'] ?? null) ? $data['statusCode'] : 0;
-$location = is_string($data['location'] ?? null) ? $data['location'] : null;
+$statusCode = $panel->getStatusCode();
+$location = $panel->getLocation();
 
-$component = is_string($page['component'] ?? null) ? $page['component'] : '';
-$url = is_string($page['url'] ?? null) ? $page['url'] : '';
+$component = Coerce::string($page['component'] ?? null);
+$url = Coerce::string($page['url'] ?? null);
 $version = is_scalar($page['version'] ?? null) ? (string) $page['version'] : '';
 $props = is_array($page['props'] ?? null) ? $page['props'] : [];
 
@@ -48,7 +48,7 @@ $typeOf = static fn(mixed $value): string => match (true) {
 $previewOf = static function (mixed $value): string {
     $json = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-    $json = is_string($json) ? $json : '—';
+    $json = $json === false ? '—' : $json;
 
     return mb_strlen($json) > 100 ? mb_substr($json, 0, 100) . '…' : $json;
 };
@@ -140,7 +140,7 @@ $infoRows = [
 ];
 
 foreach ($requestHeaders as $name => $value) {
-    if ($name === 'X-Inertia') {
+    if (!is_string($name) || !is_string($value) || $name === 'X-Inertia') {
         continue;
     }
 
@@ -179,7 +179,7 @@ foreach ($props as $key => $value) {
 }
 
 $pageJson = json_encode($page, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-$pageJson = is_string($pageJson) ? $pageJson : '{}';
+$pageJson = $pageJson === false ? '{}' : $pageJson;
 
 $rawBlock = Pre::tag()
     ->content($pageJson)

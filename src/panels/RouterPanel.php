@@ -10,10 +10,10 @@ use yii\base\InlineAction;
 use yii\debug\helpers\Coerce;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
 use yii\debug\Panel;
+use yii\debug\panels\router\RouterSnapshot;
 use yii\log\Logger;
 
 use function is_array;
-use function is_string;
 
 /**
  * Captures the routing trace of the request and renders it in the Router panel.
@@ -21,12 +21,6 @@ use function is_string;
  * Records the URL-rule resolution log emitted by the URL manager (and any REST / Composite / per-rule subclasses), the
  * resolved route, and the dispatched action, so the detail view can show the rules-tested table, the URL-rules table,
  * and the action-routes table side by side.
- *
- * @extends Panel<array{
- *   action: string|null,
- *   messages: array<int, array<int|string, mixed>>,
- *   route: string,
- * }>
  */
 class RouterPanel extends Panel
 {
@@ -43,6 +37,29 @@ class RouterPanel extends Panel
         'yii\web\UrlManager::parseRequest',
         'yii\web\UrlRule::parseRequest',
     ];
+    private RouterSnapshot|null $snapshot = null;
+
+    /**
+     * Snapshots the routing trace, the resolved route, and the dispatched action.
+     */
+    public function capture(): RouterSnapshot
+    {
+        $requestedAction = Yii::$app->requestedAction;
+
+        if ($requestedAction === null) {
+            $action = null;
+        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
+            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
+        } else {
+            $action = $requestedAction::class . '::run()';
+        }
+
+        return RouterSnapshot::capture(
+            $action,
+            $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories),
+            $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
+        );
+    }
 
     /**
      * Returns the log categories scanned for routing trace messages.
@@ -64,7 +81,7 @@ class RouterPanel extends Panel
             'panels/router/detail',
             [
                 'actionRoutes' => new ActionRoutes(),
-                'currentRoute' => new CurrentRoute($this->getRouteData()),
+                'currentRoute' => CurrentRoute::fromSnapshot($this->snapshot),
                 'routerRules' => new RouterRules(),
             ],
             $this,
@@ -72,28 +89,12 @@ class RouterPanel extends Panel
     }
 
     /**
-     * Snapshots the routing trace, the resolved route, and the dispatched action.
-     *
-     * @return array{messages: array<int, array<int|string, mixed>>, route: string, action: string|null} Captured
-     * payload consumed by {@see getRouteData()} on read-back.
+     * @param array<string, mixed> $payload
      */
-    public function save(): array
+    #[Override]
+    public function hydrate(array $payload): void
     {
-        $requestedAction = Yii::$app->requestedAction;
-
-        if ($requestedAction === null) {
-            $action = null;
-        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
-            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
-        } else {
-            $action = $requestedAction::class . '::run()';
-        }
-
-        return [
-            'action' => $action,
-            'messages' => $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories),
-            'route' => $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
-        ];
+        $this->snapshot = RouterSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -107,10 +108,7 @@ class RouterPanel extends Panel
             $values = [$values];
         }
 
-        $this->categories = [
-            ...$this->categories,
-            ...self::normalizeStringList($values),
-        ];
+        $this->categories = [...$this->categories, ...Coerce::stringList($values)];
     }
 
     /**
@@ -121,74 +119,13 @@ class RouterPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        $data = $this->getRouteData();
+        $snapshot = $this->snapshot;
 
         return [
             [
-                'title' => 'Action: ' . ($data['action'] ?? ''),
-                'value' => $data['route'],
+                'title' => 'Action: ' . ($snapshot === null ? '' : $snapshot->action ?? ''),
+                'value' => $snapshot === null ? '' : $snapshot->route,
             ],
         ];
-    }
-
-    /**
-     * Narrows the saved panel data into the typed `messages` / `route` / `action` shape consumed by the renderers.
-     *
-     * @return array{messages: array<int, array<int|string, mixed>>, route: string, action: string|null} Normalized
-     * payload with defensible defaults (`''` / `null` / `[]`) for missing fields.
-     */
-    private function getRouteData(): array
-    {
-        $data = is_array($this->data) ? $this->data : [];
-
-        return [
-            'action' => Coerce::stringOrNull($data['action'] ?? null),
-            'messages' => self::normalizeMessages($data['messages'] ?? []),
-            'route' => Coerce::stringOrNull($data['route'] ?? null) ?? '',
-        ];
-    }
-
-    /**
-     * Filters the raw saved messages to keep only array entries.
-     *
-     * @param mixed $messages Raw saved route log messages.
-     *
-     * @return array<int, array<int|string, mixed>> Reindexed list of message arrays.
-     */
-    private static function normalizeMessages(mixed $messages): array
-    {
-        if (!is_array($messages)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($messages as $message) {
-            if (is_array($message)) {
-                $normalized[] = $message;
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Filters the input list to keep only string entries.
-     *
-     * @param array<int|string, mixed> $values Raw category list.
-     *
-     * @return array<int, string> String entries in original order, possibly empty.
-     */
-    private static function normalizeStringList(array $values): array
-    {
-        $normalized = [];
-
-        foreach ($values as $value) {
-            if (is_string($value)) {
-                $normalized[] = $value;
-            }
-        }
-
-        return $normalized;
     }
 }

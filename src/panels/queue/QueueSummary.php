@@ -7,7 +7,6 @@ namespace yii\debug\panels\queue;
 use function array_unique;
 use function array_values;
 use function count;
-use function is_array;
 
 /**
  * Typed aggregate view-model for the Queue panel detail view.
@@ -41,23 +40,12 @@ final readonly class QueueSummary
     }
 
     /**
-     * Builds a queue summary from a raw panel payload.
+     * Builds a queue summary from the captured job events.
+     *
+     * @param list<JobRecord> $records Captured job events.
      */
-    public static function fromPanelData(mixed $data): self
+    public static function fromRecords(array $records): self
     {
-        $payload = is_array($data) ? $data : [];
-        $rawRecords = $payload['records'] ?? null;
-
-        if (!is_array($rawRecords)) {
-            return new self([]);
-        }
-
-        $records = [];
-
-        foreach ($rawRecords as $row) {
-            $records[] = JobRecord::fromMixed($row);
-        }
-
         return new self($records);
     }
 
@@ -75,24 +63,6 @@ final readonly class QueueSummary
     public function isEmpty(): bool
     {
         return $this->records === [];
-    }
-
-    /**
-     * Returns the records belonging to the given component id, used by the tab UI to scope the rendered cards.
-     *
-     * @return list<JobRecord> Records whose `componentId` matches, in original order.
-     */
-    public function recordsForComponent(string $componentId): array
-    {
-        $filtered = [];
-
-        foreach ($this->records as $record) {
-            if ($record->componentId === $componentId) {
-                $filtered[] = $record;
-            }
-        }
-
-        return $filtered;
     }
 
     /**

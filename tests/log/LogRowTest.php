@@ -6,264 +6,122 @@ namespace yii\debug\tests\log;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\log\LogRow;
+use yii\debug\storage\HydrationException;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see LogRow} covering the narrowing of GridView callback arguments into a typed
- * {@see \yii\debug\panels\log\LogRow}, including the `mixed` message exported via {@see \yii\helpers\VarDumper}.
+ * Unit tests for {@see LogRow} covering the capture-time narrowing of Yii logger tuples and the strict JSON hydration
+ * that restores them without coercion.
+ *
+ * @since 0.2
  */
 #[Group('panel')]
 #[Group('log')]
 final class LogRowTest extends TestCase
 {
-    public function testFromCoercesNumericStringsToIntAndFloat(): void
+    public function testFromArrayRoundTripsEveryField(): void
     {
-        $row = LogRow::fromMixed(
-            [
-                'id' => '7',
-                'level' => '4',
-                'time' => '1700000000500',
-                'time_of_previous' => '1700000000000',
-                'id_of_previous' => '6',
-                'id_of_next' => '8',
-            ],
+        $row = new LogRow(
+            id: 7,
+            message: 'boom',
+            level: Logger::LEVEL_ERROR,
+            category: 'yii\\db\\Command::query',
+            time: 1_700_000_000_500.0,
+            timeOfPrevious: 1_700_000_000_000.0,
+            timeSincePrevious: 0.5,
+            idOfPrevious: 6,
+            idOfNext: 8,
+            memory: 2_048,
+            trace: [['file' => '/app/index.php', 'line' => 12]],
         );
 
-        self::assertSame(
-            7,
-            $row->id,
-            "Numeric string 'id' must coerce to int.",
-        );
-        self::assertSame(
-            4,
-            $row->level,
-            "Numeric string 'level' must coerce to int.",
-        );
-        self::assertSame(
-            1_700_000_000_500.0,
-            $row->time,
-            "Numeric string 'time' must coerce to float.",
-        );
-        self::assertSame(
-            6,
-            $row->idOfPrevious,
-            "Numeric string 'idOfPrevious' must coerce to int.",
-        );
-        self::assertSame(
-            8,
-            $row->idOfNext,
-            "Numeric string 'idOfNext' must coerce to int.",
+        self::assertEquals(
+            $row,
+            LogRow::fromArray($row->jsonSerialize(), '$.panels.log.entries[0]'),
+            'Round-trip must preserve every field.',
         );
     }
 
-    public function testFromCollapsesNonArrayTraceFieldToEmptyList(): void
+    public function testFromLoggerTupleExportsNonStringMessage(): void
     {
-        self::assertSame(
-            [],
-            LogRow::fromMixed(['trace' => 'not an array'])->trace,
-            "Non-array trace must yield '[]'."
-        );
-        self::assertSame(
-            [],
-            LogRow::fromMixed(['trace' => null])->trace,
-            "Null trace must yield '[]'."
-        );
+        $row = LogRow::fromLoggerTuple([['a' => 1], Logger::LEVEL_INFO, 'app', 1.0, []], 1, 1.0, null, null);
+
+        self::assertStringContainsString('a', $row->message, 'Array payload must be exported to a readable string.');
     }
 
-    public function testFromDropsNonArrayTraceFramesAndNonStringFrameKeys(): void
+    public function testFromLoggerTupleFallsBackToZeroesForAMalformedTuple(): void
     {
-        $row = LogRow::fromMixed(
-            [
-                'trace' => [
-                    ['file' => '/a.php', 0 => 'numeric-key', 'line' => 5],
-                    'invalid frame',
-                    ['file' => '/b.php'],
-                ],
-            ],
-        );
+        $row = LogRow::fromLoggerTuple([], 1, 0.0, null, null);
 
-        self::assertCount(
-            2,
-            $row->trace,
-            'Non-array frames must be skipped.',
-        );
-        self::assertSame(
-            ['file' => '/a.php', 'line' => 5],
-            $row->trace[0],
-            'Numeric keys must be filtered out.',
-        );
+        self::assertSame(0, $row->level, 'Missing level must fall back to `0`.');
+        self::assertSame('', $row->category, 'Missing category must fall back to an empty string.');
+        self::assertSame(0.0, $row->time, 'Missing timestamp must fall back to `0`.');
+        self::assertSame(0, $row->memory, 'Missing memory must fall back to `0`.');
+        self::assertSame([], $row->trace, 'Missing trace must fall back to an empty list.');
     }
 
-    public function testFromExportsNonStringMessageViaVarDumper(): void
+    public function testFromLoggerTupleKeepsOnlyStringKeyedArrayTraceFrames(): void
     {
-        $arrayMessage = LogRow::fromMixed(
-            ['message' => ['foo' => 'bar']],
-        )->message;
+        $row = LogRow::fromLoggerTuple(
+            ['msg', Logger::LEVEL_INFO, 'app', 1.0, [['file' => 'a.php', 7 => 'dropped'], 'not-a-frame']],
+            1,
+            1.0,
+            null,
+            null,
+        );
 
-        self::assertStringContainsString(
-            "'foo'",
-            $arrayMessage,
-            'Arrays must be exported through VarDumper.',
-        );
-        self::assertStringContainsString(
-            "'bar'",
-            $arrayMessage,
-            'Arrays must include their values when exported.',
-        );
-        self::assertSame(
-            '42',
-            LogRow::fromMixed(['message' => 42])->message,
-            'Integers must be exported as their literal representation.',
-        );
-        self::assertSame(
-            'true',
-            LogRow::fromMixed(['message' => true])->message,
-            'Booleans must be exported as `true` / `false` literals.',
-        );
+        self::assertSame([['file' => 'a.php']], $row->trace, 'Non-array frames and integer keys must be dropped.');
     }
 
-    public function testFromKeepsIdOfPreviousAndNextNullWhenAbsentOrNonNumeric(): void
+    public function testFromLoggerTupleNarrowsNumericStringsAndScalesTime(): void
     {
-        $missing = LogRow::fromMixed(
-            [],
-        );
-        $invalid = LogRow::fromMixed(
-            [
-                'id_of_previous' => 'abc',
-                'id_of_next' => null,
-            ],
-        );
+        $row = LogRow::fromLoggerTuple(['msg', '4', 'app', '2.5', [], '4096'], 3, 1.5, 2, 4);
 
-        self::assertNull(
-            $missing->idOfPrevious,
-            "Missing 'idOfPrevious' must remain 'null'.",
-        );
-        self::assertNull(
-            $missing->idOfNext,
-            "Missing 'idOfNext' must remain 'null'.",
-        );
-        self::assertNull(
-            $invalid->idOfPrevious,
-            "Non-numeric 'idOfPrevious' must remain 'null'.",
-        );
-        self::assertNull(
-            $invalid->idOfNext,
-            "Explicit 'null' 'idOfNext' must remain 'null'.",
-        );
+        self::assertSame(3, $row->id, 'Row id is assigned by the caller.');
+        self::assertSame(4, $row->level, 'Numeric-string level must narrow to `int`.');
+        self::assertSame(2_500.0, $row->time, 'Timestamp must be scaled to milliseconds.');
+        self::assertSame(1_500.0, $row->timeOfPrevious, 'Previous timestamp must be scaled to milliseconds.');
+        self::assertSame(1.0, $row->timeSincePrevious, 'Delta stays in seconds.');
+        self::assertSame(4_096, $row->memory, 'Numeric-string memory must narrow to `int`.');
+        self::assertSame(2, $row->idOfPrevious, 'Previous id is assigned by the caller.');
+        self::assertSame(4, $row->idOfNext, 'Next id is assigned by the caller.');
     }
 
-    public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
+    public function testThrowHydrationExceptionWhenLevelIsANumericString(): void
     {
-        $row = LogRow::fromMixed(
-            'not an array',
-        );
+        $this->expectException(HydrationException::class);
 
-        self::assertSame(
-            0,
-            $row->id,
-            "Non-array input must yield zero 'id'.",
-        );
-        self::assertSame(
-            'null',
-            $row->message,
-            "Non-array input must export 'null' as 'null'.",
-        );
-        self::assertSame(
-            0,
-            $row->level,
-            "Non-array input must yield zero 'level'.",
-        );
-        self::assertSame(
-            '',
-            $row->category,
-            "Non-array input must yield empty 'category'.",
-        );
-        self::assertSame(
-            0.0,
-            $row->time,
-            "Non-array input must yield zero 'time'.",
-        );
-        self::assertSame(
-            0.0,
-            $row->timeOfPrevious,
-            "Non-array input must yield zero 'timeOfPrevious'.",
-        );
-        self::assertNull(
-            $row->idOfPrevious,
-            "Non-array input must yield 'null' 'idOfPrevious'.",
-        );
-        self::assertNull(
-            $row->idOfNext,
-            "Non-array input must yield 'null' 'idOfNext'.",
-        );
-        self::assertSame(
-            [],
-            $row->trace,
-            "Non-array input must yield empty 'trace'.",
-        );
+        LogRow::fromArray(self::payload(['level' => '4']), '$.panels.log.entries[0]');
     }
 
-    public function testFromRoundTripsTypedRow(): void
+    public function testThrowHydrationExceptionWhenTraceIsNotAListOfObjects(): void
     {
-        $row = LogRow::fromMixed(
-            [
-                'id' => 7,
-                'message' => 'Something happened',
-                'level' => Logger::LEVEL_WARNING,
-                'category' => 'application',
-                'time' => 1_700_000_000_500.0,
-                'time_of_previous' => 1_700_000_000_000.0,
-                'id_of_previous' => 6,
-                'id_of_next' => 8,
-                'trace' => [['file' => '/app/User.php', 'line' => 42]],
-            ],
-        );
+        $this->expectException(HydrationException::class);
 
-        self::assertSame(
-            7,
-            $row->id,
-            'Id must round-trip.',
-        );
-        self::assertSame(
-            'Something happened',
-            $row->message,
-            'String message must round-trip.',
-        );
-        self::assertSame(
-            Logger::LEVEL_WARNING,
-            $row->level,
-            'Level must round-trip.',
-        );
-        self::assertSame(
-            'application',
-            $row->category,
-            'Category must round-trip.',
-        );
-        self::assertSame(
-            1_700_000_000_500.0,
-            $row->time,
-            'Time must round-trip.',
-        );
-        self::assertSame(
-            1_700_000_000_000.0,
-            $row->timeOfPrevious,
-            "'timeOfPrevious' must round-trip.",
-        );
-        self::assertSame(
-            6,
-            $row->idOfPrevious,
-            "'idOfPrevious' must round-trip.",
-        );
-        self::assertSame(
-            8,
-            $row->idOfNext,
-            "'idOfNext' must round-trip.",
-        );
-        self::assertSame(
-            [['file' => '/app/User.php', 'line' => 42]],
-            $row->trace,
-            'Trace must round-trip.',
-        );
+        LogRow::fromArray(self::payload(['trace' => ['not-a-frame']]), '$.panels.log.entries[0]');
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
+    private static function payload(array $overrides = []): array
+    {
+        return [
+            'id' => 1,
+            'message' => 'msg',
+            'level' => Logger::LEVEL_INFO,
+            'category' => 'app',
+            'time' => 1.0,
+            'timeOfPrevious' => 1.0,
+            'timeSincePrevious' => 0.0,
+            'idOfPrevious' => null,
+            'idOfNext' => null,
+            'memory' => 0,
+            'trace' => [],
+            ...$overrides,
+        ];
     }
 }

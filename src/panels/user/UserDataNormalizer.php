@@ -24,7 +24,7 @@ use function trim;
 use function ucwords;
 
 /**
- * Narrows the loose `$panel->data['identity']` payload into the typed {@see UserIdentityView}.
+ * Narrows the captured identity payload into the typed {@see UserIdentityView}.
  *
  * Concentrates every closure that previously lived inline in `_identity.php` (display-value stripping, sensitive-key
  * detection, timestamp detection + humanization, status mapping, attribute bucketing) in one testable place, so the
@@ -37,7 +37,13 @@ final class UserDataNormalizer
      *
      * @var list<string>
      */
-    private const array HERO_KEYS = ['id', 'username', 'name', 'email', 'status'];
+    private const array HERO_KEYS = [
+        'id',
+        'username',
+        'name',
+        'email',
+        'status',
+    ];
 
     /**
      * Status numeric → display-label / CSS-variant map.
@@ -46,9 +52,18 @@ final class UserDataNormalizer
      * empty value.
      */
     private const array STATUS_MAP = [
-        '10' => ['label' => 'Active', 'variant' => 'success'],
-        '9' => ['label' => 'Banned', 'variant' => 'danger'],
-        '0' => ['label' => 'Inactive', 'variant' => 'muted'],
+        '10' => [
+            'label' => 'Active',
+            'variant' => 'success',
+        ],
+        '9' => [
+            'label' => 'Banned',
+            'variant' => 'danger',
+        ],
+        '0' => [
+            'label' => 'Inactive',
+            'variant' => 'muted',
+        ],
     ];
 
     /**

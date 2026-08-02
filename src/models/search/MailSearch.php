@@ -7,6 +7,7 @@ namespace yii\debug\models\search;
 use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
+use yii\debug\panels\mail\MailMessage;
 
 /**
  * Backs the filter form above the Mail panel grid of messages dispatched during the request.
@@ -42,9 +43,9 @@ class MailSearch extends Base
      */
     public string $headers = '';
     /**
-     * Submitted value for the `reply` filter (substring match).
+     * Submitted value for the `replyTo` filter (substring match).
      */
-    public string $reply = '';
+    public string $replyTo = '';
     /**
      * Submitted value for the `subject` filter (substring match).
      */
@@ -60,7 +61,7 @@ class MailSearch extends Base
         return [
             'from' => 'From',
             'to' => 'To',
-            'reply' => 'Reply',
+            'replyTo' => 'Reply',
             'cc' => 'Copy receiver',
             'bcc' => 'Hidden copy receiver',
             'subject' => 'Subject',
@@ -72,7 +73,7 @@ class MailSearch extends Base
     public function rules(): array
     {
         return [
-            [['from', 'to', 'reply', 'cc', 'bcc', 'subject', 'body', 'charset'], 'safe'],
+            [['from', 'to', 'replyTo', 'cc', 'bcc', 'subject', 'body', 'charset'], 'safe'],
         ];
     }
 
@@ -80,7 +81,7 @@ class MailSearch extends Base
      * Returns an {@see ArrayDataProvider} over the captured mail messages, applying the loaded filter values.
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
-     * @param array<int, array<string, mixed>> $models Captured mail records to wrap and filter.
+     * @param list<MailMessage> $models Captured mail messages to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
@@ -92,7 +93,7 @@ class MailSearch extends Base
                     'attributes' => [
                         'from',
                         'to',
-                        'reply',
+                        'replyTo',
                         'cc',
                         'bcc',
                         'subject',
@@ -109,7 +110,7 @@ class MailSearch extends Base
 
         $this->addCondition('from', true);
         $this->addCondition('to', true);
-        $this->addCondition('reply', true);
+        $this->addCondition('replyTo', true);
         $this->addCondition('cc', true);
         $this->addCondition('bcc', true);
         $this->addCondition('subject', true);

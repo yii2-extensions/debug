@@ -8,144 +8,33 @@ use Override;
 use ReflectionClass;
 use Yii;
 use yii\base\Application;
+use yii\debug\helpers\Coerce;
 use yii\debug\{Panel, VersionResolver};
-use yii\debug\panels\config\ConfigDataNormalizer;
+use yii\debug\panels\config\{ConfigDataNormalizer, ConfigSnapshot};
 
 use function is_array;
 use function is_object;
 use function is_scalar;
 use function is_string;
+use function ksort;
 
 /**
  * Captures the application configuration and runtime environment shown in the Configuration panel.
  *
  * Stores the Yii framework / PHP / application identity and the installed-extensions roster, then surfaces it through
  * the detail view, the toolbar's `php-info` link, and the brand-chip version readouts.
- *
- * @extends Panel<array{
- *   phpVersion?: string,
- *   yiiVersion?: string,
- *   application?: array{
- *     yii?: string,
- *     name?: string,
- *     version?: string,
- *     language?: string,
- *     sourceLanguage?: string,
- *     charset?: string,
- *     env?: string,
- *     debug?: bool,
- *   },
- *   php?: array{
- *     version?: string,
- *     xdebug?: bool,
- *     apcu?: bool,
- *     memcache?: bool,
- *     memcached?: bool,
- *   },
- *   extensions?: array<int|string, array{
- *     name?: string,
- *     version?: string,
- *     bootstrap?: string|array<string, mixed>,
- *     alias?: array<string, string>,
- *   }>,
- * }>
  */
 class ConfigPanel extends Panel
 {
     protected const string ICON = 'config';
     protected const string NAME = 'Configuration';
 
-    /**
-     * Renders the detail view from the normalized configuration summary.
-     */
-    #[Override]
-    public function getDetail(): string
-    {
-        $data = is_array($this->data) ? $this->data : [];
-
-        $summary = (new ConfigDataNormalizer())->normalize($data, $this->getExtensions());
-
-        return Yii::$app->view->render(
-            'panels/config/detail',
-            ['summary' => $summary],
-            $this,
-        );
-    }
-
-    /**
-     * Returns the installed-extensions roster as a sorted `name => version` map.
-     *
-     * @return array<string, string> Extension versions keyed by package name, sorted alphabetically.
-     */
-    public function getExtensions(): array
-    {
-        $data = [];
-
-        $panelData = is_array($this->data) ? $this->data : [];
-        $extensions = is_array($panelData['extensions'] ?? null) ? $panelData['extensions'] : [];
-
-        foreach ($extensions as $extension) {
-            $name = $extension['name'] ?? null;
-            $version = $extension['version'] ?? null;
-
-            if (is_string($name) && is_string($version)) {
-                $data[$name] = $version;
-            }
-        }
-
-        ksort($data);
-
-        return $data;
-    }
-
-    /**
-     * Returns the saved PHP version (`php.version`), or `null` when the snapshot is missing.
-     */
-    public function getPhpVersion(): string|null
-    {
-        return self::nestedScalar($this->data, 'php', 'version');
-    }
-
-    /**
-     * Returns the saved Yii framework version (`application.yii`), or `null` when the snapshot is missing.
-     */
-    public function getYiiVersion(): string|null
-    {
-        return self::nestedScalar($this->data, 'application', 'yii');
-    }
+    private ConfigSnapshot|null $snapshot = null;
 
     /**
      * Snapshots the framework/PHP/application identity and the installed-extensions roster.
-     *
-     * @return array{
-     *   phpVersion: string,
-     *   yiiVersion: string,
-     *   application: array{
-     *     yii: string,
-     *     name: string,
-     *     version: string,
-     *     language: string,
-     *     sourceLanguage: string,
-     *     charset: string,
-     *     env: string,
-     *     debug: bool,
-     *   },
-     *   php: array{
-     *     version: string,
-     *     xdebug: bool,
-     *     apcu: bool,
-     *     memcache: bool,
-     *     memcached: bool,
-     *   },
-     *   extensions: array<int|string, array{
-     *     name?: string,
-     *     version?: string,
-     *     bootstrap?: string|array<string, mixed>,
-     *     alias?: array<string, string>,
-     *   }>,
-     * } Captured configuration snapshot consumed by the detail view and the toolbar.
      */
-    public function save(): array
+    public function capture(): ConfigSnapshot
     {
         $app = $this->getApplication();
 
@@ -174,7 +63,7 @@ class ConfigPanel extends Panel
             $extensions = is_array($app->extensions) ? $app->extensions : [];
         }
 
-        return [
+        return ConfigSnapshot::capture([
             'phpVersion' => PHP_VERSION,
             'yiiVersion' => $yiiVersion,
             'application' => $application,
@@ -186,7 +75,80 @@ class ConfigPanel extends Panel
                 'memcached' => extension_loaded('memcached'),
             ],
             'extensions' => VersionResolver::forExtensions(self::normalizeExtensions($extensions)),
-        ];
+        ]);
+    }
+
+    /**
+     * Renders the detail view from the normalized configuration summary.
+     */
+    #[Override]
+    public function getDetail(): string
+    {
+        $data = $this->payload();
+
+        $summary = (new ConfigDataNormalizer())->normalize($data, $this->getExtensions());
+
+        return Yii::$app->view->render(
+            'panels/config/detail',
+            ['summary' => $summary],
+            $this,
+        );
+    }
+
+    /**
+     * Returns the installed-extensions roster as a sorted `name => version` map.
+     *
+     * @return array<string, string> Extension versions keyed by package name, sorted alphabetically.
+     */
+    public function getExtensions(): array
+    {
+        $data = [];
+
+        $panelData = $this->payload();
+
+        $extensions = is_array($panelData['extensions'] ?? null) ? $panelData['extensions'] : [];
+
+        foreach ($extensions as $extension) {
+            if (!is_array($extension)) {
+                continue;
+            }
+
+            $name = $extension['name'] ?? null;
+            $version = $extension['version'] ?? null;
+
+            if (is_string($name) && is_string($version)) {
+                $data[$name] = $version;
+            }
+        }
+
+        ksort($data);
+
+        return $data;
+    }
+
+    /**
+     * Returns the saved PHP version (`php.version`), or `null` when the snapshot is missing.
+     */
+    public function getPhpVersion(): string|null
+    {
+        return self::nestedScalar($this->payload(), 'php', 'version');
+    }
+
+    /**
+     * Returns the saved Yii framework version (`application.yii`), or `null` when the snapshot is missing.
+     */
+    public function getYiiVersion(): string|null
+    {
+        return self::nestedScalar($this->payload(), 'application', 'yii');
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = ConfigSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -214,13 +176,11 @@ class ConfigPanel extends Panel
     /**
      * Reads a `$data[$outerKey][$innerKey]` scalar as a string, returning `null` when any segment is missing or the
      * value is not scalar.
+     *
+     * @param array<array-key, mixed> $data Captured configuration payload.
      */
-    private static function nestedScalar(mixed $data, string $outerKey, string $innerKey): string|null
+    private static function nestedScalar(array $data, string $outerKey, string $innerKey): string|null
     {
-        if (!is_array($data)) {
-            return null;
-        }
-
         $outer = $data[$outerKey] ?? null;
 
         if (!is_array($outer)) {
@@ -271,7 +231,7 @@ class ConfigPanel extends Panel
             if (is_string($bootstrap)) {
                 $entry['bootstrap'] = $bootstrap;
             } elseif (is_array($bootstrap)) {
-                $entry['bootstrap'] = self::stringKeyedArray($bootstrap);
+                $entry['bootstrap'] = Coerce::stringKeyedArray($bootstrap);
             }
 
             if (is_array($rawAlias)) {
@@ -293,22 +253,10 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * Filters an array down to entries with `string` keys.
-     *
-     * @param array<array-key, mixed> $array Raw associative-style array.
-     *
-     * @return array<string, mixed> Same values, but only the entries with string keys.
+     * @return array<array-key, mixed>
      */
-    private static function stringKeyedArray(array $array): array
+    private function payload(): array
     {
-        $out = [];
-
-        foreach ($array as $key => $value) {
-            if (is_string($key)) {
-                $out[$key] = $value;
-            }
-        }
-
-        return $out;
+        return $this->snapshot?->data() ?? [];
     }
 }

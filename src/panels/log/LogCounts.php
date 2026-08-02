@@ -6,14 +6,12 @@ namespace yii\debug\panels\log;
 
 use yii\log\Logger;
 
-use function is_array;
-use function is_numeric;
+use function count;
 
 /**
  * Typed view-model for the log-level totals shown in the detail view's summary header.
  *
- * Counts are computed over the raw `$panel->data['messages']` payload (positional log tuples) rather than the typed
- * grid models, so the summary spans every captured row independently of the search filter.
+ * Counts span every captured row, independently of the search filter applied to the grid.
  */
 final readonly class LogCounts
 {
@@ -37,32 +35,18 @@ final readonly class LogCounts
     ) {}
 
     /**
-     * Builds log-level totals from a raw panel payload.
+     * Builds log-level totals from the captured rows.
+     *
+     * @param list<LogRow> $rows Captured log rows.
      */
-    public static function fromPanelData(mixed $data): self
+    public static function fromRows(array $rows): self
     {
-        $payload = is_array($data) ? $data : [];
-        $messages = $payload['messages'] ?? null;
-
-        if (!is_array($messages)) {
-            return new self(0, 0, 0, 0);
-        }
-
-        $total = 0;
         $errors = 0;
         $warnings = 0;
         $info = 0;
 
-        foreach ($messages as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-
-            $total++;
-            $rawLevel = $entry[1] ?? null;
-            $level = is_numeric($rawLevel) ? (int) $rawLevel : 0;
-
-            match ($level) {
+        foreach ($rows as $row) {
+            match ($row->level) {
                 Logger::LEVEL_ERROR => $errors++,
                 Logger::LEVEL_WARNING => $warnings++,
                 Logger::LEVEL_INFO => $info++,
@@ -70,7 +54,7 @@ final readonly class LogCounts
             };
         }
 
-        return new self($total, $errors, $warnings, $info);
+        return new self(count($rows), $errors, $warnings, $info);
     }
 
     /**

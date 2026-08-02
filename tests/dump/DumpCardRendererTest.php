@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\dump\{DumpCardRenderer, DumpRow};
 use yii\debug\panels\DumpPanel;
 use yii\debug\tests\support\TestCase;
+use yii\log\Logger;
 
 /**
  * Unit tests for {@see DumpCardRenderer} covering the dump card composition: index badge, type sniff, time and trace
@@ -312,6 +313,7 @@ final class DumpCardRendererTest extends TestCase
     ): DumpRow {
         return new DumpRow(
             message: $message,
+            level: Logger::LEVEL_TRACE,
             category: $category,
             time: $time,
             trace: $trace,

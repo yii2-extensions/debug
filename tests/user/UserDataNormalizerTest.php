@@ -11,7 +11,7 @@ use yii\debug\tests\support\TestCase;
 use function array_map;
 
 /**
- * Unit tests for {@see UserDataNormalizer} covering the narrowing of the loose `$panel->data['identity']` payload
+ * Unit tests for {@see UserDataNormalizer} covering the narrowing of captured identity data
  * into the typed view-model: hero composition (monogram + status variant), attribute bucketing (Identity / Security /
  * Timestamps / Other), VarDumper-quote stripping, sensitive-key detection and timestamp humanization.
  */

@@ -8,70 +8,47 @@ use yii\debug\helpers\Fqcn;
 use yii\helpers\Inflector;
 
 use function count;
-use function is_array;
-use function is_string;
-use function reset;
 
 /**
- * Normalizes the `mixed` payload of {@see \yii\debug\panels\AssetPanel} into a typed {@see AssetSummary} tree.
+ * Derives the Asset panel view model from the captured bundles.
  *
- * Centralizes every {@see is_array()} / {@see is_string()} narrowing, so the rendering layer can iterate typed
- * values without further runtime type checks.
+ * The captured rows are already typed, so this class only computes presentation data: the FQCN split, the anchor id,
+ * the per-bundle counters, and the layout hints the card renderer consumes.
  */
 final class AssetBundleNormalizer
 {
     /**
-     * Converts a narrowed asset-panel payload into a typed summary.
+     * Builds the typed summary rendered by the Asset panel detail view.
      *
-     * Malformed inner entries (non-string keys or non-array bundles) are silently dropped instead of triggering a
-     * render-time error.
-     *
-     * @param array<array-key, mixed> $data Narrowed asset-panel payload (the caller must guarantee `array`).
-     *
-     * @return AssetSummary Typed summary safe to render directly.
+     * @param list<AssetBundleRow> $bundles Captured bundles in registration order.
      */
-    public function normalize(array $data): AssetSummary
+    public function normalize(array $bundles): AssetSummary
     {
-        if ($data === []) {
-            return new AssetSummary([], 0, 0, 0, 0);
-        }
-
-        $bundles = [];
+        $views = [];
         $totalCss = 0;
         $totalJs = 0;
         $totalDeps = 0;
 
-        foreach ($data as $name => $bundle) {
-            if (!is_string($name) || !is_array($bundle)) {
-                continue;
-            }
-
-            $css = $this->extractFileList($bundle, 'css');
-            $js = $this->extractFileList($bundle, 'js');
-            $depends = $this->extractStringList($bundle, 'depends');
-            $sourcePath = $this->extractString($bundle, 'sourcePath');
-            $basePath = $this->extractString($bundle, 'basePath');
-            $baseUrl = $this->extractString($bundle, 'baseUrl');
-
-            $cssCount = count($css);
-            $jsCount = count($js);
-            $depsCount = count($depends);
+        foreach ($bundles as $bundle) {
+            $cssCount = count($bundle->css);
+            $jsCount = count($bundle->js);
+            $depsCount = count($bundle->depends);
 
             $hasFiles = $cssCount + $jsCount > 0;
-            $hasWiring = $sourcePath !== '' || $basePath !== '' || $baseUrl !== '';
+            $hasWiring = $bundle->sourcePath !== '' || $bundle->basePath !== '' || $bundle->baseUrl !== '';
             $hasDepends = $depsCount > 0;
 
-            $bundles[] = new AssetBundleView(
-                name: $name,
-                shortName: Fqcn::shortName($name),
-                namespace: Fqcn::namespacePart($name),
-                id: Inflector::camel2id($name),
-                sourcePath: $sourcePath,
-                basePath: $basePath,
-                baseUrl: $baseUrl,
-                css: $css,
-                js: $js,
-                depends: $depends,
+            $views[] = new AssetBundleView(
+                name: $bundle->name,
+                shortName: Fqcn::shortName($bundle->name),
+                namespace: Fqcn::namespacePart($bundle->name),
+                id: Inflector::camel2id($bundle->name),
+                sourcePath: $bundle->sourcePath,
+                basePath: $bundle->basePath,
+                baseUrl: $bundle->baseUrl,
+                css: $bundle->css,
+                js: $bundle->js,
+                depends: $bundle->depends,
                 cssCount: $cssCount,
                 jsCount: $jsCount,
                 depsCount: $depsCount,
@@ -87,86 +64,11 @@ final class AssetBundleNormalizer
         }
 
         return new AssetSummary(
-            bundles: $bundles,
-            totalBundles: count($bundles),
+            bundles: $views,
+            totalBundles: count($views),
             totalCss: $totalCss,
             totalJs: $totalJs,
             totalDeps: $totalDeps,
         );
-    }
-
-    /**
-     * Extracts a `list<string>` of file labels for the given bundle key (`'css'` or `'js'`).
-     *
-     * Each entry that is itself an array is unwrapped to its first element, since the legacy formatter wraps file
-     * paths in anchor markup as a single-element array.
-     *
-     * @param array<array-key, mixed> $bundle Raw bundle payload.
-     * @param string $key Either `'css'` or `'js'`.
-     *
-     * @return list<string> File labels in declaration order.
-     */
-    private function extractFileList(array $bundle, string $key): array
-    {
-        $raw = $bundle[$key] ?? null;
-
-        if (!is_array($raw)) {
-            return [];
-        }
-
-        $out = [];
-
-        foreach ($raw as $item) {
-            if (is_array($item)) {
-                $first = reset($item);
-                $item = $first;
-            }
-
-            if (is_string($item)) {
-                $out[] = $item;
-            }
-        }
-
-        return $out;
-    }
-
-    /**
-     * Extracts a string value for the given bundle key, falling back to `''` when missing or non-string.
-     *
-     * @param array<array-key, mixed> $bundle Raw bundle payload.
-     * @param string $key One of `'sourcePath'`, `'basePath'`, `'baseUrl'`.
-     */
-    private function extractString(array $bundle, string $key): string
-    {
-        $raw = $bundle[$key] ?? null;
-
-        return is_string($raw) ? $raw : '';
-    }
-
-    /**
-     * Extracts a `list<string>` of dependency FQCNs for the given bundle key.
-     *
-     * @param array<array-key, mixed> $bundle Raw bundle payload.
-     * @param string $key Always `'depends'` in practice.
-     *
-     * @return list<string> Dependency FQCNs in declaration order.
-     */
-    private function extractStringList(array $bundle, string $key): array
-    {
-        $raw = $bundle[$key] ?? null;
-
-        if (!is_array($raw)) {
-            return [];
-        }
-
-        $out = [];
-
-        foreach ($raw as $item) {
-            if (is_string($item)) {
-                $out[] = $item;
-            }
-        }
-
-        return $out;
     }
 }

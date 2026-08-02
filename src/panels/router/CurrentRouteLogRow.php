@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\router;
 
+use yii\debug\storage\{PanelRow, Payload};
+
+use function is_array;
+use function is_bool;
 use function is_string;
 
 /**
- * Typed view-model for one row in the Current Route rules-tested log table.
- *
- * Encapsulates the `array<string, mixed>` entries inside {@see \yii\debug\models\router\CurrentRoute::$logs}, so the
- * detail view stays free of {@see is_array()} / {@see is_string()} narrowing.
+ * Typed row of the Current Route rules-tested log, resolved once from the URL-manager trace.
  */
-final readonly class CurrentRouteLogRow
+final readonly class CurrentRouteLogRow implements PanelRow
 {
     public function __construct(
         /**
@@ -29,25 +30,43 @@ final readonly class CurrentRouteLogRow
         public bool $match,
     ) {}
 
-    /**
-     * Narrows the loose array shape into a typed row.
-     *
-     * @param array<string, mixed> $row Source row.
-     */
-    public static function from(array $row): self
+    public static function fromArray(mixed $data, string $path): self
     {
-        return new self(
-            rule: self::asString($row['rule'] ?? ''),
-            parent: self::asString($row['parent'] ?? ''),
-            match: ($row['match'] ?? false) === true,
-        );
+        $payload = Payload::object($data, $path)->shape(['rule', 'parent', 'match']);
+
+        return new self($payload->string('rule'), $payload->string('parent'), $payload->bool('match'));
     }
 
     /**
-     * Returns the value when it is already a string, falling back to `''` otherwise.
+     * Narrows one raw URL-manager trace payload, returning `null` when it does not carry a rule/match pair.
+     *
+     * @param mixed $message Raw logger payload.
      */
-    private static function asString(mixed $value): string
+    public static function fromLogMessage(mixed $message): self|null
     {
-        return is_string($value) ? $value : '';
+        if (
+            !is_array($message)
+            || !isset($message['rule'], $message['match'])
+            || !is_string($message['rule'])
+            || !is_bool($message['match'])
+        ) {
+            return null;
+        }
+
+        $parent = $message['parent'] ?? null;
+
+        return new self($message['rule'], is_string($parent) ? $parent : '', $message['match']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'rule' => $this->rule,
+            'parent' => $this->parent,
+            'match' => $this->match,
+        ];
     }
 }

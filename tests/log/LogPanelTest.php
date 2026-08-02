@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\tests\log;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\debug\panels\log\LogSnapshot;
 use yii\debug\panels\{LogPanel, RouterPanel};
+use yii\debug\storage\HydrationException;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -17,17 +19,69 @@ use yii\log\Logger;
 #[Group('log')]
 final class LogPanelTest extends TestCase
 {
+    public function testCaptureDropsNonArrayLoggerEntries(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        $this->hydratePanel($panel, LogSnapshot::capture([
+            ['valid', Logger::LEVEL_INFO, 'application', 0.0, []],
+            'invalid-string',
+        ]));
+
+        self::assertCount(
+            1,
+            $panel->getMessages(),
+            'Non-array entries must be dropped at capture.',
+        );
+    }
+    public function testCaptureExcludesCategoriesOwnedByRouterPanel(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        $module = $panel->module ?? self::fail('Module must be wired.');
+
+        $module->panels['router'] = new RouterPanel(['id' => 'router', 'module' => $module]);
+
+        self::assertSame(
+            [],
+            $panel->capture()->entries(),
+            'Empty log target yields no rows.',
+        );
+    }
+
+    public function testCaptureNarrowsNumericStringLevelToInt(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        $this->hydratePanel($panel, LogSnapshot::capture([
+            ['oops', (string) Logger::LEVEL_ERROR, 'application', 0.0, []],
+        ]));
+
+        $row = $panel->getMessages()[0] ?? self::fail('Expected one captured row.');
+
+        self::assertSame(Logger::LEVEL_ERROR, $row->level, 'Numeric-string level must narrow to `int`.');
+    }
+
+    public function testCaptureReturnsTypedRows(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        self::assertSame(
+            [],
+            $panel->capture()->entries(),
+            'Empty log target yields no rows.',
+        );
+    }
+
     public function testGetDetailRendersErrorAndWarningCountersWhenLevelsArePresent(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                ['oops', Logger::LEVEL_ERROR, 'application', 1.0, []],
-                ['careful', Logger::LEVEL_WARNING, 'application', 2.0, []],
-                ['hello', Logger::LEVEL_INFO, 'application', 3.0, []],
-            ],
-        ];
+        $this->hydratePanel($panel, LogSnapshot::capture([
+            ['oops', Logger::LEVEL_ERROR, 'application', 1.0, []],
+            ['careful', Logger::LEVEL_WARNING, 'application', 2.0, []],
+            ['hello', Logger::LEVEL_INFO, 'application', 3.0, []],
+        ]));
 
         $html = $panel->getDetail();
 
@@ -47,9 +101,7 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $panel->data = [
-            'messages' => [['hello', Logger::LEVEL_INFO, 'application', 0.0, []]],
-        ];
+        $this->hydratePanel($panel, LogSnapshot::capture([['hello', Logger::LEVEL_INFO, 'application', 0.0, []]]));
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -57,170 +109,87 @@ final class LogPanelTest extends TestCase
         );
     }
 
+    public function testGetMessagesReflectsTheLatestHydration(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        $this->hydratePanel($panel, LogSnapshot::capture([['a', Logger::LEVEL_INFO, 'application', 0.0, []]]));
+
+        self::assertCount(
+            1,
+            $panel->getMessages(),
+            'Single message must yield one row.',
+        );
+
+        $this->hydratePanel($panel, LogSnapshot::capture([
+            ['a', Logger::LEVEL_INFO, 'application', 0.0, []],
+            ['b', Logger::LEVEL_INFO, 'application', 0.0, []],
+        ]));
+
+        self::assertCount(
+            2,
+            $panel->getMessages(),
+            'Re-hydration must replace the previous rows.',
+        );
+    }
+
+    public function testGetMessagesReturnsEmptyListBeforeHydration(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        self::assertSame([], $panel->getMessages(), 'An un-hydrated panel exposes no rows.');
+    }
+
     public function testGetModelsCachesAndDecoratesPrevNextIds(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
-                ['b', Logger::LEVEL_WARNING, 'application', 2.0, []],
-                ['c', Logger::LEVEL_ERROR, 'application', 3.0, []],
-            ],
-        ];
+        $this->hydratePanel($panel, LogSnapshot::capture([
+            ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
+            ['b', Logger::LEVEL_WARNING, 'application', 2.0, []],
+            ['c', Logger::LEVEL_ERROR, 'application', 3.0, []],
+        ]));
 
-        $first = $this->invoke(
-            $panel,
-            'getModels',
-        );
-        $second = $this->invoke(
-            $panel,
-            'getModels',
-        );
+        $rows = $panel->getMessages();
 
         self::assertSame(
-            $first,
-            $second,
-            'Cache must return the same list.',
-        );
-        self::assertIsArray(
-            $first,
-            'Models must be an array.',
+            $rows,
+            $panel->getMessages(),
+            'Repeated reads must return the same rows.',
         );
 
-        $row = $first[2] ?? self::fail("Expected row id '2'.");
+        $row = $rows[1] ?? self::fail("Expected row id '2'.");
 
-        self::assertIsArray(
-            $row,
-            'Row must be an array.',
-        );
-        self::assertSame(
-            1,
-            $row['id_of_previous'] ?? null,
-            "Middle row must point back to id '1'.",
-        );
-        self::assertSame(
-            3,
-            $row['id_of_next'] ?? null,
-            "Middle row must point forward to id '3'.",
-        );
+        self::assertSame(2, $row->id, "Middle row must carry id '2'.");
+        self::assertSame(1, $row->idOfPrevious, "Middle row must point back to id '1'.");
+        self::assertSame(3, $row->idOfNext, "Middle row must point forward to id '3'.");
     }
 
     public function testGetModelsLastRowExposesNullAsNextId(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
-                ['b', Logger::LEVEL_INFO, 'application', 2.0, []],
-            ],
-        ];
+        $this->hydratePanel($panel, LogSnapshot::capture([
+            ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
+            ['b', Logger::LEVEL_INFO, 'application', 2.0, []],
+        ]));
 
-        $models = $this->invoke(
-            $panel,
-            'getModels',
-        );
+        $rows = $panel->getMessages();
+        $last = $rows[1] ?? self::fail("Expected row id '2'.");
 
-        self::assertIsArray(
-            $models,
-            'Models must be an array.',
-        );
-
-        $last = $models[2] ?? self::fail("Expected row id '2'.");
-
-        self::assertIsArray(
-            $last,
-            'Row must be an array.',
-        );
-        self::assertArrayHasKey(
-            'id_of_next',
-            $last,
-            "Last row must declare an 'id_of_next' slot.",
-        );
-        self::assertNull(
-            $last['id_of_next'],
-            "Last row must expose 'null' next id.",
-        );
-    }
-
-    public function testGetModelsRebuildsCacheWhenRefreshIsTrue(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $panel->data = [
-            'messages' => [['a', Logger::LEVEL_INFO, 'application', 0.0, []]],
-        ];
-
-        $first = $this->invoke(
-            $panel,
-            'getModels',
-        );
-
-        self::assertIsArray(
-            $first,
-            'Models must be an array.',
-        );
-        self::assertCount(
-            1,
-            $first,
-            'Single message must yield one row.',
-        );
-
-        $panel->data = [
-            'messages' => [
-                ['a', Logger::LEVEL_INFO, 'application', 0.0, []],
-                ['b', Logger::LEVEL_INFO, 'application', 0.0, []],
-            ],
-        ];
-
-        $refreshed = $this->invoke(
-            $panel,
-            'getModels',
-            [true]
-        );
-
-        self::assertIsArray(
-            $refreshed,
-            'Refreshed models must be an array.',
-        );
-        self::assertCount(
-            2,
-            $refreshed,
-            'Refresh must rebuild from the latest data.',
-        );
+        self::assertNull($last->idOfNext, 'Last row must expose `null` as the next id.');
+        self::assertSame(1, $last->idOfPrevious, "Last row must point back to id '1'.");
     }
 
     public function testGetModelsScalesTimeToMilliseconds(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $panel->data = [
-            'messages' => [['msg', Logger::LEVEL_INFO, 'application', 2.5, []]],
-        ];
+        $this->hydratePanel($panel, LogSnapshot::capture([['msg', Logger::LEVEL_INFO, 'application', 2.5, []]]));
 
-        $models = $this->invoke(
-            $panel,
-            'getModels',
-        );
+        $row = $panel->getMessages()[0] ?? self::fail("Expected row id '1'.");
 
-        self::assertIsArray(
-            $models,
-            'Models must be an array.',
-        );
-
-        $row = $models[1] ?? self::fail("Expected row id '1'.");
-
-        self::assertIsArray(
-            $row,
-            'Row must be an array.',
-        );
-        self::assertEqualsWithDelta(
-            2500.0,
-            $row['time'] ?? null,
-            1e-9,
-            'Time must be scaled to milliseconds.',
-        );
+        self::assertEqualsWithDelta(2500.0, $row->time, 1e-9, 'Time must be scaled to milliseconds.');
     }
 
     public function testGetNameAndIcon(): void
@@ -239,84 +208,11 @@ final class LogPanelTest extends TestCase
         );
     }
 
-    public function testGetSavedMessagesDropsNonArrayEntries(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            [
-                'messages' => [
-                    ['valid', Logger::LEVEL_INFO, 'application', 0.0, []],
-                    'invalid-string',
-                ],
-            ],
-        );
-
-        $messages = $this->invoke(
-            $panel,
-            'getSavedMessages',
-        );
-
-        self::assertIsArray(
-            $messages,
-            'Messages must be an array.',
-        );
-        self::assertCount(
-            1,
-            $messages,
-            'Non-array entries must be dropped.',
-        );
-    }
-
-    public function testGetSavedMessagesReturnsEmptyWhenDataIsNotArray(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            'corrupt',
-        );
-
-        self::assertSame(
-            [],
-            $this->invoke(
-                $panel,
-                'getSavedMessages',
-            ),
-            "Non-array data must collapse to '[]'.",
-        );
-    }
-
-    public function testGetSavedMessagesReturnsEmptyWhenMessagesKeyIsNotArray(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            ['messages' => 'corrupt'],
-        );
-
-        self::assertSame(
-            [],
-            $this->invoke(
-                $panel,
-                'getSavedMessages',
-            ),
-            "Non-array 'messages' key must collapse to '[]'.",
-        );
-    }
-
     public function testGetToolbarItemsEmitsCountChipOnly(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $panel->data = [
-            'messages' => [['a', Logger::LEVEL_INFO, 'application', 0.0, []]],
-        ];
+        $this->hydratePanel($panel, LogSnapshot::capture([['a', Logger::LEVEL_INFO, 'application', 0.0, []]]));
 
         $items = $this->invoke(
             $panel,
@@ -350,12 +246,10 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $panel->data = [
-            'messages' => [
-                ['err', Logger::LEVEL_ERROR, 'application', 0.0, []],
-                ['info', Logger::LEVEL_INFO, 'application', 0.0, []],
-            ],
-        ];
+        $this->hydratePanel($panel, LogSnapshot::capture([
+            ['err', Logger::LEVEL_ERROR, 'application', 0.0, []],
+            ['info', Logger::LEVEL_INFO, 'application', 0.0, []],
+        ]));
 
         $items = $this->invoke(
             $panel,
@@ -391,9 +285,7 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $panel->data = [
-            'messages' => [['warn', Logger::LEVEL_WARNING, 'application', 0.0, []]],
-        ];
+        $this->hydratePanel($panel, LogSnapshot::capture([['warn', Logger::LEVEL_WARNING, 'application', 0.0, []]]));
 
         $items = $this->invoke(
             $panel,
@@ -418,57 +310,12 @@ final class LogPanelTest extends TestCase
         );
     }
 
-    public function testNormalizeStringListDropsNonStringAndFallsBackOnNonArray(): void
+    public function testHydrationRejectsNonArrayMessages(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        self::assertSame(
-            ['kept-a', 'kept-b'],
-            $this->invoke(
-                $panel,
-                'normalizeStringList',
-                [['kept-a', 42, null, 'kept-b']],
-            ),
-            'Only string entries must survive.',
-        );
-        self::assertSame(
-            [],
-            $this->invoke(
-                $panel,
-                'normalizeStringList',
-                ['not-an-array'],
-            ),
-            "Non-array input must collapse to '[]'.",
-        );
-    }
+        $this->expectException(HydrationException::class);
 
-    public function testSaveExcludesCategoriesOwnedByRouterPanel(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $module = $panel->module ?? self::fail('Module must be wired.');
-
-        $module->panels['router'] = new RouterPanel(['id' => 'router', 'module' => $module]);
-
-        $payload = $panel->save();
-
-        self::assertSame(
-            [],
-            $payload['messages'],
-            'Empty log target yields no messages.',
-        );
-    }
-
-    public function testSaveReturnsMessagesKey(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $payload = $panel->save();
-
-        self::assertSame(
-            [],
-            $payload['messages'],
-            'Empty log target yields no messages.',
-        );
+        $panel->hydrate(['messages' => 'corrupt']);
     }
 }

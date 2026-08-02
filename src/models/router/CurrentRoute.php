@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace yii\debug\models\router;
 
 use yii\base\Model;
-use yii\log\Logger;
+use yii\debug\panels\router\{CurrentRouteLogRow, RouterSnapshot};
 
-use function is_array;
-use function is_bool;
-use function is_string;
+use function count;
 
 /**
- * Reconstructs the URL-rule match log of the active request from the captured logger messages.
+ * Exposes the URL-rule match log of the active request, already resolved at capture time.
  *
- * Replays the raw log entries supplied via {@see $messages} during {@see init()} to expose the matched action, the
- * resolved route, the trace of rules tried, and a derived flag indicating whether the URL manager actually matched.
+ * The trace replay lives in {@see RouterSnapshot::capture()}, so this model is a plain view surface over the typed
+ * rows: the matched action, the resolved route, the rules tried, and whether the URL manager matched.
  */
 class CurrentRoute extends Model
 {
@@ -32,8 +30,7 @@ class CurrentRoute extends Model
      */
     public bool $hasMatch = false;
     /**
-     * @var list<array{rule: string, match: bool, parent?: string}> Normalized trace of URL rules inspected during
-     * routing, in inspection order.
+     * @var list<CurrentRouteLogRow> Rules inspected during routing, in inspection order.
      */
     public array $logs = [];
     /**
@@ -41,77 +38,28 @@ class CurrentRoute extends Model
      */
     public string|null $message = null;
     /**
-     * @var array<int, array{0: mixed, 1: int, 2?: string, 3?: float, 4?: array<int, array<string, mixed>>}> Raw logger
-     * messages captured for the routing pass, consumed by {@see init()}.
-     */
-    public array $messages = [];
-    /**
      * Resolved request route logged for the current request.
      */
     public string $route = '';
 
-    public function init(): void
-    {
-        parent::init();
-
-        $last = null;
-
-        foreach ($this->messages as $message) {
-            if ($message[1] === Logger::LEVEL_TRACE && is_string($message[0])) {
-                $this->message = $message[0];
-                continue;
-            }
-
-            $log = $this->normalizeLogMessage($message[0]);
-
-            if ($log !== null) {
-                $previousParent = $last['parent'] ?? null;
-
-                if ($previousParent !== null && $previousParent !== '' && $previousParent === $log['rule']) {
-                    continue;
-                }
-
-                $this->logs[] = $log;
-
-                ++$this->count;
-
-                if ($log['match']) {
-                    $this->hasMatch = true;
-                }
-
-                $last = $log;
-            }
-        }
-    }
-
     /**
-     * Narrows a raw logger payload into the `{rule, match, parent?}` shape consumed by the view layer.
-     *
-     * @param mixed $message Raw logger payload.
-     *
-     * @return array{rule: string, match: bool, parent?: string}|null Normalized entry, or `null` when the payload does
-     * not have the expected shape.
+     * Builds the view model from a hydrated router snapshot, or an empty one when the panel captured nothing.
      */
-    private function normalizeLogMessage($message): array|null
+    public static function fromSnapshot(RouterSnapshot|null $snapshot): self
     {
-        if (
-            !is_array($message)
-            || !isset($message['rule'], $message['match'])
-            || !is_string($message['rule'])
-            || !is_bool($message['match'])
-        ) {
-            return null;
+        if ($snapshot === null) {
+            return new self();
         }
 
-        $log = [
-            'match' => $message['match'],
-            'rule' => $message['rule'],
-        ];
+        $route = new self();
 
-        if (isset($message['parent']) && is_string($message['parent'])) {
-            $log['parent'] = $message['parent'];
-        }
+        $route->action = $snapshot->action ?? '';
+        $route->route = $snapshot->route;
+        $route->message = $snapshot->message;
+        $route->logs = $snapshot->entries();
+        $route->count = count($route->logs);
+        $route->hasMatch = $snapshot->hasMatch();
 
-        return $log;
+        return $route;
     }
 }

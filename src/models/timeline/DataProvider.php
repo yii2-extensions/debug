@@ -6,12 +6,11 @@ namespace yii\debug\models\timeline;
 
 use Override;
 use yii\data\ArrayDataProvider;
-use yii\debug\helpers\Format;
+use yii\debug\panels\profile\ProfileRow;
+use yii\debug\panels\timeline\TimelineSpanRow;
 use yii\debug\panels\TimelinePanel;
 
 use function floor;
-use function is_array;
-use function is_numeric;
 use function log10;
 use function max;
 
@@ -34,39 +33,10 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Returns the row's left offset as a percentage of the total request duration.
-     *
-     * @param array<array-key, mixed> $model Timeline row carrying a `timestamp` entry.
      */
-    public function getLeft(array $model): float
+    public function getLeft(ProfileRow $row): float
     {
-        return $this->getTime($model) / ($this->panel->getDuration() / 100);
-    }
-
-    /**
-     * Returns the memory usage as a `[formatted_mb, y_position_percent]` pair, or `null` when no memory entry exists.
-     *
-     * @param array<array-key, mixed> $model Timeline row that may carry a numeric `memory` entry.
-     *
-     * @return array{0: string, 1: float}|null Formatted memory string and its Y position, or `null` when unavailable.
-     */
-    public function getMemory(array $model): array|null
-    {
-        $memory = $model['memory'] ?? null;
-
-        if (!is_numeric($memory)) {
-            return null;
-        }
-
-        $memoryFloat = (float) $memory;
-
-        if ($memoryFloat <= 0.0) {
-            return null;
-        }
-
-        return [
-            Format::bytesToMb($memoryFloat),
-            $memoryFloat / ($this->panel->getMemory() / 100),
-        ];
+        return $this->getTime($row) / ($this->panel->getDuration() / 100);
     }
 
     /**
@@ -93,7 +63,9 @@ class DataProvider extends ArrayDataProvider
         }
 
         $rough = $duration / $line;
+
         $magnitude = 10 ** max(0, (int) floor(log10($rough)));
+
         $normalized = $rough / $magnitude;
 
         $factor = match (true) {
@@ -116,84 +88,64 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Returns the row's elapsed time relative to the request start, in milliseconds.
-     *
-     * @param array<array-key, mixed> $model Timeline row carrying a numeric `timestamp` entry.
      */
-    public function getTime(array $model): float
+    public function getTime(ProfileRow $row): float
     {
-        $timestamp = $model['timestamp'] ?? 0;
-
-        return (is_numeric($timestamp) ? (float) $timestamp : 0.0) - $this->panel->getStart();
+        return $row->timestamp - $this->panel->getStart();
     }
 
     /**
      * Returns the row's width as a percentage of the total request duration.
-     *
-     * @param array<array-key, mixed> $model Timeline row carrying a numeric `duration` entry.
      */
-    public function getWidth(array $model): float
+    public function getWidth(ProfileRow $row): float
     {
-        $duration = $model['duration'] ?? 0;
-
-        return (is_numeric($duration) ? (float) $duration : 0.0) / ($this->panel->getDuration() / 100);
+        return $row->duration / ($this->panel->getDuration() / 100);
     }
 
     /**
-     * Normalizes the raw input rows, converts seconds to milliseconds, derives the per-row CSS layout, and tracks
-     * nested child counts so the view can shade overlapping spans.
+     * Derives the per-row CSS layout and the nested child counts, then narrows every block into a typed span row.
      *
-     * @return list<array<array-key, mixed>> Prepared rows ready for the data provider.
+     * @return list<TimelineSpanRow> Prepared span rows ready for the view.
      */
     #[Override]
     protected function prepareModels(): array
     {
-        $rawModels = $this->allModels;
+        $rows = [];
 
-        if ($rawModels === []) {
-            return [];
-        }
-
-        /** @var array<int|string, array<string, mixed>> $models */
-        $models = [];
-
-        foreach ($rawModels as $key => $rawModel) {
-            if (is_array($rawModel)) {
-                $models[$key] = $rawModel;
+        foreach ($this->allModels as $model) {
+            if ($model instanceof ProfileRow) {
+                $rows[] = $model;
             }
         }
 
-        $child = [];
+        $depths = [];
+        $open = [];
 
-        foreach ($models as $key => &$model) {
-            $rawTimestamp = $model['timestamp'] ?? 0;
-            $rawDuration = $model['duration'] ?? 0;
+        foreach ($rows as $index => $row) {
+            $depths[$index] ??= 0;
 
-            $timestamp = (is_numeric($rawTimestamp) ? (float) $rawTimestamp : 0.0) * 1000;
-            $duration = (is_numeric($rawDuration) ? (float) $rawDuration : 0.0) * 1000;
-
-            $model['timestamp'] = $timestamp;
-            $model['duration'] = $duration;
-            $model['child'] = 0;
-            $model['css'] = [
-                'width' => $this->getWidth($model),
-                'left' => $this->getLeft($model),
-            ];
-
-            foreach ($child as $id => $closesAt) {
-                if ($closesAt > $timestamp) {
-                    $existing = $models[$id]['child'] ?? 0;
-
-                    $models[$id]['child'] = (is_numeric($existing) ? (int) $existing : 0) + 1;
+            foreach ($open as $openIndex => $closesAt) {
+                if ($closesAt > $row->timestamp) {
+                    $depths[$openIndex] = ($depths[$openIndex] ?? 0) + 1;
                 } else {
-                    unset($child[$id]);
+                    unset($open[$openIndex]);
                 }
             }
 
-            $child[$key] = $timestamp + $duration;
+            $open[$index] = $row->timestamp + $row->duration;
         }
 
-        unset($model);
+        $spans = [];
 
-        return array_values($models);
+        foreach ($rows as $index => $row) {
+            $spans[] = TimelineSpanRow::from(
+                $row,
+                $depths[$index] ?? 0,
+                $this->getLeft($row),
+                $this->getWidth($row),
+            );
+        }
+
+        return $spans;
     }
 }

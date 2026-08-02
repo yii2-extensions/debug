@@ -6,6 +6,7 @@ namespace yii\debug\tests\queue;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\QueueSearch;
+use yii\debug\panels\queue\JobRecord;
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -50,27 +51,9 @@ final class QueueSearchTest extends TestCase
     public function testSearchAppliesPartialMatchOnDriverName(): void
     {
         $records = [
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'time' => 1.0,
-            ],
-            [
-                'eventType' => 'push',
-                'componentId' => 'queueRedis',
-                'driverName' => 'Redis',
-                'jobClass' => 'B',
-                'time' => 2.0,
-            ],
-            [
-                'eventType' => 'push',
-                'componentId' => 'queueRabbit',
-                'driverName' => 'AMQP',
-                'jobClass' => 'C',
-                'time' => 3.0,
-            ],
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'time' => 1.0]),
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queueRedis', 'driverName' => 'Redis', 'jobClass' => 'B', 'time' => 2.0]),
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queueRabbit', 'driverName' => 'AMQP', 'jobClass' => 'C', 'time' => 3.0]),
         ];
 
         $searchModel = new QueueSearch();
@@ -95,27 +78,9 @@ final class QueueSearchTest extends TestCase
     public function testSearchAppliesPartialMatchOnJobClass(): void
     {
         $records = [
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'app\\jobs\\HelloJob',
-                'time' => 1.0,
-            ],
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'app\\jobs\\OrderJob',
-                'time' => 2.0,
-            ],
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'app\\jobs\\EmailJob',
-                'time' => 3.0,
-            ],
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'app\\jobs\\HelloJob', 'time' => 1.0]),
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'app\\jobs\\OrderJob', 'time' => 2.0]),
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'app\\jobs\\EmailJob', 'time' => 3.0]),
         ];
 
         $searchModel = new QueueSearch();
@@ -135,30 +100,9 @@ final class QueueSearchTest extends TestCase
     public function testSearchAppliesPartialMatchOnJobId(): void
     {
         $records = [
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'jobId' => '101',
-                'time' => 1.0,
-            ],
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'jobId' => '202',
-                'time' => 2.0,
-            ],
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'jobId' => '303',
-                'time' => 3.0,
-            ],
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'jobId' => '101', 'time' => 1.0]),
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'jobId' => '202', 'time' => 2.0]),
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'jobId' => '303', 'time' => 3.0]),
         ];
 
         $searchModel = new QueueSearch();
@@ -178,44 +122,17 @@ final class QueueSearchTest extends TestCase
     public function testSearchCombinesMultipleFilters(): void
     {
         $records = [
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'time' => 1.0,
-            ],
-            [
-                'eventType' => 'exec',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'time' => 2.0,
-            ],
-            [
-                'eventType' => 'push',
-                'componentId' => 'queueRedis',
-                'driverName' => 'Redis',
-                'jobClass' => 'A',
-                'time' => 3.0,
-            ],
-            [
-                'eventType' => 'error',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'time' => 4.0,
-            ],
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'time' => 1.0]),
+            JobRecord::fromCapture(['eventType' => 'exec', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'time' => 2.0]),
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queueRedis', 'driverName' => 'Redis', 'jobClass' => 'A', 'time' => 3.0]),
+            JobRecord::fromCapture(['eventType' => 'error', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'time' => 4.0]),
         ];
 
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
             [
-                'QueueSearch' => [
-                    'eventType' => 'push',
-                    'componentId' => 'queue',
-                ],
+                'QueueSearch' => ['eventType' => 'push', 'componentId' => 'queue'],
             ],
             $records,
         );
@@ -247,27 +164,9 @@ final class QueueSearchTest extends TestCase
     public function testSearchFiltersByEventTypeExactMatch(): void
     {
         $records = [
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'time' => 1.0,
-            ],
-            [
-                'eventType' => 'exec',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'time' => 2.0,
-            ],
-            [
-                'eventType' => 'error',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'B',
-                'time' => 3.0,
-            ],
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'time' => 1.0]),
+            JobRecord::fromCapture(['eventType' => 'exec', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'time' => 2.0]),
+            JobRecord::fromCapture(['eventType' => 'error', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'B', 'time' => 3.0]),
         ];
 
         $searchModel = new QueueSearch();
@@ -289,13 +188,15 @@ final class QueueSearchTest extends TestCase
         $records = [];
 
         for ($i = 1; $i <= 60; $i++) {
-            $records[] = [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'app\\jobs\\HelloJob',
-                'time' => (float) $i,
-            ];
+            $records[] = JobRecord::fromCapture(
+                [
+                    'eventType' => 'push',
+                    'componentId' => 'queue',
+                    'driverName' => 'Sync',
+                    'jobClass' => 'app\\jobs\\HelloJob',
+                    'time' => (float) $i,
+                ],
+            );
         }
 
         $searchModel = new QueueSearch();
@@ -330,20 +231,8 @@ final class QueueSearchTest extends TestCase
     public function testSearchReturnsAllRecordsWhenFilterIsEmpty(): void
     {
         $records = [
-            [
-                'eventType' => 'push',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'A',
-                'time' => 1.0,
-            ],
-            [
-                'eventType' => 'exec',
-                'componentId' => 'queue',
-                'driverName' => 'Sync',
-                'jobClass' => 'B',
-                'time' => 2.0,
-            ],
+            JobRecord::fromCapture(['eventType' => 'push', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'A', 'time' => 1.0]),
+            JobRecord::fromCapture(['eventType' => 'exec', 'componentId' => 'queue', 'driverName' => 'Sync', 'jobClass' => 'B', 'time' => 2.0]),
         ];
 
         $searchModel = new QueueSearch();

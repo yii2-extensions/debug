@@ -7,22 +7,35 @@ namespace yii\debug\tests\event;
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use yii\base\{Component, Event};
+use yii\debug\panels\event\{EventRow, EventSnapshot};
 use yii\debug\panels\EventPanel;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see EventPanel} covering the wildcard event capture, the saved-payload narrowing, the toolbar count
+ * Unit tests for {@see EventPanel} covering the wildcard event capture, snapshot hydration, the toolbar count
  * chip, and the rendered detail/summary views.
  */
 #[Group('panel')]
 #[Group('event')]
 final class EventPanelTest extends TestCase
 {
+    public function testCaptureReturnsEventsCapturedSinceInit(): void
+    {
+        $panel = $this->makePanel(EventPanel::class);
+
+        self::assertSame(
+            [],
+            $panel->capture()->entries(),
+            'No fired events means an empty payload.',
+        );
+
+        Event::offAll();
+    }
     public function testGetDetailRendersEmptyStateWhenNoEventsCaptured(): void
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        $panel->data = [];
+        $this->hydratePanel($panel, new EventSnapshot([]));
 
         $detail = $panel->getDetail();
 
@@ -42,10 +55,10 @@ final class EventPanelTest extends TestCase
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        $panel->data = [
-            ['time' => 1.0, 'name' => 'init', 'class' => Event::class, 'isStatic' => '1', 'senderClass' => 'App'],
-            ['time' => 2.0, 'name' => 'afterSave', 'class' => Event::class, 'isStatic' => '0', 'senderClass' => 'App'],
-        ];
+        $this->hydratePanel($panel, new EventSnapshot([
+            new EventRow(1.0, 'init', Event::class, '1', 'App'),
+            new EventRow(2.0, 'afterSave', Event::class, '0', 'App'),
+        ]));
 
         self::assertStringContainsString(
             '<strong>1</strong> static',
@@ -58,9 +71,9 @@ final class EventPanelTest extends TestCase
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        $panel->data = [
-            ['time' => 1.0, 'name' => 'afterSave', 'class' => Event::class, 'isStatic' => '0', 'senderClass' => 'App'],
-        ];
+        $this->hydratePanel($panel, new EventSnapshot([
+            new EventRow(1.0, 'afterSave', Event::class, '0', 'App'),
+        ]));
 
         $detail = $panel->getDetail();
 
@@ -95,10 +108,10 @@ final class EventPanelTest extends TestCase
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        $panel->data = [
-            ['time' => 1.0, 'name' => 'a', 'class' => Event::class, 'isStatic' => '0', 'senderClass' => ''],
-            ['time' => 2.0, 'name' => 'b', 'class' => Event::class, 'isStatic' => '0', 'senderClass' => ''],
-        ];
+        $this->hydratePanel($panel, new EventSnapshot([
+            new EventRow(1.0, 'a', Event::class, '0', ''),
+            new EventRow(2.0, 'b', Event::class, '0', ''),
+        ]));
 
         $items = $this->invoke(
             $panel,
@@ -126,12 +139,6 @@ final class EventPanelTest extends TestCase
     public function testGetToolbarItemsReturnsEmptyArrayWhenDataIsCorrupt(): void
     {
         $panel = $this->makePanel(EventPanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            'corrupt',
-        );
 
         self::assertSame(
             [],
@@ -165,23 +172,19 @@ final class EventPanelTest extends TestCase
 
         $sender->trigger('test.event');
 
-        $saved = $panel->save();
+        $saved = $panel->capture()->entries();
 
         $captured = $saved[0] ?? self::fail('Expected one captured event.');
 
-        self::assertSame(
-            'test.event',
-            $captured['name'],
-            'Captured `name` must match the trigger.',
-        );
+        self::assertSame('test.event', $captured->name, 'Captured `name` must match the trigger.');
         self::assertSame(
             Component::class,
-            $captured['senderClass'],
+            $captured->senderClass,
             'Captured `senderClass` must match the sender FQCN.',
         );
         self::assertSame(
             '0',
-            $captured['isStatic'],
+            $captured->isStatic,
             "Object sender must mark 'isStatic' as '0'.",
         );
 
@@ -206,84 +209,23 @@ final class EventPanelTest extends TestCase
             $event,
         );
 
-        $saved = $panel->save();
+        $saved = $panel->capture()->entries();
 
         $captured = $saved[0] ?? self::fail('Expected one captured event.');
 
         self::assertSame(
             '1',
-            $captured['isStatic'],
+            $captured->isStatic,
             "Static event must mark 'isStatic' as '1'.",
         );
         self::assertSame(
             stdClass::class,
-            $captured['senderClass'],
+            $captured->senderClass,
             'Class-level sender must round-trip as a string.',
         );
 
         Event::offAll();
     }
 
-    public function testNormalizeEventsDropsNonArrayEntriesAndNonStringKeys(): void
-    {
-        $panel = $this->makePanel(EventPanel::class);
 
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            [
-                ['name' => 'valid', 0 => 'dropped-int-key'],
-                'invalid-entry',
-                ['name' => 'kept'],
-            ],
-        );
-
-        $normalized = $this->invoke($panel, 'normalizeEvents', [$panel->data]);
-
-        self::assertIsArray(
-            $normalized,
-            'Normalized must be an array.',
-        );
-        self::assertCount(
-            2,
-            $normalized,
-            'Non-array entries must be dropped.',
-        );
-
-        $first = $normalized[0] ?? self::fail('Expected one row.');
-
-        self::assertIsArray(
-            $first,
-            'Row must be an array.',
-        );
-        self::assertArrayNotHasKey(
-            0,
-            $first,
-            'Int keys must be filtered out.',
-        );
-    }
-
-    public function testNormalizeEventsReturnsEmptyForNonArrayInput(): void
-    {
-        $panel = $this->makePanel(EventPanel::class);
-
-        self::assertSame(
-            [],
-            $this->invoke($panel, 'normalizeEvents', ['not-an-array']),
-            'Non-array input must collapse to `[]`.',
-        );
-    }
-
-    public function testSaveReturnsEventsCapturedSinceInit(): void
-    {
-        $panel = $this->makePanel(EventPanel::class);
-
-        self::assertSame(
-            [],
-            $panel->save(),
-            'No fired events means an empty payload.',
-        );
-
-        Event::offAll();
-    }
 }

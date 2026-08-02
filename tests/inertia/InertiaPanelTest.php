@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\base\{View, ViewEvent};
+use yii\debug\panels\inertia\InertiaSnapshot;
 use yii\debug\panels\InertiaPanel;
 use yii\debug\tests\support\TestCase;
 use yii\inertia\{Manager, Page};
@@ -22,22 +23,122 @@ use yii\inertia\{Manager, Page};
 #[Group('inertia')]
 final class InertiaPanelTest extends TestCase
 {
+    public function testCaptureCapturesPageFromResponseData(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        Yii::$app->response->data = new Page('site/index', ['user' => ['id' => 1]], '/site/index', 'v1');
+
+        $saved = $panel->capture()->data();
+        $page = $saved['page'] ?? null;
+
+        self::assertIsArray($page);
+
+        self::assertSame(
+            'site/index',
+            $page['component'] ?? null,
+            'Component must come from the response page object.',
+        );
+        self::assertSame(
+            ['user' => ['id' => 1]],
+            $page['props'] ?? null,
+            'Props must round-trip through JSON intact.',
+        );
+        self::assertSame(
+            'v1',
+            $page['version'] ?? null,
+            'Version must be preserved.',
+        );
+    }
+
+    public function testCaptureCapturesPageFromRootViewRenderParams(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        $page = new Page('site/about', [], '/site/about', 'v2');
+
+        Yii::$app->view->trigger(
+            View::EVENT_BEFORE_RENDER,
+            new ViewEvent(['params' => ['page' => $page], 'viewFile' => __FILE__]),
+        );
+
+        $saved = $panel->capture()->data();
+        $capturedPage = $saved['page'] ?? null;
+
+        self::assertIsArray($capturedPage);
+
+        self::assertSame(
+            'site/about',
+            $capturedPage['component'] ?? null,
+            'Component must come from the render params.',
+        );
+    }
+
+    public function testCaptureCapturesPartialReloadHeaders(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        Yii::$app->request->headers->set('X-Inertia', 'true');
+        Yii::$app->request->headers->set('X-Inertia-Partial-Data', 'user,notifications');
+        Yii::$app->request->headers->set('X-Inertia-Partial-Component', 'site/index');
+
+        $saved = $panel->capture()->data();
+
+        self::assertSame(
+            [
+                'X-Inertia' => 'true',
+                'X-Inertia-Partial-Component' => 'site/index',
+                'X-Inertia-Partial-Data' => 'user,notifications',
+            ],
+            $saved['requestHeaders'] ?? null,
+            'Negotiation headers must be captured in display order.',
+        );
+    }
+
+    public function testCaptureCapturesSharedPropKeys(): void
+    {
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+            ['inertia' => ['class' => Manager::class, 'shared' => ['auth' => 1, 'appName' => 'demo']]],
+        );
+
+        $saved = $panel->capture()->data();
+
+        self::assertSame(
+            ['auth', 'appName'],
+            $saved['sharedKeys'] ?? null,
+            'Top-level shared keys must be captured.',
+        );
+    }
+
+    public function testCaptureReturnsNullPageForNonInertiaResponse(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        Yii::$app->response->data = ['plain' => true];
+
+        $saved = $panel->capture()->data();
+
+        self::assertNull(
+            $saved['page'] ?? null,
+            'Non-Inertia response must yield a `null` page.',
+        );
+        self::assertSame(
+            200,
+            $saved['statusCode'] ?? null,
+            'Status code must be captured.',
+        );
+    }
     public function testGetDetailMarksSharedAndPageProps(): void
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => [
-                'component' => 'site/index',
-                'props' => ['auth' => ['isGuest' => true], 'post' => ['id' => 7]],
-                'url' => '/site/index',
-                'version' => 'v1',
-            ],
-            'requestHeaders' => [],
-            'sharedKeys' => ['auth'],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
+            'component' => 'site/index',
+            'props' => ['auth' => ['isGuest' => true], 'post' => ['id' => 7]],
+            'url' => '/site/index',
+            'version' => 'v1',
+        ], [], ['auth'], 200));
 
         $html = $panel->getDetail();
 
@@ -57,18 +158,12 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => [
-                'component' => 'site/index',
-                'props' => ['user' => ['id' => 1]],
-                'url' => '/site/index',
-                'version' => 'v1',
-            ],
-            'requestHeaders' => ['X-Inertia' => 'true'],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
+            'component' => 'site/index',
+            'props' => ['user' => ['id' => 1]],
+            'url' => '/site/index',
+            'version' => 'v1',
+        ], ['X-Inertia' => 'true'], [], 200));
 
         $html = $panel->getDetail();
 
@@ -98,13 +193,7 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => null,
-            'requestHeaders' => [],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, null, [], [], 200));
 
         $html = $panel->getDetail();
 
@@ -124,13 +213,7 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'],
-            'requestHeaders' => [],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'], [], [], 200));
 
         self::assertStringContainsString(
             'The page rendered without props.',
@@ -143,27 +226,21 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => [
-                'component' => 'site/index',
-                'props' => [
-                    'string' => str_repeat('a', 700),
-                    'integer' => 7,
-                    'float' => 1.5,
-                    'boolean' => true,
-                    'null' => null,
-                ],
-                'url' => '/site/index',
-                'version' => 'v1',
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
+            'component' => 'site/index',
+            'props' => [
+                'string' => str_repeat('a', 700),
+                'integer' => 7,
+                'float' => 1.5,
+                'boolean' => true,
+                'null' => null,
             ],
-            'requestHeaders' => [
-                'X-Inertia' => 'true',
-                'X-Inertia-Partial-Data' => 'string,integer',
-            ],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+            'url' => '/site/index',
+            'version' => 'v1',
+        ], [
+            'X-Inertia' => 'true',
+            'X-Inertia-Partial-Data' => 'string,integer',
+        ], [], 200));
 
         $html = $panel->getDetail();
 
@@ -181,13 +258,7 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => 'http://example.test/site/index',
-            'page' => null,
-            'requestHeaders' => ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'],
-            'sharedKeys' => [],
-            'statusCode' => 409,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture('http://example.test/site/index', null, ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'], [], 409));
 
         $html = $panel->getDetail();
 
@@ -223,18 +294,12 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => [
-                'component' => 'site/index',
-                'props' => [],
-                'url' => '/site/index',
-                'version' => 'v1',
-            ],
-            'requestHeaders' => [],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
+            'component' => 'site/index',
+            'props' => [],
+            'url' => '/site/index',
+            'version' => 'v1',
+        ], [], [], 200));
 
         $items = $this->invoke($panel, 'getToolbarItems');
 
@@ -254,13 +319,7 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => null,
-            'requestHeaders' => [],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, null, [], [], 200));
 
         self::assertSame(
             [],
@@ -273,13 +332,7 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => null,
-            'requestHeaders' => [],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, null, [], [], 200));
 
         self::assertFalse(
             $panel->hasContent(),
@@ -291,13 +344,7 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => null,
-            'page' => ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'],
-            'requestHeaders' => [],
-            'sharedKeys' => [],
-            'statusCode' => 200,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'], [], [], 200));
 
         self::assertTrue(
             $panel->hasContent(),
@@ -309,13 +356,7 @@ final class InertiaPanelTest extends TestCase
     {
         $panel = $this->makePanel(InertiaPanel::class);
 
-        $panel->data = [
-            'location' => 'http://example.test/',
-            'page' => null,
-            'requestHeaders' => ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'],
-            'sharedKeys' => [],
-            'statusCode' => 409,
-        ];
+        $this->hydratePanel($panel, InertiaSnapshot::capture('http://example.test/', null, ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'], [], 409));
 
         self::assertTrue(
             $panel->hasContent(),
@@ -375,107 +416,6 @@ final class InertiaPanelTest extends TestCase
         self::assertNull(
             $this->invokeStatic(InertiaPanel::class, 'normalizePage', [$scalar]),
             'A scalar JSON payload must normalize to null.',
-        );
-    }
-
-    public function testSaveCapturesPageFromResponseData(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        Yii::$app->response->data = new Page('site/index', ['user' => ['id' => 1]], '/site/index', 'v1');
-
-        $saved = $panel->save();
-
-        self::assertSame(
-            'site/index',
-            $saved['page']['component'] ?? null,
-            'Component must come from the response page object.',
-        );
-        self::assertSame(
-            ['user' => ['id' => 1]],
-            $saved['page']['props'] ?? null,
-            'Props must round-trip through JSON intact.',
-        );
-        self::assertSame(
-            'v1',
-            $saved['page']['version'] ?? null,
-            'Version must be preserved.',
-        );
-    }
-
-    public function testSaveCapturesPageFromRootViewRenderParams(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        $page = new Page('site/about', [], '/site/about', 'v2');
-
-        Yii::$app->view->trigger(
-            View::EVENT_BEFORE_RENDER,
-            new ViewEvent(['params' => ['page' => $page], 'viewFile' => __FILE__]),
-        );
-
-        $saved = $panel->save();
-
-        self::assertSame(
-            'site/about',
-            $saved['page']['component'] ?? null,
-            'Component must come from the render params.',
-        );
-    }
-
-    public function testSaveCapturesPartialReloadHeaders(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        Yii::$app->request->headers->set('X-Inertia', 'true');
-        Yii::$app->request->headers->set('X-Inertia-Partial-Data', 'user,notifications');
-        Yii::$app->request->headers->set('X-Inertia-Partial-Component', 'site/index');
-
-        $saved = $panel->save();
-
-        self::assertSame(
-            [
-                'X-Inertia' => 'true',
-                'X-Inertia-Partial-Component' => 'site/index',
-                'X-Inertia-Partial-Data' => 'user,notifications',
-            ],
-            $saved['requestHeaders'],
-            'Negotiation headers must be captured in display order.',
-        );
-    }
-
-    public function testSaveCapturesSharedPropKeys(): void
-    {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-            ['inertia' => ['class' => Manager::class, 'shared' => ['auth' => 1, 'appName' => 'demo']]],
-        );
-
-        $saved = $panel->save();
-
-        self::assertSame(
-            ['auth', 'appName'],
-            $saved['sharedKeys'],
-            'Top-level shared keys must be captured.',
-        );
-    }
-
-    public function testSaveReturnsNullPageForNonInertiaResponse(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        Yii::$app->response->data = ['plain' => true];
-
-        $saved = $panel->save();
-
-        self::assertNull(
-            $saved['page'],
-            'Non-Inertia response must yield a `null` page.',
-        );
-        self::assertSame(
-            200,
-            $saved['statusCode'],
-            'Status code must be captured.',
         );
     }
 

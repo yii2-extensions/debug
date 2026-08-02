@@ -9,7 +9,11 @@ use ReflectionClass;
 use Yii;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\Svg;
+use yii\debug\panels\log\LogSnapshot;
 use yii\debug\panels\{LogPanel, ProfilingPanel, TimelinePanel};
+use yii\debug\panels\MemorySample;
+use yii\debug\panels\profile\ProfilingSnapshot;
+use yii\debug\panels\timeline\TimelineSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
@@ -91,8 +95,8 @@ final class SvgTest extends TestCase
             'addPoints',
             [
                 [
-                    ['t', Logger::LEVEL_PROFILE_BEGIN, 'c', 1_700_000_000.080, [], 2_097_152],
-                    ['t', Logger::LEVEL_PROFILE_END, 'c', 1_700_000_000.010, [], 1_048_576],
+                    new MemorySample(1_700_000_000_080.0, 2_097_152),
+                    new MemorySample(1_700_000_000_010.0, 1_048_576),
                 ],
             ],
         );
@@ -143,12 +147,10 @@ final class SvgTest extends TestCase
             'Profiling panel must be wired.',
         );
 
-        $profilingPanel->data = [
-            'messages' => [
-                ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.010, [], 1_048_576],
-                ['t1', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.020, [], 2_097_152],
-            ],
-        ];
+        $this->hydratePanel($profilingPanel, ProfilingSnapshot::capture(0, 0.0, [
+            ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.010, [], 1_048_576],
+            ['t1', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.020, [], 2_097_152],
+        ]));
 
         $svg = new Svg($panel);
 
@@ -180,7 +182,7 @@ final class SvgTest extends TestCase
 
         self::assertInstanceOf(LogPanel::class, $logPanel, 'Log panel must be wired.');
 
-        $logPanel->data = [];
+        $this->hydratePanel($logPanel, LogSnapshot::capture([]));
 
         $svg = new Svg($panel);
 
@@ -222,12 +224,10 @@ final class SvgTest extends TestCase
             'Profiling panel must be wired.',
         );
 
-        $profilingPanel->data = [
-            'messages' => [
-                ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.010, [], 1_048_576],
-                'not-an-array',
-            ],
-        ];
+        $this->hydratePanel($profilingPanel, ProfilingSnapshot::capture(0, 0.0, [
+            ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.010, [], 1_048_576],
+            'not-an-array',
+        ]));
 
         $svg = new Svg($panel);
 
@@ -401,7 +401,7 @@ final class SvgTest extends TestCase
 
         $panel = new TimelinePanel(['id' => 'timeline', 'module' => $module]);
 
-        $panel->load(['start' => 1_700_000_000.0, 'end' => 1_700_000_000.1, 'memory' => 2_097_152]);
+        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 2_097_152));
 
         return $panel;
     }

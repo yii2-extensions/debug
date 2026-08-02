@@ -5,21 +5,22 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use Stringable;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Part\{AbstractPart, TextPart};
 use Throwable;
 use Yii;
 use yii\base\Event;
+use yii\debug\helpers\Coerce;
 use yii\debug\{LogTarget, Panel};
 use yii\debug\models\search\MailSearch;
+use yii\debug\panels\mail\{MailMessage, MailSnapshot};
 use yii\helpers\{FileHelper, Url};
 use yii\mail\{BaseMailer, MailEvent,MessageInterface};
 use yii\symfonymailer\Message;
 
 use function count;
+use function file_put_contents;
 use function is_array;
-use function is_scalar;
 use function is_string;
 
 /**
@@ -28,8 +29,6 @@ use function is_string;
  * Subscribes to `BaseMailer::EVENT_AFTER_SEND` at {@see init()} time, persists each message to disk under
  * {@see $mailPath} as a `.eml` file, and records the metadata (sender, recipients, subject, headers, charset, time)
  * consumed by the detail view and the toolbar.
- *
- * @extends Panel<array<int, array<string, mixed>>>
  */
 class MailPanel extends Panel
 {
@@ -45,6 +44,15 @@ class MailPanel extends Panel
      * @var array<int, array<string, mixed>> Mail messages captured for the current request, in send order.
      */
     private array $messages = [];
+    private MailSnapshot|null $snapshot = null;
+
+    /**
+     * Snapshots the captured messages, with their metadata (time, reply, bcc, cc, from, to, subject, headers, etc.).
+     */
+    public function capture(): MailSnapshot
+    {
+        return MailSnapshot::capture($this->messages);
+    }
 
     /**
      * Renders the detail view with the mail card list.
@@ -54,7 +62,7 @@ class MailPanel extends Panel
     {
         $searchModel = new MailSearch();
 
-        $dataProvider = $searchModel->search(Yii::$app->request->get(), self::normalizeMessages($this->data));
+        $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->getMessages());
 
         return Yii::$app->view->render(
             'panels/mail/detail',
@@ -65,6 +73,14 @@ class MailPanel extends Panel
             ],
             $this,
         );
+    }
+
+    /**
+     * @return list<MailMessage> Captured mail messages in send order.
+     */
+    public function getMessages(): array
+    {
+        return $this->snapshot?->entries() ?? [];
     }
 
     /**
@@ -83,6 +99,15 @@ class MailPanel extends Panel
         }
 
         return $names;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = MailSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -131,16 +156,6 @@ class MailPanel extends Panel
     }
 
     /**
-     * Snapshots the captured messages, with their metadata (time, reply, bcc, cc, from, to, subject, headers, etc.).
-     *
-     * @return array<int, array<string, mixed>> Mail records in send order.
-     */
-    public function save(): array
-    {
-        return $this->messages;
-    }
-
-    /**
      * Builds the toolbar items.
      *
      * Returns the captured count when the current request sent at least one message; otherwise looks at the previous
@@ -153,7 +168,7 @@ class MailPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        if (!is_array($this->data)) {
+        if ($this->snapshot === null) {
             return [
                 [
                     'status' => 'warning',
@@ -162,7 +177,7 @@ class MailPanel extends Panel
             ];
         }
 
-        $mailCount = count(self::normalizeMessages($this->data));
+        $mailCount = count($this->getMessages());
 
         if ($mailCount > 0) {
             return [['value' => $mailCount]];
@@ -223,8 +238,8 @@ class MailPanel extends Panel
     /**
      * Flattens an address attribute into a comma-separated string.
      *
-     * Address arrays are joined by their keys (the address strings); scalar and {@see Stringable} values pass through
-     * unchanged; anything else collapses to `''`.
+     * Address arrays are joined by their keys (the address strings); scalar and {@see \Stringable} values pass
+     * through unchanged; anything else collapses to `''`.
      */
     private function convertParams(mixed $attr): string
     {
@@ -238,11 +253,7 @@ class MailPanel extends Panel
             );
         }
 
-        if (is_scalar($attr) || $attr instanceof Stringable) {
-            return (string) $attr;
-        }
-
-        return '';
+        return Coerce::stringOrNull($attr) ?? '';
     }
 
     /**
@@ -280,36 +291,41 @@ class MailPanel extends Panel
         $currentTag = $this->tag;
 
         $previousTag = null;
+        $summary = null;
         $found = false;
 
-        foreach ($manifest as $tag => $_summary) {
+        foreach ($manifest as $tag => $entry) {
             if ($found) {
                 $previousTag = $tag;
+                $summary = $entry;
+
                 break;
             }
 
             if ($tag === $currentTag) {
                 $found = true;
+
+                continue;
             }
+
+            // Newest entry that is not the current request, used when no entry follows the current tag.
+            $previousTag ??= $tag;
+            $summary ??= $entry;
         }
 
-        if ($previousTag === null) {
-            $previousTag = array_key_first($manifest);
-
-            if ($previousTag === $currentTag) {
-                return null;
-            }
+        if ($summary === null || $previousTag === null) {
+            return null;
         }
 
-        $summary = $manifest[$previousTag] ?? [];
-        $count = is_numeric($summary['mailCount'] ?? null) ? (int) $summary['mailCount'] : 0;
+        $count = $summary->mailCount;
 
         if ($count === 0) {
             return null;
         }
 
-        $method = is_string($summary['method'] ?? null) ? $summary['method'] : '';
-        $url = is_string($summary['url'] ?? null) ? $summary['url'] : '';
+        $method = $summary->method;
+        $url = $summary->url;
+
         $shortUrlPath = $url === '' ? null : parse_url($url, PHP_URL_PATH);
         $shortUrl = is_string($shortUrlPath) && $shortUrlPath !== '' ? $shortUrlPath : $url;
 
@@ -327,38 +343,5 @@ class MailPanel extends Panel
             'shortUrl' => $shortUrl,
             'url' => $panelUrl,
         ];
-    }
-
-    /**
-     * Narrows the saved mail rows into a string-keyed list, dropping non-array entries and non-string keys inside each
-     * entry.
-     *
-     * @return array<int, array<string, mixed>> Sanitized mail records in original order.
-     */
-    private static function normalizeMessages(mixed $messages): array
-    {
-        if (!is_array($messages)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($messages as $message) {
-            if (!is_array($message)) {
-                continue;
-            }
-
-            $row = [];
-
-            foreach ($message as $key => $value) {
-                if (is_string($key)) {
-                    $row[$key] = $value;
-                }
-            }
-
-            $normalized[] = $row;
-        }
-
-        return $normalized;
     }
 }

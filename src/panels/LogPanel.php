@@ -9,11 +9,10 @@ use Yii;
 use yii\debug\helpers\Coerce;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
-use yii\log\{Logger, Target};
+use yii\debug\panels\log\{LogCounts, LogRow, LogSnapshot};
+use yii\log\Logger;
 
-use function count;
-use function is_array;
-use function is_string;
+use function array_map;
 
 /**
  * Captures error, warning, info, and trace log messages emitted during the request and renders them in the Logs panel.
@@ -21,29 +20,36 @@ use function is_string;
  * Skips categories owned by the Router panel (to avoid duplicate rows in the routing trace) and decorates each row
  * with the previous/next message ids and the time-since-previous delta, so the detail view can render the navigation
  * buttons on each row.
- *
- * @extends Panel<array{messages?: mixed}>
  */
-class LogPanel extends Panel
+class LogPanel extends Panel implements ProvidesMemorySamples
 {
     protected const string ICON = 'logs';
     protected const string NAME = 'Logs';
 
+    private LogSnapshot|null $snapshot = null;
+
     /**
-     * @var array<int, array{
-     *   id: int,
-     *   message: mixed,
-     *   level: int,
-     *   category: string,
-     *   time: float,
-     *   time_of_previous: float,
-     *   time_since_previous: float,
-     *   id_of_previous: int|null,
-     *   id_of_next: int|null,
-     *   trace: array<int, array<string, mixed>>
-     * }>|null Cached typed log rows consumed by the logs grid.
+     * Captures every error/warning/info/trace log message, excluding the categories owned by the Router panel.
      */
-    private array|null $models = null;
+    public function capture(): LogSnapshot
+    {
+        $except = [];
+
+        $routerPanel = $this->module?->panels['router'] ?? null;
+
+        if ($routerPanel instanceof RouterPanel) {
+            $except = Coerce::stringList($routerPanel->getCategories());
+        }
+
+        $messages = $this->getLogMessages(
+            Logger::LEVEL_ERROR | Logger::LEVEL_INFO | Logger::LEVEL_WARNING | Logger::LEVEL_TRACE,
+            [],
+            $except,
+            true,
+        );
+
+        return LogSnapshot::capture($messages);
+    }
 
     /**
      * Renders the detail view with the logs grid.
@@ -67,93 +73,41 @@ class LogPanel extends Panel
     }
 
     /**
-     * Captures every error/warning/info/trace log message, excluding the categories owned by the Router panel.
-     *
-     * @return array{messages: array<int, array<int|string, mixed>>} Saved payload consumed by {@see getSavedMessages()}
-     * on read-back.
+     * @return list<MemorySample> Memory readings recorded alongside each captured log message.
      */
-    public function save(): array
+    public function getMemorySamples(): array
     {
-        $except = [];
-
-        $routerPanel = $this->module?->panels['router'] ?? null;
-
-        if ($routerPanel instanceof RouterPanel) {
-            $except = self::normalizeStringList($routerPanel->getCategories());
-        }
-
-        $messages = $this->getLogMessages(
-            Logger::LEVEL_ERROR | Logger::LEVEL_INFO | Logger::LEVEL_WARNING | Logger::LEVEL_TRACE,
-            [],
-            $except,
-            true,
+        return array_map(
+            static fn(LogRow $row): MemorySample => new MemorySample($row->time, $row->memory),
+            $this->getMessages(),
         );
-
-        return ['messages' => $messages];
     }
 
     /**
-     * Builds and caches the typed log rows consumed by the logs grid.
-     *
-     * Decorates each row with `id`, the previous/next row ids, and the time delta since the previous row. Suitable for
-     * {@see \yii\data\ArrayDataProvider}.
-     *
-     * @param bool $refresh `true` to rebuild the cache from the saved messages.
-     *
-     * @return array<int, array{
-     *   id: int,
-     *   message: mixed,
-     *   level: int,
-     *   category: string,
-     *   time: float,
-     *   time_of_previous: float,
-     *   time_since_previous: float,
-     *   id_of_previous: int|null,
-     *   id_of_next: int|null,
-     *   trace: array<int, array<string, mixed>>
-     * }> Log rows indexed by `id`, with `time` and `time_of_previous` in milliseconds.
+     * @return list<LogRow> Captured log rows in capture order.
      */
-    protected function getModels(bool $refresh = false): array
+    public function getMessages(): array
     {
-        if ($this->models === null || $refresh) {
-            $models = [];
+        return $this->snapshot?->entries() ?? [];
+    }
 
-            $messages = $this->getSavedMessages();
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = LogSnapshot::fromArray($payload, "$.panels.{$this->id}");
+    }
 
-            $messageCount = count($messages);
-
-            $previousId = null;
-            $previousTime = null;
-
-            foreach ($messages as $index => $message) {
-                $id = $index + 1;
-
-                $timestamp = Coerce::floatOrNull($message[3] ?? null) ?? 0.0;
-
-                if (null === $previousTime) {
-                    $previousTime = $timestamp;
-                }
-
-                $models[$id] = [
-                    'id' => $id,
-                    'message' => $message[0] ?? null,
-                    'level' => Coerce::intOrNull($message[1] ?? null) ?? 0,
-                    'category' => Coerce::stringOrNull($message[2] ?? null) ?? '',
-                    'time' => $timestamp * 1000, // time in milliseconds
-                    'time_of_previous' => $previousTime * 1000, // time in milliseconds
-                    'time_since_previous' => $timestamp - $previousTime,
-                    'id_of_previous' => $previousId,
-                    'id_of_next' => $id < $messageCount ? $id + 1 : null,
-                    'trace' => Coerce::traceFrames($message[4] ?? []),
-                ];
-                $previousId = $id;
-                $previousTime = $timestamp;
-            }
-
-            $this->models = $models;
-        }
-
-        return $this->models;
+    /**
+     * Returns the typed log rows consumed by the logs grid.
+     *
+     * @return list<LogRow> Rows in capture order, suitable for {@see \yii\data\ArrayDataProvider}.
+     */
+    protected function getModels(): array
+    {
+        return $this->getMessages();
     }
 
     /**
@@ -165,14 +119,13 @@ class LogPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        $messages = $this->getSavedMessages();
+        $counts = LogCounts::fromRows($this->getMessages());
 
-        $messageCount = count($messages);
-        $errorCount = count(Target::filterMessages($messages, Logger::LEVEL_ERROR));
-        $warningCount = count(Target::filterMessages($messages, Logger::LEVEL_WARNING));
+        $errorCount = $counts->errors;
+        $warningCount = $counts->warnings;
 
         $items = [
-            ['value' => $messageCount],
+            ['value' => $counts->total],
         ];
 
         if ($errorCount > 0) {
@@ -196,53 +149,4 @@ class LogPanel extends Panel
         return $items;
     }
 
-    /**
-     * Returns the saved log messages, dropping any non-array entries.
-     *
-     * @return array<int, array<int|string, mixed>> Saved messages in capture order.
-     */
-    private function getSavedMessages(): array
-    {
-        $data = is_array($this->data) ? $this->data : [];
-
-        $messages = $data['messages'] ?? [];
-
-        if (!is_array($messages)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($messages as $message) {
-            if (is_array($message)) {
-                $normalized[] = $message;
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Narrows a mixed payload into a list of strings, dropping non-string entries.
-     *
-     * @param mixed $values Raw category list.
-     *
-     * @return array<int, string> String entries in original order, possibly empty.
-     */
-    private static function normalizeStringList(mixed $values): array
-    {
-        if (!is_array($values)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($values as $value) {
-            if (is_string($value)) {
-                $normalized[] = $value;
-            }
-        }
-
-        return $normalized;
-    }
 }

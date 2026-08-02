@@ -22,18 +22,13 @@ final class MailMessageTest extends TestCase
     {
         $count = MailMessage::failedCount(
             [
-                ['isSuccessful' => true],
-                ['isSuccessful' => false],
-                ['no-flag' => 'missing counts as failed'],
-                'not-an-array',
+                MailMessage::fromCapture(['isSuccessful' => true]),
+                MailMessage::fromCapture(['isSuccessful' => false]),
+                MailMessage::fromCapture(['no-flag' => 'missing counts as failed']),
             ],
         );
 
-        self::assertSame(
-            3,
-            $count,
-            'Only strictly-`true` flags must count as sent.',
-        );
+        self::assertSame(2, $count, 'Only strictly-`true` flags must count as sent.');
     }
 
     public function testFailedCountReturnsZeroForEmptyList(): void
@@ -45,9 +40,9 @@ final class MailMessageTest extends TestCase
         );
     }
 
-    public function testFromCoercesScalarHeaderFieldsToStrings(): void
+    public function testFromCaptureCoercesScalarHeaderFieldsToStrings(): void
     {
-        $message = MailMessage::fromMixed(
+        $message = MailMessage::fromCapture(
             ['from' => 42, 'subject' => true, 'charset' => 1.5],
         );
 
@@ -68,7 +63,7 @@ final class MailMessageTest extends TestCase
         );
     }
 
-    public function testFromCoercesStringableHeaderFieldsToStrings(): void
+    public function testFromCaptureCoercesStringableHeaderFieldsToStrings(): void
     {
         $stringable = new class implements Stringable {
             public function __toString(): string
@@ -77,7 +72,7 @@ final class MailMessageTest extends TestCase
             }
         };
 
-        $message = MailMessage::fromMixed(
+        $message = MailMessage::fromCapture(
             ['subject' => $stringable],
         );
 
@@ -88,38 +83,38 @@ final class MailMessageTest extends TestCase
         );
     }
 
-    public function testFromCollapsesNonStringFileToEmpty(): void
+    public function testFromCaptureCollapsesNonStringFileToEmpty(): void
     {
         self::assertSame(
             '',
-            MailMessage::fromMixed(['file' => 42])->file,
+            MailMessage::fromCapture(['file' => 42])->file,
             "Non-string `file` must collapse to ''.",
         );
     }
 
-    public function testFromCollapsesUnparseableTimeToNull(): void
+    public function testFromCaptureCollapsesUnparseableTimeToNull(): void
     {
         self::assertNull(
-            MailMessage::fromMixed(['time' => 'not a date'])->time,
+            MailMessage::fromCapture(['time' => 'not a date'])->time,
             "Garbage string must collapse to 'null'.",
         );
         self::assertNull(
-            MailMessage::fromMixed(['time' => ''])->time,
+            MailMessage::fromCapture(['time' => ''])->time,
             "Empty string must collapse to 'null'.",
         );
         self::assertNull(
-            MailMessage::fromMixed(['time' => null])->time,
+            MailMessage::fromCapture(['time' => null])->time,
             "'null' must collapse to 'null'.",
         );
         self::assertNull(
-            MailMessage::fromMixed(['time' => ['nested']])->time,
+            MailMessage::fromCapture(['time' => ['nested']])->time,
             "Array must collapse to 'null'.",
         );
     }
 
-    public function testFromDropsEmptySegmentsBetweenCommas(): void
+    public function testFromCaptureDropsEmptySegmentsBetweenCommas(): void
     {
-        $message = MailMessage::fromMixed(
+        $message = MailMessage::fromCapture(
             ['to' => 'a@example.com,, ,b@example.com,'],
         );
 
@@ -130,9 +125,9 @@ final class MailMessageTest extends TestCase
         );
     }
 
-    public function testFromFallsBackToEmptyWhenStringFieldsAreNonScalar(): void
+    public function testFromCaptureFallsBackToEmptyWhenStringFieldsAreNonScalar(): void
     {
-        $message = MailMessage::fromMixed(
+        $message = MailMessage::fromCapture(
             [
                 'from' => ['nested'],
                 'subject' => null,
@@ -143,44 +138,44 @@ final class MailMessageTest extends TestCase
         self::assertSame('', $message->subject, 'Null `subject` must collapse to `\'\'`.');
     }
 
-    public function testFromKeepsIntTimeAsIs(): void
+    public function testFromCaptureKeepsIntTimeAsIs(): void
     {
         self::assertSame(
             1_700_000_000,
-            MailMessage::fromMixed(['time' => 1_700_000_000])->time,
+            MailMessage::fromCapture(['time' => 1_700_000_000])->time,
             'Int time must round-trip unchanged.',
         );
     }
 
-    public function testFromMapsTruthyIsSuccessfulOnlyWhenStrictlyTrue(): void
+    public function testFromCaptureMapsTruthyIsSuccessfulOnlyWhenStrictlyTrue(): void
     {
         self::assertTrue(
-            MailMessage::fromMixed(['isSuccessful' => true])->isSuccessful,
+            MailMessage::fromCapture(['isSuccessful' => true])->isSuccessful,
             "'true' must round-trip.",
         );
         self::assertFalse(
-            MailMessage::fromMixed(['isSuccessful' => 1])->isSuccessful,
+            MailMessage::fromCapture(['isSuccessful' => 1])->isSuccessful,
             "'1' must not be accepted (strict comparison)."
         );
         self::assertFalse(
-            MailMessage::fromMixed(['isSuccessful' => 'true'])->isSuccessful,
+            MailMessage::fromCapture(['isSuccessful' => 'true'])->isSuccessful,
             "'true' must not be accepted."
         );
         self::assertFalse(
-            MailMessage::fromMixed(['isSuccessful' => false])->isSuccessful,
+            MailMessage::fromCapture(['isSuccessful' => false])->isSuccessful,
             "'false' must yield 'false'."
         );
         self::assertFalse(
-            MailMessage::fromMixed([])->isSuccessful,
+            MailMessage::fromCapture([])->isSuccessful,
             "Missing flag must default to 'false'."
         );
     }
 
-    public function testFromParsesDateTimeInterfaceAsUnixTimestamp(): void
+    public function testFromCaptureParsesDateTimeInterfaceAsUnixTimestamp(): void
     {
         $datetime = new DateTimeImmutable('2024-06-15T12:34:56+00:00');
 
-        $message = MailMessage::fromMixed(
+        $message = MailMessage::fromCapture(
             ['time' => $datetime],
         );
 
@@ -191,9 +186,9 @@ final class MailMessageTest extends TestCase
         );
     }
 
-    public function testFromParsesStringTimeViaStrtotime(): void
+    public function testFromCaptureParsesStringTimeViaStrtotime(): void
     {
-        $message = MailMessage::fromMixed(
+        $message = MailMessage::fromCapture(
             ['time' => '2024-06-15T12:34:56+00:00'],
         );
 
@@ -204,11 +199,9 @@ final class MailMessageTest extends TestCase
         );
     }
 
-    public function testFromReturnsAllEmptyDefaultsWhenInputIsNotArray(): void
+    public function testFromCaptureReturnsAllEmptyDefaultsForAnEmptyPayload(): void
     {
-        $message = MailMessage::fromMixed(
-            'not an array',
-        );
+        $message = MailMessage::fromCapture([]);
 
         self::assertSame(
             '',
@@ -270,9 +263,9 @@ final class MailMessageTest extends TestCase
         );
     }
 
-    public function testFromRoundTripsTypedFields(): void
+    public function testFromCaptureRoundTripsTypedFields(): void
     {
-        $message = MailMessage::fromMixed(
+        $message = MailMessage::fromCapture(
             [
                 'from' => 'sender@example.com',
                 'subject' => 'Hello',
@@ -320,9 +313,9 @@ final class MailMessageTest extends TestCase
         );
     }
 
-    public function testFromSplitsCommaSeparatedRecipients(): void
+    public function testFromCaptureSplitsCommaSeparatedRecipients(): void
     {
-        $message = MailMessage::fromMixed(
+        $message = MailMessage::fromCapture(
             [
                 'to' => 'a@example.com, b@example.com,c@example.com',
                 'cc' => 'cc@example.com',

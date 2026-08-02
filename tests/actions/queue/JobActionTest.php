@@ -9,8 +9,10 @@ use Yii;
 use yii\base\Controller as BaseController;
 use yii\debug\actions\queue\JobAction;
 use yii\debug\controllers\DefaultController;
-use yii\debug\{LogTarget, Module};
+use yii\debug\Module;
+use yii\debug\panels\queue\QueueSnapshot;
 use yii\debug\panels\QueuePanel;
+use yii\debug\storage\PanelSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\web\{AssetManager, HttpException};
 
@@ -22,7 +24,7 @@ use yii\web\{AssetManager, HttpException};
 #[Group('queue')]
 final class JobActionTest extends TestCase
 {
-    public function testRunCollapsesRecordsToEmptyWhenPanelDataLacksRecordsKey(): void
+    public function testRunRejectsMissingQueueRecord(): void
     {
         $module = $this->bootDebugModule();
 
@@ -34,8 +36,11 @@ final class JobActionTest extends TestCase
             'Queue panel must be wired in the bootstrap.',
         );
 
-        // Snapshot payload without the expected 'records' key — exercises the `: []` fallback branch.
-        $this->writeSnapshot($module, 'tag-malformed-queue', ['queue' => ['something-else' => 'value']]);
+        $this->writeSnapshot(
+            $module,
+            'tag-empty-queue',
+            ['queue' => QueueSnapshot::capture([])],
+        );
 
         $controller = new DefaultController('default', $module);
         $action = new JobAction('queue-job', $controller, ['panel' => $queuePanel]);
@@ -45,7 +50,7 @@ final class JobActionTest extends TestCase
             'Queue job record not found.',
         );
 
-        $action->run('0', 'tag-malformed-queue');
+        $action->run('0', 'tag-empty-queue');
     }
 
     public function testRunRendersAjaxPartialWhenRequestIsAjax(): void
@@ -74,7 +79,11 @@ final class JobActionTest extends TestCase
             ],
         ];
 
-        $this->writeSnapshot($module, 'tag-queue-ajax', ['queue' => ['records' => $records]]);
+        $this->writeSnapshot(
+            $module,
+            'tag-queue-ajax',
+            ['queue' => QueueSnapshot::capture($records)],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -125,7 +134,11 @@ final class JobActionTest extends TestCase
             ],
         ];
 
-        $this->writeSnapshot($module, 'tag-queue', ['queue' => ['records' => $records]]);
+        $this->writeSnapshot(
+            $module,
+            'tag-queue',
+            ['queue' => QueueSnapshot::capture($records)],
+        );
 
         $controller = new DefaultController('default', $module);
 
@@ -156,7 +169,11 @@ final class JobActionTest extends TestCase
             'Queue panel must be wired in the bootstrap.',
         );
 
-        $this->writeSnapshot($module, 'tag-empty-queue', ['queue' => ['records' => []]]);
+        $this->writeSnapshot(
+            $module,
+            'tag-empty-queue',
+            ['queue' => QueueSnapshot::capture([])],
+        );
 
         $controller = new DefaultController('default', $module);
         $action = new JobAction('queue-job', $controller, ['panel' => $queuePanel]);
@@ -227,40 +244,10 @@ final class JobActionTest extends TestCase
     }
 
     /**
-     * @param array<string, array<string, mixed>> $panelData Per-panel data shapes, keyed by panel id.
+     * @param array<string, PanelSnapshot> $panels
      */
-    private function writeSnapshot(Module $module, string $tag, array $panelData): void
+    private function writeSnapshot(Module $module, string $tag, array $panels): void
     {
-        $logTarget = $module->logTarget;
-
-        self::assertInstanceOf(
-            LogTarget::class,
-            $logTarget,
-            'logTarget must be wired by bootstrap.',
-        );
-
-        $logTarget->tag = $tag;
-
-        $dataPath = Yii::getAlias($module->dataPath);
-
-        @mkdir($dataPath, 0o777, true);
-
-        $summary = [
-            'tag' => $tag,
-            'url' => 'dummy',
-            'method' => 'GET',
-            'time' => 1_700_000_000.0,
-            'ip' => '127.0.0.1',
-            'statusCode' => 200,
-        ];
-
-        file_put_contents(
-            "{$dataPath}/{$tag}.data",
-            serialize(['version' => 2, 'panels' => $panelData, 'summary' => $summary, 'exceptions' => []]),
-        );
-        file_put_contents(
-            "{$dataPath}/index.data",
-            serialize(['version' => 2, 'entries' => [$tag => $summary]]),
-        );
+        $this->writeDebugSnapshot($module, $tag, $panels);
     }
 }

@@ -20,9 +20,9 @@ use yii\grid\GridView;
  * @var EventPanel $panel Panel providing the detail content.
  * @var EventSearch $searchModel Search model for filtering the event grid.
  */
-$hasEvents = is_array($panel->data) && $panel->data !== [];
+$hasEvents = $panel->hasEvents();
 
-$models = $dataProvider->allModels;
+$models = $panel->getEvents();
 
 $staticCount = EventRow::staticCount($models);
 
@@ -88,9 +88,7 @@ if ($hasEvents) {
         'columns' => [
             [
                 'attribute' => 'time',
-                'value' => static fn(mixed $data): string => EventCellRenderer::renderTimeCell(
-                    EventRow::fromMixed($data),
-                ),
+                'value' => static fn(EventRow $data): string => EventCellRenderer::renderTimeCell($data),
                 'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
                 'headerOptions' => ['class' => 'sort-numerical'],
                 'options' => ['width' => '10%'],
@@ -101,27 +99,21 @@ if ($hasEvents) {
             ],
             [
                 'attribute' => 'class',
-                'value' => static fn(mixed $data): string => EventCellRenderer::renderClassCell(
-                    EventRow::fromMixed($data),
-                ),
+                'value' => static fn(EventRow $data): string => EventCellRenderer::renderClassCell($data),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-cell-mono'],
             ],
             [
                 'header' => 'Sender',
                 'attribute' => 'senderClass',
-                'value' => static fn(mixed $data): string => EventCellRenderer::renderSenderCell(
-                    EventRow::fromMixed($data),
-                ),
+                'value' => static fn(EventRow $data): string => EventCellRenderer::renderSenderCell($data),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-cell-mono'],
             ],
             [
                 'header' => 'Static',
                 'attribute' => 'isStatic',
-                'value' => static fn(mixed $data): string => EventCellRenderer::renderStaticCell(
-                    EventRow::fromMixed($data),
-                ),
+                'value' => static fn(EventRow $data): string => EventCellRenderer::renderStaticCell($data),
                 'format' => 'raw',
                 'filter' => ['1' => 'Yes', '0' => 'No'],
                 'contentOptions' => ['class' => 'yii-debug-cell-pill'],

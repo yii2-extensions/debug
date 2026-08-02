@@ -11,80 +11,25 @@ use Throwable;
 use Yii;
 use yii\base\{Component, Event};
 use yii\debug\panels\queue\JobRecord;
+use yii\debug\panels\queue\QueueSnapshot;
 use yii\debug\panels\QueuePanel;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see QueuePanel} covering the queue lifecycle capture, the saved-payload narrowing, the toolbar
+ * Unit tests for {@see QueuePanel} covering the queue lifecycle capture, snapshot hydration, the toolbar
  * sitems, and the helpers that resolve component ids and queue base classes.
  */
 #[Group('panel')]
 #[Group('queue')]
 final class QueuePanelTest extends TestCase
 {
-    public function testArrayRecordsDropsNonArrayEntriesAndNonStringKeys(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            [
-                'records' => [
-                    [
-                        'eventType' => 'push',
-                        0 => 'dropped-int-key',
-                    ],
-                    'invalid-entry',
-                    ['eventType' => 'exec'],
-                ],
-            ],
-        );
-
-        $records = $this->invoke(
-            $panel,
-            'arrayRecords',
-        );
-
-        self::assertIsArray(
-            $records,
-            'Records must be a list.',
-        );
-        self::assertCount(
-            2,
-            $records,
-            'Non-array entries must be dropped.',
-        );
-
-        $first = $records[0] ?? self::fail('Expected one record.');
-
-        self::assertIsArray(
-            $first,
-            'Record must be an array.',
-        );
-        self::assertArrayNotHasKey(
-            0,
-            $first,
-            'Int keys must be filtered out.',
-        );
-    }
-
     public function testArrayRecordsReturnsEmptyWhenDataIsNotArray(): void
     {
         $panel = $this->makePanel(QueuePanel::class);
 
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            'corrupt',
-        );
-
         self::assertSame(
             [],
-            $this->invoke(
-                $panel,
-                'arrayRecords',
-            ),
+            $panel->getRecords(),
             "Non-array data must collapse to '[]'.",
         );
     }
@@ -93,18 +38,9 @@ final class QueuePanelTest extends TestCase
     {
         $panel = $this->makePanel(QueuePanel::class);
 
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            ['other' => 'value'],
-        );
-
         self::assertSame(
             [],
-            $this->invoke(
-                $panel,
-                'arrayRecords',
-            ),
+            $panel->getRecords(),
             "Missing 'records' key must collapse to '[]'.",
         );
     }
@@ -251,7 +187,7 @@ final class QueuePanelTest extends TestCase
     {
         $panel = $this->makePanel(QueuePanel::class);
 
-        $panel->data = ['records' => []];
+        $this->hydratePanel($panel, QueueSnapshot::capture([]));
 
         $html = $panel->getDetail();
 
@@ -271,61 +207,59 @@ final class QueuePanelTest extends TestCase
     {
         $panel = $this->makePanel(QueuePanel::class);
 
-        $panel->data = [
-            'records' => [
-                [
-                    'eventType' => JobRecord::TYPE_PUSH,
-                    'componentId' => 'queue',
-                    'driverName' => 'Database',
-                    'driverClass' => 'yii\\queue\\db\\Queue',
-                    'isAsync' => true,
-                    'jobClass' => 'App\\Job',
-                    'payloadFields' => [],
-                    'time' => 0.0,
-                    'jobId' => 'job-1',
-                    'ttr' => null,
-                    'delay' => null,
-                    'priority' => null,
-                    'attempt' => null,
-                    'duration' => null,
-                    'error' => '',
-                ],
-                [
-                    'eventType' => JobRecord::TYPE_EXEC,
-                    'componentId' => 'queue',
-                    'driverName' => 'Database',
-                    'driverClass' => 'yii\\queue\\db\\Queue',
-                    'isAsync' => true,
-                    'jobClass' => 'App\\Job',
-                    'payloadFields' => [],
-                    'time' => 0.0,
-                    'jobId' => 'job-1',
-                    'ttr' => null,
-                    'delay' => null,
-                    'priority' => null,
-                    'attempt' => 1,
-                    'duration' => 0.05,
-                    'error' => '',
-                ],
-                [
-                    'eventType' => JobRecord::TYPE_ERROR,
-                    'componentId' => 'queue',
-                    'driverName' => 'Database',
-                    'driverClass' => 'yii\\queue\\db\\Queue',
-                    'isAsync' => true,
-                    'jobClass' => 'App\\Job',
-                    'payloadFields' => [],
-                    'time' => 0.0,
-                    'jobId' => 'job-1',
-                    'ttr' => null,
-                    'delay' => null,
-                    'priority' => null,
-                    'attempt' => 1,
-                    'duration' => 0.05,
-                    'error' => 'job failed',
-                ],
+        $this->hydratePanel($panel, QueueSnapshot::capture([
+            [
+                'eventType' => JobRecord::TYPE_PUSH,
+                'componentId' => 'queue',
+                'driverName' => 'Database',
+                'driverClass' => 'yii\\queue\\db\\Queue',
+                'isAsync' => true,
+                'jobClass' => 'App\\Job',
+                'payloadFields' => [],
+                'time' => 0.0,
+                'jobId' => 'job-1',
+                'ttr' => null,
+                'delay' => null,
+                'priority' => null,
+                'attempt' => null,
+                'duration' => null,
+                'error' => '',
             ],
-        ];
+            [
+                'eventType' => JobRecord::TYPE_EXEC,
+                'componentId' => 'queue',
+                'driverName' => 'Database',
+                'driverClass' => 'yii\\queue\\db\\Queue',
+                'isAsync' => true,
+                'jobClass' => 'App\\Job',
+                'payloadFields' => [],
+                'time' => 0.0,
+                'jobId' => 'job-1',
+                'ttr' => null,
+                'delay' => null,
+                'priority' => null,
+                'attempt' => 1,
+                'duration' => 0.05,
+                'error' => '',
+            ],
+            [
+                'eventType' => JobRecord::TYPE_ERROR,
+                'componentId' => 'queue',
+                'driverName' => 'Database',
+                'driverClass' => 'yii\\queue\\db\\Queue',
+                'isAsync' => true,
+                'jobClass' => 'App\\Job',
+                'payloadFields' => [],
+                'time' => 0.0,
+                'jobId' => 'job-1',
+                'ttr' => null,
+                'delay' => null,
+                'priority' => null,
+                'attempt' => 1,
+                'duration' => 0.05,
+                'error' => 'job failed',
+            ],
+        ]));
 
         $html = $panel->getDetail();
 
@@ -345,27 +279,25 @@ final class QueuePanelTest extends TestCase
     {
         $panel = $this->makePanel(QueuePanel::class);
 
-        $panel->data = [
-            'records' => [
-                [
-                    'eventType' => JobRecord::TYPE_PUSH,
-                    'componentId' => 'queue',
-                    'driverName' => 'Sync',
-                    'driverClass' => 'yii\\queue\\sync\\Queue',
-                    'isAsync' => false,
-                    'jobClass' => 'App\\Job',
-                    'payloadFields' => [],
-                    'time' => 0.0,
-                    'jobId' => 'job-1',
-                    'ttr' => null,
-                    'delay' => null,
-                    'priority' => null,
-                    'attempt' => null,
-                    'duration' => null,
-                    'error' => '',
-                ],
+        $this->hydratePanel($panel, QueueSnapshot::capture([
+            [
+                'eventType' => JobRecord::TYPE_PUSH,
+                'componentId' => 'queue',
+                'driverName' => 'Sync',
+                'driverClass' => 'yii\\queue\\sync\\Queue',
+                'isAsync' => false,
+                'jobClass' => 'App\\Job',
+                'payloadFields' => [],
+                'time' => 0.0,
+                'jobId' => 'job-1',
+                'ttr' => null,
+                'delay' => null,
+                'priority' => null,
+                'attempt' => null,
+                'duration' => null,
+                'error' => '',
             ],
-        ];
+        ]));
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -414,10 +346,7 @@ final class QueuePanelTest extends TestCase
             'getToolbarItems',
         );
 
-        self::assertIsArray(
-            $items,
-            'Items must be a list.',
-        );
+        self::assertIsArray($items, 'Toolbar items must be a list.');
         self::assertCount(
             2,
             $items,
@@ -427,14 +356,9 @@ final class QueuePanelTest extends TestCase
         $count = $items[0] ?? self::fail('Expected count chip.');
         $errors = $items[1] ?? self::fail('Expected errors chip.');
 
-        self::assertIsArray(
-            $count,
-            'Count chip must be an array.',
-        );
-        self::assertIsArray(
-            $errors,
-            'Errors chip must be an array.',
-        );
+        self::assertIsArray($count, 'Count chip must be an array.');
+        self::assertIsArray($errors, 'Errors chip must be an array.');
+
         self::assertSame(
             3,
             $count['value'] ?? null,
@@ -466,10 +390,7 @@ final class QueuePanelTest extends TestCase
             'getToolbarItems',
         );
 
-        self::assertIsArray(
-            $items,
-            'Items must be a list when a queue component is registered.',
-        );
+        self::assertIsArray($items, 'Toolbar items must be a list.');
         self::assertCount(
             1,
             $items,
@@ -478,10 +399,8 @@ final class QueuePanelTest extends TestCase
 
         $first = $items[0] ?? self::fail('Expected count chip.');
 
-        self::assertIsArray(
-            $first,
-            'Count chip must be an array.',
-        );
+        self::assertIsArray($first, 'Count chip must be an array.');
+
         self::assertSame(
             0,
             $first['value'] ?? null,
@@ -520,18 +439,18 @@ final class QueuePanelTest extends TestCase
             $this->makeQueueEvent(job: $job, error: new RuntimeException('job failed')),
         );
 
-        $saved = $panel->save();
+        $records = $panel->capture()->entries();
 
-        $errorRecord = $saved['records'][0] ?? self::fail('Expected the error record.');
+        $errorRecord = $records[0] ?? self::fail('Expected the error record.');
 
         self::assertSame(
             JobRecord::TYPE_ERROR,
-            $errorRecord['eventType'] ?? null,
+            $errorRecord->eventType,
             "Captured event must be 'error'."
         );
         self::assertSame(
             'job failed',
-            $errorRecord['error'] ?? null,
+            $errorRecord->error,
             'Error message must round-trip.'
         );
 
@@ -554,24 +473,24 @@ final class QueuePanelTest extends TestCase
             $this->makeQueueEvent(jobId: 'job-7'),
         );
 
-        $saved = $panel->save();
+        $records = $panel->capture()->entries();
 
         self::assertCount(
             1,
-            $saved['records'],
+            $records,
             'Wildcard listener must capture push events.',
         );
 
-        $record = $saved['records'][0];
+        $record = $records[0];
 
         self::assertSame(
             JobRecord::TYPE_PUSH,
-            $record['eventType'] ?? null,
+            $record->eventType,
             "Captured event type must be 'push'."
         );
         self::assertSame(
             'job-7',
-            $record['jobId'] ?? null,
+            $record->jobId,
             "'jobId' must round-trip from the event.",
         );
 
@@ -595,17 +514,17 @@ final class QueuePanelTest extends TestCase
             $this->makeQueueEvent(job: $job),
         );
 
-        $saved = $panel->save();
+        $records = $panel->capture()->entries();
 
-        $execRecord = $saved['records'][0] ?? self::fail('Expected one record.');
+        $execRecord = $records[0] ?? self::fail('Expected one record.');
 
         self::assertSame(
             JobRecord::TYPE_EXEC,
-            $execRecord['eventType'] ?? null,
+            $execRecord->eventType,
             "Captured event must be 'exec'."
         );
         self::assertNotNull(
-            $execRecord['duration'] ?? null,
+            $execRecord->duration,
             'Exec duration must be computed from begin/end pair.'
         );
 
@@ -633,27 +552,19 @@ final class QueuePanelTest extends TestCase
     {
         $panel = $this->makePanel(QueuePanel::class);
 
-        $panel->data = [
-            'records' => [['eventType' => 'saved']],
-        ];
+        $this->hydratePanel($panel, QueueSnapshot::capture([['eventType' => 'saved', 'jobClass' => 'saved-job']]));
 
         $records = $this->invoke(
             $panel,
             'resolveRecords',
         );
 
-        self::assertIsArray(
-            $records,
-            'Records must be a list.',
-        );
+        self::assertIsArray($records, 'Resolved records must be a list.');
 
         $first = $records[0] ?? self::fail('Expected one record.');
 
-        self::assertSame(
-            ['eventType' => 'saved'],
-            $first,
-            'Saved payload must be used when live is empty.',
-        );
+        self::assertInstanceOf(JobRecord::class, $first, 'Resolved records must be typed.');
+        self::assertSame('saved-job', $first->jobClass, 'Saved payload must be used when live is empty.');
     }
 
     public function testResolveRecordsPrefersLiveOverSavedPayload(): void
@@ -663,27 +574,20 @@ final class QueuePanelTest extends TestCase
         $this->setInaccessibleProperty(
             $panel,
             'records',
-            [['eventType' => 'live']],
+            [['eventType' => 'live', 'jobClass' => 'live-job']],
         );
 
-        $panel->data = [
-            'records' => [['eventType' => 'saved']],
-        ];
+        $this->hydratePanel($panel, QueueSnapshot::capture([['eventType' => 'saved', 'jobClass' => 'saved-job']]));
 
         $records = $this->invoke($panel, 'resolveRecords');
 
-        self::assertIsArray(
-            $records,
-            'Records must be a list.',
-        );
+        self::assertIsArray($records, 'Resolved records must be a list.');
 
         $first = $records[0] ?? self::fail('Expected one record.');
 
-        self::assertSame(
-            ['eventType' => 'live'],
-            $first,
-            'Live records must shadow saved payload.',
-        );
+        self::assertInstanceOf(JobRecord::class, $first, 'Resolved records must be typed.');
+        self::assertSame('push', $first->eventType, 'Unknown live event types collapse to `push`.');
+        self::assertSame('live-job', $first->jobClass, 'Live records must shadow the saved payload.');
     }
 
     public function testResolveRecordsReturnsEmptyWhenLiveAndSavedAreEmpty(): void

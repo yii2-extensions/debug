@@ -15,24 +15,26 @@ use yii\debug\db\DebugPdoStatement;
 use yii\debug\helpers\{Coerce, Vocabulary};
 use yii\debug\models\search\DbSearch;
 use yii\debug\Panel;
+use yii\debug\panels\db\{DbSnapshot, QueryRow};
 use yii\log\Logger;
 
+use function array_filter;
+use function array_values;
 use function count;
+use function hash;
 use function in_array;
 use function is_array;
 use function is_int;
 use function is_string;
+use function json_encode;
+use function mb_strtoupper;
+use function preg_match;
 
 /**
  * Captures every database query emitted during the request and renders them in the Database panel.
  *
  * Hooks the panel-bound DB connection so each prepared statement records its row count, calculates per-query timings
  * from the profile log, and exposes the EXPLAIN action that powers the queries grid's inline plan toggle.
- *
- * @extends Panel<array{
- *   messages?: mixed,
- *   rowCounts?: mixed
- * }>
  */
 class DbPanel extends Panel
 {
@@ -79,23 +81,10 @@ class DbPanel extends Panel
      */
     public array $ignoredPathsInBacktrace = [];
     /**
-     * @var array<int, array{
-     *   type: string,
-     *   query: string,
-     *   duration: float,
-     *   trace: array<int, array<string, mixed>>,
-     *   traceHash: string,
-     *   timestamp: float,
-     *   seq: int,
-     *   duplicate: int,
-     *   rows: int|null
-     * }>|null DB queries info extracted to array as models, to use with data provider.
-     */
-    private array|null $models = null;
-    /**
      * @var array<int, array<int|string, mixed>>|null Current database profile logs
      */
     private array|null $profileLogs = null;
+    private DbSnapshot|null $snapshot = null;
     /**
      * @var array<int, array{
      *   info: string,
@@ -134,7 +123,7 @@ class DbPanel extends Panel
         if ($this->timings === null) {
             $this->timings = [];
 
-            $rawTimings = Yii::getLogger()->calculateTimings($this->getMessagesForTimings());
+            $rawTimings = Yii::getLogger()->calculateTimings($this->getProfileLogs());
 
             $ignoredPathsInBacktrace = array_map(
                 Yii::getAlias(...),
@@ -169,7 +158,7 @@ class DbPanel extends Panel
                 }
 
                 $encodedTrace = json_encode($timing['trace']);
-                $timing['traceHash'] = hash($hashAlgo, is_string($encodedTrace) ? $encodedTrace : '');
+                $timing['traceHash'] = hash($hashAlgo, Coerce::string($encodedTrace));
 
                 $this->timings[] = $timing;
             }
@@ -197,6 +186,14 @@ class DbPanel extends Panel
     }
 
     /**
+     * Resolves the logger timings into typed query rows and snapshots them.
+     */
+    public function capture(): DbSnapshot
+    {
+        return new DbSnapshot($this->resolveRows());
+    }
+
+    /**
      * Counts how many times the same backtrace originated a DB query.
      *
      * @return array<string, int> Call counts indexed by the backtrace hash of the caller.
@@ -205,9 +202,8 @@ class DbPanel extends Panel
     {
         $counts = [];
 
-        foreach ($this->calculateTimings() as $timing) {
-            $traceHash = $timing['traceHash'];
-            $counts[$traceHash] = ($counts[$traceHash] ?? 0) + 1;
+        foreach ($this->resolveRows() as $row) {
+            $counts[$row->traceHash] = ($counts[$row->traceHash] ?? 0) + 1;
         }
 
         return $counts;
@@ -275,6 +271,7 @@ class DbPanel extends Panel
         }
 
         $models = $this->getModels();
+
         $queryDataProvider = $searchModel->search($models);
         $sort = $queryDataProvider->getSort();
 
@@ -338,6 +335,16 @@ class DbPanel extends Panel
     }
 
     /**
+     * Returns the executed statements as typed rows: the hydrated snapshot when present, otherwise resolved live.
+     *
+     * @return list<QueryRow> Rows in capture order.
+     */
+    public function getRows(): array
+    {
+        return $this->resolveRows();
+    }
+
+    /**
      * Returns the distinct SQL statement types captured for the request, keyed and valued by the same uppercase token.
      *
      * @return array<string, string> `type => type` map suitable for a dropdown filter.
@@ -347,10 +354,21 @@ class DbPanel extends Panel
         $types = [];
 
         foreach ($this->getModels() as $model) {
-            $types[$model['type']] = $model['type'];
+            $types[$model->type] = $model->type;
         }
 
         return $types;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = DbSnapshot::fromArray($payload, "$.panels.{$this->id}");
+
+        $this->timings = null;
     }
 
     /**
@@ -407,16 +425,6 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns whether the given call count exceeds {@see $excessiveCallerThreshold}.
-     *
-     * @param int $numCalls Call count to test.
-     */
-    public function isNumberOfCallsExcessive(int $numCalls): bool
-    {
-        return ($this->excessiveCallerThreshold !== null) && ($numCalls > $this->excessiveCallerThreshold);
-    }
-
-    /**
      * Returns whether the given query count exceeds {@see $criticalQueryThreshold}.
      *
      * @param int $count Query count to test.
@@ -427,40 +435,16 @@ class DbPanel extends Panel
     }
 
     /**
-     * Snapshots the profile messages and the row counts captured by {@see DebugPdoStatement}.
-     *
-     * @return array{messages: array<int, array<int|string, mixed>>, rowCounts: array<int, int>} Captured payload
-     * consumed by {@see getMessagesForTimings()} and {@see getSavedRowCounts()} on read-back.
-     */
-    public function save(): array
-    {
-        return [
-            'messages' => $this->getProfileLogs(),
-            'rowCounts' => DebugPdoStatement::$rowCounts,
-        ];
-    }
-
-    /**
      * Returns the number of query rows whose `duplicate` count is greater than one.
      *
-     * @param array<int, array{
-     *   type: string,
-     *   query: string,
-     *   duration: float,
-     *   trace: array<int, array<string, mixed>>,
-     *   traceHash: string,
-     *   timestamp: float,
-     *   seq: int,
-     *   duplicate: int,
-     *   rows: int|null
-     * }> $modelData Query rows produced by {@see getModels()}.
+     * @param list<QueryRow> $modelData Query rows produced by {@see getModels()}.
      */
     public function sumDuplicateQueries(array $modelData): int
     {
         $numDuplicates = 0;
 
         foreach ($modelData as $data) {
-            if ($data['duplicate'] > 1) {
+            if ($data->duplicate > 1) {
                 $numDuplicates++;
             }
         }
@@ -480,53 +464,13 @@ class DbPanel extends Panel
     }
 
     /**
-     * Builds and caches the typed query rows consumed by the queries grid.
+     * Returns the typed query rows consumed by the queries grid.
      *
-     * Joins {@see calculateTimings()}, {@see countDuplicateQuery()}, and {@see getSavedRowCounts()} into a single list
-     * suitable for {@see \yii\data\ArrayDataProvider}.
-     *
-     * @return array<int, array{
-     *   type: string,
-     *   query: string,
-     *   duration: float,
-     *   trace: array<int, array<string, mixed>>,
-     *   traceHash: string,
-     *   timestamp: float,
-     *   seq: int,
-     *   duplicate: int,
-     *   rows: int|null
-     * }> Query rows in capture order, with durations and timestamps in milliseconds.
+     * @return list<QueryRow> Rows in capture order, suitable for {@see \yii\data\ArrayDataProvider}.
      */
     protected function getModels(): array
     {
-        if ($this->models === null) {
-            $this->models = [];
-
-            $timings = $this->calculateTimings();
-            $duplicates = $this->countDuplicateQuery($timings);
-            $rowCounts = $this->getSavedRowCounts();
-
-            $rowCountIndex = 0;
-
-            foreach ($timings as $seq => $dbTiming) {
-                $rows = $rowCounts[$rowCountIndex] ?? null;
-                $rowCountIndex++;
-
-                $this->models[] = [
-                    'type' => $this->getQueryType($dbTiming['info']),
-                    'query' => $dbTiming['info'],
-                    'duration' => ($dbTiming['duration'] * 1000), // in milliseconds
-                    'trace' => $dbTiming['trace'],
-                    'traceHash' => $dbTiming['traceHash'],
-                    'timestamp' => ($dbTiming['timestamp'] * 1000), // in milliseconds
-                    'seq' => $seq,
-                    'duplicate' => $duplicates[$dbTiming['info']] ?? 1,
-                    'rows' => is_int($rows) && $rows >= 0 ? $rows : null,
-                ];
-            }
-        }
-
-        return $this->models;
+        return $this->getRows();
     }
 
     /**
@@ -554,9 +498,9 @@ class DbPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        $timings = $this->calculateTimings();
+        $rows = $this->resolveRows();
 
-        $queryCount = count($timings);
+        $queryCount = count($rows);
 
         if ($queryCount === 0) {
             return [];
@@ -584,7 +528,7 @@ class DbPanel extends Panel
             ],
             [
                 'title' => 'Total query time',
-                'value' => number_format($this->getTotalQueryTime($timings) * 1000) . ' ms',
+                'value' => number_format($this->getTotalQueryTime($rows)) . ' ms',
             ],
         ];
     }
@@ -592,26 +536,16 @@ class DbPanel extends Panel
     /**
      * Returns the sum of every captured query's duration.
      *
-     * @param array<int, array{
-     *   info: string,
-     *   category: string,
-     *   timestamp: float,
-     *   trace: array<int, array<string, mixed>>,
-     *   level: int,
-     *   duration: float,
-     *   memory: int,
-     *   memoryDiff: int,
-     *   traceHash: string
-     * }> $timings Timings produced by {@see calculateTimings()}.
+     * @param list<QueryRow> $rows Captured query rows.
      *
-     * @return float Total query time, in seconds.
+     * @return float Total query time, in milliseconds.
      */
-    protected function getTotalQueryTime(array $timings): float
+    protected function getTotalQueryTime(array $rows): float
     {
         $queryTime = 0.0;
 
-        foreach ($timings as $timing) {
-            $queryTime += $timing['duration'];
+        foreach ($rows as $row) {
+            $queryTime += $row->duration;
         }
 
         return $queryTime;
@@ -634,72 +568,6 @@ class DbPanel extends Panel
             'mysql', 'sqlite', 'pgsql' => true,
             default => false,
         };
-    }
-
-    /**
-     * Returns the profile messages used to calculate timings: the saved snapshot when present, otherwise the live
-     * profile logs.
-     *
-     * @return array<int, array<int|string, mixed>> Profile messages in capture order.
-     */
-    private function getMessagesForTimings(): array
-    {
-        $data = is_array($this->data) ? $this->data : [];
-
-        $messages = $data['messages'] ?? null;
-
-        if (!is_array($messages)) {
-            return $this->getProfileLogs();
-        }
-
-        return self::normalizeMessages($messages);
-    }
-
-    /**
-     * Returns the row counts captured by {@see DebugPdoStatement}: the saved snapshot when present, otherwise the
-     * live static list.
-     *
-     * @return array<int, int> Row counts in execution order, narrowed to integers.
-     */
-    private function getSavedRowCounts(): array
-    {
-        $data = is_array($this->data) ? $this->data : [];
-
-        $rowCounts = $data['rowCounts'] ?? DebugPdoStatement::$rowCounts;
-
-        if (!is_array($rowCounts)) {
-            return DebugPdoStatement::$rowCounts;
-        }
-
-        $normalized = [];
-
-        foreach ($rowCounts as $rowCount) {
-            if (is_int($rowCount)) {
-                $normalized[] = $rowCount;
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Filters the raw profile message list to keep only array entries.
-     *
-     * @param array<int|string, mixed> $messages Raw saved profile messages.
-     *
-     * @return array<int, array<int|string, mixed>> Reindexed list of message arrays.
-     */
-    private static function normalizeMessages(array $messages): array
-    {
-        $normalized = [];
-
-        foreach ($messages as $message) {
-            if (is_array($message)) {
-                $normalized[] = $message;
-            }
-        }
-
-        return $normalized;
     }
 
     /**
@@ -745,6 +613,39 @@ class DbPanel extends Panel
             'memoryDiff' => Coerce::intOrNull($rawTiming['memoryDiff'] ?? null) ?? 0,
             'traceHash' => Coerce::stringOrNull($rawTiming['traceHash'] ?? null) ?? '',
         ];
+    }
+
+    /**
+     * Returns the typed query rows: the hydrated snapshot when present, otherwise resolved from the live logger.
+     *
+     * @return list<QueryRow> Rows in capture order.
+     */
+    private function resolveRows(): array
+    {
+        $snapshot = $this->snapshot;
+
+        if ($snapshot !== null) {
+            return $snapshot->entries();
+        }
+
+        $timings = $this->calculateTimings();
+        $duplicates = $this->countDuplicateQuery($timings);
+        $rowCounts = array_values(DebugPdoStatement::$rowCounts);
+        $rows = [];
+
+        foreach ($timings as $seq => $timing) {
+            $count = $rowCounts[$seq] ?? null;
+
+            $rows[] = QueryRow::fromTiming(
+                $timing,
+                $this->getQueryType($timing['info']),
+                $seq,
+                $duplicates[$timing['info']] ?? 1,
+                is_int($count) && $count >= 0 ? $count : null,
+            );
+        }
+
+        return $rows;
     }
 
     /**

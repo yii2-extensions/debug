@@ -10,6 +10,8 @@ use yii\base\{InvalidConfigException, Model};
 use yii\data\{ActiveDataProvider, ArrayDataProvider, DataProviderInterface};
 use yii\db\ActiveRecord;
 
+use function array_keys;
+
 /**
  * Backs the User Switch panel's search form, delegating attribute access to the application's identity model.
  *

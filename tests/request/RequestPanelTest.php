@@ -7,18 +7,209 @@ namespace yii\debug\tests\request;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\{Action, InlineAction};
+use yii\debug\panels\request\RequestSnapshot;
 use yii\debug\panels\RequestPanel;
+use yii\debug\storage\HydrationException;
 use yii\debug\tests\support\TestCase;
 use yii\web\{Controller, Session};
 
 /**
  * Unit tests for {@see RequestPanel} covering header capture, action narrowing, censor masking, response-header
- * aggregation, flash retrieval, the toolbar status chip, and the saved-payload narrowing.
+ * aggregation, flash retrieval, the toolbar status chip, and snapshot hydration.
  */
 #[Group('panel')]
 #[Group('request')]
 final class RequestPanelTest extends TestCase
 {
+    public function testCaptureBuildsActionFromInlineAction(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $controller = new Controller('site', Yii::$app);
+        $action = new InlineAction('index', $controller, 'actionIndex');
+
+        Yii::$app->requestedAction = $action;
+
+        $saved = $panel->capture()->data();
+
+        self::assertSame(
+            $controller::class . '::actionIndex()',
+            $saved['action'] ?? null,
+            "Inline action must format as 'ControllerFQCN::actionMethod()'.",
+        );
+        self::assertSame(
+            'site/index',
+            $saved['route'] ?? null,
+            'Route must echo the action unique id.',
+        );
+    }
+
+    public function testCaptureBuildsActionFromRegularAction(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $controller = new Controller('site', Yii::$app);
+
+        $action = new class ('run', $controller) extends Action {
+            public function run(): void {}
+        };
+
+        Yii::$app->requestedAction = $action;
+
+        $saved = $panel->capture()->data();
+
+        self::assertSame(
+            $action::class . '::run()',
+            $saved['action'] ?? null,
+            "Regular action must format as 'ActionFQCN::run()'.",
+        );
+    }
+
+    public function testCaptureCapturesRequestBodyWhenNonEmpty(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $request = Yii::$app->getRequest();
+
+        $request->setRawBody('{"k":"v"}');
+        $request->setBodyParams(['k' => 'v']);
+        $request->getHeaders()->set('Content-Type', 'application/json');
+
+        $saved = $panel->capture()->data();
+
+        self::assertIsArray(
+            $saved['requestBody'] ?? null,
+            'Request body must surface as an array when non-empty.',
+        );
+        self::assertSame(
+            '{"k":"v"}',
+            $saved['requestBody']['Raw'] ?? null,
+            'Raw slot must echo the raw body.',
+        );
+    }
+
+    public function testCaptureCensorsRequestHeadersListedInCensoredVariableNames(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $panel->censoredVariableNames = ['authorization'];
+
+        Yii::$app->getRequest()->getHeaders()->set('Authorization', 'Bearer secret');
+
+        $saved = $panel->capture()->data();
+
+        $requestHeaders = $saved['requestHeaders'] ?? null;
+
+        self::assertIsArray(
+            $requestHeaders,
+            "'requestHeaders' slot must be an array.",
+        );
+        self::assertSame(
+            '****',
+            $requestHeaders['authorization'] ?? null,
+            'Censored request header must be masked.',
+        );
+    }
+
+    public function testCaptureCollapsesSingleValueHeaderArrayToScalar(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        Yii::$app->getRequest()->getHeaders()->set('X-Single', 'only');
+
+        $saved = $panel->capture()->data();
+
+        $requestHeaders = $saved['requestHeaders'] ?? null;
+
+        self::assertIsArray(
+            $requestHeaders,
+            "'requestHeaders' slot must be an array.",
+        );
+        self::assertSame(
+            'only',
+            $requestHeaders['x-single'] ?? null,
+            'Single-value header must collapse to the scalar value.',
+        );
+    }
+
+    public function testCaptureKeepsMultiValueHeaderAsArray(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $request = Yii::$app->getRequest();
+
+        $request->getHeaders()->add('X-Multi', 'a')->add('X-Multi', 'b');
+
+        $saved = $panel->capture()->data();
+
+        $requestHeaders = $saved['requestHeaders'] ?? null;
+
+        self::assertIsArray(
+            $requestHeaders,
+            "'requestHeaders' slot must be an array.",
+        );
+        self::assertSame(
+            ['a', 'b'],
+            $requestHeaders['x-multi'] ?? null,
+            'Multi-value header must stay as a list.',
+        );
+    }
+
+    public function testCaptureLeavesActionAsNullWhenNoRequestedAction(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        Yii::$app->requestedAction = null;
+        Yii::$app->requestedRoute = 'site/default';
+
+        $saved = $panel->capture()->data();
+
+        self::assertArrayHasKey(
+            'action',
+            $saved,
+            "Action slot must be present even when 'null'.",
+        );
+        self::assertNull(
+            $saved['action'],
+            "Missing requested action must yield 'null'.",
+        );
+        self::assertSame(
+            'site/default',
+            $saved['route'] ?? null,
+            'Route must fall back to requestedRoute.',
+        );
+    }
+
+    public function testCaptureLeavesRequestBodyEmptyWhenRawBodyIsEmpty(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        Yii::$app->getRequest()->setRawBody('');
+
+        $saved = $panel->capture()->data();
+
+        self::assertSame(
+            [],
+            $saved['requestBody'] ?? null,
+            "Empty raw body must collapse to '[]'.",
+        );
+    }
+
+    public function testCaptureSurfacesConfiguredDisplayVars(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+
+        $panel->displayVars = ['_GET'];
+        $GLOBALS['_GET'] = ['q' => 'search-term'];
+
+        $saved = $panel->capture()->data();
+
+        self::assertSame(
+            ['q' => 'search-term'],
+            $saved['GET'] ?? null,
+            'Configured displayVar must surface under its trimmed key.',
+        );
+    }
     public function testCensorArrayLeavesUnmatchedKeysUntouched(): void
     {
         $panel = $this->makePanel(RequestPanel::class);
@@ -159,7 +350,7 @@ final class RequestPanelTest extends TestCase
     {
         $panel = $this->makePanel(RequestPanel::class);
 
-        $panel->data = [
+        $this->hydratePanel($panel, RequestSnapshot::capture([
             'route' => 'site/index',
             'statusCode' => 200,
             'general' => ['method' => 'GET'],
@@ -171,7 +362,7 @@ final class RequestPanelTest extends TestCase
             'FILES' => [],
             'SERVER' => [],
             'SESSION' => [],
-        ];
+        ]));
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -185,13 +376,13 @@ final class RequestPanelTest extends TestCase
 
         Yii::$app->controller = new Controller('plain', Yii::$app);
 
-        $panel->data = [
+        $this->hydratePanel($panel, RequestSnapshot::capture([
             'route' => 'site/index',
             'statusCode' => 200,
             'general' => ['method' => 'GET'],
             'requestHeaders' => [],
             'responseHeaders' => [],
-        ];
+        ]));
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -306,31 +497,9 @@ final class RequestPanelTest extends TestCase
         );
     }
 
-    public function testGetStatusCodeCoercesNumericStringStatusCode(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        $panel->data = ['statusCode' => '404'];
-
-        self::assertSame(
-            404,
-            $this->invoke(
-                $panel,
-                'getStatusCode',
-            ),
-            "Numeric-string status must be coerced to 'int'.",
-        );
-    }
-
     public function testGetStatusCodeFallsBackTo200ForNonArrayData(): void
     {
         $panel = $this->makePanel(RequestPanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            'corrupt',
-        );
 
         self::assertSame(
             200,
@@ -342,27 +511,11 @@ final class RequestPanelTest extends TestCase
         );
     }
 
-    public function testGetStatusCodeFallsBackTo200ForNonNumericStatusCode(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        $panel->data = ['statusCode' => 'not-a-number'];
-
-        self::assertSame(
-            200,
-            $this->invoke(
-                $panel,
-                'getStatusCode',
-            ),
-            "Non-numeric status must default to '200'.",
-        );
-    }
-
     public function testGetStatusCodeReturnsIntStatusCode(): void
     {
         $panel = $this->makePanel(RequestPanel::class);
 
-        $panel->data = ['statusCode' => 500];
+        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 500]));
 
         self::assertSame(
             500,
@@ -378,7 +531,7 @@ final class RequestPanelTest extends TestCase
     {
         $panel = $this->makePanel(RequestPanel::class);
 
-        $panel->data = ['statusCode' => 201];
+        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 201]));
 
         $items = $this->invoke(
             $panel,
@@ -419,7 +572,7 @@ final class RequestPanelTest extends TestCase
     {
         $panel = $this->makePanel(RequestPanel::class);
 
-        $panel->data = ['statusCode' => 302];
+        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 302]));
 
         $items = $this->invoke(
             $panel,
@@ -448,7 +601,7 @@ final class RequestPanelTest extends TestCase
     {
         $panel = $this->makePanel(RequestPanel::class);
 
-        $panel->data = ['statusCode' => 500];
+        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 500]));
 
         $items = $this->invoke(
             $panel,
@@ -482,7 +635,7 @@ final class RequestPanelTest extends TestCase
     {
         $panel = $this->makePanel(RequestPanel::class);
 
-        $panel->data = ['statusCode' => 299];
+        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 299]));
 
         $items = $this->invoke(
             $panel,
@@ -505,6 +658,28 @@ final class RequestPanelTest extends TestCase
             $first['title'] ?? null,
             'Unknown status code must render with a blank trailing label.',
         );
+    }
+
+    public function testHydrationRejectsNonNumericStatusCode(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+        $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
+        $payload['statusCode'] = 'not-a-number';
+
+        $this->expectException(HydrationException::class);
+
+        $panel->hydrate($payload);
+    }
+
+    public function testHydrationRejectsNumericStringStatusCode(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+        $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
+        $payload['statusCode'] = '404';
+
+        $this->expectException(HydrationException::class);
+
+        $panel->hydrate($payload);
     }
 
     public function testNormalizeGlobalValueCollapsesEmptyValuesToEmptyArray(): void
@@ -671,193 +846,19 @@ final class RequestPanelTest extends TestCase
         );
     }
 
-    public function testSaveBuildsActionFromInlineAction(): void
+    public function testThrowHydrationExceptionWhenCapturedDataCarriesNoIntegerStatusCode(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.panels.request.statusCode'");
 
-        $controller = new Controller('site', Yii::$app);
-        $action = new InlineAction('index', $controller, 'actionIndex');
-
-        Yii::$app->requestedAction = $action;
-
-        $saved = $panel->save();
-
-        self::assertSame(
-            $controller::class . '::actionIndex()',
-            $saved['action'] ?? null,
-            "Inline action must format as 'ControllerFQCN::actionMethod()'.",
-        );
-        self::assertSame(
-            'site/index',
-            $saved['route'] ?? null,
-            'Route must echo the action unique id.',
-        );
+        RequestSnapshot::capture(['statusCode' => '200']);
     }
 
-    public function testSaveBuildsActionFromRegularAction(): void
+    public function testThrowHydrationExceptionWhenTheStatusCodeDisagreesWithTheStoredData(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
 
-        $controller = new Controller('site', Yii::$app);
+        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.panels.request.statusCode'");
 
-        $action = new class ('run', $controller) extends Action {
-            public function run(): void {}
-        };
-
-        Yii::$app->requestedAction = $action;
-
-        $saved = $panel->save();
-
-        self::assertSame(
-            $action::class . '::run()',
-            $saved['action'] ?? null,
-            "Regular action must format as 'ActionFQCN::run()'.",
-        );
-    }
-
-    public function testSaveCapturesRequestBodyWhenNonEmpty(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        $request = Yii::$app->getRequest();
-
-        $request->setRawBody('{"k":"v"}');
-        $request->setBodyParams(['k' => 'v']);
-        $request->getHeaders()->set('Content-Type', 'application/json');
-
-        $saved = $panel->save();
-
-        self::assertIsArray(
-            $saved['requestBody'] ?? null,
-            'Request body must surface as an array when non-empty.',
-        );
-        self::assertSame(
-            '{"k":"v"}',
-            $saved['requestBody']['Raw'] ?? null,
-            'Raw slot must echo the raw body.',
-        );
-    }
-
-    public function testSaveCensorsRequestHeadersListedInCensoredVariableNames(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        $panel->censoredVariableNames = ['authorization'];
-
-        Yii::$app->getRequest()->getHeaders()->set('Authorization', 'Bearer secret');
-
-        $saved = $panel->save();
-
-        $requestHeaders = $saved['requestHeaders'] ?? null;
-
-        self::assertIsArray(
-            $requestHeaders,
-            "'requestHeaders' slot must be an array.",
-        );
-        self::assertSame(
-            '****',
-            $requestHeaders['authorization'] ?? null,
-            'Censored request header must be masked.',
-        );
-    }
-
-    public function testSaveCollapsesSingleValueHeaderArrayToScalar(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        Yii::$app->getRequest()->getHeaders()->set('X-Single', 'only');
-
-        $saved = $panel->save();
-
-        $requestHeaders = $saved['requestHeaders'] ?? null;
-
-        self::assertIsArray(
-            $requestHeaders,
-            "'requestHeaders' slot must be an array.",
-        );
-        self::assertSame(
-            'only',
-            $requestHeaders['x-single'] ?? null,
-            'Single-value header must collapse to the scalar value.',
-        );
-    }
-
-    public function testSaveKeepsMultiValueHeaderAsArray(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        $request = Yii::$app->getRequest();
-
-        $request->getHeaders()->add('X-Multi', 'a')->add('X-Multi', 'b');
-
-        $saved = $panel->save();
-
-        $requestHeaders = $saved['requestHeaders'] ?? null;
-
-        self::assertIsArray(
-            $requestHeaders,
-            "'requestHeaders' slot must be an array.",
-        );
-        self::assertSame(
-            ['a', 'b'],
-            $requestHeaders['x-multi'] ?? null,
-            'Multi-value header must stay as a list.',
-        );
-    }
-
-    public function testSaveLeavesActionAsNullWhenNoRequestedAction(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        Yii::$app->requestedAction = null;
-        Yii::$app->requestedRoute = 'site/default';
-
-        $saved = $panel->save();
-
-        self::assertArrayHasKey(
-            'action',
-            $saved,
-            "Action slot must be present even when 'null'.",
-        );
-        self::assertNull(
-            $saved['action'],
-            "Missing requested action must yield 'null'.",
-        );
-        self::assertSame(
-            'site/default',
-            $saved['route'] ?? null,
-            'Route must fall back to requestedRoute.',
-        );
-    }
-
-    public function testSaveLeavesRequestBodyEmptyWhenRawBodyIsEmpty(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        Yii::$app->getRequest()->setRawBody('');
-
-        $saved = $panel->save();
-
-        self::assertSame(
-            [],
-            $saved['requestBody'] ?? null,
-            "Empty raw body must collapse to '[]'.",
-        );
-    }
-
-    public function testSaveSurfacesConfiguredDisplayVars(): void
-    {
-        $panel = $this->makePanel(RequestPanel::class);
-
-        $panel->displayVars = ['_GET'];
-        $GLOBALS['_GET'] = ['q' => 'search-term'];
-
-        $saved = $panel->save();
-
-        self::assertSame(
-            ['q' => 'search-term'],
-            $saved['GET'] ?? null,
-            'Configured displayVar must surface under its trimmed key.',
-        );
+        RequestSnapshot::fromArray([...$payload, 'statusCode' => 404], '$.panels.request');
     }
 }

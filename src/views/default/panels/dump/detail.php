@@ -20,7 +20,7 @@ use yii\grid\GridView;
  * @var DumpPanel $panel Panel providing the detail content.
  * @var LogSearch $searchModel Search model for filtering the dump grid.
  */
-$hasDumps = is_array($panel->data) && $panel->data !== [];
+$hasDumps = $panel->hasDumps();
 
 $summaryItems = [
     Span::tag()
@@ -82,11 +82,8 @@ if ($hasDumps) {
             ],
             [
                 'attribute' => 'message',
-                'value' => static fn(mixed $data, mixed $key, int $index): string => DumpCardRenderer::renderMessageCell(
-                    DumpRow::fromMixed($data),
-                    $panel,
-                    $index,
-                ),
+                'value' => static fn(DumpRow $data, mixed $key, int $index): string =>
+                    DumpCardRenderer::renderMessageCell($data, $panel, $index),
                 'format' => 'raw',
                 'options' => ['width' => '80%'],
             ],

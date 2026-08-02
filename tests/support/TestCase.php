@@ -9,6 +9,13 @@ use ReflectionProperty;
 use Yii;
 use yii\base\Application;
 use yii\debug\{LogTarget, Module, Panel};
+use yii\debug\storage\{
+    DebugSnapshot,
+    PanelFailure,
+    PanelSnapshot,
+    RequestSummary,
+    SnapshotStore,
+};
 use yii\di\Container;
 use yii\helpers\ArrayHelper;
 use yii\web\Controller;
@@ -43,6 +50,11 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     protected function getInaccessibleProperty(object $object, string $propertyName): mixed
     {
         return $this->resolveReflectionProperty($object, $propertyName)->getValue($object);
+    }
+
+    protected function hydratePanel(Panel $panel, PanelSnapshot $snapshot): void
+    {
+        $panel->hydrate($snapshot->jsonSerialize());
     }
 
     /**
@@ -159,6 +171,35 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * Builds a complete request-summary DTO with concise per-test overrides.
+     *
+     * @param array<string, mixed> $overrides
+     */
+    protected function requestSummary(string $tag = 'tag-1', array $overrides = []): RequestSummary
+    {
+        return RequestSummary::fromArray(
+            array_replace(
+                [
+                    'tag' => $tag,
+                    'url' => 'dummy',
+                    'ajax' => false,
+                    'method' => 'GET',
+                    'ip' => '127.0.0.1',
+                    'time' => 1_700_000_000.0,
+                    'statusCode' => 200,
+                    'sqlCount' => 0,
+                    'excessiveCallersCount' => 0,
+                    'mailCount' => 0,
+                    'mailFiles' => [],
+                    'processingTime' => null,
+                    'peakMemory' => null,
+                ],
+                $overrides,
+            ),
+        );
+    }
+
+    /**
      * Sets an inaccessible object property to a designated value, walking the inheritance chain when the property is
      * declared on a parent class.
      */
@@ -195,6 +236,38 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         $_GET = [];
     }
 
+    /**
+     * Persists a complete version-3 JSON fixture through the production storage boundary.
+     *
+     * @param array<string, PanelSnapshot> $panels
+     * @param array<string, mixed> $summary
+     * @param array<string, \Throwable> $failures
+     */
+    protected function writeDebugSnapshot(
+        Module $module,
+        string $tag,
+        array $panels,
+        array $summary = [],
+        array $failures = [],
+    ): void {
+        $payloads = [];
+
+        foreach ($panels as $id => $snapshot) {
+            $payloads[$id] = $snapshot->jsonSerialize();
+        }
+
+        $requestSummary = $this->requestSummary($tag, $summary);
+        $store = new SnapshotStore(Yii::getAlias($module->dataPath), $module->dirMode, $module->fileMode);
+        $panelFailures = [];
+
+        foreach ($failures as $id => $throwable) {
+            $panelFailures[$id] = PanelFailure::fromThrowable(PanelFailure::CAPTURE, $throwable);
+        }
+
+        $store->writeSnapshot($tag, new DebugSnapshot($requestSummary, $payloads, $panelFailures));
+        $store->updateManifest($requestSummary, $module->historySize);
+    }
+
     private function resolveReflectionProperty(object $object, string $propertyName): ReflectionProperty
     {
         $class = new ReflectionClass($object);
@@ -213,4 +286,5 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
 
         return $class->getProperty($propertyName);
     }
+
 }

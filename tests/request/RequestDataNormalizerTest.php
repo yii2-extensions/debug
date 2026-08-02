@@ -6,10 +6,11 @@ namespace yii\debug\tests\request;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\request\RequestDataNormalizer;
+use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see RequestDataNormalizer} covering the narrowing of `$panel->data` plus the controller summary
+ * Unit tests for {@see RequestDataNormalizer} covering captured request data plus the controller summary
  * into the typed {@see \yii\debug\panels\request\RequestView} aggregate (hero header + tab/section list).
  */
 #[Group('panel')]
@@ -27,7 +28,7 @@ final class RequestDataNormalizerTest extends TestCase
                     'isSecureConnection' => true,
                 ],
             ],
-            [],
+            null,
         );
 
         self::assertSame(
@@ -41,7 +42,7 @@ final class RequestDataNormalizerTest extends TestCase
     {
         $view = RequestDataNormalizer::fromPanelData(
             ['statusCode' => '404'],
-            [],
+            null,
         );
 
         self::assertSame(
@@ -55,7 +56,7 @@ final class RequestDataNormalizerTest extends TestCase
     {
         $view = RequestDataNormalizer::fromPanelData(
             [],
-            [],
+            null,
         );
 
         $labels = [];
@@ -75,7 +76,7 @@ final class RequestDataNormalizerTest extends TestCase
     {
         $view = RequestDataNormalizer::fromPanelData(
             ['SERVER' => []],
-            [],
+            null,
         );
 
         $labels = [];
@@ -99,7 +100,7 @@ final class RequestDataNormalizerTest extends TestCase
                 'flashes' => [],
                 'SERVER' => ['HTTP_HOST' => 'localhost'],
             ],
-            [],
+            null,
         );
 
         $labels = [];
@@ -115,11 +116,11 @@ final class RequestDataNormalizerTest extends TestCase
         );
     }
 
-    public function testFromPanelDataFallsBackToEmptyViewWhenDataIsNotArray(): void
+    public function testFromPanelDataFallsBackToEmptyViewWhenDataIsEmpty(): void
     {
         $view = RequestDataNormalizer::fromPanelData(
-            'not-an-array',
             [],
+            null,
         );
 
         self::assertSame(
@@ -149,7 +150,7 @@ final class RequestDataNormalizerTest extends TestCase
         foreach ([200 => '2xx', 304 => '3xx', 404 => '4xx', 500 => '5xx', 0 => 'none'] as $code => $expected) {
             $view = RequestDataNormalizer::fromPanelData(
                 ['statusCode' => $code],
-                [],
+                null,
             );
 
             self::assertSame(
@@ -173,7 +174,7 @@ final class RequestDataNormalizerTest extends TestCase
                 'COOKIE' => ['session' => 'abc'],
                 'requestBody' => [],
             ],
-            [],
+            null,
         );
 
         self::assertNotEmpty(
@@ -198,7 +199,7 @@ final class RequestDataNormalizerTest extends TestCase
     {
         $view = RequestDataNormalizer::fromPanelData(
             ['statusCode' => 201],
-            ['statusCode' => 500],
+            self::summary(['statusCode' => 500]),
         );
 
         self::assertSame(
@@ -212,7 +213,7 @@ final class RequestDataNormalizerTest extends TestCase
     {
         $view = RequestDataNormalizer::fromPanelData(
             [],
-            [],
+            null,
         );
 
         self::assertNotEmpty(
@@ -242,11 +243,7 @@ final class RequestDataNormalizerTest extends TestCase
     {
         $view = RequestDataNormalizer::fromPanelData(
             [],
-            [
-                'ip' => '127.0.0.1',
-                'time' => 1_704_112_496,
-                'processingTime' => 0.0125,
-            ]
+            self::summary(['ip' => '127.0.0.1', 'time' => 1_704_112_496.0, 'processingTime' => 0.0125]),
         );
 
         self::assertSame(
@@ -277,13 +274,38 @@ final class RequestDataNormalizerTest extends TestCase
                     'isSecureConnection' => true,
                 ],
             ],
-            [],
+            null,
         );
 
         self::assertSame(
             ['HTTPS'],
             $view->hero->flags,
             "Only literal 'true' must enable a flag; truthy non-bools count as inactive.",
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private static function summary(array $overrides = []): RequestSummary
+    {
+        return RequestSummary::fromArray(
+            [
+                'tag' => 'tag-1',
+                'url' => 'https://example.test/',
+                'ajax' => false,
+                'method' => 'GET',
+                'ip' => '127.0.0.1',
+                'time' => 1_700_000_000.0,
+                'statusCode' => 200,
+                'sqlCount' => 0,
+                'excessiveCallersCount' => 0,
+                'mailCount' => 0,
+                'mailFiles' => [],
+                'processingTime' => null,
+                'peakMemory' => null,
+                ...$overrides,
+            ],
         );
     }
 }

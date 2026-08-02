@@ -11,21 +11,18 @@ use Yii;
 use yii\debug\helpers\Coerce;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
+use yii\debug\panels\dump\{DumpRow, DumpSnapshot};
 use yii\helpers\VarDumper;
 use yii\log\Logger;
 
 use function array_key_exists;
 use function count;
-use function is_array;
-use function is_string;
 
 /**
  * Captures trace-level log messages emitted by `Yii::debug()` and renders them as dump cards.
  *
  * Filters the trace log by {@see $categories} (and skips categories owned by the Router panel) and stringifies each
  * captured value through {@see varDump()}, so the detail view can render the result without re-serializing.
- *
- * @extends Panel<array<int, array<int|string, mixed>>>
  */
 class DumpPanel extends Panel
 {
@@ -49,16 +46,34 @@ class DumpPanel extends Panel
      */
     public Closure|null $varDumpCallback = null;
 
+    private DumpSnapshot|null $snapshot = null;
+
     /**
-     * @var array<int, array{
-     *   message: string,
-     *   level: int,
-     *   category: string,
-     *   time: float,
-     *   trace: array<int, array<string, mixed>>
-     * }>|null Cached typed rows consumed by the dumps grid.
+     * Captures the trace-level messages allowed by {@see $categories}, excluding the categories owned by the Router
+     * panel, and pre-renders each captured value through {@see varDump()}.
      */
-    private array|null $models = null;
+    public function capture(): DumpSnapshot
+    {
+        $except = [];
+
+        $routerPanel = $this->module?->panels['router'] ?? null;
+
+        if ($routerPanel instanceof RouterPanel) {
+            $except = Coerce::stringList($routerPanel->getCategories());
+        }
+
+        $messages = $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories, $except);
+
+        foreach ($messages as &$message) {
+            if (array_key_exists(0, $message) === false) {
+                continue;
+            }
+
+            $message[0] = $this->varDump($message[0]);
+        }
+
+        return DumpSnapshot::capture($messages);
+    }
 
     /**
      * Renders the detail view with the dump grid powered by the Log search model.
@@ -82,32 +97,25 @@ class DumpPanel extends Panel
     }
 
     /**
-     * Captures the trace-level messages allowed by {@see $categories}, excluding the categories owned by the Router
-     * panel, and pre-renders each captured value through {@see varDump()}.
-     *
-     * @return array<int, array<int|string, mixed>> Raw log tuples with the first element pre-rendered as a string.
+     * @return list<DumpRow> Captured dump rows in capture order.
      */
-    public function save(): array
+    public function getDumps(): array
     {
-        $except = [];
+        return $this->snapshot?->entries() ?? [];
+    }
 
-        $routerPanel = $this->module?->panels['router'] ?? null;
+    public function hasDumps(): bool
+    {
+        return $this->getDumps() !== [];
+    }
 
-        if ($routerPanel instanceof RouterPanel) {
-            $except = self::normalizeStringList($routerPanel->getCategories());
-        }
-
-        $messages = $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories, $except);
-
-        foreach ($messages as &$message) {
-            if (array_key_exists(0, $message) === false) {
-                continue;
-            }
-
-            $message[0] = $this->varDump($message[0]);
-        }
-
-        return $messages;
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = DumpSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -132,37 +140,13 @@ class DumpPanel extends Panel
     }
 
     /**
-     * Builds and caches the typed dump rows consumed by the dumps grid.
+     * Returns the typed dump rows consumed by the dumps grid.
      *
-     * Suitable for {@see \yii\data\ArrayDataProvider}.
-     *
-     * @param bool $refresh `true` to rebuild the cache from the saved messages.
-     *
-     * @return array<int, array{
-     *   message: string,
-     *   level: int,
-     *   category: string,
-     *   time: float,
-     *   trace: array<int, array<string, mixed>>
-     * }> Dump rows in capture order, with `time` in milliseconds.
+     * @return list<DumpRow> Rows in capture order, suitable for {@see \yii\data\ArrayDataProvider}.
      */
-    protected function getModels(bool $refresh = false): array
+    protected function getModels(): array
     {
-        if ($this->models === null || $refresh) {
-            $this->models = [];
-
-            $messages = is_array($this->data) ? $this->data : [];
-
-            foreach ($messages as $message) {
-                $model = self::normalizeMessage($message);
-
-                if ($model !== null) {
-                    $this->models[] = $model;
-                }
-            }
-        }
-
-        return $this->models;
+        return $this->getDumps();
     }
 
     /**
@@ -173,9 +157,9 @@ class DumpPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        $messages = is_array($this->data) ? $this->data : [];
+        $dumps = $this->getDumps();
 
-        if ($messages === []) {
+        if ($dumps === []) {
             return [];
         }
 
@@ -183,60 +167,8 @@ class DumpPanel extends Panel
             [
                 'status' => 'info',
                 'title' => 'Number of dumped variables',
-                'value' => count($messages),
+                'value' => count($dumps),
             ],
         ];
-    }
-
-    /**
-     * Narrows one raw saved log tuple into the typed dump-row shape, or returns `null` when the entry is not an array.
-     *
-     * @param mixed $message Raw log message from saved panel data.
-     *
-     * @return array{
-     *   message: string,
-     *   level: int,
-     *   category: string,
-     *   time: float,
-     *   trace: array<int, array<string, mixed>>
-     * }|null Typed dump row with `time` in milliseconds, or `null` when the entry was malformed.
-     */
-    private static function normalizeMessage(mixed $message): array|null
-    {
-        if (!is_array($message)) {
-            return null;
-        }
-
-        return [
-            'message' => Coerce::stringOrNull($message[0] ?? null) ?? '',
-            'level' => Coerce::intOrNull($message[1] ?? null) ?? 0,
-            'category' => Coerce::stringOrNull($message[2] ?? null) ?? '',
-            'time' => (Coerce::floatOrNull($message[3] ?? null) ?? 0.0) * 1000,
-            'trace' => Coerce::traceFrames($message[4] ?? []),
-        ];
-    }
-
-    /**
-     * Narrows a mixed payload into a list of strings, dropping non-string entries.
-     *
-     * @param mixed $values Raw category list.
-     *
-     * @return array<int, string> String entries in original order, possibly empty.
-     */
-    private static function normalizeStringList(mixed $values): array
-    {
-        if (!is_array($values)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($values as $value) {
-            if (is_string($value)) {
-                $normalized[] = $value;
-            }
-        }
-
-        return $normalized;
     }
 }

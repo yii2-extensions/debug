@@ -7,7 +7,10 @@ namespace yii\debug\models\search;
 use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
+use yii\debug\storage\RequestSummary;
+use yii\debug\widgets\history\HistoryRow;
 
+use function array_map;
 use function in_array;
 
 /**
@@ -89,13 +92,15 @@ class DebugSearch extends Base
      * Returns an {@see ArrayDataProvider} over the manifest entries, applying the loaded filter values.
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
-     * @param array<int, array<string, mixed>> $models Manifest entries to wrap and filter.
+     * @param list<RequestSummary> $models Manifest entries to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
+        $rows = array_map(HistoryRow::fromSummary(...), $models);
+
         $dataProvider = new ArrayDataProvider(
             [
-                'allModels' => $models,
+                'allModels' => $rows,
                 'sort' => [
                     'attributes' => [
                         'method',
@@ -126,7 +131,7 @@ class DebugSearch extends Base
         $this->addCondition('sqlCount');
         $this->addCondition('mailCount');
 
-        $dataProvider->allModels = $this->filter($models);
+        $dataProvider->allModels = $this->filter($rows);
 
         return $dataProvider;
     }

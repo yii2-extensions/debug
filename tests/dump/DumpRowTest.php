@@ -6,187 +6,89 @@ namespace yii\debug\tests\dump;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\dump\DumpRow;
+use yii\debug\storage\HydrationException;
 use yii\debug\tests\support\TestCase;
+use yii\log\Logger;
 
 /**
- * Unit tests for {@see DumpRow} covering the narrowing of GridView callback arguments into a typed
- * {@see \yii\debug\panels\dump\DumpRow}.
+ * Unit tests for {@see DumpRow} covering the capture-time narrowing of Yii logger tuples and the strict JSON hydration
+ * that restores them without coercion.
+ *
+ * @since 0.2
  */
 #[Group('panel')]
 #[Group('dump')]
 final class DumpRowTest extends TestCase
 {
-    public function testFromCoercesNumericStringToFloatTime(): void
+    public function testFromArrayRoundTripsEveryField(): void
     {
-        $row = DumpRow::fromMixed(
-            ['time' => '1700000000.5'],
+        $row = new DumpRow(
+            message: '&lt;?php "hello"',
+            level: Logger::LEVEL_TRACE,
+            category: 'application',
+            time: 1_700_000_000_500.0,
+            trace: [['file' => '/app/index.php', 'line' => 12]],
         );
 
-        self::assertSame(
-            1_700_000_000.5,
-            $row->time,
-            'Numeric string must coerce to float.',
+        self::assertEquals(
+            $row,
+            DumpRow::fromArray($row->jsonSerialize(), '$.panels.dump.entries[0]'),
+            'Round-trip must preserve every field.',
         );
     }
 
-    public function testFromCollapsesNonArrayTraceFieldToEmptyList(): void
+    public function testFromLoggerTupleFallsBackToEmptyValuesForAMalformedTuple(): void
     {
-        $row = DumpRow::fromMixed(
-            ['trace' => 'not an array'],
+        $row = DumpRow::fromLoggerTuple([]);
+
+        self::assertSame('', $row->message, 'Missing payload must fall back to an empty string.');
+        self::assertSame(0, $row->level, 'Missing level must fall back to `0`.');
+        self::assertSame('', $row->category, 'Missing category must fall back to an empty string.');
+        self::assertSame(0.0, $row->time, 'Missing timestamp must fall back to `0`.');
+        self::assertSame([], $row->trace, 'Missing trace must fall back to an empty list.');
+    }
+
+    public function testFromLoggerTupleKeepsOnlyStringKeyedArrayTraceFrames(): void
+    {
+        $row = DumpRow::fromLoggerTuple(
+            ['msg', Logger::LEVEL_TRACE, 'app', 1.0, [['file' => 'a.php', 7 => 'dropped'], 'not-a-frame']],
         );
 
-        self::assertSame(
-            [],
-            $row->trace,
-            "Non-array 'trace' must collapse to '[]'.",
+        self::assertSame([['file' => 'a.php']], $row->trace, 'Non-array frames and integer keys must be dropped.');
+    }
+
+    public function testFromLoggerTupleNarrowsNumericStringsAndScalesTime(): void
+    {
+        $row = DumpRow::fromLoggerTuple(['msg', '8', 'app', '2.5', []]);
+
+        self::assertSame('msg', $row->message, 'Payload must round-trip verbatim.');
+        self::assertSame(8, $row->level, 'Numeric-string level must narrow to `int`.');
+        self::assertSame(2_500.0, $row->time, 'Timestamp must be scaled to milliseconds.');
+    }
+
+    public function testThrowHydrationExceptionWhenAFieldIsMissing(): void
+    {
+        $this->expectException(HydrationException::class);
+
+        DumpRow::fromArray(
+            ['message' => 'msg', 'level' => Logger::LEVEL_TRACE, 'category' => 'app', 'time' => 1.0],
+            '$.panels.dump.entries[0]',
         );
     }
 
-    public function testFromDropsNonArrayTraceFrames(): void
+    public function testThrowHydrationExceptionWhenTimeIsANumericString(): void
     {
-        $row = DumpRow::fromMixed(
+        $this->expectException(HydrationException::class);
+
+        DumpRow::fromArray(
             [
-                'trace' => [
-                    ['file' => '/a.php'],
-                    'invalid',
-                    ['file' => '/b.php'],
-                ],
+                'message' => 'msg',
+                'level' => Logger::LEVEL_TRACE,
+                'category' => 'app',
+                'time' => '2500',
+                'trace' => [],
             ],
-        );
-
-        self::assertCount(
-            2,
-            $row->trace,
-            'Non-array frames must be skipped.',
-        );
-        self::assertSame(
-            ['file' => '/a.php'],
-            $row->trace[0],
-            'Surviving frames must keep their order.',
-        );
-        self::assertSame(
-            ['file' => '/b.php'],
-            $row->trace[1],
-            'Surviving frames must keep their order.',
-        );
-    }
-
-    public function testFromDropsNonStringFrameKeys(): void
-    {
-        $row = DumpRow::fromMixed(
-            [
-                'trace' => [
-                    [
-                        'file' => '/a.php',
-                        0 => 'skip',
-                        'line' => 5],
-                ],
-            ],
-        );
-
-        $first = $row->trace[0] ?? self::fail('Expected at least one trace frame.');
-
-        self::assertSame(
-            ['file' => '/a.php', 'line' => 5],
-            $first,
-            'Numeric keys must be filtered out.',
-        );
-    }
-
-    public function testFromFallsBackToEmptyStringWhenScalarFieldsAreNotStrings(): void
-    {
-        $row = DumpRow::fromMixed(
-            ['message' => 42, 'category' => null],
-        );
-
-        self::assertSame(
-            '',
-            $row->message,
-            "Non-string 'message' must collapse to ''.",
-        );
-        self::assertSame(
-            '',
-            $row->category,
-            "Non-string 'category' must collapse to ''.",
-        );
-    }
-
-    public function testFromFallsBackToZeroWhenTimeIsNotNumeric(): void
-    {
-        $row = DumpRow::fromMixed(
-            ['time' => 'abc'],
-        );
-
-        self::assertSame(
-            0.0,
-            $row->time,
-            "Non-numeric 'time' must collapse to '0.0'.",
-        );
-    }
-
-    public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
-    {
-        $row = DumpRow::fromMixed(
-            'not an array',
-        );
-
-        self::assertSame(
-            '',
-            $row->message,
-            "Non-array input must yield empty 'message'.",
-        );
-        self::assertSame(
-            '',
-            $row->category,
-            "Non-array input must yield empty 'category'.",
-        );
-        self::assertSame(
-            0.0,
-            $row->time,
-            "Non-array input must yield zero 'time'.",
-        );
-        self::assertSame(
-            [],
-            $row->trace,
-            "Non-array input must yield empty 'trace'.",
-        );
-    }
-
-    public function testFromRoundTripsTypedRow(): void
-    {
-        $row = DumpRow::fromMixed(
-            [
-                'message' => '<?php "hello"',
-                'category' => 'application',
-                'time' => 1_700_000_000.123,
-                'trace' => [
-                    [
-                        'file' => '/app/User.php',
-                        'line' => 42,
-                    ],
-                ],
-            ],
-        );
-
-        self::assertSame(
-            '<?php "hello"',
-            $row->message,
-            'Message must round-trip.',
-        );
-        self::assertSame(
-            'application',
-            $row->category,
-            'Category must round-trip.',
-        );
-        self::assertSame(
-            1_700_000_000.123,
-            $row->time,
-            'Time must round-trip.',
-        );
-        self::assertSame(
-            [['file' => '/app/User.php', 'line' => 42]],
-            $row->trace,
-            'Trace must round-trip.',
+            '$.panels.dump.entries[0]',
         );
     }
 }

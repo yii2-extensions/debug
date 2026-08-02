@@ -16,28 +16,28 @@ use yii\debug\tests\support\TestCase;
 #[Group('queue')]
 final class JobRecordTest extends TestCase
 {
-    public function testFromAcceptsEachKnownEventType(): void
+    public function testFromCaptureAcceptsEachKnownEventType(): void
     {
         self::assertSame(
             'push',
-            JobRecord::fromMixed(['eventType' => 'push'])->eventType,
+            JobRecord::fromCapture(['eventType' => 'push'])->eventType,
             "'push' must round-trip.",
         );
         self::assertSame(
             'exec',
-            JobRecord::fromMixed(['eventType' => 'exec'])->eventType,
+            JobRecord::fromCapture(['eventType' => 'exec'])->eventType,
             "'exec' must round-trip.",
         );
         self::assertSame(
             'error',
-            JobRecord::fromMixed(['eventType' => 'error'])->eventType,
+            JobRecord::fromCapture(['eventType' => 'error'])->eventType,
             "'error' must round-trip.",
         );
     }
 
-    public function testFromCoercesNumericStringsToFloatAndInt(): void
+    public function testFromCaptureCoercesNumericStringsToFloatAndInt(): void
     {
-        $record = JobRecord::fromMixed(
+        $record = JobRecord::fromCapture(
             [
                 'time' => '1700000000.5',
                 'ttr' => '30',
@@ -80,9 +80,9 @@ final class JobRecordTest extends TestCase
         );
     }
 
-    public function testFromCollapsesUnknownEventTypeToPush(): void
+    public function testFromCaptureCollapsesUnknownEventTypeToPush(): void
     {
-        $record = JobRecord::fromMixed(
+        $record = JobRecord::fromCapture(
             ['eventType' => 'cancelled'],
         );
 
@@ -93,9 +93,9 @@ final class JobRecordTest extends TestCase
         );
     }
 
-    public function testFromFallsBackToEmptyStringWhenStringFieldsAreNotStrings(): void
+    public function testFromCaptureFallsBackToEmptyStringWhenStringFieldsAreNotStrings(): void
     {
-        $record = JobRecord::fromMixed(
+        $record = JobRecord::fromCapture(
             [
                 'componentId' => 42,
                 'jobClass' => null,
@@ -132,9 +132,9 @@ final class JobRecordTest extends TestCase
         );
     }
 
-    public function testFromKeepsNullableNumericFieldsAsNullWhenAbsent(): void
+    public function testFromCaptureKeepsNullableNumericFieldsAsNullWhenAbsent(): void
     {
-        $record = JobRecord::fromMixed(
+        $record = JobRecord::fromCapture(
             [],
         );
 
@@ -160,11 +160,9 @@ final class JobRecordTest extends TestCase
         );
     }
 
-    public function testFromReturnsAllEmptyDefaultsWhenInputIsNotArray(): void
+    public function testFromCaptureReturnsAllEmptyDefaultsForAnEmptyPayload(): void
     {
-        $record = JobRecord::fromMixed(
-            'not an array',
-        );
+        $record = JobRecord::fromCapture([]);
 
         self::assertSame(
             'push',
@@ -237,9 +235,9 @@ final class JobRecordTest extends TestCase
         );
     }
 
-    public function testFromRoundTripsTypedRow(): void
+    public function testFromCaptureRoundTripsTypedRow(): void
     {
-        $record = JobRecord::fromMixed(
+        $record = JobRecord::fromCapture(
             [
                 'eventType' => 'exec',
                 'componentId' => 'queueEmail',
@@ -327,6 +325,16 @@ final class JobRecordTest extends TestCase
             0.123,
             $record->duration,
             "'duration' must round-trip.",
+        );
+    }
+
+    public function testThrowHydrationExceptionForAnUnknownEventType(): void
+    {
+        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.panels.queue.entries[0].eventType'");
+
+        JobRecord::fromArray(
+            [...JobRecord::fromCapture([])->jsonSerialize(), 'eventType' => 'render'],
+            '$.panels.queue.entries[0]',
         );
     }
 }

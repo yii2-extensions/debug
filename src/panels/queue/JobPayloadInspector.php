@@ -18,9 +18,9 @@ use function is_scalar;
  * Extracts the public-property tree of a job into a normalized, serializable structure.
  *
  * The panel captures jobs at push time but the saved data is read back later (after the request finishes). Storing the
- * original job object would either hard-couple the renderer to the live class hierarchy or fail to serialize cleanly,
+ * original job object would either hard-couple the renderer to the live class hierarchy or fail to encode cleanly,
  * so the inspector eagerly walks the public properties via Reflection and produces a tree of scalars + nested arrays
- * that round-trips through JSON / `serialize` without surprises.
+ * that round-trips through JSON without executable object state.
  *
  * Output shape:
  *
@@ -166,6 +166,7 @@ final class JobPayloadInspector
 
         if (!isset(self::$publicPropertiesByClass[$class])) {
             $reflection = new ReflectionClass($value);
+
             self::$publicPropertiesByClass[$class] = $reflection->getProperties(ReflectionProperty::IS_PUBLIC);
         }
 

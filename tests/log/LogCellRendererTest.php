@@ -380,8 +380,10 @@ final class LogCellRendererTest extends TestCase
             category: $category,
             time: $time,
             timeOfPrevious: $timeOfPrevious,
+            timeSincePrevious: ($time - $timeOfPrevious) / 1000,
             idOfPrevious: $idOfPrevious,
             idOfNext: $idOfNext,
+            memory: 0,
             trace: $trace,
         );
     }

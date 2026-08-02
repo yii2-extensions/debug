@@ -207,9 +207,7 @@ final class RouterRenderer
 
         $rows = [];
 
-        foreach ($currentRoute->logs as $i => $log) {
-            $row = CurrentRouteLogRow::from($log);
-
+        foreach ($currentRoute->logs as $i => $row) {
             $tr = Tr::tag()
                 ->html(
                     Td::tag()->content((string) ($i + 1)),

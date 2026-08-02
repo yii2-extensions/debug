@@ -25,7 +25,7 @@ $totalCount = $dataProvider->getTotalCount();
 
 $hasMessages = $totalCount > 0;
 
-$failedCount = MailMessage::failedCount($dataProvider->allModels);
+$failedCount = MailMessage::failedCount($panel->getMessages());
 
 $summaryItems = [
     Span::tag()
@@ -94,7 +94,7 @@ if ($hasMessages) {
             )->textInput(['class' => 'yii-debug-input']) ?>
             <?= $form->field(
                 $searchModel,
-                'reply',
+                'replyTo',
                 ['options' => ['class' => 'yii-debug-field']],
             )->textInput(['class' => 'yii-debug-input']) ?>
             <?= $form->field(

@@ -8,11 +8,11 @@ use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\base\{InvalidConfigException, Model};
-use yii\data\ArrayDataProvider;
 use yii\debug\LogTarget;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
 use yii\debug\Module;
+use yii\debug\panels\user\UserSnapshot;
 use yii\debug\panels\UserPanel;
 use yii\debug\tests\support\stub\{
     ArIdentity,
@@ -132,6 +132,175 @@ final class UserPanelTest extends TestCase
         );
     }
 
+    public function testCaptureCapturesIdentityAttributesAndLabelsForModelIdentity(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity());
+
+        $saved = $panel->capture()?->data();
+
+        self::assertNotNull(
+            $saved,
+            'Identity save must succeed.',
+        );
+        self::assertSame(
+            1,
+            $saved['id'] ?? null,
+            'Identity id must round-trip.',
+        );
+        $attributes = $saved['attributes'] ?? null;
+
+        self::assertIsArray($attributes);
+
+        self::assertSame(
+            ['id', 'username'],
+            array_column($attributes, 'attribute'),
+            'Model identity must surface attribute labels.',
+        );
+    }
+
+    public function testCaptureCapturesIdentityForNonModelIdentity(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new Identity(7));
+
+        $saved = $panel->capture()?->data();
+
+        self::assertNotNull(
+            $saved,
+            'Identity save must succeed.',
+        );
+        self::assertSame(
+            7,
+            $saved['id'] ?? null,
+            'Identity id must round-trip.',
+        );
+        self::assertNull(
+            $saved['attributes'] ?? null,
+            'Non-Model identity must skip attribute labels.',
+        );
+    }
+
+    public function testCaptureIgnoresAuthManagerMisconfiguration(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                    ],
+                ],
+            ],
+        );
+
+        Yii::$app->user->login(new Identity(5));
+
+        $module = new Module('debug', null, ['authManager' => 'authManager']);
+        $module->logTarget = new LogTarget($module);
+        $panel = new UserPanel(['id' => 'user', 'module' => $module]);
+
+        $saved = $panel->capture()?->data();
+
+        self::assertNotNull(
+            $saved,
+            'Capture must complete despite missing auth manager.',
+        );
+        self::assertNull(
+            $saved['roles'] ?? null,
+            "Roles provider must stay 'null' on auth manager failure.",
+        );
+        self::assertNull(
+            $saved['permissions'] ?? null,
+            "Permissions provider must stay 'null' on auth manager failure.",
+        );
+    }
+
+    public function testCapturePopulatesRbacRowsWhenAuthManagerWired(): void
+    {
+        $role = new Role();
+
+        $role->name = 'admin';
+        $role->description = 'Administrator';
+        $role->createdAt = 1;
+        $role->updatedAt = 2;
+
+        $permission = new Permission();
+
+        $permission->name = 'manage';
+        $permission->description = 'Manage';
+        $permission->createdAt = 3;
+        $permission->updatedAt = 4;
+
+        $authManager = self::createStub(BaseManager::class);
+
+        $authManager
+            ->method('getRolesByUser')
+            ->willReturn([$role->name => $role]);
+        $authManager
+            ->method('getPermissionsByUser')
+            ->willReturn([$permission->name => $permission]);
+
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                    ],
+                ],
+            ],
+        );
+
+        Yii::$app->user->login(new Identity(9));
+
+        $module = new Module('debug', null, ['authManager' => $authManager]);
+        $module->logTarget = new LogTarget($module);
+        $panel = new UserPanel(['id' => 'user', 'module' => $module]);
+
+        $saved = $panel->capture()?->data();
+
+        self::assertNotNull(
+            $saved,
+            'Capture must complete.',
+        );
+        $roles = $saved['roles'] ?? null;
+        $permissions = $saved['permissions'] ?? null;
+
+        self::assertIsArray($roles);
+        self::assertIsArray($permissions);
+        self::assertCount(1, $roles, 'Role rows must surface.');
+        self::assertCount(1, $permissions, 'Permission rows must surface.');
+    }
+
+    public function testCaptureReturnsNullWhenNoIdentity(): void
+    {
+        $panel = $this->makePanel(
+            UserPanel::class,
+            [
+                'user' => [
+                    'class' => User::class,
+                    'identityClass' => Identity::class,
+                ],
+            ],
+        );
+
+        self::assertNull(
+            $panel->capture()?->data(),
+            'Guest must yield no snapshot.',
+        );
+    }
+
+    public function testCaptureReturnsNullWhenNoUserComponent(): void
+    {
+        $panel = $this->makePanel(UserPanel::class);
+
+        $panel->userComponent = 'nonexistent';
+
+        self::assertNull(
+            $panel->capture()?->data(),
+            'Missing user component must yield no snapshot.',
+        );
+    }
+
     public function testDataToStringExportsNonStringValues(): void
     {
         $panel = $this->makePanel(UserPanel::class);
@@ -167,7 +336,7 @@ final class UserPanelTest extends TestCase
     {
         $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity());
 
-        $this->setInaccessibleProperty($panel, 'data', ['id' => null, 'identity' => null]);
+        $this->hydratePanel($panel, UserSnapshot::capture(['id' => null, 'identity' => null]));
 
         $detail = $panel->getDetail();
 
@@ -187,7 +356,7 @@ final class UserPanelTest extends TestCase
     {
         $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity());
 
-        $panel->data = [
+        $this->hydratePanel($panel, UserSnapshot::capture([
             'id' => 1,
             'identity' => ['id' => "'1'", 'username' => "'wilmer'"],
             'attributes' => [
@@ -196,7 +365,7 @@ final class UserPanelTest extends TestCase
             ],
             'rolesProvider' => null,
             'permissionsProvider' => null,
-        ];
+        ]));
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -237,7 +406,7 @@ final class UserPanelTest extends TestCase
             $mainUser,
         );
 
-        $panel->data = [
+        $this->hydratePanel($panel, UserSnapshot::capture([
             'id' => 1,
             'identity' => [
                 'id' => "'1'",
@@ -251,7 +420,7 @@ final class UserPanelTest extends TestCase
             ],
             'rolesProvider' => null,
             'permissionsProvider' => null,
-        ];
+        ]));
 
         $html = $panel->getDetail();
 
@@ -283,7 +452,7 @@ final class UserPanelTest extends TestCase
         // Allow user switching so detail.php pulls in 'switch.php'.
         $panel->ruleUserSwitch = ['allow' => true];
 
-        $panel->data = [
+        $this->hydratePanel($panel, UserSnapshot::capture([
             'id' => 1,
             'identity' => [
                 'id' => "'1'",
@@ -299,9 +468,27 @@ final class UserPanelTest extends TestCase
                     'label' => 'Username',
                 ],
             ],
-            'rolesProvider' => new ArrayDataProvider(['allModels' => [$role]]),
-            'permissionsProvider' => new ArrayDataProvider(['allModels' => [$permission]]),
-        ];
+            'roles' => [
+                [
+                    'name' => $role->name,
+                    'description' => $role->description,
+                    'ruleName' => null,
+                    'data' => 'null',
+                    'createdAt' => null,
+                    'updatedAt' => null,
+                ],
+            ],
+            'permissions' => [
+                [
+                    'name' => $permission->name,
+                    'description' => $permission->description,
+                    'ruleName' => null,
+                    'data' => 'null',
+                    'createdAt' => null,
+                    'updatedAt' => null,
+                ],
+            ],
+        ]));
 
         $html = $panel->getDetail();
 
@@ -376,11 +563,7 @@ final class UserPanelTest extends TestCase
     {
         $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
 
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            ['id' => 42],
-        );
+        $this->hydratePanel($panel, UserSnapshot::capture(['id' => 42]));
 
         $items = $this->invoke(
             $panel,
@@ -423,11 +606,7 @@ final class UserPanelTest extends TestCase
             'mainUser',
             null,
         );
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            ['id' => 1],
-        );
+        $this->hydratePanel($panel, UserSnapshot::capture(['id' => 1]));
 
         $items = $this->invoke(
             $panel,
@@ -463,11 +642,7 @@ final class UserPanelTest extends TestCase
 
         $panel->userComponent = 'nonexistent';
 
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            ['id' => ['nested' => 'value']],
-        );
+        $this->hydratePanel($panel, UserSnapshot::capture(['id' => ['nested' => 'value']]));
 
         $items = $this->invoke(
             $panel,
@@ -693,174 +868,6 @@ final class UserPanelTest extends TestCase
         self::assertTrue(
             $panel->isEnabled(),
             "Resolvable user component must yield 'true'.",
-        );
-    }
-
-    public function testSaveCapturesIdentityAttributesAndLabelsForModelIdentity(): void
-    {
-        $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity());
-
-        $saved = $panel->save();
-
-        self::assertNotNull(
-            $saved,
-            'Identity save must succeed.',
-        );
-        self::assertSame(
-            1,
-            $saved['id'],
-            'Identity id must round-trip.',
-        );
-        self::assertSame(
-            ['id', 'username'],
-            array_column($saved['attributes'] ?? [], 'attribute'),
-            'Model identity must surface attribute labels.',
-        );
-    }
-
-    public function testSaveCapturesIdentityForNonModelIdentity(): void
-    {
-        $panel = $this->bootstrapPanelWithIdentity(new Identity(7));
-
-        $saved = $panel->save();
-
-        self::assertNotNull(
-            $saved,
-            'Identity save must succeed.',
-        );
-        self::assertSame(
-            7,
-            $saved['id'],
-            'Identity id must round-trip.',
-        );
-        self::assertNull(
-            $saved['attributes'],
-            'Non-Model identity must skip attribute labels.',
-        );
-    }
-
-    public function testSaveIgnoresAuthManagerMisconfiguration(): void
-    {
-        $this->mockWebApplication(
-            [
-                'components' => [
-                    'user' => [
-                        'class' => User::class,
-                        'identityClass' => Identity::class,
-                    ],
-                ],
-            ],
-        );
-
-        Yii::$app->user->login(new Identity(5));
-
-        $module = new Module('debug', null, ['authManager' => 'authManager']);
-        $module->logTarget = new LogTarget($module);
-        $panel = new UserPanel(['id' => 'user', 'module' => $module]);
-
-        $saved = $panel->save();
-
-        self::assertNotNull(
-            $saved,
-            'Save must complete despite missing auth manager.',
-        );
-        self::assertNull(
-            $saved['rolesProvider'],
-            "Roles provider must stay 'null' on auth manager failure.",
-        );
-        self::assertNull(
-            $saved['permissionsProvider'],
-            "Permissions provider must stay 'null' on auth manager failure.",
-        );
-    }
-
-    public function testSavePopulatesRbacProvidersWhenAuthManagerWired(): void
-    {
-        $role = new Role();
-
-        $role->name = 'admin';
-        $role->description = 'Administrator';
-        $role->createdAt = 1;
-        $role->updatedAt = 2;
-
-        $permission = new Permission();
-
-        $permission->name = 'manage';
-        $permission->description = 'Manage';
-        $permission->createdAt = 3;
-        $permission->updatedAt = 4;
-
-        $authManager = self::createStub(BaseManager::class);
-
-        $authManager
-            ->method('getRolesByUser')
-            ->willReturn([$role->name => $role]);
-        $authManager
-            ->method('getPermissionsByUser')
-            ->willReturn([$permission->name => $permission]);
-
-        $this->mockWebApplication(
-            [
-                'components' => [
-                    'user' => [
-                        'class' => User::class,
-                        'identityClass' => Identity::class,
-                    ],
-                ],
-            ],
-        );
-
-        Yii::$app->user->login(new Identity(9));
-
-        $module = new Module('debug', null, ['authManager' => $authManager]);
-        $module->logTarget = new LogTarget($module);
-        $panel = new UserPanel(['id' => 'user', 'module' => $module]);
-
-        $saved = $panel->save();
-
-        self::assertNotNull(
-            $saved,
-            'Save must complete.',
-        );
-        self::assertInstanceOf(
-            ArrayDataProvider::class,
-            $saved['rolesProvider'],
-            'Roles provider must surface.',
-        );
-        self::assertInstanceOf(
-            ArrayDataProvider::class,
-            $saved['permissionsProvider'],
-            'Permissions provider must surface.',
-        );
-    }
-
-    public function testSaveReturnsNullWhenNoIdentity(): void
-    {
-        $panel = $this->makePanel(
-            UserPanel::class,
-            [
-                'user' => [
-                    'class' => User::class,
-                    'identityClass' => Identity::class,
-                ],
-            ],
-        );
-
-        self::assertNull(
-            $panel->save(),
-            "Guest must yield a 'null' save payload.",
-        );
-    }
-
-    public function testSaveReturnsNullWhenNoUserComponent(): void
-    {
-        $panel = $this->makePanel(UserPanel::class);
-
-        $panel->userComponent = 'nonexistent';
-
-        self::assertNull(
-            $panel->save(),
-            "Missing user component must yield a 'null' save payload.",
         );
     }
 

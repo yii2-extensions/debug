@@ -6,19 +6,91 @@ namespace yii\debug\tests\config;
 
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
+use yii\debug\panels\config\ConfigSnapshot;
 use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\support\TestCase;
 
 use function is_string;
 
 /**
- * Unit tests for {@see ConfigPanel} covering the configuration snapshot produced by `save()`, the extension roster
+ * Unit tests for {@see ConfigPanel} covering the configuration snapshot produced by `capture()`, the extension roster
  * narrowing, the version pluck helpers, and the toolbar-items short-circuit.
  */
 #[Group('panel')]
 #[Group('config')]
 final class ConfigPanelTest extends TestCase
 {
+    public function testCaptureCollapsesApplicationFieldsWhenYiiAppIsNotApplication(): void
+    {
+        $panel = new ConfigPanel();
+
+        $payload = $panel->capture()->data();
+
+        $application = $payload['application'] ?? null;
+
+        self::assertIsArray(
+            $application,
+            'Application slice must be an array.',
+        );
+        self::assertSame(
+            '',
+            $application['name'] ?? null,
+            "Missing application must collapse 'name' to ''.",
+        );
+        self::assertSame(
+            [],
+            $payload['extensions'] ?? null,
+            "Missing application must collapse extensions to '[]'.",
+        );
+    }
+
+    public function testCaptureSnapshotsTheActiveApplication(): void
+    {
+        $this->mockWebApplication(
+            [
+                'name' => 'TestApp',
+                'language' => 'es-ES',
+                'sourceLanguage' => 'es',
+                'charset' => 'UTF-8',
+            ],
+        );
+
+        $panel = new ConfigPanel();
+
+        $payload = $panel->capture()->data();
+
+        $application = $payload['application'] ?? null;
+
+        self::assertIsArray(
+            $application,
+            'Application slice must be an array.',
+        );
+        self::assertSame(
+            PHP_VERSION,
+            $payload['phpVersion'] ?? null,
+            'PHP version must match the runtime constant.',
+        );
+        self::assertSame(
+            'TestApp',
+            $application['name'] ?? null,
+            'Application name must round-trip.',
+        );
+        self::assertSame(
+            'es-ES',
+            $application['language'] ?? null,
+            'Application language must round-trip.',
+        );
+        self::assertSame(
+            YII_ENV,
+            $application['env'] ?? null,
+            "'env' must match the 'YII_ENV' constant.",
+        );
+        self::assertSame(
+            YII_DEBUG,
+            $application['debug'] ?? null,
+            "'debug' must match the 'YII_DEBUG' constant.",
+        );
+    }
     public function testGetApplicationReturnsNullWhenYiiAppIsUnset(): void
     {
         $panel = new ConfigPanel();
@@ -52,30 +124,35 @@ final class ConfigPanelTest extends TestCase
     {
         $panel = $this->makePanel(ConfigPanel::class);
 
-        $panel->data = [
-            'phpVersion' => '8.3.10',
-            'yiiVersion' => '2.0.50',
-            'application' => [
-                'yii' => '2.0.50',
-                'name' => 'Demo',
-                'version' => '1.0.0',
-                'language' => 'en-US',
-                'sourceLanguage' => 'en',
-                'charset' => 'UTF-8',
-                'env' => 'dev',
-                'debug' => true,
-            ],
-            'php' => [
-                'version' => '8.3.10',
-                'xdebug' => false,
-                'apcu' => false,
-                'memcache' => false,
-                'memcached' => false,
-            ],
-            'extensions' => [
-                ['name' => 'acme/foo', 'version' => '1.0.0'],
-            ],
-        ];
+        $this->hydratePanel(
+            $panel,
+            ConfigSnapshot::capture(
+                [
+                    'phpVersion' => '8.3.10',
+                    'yiiVersion' => '2.0.50',
+                    'application' => [
+                        'yii' => '2.0.50',
+                        'name' => 'Demo',
+                        'version' => '1.0.0',
+                        'language' => 'en-US',
+                        'sourceLanguage' => 'en',
+                        'charset' => 'UTF-8',
+                        'env' => 'dev',
+                        'debug' => true,
+                    ],
+                    'php' => [
+                        'version' => '8.3.10',
+                        'xdebug' => false,
+                        'apcu' => false,
+                        'memcache' => false,
+                        'memcached' => false,
+                    ],
+                    'extensions' => [
+                        ['name' => 'acme/foo', 'version' => '1.0.0'],
+                    ],
+                ],
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -89,12 +166,17 @@ final class ConfigPanelTest extends TestCase
     {
         $panel = new ConfigPanel();
 
-        $panel->data = [
-            'extensions' => [
-                ['name' => 'acme/zebra', 'version' => '1.0.0'],
-                ['name' => 'acme/apple', 'version' => '2.5.1'],
-            ],
-        ];
+        $this->hydratePanel(
+            $panel,
+            ConfigSnapshot::capture(
+                [
+                    'extensions' => [
+                        ['name' => 'acme/zebra', 'version' => '1.0.0'],
+                        ['name' => 'acme/apple', 'version' => '2.5.1'],
+                    ],
+                ],
+            ),
+        );
 
         self::assertSame(
             ['acme/apple' => '2.5.1', 'acme/zebra' => '1.0.0'],
@@ -103,15 +185,32 @@ final class ConfigPanelTest extends TestCase
         );
     }
 
-    public function testGetExtensionsReturnsEmptyWhenDataIsNotArray(): void
+    public function testGetExtensionsDropsEntriesThatAreNotExtensionDescriptors(): void
+    {
+        $panel = $this->makePanel(ConfigPanel::class);
+
+        $this->hydratePanel(
+            $panel,
+            ConfigSnapshot::capture(
+                [
+                    'extensions' => [
+                        ['name' => 'vendor/package', 'version' => '1.0.0'],
+                        'not-a-descriptor',
+                    ],
+                ],
+            ),
+        );
+
+        self::assertSame(
+            ['vendor/package' => '1.0.0'],
+            $panel->getExtensions(),
+            'Only well-formed extension descriptors survive.',
+        );
+    }
+
+    public function testGetExtensionsReturnsEmptyWhenSnapshotIsMissing(): void
     {
         $panel = new ConfigPanel();
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'data',
-            'corrupt',
-        );
 
         self::assertSame(
             [],
@@ -124,17 +223,18 @@ final class ConfigPanelTest extends TestCase
     {
         $panel = new ConfigPanel();
 
-        $this->setInaccessibleProperty(
+        $this->hydratePanel(
             $panel,
-            'data',
-            [
-                'extensions' => [
-                    ['name' => 'acme/foo', 'version' => '1.0.0'],
-                    ['name' => 42, 'version' => '2.0.0'],
-                    ['name' => 'acme/bar', 'version' => null],
-                    ['version' => 'orphan'],
+            ConfigSnapshot::capture(
+                [
+                    'extensions' => [
+                        ['name' => 'acme/foo', 'version' => '1.0.0'],
+                        ['name' => 42, 'version' => '2.0.0'],
+                        ['name' => 'acme/bar', 'version' => null],
+                        ['version' => 'orphan'],
+                    ],
                 ],
-            ],
+            ),
         );
 
         self::assertSame(
@@ -174,10 +274,9 @@ final class ConfigPanelTest extends TestCase
     {
         $panel = new ConfigPanel();
 
-        $this->setInaccessibleProperty(
+        $this->hydratePanel(
             $panel,
-            'data',
-            ['php' => ['version' => ['nested']]],
+            ConfigSnapshot::capture(['php' => ['version' => ['nested']]]),
         );
 
         self::assertNull(
@@ -190,10 +289,9 @@ final class ConfigPanelTest extends TestCase
     {
         $panel = new ConfigPanel();
 
-        $this->setInaccessibleProperty(
+        $this->hydratePanel(
             $panel,
-            'data',
-            ['php' => 'not an array'],
+            ConfigSnapshot::capture(['php' => 'not an array']),
         );
 
         self::assertNull(
@@ -206,7 +304,10 @@ final class ConfigPanelTest extends TestCase
     {
         $panel = new ConfigPanel();
 
-        $panel->data = ['php' => ['version' => '8.3.10']];
+        $this->hydratePanel(
+            $panel,
+            ConfigSnapshot::capture(['php' => ['version' => '8.3.10']]),
+        );
 
         self::assertSame(
             '8.3.10',
@@ -243,9 +344,10 @@ final class ConfigPanelTest extends TestCase
     {
         $panel = new ConfigPanel();
 
-        $panel->data = [
-            'application' => ['yii' => '2.0.50'],
-        ];
+        $this->hydratePanel(
+            $panel,
+            ConfigSnapshot::capture(['application' => ['yii' => '2.0.50']]),
+        );
 
         self::assertSame(
             '2.0.50',
@@ -351,87 +453,6 @@ final class ConfigPanelTest extends TestCase
             'version',
             $entry,
             "Non-string 'version' must be dropped.",
-        );
-    }
-
-    public function testSaveCollapsesApplicationFieldsWhenYiiAppIsNotApplication(): void
-    {
-        $panel = new ConfigPanel();
-
-        $payload = $panel->save();
-
-        self::assertSame(
-            '',
-            $payload['application']['name'],
-            "Missing application must collapse 'name' to ''.",
-        );
-        self::assertSame(
-            [],
-            $payload['extensions'],
-            "Missing application must collapse extensions to '[]'.",
-        );
-    }
-
-    public function testSaveSnapshotsTheActiveApplication(): void
-    {
-        $this->mockWebApplication(
-            [
-                'name' => 'TestApp',
-                'language' => 'es-ES',
-                'sourceLanguage' => 'es',
-                'charset' => 'UTF-8',
-            ],
-        );
-
-        $panel = new ConfigPanel();
-
-        $payload = $panel->save();
-
-        self::assertSame(
-            PHP_VERSION,
-            $payload['phpVersion'],
-            'PHP version must match the runtime constant.',
-        );
-        self::assertSame(
-            'TestApp',
-            $payload['application']['name'],
-            'Application name must round-trip.',
-        );
-        self::assertSame(
-            'es-ES',
-            $payload['application']['language'],
-            'Application language must round-trip.',
-        );
-        self::assertSame(
-            YII_ENV,
-            $payload['application']['env'],
-            "'env' must match the 'YII_ENV' constant.",
-        );
-        self::assertSame(
-            YII_DEBUG,
-            $payload['application']['debug'],
-            "'debug' must match the 'YII_DEBUG' constant.",
-        );
-    }
-
-    public function testStringKeyedArrayFiltersOutIntegerKeys(): void
-    {
-        $filtered = $this->invoke(
-            new ConfigPanel(),
-            'stringKeyedArray',
-            [
-                [
-                    'kept' => 1,
-                    42 => 'dropped',
-                    'also-kept' => 2,
-                ],
-            ],
-        );
-
-        self::assertSame(
-            ['kept' => 1, 'also-kept' => 2],
-            $filtered,
-            'Only string-keyed entries must survive.',
         );
     }
 

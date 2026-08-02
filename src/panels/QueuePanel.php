@@ -11,9 +11,8 @@ use yii\base\Event;
 use yii\debug\actions\queue\JobAction;
 use yii\debug\models\search\QueueSearch;
 use yii\debug\Panel;
-use yii\debug\panels\queue\{JobPayloadInspector, JobRecord, QueueDriverDetector};
+use yii\debug\panels\queue\{JobPayloadInspector, JobRecord, QueueDriverDetector, QueueSnapshot};
 
-use function array_values;
 use function class_exists;
 use function count;
 use function interface_exists;
@@ -32,8 +31,6 @@ use function spl_object_id;
  *
  * Listeners are attached via `Event::on()` using the queue base class FQCN as a string, so the panel registers cleanly
  * even when the `yiisoft/yii2-queue` package is not installed; in that case the empty-state view is shown.
- *
- * @extends Panel<array{records?: mixed}>
  */
 class QueuePanel extends Panel
 {
@@ -80,6 +77,15 @@ class QueuePanel extends Panel
      * }> Queue lifecycle events captured for the current request, in fire order.
      */
     private array $records = [];
+    private QueueSnapshot|null $snapshot = null;
+
+    /**
+     * Snapshots the captured queue records.
+     */
+    public function capture(): QueueSnapshot
+    {
+        return QueueSnapshot::capture($this->records);
+    }
 
     /**
      * Renders the detail view with the queue cards list.
@@ -89,7 +95,7 @@ class QueuePanel extends Panel
     {
         $searchModel = new QueueSearch();
 
-        $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->arrayRecords());
+        $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getRecords());
 
         return Yii::$app->view->render(
             'panels/queue/detail',
@@ -100,6 +106,23 @@ class QueuePanel extends Panel
             ],
             $this,
         );
+    }
+
+    /**
+     * @return list<JobRecord> Captured job events in event order.
+     */
+    public function getRecords(): array
+    {
+        return $this->snapshot?->entries() ?? [];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = QueueSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -122,23 +145,11 @@ class QueuePanel extends Panel
     }
 
     /**
-     * Snapshots the captured queue records.
-     *
-     * @return array{records: list<array<string, mixed>>} Captured payload consumed by {@see arrayRecords()} on
-     * read-back.
-     */
-    public function save(): array
-    {
-        return ['records' => $this->records];
-    }
-
-    /**
      * Builds the toolbar items.
      *
      * Reads from {@see resolveRecords()} so the live request render and the toolbar AJAX replay (which only sees the
-     * saved snapshot in `$this->data['records']`) report the same numbers. Hides the button entirely on apps that
-     * don't configure any queue component, and surfaces an `Errors` chip in `danger` when at least one error event was
-     * captured.
+     * hydrated snapshot) report the same numbers. Hides the button entirely on apps that don't configure any queue
+     * component, and surfaces an `Errors` chip in `danger` when at least one error event was captured.
      *
      * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no queue component is configured and no
      * events were captured.
@@ -155,7 +166,7 @@ class QueuePanel extends Panel
         $errors = 0;
 
         foreach ($records as $record) {
-            if (is_array($record) && ($record['eventType'] ?? null) === JobRecord::TYPE_ERROR) {
+            if ($record->eventType === JobRecord::TYPE_ERROR) {
                 $errors++;
             }
         }
@@ -171,41 +182,6 @@ class QueuePanel extends Panel
         }
 
         return $items;
-    }
-
-    /**
-     * Returns the saved records ready to feed `Queue::search()`.
-     *
-     * Defends against stray non-array entries and non-string keys that might survive a malformed `$panel->data` payload
-     * (both shapes the search-model contract refuses to accept).
-     *
-     * @return list<array<string, mixed>> Sanitized records in original order.
-     */
-    private function arrayRecords(): array
-    {
-        if (!is_array($this->data) || !is_array($this->data['records'] ?? null)) {
-            return [];
-        }
-
-        $out = [];
-
-        foreach ($this->data['records'] as $record) {
-            if (!is_array($record)) {
-                continue;
-            }
-
-            $stringKeyed = [];
-
-            foreach ($record as $key => $value) {
-                if (is_string($key)) {
-                    $stringKeyed[$key] = $value;
-                }
-            }
-
-            $out[] = $stringKeyed;
-        }
-
-        return $out;
     }
 
     /**
@@ -437,21 +413,17 @@ class QueuePanel extends Panel
      * Returns the captured records from whichever source is populated for the current request.
      *
      * During the original request (while listeners are still firing) returns {@see $records}; during the toolbar AJAX
-     * replay or the detail-page render returns the `records` slice of `$this->data`.
+     * replay or the detail-page render returns the records held by the hydrated snapshot.
      *
-     * @return list<mixed> Captured records in capture order.
+     * @return list<JobRecord> Captured records in capture order.
      */
     private function resolveRecords(): array
     {
         if ($this->records !== []) {
-            return $this->records;
+            return QueueSnapshot::capture($this->records)->entries();
         }
 
-        if (is_array($this->data) && is_array($this->data['records'] ?? null)) {
-            return array_values($this->data['records']);
-        }
-
-        return [];
+        return $this->getRecords();
     }
 
     /**

@@ -6,39 +6,34 @@ namespace yii\debug\panels;
 
 use Closure;
 use Override;
-use Stringable;
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Strong;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\debug\helpers\Coerce;
 use yii\debug\Panel;
-use yii\debug\panels\asset\AssetBundleNormalizer;
+use yii\debug\panels\asset\{AssetBundleNormalizer, AssetBundleRow, AssetSnapshot, ViteChunk, ViteManifest};
 use yii\helpers\ArrayHelper;
 use yii\web\{AssetBundle, AssetManager};
 use yii\web\View;
 
-use function array_filter;
-use function array_values;
 use function count;
 use function file_get_contents;
 use function is_a;
 use function is_array;
 use function is_file;
 use function is_object;
-use function is_scalar;
 use function is_string;
 use function json_decode;
 
 /**
  * Captures the asset bundles registered on the request and renders them in the Asset Bundles panel.
  *
- * Stores the serialized bundle map (with `Closure` callbacks turned into label markers) so the detail view can render
- * each bundle's source path, base path, base URL, CSS/JS files, and dependency tree from a static snapshot.
+ * Stores each bundle's source path, base path, base URL, CSS/JS files, and dependency tree as typed rows, so the
+ * detail view renders from a static snapshot.
  *
  * @phpstan-import-type RegisterJsFileOptions from View
  * @phpstan-import-type RegisterCssFileOptions from View
- *
- * @extends Panel<array<string, array<string, mixed>>>
  */
 class AssetPanel extends Panel
 {
@@ -49,10 +44,39 @@ class AssetPanel extends Panel
      * Vite bridge FQCN from `yii2-extensions/inertia`, referenced as a string to avoid a hard package dependency.
      */
     private const string VITE_CLASS = 'yii\inertia\Vite';
+
+    private AssetSnapshot|null $snapshot = null;
+
     /**
-     * Reserved panel-data key holding the Vite manifest snapshot; never a valid bundle FQCN.
+     * Captures every registered asset bundle — plus the Vite manifest when the application wires the
+     * `yii2-extensions/inertia` Vite bridge — into the snapshot consumed by the detail view.
      */
-    private const string VITE_KEY = '@vite';
+    public function capture(): AssetSnapshot
+    {
+        $bundles = Yii::$app->getAssetManager()->bundles;
+
+        $rows = [];
+
+        if (is_array($bundles)) {
+            foreach ($bundles as $name => $bundle) {
+                if (!is_string($name) || !$bundle instanceof AssetBundle) {
+                    continue;
+                }
+
+                $rows[] = AssetBundleRow::fromBundle($name, $this->serializeBundle($bundle));
+            }
+        }
+
+        return new AssetSnapshot($rows, self::captureVite());
+    }
+
+    /**
+     * @return list<AssetBundleRow> Registered bundles in registration order.
+     */
+    public function getBundles(): array
+    {
+        return $this->snapshot?->bundles() ?? [];
+    }
 
     /**
      * Renders the detail view from the normalized bundle summary and the optional Vite manifest snapshot.
@@ -60,19 +84,23 @@ class AssetPanel extends Panel
     #[Override]
     public function getDetail(): string
     {
-        $data = is_array($this->data) ? $this->data : [];
-
-        $vite = is_array($data[self::VITE_KEY] ?? null) ? $data[self::VITE_KEY] : null;
-
-        unset($data[self::VITE_KEY]);
-
-        $summary = (new AssetBundleNormalizer())->normalize($data);
-
         return Yii::$app->view->render(
             'panels/assets/detail',
-            ['summary' => $summary, 'vite' => $vite],
+            [
+                'summary' => (new AssetBundleNormalizer())->normalize($this->getBundles()),
+                'vite' => $this->snapshot?->vite(),
+            ],
             $this,
         );
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = AssetSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -86,38 +114,6 @@ class AssetPanel extends Panel
         } catch (InvalidConfigException) {
             return false;
         }
-    }
-
-    /**
-     * Serializes every registered asset bundle — plus the Vite manifest snapshot when the application wires the
-     * `yii2-extensions/inertia` Vite bridge — into the panel-data shape consumed by the detail view.
-     *
-     * @return array<string, array<string, mixed>> Serialized bundles indexed by FQCN, with the optional Vite
-     * snapshot under the reserved `@vite` key; `[]` when nothing was captured.
-     */
-    public function save(): array
-    {
-        $bundles = Yii::$app->getAssetManager()->bundles;
-
-        $data = [];
-
-        if (is_array($bundles)) {
-            foreach ($bundles as $name => $bundle) {
-                if (!is_string($name) || !$bundle instanceof AssetBundle) {
-                    continue;
-                }
-
-                $data[$name] = $this->serializeBundle($bundle);
-            }
-        }
-
-        $vite = self::captureVite();
-
-        if ($vite !== null) {
-            $data[self::VITE_KEY] = $vite;
-        }
-
-        return $data;
     }
 
     /**
@@ -169,11 +165,7 @@ class AssetPanel extends Panel
         $formatted = [];
 
         foreach ($params as $param => $value) {
-            if (is_scalar($value) || $value instanceof Stringable) {
-                $value = (string) $value;
-            } else {
-                $value = get_debug_type($value);
-            }
+            $value = Coerce::stringOrNull($value) ?? get_debug_type($value);
 
             $formatted[$param] = Strong::tag()
                 ->content("'{$param}' => ")
@@ -192,7 +184,9 @@ class AssetPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        if (!is_array($this->data) || $this->data === []) {
+        $bundles = $this->getBundles();
+
+        if ($bundles === []) {
             return [];
         }
 
@@ -200,7 +194,7 @@ class AssetPanel extends Panel
             [
                 'status' => 'info',
                 'title' => 'Number of asset bundles loaded',
-                'value' => count($this->data),
+                'value' => count($bundles),
             ],
         ];
     }
@@ -208,16 +202,9 @@ class AssetPanel extends Panel
     /**
      * Captures the Vite bridge configuration and its build manifest when the application wires one.
      *
-     * @return array{
-     *   baseUrl: string,
-     *   devMode: bool,
-     *   devServerUrl: string|null,
-     *   entries: array<string, array{css: list<string>, file: string, imports: int, isEntry: bool}>,
-     *   entrypoints: list<string>,
-     *   manifestPath: string,
-     * }|null Vite snapshot, or `null` when no Vite component is registered.
+     * @return ViteManifest|null Vite snapshot, or `null` when no Vite component is registered.
      */
-    private static function captureVite(): array|null
+    private static function captureVite(): ViteManifest|null
     {
         $component = self::viteComponent();
 
@@ -226,23 +213,20 @@ class AssetPanel extends Panel
         }
 
         $manifestPath = ArrayHelper::getValue($component, 'manifestPath');
-        $manifestPath = is_string($manifestPath) ? (string) Yii::getAlias($manifestPath, false) : '';
 
-        $baseUrl = ArrayHelper::getValue($component, 'baseUrl');
-        $devMode = ArrayHelper::getValue($component, 'devMode');
+        $manifestPath = is_string($manifestPath)
+            ? (string) Yii::getAlias($manifestPath, false)
+            : '';
+
         $devServerUrl = ArrayHelper::getValue($component, 'devServerUrl');
-        $entrypoints = ArrayHelper::getValue($component, 'entrypoints');
 
-        return [
-            'baseUrl' => is_string($baseUrl) ? $baseUrl : '',
-            'devMode' => $devMode === true,
-            'devServerUrl' => is_string($devServerUrl) ? $devServerUrl : null,
-            'entries' => self::manifestEntries($manifestPath),
-            'entrypoints' => is_array($entrypoints)
-                ? array_values(array_filter($entrypoints, is_string(...)))
-                : [],
-            'manifestPath' => $manifestPath,
-        ];
+        return new ViteManifest(
+            baseUrl: Coerce::string(ArrayHelper::getValue($component, 'baseUrl')),
+            devMode: ArrayHelper::getValue($component, 'devMode') === true,
+            devServerUrl: is_string($devServerUrl) ? $devServerUrl : null,
+            manifestPath: $manifestPath,
+            chunks: self::manifestEntries($manifestPath),
+        );
     }
 
     /**
@@ -250,8 +234,8 @@ class AssetPanel extends Panel
      *
      * @param string $manifestPath Absolute path to the build manifest, already resolved from its alias.
      *
-     * @return array<string, array{css: list<string>, file: string, imports: int, isEntry: bool}> Chunks indexed by
-     * source name; `[]` when the manifest is missing or unreadable (a dev-server run never writes one).
+     * @return list<ViteChunk> Chunks in manifest order; `[]` when the manifest is missing or unreadable (a dev-server
+     * run never writes one).
      */
     private static function manifestEntries(string $manifestPath): array
     {
@@ -272,31 +256,27 @@ class AssetPanel extends Panel
                 continue;
             }
 
-            $entries[$name] = [
-                'css' => is_array($chunk['css'] ?? null)
-                    ? array_values(array_filter($chunk['css'], is_string(...)))
-                    : [],
-                'file' => is_string($chunk['file'] ?? null) ? $chunk['file'] : '',
-                'imports' => is_array($chunk['imports'] ?? null) ? count($chunk['imports']) : 0,
-                'isEntry' => ($chunk['isEntry'] ?? false) === true,
-            ];
+            $entries[] = new ViteChunk(
+                name: $name,
+                file: Coerce::string($chunk['file'] ?? null),
+                cssCount: is_array($chunk['css'] ?? null) ? count($chunk['css']) : 0,
+                imports: is_array($chunk['imports'] ?? null) ? count($chunk['imports']) : 0,
+                isEntry: ($chunk['isEntry'] ?? false) === true,
+            );
         }
 
         return $entries;
     }
 
     /**
-     * Snapshots the bundle properties consumed by the detail view (paths, files, options, dependencies).
+     * Snapshots the bundle properties consumed by the detail view (paths, files, dependencies).
      *
      * @return array{
      *   basePath: string|null,
      *   baseUrl: string|null,
      *   css: array<array-key, string|array<array-key, mixed>>,
-     *   cssOptions: RegisterCssFileOptions,
      *   depends: array<class-string>,
      *   js: array<array-key, string|array<array-key, mixed>>,
-     *   jsOptions: RegisterJsFileOptions,
-     *   publishOptions: array<string, mixed>,
      *   sourcePath: string|null,
      * } Bundle properties keyed by name.
      */
@@ -306,32 +286,10 @@ class AssetPanel extends Panel
             'basePath' => $bundle->basePath,
             'baseUrl' => $bundle->baseUrl,
             'css' => $bundle->css,
-            'cssOptions' => $bundle->cssOptions,
             'depends' => $bundle->depends,
             'js' => $bundle->js,
-            'jsOptions' => $bundle->jsOptions,
-            'publishOptions' => $this->serializeOptions($bundle->publishOptions),
             'sourcePath' => $bundle->sourcePath,
         ];
-    }
-
-    /**
-     * Replaces `beforeCopy` / `afterCopy` closures with the literal label `\Closure`, so the panel data stays
-     * serializable.
-     *
-     * @param array<string, mixed> $options Raw publish-options map.
-     *
-     * @return array<string, mixed> Options map with closure callbacks replaced.
-     */
-    private function serializeOptions(array $options): array
-    {
-        foreach (['beforeCopy', 'afterCopy'] as $name) {
-            if (isset($options[$name]) && $options[$name] instanceof Closure) {
-                $options[$name] = '\Closure';
-            }
-        }
-
-        return $options;
     }
 
     /**

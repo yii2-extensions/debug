@@ -68,8 +68,8 @@ final class SqlHighlighter
             $position = $match[0][1];
 
             $html .= Encode::content(substr($sql, $offset, $position - $offset));
-
             $text = Encode::content($match[0][0]);
+
             $token = $text;
 
             foreach (self::TOKEN_CLASSES as $group => $class) {
@@ -81,6 +81,7 @@ final class SqlHighlighter
             }
 
             $html .= $token;
+
             $offset = $position + strlen($match[0][0]);
         }
 

@@ -9,25 +9,16 @@ use Yii;
 use yii\base\Event;
 use yii\debug\models\search\EventSearch;
 use yii\debug\Panel;
+use yii\debug\panels\event\{EventRow, EventSnapshot};
 
 use function count;
-use function is_array;
 use function is_object;
-use function is_string;
 
 /**
  * Captures every framework event triggered during the request and renders them in the Events panel.
  *
  * Subscribes to the wildcard `Event::on('*', '*', …)` listener at {@see init()} time and records each fired event's
  * name, class, sender, and capture timestamp.
- *
- * @extends Panel<array<int, array{
- *   time?: float,
- *   name?: string,
- *   class?: class-string,
- *   isStatic?: string,
- *   senderClass?: string,
- * }>>
  */
 class EventPanel extends Panel
 {
@@ -35,15 +26,18 @@ class EventPanel extends Panel
     protected const string NAME = 'Events';
 
     /**
-     * @var array<int, array{
-     *   time: float,
-     *   name: string,
-     *   class: class-string<Event>,
-     *   isStatic: string,
-     *   senderClass: string
-     * }> Events captured for the current request, in fire order.
+     * @var list<EventRow> Events captured for the current request, in fire order.
      */
     private array $events = [];
+    private EventSnapshot|null $snapshot = null;
+
+    /**
+     * Returns the captured events as a typed snapshot.
+     */
+    public function capture(): EventSnapshot
+    {
+        return new EventSnapshot($this->events);
+    }
 
     /**
      * Renders the detail view with the events grid.
@@ -53,7 +47,7 @@ class EventPanel extends Panel
     {
         $searchModel = new EventSearch();
 
-        $dataProvider = $searchModel->search(Yii::$app->request->get(), self::normalizeEvents($this->data));
+        $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->getEvents());
 
         return Yii::$app->view->render(
             'panels/event/detail',
@@ -67,6 +61,28 @@ class EventPanel extends Panel
     }
 
     /**
+     * @return list<EventRow> Captured event rows in fire order.
+     */
+    public function getEvents(): array
+    {
+        return $this->snapshot?->entries() ?? [];
+    }
+
+    public function hasEvents(): bool
+    {
+        return $this->getEvents() !== [];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Override]
+    public function hydrate(array $payload): void
+    {
+        $this->snapshot = EventSnapshot::fromArray($payload, "$.panels.{$this->id}");
+    }
+
+    /**
      * Registers the wildcard event listener that records every fired event into {@see $events}.
      */
     public function init(): void
@@ -77,33 +93,15 @@ class EventPanel extends Panel
             '*',
             '*',
             function (Event $event): void {
-                $eventData = [
-                    'class' => $event::class,
-                    'isStatic' => is_object($event->sender) ? '0' : '1',
-                    'name' => $event->name,
-                    'senderClass' => is_object($event->sender) ? $event->sender::class : (string) $event->sender,
-                    'time' => microtime(true),
-                ];
-
-                $this->events[] = $eventData;
+                $this->events[] = new EventRow(
+                    time: microtime(true),
+                    name: $event->name,
+                    class: $event::class,
+                    isStatic: is_object($event->sender) ? '0' : '1',
+                    senderClass: is_object($event->sender) ? $event->sender::class : (string) $event->sender,
+                );
             },
         );
-    }
-
-    /**
-     * Snapshots the captured events into the panel-data shape consumed by the detail view.
-     *
-     * @return array<int, array{
-     *   time: float,
-     *   name: string,
-     *   class: class-string<Event>,
-     *   isStatic: string,
-     *   senderClass: string
-     * }> Event records in fire order.
-     */
-    public function save(): array
-    {
-        return $this->events;
     }
 
     /**
@@ -114,7 +112,7 @@ class EventPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        $eventCount = count(self::normalizeEvents($this->data));
+        $eventCount = count($this->getEvents());
 
         if ($eventCount === 0) {
             return [];
@@ -123,38 +121,5 @@ class EventPanel extends Panel
         return [['value' => $eventCount]];
     }
 
-    /**
-     * Narrows the saved event rows into a string-keyed list, dropping non-array entries and non-string keys inside
-     * each entry.
-     *
-     * @param mixed $events Raw event rows loaded from saved panel data.
-     *
-     * @return array<int, array<string, mixed>> Sanitized event records in original order.
-     */
-    private static function normalizeEvents(mixed $events): array
-    {
-        if (!is_array($events)) {
-            return [];
-        }
 
-        $normalized = [];
-
-        foreach ($events as $event) {
-            if (!is_array($event)) {
-                continue;
-            }
-
-            $row = [];
-
-            foreach ($event as $key => $value) {
-                if (is_string($key)) {
-                    $row[$key] = $value;
-                }
-            }
-
-            $normalized[] = $row;
-        }
-
-        return $normalized;
-    }
 }

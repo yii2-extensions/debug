@@ -8,26 +8,32 @@ use Override;
 use Throwable;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
-use yii\debug\{FlattenException, LogTarget};
-use yii\debug\helpers\{Format, Icon};
+use yii\debug\helpers\{Coerce, Format, Icon};
+use yii\debug\LogTarget;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\{ConfigPanel, MailPanel};
+use yii\debug\storage\{ExceptionSnapshot, RequestSummary};
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarView};
 use yii\helpers\Url;
 use yii\web\BadRequestHttpException;
 use yii\web\{Controller, NotFoundHttpException};
 
-use function is_array;
+use function array_key_first;
+use function is_file;
 use function is_string;
+use function mb_strpos;
+use function rtrim;
+use function sleep;
+use function strtolower;
 
 /**
  * Browses recorded debug entries and serves the debug toolbar payload.
  *
- * Hosts the entry-point actions consumed by the debug UI (`index`, `view`, `toolbar-data`, `php-info`,
- * `download-mail`) and adopts external panel actions through {@see actions()}. Loads the active tag's payload into
- * registered panels via {@see loadData()} before rendering.
+ * Hosts the entry-point actions consumed by the debug UI (`index`, `view`, `toolbar-data`, `php-info`, `download-mail`)
+ * and adopts external panel actions through {@see actions()}. Loads the active tag's payload into registered panels via
+ * {@see loadData()} before rendering.
  *
  * @template T of \yii\debug\Module
  * @extends Controller<T>
@@ -43,12 +49,12 @@ class DefaultController extends Controller
      */
     public $module = null;
     /**
-     * @var array<string, mixed> Summary metadata for the active debug entry (for example, URL and time).
+     * Summary metadata for the active debug entry.
      */
-    public $summary = [];
+    public RequestSummary|null $summary = null;
 
     /**
-     * @var array<string, array<string, mixed>>|null Cached manifest of available debug entries, indexed by tag.
+     * @var array<string, RequestSummary>|null Cached manifest of available debug entries, indexed by tag.
      */
     private array|null $manifest = null;
 
@@ -66,8 +72,8 @@ class DefaultController extends Controller
         $filePath = Yii::getAlias($mailPanel->mailPath) . '/' . basename($file);
 
         if (
-            (mb_strpos($file, '\\') !== false
-            || mb_strpos($file, '/') !== false)
+            mb_strpos($file, '\\') !== false
+            || mb_strpos($file, '/') !== false
             || !is_file($filePath)
         ) {
             throw new NotFoundHttpException(
@@ -103,8 +109,7 @@ class DefaultController extends Controller
 
         $this->loadData($tag);
 
-        $cursor = Yii::$app->getRequest()->get('cursor');
-        $cursor = is_string($cursor) ? $cursor : '';
+        $cursor = Coerce::string(Yii::$app->getRequest()->get('cursor'));
 
         $this->prepareIndexShell($manifest, $cursor);
 
@@ -318,13 +323,7 @@ class DefaultController extends Controller
 
         return $this->render(
             'view',
-            [
-                'activePanel' => $activePanel,
-                'manifest' => $this->getManifest(),
-                'panels' => $this->module->panels,
-                'summary' => $this->summary,
-                'tag' => $tag,
-            ],
+            ['activePanel' => $activePanel],
         );
     }
 
@@ -352,7 +351,7 @@ class DefaultController extends Controller
      *
      * @param bool $forceReload `true` to bypass the in-memory cache and re-read the manifest from disk.
      *
-     * @return array<string, array<string, mixed>> Manifest entries indexed by tag.
+     * @return array<string, RequestSummary> Manifest entries indexed by tag.
      */
     public function getManifest(bool $forceReload = false): array
     {
@@ -387,11 +386,9 @@ class DefaultController extends Controller
             $manifest = $this->getManifest($retry > 0);
 
             if (isset($manifest[$tag])) {
-                $data = $this->getLogTarget()->loadTagToPanels($tag);
+                $summary = $this->getLogTarget()->loadTagToPanels($tag);
 
-                $summary = $data['summary'] ?? null;
-
-                if (!is_array($summary)) {
+                if ($summary === null) {
                     throw new NotFoundHttpException(
                         "Debug data tagged with '$tag' does not contain summary data.",
                     );
@@ -405,7 +402,9 @@ class DefaultController extends Controller
             sleep(1);
         }
 
-        throw new NotFoundHttpException("Unable to find debug data tagged with '$tag'.");
+        throw new NotFoundHttpException(
+            "Unable to find debug data tagged with '$tag'.",
+        );
     }
 
     /**
@@ -414,12 +413,15 @@ class DefaultController extends Controller
     public function prepareShell(Panel $activePanel, string $tag): void
     {
         $manifest = $this->getManifest();
+
         $sidebar = SidebarDataNormalizer::fromView(
             $this->module->panels,
             $manifest,
             $activePanel,
             $tag,
-            $this->summary,
+            $this->summary ?? throw new NotFoundHttpException(
+                "Debug data tagged with '$tag' has no summary.",
+            ),
         );
 
         $this->view->params['debugShell'] = $this->createShellContext(
@@ -455,31 +457,36 @@ class DefaultController extends Controller
     }
 
     /**
-     * @param array<string, array<string, mixed>> $manifest
-     * @param array<string, mixed>|null $summary
+     * @param array<string, RequestSummary> $manifest
      */
     private function createShellContext(
         string $mode,
         array $manifest,
         string|null $activeTag,
-        array|null $summary,
+        RequestSummary|null $summary,
         SidebarView $sidebar,
     ): ShellContext {
         $theme = $this->resolveTheme();
+
         $configPanel = $this->module->panels['config'] ?? null;
+
         $yiiVersion = $configPanel instanceof ConfigPanel ? $configPanel->getYiiVersion() : null;
         $phpVersion = $configPanel instanceof ConfigPanel ? $configPanel->getPhpVersion() : null;
+
         $configTag = $activeTag ?? array_key_first($manifest);
         $configUrl = $configTag === null
             ? null
-            : Url::to([
-                '/' . $this->module->getUniqueId() . '/default/view',
-                'panel' => 'config',
-                'tag' => $configTag,
-            ]);
-        $peakMemory = is_numeric($summary['peakMemory'] ?? null)
-            ? Format::bytesToMb((float) $summary['peakMemory'])
-            : null;
+            : Url::to(
+                [
+                    '/' . $this->module->getUniqueId() . '/default/view',
+                    'panel' => 'config',
+                    'tag' => $configTag,
+                ],
+            );
+
+        $peakMemory = $summary?->peakMemory;
+
+        $peakMemory = $peakMemory !== null ? Format::bytesToMb($peakMemory) : null;
 
         return new ShellContext(
             mode: $mode,
@@ -558,7 +565,7 @@ class DefaultController extends Controller
     }
 
     /**
-     * @param array<string, array<string, mixed>> $manifest
+     * @param array<string, RequestSummary> $manifest
      */
     private function prepareIndexShell(array $manifest, string $cursor): void
     {
@@ -574,18 +581,18 @@ class DefaultController extends Controller
     }
 
     /**
-     * Renders a serialized panel exception through Yii's exception view.
+     * Renders a JSON-safe panel exception snapshot through Yii's exception view.
      *
-     * `ErrorHandler::renderFile()` accepts mixed params and injects `$handler` into the view, so the FlattenException
-     * travels through the duck-typed `$exception` slot without tripping the `@param Throwable` PHPDoc.
+     * `ErrorHandler::renderFile()` accepts mixed params, so the immutable exception snapshot can use the view's
+     * duck-typed `$exception` slot without recreating or executing the original throwable.
      *
-     * @param FlattenException $error Exception captured by the panel, typically via {@see Panel::getError()}.
+     * @param ExceptionSnapshot $error Exception captured by the panel, typically via {@see Panel::getError()}.
      *
      * @throws InvalidConfigException When the application is not bound to a `yii\web\ErrorHandler`.
      *
      * @return string Rendered exception view body.
      */
-    private function renderPanelError(FlattenException $error): string
+    private function renderPanelError(ExceptionSnapshot $error): string
     {
         $errorHandler = Yii::$app->errorHandler;
 
@@ -603,6 +610,7 @@ class DefaultController extends Controller
     private function resolveTheme(): string
     {
         $request = Yii::$app->getRequest();
+
         $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
 
         if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
@@ -611,6 +619,8 @@ class DefaultController extends Controller
 
         $raw ??= $request->get('yii_debug_theme');
 
-        return is_string($raw) && strtolower($raw) === 'dark' ? 'dark' : 'light';
+        return is_string($raw) && strtolower($raw) === 'dark'
+            ? 'dark'
+            : 'light';
     }
 }

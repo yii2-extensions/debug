@@ -6,6 +6,7 @@ namespace yii\debug\tests\mail;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\MailSearch;
+use yii\debug\panels\mail\MailMessage;
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -31,9 +32,9 @@ final class MailSearchTest extends TestCase
             "'to' label must be defined.",
         );
         self::assertArrayHasKey(
-            'reply',
+            'replyTo',
             $labels,
-            "'reply' label must be defined.",
+            "'replyTo' label must be defined.",
         );
         self::assertArrayHasKey(
             'cc',
@@ -77,36 +78,9 @@ final class MailSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'from' => 'a@x.test',
-                'to' => 'b@x.test',
-                'reply' => '',
-                'cc' => '',
-                'bcc' => '',
-                'subject' => 'Welcome',
-                'body' => '',
-                'charset' => 'utf-8',
-            ],
-            [
-                'from' => 'a@x.test',
-                'to' => 'c@x.test',
-                'reply' => '',
-                'cc' => '',
-                'bcc' => '',
-                'subject' => 'Reset password',
-                'body' => '',
-                'charset' => 'utf-8',
-            ],
-            [
-                'from' => 'a@x.test',
-                'to' => 'd@x.test',
-                'reply' => '',
-                'cc' => '',
-                'bcc' => '',
-                'subject' => 'Order shipped',
-                'body' => '',
-                'charset' => 'utf-8',
-            ],
+            MailMessage::fromCapture(['from' => 'a@x.test', 'to' => 'b@x.test', 'subject' => 'Welcome', 'charset' => 'utf-8']),
+            MailMessage::fromCapture(['from' => 'a@x.test', 'to' => 'c@x.test', 'subject' => 'Reset password', 'charset' => 'utf-8']),
+            MailMessage::fromCapture(['from' => 'a@x.test', 'to' => 'd@x.test', 'subject' => 'Order shipped', 'charset' => 'utf-8']),
         ];
 
         $search = new MailSearch();
@@ -125,26 +99,8 @@ final class MailSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'from' => 'a',
-                'to' => 'b',
-                'reply' => '',
-                'cc' => '',
-                'bcc' => '',
-                'subject' => 's1',
-                'body' => '',
-                'charset' => 'utf-8',
-            ],
-            [
-                'from' => 'a',
-                'to' => 'c',
-                'reply' => '',
-                'cc' => '',
-                'bcc' => '',
-                'subject' => 's2',
-                'body' => '',
-                'charset' => 'utf-8',
-            ],
+            MailMessage::fromCapture(['from' => 'a', 'to' => 'b', 'subject' => 's1', 'charset' => 'utf-8']),
+            MailMessage::fromCapture(['from' => 'a', 'to' => 'c', 'subject' => 's2', 'charset' => 'utf-8']),
         ];
 
         self::assertSame(
@@ -159,26 +115,8 @@ final class MailSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            [
-                'from' => 'a',
-                'to' => 'b',
-                'reply' => '',
-                'cc' => '',
-                'bcc' => '',
-                'subject' => 'x',
-                'body' => '',
-                'charset' => 'utf-8',
-            ],
-            [
-                'from' => 'a',
-                'to' => 'c',
-                'reply' => '',
-                'cc' => '',
-                'bcc' => '',
-                'subject' => 'y',
-                'body' => '',
-                'charset' => 'utf-8',
-            ],
+            MailMessage::fromCapture(['from' => 'a', 'to' => 'b', 'subject' => 'x', 'charset' => 'utf-8']),
+            MailMessage::fromCapture(['from' => 'a', 'to' => 'c', 'subject' => 'y', 'charset' => 'utf-8']),
         ];
 
         $search = new class extends MailSearch {

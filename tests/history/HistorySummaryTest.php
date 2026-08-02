@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\history;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\history\HistorySummary;
 
@@ -20,11 +21,11 @@ final class HistorySummaryTest extends TestCase
     {
         $summary = HistorySummary::fromManifest(
             [
-                ['statusCode' => 200],
-                ['statusCode' => 201],
-                ['statusCode' => 304],
-                ['statusCode' => 404],
-                ['statusCode' => 500],
+                $this->summary(200),
+                $this->summary(201),
+                $this->summary(304),
+                $this->summary(404),
+                $this->summary(500),
             ],
         );
 
@@ -46,10 +47,31 @@ final class HistorySummaryTest extends TestCase
         );
     }
 
+    public function testFromManifestCountsTypedEntries(): void
+    {
+        $summary = HistorySummary::fromManifest(
+            [
+                $this->summary(200),
+                $this->summary(404),
+            ],
+        );
+
+        self::assertSame(
+            2,
+            $summary->totalRequests,
+            'Total count must reflect every typed manifest entry.',
+        );
+        self::assertCount(
+            2,
+            $summary->statusBuckets,
+            'Each status family must contribute one bucket.',
+        );
+    }
+
     public function testFromManifestExposesEmptyFilterWhenNoStatusCaptured(): void
     {
         $summary = HistorySummary::fromManifest(
-            [['method' => 'GET']],
+            [],
         );
 
         self::assertNull(
@@ -62,8 +84,8 @@ final class HistorySummaryTest extends TestCase
     {
         $summary = HistorySummary::fromManifest(
             [
-                ['statusCode' => 201],
-                ['statusCode' => 200],
+                $this->summary(201),
+                $this->summary(200),
             ],
         );
 
@@ -82,10 +104,10 @@ final class HistorySummaryTest extends TestCase
     {
         $summary = HistorySummary::fromManifest(
             [
-                ['statusCode' => 200],
-                ['statusCode' => 301],
-                ['statusCode' => 404],
-                ['statusCode' => 500],
+                $this->summary(200),
+                $this->summary(301),
+                $this->summary(404),
+                $this->summary(500),
             ],
         );
 
@@ -129,35 +151,12 @@ final class HistorySummaryTest extends TestCase
         );
     }
 
-    public function testFromManifestSkipsNonArrayManifestEntries(): void
-    {
-        $summary = HistorySummary::fromManifest(
-            [
-                ['statusCode' => 200],
-                'not-an-array',
-                42,
-                ['statusCode' => 404],
-            ],
-        );
-
-        self::assertSame(
-            4,
-            $summary->totalRequests,
-            'Total count must reflect every manifest entry.',
-        );
-        self::assertCount(
-            2,
-            $summary->statusBuckets,
-            'Only array entries contribute to buckets.',
-        );
-    }
-
     public function testFromManifestSkipsRequestsWithStatusBelow200(): void
     {
         $summary = HistorySummary::fromManifest(
             [
-                ['statusCode' => 100],
-                ['statusCode' => 200],
+                $this->summary(100),
+                $this->summary(200),
             ],
         );
 
@@ -176,10 +175,10 @@ final class HistorySummaryTest extends TestCase
     {
         $summary = HistorySummary::fromManifest(
             [
-                ['statusCode' => 404],
-                ['statusCode' => 200],
-                ['statusCode' => 200],
-                ['statusCode' => 302],
+                $this->summary(404),
+                $this->summary(200),
+                $this->summary(200),
+                $this->summary(302),
             ],
         );
 
@@ -191,6 +190,25 @@ final class HistorySummaryTest extends TestCase
             ],
             $summary->statusCodeFilter,
             'Filter map must list unique status codes in ascending order.',
+        );
+    }
+
+    private function summary(int $statusCode): RequestSummary
+    {
+        return new RequestSummary(
+            tag: 'tag-' . $statusCode,
+            url: 'https://example.test',
+            ajax: false,
+            method: 'GET',
+            ip: '127.0.0.1',
+            time: 1_700_000_000.0,
+            statusCode: $statusCode,
+            sqlCount: 0,
+            excessiveCallersCount: 0,
+            mailCount: 0,
+            mailFiles: [],
+            processingTime: null,
+            peakMemory: null,
         );
     }
 }

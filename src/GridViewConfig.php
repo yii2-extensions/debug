@@ -7,6 +7,7 @@ namespace yii\debug;
 use UIAwesome\Html\Form\{Option, Select};
 use UIAwesome\Html\Phrasing\{Label, Span};
 use Yii;
+use yii\debug\helpers\Coerce;
 use yii\debug\widgets\DebugDataColumn;
 
 use function in_array;
@@ -127,7 +128,7 @@ final class GridViewConfig
             return false;
         }
 
-        $size = $raw !== null && is_numeric($raw) ? (int) $raw : $default;
+        $size = Coerce::int($raw, $default);
 
         if ($size <= 0) {
             $size = $default;

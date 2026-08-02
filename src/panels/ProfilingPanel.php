@@ -9,12 +9,12 @@ use Yii;
 use yii\debug\helpers\{Coerce, Format};
 use yii\debug\models\search\ProfileSearch;
 use yii\debug\Panel;
+use yii\debug\panels\profile\{ProfileRow, ProfilingSnapshot};
 use yii\helpers\Url;
 use yii\log\Logger;
 
-use function count;
-use function is_array;
-use function is_int;
+use function memory_get_peak_usage;
+use function microtime;
 
 /**
  * Captures profile-level log messages emitted by `Yii::beginProfile()` and renders the per-block timings in the
@@ -22,25 +22,31 @@ use function is_int;
  *
  * Records the request peak memory and total processing time alongside the profile messages, so the detail view can
  * surface the totals next to the sortable per-block grid and link to the Timeline panel.
- *
- * @extends Panel<array{memory?: mixed, time?: mixed, messages?: mixed}>
  */
-class ProfilingPanel extends Panel
+class ProfilingPanel extends Panel implements ProvidesMemorySamples
 {
     protected const string ICON = 'profiling';
     protected const string NAME = 'Profiling';
 
+    private ProfilingSnapshot|null $snapshot = null;
+
     /**
-     * @var array<int, array{
-     *   duration: float,
-     *   category: string,
-     *   info: string,
-     *   level: int,
-     *   timestamp: float,
-     *   seq: int
-     * }>|null Cached typed profile rows consumed by the profile grid.
+     * Snapshots the captured profile messages, the peak memory usage, and the total request time.
      */
-    private array|null $models = null;
+    public function capture(): ProfilingSnapshot
+    {
+        $messages = $this->getLogMessages(Logger::LEVEL_PROFILE);
+
+        $requestStart = Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? microtime(true);
+
+        $this->snapshot = ProfilingSnapshot::capture(
+            memory_get_peak_usage(),
+            microtime(true) - $requestStart,
+            $messages,
+        );
+
+        return $this->snapshot;
+    }
 
     /**
      * Renders the detail view with the profile grid, total time, peak memory, and the Timeline panel cross-link.
@@ -48,13 +54,12 @@ class ProfilingPanel extends Panel
     #[Override]
     public function getDetail(): string
     {
-        $profileData = $this->getProfileData();
-
         $searchModel = new ProfileSearch();
 
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
 
         $module = $this->module;
+
         $timelineUrl = $module === null
             ? '#'
             : Url::to(
@@ -69,14 +74,42 @@ class ProfilingPanel extends Panel
             'panels/profile/detail',
             [
                 'dataProvider' => $dataProvider,
-                'memory' => Format::bytesToMb($profileData['memory'], 3),
+                'memory' => Format::bytesToMb($this->getMemoryUsage(), 3),
                 'panel' => $this,
                 'searchModel' => $searchModel,
-                'time' => number_format($profileData['time'] * 1000) . ' ms',
+                'time' => number_format(($this->getProcessingTime() ?? 0.0) * 1000) . ' ms',
                 'timelineUrl' => $timelineUrl,
             ],
             $this,
         );
+    }
+
+    /**
+     * @return list<MemorySample> Memory readings recorded alongside each captured profile message.
+     */
+    public function getMemorySamples(): array
+    {
+        return $this->snapshot?->samples() ?? [];
+    }
+
+    public function getMemoryUsage(): int
+    {
+        return $this->snapshot === null ? 0 : $this->snapshot->memory;
+    }
+
+    /**
+     * Returns the typed profile blocks consumed by the profile grid and the Timeline panel.
+     *
+     * @return list<ProfileRow> Blocks in capture order, suitable for {@see \yii\data\ArrayDataProvider}.
+     */
+    public function getModels(): array
+    {
+        return $this->snapshot?->entries() ?? [];
+    }
+
+    public function getProcessingTime(): float|null
+    {
+        return $this->snapshot?->time;
     }
 
     /**
@@ -97,55 +130,12 @@ class ProfilingPanel extends Panel
     }
 
     /**
-     * Snapshots the captured profile messages, the peak memory usage, and the total request time.
-     *
-     * @return array{memory: int, time: float, messages: array<int, array<int|string, mixed>>} Captured payload, with
-     * `time` in seconds and `memory` in bytes.
+     * @param array<string, mixed> $payload
      */
-    public function save(): array
+    #[Override]
+    public function hydrate(array $payload): void
     {
-        $messages = $this->getLogMessages(Logger::LEVEL_PROFILE);
-
-        $requestStart = Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? microtime(true);
-
-        return [
-            'memory' => memory_get_peak_usage(),
-            'time' => microtime(true) - $requestStart,
-            'messages' => $messages,
-        ];
-    }
-
-    /**
-     * Builds and caches the typed profile rows consumed by the profile grid.
-     *
-     * Suitable for {@see \yii\data\ArrayDataProvider}.
-     *
-     * @return array<int, array{
-     *   duration: float,
-     *   category: string,
-     *   info: string,
-     *   level: int,
-     *   timestamp: float,
-     *   seq: int
-     * }> Profile rows in capture order, with `duration` and `timestamp` in milliseconds.
-     */
-    protected function getModels(): array
-    {
-        if ($this->models === null) {
-            $this->models = [];
-
-            $timings = Yii::getLogger()->calculateTimings($this->getProfileData()['messages']);
-
-            foreach ($timings as $seq => $profileTiming) {
-                $model = self::normalizeTiming($profileTiming, is_int($seq) ? $seq : count($this->models));
-
-                if ($model !== null) {
-                    $this->models[] = $model;
-                }
-            }
-        }
-
-        return $this->models;
+        $this->snapshot = ProfilingSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -157,98 +147,15 @@ class ProfilingPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        $profileData = $this->getProfileData();
-
         return [
             [
                 'title' => 'Total processing time',
-                'value' => number_format($profileData['time'] * 1000) . ' ms',
+                'value' => number_format(($this->getProcessingTime() ?? 0.0) * 1000) . ' ms',
             ],
             [
                 'title' => 'Peak memory',
-                'value' => Format::bytesToMb($profileData['memory'], 3),
+                'value' => Format::bytesToMb($this->getMemoryUsage(), 3),
             ],
-        ];
-    }
-
-    /**
-     * Narrows the saved panel data into the typed `memory` / `time` / `messages` shape consumed by the renderers.
-     *
-     * @return array{memory: int, time: float, messages: array<int, array<int|string, mixed>>} Normalized payload with
-     * defensible defaults (`0` / `0.0` / `[]`) for missing fields.
-     */
-    private function getProfileData(): array
-    {
-        $data = is_array($this->data) ? $this->data : [];
-
-        return [
-            'memory' => Coerce::intOrNull($data['memory'] ?? null) ?? 0,
-            'time' => Coerce::floatOrNull($data['time'] ?? null) ?? 0.0,
-            'messages' => self::normalizeMessages($data['messages'] ?? []),
-        ];
-    }
-
-    /**
-     * Filters the raw saved messages to keep only array entries.
-     *
-     * @param array<int|string, mixed>|mixed $messages Raw saved messages.
-     *
-     * @return array<int, array<int|string, mixed>> Reindexed list of message arrays.
-     */
-    private static function normalizeMessages(mixed $messages): array
-    {
-        if (!is_array($messages)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($messages as $message) {
-            if (is_array($message)) {
-                $normalized[] = $message;
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Narrows a raw timing returned by the Yii logger into the typed profile-row shape, returning `null` when either
-     * `duration` or `timestamp` is missing or non-numeric.
-     *
-     * @param mixed $timing Raw timing returned by Yii logger.
-     * @param int $seq Sequence index to assign to the resulting row.
-     *
-     * @return array{
-     *   duration: float,
-     *   category: string,
-     *   info: string,
-     *   level: int,
-     *   timestamp: float,
-     *   seq: int
-     * }|null Typed profile row with `duration` and `timestamp` in milliseconds, or `null` when the input was
-     * incomplete.
-     */
-    private static function normalizeTiming(mixed $timing, int $seq): array|null
-    {
-        if (!is_array($timing)) {
-            return null;
-        }
-
-        $duration = Coerce::floatOrNull($timing['duration'] ?? null);
-        $timestamp = Coerce::floatOrNull($timing['timestamp'] ?? null);
-
-        if ($duration === null || $timestamp === null) {
-            return null;
-        }
-
-        return [
-            'duration' => $duration * 1000,
-            'category' => Coerce::stringOrNull($timing['category'] ?? null) ?? '',
-            'info' => Coerce::stringOrNull($timing['info'] ?? null) ?? '',
-            'level' => Coerce::intOrNull($timing['level'] ?? null) ?? 0,
-            'timestamp' => $timestamp * 1000,
-            'seq' => $seq,
         ];
     }
 }

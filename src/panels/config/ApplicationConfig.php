@@ -7,7 +7,7 @@ namespace yii\debug\panels\config;
 /**
  * Typed view-model for the application section of the Configuration panel.
  *
- * Mirrors the `application` slice of {@see \yii\debug\panels\ConfigPanel::save()} after every value has been narrowed
+ * Mirrors the `application` slice of {@see \yii\debug\panels\ConfigPanel::capture()} after every value has been narrowed
  * to its declared scalar type; the consuming view reads properties without further type checks.
  */
 final readonly class ApplicationConfig

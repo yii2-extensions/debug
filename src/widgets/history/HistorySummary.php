@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
+use yii\debug\storage\RequestSummary;
+
 use function count;
-use function is_array;
-use function is_numeric;
 use function ksort;
 
 /**
@@ -38,9 +38,9 @@ final readonly class HistorySummary
     ) {}
 
     /**
-     * Builds the typed summary from the raw manifest array.
+     * Builds the typed summary from the request manifest.
      *
-     * @param array<int|string, mixed> $manifest
+     * @param array<array-key, RequestSummary> $manifest Manifest entries; only the values are read.
      */
     public static function fromManifest(array $manifest): self
     {
@@ -51,11 +51,7 @@ final readonly class HistorySummary
         $codes = [];
 
         foreach ($manifest as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-
-            $statusCode = is_numeric($entry['statusCode'] ?? null) ? (int) $entry['statusCode'] : 0;
+            $statusCode = $entry->statusCode;
 
             if ($statusCode > 0) {
                 $codes[$statusCode] = $statusCode;

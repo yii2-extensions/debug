@@ -9,7 +9,9 @@ use Yii;
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\Module;
+use yii\debug\panels\profile\ProfileRow;
 use yii\debug\panels\timeline\TimelineRenderer;
+use yii\debug\panels\timeline\TimelineSnapshot;
 use yii\debug\panels\TimelinePanel;
 use yii\debug\tests\support\TestCase;
 
@@ -51,7 +53,7 @@ final class TimelineRendererTest extends TestCase
             $panel,
             $this->makeDataProvider(
                 $panel,
-                [['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05]],
+                [new ProfileRow(0.0, 50.0, 'yii\\db\\Command::query', '', 0, 0, 0, 0, [])],
             ),
         );
 
@@ -82,7 +84,7 @@ final class TimelineRendererTest extends TestCase
             $panel,
             $this->makeDataProvider(
                 $panel,
-                [['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05]],
+                [new ProfileRow(0.0, 50.0, 'yii\\db\\Command::query', '', 0, 0, 0, 0, [])],
             ),
         );
 
@@ -118,7 +120,7 @@ final class TimelineRendererTest extends TestCase
 
         $dataProvider = $this->makeDataProvider(
             $panel,
-            [['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05]],
+            [new ProfileRow(0.0, 50.0, 'yii\\db\\Command::query', '', 0, 0, 0, 0, [])],
         );
 
         $html = TimelineRenderer::renderChart($panel, $dataProvider);
@@ -158,8 +160,8 @@ final class TimelineRendererTest extends TestCase
         $dataProvider = $this->makeDataProvider(
             $panel,
             [
-                ['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05],
-                ['category' => 'yii\\db\\Command::execute', 'timestamp' => 0.05, 'duration' => 0.03],
+                new ProfileRow(0.0, 50.0, 'yii\\db\\Command::query', '', 0, 0, 0, 0, []),
+                new ProfileRow(50.0, 30.0, 'yii\\db\\Command::execute', '', 0, 0, 0, 0, []),
             ],
         );
 
@@ -179,8 +181,8 @@ final class TimelineRendererTest extends TestCase
         $dataProvider = $this->makeDataProvider(
             $panel,
             [
-                ['category' => 'yii\\db\\Command::query', 'timestamp' => 0.0, 'duration' => 0.05],
-                ['category' => 'yii\\base\\View::render', 'timestamp' => 0.05, 'duration' => 0.03],
+                new ProfileRow(0.0, 50.0, 'yii\\db\\Command::query', '', 0, 0, 0, 0, []),
+                new ProfileRow(50.0, 30.0, 'yii\\base\\View::render', '', 0, 0, 0, 0, []),
             ],
         );
 
@@ -273,7 +275,7 @@ final class TimelineRendererTest extends TestCase
         $dataProvider = $this->makeDataProvider(
             $panel,
             [
-                ['category' => 'x', 'timestamp' => 0.0, 'duration' => 0.05],
+                new ProfileRow(0.0, 50.0, 'x', '', 0, 0, 0, 0, []),
             ],
         );
 
@@ -368,9 +370,9 @@ final class TimelineRendererTest extends TestCase
         $dataProvider = $this->makeDataProvider(
             $panel,
             [
-                ['category' => 'a', 'timestamp' => 0.0, 'duration' => 0.01],
-                ['category' => 'b', 'timestamp' => 0.01, 'duration' => 0.01],
-                ['category' => 'c', 'timestamp' => 0.02, 'duration' => 0.01],
+                new ProfileRow(0.0, 10.0, 'a', '', 0, 0, 0, 0, []),
+                new ProfileRow(10.0, 10.0, 'b', '', 0, 0, 0, 0, []),
+                new ProfileRow(20.0, 10.0, 'c', '', 0, 0, 0, 0, []),
             ],
         );
 
@@ -413,7 +415,7 @@ final class TimelineRendererTest extends TestCase
     }
 
     /**
-     * @param list<array<string, mixed>> $models
+     * @param list<ProfileRow> $models
      */
     private function makeDataProvider(TimelinePanel $panel, array $models): DataProvider
     {
@@ -440,12 +442,9 @@ final class TimelineRendererTest extends TestCase
 
         $start = 1_700_000_000.0;
 
-        $panel->load(
-            [
-                'start' => $start,
-                'end' => $start + $duration / 1000,
-                'memory' => $memory,
-            ],
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot($start, $start + $duration / 1000, $memory),
         );
 
         return $panel;

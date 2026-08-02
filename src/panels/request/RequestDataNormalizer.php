@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\request;
 
-use yii\debug\helpers\Vocabulary;
+use yii\debug\helpers\{Coerce, Vocabulary};
+use yii\debug\storage\RequestSummary;
 
 use function array_key_exists;
 use function date;
 use function is_array;
-use function is_int;
-use function is_numeric;
-use function is_string;
 use function sprintf;
 
 /**
- * Narrows the loosely-typed `$panel->data` payload (alongside the controller summary array) into the typed
+ * Narrows the request snapshot payload (alongside the controller summary array) into the typed
  * {@see RequestView} the detail view consumes.
  *
  * Concentrates every `is_array()` / `is_string()` / `is_int()` defensive check in one place, so the view stays focused
@@ -34,23 +32,18 @@ final class RequestDataNormalizer
     ];
 
     /**
-     * Narrows `$panel->data` plus the controller `$summary` into the typed {@see RequestView}.
+     * Builds the typed {@see RequestView} from the captured request data and the manifest entry.
      *
-     * @param mixed $data Raw value of {@see \yii\debug\panels\RequestPanel::$data}.
-     * @param array<string, mixed> $summary Controller summary block accompanying the panel data.
+     * @param array<array-key, mixed> $data Captured request data exposed by {@see RequestSnapshot}.
+     * @param RequestSummary|null $summary Manifest entry for the loaded capture, when available.
      */
-    public static function fromPanelData(mixed $data, array $summary): RequestView
+    public static function fromPanelData(array $data, RequestSummary|null $summary): RequestView
     {
-        $data = is_array($data) ? $data : [];
-
-        $hero = self::buildHero($data, $summary);
-        $tabs = self::buildTabs($data);
-
-        return new RequestView(hero: $hero, tabs: $tabs);
+        return new RequestView(hero: self::buildHero($data, $summary), tabs: self::buildTabs($data));
     }
 
     /**
-     * Narrows a `mixed` saved-payload bucket into a name → value array, falling back to `[]` for non-array buckets.
+     * Narrows a `mixed` snapshot bucket into a name → value array, falling back to `[]` for non-array buckets.
      *
      * @return array<int|string, mixed> Bucket entries preserving the original keys.
      */
@@ -60,52 +53,30 @@ final class RequestDataNormalizer
     }
 
     /**
-     * Coerces the value to an int, falling back to `0` when it is neither an int nor a numeric string.
-     */
-    private static function asInt(mixed $value): int
-    {
-        if (is_int($value)) {
-            return $value;
-        }
-
-        return is_numeric($value) ? (int) $value : 0;
-    }
-
-    /**
-     * Returns the value when it is already a string, falling back to `''` otherwise.
-     */
-    private static function asString(mixed $value): string
-    {
-        return is_string($value) ? $value : '';
-    }
-
-    /**
-     * Builds the hero header view-model from the panel data and the controller summary.
+     * Builds the hero header view-model from the panel data and the manifest entry.
      *
-     * @param array<int|string, mixed> $data Panel data narrowed to an array.
-     * @param array<string, mixed> $summary Controller summary block.
+     * @param array<array-key, mixed> $data Captured request data.
+     * @param RequestSummary|null $summary Manifest entry for the loaded capture, when available.
      */
-    private static function buildHero(array $data, array $summary): RequestHero
+    private static function buildHero(array $data, RequestSummary|null $summary): RequestHero
     {
-        $statusCode = self::asInt($data['statusCode'] ?? $summary['statusCode'] ?? 0);
+        $statusCode = Coerce::intOrNull($data['statusCode'] ?? null)
+            ?? ($summary === null ? 0 : $summary->statusCode);
 
         $general = is_array($data['general'] ?? null) ? $data['general'] : [];
 
-        $method = self::asString($general['method'] ?? $summary['method'] ?? '');
-        $url = self::asString($summary['url'] ?? '');
-        $ip = self::asString($summary['ip'] ?? '');
+        $method = Coerce::stringOrNull($general['method'] ?? null)
+            ?? ($summary === null ? '' : $summary->method);
+        $url = $summary === null ? '' : $summary->url;
+        $ip = $summary === null ? '' : $summary->ip;
 
-        $timeValue = $summary['time'] ?? null;
+        $capturedAt = $summary === null ? 0.0 : $summary->time;
 
-        $time = is_numeric($timeValue) && $timeValue !== '0' && $timeValue !== 0 && $timeValue !== 0.0
-            ? date('H:i:s', (int) $timeValue)
-            : '';
+        $time = $capturedAt > 0 ? date('H:i:s', (int) $capturedAt) : '';
 
-        $processing = $summary['processingTime'] ?? null;
+        $processing = $summary?->processingTime;
 
-        $durationMs = is_numeric($processing)
-            ? sprintf('%.1f ms', (float) $processing * 1000)
-            : '';
+        $durationMs = $processing === null ? '' : sprintf('%.1f ms', $processing * 1000);
 
         $flags = [];
 

@@ -6,6 +6,7 @@ namespace yii\debug\models\search;
 
 use Override;
 use yii\data\ArrayDataProvider;
+use yii\debug\panels\db\QueryRow;
 
 /**
  * Backs the filter form above the Database panel's query grid.
@@ -41,7 +42,7 @@ class DbSearch extends Base
     /**
      * Returns an {@see ArrayDataProvider} over the captured queries, applying the active filter values.
      *
-     * @param array<int, array<string, mixed>> $models Captured query records to wrap and filter.
+     * @param list<QueryRow> $models Captured query rows to wrap and filter.
      *
      * @return ArrayDataProvider Sortable provider with the filtered query rows.
      */

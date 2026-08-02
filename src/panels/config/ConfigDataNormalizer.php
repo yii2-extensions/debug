@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\config;
 
+use yii\debug\helpers\Coerce;
+
 use function is_array;
-use function is_string;
 
 /**
  * Normalizes the narrowed payload of {@see \yii\debug\panels\ConfigPanel} into a typed {@see ConfigSummary} tree.
@@ -87,8 +88,6 @@ final class ConfigDataNormalizer
      */
     private function extractString(array $raw, string $key): string
     {
-        $value = $raw[$key] ?? null;
-
-        return is_string($value) ? $value : '';
+        return Coerce::string($raw[$key] ?? null);
     }
 }

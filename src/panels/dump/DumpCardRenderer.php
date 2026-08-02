@@ -8,6 +8,7 @@ use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
+use yii\debug\helpers\Coerce;
 use yii\debug\panels\DumpPanel;
 
 use function array_map;
@@ -17,7 +18,6 @@ use function floor;
 use function html_entity_decode;
 use function in_array;
 use function is_int;
-use function is_string;
 use function ltrim;
 use function preg_match;
 use function preg_replace;
@@ -69,7 +69,8 @@ final class DumpCardRenderer
             return ['', null];
         }
 
-        $file = is_string($frame['file'] ?? null) ? $frame['file'] : '';
+        $file = Coerce::string($frame['file'] ?? null);
+
         $line = is_int($frame['line'] ?? null) ? $frame['line'] : null;
 
         return [$file, $line];

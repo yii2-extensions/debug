@@ -7,18 +7,26 @@ namespace yii\debug\tests;
 use Exception;
 use PHPUnit\Framework\Attributes\Group;
 use yii\base\InvalidConfigException;
-use yii\debug\{FlattenException, LogTarget, Module, Panel};
+use yii\debug\{LogTarget, Module, Panel};
+use yii\debug\storage\ExceptionSnapshot;
 use yii\debug\tests\support\stub\CustomPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see Panel} covering trace-line rendering, the `getToolbarData` template flow, the `getToolbarIcon`
- * and `hasRequestNavigation` extension hooks.
+ * Unit tests for {@see Panel} covering trace-line rendering, the `getToolbarData` template flow, and the
+ * `getToolbarIcon` extension hook.
  */
 #[Group('panel')]
 final class PanelTest extends TestCase
 {
+    public function testCaptureDefaultsToNull(): void
+    {
+        self::assertNull(
+            $this->createPanel()->capture(),
+            'Base Panel records nothing by default.',
+        );
+    }
     public function testGetDetailDefaultsToEmptyString(): void
     {
         self::assertSame(
@@ -329,37 +337,31 @@ final class PanelTest extends TestCase
         );
     }
 
-    public function testHasRequestNavigationDefaultsToTrue(): void
-    {
-        self::assertTrue(
-            $this->createPanel()->hasRequestNavigation(),
-            'Default panels participate in request navigation.',
-        );
-    }
-
-    public function testSaveDefaultsToNull(): void
-    {
-        self::assertNull(
-            $this->createPanel()->save(),
-            'Base Panel records nothing by default.',
-        );
-    }
-
-    public function testSetErrorMakesGetErrorAndHasErrorSurfaceTheFlattenedException(): void
+    public function testSetErrorMakesGetErrorAndHasErrorSurfaceTheExceptionSnapshot(): void
     {
         $panel = $this->createPanel();
 
-        $panel->setError(new FlattenException(new Exception('captured')));
+        $panel->setError(ExceptionSnapshot::fromThrowable(new Exception('captured')));
 
         self::assertTrue(
             $panel->hasError(),
             "Recording an exception must flip 'hasError' to `true`.",
         );
         self::assertInstanceOf(
-            FlattenException::class,
+            ExceptionSnapshot::class,
             $panel->getError(),
-            "'getError' must surface the recorded FlattenException.",
+            "'getError' must surface the recorded exception snapshot.",
         );
+    }
+
+    public function testThrowHydrationExceptionWhenTheBasePanelReceivesAPayload(): void
+    {
+        $panel = $this->createPanel();
+        $panel->id = 'custom';
+
+        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.panels.custom'");
+
+        $panel->hydrate(['anything' => 1]);
     }
 
     public function testThrowInvalidConfigExceptionWhenLogTargetIsMissing(): void

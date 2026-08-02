@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\tests\history;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
-use yii\debug\widgets\history\HistoryScale;
+use yii\debug\widgets\history\{HistoryRow, HistoryScale};
 
 /**
  * Unit tests for {@see HistoryScale} covering the page-maxima scan behind the History micro-gauges.
@@ -18,11 +19,10 @@ final class HistoryScaleTest extends TestCase
     {
         $scale = HistoryScale::fromModels(
             [
-                ['processingTime' => null, 'peakMemory' => null],
-                ['processingTime' => 0.125, 'peakMemory' => 1_048_576],
-                ['processingTime' => 0.5, 'peakMemory' => 2_097_152],
-                ['processingTime' => 0.25],
-                'garbage-row',
+                self::row(null, null),
+                self::row(0.125, 1_048_576),
+                self::row(0.5, 2_097_152),
+                self::row(0.25, null),
             ],
         );
 
@@ -57,10 +57,7 @@ final class HistoryScaleTest extends TestCase
     public function testFromModelsReturnsZeroMaximaWhenNoRowCarriesValues(): void
     {
         $scale = HistoryScale::fromModels(
-            [
-                ['tag' => 'a'],
-                ['tag' => 'b', 'processingTime' => null, 'peakMemory' => null],
-            ],
+            [self::row(null, null), self::row(null, null)],
         );
 
         self::assertSame(
@@ -72,6 +69,29 @@ final class HistoryScaleTest extends TestCase
             0,
             $scale->maxPeakMemory,
             'All-`null` memory must collapse the scale to `0`.',
+        );
+    }
+
+    private static function row(float|null $processingTime, int|null $peakMemory): HistoryRow
+    {
+        return HistoryRow::fromSummary(
+            RequestSummary::fromArray(
+                [
+                    'tag' => 'tag-1',
+                    'url' => 'https://example.test/',
+                    'ajax' => false,
+                    'method' => 'GET',
+                    'ip' => '127.0.0.1',
+                    'time' => 1_700_000_000.0,
+                    'statusCode' => 200,
+                    'sqlCount' => 0,
+                    'excessiveCallersCount' => 0,
+                    'mailCount' => 0,
+                    'mailFiles' => [],
+                    'processingTime' => $processingTime,
+                    'peakMemory' => $peakMemory,
+                ],
+            ),
         );
     }
 }

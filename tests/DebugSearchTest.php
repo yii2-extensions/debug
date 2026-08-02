@@ -6,6 +6,7 @@ namespace yii\debug\tests;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\DebugSearch;
+use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -142,9 +143,9 @@ final class DebugSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            ['method' => 'GET', 'sqlCount' => 2, 'mailCount' => 0],
-            ['method' => 'GET', 'sqlCount' => 10, 'mailCount' => 0],
-            ['method' => 'POST', 'sqlCount' => 20, 'mailCount' => 0],
+            self::summary(['method' => 'GET', 'sqlCount' => 2, 'mailCount' => 0]),
+            self::summary(['method' => 'GET', 'sqlCount' => 10, 'mailCount' => 0]),
+            self::summary(['method' => 'POST', 'sqlCount' => 20, 'mailCount' => 0]),
         ];
 
         $search = new DebugSearch();
@@ -163,9 +164,9 @@ final class DebugSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            ['method' => 'GET', 'sqlCount' => 1, 'mailCount' => 1],
-            ['method' => 'GET', 'sqlCount' => 1, 'mailCount' => 5],
-            ['method' => 'POST', 'sqlCount' => 1, 'mailCount' => 10],
+            self::summary(['method' => 'GET', 'sqlCount' => 1, 'mailCount' => 1]),
+            self::summary(['method' => 'GET', 'sqlCount' => 1, 'mailCount' => 5]),
+            self::summary(['method' => 'POST', 'sqlCount' => 1, 'mailCount' => 10]),
         ];
 
         $search = new DebugSearch();
@@ -184,9 +185,9 @@ final class DebugSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            ['method' => 'GET', 'ip' => '127.0.0.1', 'sqlCount' => 0, 'mailCount' => 0],
-            ['method' => 'GET', 'ip' => '10.0.0.1', 'sqlCount' => 0, 'mailCount' => 0],
-            ['method' => 'GET', 'ip' => '192.168.1.1', 'sqlCount' => 0, 'mailCount' => 0],
+            self::summary(['method' => 'GET', 'ip' => '127.0.0.1', 'sqlCount' => 0, 'mailCount' => 0]),
+            self::summary(['method' => 'GET', 'ip' => '10.0.0.1', 'sqlCount' => 0, 'mailCount' => 0]),
+            self::summary(['method' => 'GET', 'ip' => '192.168.1.1', 'sqlCount' => 0, 'mailCount' => 0]),
         ];
 
         $search = new DebugSearch();
@@ -205,8 +206,8 @@ final class DebugSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            ['url' => '/report >5 ms', 'sqlCount' => 0, 'mailCount' => 0],
-            ['url' => '/report/10', 'sqlCount' => 0, 'mailCount' => 0],
+            self::summary(['url' => '/report >5 ms', 'sqlCount' => 0, 'mailCount' => 0]),
+            self::summary(['url' => '/report/10', 'sqlCount' => 0, 'mailCount' => 0]),
         ];
 
         $provider = (new DebugSearch())->search(['DebugSearch' => ['url' => 'report >5']], $records);
@@ -214,42 +215,13 @@ final class DebugSearchTest extends TestCase
         self::assertSame(1, $provider->getTotalCount(), 'Partial text fields must treat embedded operators as text.');
     }
 
-    public function testSearchRejectsNonNumericCandidatesForNumericConditions(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            ['sqlCount' => 'not-numeric', 'mailCount' => 0],
-            ['sqlCount' => [], 'mailCount' => 0],
-            ['sqlCount' => 6, 'mailCount' => 0],
-        ];
-
-        $provider = (new DebugSearch())->search(['DebugSearch' => ['sqlCount' => '>5']], $records);
-
-        self::assertSame(1, $provider->getTotalCount(), 'Numeric comparisons must reject non-numeric candidates.');
-    }
-
-    public function testSearchRejectsRowsWithoutTheFilteredAttribute(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            ['method' => 'GET', 'sqlCount' => 0, 'mailCount' => 0],
-            ['sqlCount' => 0, 'mailCount' => 0],
-        ];
-
-        $provider = (new DebugSearch())->search(['DebugSearch' => ['method' => 'GET']], $records);
-
-        self::assertSame(1, $provider->getTotalCount(), 'Rows without the filtered attribute must not match.');
-    }
-
     public function testSearchReturnsAllRowsWhenValidateShortCircuits(): void
     {
         $this->mockWebApplication();
 
         $records = [
-            ['method' => 'GET', 'sqlCount' => 1, 'mailCount' => 0],
-            ['method' => 'POST', 'sqlCount' => 2, 'mailCount' => 0],
+            self::summary(['method' => 'GET', 'sqlCount' => 1, 'mailCount' => 0]),
+            self::summary(['method' => 'POST', 'sqlCount' => 2, 'mailCount' => 0]),
         ];
 
         $search = new class extends DebugSearch {
@@ -278,8 +250,8 @@ final class DebugSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            ['method' => 'GET', 'sqlCount' => 1, 'mailCount' => 0],
-            ['method' => 'POST', 'sqlCount' => 2, 'mailCount' => 0],
+            self::summary(['method' => 'GET', 'sqlCount' => 1, 'mailCount' => 0]),
+            self::summary(['method' => 'POST', 'sqlCount' => 2, 'mailCount' => 0]),
         ];
 
         $search = new DebugSearch();
@@ -298,12 +270,37 @@ final class DebugSearchTest extends TestCase
         $this->mockWebApplication();
 
         $records = [
-            ['sqlCount' => 0, 'mailCount' => 0],
-            ['sqlCount' => 1, 'mailCount' => 0],
+            self::summary(['sqlCount' => 0, 'mailCount' => 0]),
+            self::summary(['sqlCount' => 1, 'mailCount' => 0]),
         ];
 
         $provider = (new DebugSearch())->search(['DebugSearch' => ['sqlCount' => '>0']], $records);
 
         self::assertSame(1, $provider->getTotalCount(), "'>0' must retain only positive values.");
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private static function summary(array $overrides = []): RequestSummary
+    {
+        return RequestSummary::fromArray(
+            [
+                'tag' => 'tag-1',
+                'url' => 'https://example.test/',
+                'ajax' => false,
+                'method' => 'GET',
+                'ip' => '127.0.0.1',
+                'time' => 1_700_000_000.0,
+                'statusCode' => 200,
+                'sqlCount' => 0,
+                'excessiveCallersCount' => 0,
+                'mailCount' => 0,
+                'mailFiles' => [],
+                'processingTime' => null,
+                'peakMemory' => null,
+                ...$overrides,
+            ],
+        );
     }
 }

@@ -7,6 +7,7 @@ namespace yii\debug\models\search;
 use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
+use yii\debug\panels\profile\ProfileRow;
 
 /**
  * Backs the filter form above the Profiling panel grid of profile blocks captured for the request.
@@ -43,7 +44,7 @@ class ProfileSearch extends Base
      * Returns an {@see ArrayDataProvider} over the captured profile blocks, applying the loaded filter values.
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
-     * @param array<int, array<string, mixed>> $models Captured profile records to wrap and filter.
+     * @param list<ProfileRow> $models Captured profile blocks to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

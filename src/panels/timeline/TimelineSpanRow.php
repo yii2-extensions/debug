@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\timeline;
 
+use yii\debug\panels\profile\ProfileRow;
+
 use function abs;
-use function is_array;
-use function is_numeric;
-use function is_string;
 use function max;
 use function rtrim;
 use function sprintf;
@@ -15,9 +14,6 @@ use function str_contains;
 
 /**
  * Typed view-model for one span row in the Timeline panel chart.
- *
- * Narrows the loose `array<string, mixed>` shape produced by {@see \yii\debug\models\timeline\DataProvider} into typed
- * properties, so the renderer stays free of {@see is_array()} / {@see is_numeric()} narrowing on every cell access.
  *
  * The category → CSS-variant mapping and the tooltip composition live here, so the renderer ends up purely formatting.
  */
@@ -58,61 +54,28 @@ final readonly class TimelineSpanRow
     ) {}
 
     /**
-     * Narrows the loose array shape into a typed row.
+     * Builds the view row from a captured profile block and its computed chart geometry.
      *
-     * Computes the CSS variant, the tooltip text, and clamps the bar width to the visible floor (`0.4%`).
+     * Derives the CSS variant and the tooltip text, and clamps the bar width to the visible floor (`0.4%`).
      *
-     * @param array<string, mixed> $row Source row.
+     * @param ProfileRow $row Captured profile block.
+     * @param int $depth Nesting depth in the call tree.
+     * @param float $left Bar left offset as a percentage of the request duration.
+     * @param float $width Bar width as a percentage of the request duration.
      */
-    public static function from(array $row): self
+    public static function from(ProfileRow $row, int $depth, float $left, float $width): self
     {
-        $category = self::asString($row['category'] ?? '');
-        $duration = self::asFloat($row['duration'] ?? 0.0);
-        $memoryBytes = self::asFloat($row['memory'] ?? 0.0);
-        $memoryDiff = self::asFloat($row['memoryDiff'] ?? 0.0);
-
-        $css = is_array($row['css'] ?? null) ? $row['css'] : [];
-
-        $cssLeft = self::numberToString($css['left'] ?? 0);
-        $cssWidth = self::numberToString(max(self::asFloat($css['width'] ?? 0), 0.4));
-
-        $info = self::asString($row['info'] ?? '');
-
-        $tooltipHeading = $info !== '' ? $info : $category;
+        $heading = $row->info !== '' ? $row->info : $row->category;
 
         return new self(
-            category: $category,
-            duration: $duration,
-            depth: self::asInt($row['child'] ?? 0),
-            cssLeft: $cssLeft,
-            cssWidth: $cssWidth,
-            variant: self::variantOf($category),
-            tooltip: self::buildTooltip($tooltipHeading, $duration, $memoryBytes, $memoryDiff),
+            category: $row->category,
+            duration: $row->duration,
+            depth: $depth,
+            cssLeft: self::numberToString($left),
+            cssWidth: self::numberToString(max($width, 0.4)),
+            variant: self::variantOf($row->category),
+            tooltip: self::buildTooltip($heading, $row->duration, (float) $row->memory, (float) $row->memoryDiff),
         );
-    }
-
-    /**
-     * Coerces the value to a float, falling back to `0.0` when it is not numeric.
-     */
-    private static function asFloat(mixed $value): float
-    {
-        return is_numeric($value) ? (float) $value : 0.0;
-    }
-
-    /**
-     * Coerces the value to an int, falling back to `0` when it is not numeric.
-     */
-    private static function asInt(mixed $value): int
-    {
-        return is_numeric($value) ? (int) $value : 0;
-    }
-
-    /**
-     * Returns the value when it is already a string, falling back to `''` otherwise.
-     */
-    private static function asString(mixed $value): string
-    {
-        return is_string($value) ? $value : '';
     }
 
     /**
@@ -149,11 +112,9 @@ final readonly class TimelineSpanRow
      * Matches the legacy {@see \yii\helpers\StringHelper::normalizeNumber()} output for the values the timeline
      * produces.
      */
-    private static function numberToString(mixed $value): string
+    private static function numberToString(float $value): string
     {
-        $float = self::asFloat($value);
-
-        $rendered = sprintf('%.3f', $float);
+        $rendered = sprintf('%.3f', $value);
         $rendered = rtrim($rendered, '0');
 
         return rtrim($rendered, '.');

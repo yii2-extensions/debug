@@ -87,10 +87,11 @@ final class MailCardRenderer
         }
 
         $collapsed = (string) preg_replace('/\s+/', ' ', $body);
-
         $preview = mb_substr($collapsed, 0, self::BODY_PREVIEW_LIMIT);
 
-        return mb_strlen($collapsed) > self::BODY_PREVIEW_LIMIT ? "{$preview}…" : $preview;
+        return mb_strlen($collapsed) > self::BODY_PREVIEW_LIMIT
+            ? "{$preview}…"
+            : $preview;
     }
 
     /**

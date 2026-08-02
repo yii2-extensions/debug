@@ -15,7 +15,22 @@ use yii\base\{Application, Controller, Model, Module};
 use yii\helpers\Inflector;
 use yii\web\{GroupUrlRule, UrlRule, UrlRuleInterface};
 
+use function class_exists;
+use function count;
 use function is_array;
+use function is_string;
+use function is_subclass_of;
+use function ksort;
+use function ltrim;
+use function mb_strtolower;
+use function pathinfo;
+use function preg_replace;
+use function str_ends_with;
+use function str_replace;
+use function str_starts_with;
+use function strtr;
+use function substr;
+use function trim;
 
 /**
  * Discovers every controller action reachable from the running application and pairs it with its matching URL rule.
@@ -206,7 +221,10 @@ class ActionRoutes extends Model
 
             if (is_dir($controllerPath)) {
                 $iterator = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($controllerPath, RecursiveDirectoryIterator::KEY_AS_PATHNAME | FilesystemIterator::SKIP_DOTS),
+                    new RecursiveDirectoryIterator(
+                        $controllerPath,
+                        RecursiveDirectoryIterator::KEY_AS_PATHNAME | FilesystemIterator::SKIP_DOTS,
+                    ),
                 );
 
                 /** @var SplFileInfo $fileInfo */
@@ -220,7 +238,7 @@ class ActionRoutes extends Model
                     $relativePath = str_replace($controllerPath, '', $file);
                     $class = strtr($relativePath, ['/' => '\\', '.php' => '']);
 
-                    $controllerClass = $module->controllerNamespace . $class;
+                    $controllerClass = "{$module->controllerNamespace}{$class}";
 
                     if ($this->validateControllerClass($controllerClass)) {
                         $dir = ltrim(pathinfo($relativePath, PATHINFO_DIRNAME), '\\/');
@@ -305,7 +323,9 @@ class ActionRoutes extends Model
         $name = null;
 
         if ($rule instanceof UrlRule && $rule->getCreateUrlStatus() === UrlRule::CREATE_STATUS_SUCCESS) {
-            $name = is_string($rule->name) ? $rule->name : null;
+            $name = is_string($rule->name)
+                ? $rule->name
+                : null;
         } elseif ($rule instanceof GroupUrlRule) {
             /** @var UrlRuleInterface $subrule */
             foreach ($rule->rules as $subrule) {

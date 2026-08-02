@@ -5,45 +5,59 @@ declare(strict_types=1);
 namespace yii\debug\tests\queue;
 
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\queue\{JobRecord, QueueSummary};
+use yii\debug\panels\queue\{JobRecord, QueueSnapshot, QueueSummary};
 use yii\debug\tests\support\TestCase;
 
+use function is_array;
+
 /**
- * Unit tests for {@see QueueSummary} covering the narrowing of `$panel->data` into typed
+ * Unit tests for {@see QueueSummary} covering the narrowing of captured records into typed
  * {@see \yii\debug\panels\queue\QueueSummary} aggregates.
  */
 #[Group('panel')]
 #[Group('queue')]
 final class QueueSummaryTest extends TestCase
 {
-    public function testFromPanelDataAggregatesEventTypeCounts(): void
+    public function testCaptureDropsRecordsThatAreNotArrays(): void
     {
-        $summary = QueueSummary::fromPanelData(
-            [
-                'records' => [
-                    [
-                        'eventType' => 'push',
-                        'componentId' => 'queue',
-                        'jobClass' => 'A',
-                    ],
-                    [
-                        'eventType' => 'push',
-                        'componentId' => 'queue',
-                        'jobClass' => 'A',
-                    ],
-                    [
-                        'eventType' => 'exec',
-                        'componentId' => 'queue',
-                        'jobClass' => 'A',
-                    ],
-                    [
-                        'eventType' => 'error',
-                        'componentId' => 'queue',
-                        'jobClass' => 'B',
-                    ],
+        $summary = QueueSummary::fromRecords(
+            QueueSnapshot::capture(
+                [
+                    ['eventType' => 'push', 'componentId' => 'queue'],
+                    'invalid string',
+                    42,
+                    ['eventType' => 'exec', 'componentId' => 'queue'],
                 ],
-            ],
+            )->entries(),
         );
+
+        self::assertSame(2, $summary->totalEvents(), 'Non-array entries must be dropped at capture.');
+        self::assertSame(1, $summary->totalPushed(), 'Only the explicit push survives.');
+    }
+    public function testFromRecordsAggregatesEventTypeCounts(): void
+    {
+        $summary = QueueSummary::fromRecords(self::records([
+            [
+                'eventType' => 'push',
+                'componentId' => 'queue',
+                'jobClass' => 'A',
+            ],
+            [
+                'eventType' => 'push',
+                'componentId' => 'queue',
+                'jobClass' => 'A',
+            ],
+            [
+                'eventType' => 'exec',
+                'componentId' => 'queue',
+                'jobClass' => 'A',
+            ],
+            [
+                'eventType' => 'error',
+                'componentId' => 'queue',
+                'jobClass' => 'B',
+            ],
+        ]));
 
         self::assertSame(
             4,
@@ -71,42 +85,13 @@ final class QueueSummaryTest extends TestCase
         );
     }
 
-    public function testFromPanelDataDropsRecordsThatAreNotArrays(): void
+    public function testFromRecordsExposesDistinctComponentIdsInFirstSeenOrder(): void
     {
-        $summary = QueueSummary::fromPanelData(
-            [
-                'records' => [
-                    ['eventType' => 'push', 'componentId' => 'queue'],
-                    'invalid string',
-                    42,
-                    ['eventType' => 'exec', 'componentId' => 'queue'],
-                ],
-            ],
-        );
-
-        self::assertSame(
-            4,
-            $summary->totalEvents(),
-            "'JobRecord::fromMixed()' accepts non-array defaults so totalEvents reflects every entry.",
-        );
-        self::assertSame(
-            3,
-            $summary->totalPushed(),
-            'One explicit push + two non-array fallbacks (defaulting to push) total three.',
-        );
-    }
-
-    public function testFromPanelDataExposesDistinctComponentIdsInFirstSeenOrder(): void
-    {
-        $summary = QueueSummary::fromPanelData(
-            [
-                'records' => [
-                    ['eventType' => 'push', 'componentId' => 'queueEmail'],
-                    ['eventType' => 'push', 'componentId' => 'queue'],
-                    ['eventType' => 'push', 'componentId' => 'queueEmail'],
-                ],
-            ],
-        );
+        $summary = QueueSummary::fromRecords(self::records([
+            ['eventType' => 'push', 'componentId' => 'queueEmail'],
+            ['eventType' => 'push', 'componentId' => 'queue'],
+            ['eventType' => 'push', 'componentId' => 'queueEmail'],
+        ]));
 
         self::assertSame(
             ['queueEmail', 'queue'],
@@ -115,44 +100,13 @@ final class QueueSummaryTest extends TestCase
         );
     }
 
-    public function testFromPanelDataFiltersRecordsByComponent(): void
+    public function testFromRecordsReturnsEmptySummaryForAnEmptyList(): void
     {
-        $summary = QueueSummary::fromPanelData(
-            [
-                'records' => [
-                    ['eventType' => 'push', 'componentId' => 'queue', 'jobClass' => 'A'],
-                    ['eventType' => 'push', 'componentId' => 'queueEmail', 'jobClass' => 'B'],
-                    ['eventType' => 'exec', 'componentId' => 'queue', 'jobClass' => 'A'],
-                ],
-            ],
-        );
-
-        self::assertCount(
-            2,
-            $summary->recordsForComponent('queue'),
-            "Two records belong to 'queue'.",
-        );
-        self::assertCount(
-            1,
-            $summary->recordsForComponent('queueEmail'),
-            "One record belongs to 'queueEmail'.",
-        );
-        self::assertSame(
-            [],
-            $summary->recordsForComponent('nonexistent'),
-            "Unknown component must yield '[]'.",
-        );
-    }
-
-    public function testFromPanelDataReturnsEmptySummaryWhenInputIsNotArray(): void
-    {
-        $summary = QueueSummary::fromPanelData(
-            'not an array',
-        );
+        $summary = QueueSummary::fromRecords([]);
 
         self::assertTrue(
             $summary->isEmpty(),
-            'Non-array input must yield an empty summary.',
+            'An empty list must yield an empty summary.',
         );
         self::assertSame(
             0,
@@ -161,29 +115,14 @@ final class QueueSummaryTest extends TestCase
         );
     }
 
-    public function testFromPanelDataReturnsEmptySummaryWhenRecordsAreMissing(): void
-    {
-        $summary = QueueSummary::fromPanelData(
-            [],
-        );
 
-        self::assertTrue(
-            $summary->isEmpty(),
-            'Missing records key must yield an empty summary.',
-        );
-    }
-
-    public function testFromPanelDataReturnsRecordsInOriginalOrder(): void
+    public function testFromRecordsReturnsRecordsInOriginalOrder(): void
     {
-        $summary = QueueSummary::fromPanelData(
-            [
-                'records' => [
-                    ['eventType' => 'push', 'jobClass' => 'First'],
-                    ['eventType' => 'push', 'jobClass' => 'Second'],
-                    ['eventType' => 'push', 'jobClass' => 'Third'],
-                ],
-            ],
-        );
+        $summary = QueueSummary::fromRecords(self::records([
+            ['eventType' => 'push', 'jobClass' => 'First'],
+            ['eventType' => 'push', 'jobClass' => 'Second'],
+            ['eventType' => 'push', 'jobClass' => 'Third'],
+        ]));
 
         $classes = array_map(static fn(JobRecord $record): string => $record->jobClass, $summary->records);
 
@@ -192,5 +131,23 @@ final class QueueSummaryTest extends TestCase
             $classes,
             'Records must preserve insertion order.',
         );
+    }
+
+    /**
+     * @param array<int, mixed> $rows
+     *
+     * @return list<JobRecord>
+     */
+    private static function records(array $rows): array
+    {
+        $records = [];
+
+        foreach ($rows as $row) {
+            if (is_array($row)) {
+                $records[] = JobRecord::fromCapture($row);
+            }
+        }
+
+        return $records;
     }
 }

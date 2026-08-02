@@ -6,343 +6,109 @@ namespace yii\debug\tests\db;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\db\QueryRow;
+use yii\debug\storage\HydrationException;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see QueryRow} covering the narrowing of GridView callback arguments into a typed
- * {@see \yii\debug\panels\db\QueryRow}.
+ * Unit tests for {@see QueryRow} covering the capture-time narrowing of logger timings and the strict JSON hydration
+ * that restores them without coercion.
+ *
+ * @since 0.2
  */
 #[Group('panel')]
 #[Group('db')]
 final class QueryRowTest extends TestCase
 {
-    public function testFromClampsDuplicateToMinimumOfOne(): void
+    public function testFromArrayClampsDuplicateToMinimumOfOne(): void
     {
-        $zero = QueryRow::fromMixed(
-            ['duplicate' => 0],
-        );
-        $negative = QueryRow::fromMixed(
-            ['duplicate' => -5],
-        );
-        $missing = QueryRow::fromMixed(
-            [],
+        $row = QueryRow::fromArray(self::payload(['duplicate' => 0]), '$.panels.db.entries[0]');
+
+        self::assertSame(1, $row->duplicate, 'A duplicate count below one must clamp to `1`.');
+    }
+
+    public function testFromArrayRoundTripsEveryField(): void
+    {
+        $row = new QueryRow(
+            type: 'SELECT',
+            query: 'SELECT * FROM t',
+            duration: 5.0,
+            trace: [['file' => '/app/index.php', 'line' => 12]],
+            traceHash: 'abc123',
+            timestamp: 1_700_000_000_000.0,
+            seq: 3,
+            duplicate: 2,
+            rows: 42,
         );
 
-        self::assertSame(
-            1,
-            $zero->duplicate,
-            "A '0' duplicate must clamp to '1'.",
-        );
-        self::assertSame(
-            1,
-            $negative->duplicate,
-            "A negative duplicate must clamp to '1'.",
-        );
-        self::assertSame(
-            1,
-            $missing->duplicate,
-            "A missing duplicate must default to '1'.",
+        self::assertEquals(
+            $row,
+            QueryRow::fromArray($row->jsonSerialize(), '$.panels.db.entries[0]'),
+            'Round-trip must preserve every field.',
         );
     }
 
-    public function testFromCoercesNumericStringsToFloatAndInt(): void
+    public function testFromTimingScalesToMillisecondsAndKeepsCallerValues(): void
     {
-        $row = QueryRow::fromMixed(
+        $row = QueryRow::fromTiming(
             [
-                'duration' => '12.5',
-                'timestamp' => '1700000000.123',
-                'seq' => '4',
-                'duplicate' => '2',
-                'rows' => '99',
+                'info' => 'SELECT 1',
+                'category' => 'yii\\db\\Command::query',
+                'timestamp' => 2.5,
+                'trace' => [['file' => 'a.php']],
+                'level' => 0,
+                'duration' => 0.005,
+                'memory' => 0,
+                'memoryDiff' => 0,
+                'traceHash' => 'hash',
             ],
-        );
-
-        self::assertSame(
-            12.5,
-            $row->duration,
-            'Numeric string must coerce to float.',
-        );
-        self::assertSame(
-            1_700_000_000.123,
-            $row->timestamp,
-            'Numeric string must coerce to float.',
-        );
-        self::assertSame(
-            4,
-            $row->seq,
-            'Numeric string must coerce to int.',
-        );
-        self::assertSame(
-            2,
-            $row->duplicate,
-            'Numeric string must coerce to int.',
-        );
-        self::assertSame(
-            99,
-            $row->rows,
-            "Numeric string must coerce to int for 'rows'.",
-        );
-    }
-
-    public function testFromCollapsesNonArrayTraceFieldToEmptyList(): void
-    {
-        $row = QueryRow::fromMixed(['trace' => 'not an array']);
-
-        self::assertSame(
-            [],
-            $row->trace,
-            "Non-array 'trace' must collapse to '[]'.",
-        );
-    }
-
-    public function testFromDropsNonArrayTraceFrames(): void
-    {
-        $row = QueryRow::fromMixed(
-            [
-                'trace' => [
-                    ['file' => '/a.php'],
-                    'invalid frame',
-                    42,
-                    ['file' => '/b.php'],
-                ],
-            ],
-        );
-
-        self::assertCount(
-            2,
-            $row->trace,
-            'Non-array frames must be skipped.',
-        );
-        self::assertSame(
-            ['file' => '/a.php'],
-            $row->trace[0],
-            'Surviving frames must keep their order.',
-        );
-        self::assertSame(
-            ['file' => '/b.php'],
-            $row->trace[1],
-            'Surviving frames must keep their order.',
-        );
-    }
-
-    public function testFromDropsNonStringFrameKeys(): void
-    {
-        $row = QueryRow::fromMixed(
-            [
-                'trace' => [
-                    [
-                        'file' => '/a.php',
-                        0 => 'numeric-key',
-                        'line' => 5,
-                    ],
-                ],
-            ],
-        );
-
-        self::assertCount(
-            1,
-            $row->trace,
-            'Frame must be retained.',
-        );
-        self::assertSame(
-            ['file' => '/a.php', 'line' => 5],
-            $row->trace[0],
-            'Numeric keys must be filtered out.',
-        );
-    }
-
-    public function testFromFallsBackToEmptyStringWhenStringFieldsAreNotStrings(): void
-    {
-        $row = QueryRow::fromMixed(
-            [
-                'type' => 42,
-                'query' => null,
-                'traceHash' => false,
-            ],
-        );
-
-        self::assertSame(
-            '',
-            $row->type,
-            "Non-string `type` must collapse to ''.",
-        );
-        self::assertSame(
-            '',
-            $row->query,
-            "Non-string `query` must collapse to ''.",
-        );
-        self::assertSame(
-            '',
-            $row->traceHash,
-            "Non-string `traceHash` must collapse to ''.",
-        );
-    }
-
-    public function testFromFallsBackToZeroForNonNumericNumericFields(): void
-    {
-        $row = QueryRow::fromMixed(
-            [
-                'duration' => 'abc',
-                'timestamp' => null,
-                'seq' => false,
-            ],
-        );
-
-        self::assertSame(
-            0.0,
-            $row->duration,
-            "Non-numeric 'duration' must collapse to '0.0'.",
-        );
-        self::assertSame(
-            0.0,
-            $row->timestamp,
-            "Non-numeric 'timestamp' must collapse to '0.0'.",
-        );
-        self::assertSame(
-            0,
-            $row->seq,
-            "Non-numeric 'seq' must collapse to '0'.",
-        );
-    }
-
-    public function testFromKeepsRowsAsNullWhenAbsentOrNonNumeric(): void
-    {
-        $missing = QueryRow::fromMixed(
-            ['type' => 'SELECT'],
-        );
-        $string = QueryRow::fromMixed(
-            ['rows' => 'abc'],
-        );
-        $nullValue = QueryRow::fromMixed(
-            ['rows' => null],
-        );
-
-        self::assertNull(
-            $missing->rows,
-            "Missing 'rows' must remain 'null'.",
-        );
-        self::assertNull(
-            $string->rows,
-            "Non-numeric string 'rows' must remain 'null'.",
-        );
-        self::assertNull(
-            $nullValue->rows,
-            "Explicit 'null' must round-trip.",
-        );
-    }
-
-    public function testFromReturnsAllZeroDefaultsWhenInputIsNotArray(): void
-    {
-        $row = QueryRow::fromMixed(
-            'not an array',
-        );
-
-        self::assertSame(
-            '',
-            $row->type,
-            "Non-array input must yield empty 'type'.",
-        );
-        self::assertSame(
-            '',
-            $row->query,
-            "Non-array input must yield empty 'query'.",
-        );
-        self::assertSame(
-            0.0,
-            $row->duration,
-            "Non-array input must yield zero 'duration'.",
-        );
-        self::assertSame(
-            [],
-            $row->trace,
-            "Non-array input must yield empty 'trace'.",
-        );
-        self::assertSame(
-            '',
-            $row->traceHash,
-            "Non-array input must yield empty 'traceHash'.",
-        );
-        self::assertSame(
-            0.0,
-            $row->timestamp,
-            "Non-array input must yield zero 'timestamp'.",
-        );
-        self::assertSame(
-            0,
-            $row->seq,
-            "Non-array input must yield zero 'seq'.",
-        );
-        self::assertSame(
-            1,
-            $row->duplicate,
-            "Missing 'duplicate' must collapse to the minimum value '1'.",
-        );
-        self::assertNull(
-            $row->rows,
-            "Non-array input must yield 'null' 'rows'.",
-        );
-    }
-
-    public function testFromRoundTripsTypedRow(): void
-    {
-        $row = QueryRow::fromMixed(
-            [
-                'type' => 'SELECT',
-                'query' => 'SELECT 1',
-                'duration' => 12.5,
-                'trace' => [['file' => '/app/User.php', 'line' => 42]],
-                'traceHash' => 'abc123',
-                'timestamp' => 1_700_000_000_000.0,
-                'seq' => 7,
-                'duplicate' => 3,
-                'rows' => 5,
-            ],
-        );
-
-        self::assertSame(
             'SELECT',
-            $row->type,
-            'Type must round-trip.',
-        );
-        self::assertSame(
-            'SELECT 1',
-            $row->query,
-            'Query must round-trip.',
-        );
-        self::assertSame(
-            12.5,
-            $row->duration,
-            'Duration must round-trip.',
-        );
-        self::assertSame(
-            [['file' => '/app/User.php', 'line' => 42]],
-            $row->trace,
-            'Trace must round-trip.',
-        );
-        self::assertSame(
-            'abc123',
-            $row->traceHash,
-            'TraceHash must round-trip.',
-        );
-        self::assertSame(
-            1_700_000_000_000.0,
-            $row->timestamp,
-            'Timestamp must round-trip.',
-        );
-        self::assertSame(
             7,
-            $row->seq,
-            'Seq must round-trip.',
-        );
-        self::assertSame(
             3,
-            $row->duplicate,
-            'Duplicate count must round-trip.',
+            42,
         );
-        self::assertSame(
-            5,
-            $row->rows,
-            'Rows must round-trip.',
-        );
+
+        self::assertSame('SELECT', $row->type, 'The verb is supplied by the caller.');
+        self::assertSame('SELECT 1', $row->query, 'The statement comes from the timing token.');
+        self::assertEqualsWithDelta(5.0, $row->duration, 1e-9, 'Duration must be scaled to milliseconds.');
+        self::assertEqualsWithDelta(2_500.0, $row->timestamp, 1e-9, 'Timestamp must be scaled to milliseconds.');
+        self::assertSame('hash', $row->traceHash, 'Trace hash must round-trip.');
+        self::assertSame(7, $row->seq, 'Sequence index is supplied by the caller.');
+        self::assertSame(3, $row->duplicate, 'Duplicate count is supplied by the caller.');
+        self::assertSame(42, $row->rows, 'Row count is supplied by the caller.');
+    }
+
+    public function testThrowHydrationExceptionWhenDurationIsANumericString(): void
+    {
+        $this->expectException(HydrationException::class);
+
+        QueryRow::fromArray(self::payload(['duration' => '5.0']), '$.panels.db.entries[0]');
+    }
+
+    public function testThrowHydrationExceptionWhenTraceIsNotAListOfObjects(): void
+    {
+        $this->expectException(HydrationException::class);
+
+        QueryRow::fromArray(self::payload(['trace' => ['not-a-frame']]), '$.panels.db.entries[0]');
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
+    private static function payload(array $overrides = []): array
+    {
+        return [
+            'type' => 'SELECT',
+            'query' => 'SELECT 1',
+            'duration' => 1.0,
+            'trace' => [],
+            'traceHash' => 'hash',
+            'timestamp' => 1.0,
+            'seq' => 0,
+            'duplicate' => 1,
+            'rows' => null,
+            ...$overrides,
+        ];
     }
 }

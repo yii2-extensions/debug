@@ -75,7 +75,7 @@ class TimelineSearch extends Base
         $duration = (float) $this->duration;
 
         if ($duration > 0) {
-            $this->addMinimumCondition('duration', $duration / 1000);
+            $this->addMinimumCondition('duration', $duration);
         }
 
         $dataProvider->allModels = $this->filter($models);

@@ -7,6 +7,8 @@ namespace yii\debug\models\search;
 use Override;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
+use yii\debug\panels\dump\DumpRow;
+use yii\debug\panels\log\LogRow;
 
 /**
  * Backs the filter form above the Log panel grid of the active request's log messages.
@@ -33,7 +35,7 @@ class LogSearch extends Base
             'level' => 'Level',
             'category' => 'Category',
             'message' => 'Message',
-            'time_since_previous' => 'Since previous',
+            'timeSincePrevious' => 'Since previous',
         ];
     }
 
@@ -49,7 +51,7 @@ class LogSearch extends Base
      * Returns an {@see ArrayDataProvider} over the captured log messages, applying the loaded filter values.
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
-     * @param array<int, array<string, mixed>> $models Captured log entries to wrap and filter.
+     * @param list<DumpRow|LogRow> $models Captured log-shaped rows to wrap and filter.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {
@@ -60,7 +62,7 @@ class LogSearch extends Base
                 'sort' => [
                     'attributes' => [
                         'time',
-                        'time_since_previous' => ['default' => SORT_DESC],
+                        'timeSincePrevious' => ['default' => SORT_DESC],
                         'level',
                         'category',
                         'message',

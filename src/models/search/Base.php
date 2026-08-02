@@ -11,11 +11,15 @@ use yii\helpers\VarDumper;
 use function array_filter;
 use function array_key_exists;
 use function array_values;
+use function get_object_vars;
 use function is_float;
 use function is_int;
 use function is_numeric;
+use function is_object;
 use function is_scalar;
 use function is_string;
+use function mb_stripos;
+use function mb_strtolower;
 use function preg_match;
 
 /**
@@ -37,6 +41,7 @@ class Base extends Model
     protected function addCondition(string $attribute, bool $partial = false): void
     {
         $rawValue = $this->getAttributes([$attribute])[$attribute] ?? null;
+
         $value = is_scalar($rawValue) ? (string) $rawValue : '';
 
         if ($value === '') {
@@ -71,31 +76,36 @@ class Base extends Model
     /**
      * Applies all registered conditions.
      *
-     * @param array<int, array<string, mixed>> $rows
+     * @template TRow of array<string, mixed>|object
      *
-     * @return array<int, array<string, mixed>>
+     * @param array<int, TRow> $rows Rows to filter; typed row objects or string-keyed arrays.
+     *
+     * @return list<TRow> Rows matching every registered condition, reindexed.
      */
     protected function filter(array $rows): array
     {
         $filtered = array_values(array_filter($rows, $this->matches(...)));
+
         $this->conditions = [];
 
         return $filtered;
     }
 
     /**
-     * @param array<string, mixed> $row
+     * @param array<string, mixed>|object $row Typed row object or string-keyed array.
      */
-    private function matches(array $row): bool
+    private function matches(array|object $row): bool
     {
         foreach ($this->conditions as $condition) {
             $attribute = $condition['attribute'];
 
-            if (!array_key_exists($attribute, $row)) {
+            $values = is_object($row) ? get_object_vars($row) : $row;
+
+            if (!array_key_exists($attribute, $values)) {
                 return false;
             }
 
-            $candidate = $row[$attribute];
+            $candidate = $values[$attribute];
             $operator = $condition['operator'];
 
             if ($operator === '>' || $operator === '<' || $operator === '>=') {
@@ -103,13 +113,14 @@ class Base extends Model
 
                 if (
                     !is_float($expected)
-                    || (!is_int($candidate) && !is_float($candidate) && !is_string($candidate))
+                    || !is_int($candidate) && !is_float($candidate) && !is_string($candidate)
                     || !is_numeric($candidate)
                 ) {
                     return false;
                 }
 
                 $candidate = (float) $candidate;
+
                 $matched = match ($operator) {
                     '>' => $candidate > $expected,
                     '<' => $candidate < $expected,
@@ -123,7 +134,10 @@ class Base extends Model
                 continue;
             }
 
-            $candidate = is_scalar($candidate) ? (string) $candidate : VarDumper::export($candidate);
+            $candidate = is_scalar($candidate)
+                ? (string) $candidate
+                : VarDumper::export($candidate);
+
             $expected = $condition['value'];
 
             if (!is_string($expected)) {

@@ -7,12 +7,11 @@ namespace yii\debug\models\timeline;
 use Stringable;
 use UIAwesome\Html\Svg\{Defs, G, LinearGradient, Polygon, Polyline, Stop, Svg as SvgBuilder};
 use yii\base\BaseObject;
-use yii\debug\panels\TimelinePanel;
+use yii\debug\panels\{MemorySample, ProvidesMemorySamples, TimelinePanel};
 use yii\helpers\StringHelper;
 
-use function is_array;
-use function is_numeric;
 use function is_string;
+use function usort;
 
 /**
  * Renders the timeline panel's memory-usage graph as an inline SVG.
@@ -82,17 +81,9 @@ class Svg extends BaseObject implements Stringable
         foreach ($this->listenMessages as $panelId) {
             $sourcePanel = $module->panels[$panelId] ?? null;
 
-            if ($sourcePanel === null) {
-                continue;
+            if ($sourcePanel instanceof ProvidesMemorySamples) {
+                $this->addPoints($sourcePanel->getMemorySamples());
             }
-
-            $data = $sourcePanel->data;
-
-            if (!is_array($data) || !isset($data['messages']) || !is_array($data['messages'])) {
-                continue;
-            }
-
-            $this->addPoints($data['messages']);
         }
     }
 
@@ -134,18 +125,16 @@ class Svg extends BaseObject implements Stringable
     }
 
     /**
-     * Appends plotted points sourced from a panel's log messages.
+     * Appends plotted points sourced from a panel's memory samples.
      *
-     * Stops at the first message whose shape is invalid (missing timestamp/memory entries), to avoid plotting
-     * partially-populated traces.
+     * @param list<MemorySample> $samples Samples to plot.
      *
-     * @param array<array-key, mixed> $messages Log messages with the structure documented in {@see Logger::messages}.
-     *
-     * @return int Number of points actually appended.
+     * @return int Number of samples plotted.
      */
-    protected function addPoints(array $messages): int
+    protected function addPoints(array $samples): int
     {
         $hasPoints = $this->hasPoints();
+
         $panelMemory = $this->panel->getMemory();
 
         if ($panelMemory <= 0 || $this->x <= 0) {
@@ -162,21 +151,12 @@ class Svg extends BaseObject implements Stringable
 
         $i = 0;
 
-        foreach ($messages as $message) {
-            if (
-                !is_array($message)
-                || !isset($message[3], $message[5])
-                || !is_numeric($message[3])
-                || !is_numeric($message[5])
-            ) {
-                break;
-            }
-
+        foreach ($samples as $sample) {
             ++$i;
 
             $this->points[] = [
-                ((float) $message[3] * 1000 - $this->panel->getStart()) / $xOne,
-                $this->y - ((float) $message[5] / $memory * $yOne),
+                ($sample->time - $this->panel->getStart()) / $xOne,
+                $this->y - ($sample->memory / $memory * $yOne),
             ];
         }
 
@@ -238,6 +218,7 @@ class Svg extends BaseObject implements Stringable
     private function polylinePoints(): string
     {
         $y = (float) $this->y;
+
         $str = "0 {$this->y} ";
 
         foreach ($this->points as $point) {

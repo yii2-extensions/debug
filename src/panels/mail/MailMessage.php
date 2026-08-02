@@ -6,12 +6,12 @@ namespace yii\debug\panels\mail;
 
 use DateTimeInterface;
 use yii\debug\helpers\Coerce;
+use yii\debug\storage\{PanelRow, Payload};
 
 use function array_filter;
 use function array_map;
 use function array_values;
 use function explode;
-use function is_array;
 use function is_int;
 use function is_string;
 use function strtotime;
@@ -19,11 +19,10 @@ use function strtotime;
 /**
  * Typed view-model for a single mail message rendered in the Mail panel detail view.
  *
- * Mirrors the captured `BaseMailer::EVENT_AFTER_SEND` payload after every value has been narrowed and the recipient
- * fields split into per-address lists, so the consuming view iterates and reads typed properties without further
- * runtime checks.
+ * Narrowed once from the `BaseMailer::EVENT_AFTER_SEND` payload, with the recipient fields split into per-address
+ * lists, and persisted in that form.
  */
-final readonly class MailMessage
+final readonly class MailMessage implements PanelRow
 {
     public function __construct(
         /**
@@ -77,14 +76,14 @@ final readonly class MailMessage
     ) {}
 
     /**
-     * @param array<array-key, mixed> $models
+     * @param list<self> $models Captured messages.
      */
     public static function failedCount(array $models): int
     {
         $failed = 0;
 
         foreach ($models as $model) {
-            if (!self::fromMixed($model)->isSuccessful) {
+            if ($model->isSuccessful === false) {
                 $failed++;
             }
         }
@@ -92,13 +91,49 @@ final readonly class MailMessage
         return $failed;
     }
 
-    /**
-     * Builds a typed mail message from a data-provider value.
-     */
-    public static function fromMixed(mixed $data): self
+    public static function fromArray(mixed $data, string $path): self
     {
-        $row = is_array($data) ? $data : [];
+        $payload = Payload::object($data, $path)
+            ->shape(
+                [
+                    'from',
+                    'to',
+                    'cc',
+                    'bcc',
+                    'replyTo',
+                    'subject',
+                    'body',
+                    'headers',
+                    'charset',
+                    'file',
+                    'isSuccessful',
+                    'time',
+                ],
+            );
 
+        return new self(
+            from: $payload->string('from'),
+            to: Coerce::stringList($payload->list('to')),
+            cc: Coerce::stringList($payload->list('cc')),
+            bcc: Coerce::stringList($payload->list('bcc')),
+            replyTo: Coerce::stringList($payload->list('replyTo')),
+            subject: $payload->string('subject'),
+            body: $payload->string('body'),
+            headers: $payload->string('headers'),
+            charset: $payload->string('charset'),
+            file: $payload->string('file'),
+            isSuccessful: $payload->bool('isSuccessful'),
+            time: $payload->nullableInt('time'),
+        );
+    }
+
+    /**
+     * Narrows one captured `EVENT_AFTER_SEND` payload into a typed message.
+     *
+     * @param array<array-key, mixed> $row Captured payload.
+     */
+    public static function fromCapture(array $row): self
+    {
         return new self(
             from: self::scalar($row, 'from'),
             to: self::splitAddresses(self::scalar($row, 'to')),
@@ -113,6 +148,27 @@ final readonly class MailMessage
             isSuccessful: ($row['isSuccessful'] ?? false) === true,
             time: self::normalizeTime($row['time'] ?? null),
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'from' => $this->from,
+            'to' => $this->to,
+            'cc' => $this->cc,
+            'bcc' => $this->bcc,
+            'replyTo' => $this->replyTo,
+            'subject' => $this->subject,
+            'body' => $this->body,
+            'headers' => $this->headers,
+            'charset' => $this->charset,
+            'file' => $this->file,
+            'isSuccessful' => $this->isSuccessful,
+            'time' => $this->time,
+        ];
     }
 
     private static function normalizeTime(mixed $value): int|null

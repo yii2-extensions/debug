@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\router;
 
+use yii\debug\helpers\Coerce;
+
 use function array_map;
 use function implode;
 use function is_array;
-use function is_string;
 
 /**
  * Typed view-model for one row in the Router Rules table.
@@ -52,21 +53,13 @@ final readonly class RouterRuleRow
     public static function from(array $row): self
     {
         return new self(
-            name: self::asString($row['name'] ?? ''),
-            route: self::asString($row['route'] ?? ''),
+            name: Coerce::string($row['name'] ?? null),
+            route: Coerce::string($row['route'] ?? null),
             verb: self::verbAsString($row['verb'] ?? null),
-            suffix: self::asString($row['suffix'] ?? ''),
-            mode: self::asString($row['mode'] ?? ''),
-            type: self::asString($row['type'] ?? ''),
+            suffix: Coerce::string($row['suffix'] ?? null),
+            mode: Coerce::string($row['mode'] ?? null),
+            type: Coerce::string($row['type'] ?? null),
         );
-    }
-
-    /**
-     * Returns the value when it is already a string, falling back to `''` otherwise.
-     */
-    private static function asString(mixed $value): string
-    {
-        return is_string($value) ? $value : '';
     }
 
     /**
@@ -80,12 +73,12 @@ final readonly class RouterRuleRow
             return implode(
                 ', ',
                 array_map(
-                    static fn(mixed $element): string => is_string($element) ? $element : '',
+                    static fn(mixed $element): string => Coerce::string($element),
                     $value,
                 ),
             );
         }
 
-        return self::asString($value);
+        return Coerce::string($value);
     }
 }
