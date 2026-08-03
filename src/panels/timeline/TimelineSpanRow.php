@@ -6,11 +6,11 @@ namespace yii\debug\panels\timeline;
 
 use yii\debug\panels\profile\ProfileRow;
 
-use function abs;
 use function max;
 use function rtrim;
 use function sprintf;
 use function str_contains;
+use function str_replace;
 
 /**
  * Typed view-model for one span row in the Timeline panel chart.
@@ -89,10 +89,10 @@ final readonly class TimelineSpanRow
         $memoryDelta = '';
 
         if ($memoryDiff !== 0.0) {
-            $memoryDelta = sprintf(
-                ' (%s%.2f MB)',
-                $memoryDiff > 0 ? '+' : '−',
-                abs($memoryDiff) / 1048576,
+            $memoryDelta = str_replace(
+                '-',
+                '−',
+                sprintf(' (%+.2f MB)', $memoryDiff / 1048576),
             );
         }
 

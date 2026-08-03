@@ -90,9 +90,10 @@ final class UserSwitchTest extends TestCase
 
         $switch = new UserSwitch();
 
-        self::assertTrue(
-            $switch->getMainUser()->getIsGuest(),
-            'Guest sessions must surface the guest user as the main user.',
+        self::assertSame(
+            Yii::$app->user,
+            $switch->getMainUser(),
+            'Guest sessions must surface the current user component as the main user.',
         );
     }
 
@@ -132,8 +133,12 @@ final class UserSwitchTest extends TestCase
 
         $switch = new UserSwitch();
 
+        $resolved = $switch->getUser();
+
+        $switch->userComponent = 'missing-component';
+
         self::assertSame(
-            $switch->getUser(),
+            $resolved,
             $switch->getUser(),
             'Repeated calls must return the cached user component.',
         );
@@ -159,7 +164,13 @@ final class UserSwitchTest extends TestCase
     {
         $this->bootApp();
 
+        Yii::$app->user->login(new Identity(5));
+
         $switch = new UserSwitch();
+
+        $switch->getMainUser();
+
+        Yii::$app->user->logout();
 
         self::assertTrue(
             $switch->isMainUser(),
@@ -206,15 +217,9 @@ final class UserSwitchTest extends TestCase
 
     public function testRulesMarkBothAttributesSafe(): void
     {
-        $firstRule = (new UserSwitch())->rules()[0] ?? null;
-
-        self::assertIsArray(
-            $firstRule,
-            'First rule must be a configuration tuple.',
-        );
         self::assertSame(
-            'safe',
-            $firstRule[1] ?? null,
+            [[['user', 'mainUser'], 'safe']],
+            (new UserSwitch())->rules(),
             "First rule must mark 'user'/'mainUser' as 'safe'."
         );
     }
@@ -264,6 +269,20 @@ final class UserSwitchTest extends TestCase
         );
     }
 
+    public function testThrowInvalidConfigExceptionWhenUserComponentDoesNotExist(): void
+    {
+        $this->bootApp();
+
+        $switch = new UserSwitch(['userComponent' => 'missing-user']);
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            "Application component 'missing-user' must be a 'yii\\web\\User' instance.",
+        );
+
+        $switch->getUser();
+    }
+
     public function testThrowInvalidConfigExceptionWhenUserComponentIdResolvesToNonUser(): void
     {
         $this->bootApp();
@@ -273,7 +292,9 @@ final class UserSwitchTest extends TestCase
         $switch = new UserSwitch(['userComponent' => 'weirdcomponent']);
 
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage("must be a 'yii\\web\\User' instance");
+        $this->expectExceptionMessage(
+            "must be a 'yii\\web\\User' instance",
+        );
 
         $switch->getUser();
     }

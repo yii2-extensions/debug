@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor!: replace serialized panel data with atomic versioned JSON, strict snapshot DTO hydration, and isolated JSON-safe panel failures.
 - refactor: remove mutation-equivalent branches, isolate test sessions, and strengthen `GridViewConfig`, `FQCN`, and `Avatar` coverage.
 - refactor: remove three mutation-equivalent conversions and close 36 simple mutation gaps across snapshots, renderers, queues, and log summaries.
+- refactor: remove two mutation-equivalent branches and close 34 simple mutation gaps across user switching, queues, Inertia, logs, routing, timeline rendering, and storage snapshots.
 
 ## 0.1.1 May 18, 2026
 
