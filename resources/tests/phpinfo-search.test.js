@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   formatPhpInfoSearchStatus,
   normalizePhpInfoQuery,
+  resolvePhpInfoTocGroupState,
 } from "../src/panels/phpinfo-search.js";
 
 test("normalizePhpInfoQuery trims and normalizes case", () => {
@@ -21,5 +22,45 @@ test("formatPhpInfoSearchStatus keeps module-name matches distinct", () => {
   assert.equal(
     formatPhpInfoSearchStatus(2, 1, 1),
     "1 module · 2 directives in 1 module",
+  );
+});
+
+test("resolvePhpInfoTocGroupState opens only the active module group", () => {
+  assert.deepEqual(
+    resolvePhpInfoTocGroupState(
+      ["phpinfo-core", "phpinfo-date"],
+      "phpinfo-date",
+      null,
+    ),
+    { hidden: false, open: true },
+  );
+  assert.deepEqual(
+    resolvePhpInfoTocGroupState(
+      ["phpinfo-pdo", "phpinfo-pdo-mysql"],
+      "phpinfo-date",
+      null,
+    ),
+    { hidden: false, open: false },
+  );
+});
+
+test("resolvePhpInfoTocGroupState exposes only groups with search results", () => {
+  var visibleIds = { "phpinfo-pdo": true };
+
+  assert.deepEqual(
+    resolvePhpInfoTocGroupState(
+      ["phpinfo-pdo", "phpinfo-pdo-mysql"],
+      "",
+      visibleIds,
+    ),
+    { hidden: false, open: true },
+  );
+  assert.deepEqual(
+    resolvePhpInfoTocGroupState(
+      ["phpinfo-core", "phpinfo-date"],
+      "",
+      visibleIds,
+    ),
+    { hidden: true, open: false },
   );
 });

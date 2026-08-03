@@ -14,7 +14,10 @@ use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Aside, Section};
 use yii\debug\helpers\Icon;
 
+use function array_keys;
 use function count;
+use function in_array;
+use function strtolower;
 
 /**
  * Renders the phpinfo page.
@@ -26,6 +29,100 @@ use function count;
  */
 final class PhpInfoRenderer
 {
+    /**
+     * Known phpinfo modules grouped by the job they perform. Unknown and third-party modules fall back to "Other".
+     *
+     * @var array<string, list<string>>
+     */
+    private const array TOC_GROUPS = [
+        'Core & Runtime' => [
+            'apcu',
+            'core',
+            'date',
+            'ffi',
+            'filter',
+            'hash',
+            'json',
+            'pcre',
+            'phar',
+            'random',
+            'reflection',
+            'session',
+            'spl',
+            'standard',
+            'xdebug',
+            'zend opcache',
+        ],
+        'Database' => [
+            'mongodb',
+            'mysqli',
+            'mysqlnd',
+            'oci8',
+            'odbc',
+            'pdo',
+            'pdo_dblib',
+            'pdo_mysql',
+            'pdo_oci',
+            'pdo_odbc',
+            'pdo_pgsql',
+            'pdo_sqlite',
+            'pgsql',
+            'redis',
+            'sqlite3',
+        ],
+        'Text & Localization' => [
+            'ctype',
+            'gettext',
+            'iconv',
+            'intl',
+            'mbstring',
+            'tokenizer',
+        ],
+        'Network & Security' => [
+            'curl',
+            'ftp',
+            'openssl',
+            'sockets',
+            'sodium',
+            'ssh2',
+        ],
+        'XML, Data & Media' => [
+            'dom',
+            'exif',
+            'fileinfo',
+            'gd',
+            'imagick',
+            'libxml',
+            'simplexml',
+            'xml',
+            'xmlreader',
+            'xmlwriter',
+            'xsl',
+        ],
+        'System & Compression' => [
+            'bz2',
+            'calendar',
+            'pcntl',
+            'posix',
+            'readline',
+            'shmop',
+            'sysvmsg',
+            'sysvsem',
+            'sysvshm',
+            'zip',
+            'zlib',
+        ],
+        'Environment' => [
+            'additional modules',
+            'apache2handler',
+            'cgi-fcgi',
+            'environment',
+            'php credits',
+            'php license',
+            'php variables',
+        ],
+    ];
+
     /**
      * Renders the full phpinfo page (TOC sidebar + main column).
      */
@@ -277,27 +374,68 @@ final class PhpInfoRenderer
      */
     private static function renderToc(array $entries): Aside
     {
-        $items = [];
+        $groupedEntries = [];
 
-        foreach ($entries as $entry) {
-            $isOverview = $entry->slug === 'phpinfo-overview';
-
-            $link = A::tag()
-                ->addDataAttribute('toc-target', $entry->slug)
-                ->class('yii-debug-phpinfo-toc-link' . ($isOverview ? ' is-active' : ''))
-                ->content($entry->title)
-                ->href("#{$entry->slug}");
-
-            if ($isOverview) {
-                $link = $link->addAriaAttribute('current', 'page');
-            }
-
-            $items[] = Li::tag()->html(
-                $link,
-            );
+        foreach (array_keys(self::TOC_GROUPS) as $label) {
+            $groupedEntries[$label] = [];
         }
 
-        $moduleCount = count($entries) > 0 ? count($entries) - 1 : 0;
+        $groupedEntries['Other'] = [];
+        $moduleCount = 0;
+        $overviewItem = null;
+
+        foreach ($entries as $entry) {
+            if ($entry->slug === 'phpinfo-overview') {
+                $overviewItem = Li::tag()->html(self::renderTocLink($entry, true));
+
+                continue;
+            }
+
+            $groupedEntries[self::resolveTocGroup($entry->title)][] = $entry;
+            $moduleCount++;
+        }
+
+        $groups = [];
+
+        foreach ($groupedEntries as $label => $groupEntries) {
+            if ($groupEntries === []) {
+                continue;
+            }
+
+            $items = [];
+
+            foreach ($groupEntries as $entry) {
+                $items[] = Li::tag()->html(self::renderTocLink($entry));
+            }
+
+            $groups[] = Details::tag()
+                ->addDataAttribute('yii-debug-phpinfo-toc-group', true)
+                ->class('yii-debug-phpinfo-toc-group')
+                ->html(
+                    Summary::tag()
+                        ->class('yii-debug-phpinfo-toc-group-summary')
+                        ->html(
+                            Span::tag()->content($label),
+                            Span::tag()
+                                ->addAriaAttribute('label', count($groupEntries) . ' modules')
+                                ->class('yii-debug-phpinfo-toc-group-count')
+                                ->content((string) count($groupEntries)),
+                        ),
+                    Ul::tag()->class('yii-debug-phpinfo-toc-group-list')->html(...$items),
+                );
+        }
+
+        $navigation = [];
+
+        if ($overviewItem !== null) {
+            $navigation[] = Ul::tag()
+                ->class('yii-debug-phpinfo-toc-overview')
+                ->html($overviewItem);
+        }
+
+        $navigation[] = Div::tag()
+            ->class('yii-debug-phpinfo-toc-groups')
+            ->html(...$groups);
 
         return Aside::tag()
             ->addAriaAttribute('label', 'phpinfo modules')
@@ -309,7 +447,31 @@ final class PhpInfoRenderer
                         Span::tag()->content((string) $moduleCount),
                         Span::tag()->content('modules'),
                     ),
-                Ul::tag()->class('yii-debug-phpinfo-toc-list')->html(...$items),
+                ...$navigation,
             );
+    }
+
+    private static function renderTocLink(PhpInfoTocEntry $entry, bool $active = false): A
+    {
+        $link = A::tag()
+            ->addDataAttribute('toc-target', $entry->slug)
+            ->class('yii-debug-phpinfo-toc-link' . ($active ? ' is-active' : ''))
+            ->content($entry->title)
+            ->href("#{$entry->slug}");
+
+        return $active ? $link->addAriaAttribute('current', 'page') : $link;
+    }
+
+    private static function resolveTocGroup(string $title): string
+    {
+        $normalizedTitle = strtolower($title);
+
+        foreach (self::TOC_GROUPS as $label => $modules) {
+            if (in_array($normalizedTitle, $modules, true)) {
+                return $label;
+            }
+        }
+
+        return 'Other';
     }
 }

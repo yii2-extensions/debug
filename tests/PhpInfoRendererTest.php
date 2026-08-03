@@ -80,6 +80,42 @@ final class PhpInfoRendererTest extends TestCase
         );
     }
 
+    public function testRenderGroupsModulesAndFallsBackToOther(): void
+    {
+        $html = PhpInfoRenderer::render(
+            $this->emptyView(
+                [
+                    new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview'),
+                    new PhpInfoTocEntry(title: 'Core', slug: 'phpinfo-core'),
+                    new PhpInfoTocEntry(title: 'date', slug: 'phpinfo-date'),
+                    new PhpInfoTocEntry(title: 'PDO', slug: 'phpinfo-pdo'),
+                    new PhpInfoTocEntry(title: 'vendor_extension', slug: 'phpinfo-vendor-extension'),
+                ],
+            ),
+        );
+
+        self::assertMatchesRegularExpression(
+            '~Core &amp; Runtime.*?href="#phpinfo-core".*?href="#phpinfo-date".*?</details>~s',
+            $html,
+            'Runtime modules must share one collapsed navigation group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~Database.*?href="#phpinfo-pdo".*?</details>~s',
+            $html,
+            'Database drivers must render in the Database group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~Other.*?href="#phpinfo-vendor-extension".*?</details>~s',
+            $html,
+            'Unknown extensions must remain accessible in the Other group.',
+        );
+        self::assertStringContainsString(
+            'data-yii-debug-phpinfo-toc-group="true"',
+            $html,
+            'Every module group must expose the JavaScript synchronization hook.',
+        );
+    }
+
     public function testRenderModulesHtmlPassesThroughVerbatim(): void
     {
         $view = new PhpInfoView(

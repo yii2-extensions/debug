@@ -43,6 +43,23 @@ export function formatPhpInfoSearchStatus(
   return parts.join(" · ");
 }
 
+export function resolvePhpInfoTocGroupState(targets, activeId, visibleIds) {
+  var visibleTargets =
+    visibleIds === null
+      ? targets
+      : targets.filter(function (target) {
+          return Boolean(visibleIds[target]);
+        });
+
+  return {
+    hidden: visibleTargets.length === 0,
+    open:
+      visibleIds === null
+        ? targets.indexOf(activeId) !== -1
+        : visibleTargets.length > 0,
+  };
+}
+
 function setLinkHidden(link, hidden) {
   link.hidden = hidden;
 
@@ -89,6 +106,9 @@ export function initPhpInfoSearch(root) {
   var empty = root.querySelector("[data-yii-debug-phpinfo-empty]");
   var sections = toArray(root.querySelectorAll(".yii-debug-phpinfo-section"));
   var tocLinks = toArray(root.querySelectorAll(".yii-debug-phpinfo-toc-link"));
+  var tocGroups = toArray(
+    root.querySelectorAll("[data-yii-debug-phpinfo-toc-group]"),
+  );
   var sectionById = Object.create(null);
   var selectedId;
 
@@ -112,6 +132,18 @@ export function initPhpInfoSearch(root) {
       }
 
       setLinkHidden(link, visibleIds !== null && !visibleIds[target]);
+    });
+
+    tocGroups.forEach(function (group) {
+      var targets = toArray(
+        group.querySelectorAll(".yii-debug-phpinfo-toc-link"),
+      ).map(function (link) {
+        return link.getAttribute("data-toc-target") || "";
+      });
+      var state = resolvePhpInfoTocGroupState(targets, activeId, visibleIds);
+
+      group.hidden = state.hidden;
+      group.open = state.open;
     });
   }
 

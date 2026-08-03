@@ -5205,13 +5205,91 @@
     }
   }
 
-  .yii-debug-phpinfo-toc-list {
+  .yii-debug-phpinfo-toc-overview,
+  .yii-debug-phpinfo-toc-group-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  .yii-debug-phpinfo-toc-overview {
+    margin-bottom: var(--yii-debug-space-2);
+    padding-bottom: var(--yii-debug-space-2);
+    border-bottom: var(--yii-debug-border);
+  }
+
+  .yii-debug-phpinfo-toc-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .yii-debug-phpinfo-toc-group {
+    margin: 0;
+  }
+
+  .yii-debug-phpinfo-toc-group-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 8px;
+    border-radius: var(--yii-debug-radius-sm);
+    color: var(--yii-debug-panel-muted);
+    cursor: pointer;
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 600;
+    list-style: none;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: "›";
+      color: var(--yii-debug-panel-muted);
+      font-size: var(--yii-debug-fs-md);
+      line-height: 1;
+      transition: transform 120ms ease;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: var(--yii-debug-panel-surface-hover);
+      color: var(--yii-debug-panel-text);
+      outline: 0;
+    }
+  }
+
+  .yii-debug-phpinfo-toc-group[open]
+    > .yii-debug-phpinfo-toc-group-summary {
+    color: var(--yii-debug-panel-text);
+
+    &::before {
+      transform: rotate(90deg);
+    }
+  }
+
+  .yii-debug-phpinfo-toc-group-count {
+    min-width: 22px;
+    padding: 1px 6px;
+    border-radius: var(--yii-debug-radius-pill);
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
+  .yii-debug-phpinfo-toc-group-list {
+    margin: 2px 0 var(--yii-debug-space-2);
+    padding-left: 14px;
   }
 
   .yii-debug-phpinfo-toc-link {
@@ -5367,6 +5445,7 @@
    * an attribute the eye never sees.
    */
   .yii-debug-phpinfo-toc-link[hidden],
+  .yii-debug-phpinfo-toc-group[hidden],
   .yii-debug-phpinfo-section[hidden],
   .yii-debug-phpinfo-search-clear[hidden],
   .yii-debug-phpinfo-search-empty[hidden],
@@ -5376,8 +5455,9 @@
   }
 
   /**
-   * Compact TOC into a horizontal scroller above the content on narrow
-   * viewports so the layout doesn't collapse to a tiny side column.
+   * Compact the grouped TOC above the content on narrow viewports. Closed
+   * groups share a two-column grid; the active or matching group spans the
+   * row so its module links remain easy to scan.
    */
   @media (width <= 900px) {
     .yii-debug-phpinfo-shell {
@@ -5390,16 +5470,21 @@
       overflow: hidden;
     }
 
-    .yii-debug-phpinfo-toc-list {
-      flex-flow: row nowrap;
-      gap: 4px;
-      overflow-x: auto;
-      overscroll-behavior-x: contain;
-      scrollbar-width: thin;
+    .yii-debug-phpinfo-toc-groups {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px var(--yii-debug-space-2);
+    }
 
-      li {
-        flex: 0 0 auto;
-      }
+    .yii-debug-phpinfo-toc-group[open] {
+      grid-column: 1 / -1;
+    }
+
+    .yii-debug-phpinfo-toc-group-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 4px;
+      padding-left: 0;
     }
 
     .yii-debug-phpinfo-toc-link {
@@ -5416,6 +5501,12 @@
           transparent 80%
         );
       }
+    }
+  }
+
+  @media (width <= 560px) {
+    .yii-debug-phpinfo-toc-groups {
+      grid-template-columns: 1fr;
     }
   }
 
