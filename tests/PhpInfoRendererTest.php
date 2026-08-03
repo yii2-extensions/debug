@@ -52,34 +52,6 @@ final class PhpInfoRendererTest extends TestCase
         );
     }
 
-    public function testRenderMarksOverviewAsInitialTocSelection(): void
-    {
-        $html = PhpInfoRenderer::render(
-            $this->emptyView(
-                [
-                    new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview'),
-                    new PhpInfoTocEntry(title: 'Core', slug: 'phpinfo-core'),
-                ],
-            ),
-        );
-
-        self::assertStringContainsString(
-            'class="yii-debug-phpinfo-toc-link is-active"',
-            $html,
-            'Overview must render as the initial selected view before JavaScript initializes.',
-        );
-        self::assertStringContainsString(
-            'aria-current="page"',
-            $html,
-            'The initial TOC selection must be exposed to assistive technology.',
-        );
-        self::assertStringContainsString(
-            '<span>1</span><span>modules</span>',
-            $html,
-            'The TOC counter must exclude the Overview entry.',
-        );
-    }
-
     public function testRenderGroupsModulesAndFallsBackToOther(): void
     {
         $html = PhpInfoRenderer::render(
@@ -113,6 +85,34 @@ final class PhpInfoRendererTest extends TestCase
             'data-yii-debug-phpinfo-toc-group="true"',
             $html,
             'Every module group must expose the JavaScript synchronization hook.',
+        );
+    }
+
+    public function testRenderMarksOverviewAsInitialTocSelection(): void
+    {
+        $html = PhpInfoRenderer::render(
+            $this->emptyView(
+                [
+                    new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview'),
+                    new PhpInfoTocEntry(title: 'Core', slug: 'phpinfo-core'),
+                ],
+            ),
+        );
+
+        self::assertStringContainsString(
+            'class="yii-debug-phpinfo-toc-link is-active"',
+            $html,
+            'Overview must render as the initial selected view before JavaScript initializes.',
+        );
+        self::assertStringContainsString(
+            'aria-current="page"',
+            $html,
+            'The initial TOC selection must be exposed to assistive technology.',
+        );
+        self::assertStringContainsString(
+            '<span>1</span><span>modules</span>',
+            $html,
+            'The TOC counter must exclude the Overview entry.',
         );
     }
 

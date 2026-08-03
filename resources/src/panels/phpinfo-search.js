@@ -22,8 +22,8 @@ function plural(count, singular, pluralForm) {
 }
 
 export function formatPhpInfoSearchStatus(
-  directiveCount,
-  directiveModuleCount,
+  matchCount,
+  matchModuleCount,
   titleMatchCount,
 ) {
   var parts = [];
@@ -32,11 +32,11 @@ export function formatPhpInfoSearchStatus(
     parts.push(plural(titleMatchCount, "module", "modules"));
   }
 
-  if (directiveCount > 0) {
+  if (matchCount > 0) {
     parts.push(
-      plural(directiveCount, "directive", "directives") +
+      plural(matchCount, "match", "matches") +
         " in " +
-        plural(directiveModuleCount, "module", "modules"),
+        plural(matchModuleCount, "module", "modules"),
     );
   }
 
@@ -185,8 +185,8 @@ export function initPhpInfoSearch(root) {
     }
 
     var visibleIds = Object.create(null);
-    var directiveCount = 0;
-    var directiveModuleCount = 0;
+    var matchCount = 0;
+    var matchModuleCount = 0;
     var titleMatchCount = 0;
 
     sections.forEach(function (section) {
@@ -194,7 +194,7 @@ export function initPhpInfoSearch(root) {
 
       var title = normalizePhpInfoQuery(section.getAttribute("data-section"));
       var titleMatch = title.indexOf(query) !== -1;
-      var sectionDirectiveCount = 0;
+      var sectionMatchCount = 0;
 
       if (titleMatch) {
         titleMatchCount++;
@@ -212,7 +212,7 @@ export function initPhpInfoSearch(root) {
             });
 
             wrap.hidden = matchingRows.length === 0;
-            sectionDirectiveCount += matchingRows.length;
+            sectionMatchCount += matchingRows.length;
 
             rows.forEach(function (row) {
               var rowMatch = matchingRows.indexOf(row) !== -1;
@@ -225,15 +225,15 @@ export function initPhpInfoSearch(root) {
         );
       }
 
-      var visible = titleMatch || sectionDirectiveCount > 0;
+      var visible = titleMatch || sectionMatchCount > 0;
 
       section.hidden = !visible;
 
       if (visible) visibleIds[section.id] = true;
 
-      if (sectionDirectiveCount > 0) {
-        directiveCount += sectionDirectiveCount;
-        directiveModuleCount++;
+      if (sectionMatchCount > 0) {
+        matchCount += sectionMatchCount;
+        matchModuleCount++;
       }
     });
 
@@ -241,14 +241,14 @@ export function initPhpInfoSearch(root) {
 
     if (status) {
       status.textContent = formatPhpInfoSearchStatus(
-        directiveCount,
-        directiveModuleCount,
+        matchCount,
+        matchModuleCount,
         titleMatchCount,
       );
     }
 
     if (empty) {
-      empty.hidden = directiveCount + titleMatchCount !== 0;
+      empty.hidden = matchCount + titleMatchCount !== 0;
     }
 
     if (clear) clear.hidden = false;

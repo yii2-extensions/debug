@@ -41,13 +41,25 @@ use const PREG_SET_ORDER;
  * Narrows the raw {@see phpinfo()} HTML output into the typed {@see PhpInfoView}.
  *
  * Splits the captured body into the overview chunk (everything before the first `<h2>`) and the modules chunk (every
- * `<h2>` + table that follows), parses each `<tr><td>k</td><td>v</td></tr>` pair into a key/value map, builds the five
+ * module heading + table that follows), parses each `<tr><td>k</td><td>v</td></tr>` pair into a key/value map, builds
+ * the five
  * hero sections ('PHP version' / 'Build' / 'Configuration' / 'Capabilities' / 'Streams') with typed tiles, and wraps
  * every module `<table>` in the panel's table chrome plus a deep-link `<section>` so the search filter and the TOC can
  * hide / jump to it.
  */
 final class PhpInfoDataNormalizer
 {
+    /**
+     * phpinfo() exposes environment variables and superglobals verbatim. Keep credentials out of the rendered HTML
+     * while leaving ordinary module directives (for example, session.cookie_path) untouched.
+     */
+    private const string SENSITIVE_VARIABLE_PATTERN
+        = '/password|passwd|pwd|token|secret|credential|authorization|php[_-]?auth|auth[_-]?key|cookie|session[_-]?(?:id|key|token)|xsrf|csrf|(?:api|app|private|access|encryption|signing)[_-]?key|(?:database|db)[_-]?url|dsn/i';
+    private const string TABLE_KIND_DATA = 'data';
+    private const string TABLE_KIND_DIRECTIVES = 'directives';
+    private const string TABLE_KIND_FACTS = 'facts';
+    private const string TABLE_KIND_NOTE = 'note';
+
     /**
      * Builds the typed view-model from the raw {@see phpinfo()} HTML body, the runtime metrics PHP itself reports
      * (SAPI, OS, memory limit) and the active {@see PHP_VERSION} constant.
@@ -76,6 +88,24 @@ final class PhpInfoDataNormalizer
             modulesHtml: $modulesHtml,
             configureCommand: self::pluck($overviewRows, 'Configure Command'),
         );
+    }
+
+    private static function addRowClass(string $attributes, string $class, bool $removePhpInfoHeader = false): string
+    {
+        $attributes = trim($attributes);
+
+        if ($removePhpInfoHeader) {
+            $attributes = str_replace(['class="h"', "class='h'"], '', $attributes);
+            $attributes = trim($attributes);
+        }
+
+        if (str_contains($attributes, 'class="')) {
+            $withClass = preg_replace('/class="([^"]*)"/', 'class="$1 ' . $class . '"', $attributes, 1);
+
+            return $withClass ?? $attributes;
+        }
+
+        return trim($attributes . ' class="' . $class . '"');
     }
 
     /**
@@ -330,6 +360,156 @@ final class PhpInfoDataNormalizer
         return $tiles;
     }
 
+    private static function classifyModuleTable(string $tableBody): string
+    {
+        $headerCells = self::extractFirstHeaderCells($tableBody);
+        $firstHeader = strtolower($headerCells[0] ?? '');
+        $secondHeader = strtolower($headerCells[1] ?? '');
+
+        if ($firstHeader === 'directive') {
+            return self::TABLE_KIND_DIRECTIVES;
+        }
+
+        if (
+            in_array($firstHeader, ['contribution', 'module', 'module name', 'statistics', 'variable'], true)
+            || $secondHeader === 'value'
+            || $secondHeader === 'authors'
+        ) {
+            return self::TABLE_KIND_DATA;
+        }
+
+        if (self::countRowsWithValues($tableBody, false) === 0) {
+            return self::TABLE_KIND_NOTE;
+        }
+
+        return self::TABLE_KIND_FACTS;
+    }
+
+    private static function countRowsWithValues(string $tableBody, bool $skipHeaderRows): int
+    {
+        preg_match_all('%<tr\b([^>]*)>(.*?)</tr>%si', $tableBody, $rows, PREG_SET_ORDER);
+
+        $count = 0;
+
+        foreach ($rows as $row) {
+            if ($skipHeaderRows && preg_match('/\bclass="[^"]*\bh\b[^"]*"/i', $row[1]) === 1) {
+                continue;
+            }
+
+            preg_match_all('%<(?:th|td)\b[^>]*>%i', $row[2], $cells);
+
+            if (count($cells[0]) >= 2) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    private static function countTableRows(string $tableBody): int
+    {
+        preg_match_all('%<tr\b[^>]*>%i', $tableBody, $rows);
+
+        return count($rows[0]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function extractFirstHeaderCells(string $tableBody): array
+    {
+        if (preg_match('%<tr\b[^>]*class="[^"]*\bh\b[^"]*"[^>]*>(.*?)</tr>%si', $tableBody, $row) !== 1) {
+            return [];
+        }
+
+        preg_match_all('%<(?:th|td)\b[^>]*>(.*?)</(?:th|td)>%si', $row[1], $cells, PREG_SET_ORDER);
+
+        return array_map(
+            static fn(array $cell): string => trim(html_entity_decode(strip_tags($cell[1]), ENT_QUOTES, 'UTF-8')),
+            $cells,
+        );
+    }
+
+    private static function formatModuleTableCount(int $count, string $kind): string
+    {
+        $noun = match ($kind) {
+            self::TABLE_KIND_DIRECTIVES => $count === 1 ? 'directive' : 'directives',
+            self::TABLE_KIND_DATA => $count === 1 ? 'row' : 'rows',
+            self::TABLE_KIND_NOTE => $count === 1 ? 'note' : 'notes',
+            default => $count === 1 ? 'value' : 'values',
+        };
+
+        return "$count $noun";
+    }
+
+    private static function isSensitiveVariableKey(string $key): bool
+    {
+        $isRuntimeVariable = str_starts_with($key, '$_');
+        $isEnvironmentVariable = $key !== '' && strtolower($key) !== $key;
+
+        return ($isRuntimeVariable || $isEnvironmentVariable)
+            && preg_match(self::SENSITIVE_VARIABLE_PATTERN, $key) === 1;
+    }
+
+    private static function moduleTableLabel(string $kind, string $tableBody): string
+    {
+        if ($kind === self::TABLE_KIND_DIRECTIVES) {
+            return 'Configuration directives';
+        }
+
+        if ($kind === self::TABLE_KIND_FACTS) {
+            return 'Module information';
+        }
+
+        if ($kind === self::TABLE_KIND_NOTE) {
+            return 'Notes';
+        }
+
+        $firstHeader = strtolower(self::extractFirstHeaderCells($tableBody)[0] ?? '');
+
+        return match ($firstHeader) {
+            'contribution' => 'Contributors',
+            'module', 'module name' => 'Modules',
+            'statistics' => 'Statistics',
+            'variable' => 'Variables',
+            default => 'Data',
+        };
+    }
+
+    private static function normalizeFactRows(string $tableBody): string
+    {
+        $normalized = preg_replace_callback(
+            '%<tr\b([^>]*)>(.*?)</tr>%si',
+            static function (array $row): string {
+                preg_match_all('%<(?:th|td)\b[^>]*>(.*?)</(?:th|td)>%si', $row[2], $cells, PREG_SET_ORDER);
+
+                if (count($cells) === 1) {
+                    $content = trim($cells[0][1]);
+                    $attributes = self::addRowClass($row[1], 'yii-debug-phpinfo-fact-subheading', true);
+
+                    return sprintf(
+                        '<tr %s><th colspan="2" class="yii-debug-phpinfo-fact-subheading-cell">%s</th></tr>',
+                        $attributes,
+                        $content,
+                    );
+                }
+
+                $value = isset($cells[1])
+                    ? trim(html_entity_decode(strip_tags($cells[1][1]), ENT_QUOTES, 'UTF-8'))
+                    : '';
+                $class = mb_strlen($value) > 72
+                    ? 'yii-debug-phpinfo-fact yii-debug-phpinfo-fact-wide'
+                    : 'yii-debug-phpinfo-fact';
+                $attributes = self::addRowClass($row[1], $class, true);
+
+                return '<tr ' . $attributes . '>' . self::renderFactStatusPills($row[2]) . '</tr>';
+            },
+            $tableBody,
+        );
+
+        return $normalized ?? $tableBody;
+    }
+
     /**
      * @return array<string, string>
      */
@@ -364,6 +544,74 @@ final class PhpInfoDataNormalizer
     private static function pluck(array $rows, string $key): string
     {
         return $rows[$key] ?? '';
+    }
+
+    private static function redactSensitiveRows(string $tableBody): string
+    {
+        $redacted = preg_replace_callback(
+            '%<tr\b([^>]*)>(.*?)</tr>%si',
+            static function (array $row): string {
+                if (
+                    preg_match(
+                        '%<(?:th|td)\b[^>]*class="[^"]*\be\b[^"]*"[^>]*>(.*?)</(?:th|td)>%si',
+                        $row[2],
+                        $keyCell,
+                    ) !== 1
+                ) {
+                    return $row[0];
+                }
+
+                $key = trim(html_entity_decode(strip_tags($keyCell[1]), ENT_QUOTES, 'UTF-8'));
+
+                if (!self::isSensitiveVariableKey($key)) {
+                    return $row[0];
+                }
+
+                $content = preg_replace(
+                    '%<td\b([^>]*)class="[^"]*\bv\b[^"]*"([^>]*)>.*?</td>%si',
+                    '<td $1class="v"$2><span class="yii-debug-phpinfo-redacted" aria-label="Sensitive value hidden">redacted</span></td>',
+                    $row[2],
+                );
+
+                return '<tr' . $row[1] . '>' . ($content ?? $row[2]) . '</tr>';
+            },
+            $tableBody,
+        );
+
+        return $redacted ?? $tableBody;
+    }
+
+    private static function renderFactStatusPills(string $rowContent): string
+    {
+        $rendered = preg_replace_callback(
+            '%<td\b([^>]*)>(.*?)</td>%si',
+            static function (array $cell): string {
+                if (preg_match('/\bclass="[^"]*\bv\b[^"]*"/i', $cell[1]) !== 1) {
+                    return $cell[0];
+                }
+
+                $value = trim(html_entity_decode(strip_tags($cell[2]), ENT_QUOTES, 'UTF-8'));
+                $normalized = strtolower($value);
+
+                if (in_array($normalized, ['active', 'enabled', 'on', 'supported', 'up and running', 'yes'], true)) {
+                    $variant = 'success';
+                } elseif (in_array($normalized, ['disabled', 'inactive', 'no', 'not compiled in', 'not supported', 'off'], true)) {
+                    $variant = 'muted';
+                } else {
+                    return $cell[0];
+                }
+
+                return sprintf(
+                    '<td%s><span class="yii-debug-phpinfo-status-pill" data-variant="%s">%s</span></td>',
+                    $cell[1],
+                    $variant,
+                    trim($cell[2]),
+                );
+            },
+            $rowContent,
+        );
+
+        return $rendered ?? $rowContent;
     }
 
     /**
@@ -439,9 +687,9 @@ final class PhpInfoDataNormalizer
     }
 
     /**
-     * Wraps every `<h2>NAME</h2>` block in `<section class="...">` chrome and prepends every `<table>` with the
+     * Wraps every module heading block in `<section class="...">` chrome and prepends every `<table>` with the
      * panel's `<div class="yii-debug-table-wrap">` wrap. Appends one {@see PhpInfoTocEntry} to `$tocEntries` per
-     * captured `<h2>`.
+     * captured heading. PHP emits regular modules as `<h2>` and its credits block as `<h1>`.
      *
      * @param list<PhpInfoTocEntry> $tocEntries
      */
@@ -454,19 +702,14 @@ final class PhpInfoDataNormalizer
         );
         $modulesSrc = $rowHeaders ?? $modulesSrc;
 
-        $modulesSrc = str_replace(
-            '<table',
-            '<div class="yii-debug-table-wrap"><table aria-label="PHP configuration values" class="yii-debug-table yii-debug-phpinfo__table" ',
-            $modulesSrc,
-        );
-        $modulesSrc = str_replace('</table>', '</table></div>', $modulesSrc);
+        $modulesSrc = self::wrapModuleTables($modulesSrc);
 
         $captured = [];
 
         $wrapped = preg_replace_callback(
-            '%<h2[^>]*>(.*?)</h2>%s',
+            '%<h([12])[^>]*>(.*?)</h\1>%s',
             static function (array $m) use (&$captured): string {
-                $title = trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES, 'UTF-8'));
+                $title = trim(html_entity_decode(strip_tags($m[2]), ENT_QUOTES, 'UTF-8'));
                 $slug = self::slugify($title);
 
                 $captured[] = new PhpInfoTocEntry(title: $title, slug: $slug);
@@ -497,5 +740,41 @@ final class PhpInfoDataNormalizer
         }
 
         return $modulesSrc;
+    }
+
+    private static function wrapModuleTables(string $modulesSrc): string
+    {
+        $wrapped = preg_replace_callback(
+            '%<table\b[^>]*>(.*?)</table>%si',
+            static function (array $table): string {
+                $body = self::redactSensitiveRows($table[1]);
+                $kind = self::classifyModuleTable($body);
+
+                if ($kind === self::TABLE_KIND_FACTS) {
+                    $body = self::normalizeFactRows($body);
+                }
+
+                $label = self::moduleTableLabel($kind, $body);
+                $skipHeaders = $kind === self::TABLE_KIND_DIRECTIVES || $kind === self::TABLE_KIND_DATA;
+                $count = $kind === self::TABLE_KIND_NOTE
+                    ? self::countTableRows($body)
+                    : self::countRowsWithValues($body, $skipHeaders);
+                $countLabel = self::formatModuleTableCount($count, $kind);
+                $encodedLabel = Encode::content($label);
+
+                return sprintf(
+                    '<div class="yii-debug-table-wrap yii-debug-phpinfo-table-section is-%s"><header class="yii-debug-phpinfo-table-section-head"><span>%s</span><span class="yii-debug-phpinfo-table-section-count">%s</span></header><div class="yii-debug-phpinfo-table-scroll"><table aria-label="%s" class="yii-debug-table yii-debug-phpinfo__table is-%s">%s</table></div></div>',
+                    $kind,
+                    $encodedLabel,
+                    Encode::content($countLabel),
+                    Encode::value($label),
+                    $kind,
+                    $body,
+                );
+            },
+            $modulesSrc,
+        );
+
+        return $wrapped ?? $modulesSrc;
     }
 }

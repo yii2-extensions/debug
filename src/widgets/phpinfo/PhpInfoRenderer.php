@@ -216,7 +216,7 @@ final class PhpInfoRenderer
                         Label::tag()
                             ->class('yii-debug-sr-only')
                             ->for('yii-debug-phpinfo-filter')
-                            ->content('Filter PHP modules and directives'),
+                            ->content('Filter PHP modules and settings'),
                         Span::tag()
                             ->addAttribute('aria-hidden', 'true')
                             ->class('yii-debug-phpinfo-search-icon')
@@ -229,7 +229,7 @@ final class PhpInfoRenderer
                             ->addAriaAttribute('controls', 'yii-debug-phpinfo-results')
                             ->addDataAttribute('yii-debug-phpinfo-search', true)
                             ->class('yii-debug-phpinfo-search-input')
-                            ->placeholder('Search modules or directives…'),
+                            ->placeholder('Search modules or settings…'),
                         Button::tag()
                             ->addAttribute('hidden', true)
                             ->addAriaAttribute('label', 'Clear PHP configuration search')
@@ -249,7 +249,7 @@ final class PhpInfoRenderer
                             ->addAttribute('hidden', true)
                             ->addDataAttribute('yii-debug-phpinfo-empty', true)
                             ->class('yii-debug-phpinfo-search-empty')
-                            ->content('No modules or directives match this query.'),
+                            ->content('No modules or settings match this query.'),
                     ),
             );
     }

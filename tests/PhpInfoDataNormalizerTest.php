@@ -45,6 +45,53 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputClassifiesAndEnhancesModuleTables(): void
+    {
+        $body = '<h2>curl</h2>'
+            . '<table>'
+            . '<tr><td class="e">cURL support</td><td class="v">enabled</td></tr>'
+            . '<tr><td class="e">Features</td></tr>'
+            . '<tr><td class="e">HTTP2</td><td class="v">Yes</td></tr>'
+            . '</table>'
+            . '<table>'
+            . '<tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
+            . '<tr><td class="e">curl.cainfo</td><td class="v"><i>no value</i></td><td class="v"><i>no value</i></td></tr>'
+            . '</table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringContainsString(
+            'yii-debug-phpinfo-table-section is-facts',
+            $view->modulesHtml,
+            'Two-column module metadata must use the compact facts presentation.',
+        );
+        self::assertStringContainsString(
+            '<span>Module information</span><span class="yii-debug-phpinfo-table-section-count">2 values</span>',
+            $view->modulesHtml,
+            'Facts must expose a descriptive heading and exclude subsection rows from the value count.',
+        );
+        self::assertStringContainsString(
+            'class="yii-debug-phpinfo-status-pill" data-variant="success">enabled</span>',
+            $view->modulesHtml,
+            'Enabled module capabilities must render as success pills.',
+        );
+        self::assertStringContainsString(
+            'class="yii-debug-phpinfo-fact-subheading-cell">Features</th>',
+            $view->modulesHtml,
+            'Single-cell labels inside fact tables must become full-width subsection headings.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-phpinfo-table-section is-directives',
+            $view->modulesHtml,
+            'Local/master configuration tables must retain a dense directives presentation.',
+        );
+        self::assertStringContainsString(
+            '<span>Configuration directives</span><span class="yii-debug-phpinfo-table-section-count">1 directive</span>',
+            $view->modulesHtml,
+            'Directive tables must surface an accurate directive count.',
+        );
+    }
+
     public function testFromOutputClassifiesDisabledAsMutedPill(): void
     {
         $body = '<table><tr><td>Debug Build</td><td>disabled</td></tr></table>';
@@ -197,6 +244,28 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputDoesNotRedactOrdinaryModuleDirectives(): void
+    {
+        $body = '<h2>session</h2>'
+            . '<table>'
+            . '<tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
+            . '<tr><td class="e">session.cookie_path</td><td class="v">/</td><td class="v">/</td></tr>'
+            . '</table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringNotContainsString(
+            'yii-debug-phpinfo-redacted',
+            $view->modulesHtml,
+            'Sensitive-name detection must not hide ordinary lowercase PHP directives.',
+        );
+        self::assertStringContainsString(
+            '<td class="v">/</td><td class="v">/</td>',
+            $view->modulesHtml,
+            'Ordinary directive values must remain intact.',
+        );
+    }
+
     public function testFromOutputDowngradesTokenListToTextWhenTokenContainsWhitespace(): void
     {
         $body = '<table><tr><td>Registered PHP Streams</td><td>https,ftp with space,ssh2</td></tr></table>';
@@ -326,6 +395,46 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputRedactsSensitiveEnvironmentAndRuntimeVariables(): void
+    {
+        $body = '<h2>PHP Variables</h2>'
+            . '<table>'
+            . '<tr class="h"><th>Variable</th><th>Value</th></tr>'
+            . '<tr><td class="e">$_COOKIE[\'XSRF-TOKEN\']</td><td class="v">sensitive-cookie-value</td></tr>'
+            . '<tr><td class="e">APP_KEY</td><td class="v">sensitive-app-key</td></tr>'
+            . '<tr><td class="e">$_SERVER[\'PHP_AUTH_PW\']</td><td class="v">sensitive-basic-auth-value</td></tr>'
+            . '<tr><td class="e">APP_NAME</td><td class="v">Yii application</td></tr>'
+            . '</table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringNotContainsString(
+            'sensitive-cookie-value',
+            $view->modulesHtml,
+            'Cookie values must never reach the rendered phpinfo HTML.',
+        );
+        self::assertStringNotContainsString(
+            'sensitive-app-key',
+            $view->modulesHtml,
+            'Credential-like environment values must never reach the rendered phpinfo HTML.',
+        );
+        self::assertStringNotContainsString(
+            'sensitive-basic-auth-value',
+            $view->modulesHtml,
+            'PHP basic-auth credentials must never reach the rendered phpinfo HTML.',
+        );
+        self::assertStringContainsString(
+            'aria-label="Sensitive value hidden">redacted</span>',
+            $view->modulesHtml,
+            'Redacted variables must expose an accessible non-secret placeholder.',
+        );
+        self::assertStringContainsString(
+            '>Yii application</td>',
+            $view->modulesHtml,
+            'Ordinary environment values must remain available.',
+        );
+    }
+
     public function testFromOutputResolvesHomeDirectoryFromPosixWhenEnvUnset(): void
     {
         $body = '<table><tr><td>Loaded Configuration File</td><td>/tmp/php.ini</td></tr></table>';
@@ -353,6 +462,31 @@ final class PhpInfoDataNormalizerTest extends TestCase
             $tile->kind,
             "Without env signals, 'resolveHomeDirectory()' must still produce a PATH tile (the posix fallback "
             . 'or empty home are both acceptable).',
+        );
+    }
+
+    public function testFromOutputSeparatesPhpCreditsFromPhpVariables(): void
+    {
+        $body = '<h2>PHP Variables</h2><table><tr><td>Variable</td><td>Value</td></tr></table>'
+            . '<h1>PHP Credits</h1><table><tr><td>PHP Group</td><td>Contributors</td></tr></table>'
+            . '<h2>PHP License</h2><table><tr><td>License text</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+        $titles = [];
+
+        foreach ($view->tocEntries as $entry) {
+            $titles[] = $entry->title;
+        }
+
+        self::assertSame(
+            ['Overview', 'PHP Variables', 'PHP Credits', 'PHP License'],
+            $titles,
+            'The h1-based PHP Credits block must become an independent module instead of extending PHP Variables.',
+        );
+        self::assertStringContainsString(
+            'id="phpinfo-php-credits"',
+            $view->modulesHtml,
+            'PHP Credits must expose its own deep-linkable section.',
         );
     }
 

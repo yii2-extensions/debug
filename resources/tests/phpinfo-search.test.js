@@ -12,16 +12,16 @@ test("normalizePhpInfoQuery trims and normalizes case", () => {
   assert.equal(normalizePhpInfoQuery(null), "");
 });
 
-test("formatPhpInfoSearchStatus describes directive results", () => {
-  assert.equal(formatPhpInfoSearchStatus(1, 1, 0), "1 directive in 1 module");
-  assert.equal(formatPhpInfoSearchStatus(4, 2, 0), "4 directives in 2 modules");
+test("formatPhpInfoSearchStatus describes matching settings", () => {
+  assert.equal(formatPhpInfoSearchStatus(1, 1, 0), "1 match in 1 module");
+  assert.equal(formatPhpInfoSearchStatus(4, 2, 0), "4 matches in 2 modules");
 });
 
 test("formatPhpInfoSearchStatus keeps module-name matches distinct", () => {
   assert.equal(formatPhpInfoSearchStatus(0, 0, 1), "1 module");
   assert.equal(
     formatPhpInfoSearchStatus(2, 1, 1),
-    "1 module · 2 directives in 1 module",
+    "1 module · 2 matches in 1 module",
   );
 });
 

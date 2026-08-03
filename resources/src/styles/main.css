@@ -5911,35 +5911,16 @@
 
   /**
    * -- phpinfo module card -----------------------------------------------
-   * Each module is a neutral table card. The module title uses the interface
-   * font; directives and values remain monospace for scanning.
+   * Module information, capability summaries, and configuration directives
+   * have different reading patterns. Keep them in separate neutral cards:
+   * compact fact grids for module metadata and dense tables for directives.
    */
 
   .yii-debug-phpinfo-module {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yii-debug-space-3);
     margin-top: 0;
-    border: var(--yii-debug-border);
-    border-radius: var(--yii-debug-radius-md);
-    background: var(--yii-debug-panel-surface);
-    box-shadow: var(--yii-debug-shadow-sm);
-    overflow: hidden;
-
-    /**
-     * Multiple tables in one module (e.g. APCu's main table + Directives)
-     * separated by a thin divider rather than a margin gap.
-     */
-    .yii-debug-table-wrap + .yii-debug-table-wrap {
-      border-top: var(--yii-debug-border);
-    }
-
-    /**
-     * The wrap inside the card strips its own border/radius — the card
-     * already provides that chrome.
-     */
-    .yii-debug-table-wrap {
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-    }
   }
 
   .yii-debug-phpinfo-module-head {
@@ -5947,9 +5928,7 @@
     align-items: center;
     gap: 10px;
     margin: 0;
-    padding: 10px var(--yii-debug-space-3);
-    background: var(--yii-debug-panel-surface-muted);
-    border-bottom: var(--yii-debug-border);
+    padding: 2px 2px 0;
 
     h2 {
       margin: 0;
@@ -5957,14 +5936,54 @@
       background: none;
       color: var(--yii-debug-panel-text);
       font-family: var(--yii-debug-font-sans);
-      font-size: var(--yii-debug-fs-lg);
-      font-weight: 600;
+      font-size: var(--yii-debug-fs-xl);
+      font-weight: 650;
       text-align: left;
     }
   }
 
   .yii-debug-phpinfo-module-dot {
     display: none;
+  }
+
+  .yii-debug-phpinfo-table-section {
+    overflow: hidden;
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-md);
+    background: var(--yii-debug-panel-surface);
+    box-shadow: var(--yii-debug-shadow-sm);
+  }
+
+  .yii-debug-phpinfo-table-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--yii-debug-space-2);
+    padding: 9px var(--yii-debug-space-3);
+    border-bottom: var(--yii-debug-border);
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-text);
+    font-family: var(--yii-debug-font-sans);
+    font-size: var(--yii-debug-fs-sm);
+    font-weight: 600;
+  }
+
+  .yii-debug-phpinfo-table-section-count {
+    flex: none;
+    padding: 1px 7px;
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-pill);
+    background: var(--yii-debug-panel-surface);
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .yii-debug-phpinfo-table-scroll {
+    min-width: 0;
+    overflow-x: auto;
   }
 
   .yii-debug-phpinfo-module .yii-debug-table {
@@ -5984,9 +6003,14 @@
       width: 30%;
     }
 
+    th,
+    td {
+      text-align: left;
+    }
+
     th[scope="row"] {
       color: var(--yii-debug-panel-text);
-      font-family: var(--yii-debug-font-mono);
+      font-family: var(--yii-debug-font-sans);
       font-weight: 500;
       white-space: normal;
     }
@@ -5995,11 +6019,17 @@
       font-family: var(--yii-debug-font-mono);
     }
 
-    tr.h > td {
+    tr.h > * {
       position: sticky;
       top: 0;
       z-index: 1;
+      background: var(--yii-debug-panel-surface-muted);
+      color: var(--yii-debug-panel-muted);
       font-family: var(--yii-debug-font-sans);
+      font-size: var(--yii-debug-fs-xs);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
 
     tr.is-search-match > * {
@@ -6018,6 +6048,174 @@
         var(--yii-debug-warning) 72%,
         var(--yii-debug-panel-text)
       );
+    }
+  }
+
+  /**
+   * Two-column information tables become a compact responsive key/value
+   * grid. This turns long capability lists (curl, GD, OPcache) into a scannable
+   * dashboard while preserving their native table semantics in the DOM.
+   */
+  .yii-debug-phpinfo-table-section.is-facts {
+    .yii-debug-phpinfo-table-scroll {
+      overflow: visible;
+    }
+
+    .yii-debug-table.is-facts {
+      display: block;
+      min-width: 0;
+      table-layout: auto;
+
+      tbody {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      tr.yii-debug-phpinfo-fact {
+        display: grid;
+        grid-template-columns: minmax(130px, 0.85fr) minmax(0, 1.15fr);
+        min-width: 0;
+        border-bottom: 1px solid
+          color-mix(in srgb, var(--yii-debug-panel-border), transparent 25%);
+
+        &:nth-child(odd) {
+          border-right: 1px solid
+            color-mix(in srgb, var(--yii-debug-panel-border), transparent 25%);
+        }
+
+        &.yii-debug-phpinfo-fact-wide {
+          grid-column: 1 / -1;
+          border-right: 0;
+        }
+
+        > * {
+          width: auto;
+          padding: 9px 12px;
+          border: 0;
+          background: transparent;
+          overflow-wrap: anywhere;
+        }
+
+        > th {
+          color: var(--yii-debug-panel-muted);
+          font-family: var(--yii-debug-font-sans);
+          font-size: var(--yii-debug-fs-xs);
+          font-weight: 600;
+        }
+
+        > td {
+          color: var(--yii-debug-panel-text);
+          font-family: var(--yii-debug-font-mono);
+          font-size: var(--yii-debug-fs-xs);
+        }
+      }
+
+      tr.yii-debug-phpinfo-fact-subheading {
+        display: block;
+        grid-column: 1 / -1;
+
+        > th {
+          display: block;
+          width: auto;
+          padding: 8px 12px;
+          border-block: var(--yii-debug-border);
+          background: color-mix(
+            in srgb,
+            var(--yii-debug-panel-surface-muted),
+            transparent 15%
+          );
+          color: var(--yii-debug-panel-text);
+          font-family: var(--yii-debug-font-sans);
+          font-size: var(--yii-debug-fs-xs);
+          font-weight: 650;
+          letter-spacing: 0.02em;
+          text-align: left;
+        }
+      }
+    }
+  }
+
+  .yii-debug-phpinfo-status-pill,
+  .yii-debug-phpinfo-redacted {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 1px 8px;
+    border: 1px solid transparent;
+    border-radius: var(--yii-debug-radius-pill);
+    font-family: var(--yii-debug-font-mono);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.03em;
+  }
+
+  .yii-debug-phpinfo-status-pill[data-variant="success"] {
+    border-color: color-mix(
+      in srgb,
+      var(--yii-debug-success),
+      transparent 65%
+    );
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-success),
+      transparent 88%
+    );
+    color: var(--yii-debug-success);
+  }
+
+  .yii-debug-phpinfo-status-pill[data-variant="muted"] {
+    border-color: var(--yii-debug-panel-border);
+    background: var(--yii-debug-panel-surface-muted);
+    color: var(--yii-debug-panel-muted);
+  }
+
+  .yii-debug-phpinfo-redacted {
+    border-color: color-mix(
+      in srgb,
+      var(--yii-debug-warning),
+      transparent 65%
+    );
+    background: color-mix(
+      in srgb,
+      var(--yii-debug-warning),
+      transparent 90%
+    );
+    color: color-mix(
+      in srgb,
+      var(--yii-debug-warning) 72%,
+      var(--yii-debug-panel-text)
+    );
+    text-transform: uppercase;
+  }
+
+  .yii-debug-phpinfo-table-section.is-note {
+    .yii-debug-table.is-note {
+      min-width: 0;
+      table-layout: auto;
+
+      td,
+      th {
+        width: auto;
+        padding: var(--yii-debug-space-3);
+        color: var(--yii-debug-panel-muted);
+        font-family: var(--yii-debug-font-sans);
+        line-height: 1.6;
+        text-align: left;
+      }
+    }
+  }
+
+  @media (width <= 720px) {
+    .yii-debug-phpinfo-table-section.is-facts
+      .yii-debug-table.is-facts
+      tbody {
+      grid-template-columns: 1fr;
+    }
+
+    .yii-debug-phpinfo-table-section.is-facts
+      .yii-debug-table.is-facts
+      tr.yii-debug-phpinfo-fact {
+      border-right: 0;
     }
   }
 

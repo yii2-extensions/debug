@@ -18,14 +18,14 @@ final readonly class PhpInfoView
          */
         public array $sections,
         /**
-         * TOC entries in display order (Overview first, then one entry per phpinfo module `<h2>`).
+         * TOC entries in display order (Overview first, then one entry per phpinfo module heading).
          *
          * @var list<PhpInfoTocEntry>
          */
         public array $tocEntries,
         /**
          * Modules HTML produced by {@see phpinfo()} (already wrapped in `<section>` chrome by the normalizer); empty
-         * string when no `<h2>` is present in the output.
+         * string when no module heading is present in the output.
          */
         public string $modulesHtml,
         /**
