@@ -51,9 +51,11 @@ final class SidebarRenderer
      */
     private static function renderHistoryCard(SidebarSnapshot $snapshot): Div
     {
+        $method = $snapshot->method !== '' ? "{$snapshot->method} " : '';
+
         return Div::tag()
             ->class('yii-debug-history-card')
-            ->title(($snapshot->method !== '' ? $snapshot->method . ' ' : '') . $snapshot->fullUrl)
+            ->title("{$method}{$snapshot->fullUrl}")
             ->html(
                 Div::tag()
                     ->class('yii-debug-snapshot-line')
@@ -122,7 +124,11 @@ final class SidebarRenderer
         string $ariaLabel,
         string $icon,
     ): A|Button {
-        $class = self::ICON_BTN_CLASS . ($isDisabled ? ' is-disabled' : '');
+        $disabledClass = $isDisabled ? ' is-disabled' : '';
+
+        $class = self::ICON_BTN_CLASS;
+
+        $class = "{$class}{$disabledClass}";
 
         if ($isCursor || $isDisabled) {
             $button = Button::tag()

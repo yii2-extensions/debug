@@ -427,7 +427,9 @@ class UserPanel extends Panel
             );
         }
 
-        $userControllerRoute = $module->getUniqueId() . '/user';
+        $moduleId = $module->getUniqueId();
+
+        $userControllerRoute = "{$moduleId}/user";
 
         $this->ruleUserSwitch['controllers'] = [$userControllerRoute];
 
@@ -437,7 +439,7 @@ class UserPanel extends Panel
                 'class' => AccessControl::class,
                 'only' => [
                     $userControllerRoute,
-                    $module->getUniqueId() . '/default',
+                    "{$moduleId}/default",
                 ],
                 'user' => $userSwitch->getMainUser(),
                 'rules' => [$this->ruleUserSwitch],

@@ -58,15 +58,17 @@ final class Tabs
             $panels[] = $panel;
         }
 
-        return Ul::tag()
+        $tabs = Ul::tag()
             ->class('yii-debug-tabs')
             ->addAriaAttribute('label', $ariaLabel)
             ->addAttribute('role', 'tablist')
             ->html(...$items)
-            ->render()
-            . Div::tag()
-                ->class('yii-debug-tab-content')
-                ->html(...$panels)
-                ->render();
+            ->render();
+        $content = Div::tag()
+            ->class('yii-debug-tab-content')
+            ->html(...$panels)
+            ->render();
+
+        return "{$tabs}{$content}";
     }
 }

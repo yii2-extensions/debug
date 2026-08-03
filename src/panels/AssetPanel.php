@@ -166,11 +166,11 @@ class AssetPanel extends Panel
 
         foreach ($params as $param => $value) {
             $value = Coerce::stringOrNull($value) ?? get_debug_type($value);
-
-            $formatted[$param] = Strong::tag()
+            $label = Strong::tag()
                 ->content("'{$param}' => ")
-                ->render()
-                . $value;
+                ->render();
+
+            $formatted[$param] = "{$label}{$value}";
         }
 
         return $formatted;

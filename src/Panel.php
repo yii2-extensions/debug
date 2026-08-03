@@ -236,8 +236,10 @@ class Panel extends Component implements ViewContextInterface
      */
     public function getUrl(array|null $additionalParams = null): string
     {
+        $moduleId = $this->module?->getUniqueId();
+
         $route = [
-            '/' . $this->module?->getUniqueId() . '/default/view',
+            "/{$moduleId}/default/view",
             'panel' => $this->id,
             'tag' => $this->tag,
         ];

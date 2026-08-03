@@ -102,7 +102,9 @@ final class DumpCardRenderer
             $row->trace,
         );
 
-        return $body->html($row->message . Ul::tag()->class('yii-debug-trace')->html(...$items)->render());
+        $trace = Ul::tag()->class('yii-debug-trace')->html(...$items)->render();
+
+        return $body->html("{$row->message}{$trace}");
     }
 
     /**
@@ -158,10 +160,12 @@ final class DumpCardRenderer
         if ($file !== '') {
             $suffix = ($line !== null && $line > 0) ? ":{$line}" : '';
 
+            $basename = basename($file);
+
             $children[] = Span::tag()
                 ->class('yii-debug-dump-trace')
-                ->content(basename($file) . $suffix)
-                ->title($file . $suffix);
+                ->content("{$basename}{$suffix}")
+                ->title("{$file}{$suffix}");
         }
 
         return $children;

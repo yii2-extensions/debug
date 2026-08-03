@@ -86,13 +86,17 @@ final class RequestSectionRenderer
         $header = self::renderSectionHeader($section);
 
         if ($section->entries === []) {
-            return $header . P::tag()
+            $emptyState = P::tag()
                 ->class('yii-debug-table-empty')
                 ->content('No data')
                 ->render();
+
+            return "{$header}{$emptyState}";
         }
 
-        return $header . self::renderSectionTable($section);
+        $table = self::renderSectionTable($section);
+
+        return "{$header}{$table}";
     }
 
     /**
@@ -149,7 +153,7 @@ final class RequestSectionRenderer
 
         if ($section->filterable && $section->entries !== []) {
             $children[] = InputSearch::tag()
-                ->addAriaAttribute('label', 'Filter ' . $section->caption)
+                ->addAriaAttribute('label', "Filter {$section->caption}")
                 ->addDataAttribute('yii-debug-filter', true)
                 ->class('yii-debug-filter-input')
                 ->placeholder('Filter…');

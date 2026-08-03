@@ -67,7 +67,7 @@ final class QueueCardRenderer
         return Div::tag()
             ->class('yii-debug-queue-hint')
             ->html(
-                Strong::tag()->content('Async driver: ' . $list . '.'),
+                Strong::tag()->content("Async driver: {$list}."),
                 ' Push events show here, but jobs run in a separate worker process; see the History sidebar for ',
                 Strong::tag()->content('CLI'),
                 ' debug snapshots that capture the matching exec/error events.',
@@ -148,6 +148,7 @@ final class QueueCardRenderer
     private static function renderArrayOrObjectRow(string $key, array $value): Details
     {
         $isObject = isset($value['__class']) && is_string($value['__class']);
+
         $isList = !$isObject && array_is_list($value);
 
         $children = [];
@@ -155,36 +156,42 @@ final class QueueCardRenderer
         if ($isObject) {
             $className = Fqcn::shortName($value['__class']);
             $namespace = Fqcn::namespacePart($value['__class']);
-            $summaryHtml = Span::tag()
+
+            $displayClass = $namespace !== '' ? "{$namespace}\\{$className}" : $className;
+
+            $keyHtml = Span::tag()
                 ->class('yii-debug-queue-tree-key')
                 ->content($key)
-                ->render()
-                . Span::tag()
-                    ->class('yii-debug-queue-tree-type')
-                    ->content('object')
-                    ->render()
-                . Span::tag()
-                    ->class('yii-debug-queue-tree-class')
-                    ->title($value['__class'])
-                    ->content($namespace !== '' ? $namespace . '\\' . $className : $className)
-                    ->render();
+                ->render();
+            $typeHtml = Span::tag()
+                ->class('yii-debug-queue-tree-type')
+                ->content('object')
+                ->render();
+            $classHtml = Span::tag()
+                ->class('yii-debug-queue-tree-class')
+                ->title($value['__class'])
+                ->content($displayClass)
+                ->render();
+
+            $summaryHtml = "{$keyHtml}{$typeHtml}{$classHtml}";
 
             unset($value['__class']);
         } else {
             $kind = $isList ? 'list' : 'array';
 
-            $summaryHtml = Span::tag()
+            $keyHtml = Span::tag()
                 ->class('yii-debug-queue-tree-key')
                 ->content($key)
-                ->render()
-                . Span::tag()
-                    ->class('yii-debug-queue-tree-type')
-                    ->content($kind)
-                    ->render()
-                . Span::tag()
-                    ->class('yii-debug-queue-tree-meta')
-                    ->content(sprintf('(%d)', count($value)))
-                    ->render();
+                ->render();
+            $typeHtml = Span::tag()
+                ->class('yii-debug-queue-tree-type')
+                ->content($kind)
+                ->render();
+            $metaHtml = Span::tag()
+                ->class('yii-debug-queue-tree-meta')
+                ->content(sprintf('(%d)', count($value)))
+                ->render();
+            $summaryHtml = "{$keyHtml}{$typeHtml}{$metaHtml}";
         }
 
         if (isset($value['__truncated'])) {
@@ -192,6 +199,7 @@ final class QueueCardRenderer
                 ->class('yii-debug-queue-tree-truncated')
                 ->content('truncated')
                 ->render();
+
             unset($value['__truncated']);
         }
 
@@ -327,7 +335,7 @@ final class QueueCardRenderer
         }
 
         if ($record->delay !== null && $record->delay > 0) {
-            $items[] = self::metaItem('delay', $record->delay . 's');
+            $items[] = self::metaItem('delay', "{$record->delay}s");
         }
 
         if ($record->priority !== null) {
@@ -406,7 +414,7 @@ final class QueueCardRenderer
     private static function renderStringRow(string $key, string $value): Div
     {
         $preview = mb_strlen($value) > self::STRING_PREVIEW_LIMIT
-            ? mb_substr($value, 0, self::STRING_PREVIEW_LIMIT) . '…'
+            ? sprintf('%s…', mb_substr($value, 0, self::STRING_PREVIEW_LIMIT))
             : $value;
 
         return Div::tag()
@@ -421,7 +429,7 @@ final class QueueCardRenderer
                 Span::tag()
                     ->class('yii-debug-queue-tree-value yii-debug-queue-tree-value-string')
                     ->title($value)
-                    ->content('"' . $preview . '"'),
+                    ->content("\"{$preview}\""),
             );
     }
 }

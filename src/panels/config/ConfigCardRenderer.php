@@ -201,7 +201,9 @@ final class ConfigCardRenderer
             }
         }
 
-        return $parts === [] ? $locale : "{$locale} (" . implode(', ', $parts) . ')';
+        $displayName = implode(', ', $parts);
+
+        return $parts === [] ? $locale : "{$locale} ({$displayName})";
     }
 
     /**
@@ -240,8 +242,10 @@ final class ConfigCardRenderer
      */
     private static function renderExtensionPill(string $name, bool $enabled): Span
     {
+        $variant = $enabled ? 'is-on' : 'is-off';
+
         return Span::tag()
-            ->class('yii-debug-ext-pill ' . ($enabled ? 'is-on' : 'is-off'))
+            ->class("yii-debug-ext-pill {$variant}")
             ->html(
                 Span::tag()
                     ->addAriaAttribute('hidden', 'true')

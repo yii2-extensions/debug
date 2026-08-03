@@ -515,10 +515,12 @@ class DbPanel extends Panel
         }
 
         if ($excessiveCallerCount > 0) {
-            $warning .= ($warning !== '' ? "\n" : '') . $excessiveCallerCount . ' '
-                . ($excessiveCallerCount === 1 ? 'caller is' : 'callers are')
-                . ' making too many calls.';
+            $separator = $warning !== '' ? "\n" : '';
+            $callerLabel = $excessiveCallerCount === 1 ? 'caller is' : 'callers are';
+            $warning = "{$warning}{$separator}{$excessiveCallerCount} {$callerLabel} making too many calls.";
         }
+
+        $totalQueryTime = number_format($this->getTotalQueryTime($rows));
 
         return [
             [
@@ -528,7 +530,7 @@ class DbPanel extends Panel
             ],
             [
                 'title' => 'Total query time',
-                'value' => number_format($this->getTotalQueryTime($rows)) . ' ms',
+                'value' => "{$totalQueryTime} ms",
             ],
         ];
     }

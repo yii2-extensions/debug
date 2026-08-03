@@ -60,15 +60,20 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples
 
         $module = $this->module;
 
-        $timelineUrl = $module === null
-            ? '#'
-            : Url::to(
+        if ($module === null) {
+            $timelineUrl = '#';
+        } else {
+            $moduleId = $module->getUniqueId();
+            $timelineUrl = Url::to(
                 [
-                    '/' . $module->getUniqueId() . '/default/view',
+                    "/{$moduleId}/default/view",
                     'panel' => 'timeline',
                     'tag' => $this->tag,
                 ],
             );
+        }
+
+        $processingTime = number_format(($this->getProcessingTime() ?? 0.0) * 1000);
 
         return Yii::$app->view->render(
             'panels/profile/detail',
@@ -77,7 +82,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples
                 'memory' => Format::bytesToMb($this->getMemoryUsage(), 3),
                 'panel' => $this,
                 'searchModel' => $searchModel,
-                'time' => number_format(($this->getProcessingTime() ?? 0.0) * 1000) . ' ms',
+                'time' => "{$processingTime} ms",
                 'timelineUrl' => $timelineUrl,
             ],
             $this,
@@ -147,10 +152,12 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples
     #[Override]
     protected function getToolbarItems(): array
     {
+        $processingTime = number_format(($this->getProcessingTime() ?? 0.0) * 1000);
+
         return [
             [
                 'title' => 'Total processing time',
-                'value' => number_format(($this->getProcessingTime() ?? 0.0) * 1000) . ' ms',
+                'value' => "{$processingTime} ms",
             ],
             [
                 'title' => 'Peak memory',

@@ -149,7 +149,9 @@ final class JobPayloadInspector
         }
 
         if (is_resource($value)) {
-            return '(resource: ' . get_resource_type($value) . ')';
+            $resourceType = get_resource_type($value);
+
+            return "(resource: {$resourceType})";
         }
 
         return '(unsupported)';
