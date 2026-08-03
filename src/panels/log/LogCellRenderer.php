@@ -117,7 +117,9 @@ final class LogCellRenderer
             $row->trace,
         );
 
-        return $body . Ul::tag()->class('yii-debug-trace')->html(...$items)->render();
+        $trace = Ul::tag()->class('yii-debug-trace')->html(...$items)->render();
+
+        return "{$body}{$trace}";
     }
 
     /**

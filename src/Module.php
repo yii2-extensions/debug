@@ -252,6 +252,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $errorHandler->on(ErrorHandler::EVENT_AFTER_RENDER, [$this, 'injectToolbarOnErrorPage']);
 
+        $route = $this->getUniqueId();
+        $pattern = $this->getUniqueId();
+
         $app->getUrlManager()->addRules(
             [
                 [
@@ -263,8 +266,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 ],
                 [
                     'class' => $this->urlRuleClass,
-                    'route' => $this->getUniqueId() . '/<controller>/<action>',
-                    'pattern' => $this->getUniqueId() . '/<controller:[\w\-]+>/<action:[\w\-]+>',
+                    'route' => "{$route}/<controller>/<action>",
+                    'pattern' => "{$pattern}/<controller:[\w\-]+>/<action:[\w\-]+>",
                     'normalizer' => false,
                     'suffix' => false,
                 ],
@@ -296,7 +299,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             }
         }
 
-        return '<yii-debug-toolbar' . Attributes::render(
+        $attributes = Attributes::render(
             [
                 'id' => 'yii-debug-toolbar',
                 'data-url' => $url,
@@ -305,7 +308,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 'data-height' => $this->defaultHeight,
                 'style' => 'display:none',
             ],
-        ) . '></yii-debug-toolbar>';
+        );
+
+        return "<yii-debug-toolbar{$attributes}></yii-debug-toolbar>";
     }
 
     /**
@@ -318,7 +323,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
     public static function getYiiLogo(): string
     {
         if (self::$yiiLogo === null) {
-            self::$yiiLogo = 'data:image/svg+xml;base64,' . base64_encode(Icon::render('yii'));
+            $payload = base64_encode(Icon::render('yii'));
+
+            self::$yiiLogo = "data:image/svg+xml;base64,{$payload}";
         }
 
         return self::$yiiLogo;
@@ -370,10 +377,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return;
         }
 
-        $injection = $this->getToolbarHtml() . '<script>' . self::toolbarScript() . '</script>';
+        $toolbar = $this->getToolbarHtml();
+        $script = self::toolbarScript();
+        $injection = "{$toolbar}<script>{$script}</script>";
 
         if (str_contains($event->output, '</body>')) {
-            $event->output = str_replace('</body>', $injection . '</body>', $event->output);
+            $event->output = str_replace('</body>', "{$injection}</body>", $event->output);
 
             return;
         }
@@ -403,7 +412,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         echo $view->renderDynamic('return Yii::$app->getModule("' . $this->getUniqueId() . '")->getToolbarHtml();');
 
-        echo '<script>' . self::toolbarScript() . '</script>';
+        $script = self::toolbarScript();
+
+        echo "<script>{$script}</script>";
     }
 
     /**
@@ -418,9 +429,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $logTarget = $this->logTargetOrFail();
 
+        $route = $this->getUniqueId();
+
         $url = Url::toRoute(
             [
-                '/' . $this->getUniqueId() . '/default/view',
+                "/{$route}/default/view",
                 'tag' => $logTarget->tag,
             ],
         );
@@ -703,7 +716,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     private static function toolbarScript(): string
     {
         if (self::$toolbarScript === null || YII_DEBUG) {
-            $contents = file_get_contents(__DIR__ . '/assets/dist/js/toolbar.min.js');
+            $contents = file_get_contents(sprintf('%s/assets/dist/js/toolbar.min.js', __DIR__));
 
             self::$toolbarScript = $contents === false ? '' : $contents;
         }

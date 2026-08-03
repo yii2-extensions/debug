@@ -271,7 +271,7 @@ class ActionRoutes extends Model
             }
 
             if ($controllerClass !== null && $this->validateControllerClass($controllerClass)) {
-                $controllers[$prefix . $controllerId] = $controllerClass;
+                $controllers["{$prefix}{$controllerId}"] = $controllerClass;
             }
         }
 

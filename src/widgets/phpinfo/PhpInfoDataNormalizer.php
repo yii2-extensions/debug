@@ -22,6 +22,7 @@ use function preg_match;
 use function preg_replace;
 use function preg_replace_callback;
 use function rtrim;
+use function sprintf;
 use function str_contains;
 use function str_replace;
 use function str_starts_with;
@@ -392,7 +393,9 @@ final class PhpInfoDataNormalizer
 
     private static function shortenPath(string $path, string $home): string
     {
-        if ($home === '' || !str_starts_with($path, $home . '/')) {
+        $homePath = "{$home}/";
+
+        if ($home === '' || !str_starts_with($path, $homePath)) {
             return $path;
         }
 
@@ -468,13 +471,17 @@ final class PhpInfoDataNormalizer
 
                 $captured[] = new PhpInfoTocEntry(title: $title, slug: $slug);
 
-                return '</section><section class="yii-debug-phpinfo-section yii-debug-phpinfo-module" id="'
-                    . Encode::value($slug)
-                    . '" data-section="' . Encode::value($title) . '">'
-                    . '<header class="yii-debug-phpinfo-module-head">'
-                    . '<span class="yii-debug-phpinfo-module-dot" aria-hidden="true"></span>'
-                    . '<h2 id="' . Encode::value($slug) . '-heading">' . Encode::content($title) . '</h2>'
-                    . '</header>';
+                $encodedSlug = Encode::value($slug);
+                $encodedTitle = Encode::value($title);
+                $encodedContent = Encode::content($title);
+
+                return sprintf(
+                    '</section><section class="yii-debug-phpinfo-section yii-debug-phpinfo-module" id="%s" data-section="%s"><header class="yii-debug-phpinfo-module-head"><span class="yii-debug-phpinfo-module-dot" aria-hidden="true"></span><h2 id="%s-heading">%s</h2></header>',
+                    $encodedSlug,
+                    $encodedTitle,
+                    $encodedSlug,
+                    $encodedContent,
+                );
             },
             $modulesSrc,
         );

@@ -108,15 +108,21 @@ final class MailCardRenderer
         }
 
         if ($diff < 3600) {
-            return [(int) floor($diff / 60) . ' min ago', $absolute];
+            $minutes = (int) floor($diff / 60);
+
+            return ["{$minutes} min ago", $absolute];
         }
 
         if ($diff < 86400) {
-            return [(int) floor($diff / 3600) . ' h ago', $absolute];
+            $hours = (int) floor($diff / 3600);
+
+            return ["{$hours} h ago", $absolute];
         }
 
         if ($diff < 2592000) {
-            return [(int) floor($diff / 86400) . ' d ago', $absolute];
+            $days = (int) floor($diff / 86400);
+
+            return ["{$days} d ago", $absolute];
         }
 
         return [$absolute, $absolute];
@@ -318,12 +324,14 @@ final class MailCardRenderer
         $tooltip = $message->isSuccessful ? 'Mailer reported success' : 'Mailer reported failure';
         $label = $message->isSuccessful ? 'Sent' : 'Failed';
 
+        $encodedLabel = Encode::content($label);
+
         return Span::tag()
             ->class("yii-debug-mail-status yii-debug-mail-status-{$variant}")
             ->title($tooltip)
             ->html(
                 Span::tag()->addAriaAttribute('hidden', 'true')->class('yii-debug-mail-status-dot'),
-                ' ' . Encode::content($label),
+                " {$encodedLabel}",
             );
     }
 

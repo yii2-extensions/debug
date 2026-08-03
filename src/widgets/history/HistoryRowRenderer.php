@@ -131,9 +131,8 @@ final class HistoryRowRenderer
         }
 
         if ($row->excessiveCallersCount > 0) {
-            $warningParts[] = "{$row->excessiveCallersCount} "
-                . ($row->excessiveCallersCount === 1 ? 'caller is' : 'callers are')
-                . ' making too many calls.';
+            $callerLabel = $row->excessiveCallersCount === 1 ? 'caller is' : 'callers are';
+            $warningParts[] = "{$row->excessiveCallersCount} {$callerLabel} making too many calls.";
         }
 
         $warning = implode(' &#10;', $warningParts);
@@ -141,11 +140,12 @@ final class HistoryRowRenderer
         $content = (string) $row->sqlCount;
 
         if ($warning !== '') {
-            $content .= ' '
-                . Span::tag()
-                    ->title($warning)
-                    ->content('⚠')
-                    ->render();
+            $warningHtml = Span::tag()
+                ->title($warning)
+                ->content('⚠')
+                ->render();
+
+            $content = "{$content} {$warningHtml}";
         }
 
         return A::tag()
@@ -178,15 +178,19 @@ final class HistoryRowRenderer
             return '';
         }
 
+        $requestLabel = $summary->totalRequests === 1 ? 'captured request' : 'captured requests';
+
         $children = [
             Span::tag()->html(
                 Strong::tag()->content((string) $summary->totalRequests),
-                ' captured request' . ($summary->totalRequests === 1 ? '' : 's'),
+                " {$requestLabel}",
             ),
         ];
 
         foreach ($summary->statusBuckets as $bucket) {
-            $children[] = Span::tag()->class('yii-debug-grid-summary-sep')->content('·');
+            $children[] = Span::tag()
+                ->class('yii-debug-grid-summary-sep')
+                ->content('·');
             $children[] = A::tag()
                 ->class("yii-debug-grid-summary-stat-{$bucket->variant}")
                 ->href(Url::to(['index', 'Debug[statusCode]' => $bucket->sampleCode]))

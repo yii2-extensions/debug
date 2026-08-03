@@ -298,7 +298,7 @@ final class AssetCardRenderer
                 ->html(
                     Span::tag()
                         ->class('yii-debug-asset-depends-label')
-                        ->content('Depends on ' . $bundle->depsCount),
+                        ->content("Depends on {$bundle->depsCount}"),
                     Div::tag()
                         ->class('yii-debug-asset-depends-list')
                         ->html(

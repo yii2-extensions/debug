@@ -179,11 +179,14 @@ final readonly class DebugValue implements JsonSerializable
     {
         return match ($this->type) {
             'special-float' => (string) $this->value,
-            'binary' => '(binary: base64 ' . base64_encode(is_string($this->value) ? $this->value : '') . ')',
-            'resource' => '(resource: ' . ($this->resourceType ?? 'unknown') . ')',
+            'binary' => sprintf(
+                '(binary: base64 %s)',
+                base64_encode(is_string($this->value) ? $this->value : ''),
+            ),
+            'resource' => sprintf('(resource: %s)', $this->resourceType ?? 'unknown'),
             default => is_string($this->value) && $this->value !== ''
                 ? $this->value
-                : '(' . $this->type . ': ' . ($this->reason ?? 'unknown') . ')',
+                : sprintf('(%s: %s)', $this->type, $this->reason ?? 'unknown'),
         };
     }
 
@@ -344,7 +347,10 @@ final readonly class DebugValue implements JsonSerializable
         }
 
         if ($value instanceof Throwable) {
-            return $value::class . ': ' . $value->getMessage();
+            $class = $value::class;
+            $message = $value->getMessage();
+
+            return "{$class}: {$message}";
         }
 
         if ($value instanceof Stringable) {

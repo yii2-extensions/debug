@@ -38,16 +38,19 @@ final class RouterRenderer
         RouterRules $routerRules,
         ActionRoutes $actionRoutes,
     ): string {
-        return self::renderFlagsStrip($routerRules)
-            . Tabs::render(
-                'router',
-                'Router data',
-                [
-                    ['label' => 'Current Route', 'content' => self::renderCurrentRoutePanel($currentRoute)],
-                    ['label' => 'Router Rules', 'content' => self::renderRouterRulesPanel($routerRules)],
-                    ['label' => 'Action Routes', 'content' => self::renderActionRoutesPanel($actionRoutes)],
-                ],
-            );
+        $flags = self::renderFlagsStrip($routerRules);
+
+        $tabs = Tabs::render(
+            'router',
+            'Router data',
+            [
+                ['label' => 'Current Route', 'content' => self::renderCurrentRoutePanel($currentRoute)],
+                ['label' => 'Router Rules', 'content' => self::renderRouterRulesPanel($routerRules)],
+                ['label' => 'Action Routes', 'content' => self::renderActionRoutesPanel($actionRoutes)],
+            ],
+        );
+
+        return "{$flags}{$tabs}";
     }
 
     /**
@@ -155,10 +158,10 @@ final class RouterRenderer
                 )
                 ->render();
 
-        $body = self::renderRouteSummary($currentRoute)
-            . $heading
-            . self::renderCalloutBlock($currentRoute)
-            . self::renderLogsTable($currentRoute);
+        $summary = self::renderRouteSummary($currentRoute);
+        $callout = self::renderCalloutBlock($currentRoute);
+        $logs = self::renderLogsTable($currentRoute);
+        $body = "{$summary}{$heading}{$callout}{$logs}";
 
         return $body === ''
             ? H2::tag()->content('No route resolution captured.')->render()

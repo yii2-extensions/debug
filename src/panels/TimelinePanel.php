@@ -136,10 +136,11 @@ class TimelinePanel extends Panel
 
         if ($svg === null) {
             $class = Coerce::stringOrNull($this->svgOptions['class'] ?? null) ?? Svg::class;
+            $svgClass = Svg::class;
 
             if (!is_a($class, Svg::class, true)) {
                 throw new InvalidConfigException(
-                    'Timeline SVG class must extend ' . Svg::class . '.',
+                    "Timeline SVG class must extend {$svgClass}.",
                 );
             }
 
@@ -151,7 +152,7 @@ class TimelinePanel extends Panel
 
             if (!$object instanceof Svg) {
                 throw new InvalidConfigException(
-                    'Timeline SVG factory must create ' . Svg::class . '.',
+                    "Timeline SVG factory must create {$svgClass}.",
                 );
             }
 

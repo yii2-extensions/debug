@@ -325,9 +325,11 @@ class MailPanel extends Panel
         $shortUrlPath = $url === '' ? null : parse_url($url, PHP_URL_PATH);
         $shortUrl = is_string($shortUrlPath) && $shortUrlPath !== '' ? $shortUrlPath : $url;
 
+        $moduleId = $module->getUniqueId();
+
         $panelUrl = Url::toRoute(
             [
-                '/' . $module->getUniqueId() . '/default/view',
+                "/{$moduleId}/default/view",
                 'panel' => $this->id,
                 'tag' => $previousTag,
             ],

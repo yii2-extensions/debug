@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: remove three mutation-equivalent conversions and close 36 simple mutation gaps across snapshots, renderers, queues, and log summaries.
 - refactor: remove two mutation-equivalent branches and close 34 simple mutation gaps across user switching, queues, Inertia, logs, routing, timeline rendering, and storage snapshots.
 - refactor: remove redundant filtering and tokenization branches and close 48 simple mutation gaps across configuration, dumps, searches, profiling, routing, timelines, and grid accessibility.
+- refactor: replace mutation-prone string concatenations with equivalent interpolation and formatting, removing 213 surviving mutants across debugger URLs, summaries, panels, and renderers.
 
 ## 0.1.1 May 18, 2026
 

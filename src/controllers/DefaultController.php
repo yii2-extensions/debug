@@ -235,18 +235,21 @@ class DefaultController extends Controller
             $publishedUrl = $published[1] ?? null;
 
             if (is_string($publishedUrl)) {
-                $iconBaseUrl = rtrim($publishedUrl, '/') . '/svg/';
+                $publishedUrl = rtrim($publishedUrl, '/');
+                $iconBaseUrl = "{$publishedUrl}/svg/";
             }
         } catch (Throwable) {
             // Asset manager not configured (for example, unit test environment) keep empty so the toolbar JS falls back
             // to the bundled PNG logo and skips chip icons.
         }
 
+        $moduleId = $this->module->getUniqueId();
+
         return [
             'configUrl' => $configPanel !== null
                 ? Url::toRoute(
                     [
-                        '/' . $this->module->getUniqueId() . '/default/view',
+                        "/{$moduleId}/default/view",
                         'tag' => $tag,
                         'panel' => 'config',
                     ],
@@ -256,7 +259,7 @@ class DefaultController extends Controller
             'iconBaseUrl' => $iconBaseUrl,
             'indexUrl' => Url::toRoute(
                 [
-                    '/' . $this->module->getUniqueId() . '/default/index',
+                    "/{$moduleId}/default/index",
                 ]
             ),
             'items' => $items,
@@ -266,7 +269,7 @@ class DefaultController extends Controller
             'logoFallback' => $this->module::getYiiLogo(),
             'phpInfoUrl' => Url::toRoute(
                 [
-                    '/' . $this->module->getUniqueId() . '/default/php-info',
+                    "/{$moduleId}/default/php-info",
                 ],
             ),
             'phpVersion' => $phpVersion,
@@ -474,11 +477,12 @@ class DefaultController extends Controller
         $phpVersion = $configPanel instanceof ConfigPanel ? $configPanel->getPhpVersion() : null;
 
         $configTag = $activeTag ?? array_key_first($manifest);
+        $moduleId = $this->module->getUniqueId();
         $configUrl = $configTag === null
             ? null
             : Url::to(
                 [
-                    '/' . $this->module->getUniqueId() . '/default/view',
+                    "/{$moduleId}/default/view",
                     'panel' => 'config',
                     'tag' => $configTag,
                 ],

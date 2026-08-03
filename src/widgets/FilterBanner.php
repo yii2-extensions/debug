@@ -41,7 +41,9 @@ class FilterBanner extends Widget
     public function run(): string
     {
         if ($this->searchModel === null) {
-            throw new InvalidConfigException(self::class . '::$searchModel must be set.');
+            $class = self::class;
+
+            throw new InvalidConfigException("{$class}::\$searchModel must be set.");
         }
 
         $formName = $this->searchModel->formName();
@@ -49,13 +51,16 @@ class FilterBanner extends Widget
         $rawFilters = (array) $request->get($formName, []);
 
         $activeFilters = [];
+
         foreach ($rawFilters as $attr => $val) {
             if ($val === '' || $val === null) {
                 continue;
             }
+
             if (!is_string($attr) || !is_scalar($val)) {
                 continue;
             }
+
             $activeFilters[$attr] = (string) $val;
         }
 
@@ -64,16 +69,29 @@ class FilterBanner extends Widget
         }
 
         $count = count($activeFilters);
+
         $pills = '';
+
         foreach ($activeFilters as $attr => $val) {
-            $pillContent = Span::tag()->class('yii-debug-active-filter-attr')->content($attr)->render()
-                . Span::tag()->class('yii-debug-active-filter-sep')->content(':')->render()
-                . Span::tag()->class('yii-debug-active-filter-value')->content($val)->render()
-                . Span::tag()
-                    ->class('yii-debug-active-filter-x')
-                    ->addAttribute('aria-hidden', 'true')
-                    ->content('×')
-                    ->render();
+            $attribute = Span::tag()
+                ->class('yii-debug-active-filter-attr')
+                ->content($attr)
+                ->render();
+            $separator = Span::tag()
+                ->class('yii-debug-active-filter-sep')
+                ->content(':')
+                ->render();
+            $value = Span::tag()
+                ->class('yii-debug-active-filter-value')
+                ->content($val)
+                ->render();
+            $remove = Span::tag()
+                ->class('yii-debug-active-filter-x')
+                ->addAttribute('aria-hidden', 'true')
+                ->content('×')
+                ->render();
+
+            $pillContent = "{$attribute}{$separator}{$value}{$remove}";
 
             $pills .= A::tag()
                 ->class('yii-debug-active-filter-pill')
@@ -97,11 +115,13 @@ class FilterBanner extends Widget
             ->content('Clear all')
             ->render();
 
+        $content = "{$label}{$list}{$clearAll}";
+
         return Div::tag()
             ->class('yii-debug-active-filters')
             ->addAttribute('role', 'group')
             ->addAriaAttribute('label', 'Active filters')
-            ->html($label . $list . $clearAll)
+            ->html($content)
             ->render();
     }
 
@@ -115,6 +135,7 @@ class FilterBanner extends Widget
     private function buildUrl(string $formName, array $without): string
     {
         $params = Yii::$app->getRequest()->getQueryParams();
+
         $bag = is_array($params[$formName] ?? null) ? $params[$formName] : [];
 
         foreach ($without as $attr) {
@@ -130,7 +151,9 @@ class FilterBanner extends Widget
         unset($params['page']);
 
         $controller = Yii::$app->controller;
-        $route = '/' . ($controller !== null ? $controller->getRoute() : '');
+        $controllerRoute = $controller !== null ? $controller->getRoute() : '';
+        $route = "/{$controllerRoute}";
+
         array_unshift($params, $route);
 
         return Url::to($params);

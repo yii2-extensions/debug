@@ -285,11 +285,17 @@ final class UserDataNormalizer
         if ($diff < 60) {
             $relative = 'just now';
         } elseif ($diff < 3600) {
-            $relative = floor($diff / 60) . ' min ago';
+            $minutes = floor($diff / 60);
+
+            $relative = "{$minutes} min ago";
         } elseif ($diff < 86400) {
-            $relative = floor($diff / 3600) . ' h ago';
+            $hours = floor($diff / 3600);
+
+            $relative = "{$hours} h ago";
         } elseif ($diff < 2592000) {
-            $relative = floor($diff / 86400) . ' d ago';
+            $days = floor($diff / 86400);
+
+            $relative = "{$days} d ago";
         } else {
             $relative = $absolute;
         }

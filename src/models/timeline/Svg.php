@@ -207,7 +207,8 @@ class Svg extends BaseObject implements Stringable
             $str .= "{$x} {$y} ";
         }
 
-        $str .= ($this->x - 0.001) . " {$y} {$this->x} {$this->y}";
+        $lastX = $this->x - 0.001;
+        $str = "{$str}{$lastX} {$y} {$this->x} {$this->y}";
 
         return StringHelper::normalizeNumber($str);
     }
