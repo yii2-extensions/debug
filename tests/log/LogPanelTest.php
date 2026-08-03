@@ -252,7 +252,8 @@ final class LogPanelTest extends TestCase
         $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
-            $panel, LogSnapshot::capture(
+            $panel,
+            LogSnapshot::capture(
                 [
                     ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
                     ['b', Logger::LEVEL_WARNING, 'application', 2.0, []],
