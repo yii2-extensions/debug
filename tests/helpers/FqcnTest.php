@@ -70,6 +70,13 @@ final class FqcnTest extends TestCase
     {
         $label = Fqcn::renderLabel('yii\\base\\Event');
 
+        self::assertSame(
+            <<<HTML
+            <span title="yii\base\Event"><span class="yii-debug-muted">yii\base\</span><wbr><strong>Event</strong></span>
+            HTML,
+            $label,
+            'Namespaced labels must keep the namespace, break opportunity, and short name in display order.',
+        );
         self::assertStringContainsString(
             'yii-debug-muted',
             $label,

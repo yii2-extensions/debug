@@ -49,7 +49,7 @@ final readonly class EventRow implements PanelRow
 
         foreach ($rows as $row) {
             if ($row->class !== '') {
-                $classes[$row->class] = true;
+                $classes[$row->class] = null;
             }
         }
 

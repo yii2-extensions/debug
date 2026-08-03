@@ -272,10 +272,6 @@ final class SidebarDataNormalizer
      */
     private static function newestTag(array $manifest): string|null
     {
-        if ($manifest === []) {
-            return null;
-        }
-
         return array_key_first($manifest);
     }
 

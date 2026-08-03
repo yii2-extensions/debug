@@ -7,7 +7,6 @@ namespace yii\debug\helpers;
 use Stringable;
 
 use function is_array;
-use function is_int;
 use function is_numeric;
 use function is_scalar;
 use function is_string;
@@ -50,10 +49,6 @@ final class Coerce
      */
     public static function intOrNull(mixed $value): int|null
     {
-        if (is_int($value)) {
-            return $value;
-        }
-
         return is_numeric($value) ? (int) $value : null;
     }
 

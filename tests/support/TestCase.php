@@ -18,7 +18,7 @@ use yii\debug\storage\{
 };
 use yii\di\Container;
 use yii\helpers\ArrayHelper;
-use yii\web\Controller;
+use yii\web\{Controller, Session};
 
 /**
  * Base class for the debug-extension test suite.
@@ -35,11 +35,25 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     private static array|null $serverSnapshot = null;
 
     /**
-     * Destroys the active application by clearing `Yii::$app` and resetting the DI container.
+     * Destroys the active application by closing its session, clearing `Yii::$app`, and resetting the DI container.
      */
     protected function destroyApplication(): void
     {
-        (new ReflectionClass(Yii::class))->setStaticPropertyValue('app', null);
+        $yii = new ReflectionClass(Yii::class);
+
+        $app = $yii->getStaticPropertyValue('app');
+
+        if ($app instanceof Application && $app->has('session', true)) {
+            $session = $app->get('session', false);
+
+            if ($session instanceof Session && $session->getIsActive()) {
+                $session->removeAll();
+                $session->close();
+            }
+        }
+
+        $yii->setStaticPropertyValue('app', null);
+
         Yii::$container = new Container();
     }
 

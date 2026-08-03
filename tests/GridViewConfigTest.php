@@ -30,6 +30,20 @@ final class GridViewConfigTest extends TestCase
         );
     }
 
+    public function testDefaultsLayoutWrapsItemsBeforeSummaryAndPagerFooter(): void
+    {
+        self::assertSame(
+            <<<HTML
+            <div class="yii-debug-table-wrap">{items}</div>
+            <div class="yii-debug-grid-footer">{summary}
+            {pager}
+            </div>
+            HTML,
+            GridViewConfig::defaults()['layout'],
+            'Grid layout must keep the scrollable table before the summary and pager footer.',
+        );
+    }
+
     public function testDefaultsPagerOptionsEmitNamespacedPagerMarkup(): void
     {
         $pager = GridViewConfig::defaults()['pager'];
@@ -116,6 +130,59 @@ final class GridViewConfigTest extends TestCase
         );
     }
 
+    public function testPageSizeSelectorHtmlRendersCompleteControlContract(): void
+    {
+        $this->mockWebApplication();
+
+        self::assertSame(
+            <<<HTML
+            <label class="yii-debug-grid-pagesize"><span class="yii-debug-grid-pagesize-label">Rows</span><select class="yii-debug-grid-pagesize-select" name="per-page" data-yii-debug-pagesize="true">
+            <option value="10">
+            10
+            </option>
+            <option value="25">
+            25
+            </option>
+            <option value="50" selected>
+            50
+            </option>
+            <option value="100">
+            100
+            </option>
+            <option value="all">
+            All
+            </option>
+            </select></label>
+            HTML,
+            GridViewConfig::pageSizeSelectorHtml(),
+            'Page-size selector must preserve its data hook, option order, labels, and default selection.',
+        );
+    }
+
+    public function testPaginationFromRequestCapsOversizedValuesAtOneThousand(): void
+    {
+        $this->mockWebApplication();
+
+        $_GET['per-page'] = '2000';
+
+        $pagination = GridViewConfig::paginationFromRequest();
+
+        self::assertIsArray(
+            $pagination,
+            'Oversized per-page must still yield a pagination config.',
+        );
+        self::assertArrayHasKey(
+            'pageSize',
+            $pagination,
+            "Pagination config must expose 'pageSize'.",
+        );
+        self::assertSame(
+            1000,
+            $pagination['pageSize'],
+            'Oversized page requests must be capped at 1000 rows.',
+        );
+    }
+
     public function testPaginationFromRequestFallsBackToDefaultForNonPositiveValues(): void
     {
         $this->mockWebApplication();
@@ -140,6 +207,30 @@ final class GridViewConfigTest extends TestCase
         );
     }
 
+    public function testPaginationFromRequestFallsBackToDefaultForZero(): void
+    {
+        $this->mockWebApplication();
+
+        $_GET['per-page'] = '0';
+
+        $pagination = GridViewConfig::paginationFromRequest(75);
+
+        self::assertIsArray(
+            $pagination,
+            'Oversized per-page must still yield a pagination config.',
+        );
+        self::assertArrayHasKey(
+            'pageSize',
+            $pagination,
+            "Pagination config must expose 'pageSize'.",
+        );
+        self::assertSame(
+            75,
+            $pagination['pageSize'],
+            'Zero per-page must fall back to the supplied default.',
+        );
+    }
+
     public function testPaginationFromRequestReturnsFalseWhenPerPageEqualsAll(): void
     {
         $this->mockWebApplication();
@@ -149,6 +240,21 @@ final class GridViewConfigTest extends TestCase
         self::assertFalse(
             GridViewConfig::paginationFromRequest(),
             "'per-page=all' must disable pagination entirely.",
+        );
+    }
+
+    public function testPaginationFromRequestUsesCompleteDefaultContract(): void
+    {
+        $this->mockWebApplication();
+
+        self::assertSame(
+            [
+                'pageSize' => 50,
+                'pageSizeParam' => 'per-page',
+                'pageSizeLimit' => false,
+            ],
+            GridViewConfig::paginationFromRequest(),
+            'Missing per-page must retain the default size and unrestricted Yii page-size configuration.',
         );
     }
 
