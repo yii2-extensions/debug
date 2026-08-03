@@ -135,6 +135,11 @@ final class TimelineRendererTest extends TestCase
             $html,
             'Peak-memory chip must appear inside the memory footer.',
         );
+        self::assertStringContainsString(
+            "style='height: 40px;'",
+            $html,
+            'Memory track height must follow the SVG canvas height.',
+        );
     }
 
     public function testRenderChartReturnsEmptyStringWhenDataProviderHasNoModels(): void
@@ -181,8 +186,8 @@ final class TimelineRendererTest extends TestCase
         $dataProvider = $this->makeDataProvider(
             $panel,
             [
-                new ProfileRow(0.0, 50.0, 'yii\\db\\Command::query', '', 0, 0, 0, 0, []),
-                new ProfileRow(50.0, 30.0, 'yii\\base\\View::render', '', 0, 0, 0, 0, []),
+                new ProfileRow(1_700_000_000_000.0, 50.0, 'yii\\db\\Command::query', '', 0, 0, 0, 0, []),
+                new ProfileRow(1_700_000_000_050.0, 30.0, 'yii\\base\\View::render', '', 0, 0, 0, 0, []),
             ],
         );
 
@@ -219,6 +224,11 @@ final class TimelineRendererTest extends TestCase
             'Bars must carry exact percentage left/width styles.',
         );
         self::assertStringContainsString(
+            "style='left: 0%; width: 50%;'",
+            $html,
+            'The first bar must retain its exact left offset and width.',
+        );
+        self::assertStringContainsString(
             'yii-debug-tl-row-db',
             $html,
             'DB span must carry the `db` variant.',
@@ -244,6 +254,8 @@ final class TimelineRendererTest extends TestCase
     {
         $panel = $this->stubPanel(10.0, 1);
 
+        $panel->tag = 'request-tag-123';
+
         $dataProvider = $this->makeDataProvider(
             $panel,
             [],
@@ -265,6 +277,11 @@ final class TimelineRendererTest extends TestCase
             'panel=profiling',
             $html,
             "Profiling link must carry the 'panel=profiling' query."
+        );
+        self::assertStringContainsString(
+            'tag=request-tag-123',
+            $html,
+            'Profiling link must retain the active request tag.',
         );
     }
 
@@ -318,6 +335,11 @@ final class TimelineRendererTest extends TestCase
             'name="TimelineSearch[duration]"',
             $html,
             'Duration input must surface in the form.',
+        );
+        self::assertStringContainsString(
+            'min="0"',
+            $html,
+            'Duration input must retain its zero lower bound.',
         );
         self::assertStringContainsString(
             'value="5"',

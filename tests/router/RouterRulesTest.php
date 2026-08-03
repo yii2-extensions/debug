@@ -10,6 +10,8 @@ use Yii;
 use yii\debug\models\router\RouterRules;
 use yii\debug\tests\provider\RouterRulesProvider;
 use yii\debug\tests\support\TestCase;
+use yii\rest\UrlRule as RestUrlRule;
+use yii\web\UrlRule as WebUrlRule;
 
 /**
  * Unit tests for {@see RouterRules} covering URL-manager flag detection (pretty URLs, strict parsing, suffix) and the
@@ -163,6 +165,33 @@ final class RouterRulesTest extends TestCase
         );
     }
 
+    public function testScanRestRuleContinuesAfterANonIterableInnerGroup(): void
+    {
+        $this->mockWebApplication();
+
+        $router = new RouterRules();
+        $restRule = new RestUrlRule(['controller' => 'user']);
+
+        $this->setInaccessibleProperty(
+            $restRule,
+            'rules',
+            [null, [new WebUrlRule(['pattern' => 'later', 'route' => 'site/later'])]],
+        );
+
+        $this->invoke($router, 'scanRestRule', [$restRule]);
+
+        self::assertCount(
+            1,
+            $router->rules,
+            'A malformed inner group must not stop scanning later REST rules.',
+        );
+        self::assertSame(
+            'site/later',
+            $router->rules[0]['route'] ?? null,
+            'The later valid rule must be captured.',
+        );
+    }
+
     public function testScanRestRuleShortCircuitsWhenRulesGroupsArentIterable(): void
     {
         MockerState::addCondition('yii\debug\models\router', 'is_iterable', [], false, true);
@@ -200,11 +229,18 @@ final class RouterRulesTest extends TestCase
 
         $rules = Yii::$app->urlManager->rules;
 
-        self::assertArrayHasKey(0, $rules, 'REST rule fixture must surface in the URL manager.');
+        self::assertArrayHasKey(
+            0,
+            $rules,
+            'REST rule fixture must surface in the URL manager.',
+        );
 
         $restRule = $rules[0];
 
-        self::assertIsObject($restRule, 'REST rule must be an object instance.');
+        self::assertIsObject(
+            $restRule,
+            'REST rule must be an object instance.',
+        );
 
         $rulesGroups = $this->getInaccessibleProperty($restRule, 'rules');
 

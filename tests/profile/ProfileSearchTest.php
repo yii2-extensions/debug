@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\profile;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\data\{Pagination, Sort};
 use yii\debug\models\search\ProfileSearch;
 use yii\debug\panels\profile\ProfileRow;
 use yii\debug\tests\support\TestCase;
@@ -59,12 +60,49 @@ final class ProfileSearchTest extends TestCase
 
         $search = new ProfileSearch();
 
-        $provider = $search->search(['ProfileSearch' => ['category' => 'db']], $records);
+        $provider = $search
+            ->search(['ProfileSearch' => ['category' => 'db']], $records);
 
         self::assertSame(
             1,
             $provider->getTotalCount(),
             "Substring match on 'db' must surface only the database row.",
+        );
+    }
+
+    public function testSearchConfiguresPaginationAndSortingContracts(): void
+    {
+        $this->mockWebApplication();
+
+        $provider = (new ProfileSearch())->search([], []);
+
+        $pagination = $provider->getPagination();
+        $sort = $provider->getSort();
+
+        self::assertInstanceOf(
+            Pagination::class,
+            $pagination,
+            'Profiling pagination must be enabled.',
+        );
+        self::assertSame(
+            50,
+            $pagination->pageSize,
+            'Profiling pagination must default to fifty rows.',
+        );
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'Profiling sorting must be enabled.',
+        );
+        self::assertSame(
+            ['category', 'seq', 'duration', 'info'],
+            array_keys($sort->attributes),
+            'Every displayed profiling field must remain sortable.',
+        );
+        self::assertSame(
+            ['duration' => SORT_DESC],
+            $sort->defaultOrder,
+            'Profiling rows must sort by longest duration first.',
         );
     }
 
@@ -107,8 +145,35 @@ final class ProfileSearchTest extends TestCase
 
         self::assertSame(
             2,
-            $search->search(['ProfileSearch' => ['category' => 'a']], $records)->getTotalCount(),
+            $search
+                ->search(['ProfileSearch' => ['category' => 'a']], $records)
+                ->getTotalCount(),
             'Failed validation must short-circuit filtering.',
+        );
+    }
+
+    public function testSearchUsesSubstringMatchingForCategoryAndInfo(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::block('yii\\db', 'SELECT users', 0.1, 0),
+            self::block('app', 'boot', 0.2, 1),
+        ];
+
+        self::assertSame(
+            1,
+            (new ProfileSearch())
+                ->search(['ProfileSearch' => ['category' => 'ii\\d']], $records)
+                ->getTotalCount(),
+            'Category filtering must use substring matching.',
+        );
+        self::assertSame(
+            1,
+            (new ProfileSearch())
+                ->search(['ProfileSearch' => ['info' => 'LECT']], $records)
+                ->getTotalCount(),
+            'Info filtering must use substring matching.',
         );
     }
 

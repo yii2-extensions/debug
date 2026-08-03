@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\dump;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\base\InvalidConfigException;
 use yii\debug\LogTarget;
 use yii\debug\panels\dump\DumpSnapshot;
 use yii\debug\panels\{DumpPanel, RouterPanel};
@@ -33,7 +34,22 @@ final class DumpPanelTest extends TestCase
 
         $first = $panel->capture()->entries()[0] ?? self::fail('Expected one captured row.');
 
-        self::assertStringContainsString('stringValue', $first->message, 'Dumped output must contain the value.');
+        self::assertStringContainsString(
+            'stringValue',
+            $first->message,
+            'Dumped output must contain the value.',
+        );
+    }
+    public function testCaptureReportsMissingModuleThroughThePanelContract(): void
+    {
+        $panel = new DumpPanel();
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'The debug module logTarget must be initialized before reading log messages.',
+        );
+
+        $panel->capture();
     }
 
     public function testCaptureSkipsCategoriesOwnedByRouterPanel(): void
@@ -44,6 +60,7 @@ final class DumpPanelTest extends TestCase
         $panel->categories = [];
 
         $module = $panel->module ?? self::fail('Module must be wired.');
+
         $module->panels['router'] = new RouterPanel(['id' => 'router', 'module' => $module]);
 
         $this->logTargetOf($panel)->messages = [
@@ -66,11 +83,24 @@ final class DumpPanelTest extends TestCase
 
         $this->logTargetOf($panel)->messages = [
             [1 => Logger::LEVEL_TRACE, 2 => 'application', 3 => 0.0, 4 => [], 5 => 0],
+            [['later-value'], Logger::LEVEL_TRACE, 'application', 1.0, [], 0],
         ];
 
-        $first = $panel->capture()->entries()[0] ?? self::fail('Expected one captured row.');
+        $entries = $panel->capture()->entries();
 
-        self::assertSame('', $first->message, 'Missing first slot must collapse to an empty message.');
+        $first = $entries[0] ?? self::fail('Expected the malformed captured row.');
+        $second = $entries[1] ?? self::fail('Expected the later valid captured row.');
+
+        self::assertSame(
+            '',
+            $first->message,
+            'Missing first slot must collapse to an empty message.',
+        );
+        self::assertStringContainsString(
+            'later-value',
+            $second->message,
+            'A malformed message must not stop later payloads from being rendered.',
+        );
     }
 
     public function testGetDetailRendersEmptyStateWhenNoDumpsCaptured(): void
@@ -97,9 +127,14 @@ final class DumpPanelTest extends TestCase
     {
         $panel = $this->makePanel(DumpPanel::class);
 
-        $this->hydratePanel($panel, DumpSnapshot::capture([
-            ['<pre>42</pre>', Logger::LEVEL_TRACE, 'application', 0.001, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            DumpSnapshot::capture(
+                [
+                    ['<pre>42</pre>', Logger::LEVEL_TRACE, 'application', 0.001, []],
+                ],
+            ),
+        );
 
         $detail = $panel->getDetail();
 
@@ -118,9 +153,14 @@ final class DumpPanelTest extends TestCase
     {
         $panel = $this->makePanel(DumpPanel::class);
 
-        $this->hydratePanel($panel, DumpSnapshot::capture([
-            ['<pre>42</pre>', Logger::LEVEL_TRACE, 'application', 0.5, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            DumpSnapshot::capture(
+                [
+                    ['<pre>42</pre>', Logger::LEVEL_TRACE, 'application', 0.5, []],
+                ],
+            ),
+        );
 
         $first = $this->invoke(
             $panel,
@@ -142,9 +182,14 @@ final class DumpPanelTest extends TestCase
     {
         $panel = $this->makePanel(DumpPanel::class);
 
-        $this->hydratePanel($panel, DumpSnapshot::capture([
-            ['a', Logger::LEVEL_TRACE, 'application', 0.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            DumpSnapshot::capture(
+                [
+                    ['a', Logger::LEVEL_TRACE, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         $first = $this->invoke(
             $panel,
@@ -161,10 +206,15 @@ final class DumpPanelTest extends TestCase
             'Single message must yield one row.',
         );
 
-        $this->hydratePanel($panel, DumpSnapshot::capture([
-            ['a', Logger::LEVEL_TRACE, 'application', 0.0, []],
-            ['b', Logger::LEVEL_TRACE, 'application', 0.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            DumpSnapshot::capture(
+                [
+                    ['a', Logger::LEVEL_TRACE, 'application', 0.0, []],
+                    ['b', Logger::LEVEL_TRACE, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         $refreshed = $this->invoke(
             $panel,
@@ -187,23 +237,38 @@ final class DumpPanelTest extends TestCase
     {
         $panel = $this->makePanel(DumpPanel::class);
 
-        $this->hydratePanel($panel, DumpSnapshot::capture([
-            ['msg', Logger::LEVEL_TRACE, 'application', 2.5, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            DumpSnapshot::capture(
+                [
+                    ['msg', Logger::LEVEL_TRACE, 'application', 2.5, []],
+                ],
+            ),
+        );
 
         $row = $panel->getDumps()[0] ?? self::fail('Expected one row.');
 
-        self::assertEqualsWithDelta(2500.0, $row->time, 1e-9, 'Time must be scaled to milliseconds.');
+        self::assertEqualsWithDelta(
+            2500.0,
+            $row->time,
+            1e-9,
+            'Time must be scaled to milliseconds.',
+        );
     }
 
     public function testGetModelsSkipsEntriesThatAreNotArrays(): void
     {
         $panel = $this->makePanel(DumpPanel::class);
 
-        $this->hydratePanel($panel, DumpSnapshot::capture([
-            ['valid', Logger::LEVEL_TRACE, 'application', 0.0, []],
-            'invalid-string-entry',
-        ]));
+        $this->hydratePanel(
+            $panel,
+            DumpSnapshot::capture(
+                [
+                    ['valid', Logger::LEVEL_TRACE, 'application', 0.0, []],
+                    'invalid-string-entry',
+                ],
+            ),
+        );
 
         $models = $this->invoke(
             $panel,
@@ -257,10 +322,15 @@ final class DumpPanelTest extends TestCase
     {
         $panel = $this->makePanel(DumpPanel::class);
 
-        $this->hydratePanel($panel, DumpSnapshot::capture([
-            ['a', Logger::LEVEL_TRACE, 'application', 0.0, []],
-            ['b', Logger::LEVEL_TRACE, 'application', 0.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            DumpSnapshot::capture(
+                [
+                    ['a', Logger::LEVEL_TRACE, 'application', 0.0, []],
+                    ['b', Logger::LEVEL_TRACE, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         $items = $this->invoke(
             $panel,

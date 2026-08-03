@@ -329,7 +329,7 @@ final class TimelineRenderer
             ->html(
                 Div::tag()
                     ->class('yii-debug-tl-label')
-                    ->style(['--depth' => (string) $row->depth])
+                    ->style(['--depth' => $row->depth])
                     ->html(
                         Span::tag()->class('yii-debug-tl-dot')->addAttribute('aria-hidden', 'true'),
                         Span::tag()->class('yii-debug-tl-name')->html(Fqcn::renderLabel($row->category)),
