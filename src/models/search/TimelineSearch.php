@@ -53,6 +53,7 @@ class TimelineSearch extends Base
     public function search(array $params, TimelinePanel $panel): DataProvider
     {
         $models = $panel->getModels();
+
         $dataProvider = new DataProvider(
             $panel,
             [
@@ -71,12 +72,7 @@ class TimelineSearch extends Base
         }
 
         $this->addCondition('category', true);
-
-        $duration = (float) $this->duration;
-
-        if ($duration > 0) {
-            $this->addMinimumCondition('duration', $duration);
-        }
+        $this->addMinimumCondition('duration', (float) $this->duration);
 
         $dataProvider->allModels = $this->filter($models);
 

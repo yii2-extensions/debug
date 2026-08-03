@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\tests\provider\GridViewConfigProvider;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\DebugDataColumn;
+use yii\grid\GridView;
 
 /**
  * Unit tests for {@see GridViewConfig}, the static helper that drives consistent pager and table markup across every
@@ -19,6 +21,59 @@ use yii\debug\widgets\DebugDataColumn;
 #[Group('grid-view-config')]
 final class GridViewConfigTest extends TestCase
 {
+    public function testDebugDataColumnAppliesAccessibleDefaults(): void
+    {
+        $this->mockWebApplication();
+
+        $column = new DebugDataColumn(
+            [
+                'attribute' => 'eventType',
+                'grid' => new GridView(['dataProvider' => new ArrayDataProvider(['allModels' => []])]),
+            ],
+        );
+
+        self::assertSame(
+            'eventType',
+            $column->filterAttribute,
+            'Parent initialization must resolve filterAttribute.',
+        );
+        self::assertSame(
+            'col',
+            $column->headerOptions['scope'] ?? null,
+            'Headers must default to column scope.',
+        );
+        self::assertSame(
+            'Filter by Event Type',
+            $column->filterInputOptions['aria-label'] ?? null,
+            'Filters must receive a complete accessible label.',
+        );
+    }
+
+    public function testDebugDataColumnPreservesExplicitAccessibilityOptions(): void
+    {
+        $this->mockWebApplication();
+
+        $column = new DebugDataColumn(
+            [
+                'attribute' => 'eventType',
+                'filterInputOptions' => ['aria-label' => 'Custom filter'],
+                'grid' => new GridView(['dataProvider' => new ArrayDataProvider(['allModels' => []])]),
+                'headerOptions' => ['scope' => 'row'],
+            ],
+        );
+
+        self::assertSame(
+            'row',
+            $column->headerOptions['scope'] ?? null,
+            'Explicit header scope must be preserved.',
+        );
+        self::assertSame(
+            'Custom filter',
+            $column->filterInputOptions['aria-label'] ?? null,
+            'Explicit filter labels must not be overwritten.',
+        );
+    }
+
     public function testDefaultsContainerOptionsCarryYiiDebugGridClass(): void
     {
         $defaults = GridViewConfig::defaults();

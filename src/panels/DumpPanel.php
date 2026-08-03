@@ -56,7 +56,7 @@ class DumpPanel extends Panel
     {
         $except = [];
 
-        $routerPanel = $this->module?->panels['router'] ?? null;
+        $routerPanel = $this->module->panels['router'] ?? null;
 
         if ($routerPanel instanceof RouterPanel) {
             $except = Coerce::stringList($routerPanel->getCategories());

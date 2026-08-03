@@ -108,12 +108,14 @@ final readonly class ProfileRow implements PanelRow
             return null;
         }
 
+        $level = Coerce::intOrNull($timing['level'] ?? null);
+
         return new self(
             timestamp: $timestamp * 1000,
             duration: $duration * 1000,
             category: Coerce::stringOrNull($timing['category'] ?? null) ?? '',
             info: Coerce::stringOrNull($timing['info'] ?? null) ?? '',
-            level: max(0, Coerce::intOrNull($timing['level'] ?? null) ?? 0),
+            level: $level === null ? 0 : max(0, $level),
             seq: $seq,
             memory: Coerce::intOrNull($timing['memory'] ?? null) ?? 0,
             memoryDiff: Coerce::intOrNull($timing['memoryDiff'] ?? null) ?? 0,

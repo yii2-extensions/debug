@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\db;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\data\Sort;
 use yii\debug\models\search\DbSearch;
 use yii\debug\panels\db\QueryRow;
 use yii\debug\tests\support\TestCase;
@@ -16,6 +17,57 @@ use yii\debug\tests\support\TestCase;
 #[Group('search')]
 final class DbSearchTest extends TestCase
 {
+    public function testAttributeLabelsAndRulesExposeTheCompleteFilterContract(): void
+    {
+        $search = new DbSearch();
+
+        self::assertSame(
+            ['type' => 'Type', 'query' => 'Query'],
+            $search->attributeLabels(),
+            'Both database filter labels must remain available.',
+        );
+        self::assertSame(
+            [[['type', 'query'], 'safe']],
+            $search->rules(),
+            'Both database filters must remain safe for mass assignment.',
+        );
+    }
+
+    public function testSearchAppliesPartialMatchOnQueryType(): void
+    {
+        $this->mockWebApplication();
+
+        $search = new DbSearch();
+
+        $search->type = 'sel';
+
+        $rows = $search->search(
+            [
+                self::row('SELECT', 'SELECT 1'),
+                self::row('INSERT', 'INSERT INTO logs VALUES (1)'),
+            ],
+        )->allModels;
+
+        self::assertCount(
+            1,
+            $rows,
+            'A partial type filter must keep only the matching statement.',
+        );
+
+        $first = $rows[0] ?? null;
+
+        self::assertInstanceOf(
+            QueryRow::class,
+            $first,
+            'The filtered model must remain a query row.',
+        );
+        self::assertSame(
+            'SELECT',
+            $first->type,
+            'The matching query type must be retained.',
+        );
+    }
+
     public function testSearchAppliesQueryFilterAcrossSqlText(): void
     {
         $this->mockWebApplication();
@@ -54,6 +106,22 @@ final class DbSearchTest extends TestCase
         );
     }
 
+    public function testSearchConfiguresEverySortableDatabaseField(): void
+    {
+        $sort = (new DbSearch())->search([])->getSort();
+
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'Database query sorting must be enabled.',
+        );
+        self::assertSame(
+            ['duration', 'seq', 'type', 'query', 'duplicate', 'rows'],
+            array_keys($sort->attributes),
+            'Every displayed database field must remain sortable.',
+        );
+    }
+
     public function testSearchReturnsAllRowsWhenValidateShortCircuits(): void
     {
         $models = [
@@ -67,6 +135,8 @@ final class DbSearchTest extends TestCase
                 return false;
             }
         };
+
+        $search->type = 'SELECT';
 
         $provider = $search->search($models);
 

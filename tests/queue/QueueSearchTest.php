@@ -319,6 +319,56 @@ final class QueueSearchTest extends TestCase
         );
     }
 
+    public function testSearchFiltersByComponentIdExactMatch(): void
+    {
+        $records = [
+            JobRecord::fromCapture(
+                [
+                    'eventType' => 'push',
+                    'componentId' => 'queue',
+                    'driverName' => 'Sync',
+                    'jobClass' => 'A',
+                    'time' => 1.0,
+                ],
+            ),
+            JobRecord::fromCapture(
+                [
+                    'eventType' => 'push',
+                    'componentId' => 'queueRedis',
+                    'driverName' => 'Redis',
+                    'jobClass' => 'B',
+                    'time' => 2.0,
+                ],
+            ),
+        ];
+
+        $dataProvider = (new QueueSearch())->search(
+            ['QueueSearch' => ['componentId' => 'queueRedis']],
+            $records,
+        );
+
+        $models = $dataProvider->getModels();
+
+        self::assertCount(
+            1,
+            $models,
+            'The component filter must keep one queue component.',
+        );
+
+        $first = $models[0] ?? null;
+
+        self::assertInstanceOf(
+            JobRecord::class,
+            $first,
+            'The filtered model must remain a queue record.',
+        );
+        self::assertSame(
+            'queueRedis',
+            $first->componentId,
+            'The exact queue component must be retained.',
+        );
+    }
+
     public function testSearchFiltersByEventTypeExactMatch(): void
     {
         $records = [

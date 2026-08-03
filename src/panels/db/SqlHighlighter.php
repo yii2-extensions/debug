@@ -75,8 +75,6 @@ final class SqlHighlighter
             foreach (self::TOKEN_CLASSES as $group => $class) {
                 if (isset($match[$group]) && $match[$group][1] !== -1) {
                     $token = $class === '' ? $text : "<span class=\"{$class}\">{$text}</span>";
-
-                    break;
                 }
             }
 

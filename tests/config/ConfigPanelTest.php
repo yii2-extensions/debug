@@ -33,9 +33,18 @@ final class ConfigPanelTest extends TestCase
             'Application slice must be an array.',
         );
         self::assertSame(
-            '',
-            $application['name'] ?? null,
-            "Missing application must collapse 'name' to ''.",
+            [
+                'yii' => $payload['yiiVersion'] ?? null,
+                'name' => '',
+                'version' => '',
+                'language' => '',
+                'sourceLanguage' => '',
+                'charset' => '',
+                'env' => YII_ENV,
+                'debug' => YII_DEBUG,
+            ],
+            $application,
+            'Missing application must retain the complete neutral application schema.',
         );
         self::assertSame(
             [],
@@ -89,6 +98,17 @@ final class ConfigPanelTest extends TestCase
             YII_DEBUG,
             $application['debug'] ?? null,
             "'debug' must match the 'YII_DEBUG' constant.",
+        );
+        self::assertSame(
+            [
+                'version' => PHP_VERSION,
+                'xdebug' => extension_loaded('xdebug'),
+                'apcu' => extension_loaded('apcu'),
+                'memcache' => extension_loaded('memcache'),
+                'memcached' => extension_loaded('memcached'),
+            ],
+            $payload['php'] ?? null,
+            'The PHP capability slice must retain every captured field.',
         );
     }
 
@@ -197,15 +217,16 @@ final class ConfigPanelTest extends TestCase
                     'extensions' => [
                         ['name' => 'vendor/package', 'version' => '1.0.0'],
                         'not-a-descriptor',
+                        ['name' => 'vendor/after', 'version' => '2.0.0'],
                     ],
                 ],
             ),
         );
 
         self::assertSame(
-            ['vendor/package' => '1.0.0'],
+            ['vendor/after' => '2.0.0', 'vendor/package' => '1.0.0'],
             $panel->getExtensions(),
-            'Only well-formed extension descriptors survive.',
+            'Malformed descriptors must not stop later valid extensions from being collected.',
         );
     }
 
@@ -422,6 +443,7 @@ final class ConfigPanelTest extends TestCase
             [
                 'acme/foo' => ['name' => 'acme/foo', 'version' => '1.0'],
                 'acme/bar' => 'invalid',
+                'acme/baz' => ['name' => 'acme/baz', 'version' => '2.0'],
             ],
         );
 
@@ -434,6 +456,11 @@ final class ConfigPanelTest extends TestCase
             'acme/bar',
             $normalized,
             'Non-array entries must be dropped.',
+        );
+        self::assertArrayHasKey(
+            'acme/baz',
+            $normalized,
+            'A malformed entry must not stop normalization of later extensions.',
         );
     }
 
