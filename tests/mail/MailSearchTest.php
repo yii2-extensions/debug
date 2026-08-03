@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\mail;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\data\{Pagination, Sort};
 use yii\debug\models\search\MailSearch;
 use yii\debug\panels\mail\MailMessage;
 use yii\debug\tests\support\TestCase;
@@ -60,16 +61,10 @@ final class MailSearchTest extends TestCase
 
     public function testRulesMarkEveryFilterAsSafe(): void
     {
-        $firstRule = (new MailSearch())->rules()[0] ?? null;
-
-        self::assertIsArray(
-            $firstRule,
-            'First rule must be a configuration tuple.',
-        );
         self::assertSame(
-            'safe',
-            $firstRule[1] ?? null,
-            "First rule must mark filter fields as 'safe'.",
+            [[['from', 'to', 'replyTo', 'cc', 'bcc', 'subject', 'body', 'charset'], 'safe']],
+            (new MailSearch())->rules(),
+            'Every searchable mail field must remain safe for mass assignment.',
         );
     }
 
@@ -91,6 +86,90 @@ final class MailSearchTest extends TestCase
             1,
             $provider->getTotalCount(),
             "Substring match on 'Order' must surface only the matching message.",
+        );
+    }
+
+    public function testSearchAppliesPartialMatchToEveryNonSubjectFilter(): void
+    {
+        $this->mockWebApplication();
+
+        $matching = MailMessage::fromCapture(
+            [
+                'from' => 'Sender Alpha <alpha@example.test>',
+                'to' => 'to-alpha@example.test',
+                'reply' => 'reply-alpha@example.test',
+                'cc' => 'cc-alpha@example.test',
+                'bcc' => 'bcc-alpha@example.test',
+                'subject' => 'Alpha subject',
+                'body' => 'Alpha message body',
+                'charset' => 'utf-8',
+            ],
+        );
+        $other = MailMessage::fromCapture(
+            [
+                'from' => 'Sender Beta <beta@example.test>',
+                'to' => 'to-beta@example.test',
+                'reply' => 'reply-beta@example.test',
+                'cc' => 'cc-beta@example.test',
+                'bcc' => 'bcc-beta@example.test',
+                'subject' => 'Beta subject',
+                'body' => 'Beta message body',
+                'charset' => 'iso-8859-1',
+            ],
+        );
+
+        $filters = [
+            'from' => 'Alpha',
+            'to' => 'to-alpha',
+            'replyTo' => 'reply-alpha',
+            'cc' => 'cc-alpha',
+            'bcc' => 'bcc-alpha',
+            'body' => 'Alpha message',
+            'charset' => 'utf',
+        ];
+
+        foreach ($filters as $attribute => $value) {
+            $provider = (new MailSearch())->search(
+                ['MailSearch' => [$attribute => $value]],
+                [$matching, $other],
+            );
+
+            self::assertSame(
+                [$matching],
+                $provider->allModels,
+                "The '{$attribute}' filter must apply a partial match.",
+            );
+        }
+    }
+
+    public function testSearchConfiguresPaginationAndSorting(): void
+    {
+        $this->mockWebApplication();
+
+        $provider = (new MailSearch())->search([], []);
+
+        $pagination = $provider->getPagination();
+        $sort = $provider->getSort();
+
+        self::assertInstanceOf(
+            Pagination::class,
+            $pagination,
+            'Mail results must remain paginated.',
+        );
+        self::assertSame(
+            20,
+            $pagination->getPageSize(),
+            'Mail results must preserve the configured default page size.',
+        );
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'Mail results must remain sortable.',
+        );
+        self::assertSame(
+            ['from', 'to', 'replyTo', 'cc', 'bcc', 'subject', 'body', 'charset'],
+            array_keys($sort->attributes),
+            'Every displayed mail field must remain sortable.',
         );
     }
 

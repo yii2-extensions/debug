@@ -64,10 +64,15 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $panelItem = $view->navItems[1];
 
-        self::assertContains(
-            'tag-newest',
+        self::assertSame(
+            ['view', 'tag' => 'tag-newest', 'panel' => 'request'],
             $panelItem->url,
-            'Index-mode panel link must carry the newest tag.',
+            'Index-mode panel link must carry its route, newest tag, and panel ID.',
+        );
+        self::assertStringContainsString(
+            '<svg',
+            $panelItem->iconSvg,
+            'A panel toolbar icon must be rendered into the navigation item.',
         );
         self::assertSame(
             'Open this panel on the newest request',
@@ -173,6 +178,39 @@ final class SidebarDataNormalizerTest extends TestCase
             $view->snapshot->title,
             "Index mode must use the 'Newest request' heading.",
         );
+        self::assertSame(
+            'Newest captured request',
+            $view->snapshot->ariaLabel,
+            'Index mode must expose the expanded snapshot aria-label.',
+        );
+        self::assertSame(
+            ['view', 'tag' => 'tag-1'],
+            $view->snapshot->newestUrl,
+            'A navigator without panels must omit the panel parameter.',
+        );
+        self::assertSame(
+            ['view', 'tag' => 'tag-1'],
+            $view->snapshot->oldestUrl,
+            'The single snapshot must be both the newest and oldest destination.',
+        );
+        self::assertSame(
+            [],
+            $view->snapshot->newerUrl,
+            'The newest snapshot must not expose a newer destination.',
+        );
+        self::assertSame(
+            [],
+            $view->snapshot->olderUrl,
+            'The oldest snapshot must not expose an older destination.',
+        );
+        self::assertTrue(
+            $view->snapshot->isNewest,
+            'A single snapshot must be marked as newest.',
+        );
+        self::assertTrue(
+            $view->snapshot->isOldest,
+            'A single snapshot must be marked as oldest.',
+        );
     }
 
     public function testFromIndexSurfacesNewestTagAsSnapshot(): void
@@ -212,10 +250,15 @@ final class SidebarDataNormalizerTest extends TestCase
         $this->mockWebApplication();
 
         $panel = new RequestPanel();
+
         $panel->id = 'request';
 
+        $inactivePanel = new RequestPanel();
+
+        $inactivePanel->id = 'other';
+
         $view = SidebarDataNormalizer::fromView(
-            ['request' => $panel],
+            ['request' => $panel, 'other' => $inactivePanel],
             ['tag-1' => $this->requestSummary()],
             $panel,
             'tag-1',
@@ -227,10 +270,34 @@ final class SidebarDataNormalizerTest extends TestCase
             $view->navItems,
             'History must include at least one navigation item.',
         );
-        self::assertContains(
-            'tag-1',
+        self::assertSame(
+            ['index', 'cursor' => 'tag-1'],
             $view->navItems[0]->url,
-            "History entry must carry the active tag as 'cursor'.",
+            "History entry must carry the active tag as the exact 'cursor' route.",
+        );
+
+        $panelItem = $view->navItems[1] ?? self::fail('Request panel navigation item must surface.');
+
+        self::assertSame(
+            ['view', 'tag' => 'tag-1', 'panel' => 'request'],
+            $panelItem->url,
+            'View-mode panel link must preserve the active capture and panel.',
+        );
+        self::assertSame(
+            'Request',
+            $panelItem->tooltip,
+            'View-mode panel tooltip must use the panel name.',
+        );
+        self::assertTrue(
+            $panelItem->isActive,
+            'View mode must mark the selected panel as active.',
+        );
+
+        $inactiveItem = $view->navItems[2] ?? self::fail('Inactive panel navigation item must surface.');
+
+        self::assertFalse(
+            $inactiveItem->isActive,
+            'View mode must not mark other panels as active.',
         );
     }
 
@@ -317,6 +384,41 @@ final class SidebarDataNormalizerTest extends TestCase
             $view->snapshot->title,
             "View mode must use the 'Current request' heading.",
         );
+        self::assertSame(
+            'Current request',
+            $view->snapshot->ariaLabel,
+            "View mode must use the 'Current request' aria-label.",
+        );
+    }
+
+    public function testFromViewOmitsTagFromBoundaryUrlsWhenManifestIsEmpty(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromView(
+            ['request' => $panel],
+            [],
+            $panel,
+            'tag-1',
+            $this->requestSummary(),
+        );
+
+        $snapshot = $view->snapshot ?? self::fail('View mode must carry the supplied snapshot.');
+
+        self::assertSame(
+            ['view', 'panel' => 'request'],
+            $snapshot->newestUrl,
+            'An empty manifest must omit the missing newest tag.',
+        );
+        self::assertSame(
+            ['view', 'panel' => 'request'],
+            $snapshot->oldestUrl,
+            'An empty manifest must omit the missing oldest tag.',
+        );
     }
 
     public function testFromViewPopulatesPrevAndNextNavigatorsWhenSnapshotIsMiddleOfManifest(): void
@@ -352,6 +454,24 @@ final class SidebarDataNormalizerTest extends TestCase
         self::assertTrue(
             $view->snapshot->hasOlder,
             'Middle-tag snapshot must expose a older navigator.',
+        );
+        self::assertSame(
+            ['view', 'tag' => 'tag-newest', 'panel' => 'request'],
+            $view->snapshot->newerUrl,
+            'Middle-tag snapshot must link to the immediately newer capture.',
+        );
+        self::assertSame(
+            ['view', 'tag' => 'tag-oldest', 'panel' => 'request'],
+            $view->snapshot->olderUrl,
+            'Middle-tag snapshot must link to the immediately older capture.',
+        );
+        self::assertFalse(
+            $view->snapshot->isNewest,
+            'Middle-tag snapshot must not be marked as newest.',
+        );
+        self::assertFalse(
+            $view->snapshot->isOldest,
+            'Middle-tag snapshot must not be marked as oldest.',
         );
     }
 
@@ -440,6 +560,11 @@ final class SidebarDataNormalizerTest extends TestCase
             $ids,
             'Config panel must be skipped in the sidebar nav.',
         );
+        self::assertContains(
+            'Request',
+            $ids,
+            'Panels after Configuration must remain available.',
+        );
     }
 
     public function testFromViewSkipsPanelsWithoutContentForTheCapture(): void
@@ -454,7 +579,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $this->hydratePanel($inertia, InertiaSnapshot::capture(null, null, [], [], 200));
 
         $view = SidebarDataNormalizer::fromView(
-            ['request' => $active, 'inertia' => $inertia],
+            ['inertia' => $inertia, 'request' => $active],
             ['tag-1' => $this->requestSummary()],
             $active,
             'tag-1',
