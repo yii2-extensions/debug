@@ -55,6 +55,11 @@ final class SidebarRendererTest extends TestCase
             substr_count($html, 'is-active'),
             'Only the active entry carries the modifier.',
         );
+        self::assertMatchesRegularExpression(
+            '/<a class="yii-debug-nav-link is-active"[^>]*title="History"[^>]*aria-current="page">/',
+            $html,
+            'The active link must preserve its base class, tooltip, and current-page marker.',
+        );
     }
 
     public function testRenderEmitsCursorButtonsWhenSnapshotIsCursor(): void
@@ -93,9 +98,9 @@ final class SidebarRendererTest extends TestCase
         $html = SidebarRenderer::render($view);
 
         self::assertStringContainsString(
-            'data-yii-debug-history-cursor',
+            'data-yii-debug-history-cursor="true"',
             $html,
-            'Cursor mode must emit the history-cursor marker.',
+            'Cursor mode must emit a true history-cursor marker.',
         );
         self::assertStringContainsString(
             'data-yii-debug-cursor-init="init-tag"',
@@ -130,6 +135,11 @@ final class SidebarRendererTest extends TestCase
             'data-test="request-icon"',
             $html,
             'Icon SVG payload must surface inside the nav link.',
+        );
+        self::assertStringContainsString(
+            'aria-hidden="true"',
+            $html,
+            'Decorative panel icons must remain hidden from assistive technology.',
         );
     }
 
@@ -241,6 +251,21 @@ final class SidebarRendererTest extends TestCase
             'aria-label="Newest captured request"',
             $html,
             "Navigation mode must use the long 'aria-label' for Newest.",
+        );
+        self::assertStringContainsString(
+            'title="GET http://example.test/index.php"',
+            $html,
+            'Snapshot tooltip must prefix the URL with the request method.',
+        );
+        self::assertMatchesRegularExpression(
+            '/<button class="[^"]*is-disabled"[^>]*aria-label="Newer captured request">/',
+            $html,
+            'A missing newer capture must render a disabled button.',
+        );
+        self::assertMatchesRegularExpression(
+            '/<a[^>]*href="[^"]*tag=older"[^>]*aria-label="Older captured request">/',
+            $html,
+            'An available older capture must render an anchor to its tag.',
         );
         self::assertStringNotContainsString(
             'data-yii-debug-cursor=',

@@ -12,13 +12,11 @@ use function array_key_first;
 use function array_key_last;
 use function array_keys;
 use function array_search;
-use function count;
 use function date;
 use function is_int;
 use function is_string;
 use function parse_url;
 use function reset;
-use function str_starts_with;
 
 /**
  * Builds the typed sidebar data used by history and request views.
@@ -213,7 +211,7 @@ final class SidebarDataNormalizer
         $prevTag = is_int($cursorIndex) && $cursorIndex > 0 && isset($manifestKeys[$cursorIndex - 1])
             ? $manifestKeys[$cursorIndex - 1]
             : null;
-        $nextTag = is_int($cursorIndex) && $cursorIndex < count($manifestKeys) - 1 && isset($manifestKeys[$cursorIndex + 1])
+        $nextTag = is_int($cursorIndex) && isset($manifestKeys[$cursorIndex + 1])
             ? $manifestKeys[$cursorIndex + 1]
             : null;
 
@@ -282,14 +280,10 @@ final class SidebarDataNormalizer
 
     /**
      * Strips the scheme/host/port from a captured URL so the snapshot card only shows the meaningful path + query +
-     * fragment. `php yii ...` console invocations pass through verbatim since they have no host portion.
+     * fragment. Console invocations pass through verbatim because `parse_url()` treats them as a path.
      */
     private static function urlToPath(string $url): string
     {
-        if ($url === '' || str_starts_with($url, 'php yii ')) {
-            return $url;
-        }
-
         $parsed = parse_url($url);
 
         if ($parsed === false) {
