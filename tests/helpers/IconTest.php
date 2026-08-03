@@ -56,5 +56,4 @@ final class IconTest extends TestCase
             'Rendered markup must include the opening `<svg>` tag.',
         );
     }
-
 }

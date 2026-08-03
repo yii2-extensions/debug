@@ -218,6 +218,7 @@ final class RequestSectionRendererTest extends TestCase
             "First panel 'id' must match its tab href.",
         );
     }
+
     public function testRequestSectionDefaultsToNonFilterable(): void
     {
         $section = new RequestSection(caption: 'Headers', entries: ['Accept' => 'text/html']);
