@@ -17,6 +17,7 @@ use yii\debug\helpers\Icon;
 use function array_keys;
 use function count;
 use function in_array;
+use function mb_strlen;
 use function strtolower;
 
 /**
@@ -305,8 +306,21 @@ final class PhpInfoRenderer
      */
     private static function renderTile(PhpInfoTile $tile): Div
     {
+        $class = 'yii-debug-phpinfo-overview-hero-metric';
+
+        if (
+            mb_strlen($tile->rawValue) > 48
+            || in_array(
+                $tile->kind,
+                [PhpInfoTile::KIND_PATH, PhpInfoTile::KIND_PATH_LIST, PhpInfoTile::KIND_TOKEN_LIST],
+                true,
+            )
+        ) {
+            $class .= ' is-wide';
+        }
+
         return Div::tag()
-            ->class('yii-debug-phpinfo-overview-hero-metric')
+            ->class($class)
             ->html(
                 Dt::tag()->content($tile->label),
                 Dd::tag()->html(self::renderTileValue($tile)),

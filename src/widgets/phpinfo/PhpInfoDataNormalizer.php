@@ -14,6 +14,7 @@ use function count;
 use function explode;
 use function getenv;
 use function html_entity_decode;
+use function implode;
 use function in_array;
 use function is_array;
 use function is_string;
@@ -54,7 +55,7 @@ final class PhpInfoDataNormalizer
      * while leaving ordinary module directives (for example, session.cookie_path) untouched.
      */
     private const string SENSITIVE_VARIABLE_PATTERN
-        = '/password|passwd|pwd|token|secret|credential|authorization|php[_-]?auth|auth[_-]?key|cookie|session[_-]?(?:id|key|token)|xsrf|csrf|(?:api|app|private|access|encryption|signing)[_-]?key|(?:database|db)[_-]?url|dsn/i';
+        = '/password|passwd|token|secret|credential|authorization|signature|php[_-]?auth|auth[_-]?key|cookie|session[_-]?(?:id|key|token)|xsrf|csrf|(?:api|app|private|access|encryption|signing)[_-]?key|(?:database|db)[_-]?url|dsn/i';
     private const string TABLE_KIND_DATA = 'data';
     private const string TABLE_KIND_DIRECTIVES = 'directives';
     private const string TABLE_KIND_FACTS = 'facts';
@@ -430,6 +431,13 @@ final class PhpInfoDataNormalizer
         );
     }
 
+    private static function extractTableTitle(string $tableBody): string
+    {
+        $headerCells = self::extractFirstHeaderCells($tableBody);
+
+        return count($headerCells) === 1 ? $headerCells[0] : '';
+    }
+
     private static function formatModuleTableCount(int $count, string $kind): string
     {
         $noun = match ($kind) {
@@ -474,6 +482,128 @@ final class PhpInfoDataNormalizer
             'variable' => 'Variables',
             default => 'Data',
         };
+    }
+
+    private static function normalizeModuleTable(
+        string $tableBody,
+        string $labelOverride = '',
+        bool $collapsible = false,
+        bool $open = false,
+    ): string {
+        $tableTitle = self::extractTableTitle($tableBody);
+
+        if ($tableTitle !== '') {
+            $withoutTitle = preg_replace(
+                '%^\s*<tr\b[^>]*class="[^"]*\bh\b[^"]*"[^>]*>.*?</tr>%si',
+                '',
+                $tableBody,
+                1,
+            );
+            $tableBody = $withoutTitle ?? $tableBody;
+        }
+
+        $kind = self::classifyModuleTable($tableBody);
+        $label = $labelOverride !== ''
+            ? $labelOverride
+            : ($tableTitle !== '' ? $tableTitle : self::moduleTableLabel($kind, $tableBody));
+
+        if ($kind === self::TABLE_KIND_FACTS) {
+            $tableBody = self::normalizeFactRows($tableBody);
+        }
+
+        $skipHeaders = $kind === self::TABLE_KIND_DIRECTIVES || $kind === self::TABLE_KIND_DATA;
+        $count = $kind === self::TABLE_KIND_NOTE
+            ? self::countTableRows($tableBody)
+            : self::countRowsWithValues($tableBody, $skipHeaders);
+        $countLabel = self::formatModuleTableCount($count, $kind);
+        $encodedLabel = Encode::content($label);
+        $headTag = $collapsible ? 'summary' : 'header';
+        $containerTag = $collapsible ? 'details' : 'div';
+        $attributes = $collapsible
+            ? sprintf(
+                ' data-yii-debug-phpinfo-collapsible="true" data-yii-debug-phpinfo-default-open="%s"%s',
+                $open ? 'true' : 'false',
+                $open ? ' open' : '',
+            )
+            : '';
+
+        return sprintf(
+            '<%s class="yii-debug-table-wrap yii-debug-phpinfo-table-section is-%s%s"%s><%s class="yii-debug-phpinfo-table-section-head"><span>%s</span><span class="yii-debug-phpinfo-table-section-count">%s</span></%s><div class="yii-debug-phpinfo-table-scroll"><table aria-label="%s" class="yii-debug-table yii-debug-phpinfo__table is-%s">%s</table></div></%s>',
+            $containerTag,
+            $kind,
+            $collapsible ? ' yii-debug-phpinfo-variable-group' : '',
+            $attributes,
+            $headTag,
+            $encodedLabel,
+            Encode::content($countLabel),
+            $headTag,
+            Encode::value($label),
+            $kind,
+            $tableBody,
+            $containerTag,
+        );
+    }
+
+    private static function normalizeVariableTables(string $tableBody): string|null
+    {
+        $headers = self::extractFirstHeaderCells($tableBody);
+
+        if (strtolower($headers[0] ?? '') !== 'variable' || strtolower($headers[1] ?? '') !== 'value') {
+            return null;
+        }
+
+        preg_match_all('%<tr\b([^>]*)>(.*?)</tr>%si', $tableBody, $rows, PREG_SET_ORDER);
+
+        $header = '';
+        $groups = [
+            'Request' => [],
+            'Cookies' => [],
+            'Server' => [],
+            'Environment' => [],
+            'Other' => [],
+        ];
+
+        foreach ($rows as $row) {
+            if (preg_match('/\bclass="[^"]*\bh\b[^"]*"/i', $row[1]) === 1) {
+                $header = $row[0];
+
+                continue;
+            }
+
+            if (
+                preg_match(
+                    '%<(?:th|td)\b[^>]*class="[^"]*\be\b[^"]*"[^>]*>(.*?)</(?:th|td)>%si',
+                    $row[2],
+                    $keyCell,
+                ) !== 1
+            ) {
+                $groups['Other'][] = $row[0];
+
+                continue;
+            }
+
+            $key = trim(html_entity_decode(strip_tags($keyCell[1]), ENT_QUOTES, 'UTF-8'));
+            $groups[self::resolveVariableGroup($key)][] = $row[0];
+        }
+
+        $rendered = [];
+        $open = true;
+
+        foreach ($groups as $label => $groupRows) {
+            if ($groupRows === []) {
+                continue;
+            }
+
+            $rendered[] = self::normalizeModuleTable(
+                $header . implode('', $groupRows),
+                $label,
+                true,
+                $open,
+            );
+            $open = false;
+        }
+
+        return $rendered === [] ? null : implode('', $rendered);
     }
 
     private static function normalizeFactRows(string $tableBody): string
@@ -614,6 +744,29 @@ final class PhpInfoDataNormalizer
         return $rendered ?? $rowContent;
     }
 
+    private static function resolveVariableGroup(string $key): string
+    {
+        foreach (['$_REQUEST[', '$_GET[', '$_POST[', '$_FILES['] as $prefix) {
+            if (str_starts_with($key, $prefix)) {
+                return 'Request';
+            }
+        }
+
+        if (str_starts_with($key, '$_COOKIE[')) {
+            return 'Cookies';
+        }
+
+        if (str_starts_with($key, '$_SERVER[')) {
+            return 'Server';
+        }
+
+        if (str_starts_with($key, '$_ENV[') || ($key !== '' && strtolower($key) !== $key)) {
+            return 'Environment';
+        }
+
+        return 'Other';
+    }
+
     /**
      * Walks `$_SERVER` / `getenv()` / `posix_getpwuid()` looking for the active user's home directory; returns an
      * empty string when none of the signals are populated (Yii's built-in dev server is the typical case).
@@ -748,29 +901,8 @@ final class PhpInfoDataNormalizer
             '%<table\b[^>]*>(.*?)</table>%si',
             static function (array $table): string {
                 $body = self::redactSensitiveRows($table[1]);
-                $kind = self::classifyModuleTable($body);
 
-                if ($kind === self::TABLE_KIND_FACTS) {
-                    $body = self::normalizeFactRows($body);
-                }
-
-                $label = self::moduleTableLabel($kind, $body);
-                $skipHeaders = $kind === self::TABLE_KIND_DIRECTIVES || $kind === self::TABLE_KIND_DATA;
-                $count = $kind === self::TABLE_KIND_NOTE
-                    ? self::countTableRows($body)
-                    : self::countRowsWithValues($body, $skipHeaders);
-                $countLabel = self::formatModuleTableCount($count, $kind);
-                $encodedLabel = Encode::content($label);
-
-                return sprintf(
-                    '<div class="yii-debug-table-wrap yii-debug-phpinfo-table-section is-%s"><header class="yii-debug-phpinfo-table-section-head"><span>%s</span><span class="yii-debug-phpinfo-table-section-count">%s</span></header><div class="yii-debug-phpinfo-table-scroll"><table aria-label="%s" class="yii-debug-table yii-debug-phpinfo__table is-%s">%s</table></div></div>',
-                    $kind,
-                    $encodedLabel,
-                    Encode::content($countLabel),
-                    Encode::value($label),
-                    $kind,
-                    $body,
-                );
+                return self::normalizeVariableTables($body) ?? self::normalizeModuleTable($body);
             },
             $modulesSrc,
         );

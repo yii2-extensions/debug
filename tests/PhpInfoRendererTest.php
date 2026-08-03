@@ -324,6 +324,31 @@ final class PhpInfoRendererTest extends TestCase
         );
     }
 
+    public function testRenderMarksLongOverviewValuesAsWide(): void
+    {
+        $section = new PhpInfoSection(
+            eyebrow: 'Build',
+            tiles: [
+                new PhpInfoTile(
+                    label: 'Build System',
+                    displayValue: 'A deliberately long build-system value that needs the complete card width',
+                    rawValue: 'A deliberately long build-system value that needs the complete card width',
+                    kind: PhpInfoTile::KIND_TEXT,
+                ),
+            ],
+        );
+
+        $html = PhpInfoRenderer::render(
+            new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: ''),
+        );
+
+        self::assertStringContainsString(
+            'class="yii-debug-phpinfo-overview-hero-metric is-wide"',
+            $html,
+            'Long technical values must span the overview card instead of wrapping inside a narrow grid cell.',
+        );
+    }
+
     public function testRenderSkipsConfigureCommandWhenEmpty(): void
     {
         $html = PhpInfoRenderer::render($this->emptyView([]));

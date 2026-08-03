@@ -5633,6 +5633,10 @@
         color: inherit;
       }
     }
+
+    &.is-wide {
+      grid-column: 1 / -1;
+    }
   }
 
   /**
@@ -5966,6 +5970,42 @@
     font-family: var(--yii-debug-font-sans);
     font-size: var(--yii-debug-fs-sm);
     font-weight: 600;
+  }
+
+  .yii-debug-phpinfo-variable-group {
+    > summary {
+      cursor: pointer;
+      list-style: none;
+      transition: background-color 120ms ease;
+
+      &::-webkit-details-marker {
+        display: none;
+      }
+
+      &:hover,
+      &:focus-visible {
+        background: var(--yii-debug-panel-surface-hover);
+        outline: 0;
+      }
+
+      > span:first-child {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        &::before {
+          content: "›";
+          color: var(--yii-debug-panel-muted);
+          font-size: var(--yii-debug-fs-md);
+          line-height: 1;
+          transition: transform 120ms ease;
+        }
+      }
+    }
+
+    &[open] > summary > span:first-child::before {
+      transform: rotate(90deg);
+    }
   }
 
   .yii-debug-phpinfo-table-section-count {

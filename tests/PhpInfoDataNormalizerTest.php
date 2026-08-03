@@ -403,6 +403,10 @@ final class PhpInfoDataNormalizerTest extends TestCase
             . '<tr><td class="e">$_COOKIE[\'XSRF-TOKEN\']</td><td class="v">sensitive-cookie-value</td></tr>'
             . '<tr><td class="e">APP_KEY</td><td class="v">sensitive-app-key</td></tr>'
             . '<tr><td class="e">$_SERVER[\'PHP_AUTH_PW\']</td><td class="v">sensitive-basic-auth-value</td></tr>'
+            . '<tr><td class="e">WEBHOOK_SIGNATURE</td><td class="v">sensitive-signature-value</td></tr>'
+            . '<tr><td class="e">PWD</td><td class="v">/srv/app</td></tr>'
+            . '<tr><td class="e">OLDPWD</td><td class="v">/srv</td></tr>'
+            . '<tr><td class="e">CHPWD_STATUS</td><td class="v">unchanged</td></tr>'
             . '<tr><td class="e">APP_NAME</td><td class="v">Yii application</td></tr>'
             . '</table>';
 
@@ -423,6 +427,11 @@ final class PhpInfoDataNormalizerTest extends TestCase
             $view->modulesHtml,
             'PHP basic-auth credentials must never reach the rendered phpinfo HTML.',
         );
+        self::assertStringNotContainsString(
+            'sensitive-signature-value',
+            $view->modulesHtml,
+            'Signature values must never reach the rendered phpinfo HTML.',
+        );
         self::assertStringContainsString(
             'aria-label="Sensitive value hidden">redacted</span>',
             $view->modulesHtml,
@@ -432,6 +441,66 @@ final class PhpInfoDataNormalizerTest extends TestCase
             '>Yii application</td>',
             $view->modulesHtml,
             'Ordinary environment values must remain available.',
+        );
+        self::assertStringContainsString(
+            '>/srv/app</td>',
+            $view->modulesHtml,
+            'The PWD working-directory variable must not be mistaken for a password.',
+        );
+        self::assertStringContainsString(
+            '>/srv</td>',
+            $view->modulesHtml,
+            'The OLDPWD working-directory variable must remain visible.',
+        );
+        self::assertStringContainsString(
+            '>unchanged</td>',
+            $view->modulesHtml,
+            'Environment names containing CHPWD must not be treated as credentials.',
+        );
+    }
+
+    public function testFromOutputGroupsPhpVariablesBySource(): void
+    {
+        $body = '<h2>PHP Variables</h2>'
+            . '<table>'
+            . '<tr class="h"><th>Variable</th><th>Value</th></tr>'
+            . '<tr><td class="e">$_REQUEST[\'page\']</td><td class="v">1</td></tr>'
+            . '<tr><td class="e">$_COOKIE[\'theme\']</td><td class="v">dark</td></tr>'
+            . '<tr><td class="e">$_SERVER[\'REQUEST_METHOD\']</td><td class="v">GET</td></tr>'
+            . '<tr><td class="e">APP_ENV</td><td class="v">dev</td></tr>'
+            . '</table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertSame(
+            4,
+            substr_count($view->modulesHtml, 'data-yii-debug-phpinfo-collapsible="true"'),
+            'PHP Variables must render one collapsible table per populated source group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~<summary[^>]*>.*?<span>Request</span>.*?</summary>.*?\$_REQUEST~s',
+            $view->modulesHtml,
+            'Request superglobals must render in the Request group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~<summary[^>]*>.*?<span>Cookies</span>.*?</summary>.*?\$_COOKIE~s',
+            $view->modulesHtml,
+            'Cookie variables must render in the Cookies group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~<summary[^>]*>.*?<span>Server</span>.*?</summary>.*?\$_SERVER~s',
+            $view->modulesHtml,
+            'Server variables must render in the Server group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~<summary[^>]*>.*?<span>Environment</span>.*?</summary>.*?APP_ENV~s',
+            $view->modulesHtml,
+            'Environment variables must render in the Environment group.',
+        );
+        self::assertSame(
+            1,
+            substr_count($view->modulesHtml, 'data-yii-debug-phpinfo-default-open="true"'),
+            'Only the first populated variable group must be expanded initially.',
         );
     }
 
@@ -487,6 +556,43 @@ final class PhpInfoDataNormalizerTest extends TestCase
             'id="phpinfo-php-credits"',
             $view->modulesHtml,
             'PHP Credits must expose its own deep-linkable section.',
+        );
+    }
+
+    public function testFromOutputUsesNativePhpCreditsTableTitles(): void
+    {
+        $body = '<h2>PHP Variables</h2>'
+            . '<h1>PHP Credits</h1>'
+            . '<table><tr class="h"><th>PHP Group</th></tr><tr><td>Contributors</td></tr></table>'
+            . '<table><tr class="h"><th>PHP Authors</th></tr>'
+            . '<tr><td class="e">Zend Engine</td><td class="v">Authors</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringContainsString(
+            '<span>PHP Group</span>',
+            $view->modulesHtml,
+            'A one-cell phpinfo heading must become the table card title.',
+        );
+        self::assertStringContainsString(
+            '<span>PHP Authors</span>',
+            $view->modulesHtml,
+            'PHP Credits fact tables must retain their native titles.',
+        );
+        self::assertStringNotContainsString(
+            '<span>Notes</span>',
+            $view->modulesHtml,
+            'Native PHP Credits headings must replace the generic Notes label.',
+        );
+        self::assertStringNotContainsString(
+            '<span>Module information</span>',
+            $view->modulesHtml,
+            'Native PHP Credits headings must replace the generic module-information label.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-phpinfo-table-section-count">1 note</span>',
+            $view->modulesHtml,
+            'The title row must not inflate a note table count.',
         );
     }
 

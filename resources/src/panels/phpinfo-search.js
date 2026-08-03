@@ -43,6 +43,10 @@ export function formatPhpInfoSearchStatus(
   return parts.join(" · ");
 }
 
+export function formatPhpInfoFilteredCount(matchCount, totalLabel) {
+  return matchCount + " of " + totalLabel;
+}
+
 export function resolvePhpInfoTocGroupState(targets, activeId, visibleIds) {
   var visibleTargets =
     visibleIds === null
@@ -68,10 +72,47 @@ function setLinkHidden(link, hidden) {
   }
 }
 
+function resetTableSection(wrap) {
+  wrap.hidden = false;
+
+  var count = wrap.querySelector(".yii-debug-phpinfo-table-section-count");
+
+  if (count) {
+    var original = count.getAttribute("data-yii-debug-phpinfo-total");
+
+    if (original === null) {
+      original = count.textContent.trim();
+      count.setAttribute("data-yii-debug-phpinfo-total", original);
+    }
+
+    count.textContent = original;
+  }
+
+  if (wrap.hasAttribute("data-yii-debug-phpinfo-collapsible")) {
+    wrap.open =
+      wrap.getAttribute("data-yii-debug-phpinfo-default-open") === "true";
+  }
+}
+
+function showFilteredTableCount(wrap, matchCount) {
+  var count = wrap.querySelector(".yii-debug-phpinfo-table-section-count");
+
+  if (!count) return;
+
+  var total = count.getAttribute("data-yii-debug-phpinfo-total");
+
+  if (total === null) {
+    total = count.textContent.trim();
+    count.setAttribute("data-yii-debug-phpinfo-total", total);
+  }
+
+  count.textContent = formatPhpInfoFilteredCount(matchCount, total);
+}
+
 function resetSection(section) {
   toArray(section.querySelectorAll(".yii-debug-table-wrap")).forEach(
     function (wrap) {
-      wrap.hidden = false;
+      resetTableSection(wrap);
     },
   );
 
@@ -213,6 +254,12 @@ export function initPhpInfoSearch(root) {
 
             wrap.hidden = matchingRows.length === 0;
             sectionMatchCount += matchingRows.length;
+
+            showFilteredTableCount(wrap, matchingRows.length);
+
+            if (wrap.hasAttribute("data-yii-debug-phpinfo-collapsible")) {
+              wrap.open = matchingRows.length > 0;
+            }
 
             rows.forEach(function (row) {
               var rowMatch = matchingRows.indexOf(row) !== -1;

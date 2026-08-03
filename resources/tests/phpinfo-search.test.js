@@ -2,10 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  formatPhpInfoFilteredCount,
   formatPhpInfoSearchStatus,
   normalizePhpInfoQuery,
   resolvePhpInfoTocGroupState,
 } from "../src/panels/phpinfo-search.js";
+
+test("formatPhpInfoFilteredCount keeps the original total visible", () => {
+  assert.equal(formatPhpInfoFilteredCount(1, "142 rows"), "1 of 142 rows");
+  assert.equal(
+    formatPhpInfoFilteredCount(3, "99 directives"),
+    "3 of 99 directives",
+  );
+});
 
 test("normalizePhpInfoQuery trims and normalizes case", () => {
   assert.equal(normalizePhpInfoQuery("  Memory_Limit  "), "memory_limit");
