@@ -40,6 +40,7 @@ final class DumpPanelTest extends TestCase
             'Dumped output must contain the value.',
         );
     }
+
     public function testCaptureReportsMissingModuleThroughThePanelContract(): void
     {
         $panel = new DumpPanel();
