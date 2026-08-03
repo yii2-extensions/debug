@@ -65,10 +65,6 @@ final class DumpCardRenderer
     {
         $frame = $trace[0] ?? null;
 
-        if ($frame === null) {
-            return ['', null];
-        }
-
         $file = Coerce::string($frame['file'] ?? null);
 
         $line = is_int($frame['line'] ?? null) ? $frame['line'] : null;

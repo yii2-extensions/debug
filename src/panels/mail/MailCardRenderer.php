@@ -82,10 +82,6 @@ final class MailCardRenderer
      */
     private static function bodyPreview(string $body): string
     {
-        if ($body === '') {
-            return '';
-        }
-
         $collapsed = (string) preg_replace('/\s+/', ' ', $body);
         $preview = mb_substr($collapsed, 0, self::BODY_PREVIEW_LIMIT);
 

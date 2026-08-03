@@ -224,10 +224,6 @@ class InertiaPanel extends Panel
      */
     private static function normalizePage(JsonSerializable|null $page): array|null
     {
-        if ($page === null) {
-            return null;
-        }
-
         $encoded = json_encode($page);
 
         if (!is_string($encoded)) {

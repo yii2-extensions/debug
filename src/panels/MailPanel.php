@@ -284,10 +284,6 @@ class MailPanel extends Panel
             return null;
         }
 
-        if ($manifest === []) {
-            return null;
-        }
-
         $currentTag = $this->tag;
 
         $previousTag = null;

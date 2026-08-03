@@ -153,10 +153,6 @@ final class GridViewConfig
      */
     public static function rowClassFor(string|null $level): array
     {
-        if ($level === null || $level === '') {
-            return [];
-        }
-
         $normalized = $level === 'error' ? 'danger' : $level;
 
         if (!in_array($normalized, ['success', 'info', 'warning', 'danger'], true)) {

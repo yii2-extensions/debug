@@ -444,10 +444,6 @@ final class PhpInfoDataNormalizer
      */
     private static function wrapModulesHtml(string $modulesSrc, array &$tocEntries): string
     {
-        if ($modulesSrc === '') {
-            return '';
-        }
-
         $rowHeaders = preg_replace(
             '%<td class="e">(.*?)</td>%s',
             '<th scope="row" class="e">$1</th>',

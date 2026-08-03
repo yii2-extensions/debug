@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: add the Inertia panel, expose Vite assets, improve log messages, and polish panel navigation.
 - refactor!: simplify debug storage, normalization, assets, and accessible UI for `0.2`; see `UPGRADE.md` for migration details.
 - refactor!: replace serialized panel data with atomic versioned JSON, strict snapshot DTO hydration, and isolated JSON-safe panel failures.
+- refactor: remove mutation-equivalent branches, isolate test sessions, and strengthen `GridViewConfig`, `FQCN`, and `Avatar` coverage.
 
 ## 0.1.1 May 18, 2026
 

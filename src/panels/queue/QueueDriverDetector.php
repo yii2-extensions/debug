@@ -67,10 +67,6 @@ final class QueueDriverDetector
             return self::$cache[$fqcn];
         }
 
-        if ($fqcn === '') {
-            return self::$cache[$fqcn] = ['Unknown', true];
-        }
-
         $token = self::extractDriverToken($fqcn);
 
         $name = array_key_exists($token, self::DRIVER_LABELS)

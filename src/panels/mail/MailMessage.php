@@ -203,10 +203,6 @@ final readonly class MailMessage implements PanelRow
      */
     private static function splitAddresses(string $raw): array
     {
-        if ($raw === '') {
-            return [];
-        }
-
         $parts = array_map(trim(...), explode(',', $raw));
 
         return array_values(array_filter($parts, static fn(string $address): bool => $address !== ''));
