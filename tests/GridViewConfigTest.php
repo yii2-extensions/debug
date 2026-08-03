@@ -217,7 +217,7 @@ final class GridViewConfigTest extends TestCase
 
         self::assertIsArray(
             $pagination,
-            'Oversized per-page must still yield a pagination config.',
+            'Zero per-page must still yield a pagination config.',
         );
         self::assertArrayHasKey(
             'pageSize',
