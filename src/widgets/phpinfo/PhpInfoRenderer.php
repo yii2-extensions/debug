@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\widgets\phpinfo;
 
 use UIAwesome\Html\Flow\{Div, Pre};
-use UIAwesome\Html\Form\InputSearch;
+use UIAwesome\Html\Form\{Button, InputSearch};
 use UIAwesome\Html\Interactive\{Details, Summary};
 use UIAwesome\Html\List\{Dd, Dl, Dt, Li, Ul};
 use UIAwesome\Html\Palpable\A;
@@ -94,7 +94,13 @@ final class PhpInfoRenderer
 
         return Div::tag()
             ->class('yii-debug-phpinfo-main')
-            ->html(self::renderSearch(), $overviewSection, $view->modulesHtml);
+            ->html(
+                self::renderSearch(),
+                Div::tag()
+                    ->id('yii-debug-phpinfo-results')
+                    ->class('yii-debug-phpinfo-results')
+                    ->html($overviewSection, $view->modulesHtml),
+            );
     }
 
     /**
@@ -104,28 +110,50 @@ final class PhpInfoRenderer
     {
         return Div::tag()
             ->class('yii-debug-phpinfo-search')
+            ->addAttribute('role', 'search')
+            ->addAriaAttribute('label', 'PHP configuration')
             ->html(
-                Label::tag()
-                    ->class('yii-debug-sr-only')
-                    ->for('yii-debug-phpinfo-filter')
-                    ->content('Filter PHP modules and directives'),
-                Span::tag()
-                    ->addAttribute('aria-hidden', 'true')
-                    ->class('yii-debug-phpinfo-search-icon')
-                    ->html(Icon::render('search')),
-                InputSearch::tag()
-                    ->id('yii-debug-phpinfo-filter')
-                    ->name('phpinfo-filter')
-                    ->addAttribute('autocomplete', 'off')
-                    ->addAttribute('spellcheck', 'false')
-                    ->addDataAttribute('yii-debug-phpinfo-search', true)
-                    ->class('yii-debug-phpinfo-search-input')
-                    ->placeholder('Filter modules + directives…'),
-                Span::tag()
-                    ->addAttribute('hidden', true)
-                    ->addDataAttribute('yii-debug-phpinfo-empty', true)
-                    ->class('yii-debug-phpinfo-search-empty')
-                    ->content('No modules match this query.'),
+                Div::tag()
+                    ->class('yii-debug-phpinfo-search-control')
+                    ->html(
+                        Label::tag()
+                            ->class('yii-debug-sr-only')
+                            ->for('yii-debug-phpinfo-filter')
+                            ->content('Filter PHP modules and directives'),
+                        Span::tag()
+                            ->addAttribute('aria-hidden', 'true')
+                            ->class('yii-debug-phpinfo-search-icon')
+                            ->html(Icon::render('search')),
+                        InputSearch::tag()
+                            ->id('yii-debug-phpinfo-filter')
+                            ->name('phpinfo-filter')
+                            ->addAttribute('autocomplete', 'off')
+                            ->addAttribute('spellcheck', 'false')
+                            ->addAriaAttribute('controls', 'yii-debug-phpinfo-results')
+                            ->addDataAttribute('yii-debug-phpinfo-search', true)
+                            ->class('yii-debug-phpinfo-search-input')
+                            ->placeholder('Search modules or directives…'),
+                        Button::tag()
+                            ->addAttribute('hidden', true)
+                            ->addAriaAttribute('label', 'Clear PHP configuration search')
+                            ->addDataAttribute('yii-debug-phpinfo-clear', true)
+                            ->class('yii-debug-phpinfo-search-clear')
+                            ->content('Clear')
+                            ->type('button'),
+                    ),
+                Div::tag()
+                    ->class('yii-debug-phpinfo-search-feedback')
+                    ->html(
+                        Span::tag()
+                            ->addAriaAttribute('live', 'polite')
+                            ->addDataAttribute('yii-debug-phpinfo-status', true)
+                            ->class('yii-debug-phpinfo-search-status'),
+                        Span::tag()
+                            ->addAttribute('hidden', true)
+                            ->addDataAttribute('yii-debug-phpinfo-empty', true)
+                            ->class('yii-debug-phpinfo-search-empty')
+                            ->content('No modules or directives match this query.'),
+                    ),
             );
     }
 
@@ -252,14 +280,24 @@ final class PhpInfoRenderer
         $items = [];
 
         foreach ($entries as $entry) {
+            $isOverview = $entry->slug === 'phpinfo-overview';
+
+            $link = A::tag()
+                ->addDataAttribute('toc-target', $entry->slug)
+                ->class('yii-debug-phpinfo-toc-link' . ($isOverview ? ' is-active' : ''))
+                ->content($entry->title)
+                ->href("#{$entry->slug}");
+
+            if ($isOverview) {
+                $link = $link->addAriaAttribute('current', 'page');
+            }
+
             $items[] = Li::tag()->html(
-                A::tag()
-                    ->addDataAttribute('toc-target', $entry->slug)
-                    ->class('yii-debug-phpinfo-toc-link')
-                    ->content($entry->title)
-                    ->href("#{$entry->slug}"),
+                $link,
             );
         }
+
+        $moduleCount = count($entries) > 0 ? count($entries) - 1 : 0;
 
         return Aside::tag()
             ->addAriaAttribute('label', 'phpinfo modules')
@@ -268,7 +306,7 @@ final class PhpInfoRenderer
                 Header::tag()
                     ->class('yii-debug-phpinfo-toc-title')
                     ->html(
-                        Span::tag()->content((string) count($entries)),
+                        Span::tag()->content((string) $moduleCount),
                         Span::tag()->content('modules'),
                     ),
                 Ul::tag()->class('yii-debug-phpinfo-toc-list')->html(...$items),

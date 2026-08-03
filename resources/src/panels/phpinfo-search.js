@@ -1,123 +1,275 @@
 /**
- * PhpInfo panel client behavior:
- *   - Search: filters whole modules by title or directive content.
- *   - TOC sync: IntersectionObserver keeps the entry of the section currently
- *     in view highlighted. Click on a TOC entry smooth-scrolls and updates the
- *     URL hash so the dev can copy/paste a deep link to a specific module.
+ * PHP Info navigation and search.
+ *
+ * The TOC behaves as a module selector: only Overview or the selected module
+ * is visible during normal browsing. Search temporarily switches to a result
+ * view where module-name matches show a complete module and directive matches
+ * show only the matching rows plus their table headers.
  */
 
-(function () {
-  var search = document.querySelector("[data-yii-debug-phpinfo-search]");
-  var empty = document.querySelector("[data-yii-debug-phpinfo-empty]");
-  var sections = Array.prototype.slice.call(
-    document.querySelectorAll(".yii-debug-phpinfo-section"),
-  );
-  var tocLinks = Array.prototype.slice.call(
-    document.querySelectorAll(".yii-debug-phpinfo-toc-link"),
-  );
+function toArray(value) {
+  return Array.prototype.slice.call(value);
+}
 
-  if (!sections.length) {
-    return;
+export function normalizePhpInfoQuery(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function plural(count, singular, pluralForm) {
+  return count + " " + (count === 1 ? singular : pluralForm);
+}
+
+export function formatPhpInfoSearchStatus(
+  directiveCount,
+  directiveModuleCount,
+  titleMatchCount,
+) {
+  var parts = [];
+
+  if (titleMatchCount > 0) {
+    parts.push(plural(titleMatchCount, "module", "modules"));
   }
 
-  function setHidden(el, hide) {
-    if (!el) return;
-    el.hidden = hide;
-    if (el.parentElement && el.parentElement.tagName === "LI") {
-      el.parentElement.hidden = hide;
-    }
+  if (directiveCount > 0) {
+    parts.push(
+      plural(directiveCount, "directive", "directives") +
+        " in " +
+        plural(directiveModuleCount, "module", "modules"),
+    );
+  }
+
+  return parts.join(" · ");
+}
+
+function setLinkHidden(link, hidden) {
+  link.hidden = hidden;
+
+  if (link.parentElement && link.parentElement.tagName === "LI") {
+    link.parentElement.hidden = hidden;
+  }
+}
+
+function resetSection(section) {
+  toArray(section.querySelectorAll(".yii-debug-table-wrap")).forEach(
+    function (wrap) {
+      wrap.hidden = false;
+    },
+  );
+
+  toArray(section.querySelectorAll("tr")).forEach(function (row) {
+    row.hidden = false;
+    row.classList.remove("is-search-match");
+  });
+}
+
+function markLocalOverrides(sections) {
+  sections.forEach(function (section) {
+    toArray(section.querySelectorAll("tr")).forEach(function (row) {
+      if (row.classList.contains("h")) return;
+
+      var values = toArray(row.querySelectorAll("td"));
+
+      if (
+        values.length === 2 &&
+        values[0].textContent.trim() !== values[1].textContent.trim()
+      ) {
+        row.classList.add("has-local-override");
+        values[0].title = "Local value differs from master value";
+      }
+    });
+  });
+}
+
+export function initPhpInfoSearch(root) {
+  var search = root.querySelector("[data-yii-debug-phpinfo-search]");
+  var clear = root.querySelector("[data-yii-debug-phpinfo-clear]");
+  var status = root.querySelector("[data-yii-debug-phpinfo-status]");
+  var empty = root.querySelector("[data-yii-debug-phpinfo-empty]");
+  var sections = toArray(root.querySelectorAll(".yii-debug-phpinfo-section"));
+  var tocLinks = toArray(root.querySelectorAll(".yii-debug-phpinfo-toc-link"));
+  var sectionById = Object.create(null);
+  var selectedId;
+
+  if (!sections.length) return;
+
+  sections.forEach(function (section) {
+    sectionById[section.id] = section;
+  });
+
+  function updateToc(activeId, visibleIds) {
+    tocLinks.forEach(function (link) {
+      var target = link.getAttribute("data-toc-target") || "";
+      var active = target === activeId;
+
+      link.classList.toggle("is-active", active);
+
+      if (active) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+
+      setLinkHidden(link, visibleIds !== null && !visibleIds[target]);
+    });
+  }
+
+  function showSelected() {
+    sections.forEach(function (section) {
+      resetSection(section);
+      section.hidden = section.id !== selectedId;
+    });
+
+    updateToc(selectedId, null);
+
+    if (status) status.textContent = "";
+    if (empty) empty.hidden = true;
+    if (clear) clear.hidden = true;
+  }
+
+  function replaceHash(id) {
+    if (!window.history || !window.history.replaceState) return;
+
+    window.history.replaceState(null, "", "#" + id);
+  }
+
+  function selectSection(id, updateHash) {
+    selectedId = sectionById[id] ? id : sections[0].id;
+
+    if (search) search.value = "";
+
+    showSelected();
+
+    if (updateHash) replaceHash(selectedId);
   }
 
   function applyFilter() {
-    var query = (search ? search.value : "").trim().toLowerCase();
+    var query = normalizePhpInfoQuery(search ? search.value : "");
 
     if (!query) {
-      sections.forEach(function (s) {
-        s.hidden = false;
-      });
-      tocLinks.forEach(function (l) {
-        setHidden(l, false);
-      });
-      if (empty) empty.hidden = true;
+      showSelected();
       return;
     }
 
-    var matches = 0;
-    var visible = Object.create(null);
-    var firstTitleHit = null;
-    var firstContentHit = null;
+    var visibleIds = Object.create(null);
+    var directiveCount = 0;
+    var directiveModuleCount = 0;
+    var titleMatchCount = 0;
 
     sections.forEach(function (section) {
-      var title = (section.getAttribute("data-section") || "").toLowerCase();
-      var content = section.textContent.toLowerCase();
+      resetSection(section);
+
+      var title = normalizePhpInfoQuery(section.getAttribute("data-section"));
       var titleMatch = title.indexOf(query) !== -1;
-      var hit = titleMatch || content.indexOf(query) !== -1;
-      section.hidden = !hit;
-      if (hit) {
-        visible[section.id] = true;
-        matches++;
-        if (titleMatch && !firstTitleHit) firstTitleHit = section;
-        else if (!firstContentHit) firstContentHit = section;
+      var sectionDirectiveCount = 0;
+
+      if (titleMatch) {
+        titleMatchCount++;
+      } else if (section.classList.contains("yii-debug-phpinfo-module")) {
+        toArray(section.querySelectorAll(".yii-debug-table-wrap")).forEach(
+          function (wrap) {
+            var rows = toArray(wrap.querySelectorAll("tr"));
+            var matchingRows = rows.filter(function (row) {
+              var key = row.querySelector('th[scope="row"], th.e, td.e');
+
+              return (
+                key !== null &&
+                normalizePhpInfoQuery(key.textContent).indexOf(query) !== -1
+              );
+            });
+
+            wrap.hidden = matchingRows.length === 0;
+            sectionDirectiveCount += matchingRows.length;
+
+            rows.forEach(function (row) {
+              var rowMatch = matchingRows.indexOf(row) !== -1;
+              var header = row.classList.contains("h");
+
+              row.hidden = !rowMatch && !(header && matchingRows.length > 0);
+              row.classList.toggle("is-search-match", rowMatch);
+            });
+          },
+        );
+      }
+
+      var visible = titleMatch || sectionDirectiveCount > 0;
+
+      section.hidden = !visible;
+
+      if (visible) visibleIds[section.id] = true;
+
+      if (sectionDirectiveCount > 0) {
+        directiveCount += sectionDirectiveCount;
+        directiveModuleCount++;
       }
     });
 
-    /**
-     * Prefer scroll-targeting a section whose title matches — content
-     * matches catch incidental hits (Overview's Configure Command lists
-     * every `--with-X` flag, so any extension name appears there) which
-     * would otherwise always scroll the dev to Overview first.
-     */
-    var firstVisible = firstTitleHit || firstContentHit;
+    updateToc("", visibleIds);
 
-    tocLinks.forEach(function (link) {
-      var target = link.getAttribute("data-toc-target") || "";
-      setHidden(link, !visible[target]);
-    });
-
-    if (empty) empty.hidden = matches !== 0;
-
-    if (firstVisible) {
-      firstVisible.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (status) {
+      status.textContent = formatPhpInfoSearchStatus(
+        directiveCount,
+        directiveModuleCount,
+        titleMatchCount,
+      );
     }
+
+    if (empty) {
+      empty.hidden = directiveCount + titleMatchCount !== 0;
+    }
+
+    if (clear) clear.hidden = false;
   }
+
+  function clearSearch() {
+    if (search) {
+      search.value = "";
+      search.focus();
+    }
+
+    showSelected();
+  }
+
+  markLocalOverrides(sections);
+
+  var hashId = window.location.hash.replace(/^#/, "");
+
+  selectedId = sectionById[hashId] ? hashId : sections[0].id;
+  showSelected();
 
   if (search) {
     search.addEventListener("input", applyFilter);
+    search.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && search.value !== "") {
+        event.preventDefault();
+        clearSearch();
+      }
+    });
   }
 
-  if ("IntersectionObserver" in window) {
-    var observer = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          var id = entry.target.id;
-          tocLinks.forEach(function (link) {
-            link.classList.toggle(
-              "is-active",
-              link.getAttribute("data-toc-target") === id,
-            );
-          });
-        });
-      },
-      { rootMargin: "-30% 0px -60% 0px", threshold: 0 },
-    );
-
-    sections.forEach(function (section) {
-      observer.observe(section);
-    });
+  if (clear) {
+    clear.addEventListener("click", clearSearch);
   }
 
   tocLinks.forEach(function (link) {
     link.addEventListener("click", function (event) {
-      var hash = link.getAttribute("href") || "";
-      var id = hash.charAt(0) === "#" ? hash.slice(1) : hash;
-      var target = document.getElementById(id);
-      if (!target) return;
+      var id = link.getAttribute("data-toc-target") || "";
+
+      if (!sectionById[id]) return;
+
       event.preventDefault();
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-      if (history.replaceState) {
-        history.replaceState(null, "", "#" + id);
-      }
+      selectSection(id, true);
     });
   });
-})();
+
+  window.addEventListener("hashchange", function () {
+    var id = window.location.hash.replace(/^#/, "");
+
+    if (sectionById[id]) selectSection(id, false);
+  });
+}
+
+if (typeof document !== "undefined") {
+  initPhpInfoSearch(document);
+}
