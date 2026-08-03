@@ -23,10 +23,15 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([
-            ['valid', Logger::LEVEL_INFO, 'application', 0.0, []],
-            'invalid-string',
-        ]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['valid', Logger::LEVEL_INFO, 'application', 0.0, []],
+                    'invalid-string',
+                ],
+            ),
+        );
 
         self::assertCount(
             1,
@@ -41,7 +46,12 @@ final class LogPanelTest extends TestCase
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
-        $module->panels['router'] = new RouterPanel(['id' => 'router', 'module' => $module]);
+        $module->panels['router'] = new RouterPanel(
+            [
+                'id' => 'router',
+                'module' => $module,
+            ],
+        );
 
         self::assertSame(
             [],
@@ -50,17 +60,85 @@ final class LogPanelTest extends TestCase
         );
     }
 
+    public function testCaptureFallsBackToZeroForAnInvalidTimestamp(): void
+    {
+        $row = LogSnapshot::capture(
+            [
+                ['message', Logger::LEVEL_INFO, 'application', null, []],
+            ]
+        )->entries()[0] ?? self::fail('Expected one captured row.');
+
+        self::assertSame(
+            0.0,
+            $row->time,
+            'An invalid timestamp must use the zero fallback.',
+        );
+        self::assertSame(
+            0.0,
+            $row->timeOfPrevious,
+            'The first previous timestamp must use the same fallback.',
+        );
+    }
+
     public function testCaptureNarrowsNumericStringLevelToInt(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([
-            ['oops', (string) Logger::LEVEL_ERROR, 'application', 0.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['oops', (string) Logger::LEVEL_ERROR, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         $row = $panel->getMessages()[0] ?? self::fail('Expected one captured row.');
 
-        self::assertSame(Logger::LEVEL_ERROR, $row->level, 'Numeric-string level must narrow to `int`.');
+        self::assertSame(
+            Logger::LEVEL_ERROR,
+            $row->level,
+            "Numeric-string level must narrow to 'int'.",
+        );
+    }
+
+    public function testCapturePreservesTimestampsAndPreviousRowDelta(): void
+    {
+        $rows = LogSnapshot::capture(
+            [
+                ['first', Logger::LEVEL_INFO, 'application', 2.5, []],
+                ['second', Logger::LEVEL_INFO, 'application', 4.0, []],
+            ],
+        )->entries();
+
+        $first = $rows[0] ?? self::fail('Expected the first captured row.');
+        $second = $rows[1] ?? self::fail('Expected the second captured row.');
+
+        self::assertSame(
+            2500.0,
+            $first->time,
+            'The tuple timestamp must be read from index three.',
+        );
+        self::assertSame(
+            2500.0,
+            $first->timeOfPrevious,
+            'The first row must reference its own timestamp.',
+        );
+        self::assertSame(
+            4000.0,
+            $second->time,
+            'The second tuple timestamp must remain intact.',
+        );
+        self::assertSame(
+            2500.0,
+            $second->timeOfPrevious,
+            'The second row must reference the first timestamp.',
+        );
+        self::assertSame(
+            1.5,
+            $second->timeSincePrevious,
+            'The elapsed time must compare adjacent rows.',
+        );
     }
 
     public function testCaptureReturnsTypedRows(): void
@@ -78,11 +156,16 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([
-            ['oops', Logger::LEVEL_ERROR, 'application', 1.0, []],
-            ['careful', Logger::LEVEL_WARNING, 'application', 2.0, []],
-            ['hello', Logger::LEVEL_INFO, 'application', 3.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['oops', Logger::LEVEL_ERROR, 'application', 1.0, []],
+                    ['careful', Logger::LEVEL_WARNING, 'application', 2.0, []],
+                    ['hello', Logger::LEVEL_INFO, 'application', 3.0, []],
+                ],
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -102,7 +185,14 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([['hello', Logger::LEVEL_INFO, 'application', 0.0, []]]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['hello', Logger::LEVEL_INFO, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -114,7 +204,14 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([['a', Logger::LEVEL_INFO, 'application', 0.0, []]]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['a', Logger::LEVEL_INFO, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         self::assertCount(
             1,
@@ -122,10 +219,15 @@ final class LogPanelTest extends TestCase
             'Single message must yield one row.',
         );
 
-        $this->hydratePanel($panel, LogSnapshot::capture([
-            ['a', Logger::LEVEL_INFO, 'application', 0.0, []],
-            ['b', Logger::LEVEL_INFO, 'application', 0.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['a', Logger::LEVEL_INFO, 'application', 0.0, []],
+                    ['b', Logger::LEVEL_INFO, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         self::assertCount(
             2,
@@ -138,18 +240,27 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        self::assertSame([], $panel->getMessages(), 'An un-hydrated panel exposes no rows.');
+        self::assertSame(
+            [],
+            $panel->getMessages(),
+            'An un-hydrated panel exposes no rows.',
+        );
     }
 
     public function testGetModelsCachesAndDecoratesPrevNextIds(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([
-            ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
-            ['b', Logger::LEVEL_WARNING, 'application', 2.0, []],
-            ['c', Logger::LEVEL_ERROR, 'application', 3.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
+                    ['b', Logger::LEVEL_WARNING, 'application', 2.0, []],
+                    ['c', Logger::LEVEL_ERROR, 'application', 3.0, []],
+                ],
+            ),
+        );
 
         $rows = $panel->getMessages();
 
@@ -161,36 +272,72 @@ final class LogPanelTest extends TestCase
 
         $row = $rows[1] ?? self::fail("Expected row id '2'.");
 
-        self::assertSame(2, $row->id, "Middle row must carry id '2'.");
-        self::assertSame(1, $row->idOfPrevious, "Middle row must point back to id '1'.");
-        self::assertSame(3, $row->idOfNext, "Middle row must point forward to id '3'.");
+        self::assertSame(
+            2,
+            $row->id,
+            "Middle row must carry id '2'.",
+        );
+        self::assertSame(
+            1,
+            $row->idOfPrevious,
+            "Middle row must point back to id '1'.",
+        );
+        self::assertSame(
+            3,
+            $row->idOfNext,
+            "Middle row must point forward to id '3'.",
+        );
     }
 
     public function testGetModelsLastRowExposesNullAsNextId(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([
-            ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
-            ['b', Logger::LEVEL_INFO, 'application', 2.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['a', Logger::LEVEL_INFO, 'application', 1.0, []],
+                    ['b', Logger::LEVEL_INFO, 'application', 2.0, []],
+                ],
+            ),
+        );
 
         $rows = $panel->getMessages();
         $last = $rows[1] ?? self::fail("Expected row id '2'.");
 
-        self::assertNull($last->idOfNext, 'Last row must expose `null` as the next id.');
-        self::assertSame(1, $last->idOfPrevious, "Last row must point back to id '1'.");
+        self::assertNull(
+            $last->idOfNext,
+            "Last row must expose 'null' as the next id.",
+        );
+        self::assertSame(
+            1,
+            $last->idOfPrevious,
+            "Last row must point back to id '1'.",
+        );
     }
 
     public function testGetModelsScalesTimeToMilliseconds(): void
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([['msg', Logger::LEVEL_INFO, 'application', 2.5, []]]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['msg', Logger::LEVEL_INFO, 'application', 2.5, []],
+                ],
+            ),
+        );
 
         $row = $panel->getMessages()[0] ?? self::fail("Expected row id '1'.");
 
-        self::assertEqualsWithDelta(2500.0, $row->time, 1e-9, 'Time must be scaled to milliseconds.');
+        self::assertEqualsWithDelta(
+            2500.0,
+            $row->time,
+            1e-9,
+            'Time must be scaled to milliseconds.',
+        );
     }
 
     public function testGetNameAndIcon(): void
@@ -213,7 +360,14 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([['a', Logger::LEVEL_INFO, 'application', 0.0, []]]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['a', Logger::LEVEL_INFO, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -247,10 +401,15 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([
-            ['err', Logger::LEVEL_ERROR, 'application', 0.0, []],
-            ['info', Logger::LEVEL_INFO, 'application', 0.0, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['err', Logger::LEVEL_ERROR, 'application', 0.0, []],
+                    ['info', Logger::LEVEL_INFO, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -286,7 +445,14 @@ final class LogPanelTest extends TestCase
     {
         $panel = $this->makePanel(LogPanel::class);
 
-        $this->hydratePanel($panel, LogSnapshot::capture([['warn', Logger::LEVEL_WARNING, 'application', 0.0, []]]));
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['warn', Logger::LEVEL_WARNING, 'application', 0.0, []],
+                ],
+            ),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -316,6 +482,9 @@ final class LogPanelTest extends TestCase
         $panel = $this->makePanel(LogPanel::class);
 
         $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '$.panels..entries': expected a required field.",
+        );
 
         $panel->hydrate(['messages' => 'corrupt']);
     }

@@ -180,10 +180,6 @@ class InertiaPanel extends Panel
     #[Override]
     public function isEnabled(): bool
     {
-        if (Yii::$app->has(self::COMPONENT_ID) === false) {
-            return false;
-        }
-
         try {
             $component = Yii::$app->get(self::COMPONENT_ID);
         } catch (InvalidConfigException) {

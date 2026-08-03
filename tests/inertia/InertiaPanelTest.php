@@ -95,6 +95,19 @@ final class InertiaPanelTest extends TestCase
         );
     }
 
+    public function testCaptureCapturesResponseLocationHeader(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+
+        Yii::$app->response->headers->set('X-Inertia-Location', 'https://example.test/users');
+
+        self::assertSame(
+            'https://example.test/users',
+            $panel->capture()->location,
+            'The external redirect target must be retained verbatim.',
+        );
+    }
+
     public function testCaptureCapturesSharedPropKeys(): void
     {
         $panel = $this->makePanel(
@@ -288,6 +301,17 @@ final class InertiaPanelTest extends TestCase
             'inertia',
             $panel->getToolbarIcon(),
             "Icon key must be 'inertia'.",
+        );
+    }
+
+    public function testGetStatusCodeReturnsZeroBeforeHydration(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        self::assertSame(
+            0,
+            $panel->getStatusCode(),
+            'An un-hydrated panel must expose the neutral status code.',
         );
     }
 

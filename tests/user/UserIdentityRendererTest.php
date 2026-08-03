@@ -102,6 +102,16 @@ final class UserIdentityRendererTest extends TestCase
             $html,
             'Reveal buttons must carry the JS hook attribute.',
         );
+        self::assertStringContainsString(
+            'aria-label="Reveal Auth Key"',
+            $html,
+            'The reveal control must expose its complete accessible label.',
+        );
+        self::assertStringContainsString(
+            'data-yii-debug-reveal="true"',
+            $html,
+            'The JS hook must retain its enabled boolean value.',
+        );
     }
 
     public function testRenderHeroEmitsAvatarMonogramAndStatusVariant(): void

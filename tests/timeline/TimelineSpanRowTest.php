@@ -275,6 +275,33 @@ final class TimelineSpanRowTest extends TestCase
         );
     }
 
+    public function testFromUsesTheExactMebibyteDivisorForMemoryValues(): void
+    {
+        $first = TimelineSpanRow::from(
+            self::block(memory: 131072, memoryDiff: 89129),
+            0,
+            0.0,
+            100.0,
+        );
+        $second = TimelineSpanRow::from(
+            self::block(memory: 89129, memoryDiff: 131072),
+            0,
+            0.0,
+            100.0,
+        );
+
+        self::assertSame(
+            "\n0.000 ms · 0.12 MB (+0.09 MB)",
+            $first->tooltip,
+            'Memory values must use exactly 1,048,576 bytes per mebibyte.',
+        );
+        self::assertSame(
+            "\n0.000 ms · 0.09 MB (+0.12 MB)",
+            $second->tooltip,
+            'Rounding must remain stable on both sides of a two-decimal boundary.',
+        );
+    }
+
     private static function block(
         string $category = '',
         string $info = '',
