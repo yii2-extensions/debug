@@ -117,7 +117,7 @@ final readonly class Payload
             throw HydrationException::at($this->keyPath($key), 'a number or null');
         }
 
-        return (float) $value;
+        return $value;
     }
 
     public function nullableString(string $key): string|null

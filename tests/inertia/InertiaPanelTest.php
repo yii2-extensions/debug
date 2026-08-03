@@ -438,4 +438,27 @@ final class InertiaPanelTest extends TestCase
             'A non-manager component must yield no shared keys.',
         );
     }
+
+    public function testSnapshotDataReturnsEveryCapturedField(): void
+    {
+        $snapshot = InertiaSnapshot::capture(
+            '/users',
+            ['component' => 'Users'],
+            ['X-Inertia' => 'true'],
+            ['auth'],
+            201,
+        );
+
+        self::assertSame(
+            [
+                'location' => '/users',
+                'page' => ['component' => 'Users'],
+                'requestHeaders' => ['X-Inertia' => 'true'],
+                'sharedKeys' => ['auth'],
+                'statusCode' => 201,
+            ],
+            $snapshot->data(),
+            'The display payload must retain every captured Inertia field.',
+        );
+    }
 }

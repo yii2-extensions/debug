@@ -9,6 +9,7 @@ use stdClass;
 use Yii;
 use yii\base\Module;
 use yii\debug\controllers\UserController;
+use yii\debug\models\UserSwitch;
 use yii\debug\tests\support\stub\{Identity, NullableIdentity};
 use yii\debug\tests\support\TestCase;
 use yii\web\{BadRequestHttpException, Response, User};
@@ -28,6 +29,14 @@ final class UserControllerTest extends TestCase
 
         Yii::$app->user->login(new Identity(7));
 
+        (new UserSwitch())->setUserByIdentity(new Identity(42));
+
+        self::assertSame(
+            42,
+            Yii::$app->user->getId(),
+            'The fixture must impersonate a different identity before reset.',
+        );
+
         $controller = new UserController('debug-user', new Module('debug'));
 
         $result = $controller->actionResetIdentity();
@@ -35,6 +44,11 @@ final class UserControllerTest extends TestCase
         self::assertFalse(
             $result->isGuest,
             'Reset must leave an authenticated identity in place.',
+        );
+        self::assertSame(
+            7,
+            $result->getId(),
+            'Reset must restore the original identity captured before impersonation.',
         );
     }
 

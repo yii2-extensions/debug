@@ -36,8 +36,43 @@ final class ProfilingPanelTest extends TestCase
             $snapshot->time,
             "'time' must be non-negative.",
         );
-        self::assertSame([], $snapshot->entries(), 'Empty log target yields no profile blocks.');
-        self::assertSame([], $snapshot->samples(), 'Empty log target yields no memory samples.');
+        self::assertSame(
+            [],
+            $snapshot->entries(),
+            'Empty log target yields no profile blocks.',
+        );
+        self::assertSame(
+            [],
+            $snapshot->samples(),
+            'Empty log target yields no memory samples.',
+        );
+    }
+
+    public function testCaptureScalesMemorySampleTimeToMilliseconds(): void
+    {
+        $snapshot = ProfilingSnapshot::capture(
+            0,
+            0.0,
+            [['sample', Logger::LEVEL_INFO, 'application', 1.25, [], 2_048]],
+        );
+
+        $samples = $snapshot->samples();
+
+        self::assertCount(
+            1,
+            $samples,
+            'A logger tuple with time and memory must produce one sample.',
+        );
+        self::assertSame(
+            1_250.0,
+            $samples[0]->time,
+            'Sample timestamps must be converted to milliseconds.',
+        );
+        self::assertSame(
+            2_048,
+            $samples[0]->memory,
+            'Sample memory must retain the logger value.',
+        );
     }
 
     public function testGetDetailFallsBackToHashTimelineUrlWhenModuleIsMissing(): void
@@ -46,7 +81,10 @@ final class ProfilingPanelTest extends TestCase
 
         $panel->module = null;
 
-        $this->hydratePanel($panel, ProfilingSnapshot::capture(0, 0.0, []));
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(0, 0.0, []),
+        );
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -58,10 +96,17 @@ final class ProfilingPanelTest extends TestCase
     {
         $panel = $this->makePanel(ProfilingPanel::class);
 
-        $this->hydratePanel($panel, ProfilingSnapshot::capture(1_048_576, 0.123, [
-            ['app\\token', Logger::LEVEL_PROFILE_BEGIN, 'application', 0.0, []],
-            ['app\\token', Logger::LEVEL_PROFILE_END, 'application', 0.5, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(
+                1_048_576,
+                0.123,
+                [
+                    ['app\\token', Logger::LEVEL_PROFILE_BEGIN, 'application', 0.0, []],
+                    ['app\\token', Logger::LEVEL_PROFILE_END, 'application', 0.5, []],
+                ],
+            ),
+        );
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -73,16 +118,28 @@ final class ProfilingPanelTest extends TestCase
     {
         $panel = $this->makePanel(ProfilingPanel::class);
 
-        $this->hydratePanel($panel, ProfilingSnapshot::capture(0, 0.0, [
-            ['app\\sql', Logger::LEVEL_PROFILE_BEGIN, 'application', 0.0, []],
-            ['app\\sql', Logger::LEVEL_PROFILE_END, 'application', 0.005, []],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(
+                0,
+                0.0,
+                [
+                    ['app\\sql', Logger::LEVEL_PROFILE_BEGIN, 'application', 0.0, []],
+                    ['app\\sql', Logger::LEVEL_PROFILE_END, 'application', 0.005, []],
+                ],
+            ),
+        );
 
         $models = $panel->getModels();
 
-        self::assertCount(1, $models, 'Paired begin/end must yield one row.');
+        self::assertCount(
+            1,
+            $models,
+            'Paired begin/end must yield one row.',
+        );
 
         $row = $models[0];
+
         self::assertSame(
             'app\\sql',
             $row->info,
@@ -99,7 +156,10 @@ final class ProfilingPanelTest extends TestCase
     {
         $panel = $this->makePanel(ProfilingPanel::class);
 
-        $this->hydratePanel($panel, ProfilingSnapshot::capture(0, 0.0, []));
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(0, 0.0, []),
+        );
 
         $first = $this->invoke(
             $panel,
@@ -137,7 +197,10 @@ final class ProfilingPanelTest extends TestCase
     {
         $panel = $this->makePanel(ProfilingPanel::class);
 
-        $this->hydratePanel($panel, ProfilingSnapshot::capture(0, 0.0, []));
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(0, 0.0, []),
+        );
 
         $payload = $panel->getToolbarData();
 
@@ -167,7 +230,10 @@ final class ProfilingPanelTest extends TestCase
     {
         $panel = $this->makePanel(ProfilingPanel::class);
 
-        $this->hydratePanel($panel, ProfilingSnapshot::capture(2_097_152, 0.25, []));
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(2_097_152, 0.25, []),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -196,7 +262,10 @@ final class ProfilingPanelTest extends TestCase
     {
         $panel = $this->makePanel(ProfilingPanel::class);
 
-        $this->hydratePanel($panel, ProfilingSnapshot::capture(2_097_152, 0.25, []));
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(2_097_152, 0.25, []),
+        );
 
         $items = $this->invoke(
             $panel,

@@ -25,6 +25,15 @@ final class PayloadTest extends TestCase
         );
     }
 
+    public function testNullableNumberReturnsIntegerInputAsFloat(): void
+    {
+        self::assertSame(
+            7.0,
+            Payload::object(['duration' => 7])->nullableNumber('duration'),
+            'Integer JSON numbers must satisfy the nullable float contract.',
+        );
+    }
+
     public function testObjectAcceptsAnEmptyArrayAsAnEmptyObject(): void
     {
         self::assertSame([], Payload::object([])->all(), 'An empty JSON object decodes to an empty array.');
@@ -41,14 +50,20 @@ final class PayloadTest extends TestCase
 
     public function testThrowHydrationExceptionForAnObjectWithIntegerKeys(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$': expected an object with string keys.");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$': expected an object with string keys.",
+        );
 
         Payload::object([1 => 'a']);
     }
 
     public function testThrowHydrationExceptionForANonBooleanValue(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.flag': expected a boolean.");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.flag': expected a boolean.",
+        );
 
         Payload::object(['flag' => 1])->bool('flag');
     }
@@ -56,13 +71,19 @@ final class PayloadTest extends TestCase
     public function testThrowHydrationExceptionForANonIntegerValue(): void
     {
         $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.count': expected an integer.",
+        );
 
         Payload::object(['count' => '7'])->int('count');
     }
 
     public function testThrowHydrationExceptionForANonListValue(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.entries': expected a list.");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.entries': expected a list.",
+        );
 
         Payload::object(['entries' => ['a' => 1]])->list('entries');
     }
@@ -70,13 +91,19 @@ final class PayloadTest extends TestCase
     public function testThrowHydrationExceptionForANonNumberValue(): void
     {
         $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '$.time': expected a number.",
+        );
 
         Payload::object(['time' => '1.5'])->number('time');
     }
 
     public function testThrowHydrationExceptionForANonStringValue(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.name': expected a string.");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.name': expected a string.",
+        );
 
         Payload::object(['name' => 42])->string('name');
     }
@@ -84,6 +111,9 @@ final class PayloadTest extends TestCase
     public function testThrowHydrationExceptionForANullableIntegerCarryingAString(): void
     {
         $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '$.line': expected an integer or null.",
+        );
 
         Payload::object(['line' => '7'])->nullableInt('line');
     }
@@ -91,6 +121,9 @@ final class PayloadTest extends TestCase
     public function testThrowHydrationExceptionForANullableNumberCarryingAString(): void
     {
         $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '$.duration': expected a number or null.",
+        );
 
         Payload::object(['duration' => '1.5'])->nullableNumber('duration');
     }
@@ -98,34 +131,49 @@ final class PayloadTest extends TestCase
     public function testThrowHydrationExceptionForANullableStringCarryingAnInteger(): void
     {
         $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '$.action': expected a string or null.",
+        );
 
         Payload::object(['action' => 42])->nullableString('action');
     }
 
     public function testThrowHydrationExceptionForAnUndeclaredField(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.extra': expected a declared field.");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.extra': expected a declared field.",
+        );
 
         Payload::object(['name' => 'a', 'extra' => 1])->shape(['name']);
     }
 
     public function testThrowHydrationExceptionForAValueThatIsNotAnObject(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$': expected an object.");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$': expected an object.",
+        );
 
         Payload::object(['a', 'b']);
     }
 
     public function testThrowHydrationExceptionWhenAMissingKeyIsRead(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.absent': expected a required field.");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.absent': expected a required field.",
+        );
 
         Payload::object([])->raw('absent');
     }
 
     public function testThrowHydrationExceptionWhenARequiredFieldIsMissing(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.name': expected a required field.");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.name': expected a required field.",
+        );
 
         Payload::object([])->shape(['name']);
     }

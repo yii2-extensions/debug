@@ -173,7 +173,7 @@ class LogTarget extends Target
             ajax: $request->getIsAjax(),
             method: $request->getMethod(),
             ip: $request->getUserIP() ?? '',
-            time: is_int($requestTime) || is_float($requestTime) ? (float) $requestTime : microtime(true),
+            time: is_int($requestTime) || is_float($requestTime) ? $requestTime : microtime(true),
             statusCode: $response->statusCode,
             sqlCount: $this->getSqlTotalCount(),
             excessiveCallersCount: $this->getExcessiveDbCallersCount(),

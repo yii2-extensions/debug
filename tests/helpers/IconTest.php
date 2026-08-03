@@ -15,6 +15,23 @@ use yii\debug\tests\support\TestCase;
 #[Group('icon')]
 final class IconTest extends TestCase
 {
+    public function testRenderReturnsCachedMarkupWithoutReadingFile(): void
+    {
+        $this->setInaccessibleStaticProperty(
+            Icon::class,
+            'cache',
+            ['cached-only' => '<svg id="cached"></svg>'],
+        );
+
+        self::assertSame(
+            '<svg id="cached"></svg>',
+            Icon::render('cached-only'),
+            'A cached icon must be returned even when no matching file exists.',
+        );
+
+        $this->setInaccessibleStaticProperty(Icon::class, 'cache', []);
+    }
+
     public function testRenderReturnsEmptyStringWhenSvgFileMissing(): void
     {
         self::assertSame(
@@ -40,15 +57,4 @@ final class IconTest extends TestCase
         );
     }
 
-    public function testRenderUsesInMemoryCacheForRepeatedLookups(): void
-    {
-        $first = Icon::render('clock');
-        $second = Icon::render('clock');
-
-        self::assertSame(
-            $first,
-            $second,
-            'Repeated lookups must return the cached markup verbatim.',
-        );
-    }
 }

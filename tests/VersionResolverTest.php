@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests;
 
+use Composer\InstalledVersions;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\tests\support\TestCase;
 use yii\debug\VersionResolver;
@@ -76,9 +77,15 @@ final class VersionResolverTest extends TestCase
         $resolved = VersionResolver::forExtensions(
             [
                 ['name' => 'broken', 'version' => 'dev-master'],
+                'yiisoft/yii2' => ['name' => 'yiisoft/yii2', 'version' => '99.99.99'],
             ]
         );
 
+        self::assertCount(
+            2,
+            $resolved,
+            'Skipping a malformed numeric key must not truncate the remaining extension map.',
+        );
         self::assertArrayHasKey(
             0,
             $resolved,
@@ -94,22 +101,45 @@ final class VersionResolverTest extends TestCase
             $resolved[0]['version'],
             'Numeric keys come from malformed registrations and must pass through untouched.',
         );
+        self::assertArrayHasKey(
+            'yiisoft/yii2',
+            $resolved,
+            'A valid extension after a malformed entry must still be processed.',
+        );
+        self::assertArrayHasKey(
+            'version',
+            $resolved['yiisoft/yii2'],
+            'The valid extension must retain its version field.',
+        );
+        self::assertNotSame(
+            '99.99.99',
+            $resolved['yiisoft/yii2']['version'],
+            'Processing must continue after a numeric-keyed entry.',
+        );
     }
 
     public function testForPackageAppendsShortGitReferenceForDevBranches(): void
     {
-        $version = VersionResolver::forPackage(
-            'yiisoft/yii2',
-        );
+        $version = VersionResolver::forPackage('yiisoft/yii2');
+        $reference = InstalledVersions::getReference('yiisoft/yii2');
 
         self::assertNotNull(
             $version,
             'Framework version must resolve in a dev workspace.',
         );
+        self::assertNotNull(
+            $reference,
+            'The installed framework dev build must expose its Git reference.',
+        );
         self::assertMatchesRegularExpression(
             '/(?:dev|x-dev|dev-[\w.\-]+).* @[0-9a-f]{7}$/',
             $version,
             "Dev branches must end with ' @<7-char SHA>' for build identification.",
+        );
+        self::assertStringEndsWith(
+            ' @' . substr($reference, 0, 7),
+            $version,
+            'The suffix must use the first seven characters of the installed Git reference.',
         );
     }
 

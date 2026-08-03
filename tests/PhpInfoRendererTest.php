@@ -98,14 +98,33 @@ final class PhpInfoRendererTest extends TestCase
         $html = PhpInfoRenderer::render($this->emptyView([]));
 
         self::assertStringContainsString(
-            'data-yii-debug-phpinfo-search',
+            'data-yii-debug-phpinfo-search="true"',
             $html,
-            'Search input must carry the filter JS hook.',
+            'Search input must enable the filter JS hook explicitly.',
         );
         self::assertStringContainsString(
-            'data-yii-debug-phpinfo-empty',
+            'data-yii-debug-phpinfo-empty="true"',
             $html,
-            'Empty-state hint must carry the JS hook.',
+            'Empty-state hint must enable the JS hook explicitly.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-phpinfo-search-empty" hidden data-yii-debug-phpinfo-empty="true">',
+            $html,
+            'Empty-state hint must remain hidden until filtering finds no matches.',
+        );
+    }
+
+    public function testRenderSectionRendersEyebrowHeader(): void
+    {
+        $section = new PhpInfoSection(eyebrow: 'Runtime', tiles: []);
+        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
+
+        $html = PhpInfoRenderer::render($view);
+
+        self::assertStringContainsString(
+            '<span class="yii-debug-phpinfo-overview-block-eyebrow">Runtime</span>',
+            $html,
+            'Every overview section must retain its eyebrow header.',
         );
     }
 
