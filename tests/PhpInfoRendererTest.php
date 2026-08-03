@@ -52,6 +52,34 @@ final class PhpInfoRendererTest extends TestCase
         );
     }
 
+    public function testRenderMarksOverviewAsInitialTocSelection(): void
+    {
+        $html = PhpInfoRenderer::render(
+            $this->emptyView(
+                [
+                    new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview'),
+                    new PhpInfoTocEntry(title: 'Core', slug: 'phpinfo-core'),
+                ],
+            ),
+        );
+
+        self::assertStringContainsString(
+            'class="yii-debug-phpinfo-toc-link is-active"',
+            $html,
+            'Overview must render as the initial selected view before JavaScript initializes.',
+        );
+        self::assertStringContainsString(
+            'aria-current="page"',
+            $html,
+            'The initial TOC selection must be exposed to assistive technology.',
+        );
+        self::assertStringContainsString(
+            '<span>1</span><span>modules</span>',
+            $html,
+            'The TOC counter must exclude the Overview entry.',
+        );
+    }
+
     public function testRenderModulesHtmlPassesThroughVerbatim(): void
     {
         $view = new PhpInfoView(
@@ -292,34 +320,6 @@ final class PhpInfoRendererTest extends TestCase
             'href="#phpinfo-apcu"',
             $html,
             'TOC must link to the module anchor.',
-        );
-    }
-
-    public function testRenderMarksOverviewAsInitialTocSelection(): void
-    {
-        $html = PhpInfoRenderer::render(
-            $this->emptyView(
-                [
-                    new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview'),
-                    new PhpInfoTocEntry(title: 'Core', slug: 'phpinfo-core'),
-                ],
-            ),
-        );
-
-        self::assertStringContainsString(
-            'class="yii-debug-phpinfo-toc-link is-active"',
-            $html,
-            'Overview must render as the initial selected view before JavaScript initializes.',
-        );
-        self::assertStringContainsString(
-            'aria-current="page"',
-            $html,
-            'The initial TOC selection must be exposed to assistive technology.',
-        );
-        self::assertStringContainsString(
-            '<span>1</span><span>modules</span>',
-            $html,
-            'The TOC counter must exclude the Overview entry.',
         );
     }
 
