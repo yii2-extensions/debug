@@ -12,7 +12,7 @@ use yii\base\InvalidConfigException;
 use yii\db\Connection;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\LogTarget;
-use yii\debug\panels\db\QueryRow;
+use yii\debug\panels\db\{DbSnapshot, QueryRow};
 use yii\debug\panels\DbPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -823,6 +823,17 @@ final class DbPanelTest extends TestCase
                 ],
             ),
             "Missing 'duration' must yield 'null'.",
+        );
+    }
+
+    public function testSnapshotSerializesRowsToArrays(): void
+    {
+        $row = $this->makeRow();
+
+        self::assertSame(
+            ['entries' => [$row->jsonSerialize()]],
+            (new DbSnapshot([$row]))->jsonSerialize(),
+            'Database snapshots must serialize typed rows into JSON-safe arrays.',
         );
     }
 

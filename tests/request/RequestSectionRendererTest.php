@@ -219,6 +219,16 @@ final class RequestSectionRendererTest extends TestCase
         );
     }
 
+    public function testRequestSectionDefaultsToNonFilterable(): void
+    {
+        $section = new RequestSection(caption: 'Headers', entries: ['Accept' => 'text/html']);
+
+        self::assertFalse(
+            $section->filterable,
+            'Sections must opt in explicitly before the renderer exposes filtering controls.',
+        );
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

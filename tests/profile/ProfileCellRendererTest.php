@@ -77,10 +77,9 @@ final class ProfileCellRendererTest extends TestCase
         $html = ProfileCellRenderer::renderDurationCell(self::makeRow(duration: 12.5), 25.0);
 
         self::assertSame(
-            '<span class="yii-debug-gauge" style=\'--yii-debug-gauge: 50%;\'>'
-            . '<span class="yii-debug-gauge-value">12.5 ms</span>'
-            . '<span class="yii-debug-gauge-bar" aria-hidden="true"></span>'
-            . '</span>',
+            <<<HTML
+            <span class="yii-debug-gauge" style='--yii-debug-gauge: 50%;'><span class="yii-debug-gauge-value">12.5 ms</span><span class="yii-debug-gauge-bar" aria-hidden="true"></span></span>
+            HTML,
             $html,
             'Rail must sit at half the capture maximum.',
         );
@@ -88,10 +87,13 @@ final class ProfileCellRendererTest extends TestCase
 
     public function testRenderInfoCellEmitsOneIndentArrowPerLevel(): void
     {
-        $html = ProfileCellRenderer::renderInfoCell(
-            self::makeRow(info: 'nested', level: 3),
-        );
+        $html = ProfileCellRenderer::renderInfoCell(self::makeRow(info: 'nested', level: 3));
 
+        self::assertSame(
+            str_repeat('<span class="yii-debug-indent">→</span>', 3) . 'nested',
+            $html,
+            'Indentation arrows must precede the profile token.',
+        );
         self::assertSame(
             3,
             substr_count($html, 'yii-debug-indent'),
@@ -107,9 +109,7 @@ final class ProfileCellRendererTest extends TestCase
 
     public function testRenderInfoCellEscapesInfoText(): void
     {
-        $html = ProfileCellRenderer::renderInfoCell(
-            self::makeRow(info: '<script>alert(1)</script>', level: 0),
-        );
+        $html = ProfileCellRenderer::renderInfoCell(self::makeRow(info: '<script>alert(1)</script>', level: 0));
 
         self::assertStringContainsString(
             '&lt;script&gt;',
@@ -125,9 +125,7 @@ final class ProfileCellRendererTest extends TestCase
 
     public function testRenderInfoCellOmitsIndentArrowsAtLevelZero(): void
     {
-        $html = ProfileCellRenderer::renderInfoCell(
-            self::makeRow(info: 'root', level: 0),
-        );
+        $html = ProfileCellRenderer::renderInfoCell(self::makeRow(info: 'root', level: 0));
 
         self::assertStringNotContainsString(
             'yii-debug-indent',
@@ -156,14 +154,23 @@ final class ProfileCellRendererTest extends TestCase
     {
         $expected = date('H:i:s', 1_700_000_000) . '.789';
 
-        $html = ProfileCellRenderer::renderTimeCell(
-            self::makeRow(timestamp: 1_700_000_000_789.0),
-        );
+        $html = ProfileCellRenderer::renderTimeCell(self::makeRow(timestamp: 1_700_000_000_789.0));
 
         self::assertStringContainsString(
             ">{$expected}</span>",
             $html,
             "Visible text must format as 'H:i:s.mmm'.",
+        );
+    }
+
+    public function testRenderTimeCellKeepsMillisecondsBelowTheNextBoundary(): void
+    {
+        $html = ProfileCellRenderer::renderTimeCell(self::makeRow(timestamp: 1_500.5));
+
+        self::assertStringContainsString(
+            '>' . date('H:i:s', 1) . '.500</span>',
+            $html,
+            'Sub-millisecond fractions must not advance the rendered millisecond value.',
         );
     }
 

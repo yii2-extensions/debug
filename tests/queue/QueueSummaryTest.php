@@ -114,6 +114,10 @@ final class QueueSummaryTest extends TestCase
             $summary->totalEvents(),
             "Total events must be '0'.",
         );
+        self::assertFalse(
+            $summary->hasErrors(),
+            'An empty summary must not report errors.',
+        );
     }
 
     public function testFromRecordsReturnsRecordsInOriginalOrder(): void

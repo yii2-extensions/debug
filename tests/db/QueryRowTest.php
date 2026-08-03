@@ -47,6 +47,33 @@ final class QueryRowTest extends TestCase
         );
     }
 
+    public function testFromTimingClampsDuplicateToMinimumOfOne(): void
+    {
+        $row = QueryRow::fromTiming(
+            [
+                'info' => 'SELECT 1',
+                'category' => 'yii\\db\\Command::query',
+                'timestamp' => 1.0,
+                'trace' => [],
+                'level' => 0,
+                'duration' => 0.001,
+                'memory' => 0,
+                'memoryDiff' => 0,
+                'traceHash' => 'hash',
+            ],
+            'SELECT',
+            0,
+            0,
+            null,
+        );
+
+        self::assertSame(
+            1,
+            $row->duplicate,
+            "A capture-time duplicate count below one must clamp to '1'.",
+        );
+    }
+
     public function testFromTimingScalesToMillisecondsAndKeepsCallerValues(): void
     {
         $row = QueryRow::fromTiming(

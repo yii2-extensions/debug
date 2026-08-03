@@ -90,7 +90,7 @@ final class DbQueryRenderer
                 );
         }
 
-        return implode('', array_map(static fn(Div|Ul $el): string => $el->render(), $children));
+        return implode('', $children);
     }
 
     /**

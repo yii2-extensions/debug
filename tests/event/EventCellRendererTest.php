@@ -121,6 +121,15 @@ final class EventCellRendererTest extends TestCase
         );
     }
 
+    public function testRenderTimeCellKeepsMillisecondsBelowTheNextBoundary(): void
+    {
+        self::assertSame(
+            date('H:i:s', 1) . '.500',
+            EventCellRenderer::renderTimeCell(self::makeRow(time: 1.5005)),
+            'Sub-millisecond fractions must not advance the rendered millisecond value.',
+        );
+    }
+
     public function testRenderTimeCellPadsMillisecondsWithLeadingZeros(): void
     {
         self::assertSame(

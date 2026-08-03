@@ -221,6 +221,15 @@ final class DbQueryRendererTest extends TestCase
         );
     }
 
+    public function testRenderTimeCellKeepsMillisecondsBelowTheNextBoundary(): void
+    {
+        self::assertSame(
+            date('H:i:s.', 1) . '500',
+            DbQueryRenderer::renderTimeCell(self::makeRow(timestamp: 1_500.5)),
+            'Sub-millisecond fractions must not advance the rendered millisecond value.',
+        );
+    }
+
     public function testRenderTypeCellMapsInsertToPostAndDeleteToDeleteVerbs(): void
     {
         self::assertStringContainsString(

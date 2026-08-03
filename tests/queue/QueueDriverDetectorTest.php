@@ -21,16 +21,13 @@ final class QueueDriverDetectorTest extends TestCase
         $this->setInaccessibleStaticProperty(
             QueueDriverDetector::class,
             'cache',
-            [],
+            ['cached\queue' => ['Cached driver', false]],
         );
 
-        $first = QueueDriverDetector::detect('yii\\queue\\redis\\Queue');
-        $second = QueueDriverDetector::detect('yii\\queue\\redis\\Queue');
-
         self::assertSame(
-            $first,
-            $second,
-            'Repeated lookups for the same FQCN must return the cached tuple verbatim.',
+            ['Cached driver', false],
+            QueueDriverDetector::detect('cached\queue'),
+            'A precomputed FQCN tuple must be returned from the cache verbatim.',
         );
     }
 
@@ -135,8 +132,8 @@ final class QueueDriverDetectorTest extends TestCase
 
         self::assertSame(
             ['MyCustom', true],
-            QueueDriverDetector::detect('app\\queue\\my_custom\\Queue'),
-            "Unknown snake_case driver tokens must title-case into 'MyCustom'.",
+            QueueDriverDetector::detect('app\\queue\\MY_CUSTOM\\Queue'),
+            "Unknown snake_case driver tokens must be lowercased and title-cased into 'MyCustom'.",
         );
     }
 }
