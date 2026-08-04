@@ -58,19 +58,21 @@ final readonly class TimelineSpanRow
      *
      * Derives the CSS variant and the tooltip text, and clamps the bar width to the visible floor (`0.4%`).
      *
+     * The indent reuses the nesting level the profiler already recorded, so the chart and the Profiling grid agree on
+     * the call tree.
+     *
      * @param ProfileRow $row Captured profile block.
-     * @param int $depth Nesting depth in the call tree.
      * @param float $left Bar left offset as a percentage of the request duration.
      * @param float $width Bar width as a percentage of the request duration.
      */
-    public static function from(ProfileRow $row, int $depth, float $left, float $width): self
+    public static function from(ProfileRow $row, float $left, float $width): self
     {
         $heading = $row->info !== '' ? $row->info : $row->category;
 
         return new self(
             category: $row->category,
             duration: $row->duration,
-            depth: $depth,
+            depth: $row->level,
             cssLeft: self::numberToString($left),
             cssWidth: self::numberToString(max($width, 0.4)),
             variant: self::variantOf($row->category),

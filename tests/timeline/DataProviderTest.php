@@ -168,7 +168,7 @@ final class DataProviderTest extends TestCase
         );
     }
 
-    public function testPrepareModelsTracksChildOverlap(): void
+    public function testPrepareModelsIndentsSpansByProfilerNestingLevel(): void
     {
         $panel = $this->stubPanel();
 
@@ -177,7 +177,7 @@ final class DataProviderTest extends TestCase
             [
                 'allModels' => [
                     new ProfileRow(0.0, 50.0, 'outer', '', 0, 0, 0, 0, []),
-                    new ProfileRow(1.0, 20.0, 'inner', '', 0, 1, 0, 0, []),
+                    new ProfileRow(1.0, 20.0, 'inner', '', 1, 1, 0, 0, []),
                 ],
             ],
         );
@@ -189,16 +189,22 @@ final class DataProviderTest extends TestCase
             $models,
             'Both rows must be prepared.',
         );
-        self::assertArrayHasKey(
-            0,
-            $models,
-            'Prepared models must expose the first slot.',
-        );
 
         $outer = $models[0] ?? self::fail('Expected the outer span row.');
+        $inner = $models[1] ?? self::fail('Expected the inner span row.');
 
         self::assertInstanceOf(TimelineSpanRow::class, $outer, 'Prepared rows must be typed span rows.');
-        self::assertSame(1, $outer->depth, 'Outer span overlapping the inner span must record one child.');
+        self::assertSame(
+            0,
+            $outer->depth,
+            'The enclosing span sits at the root, however many children it holds.',
+        );
+        self::assertInstanceOf(TimelineSpanRow::class, $inner, 'Prepared rows must be typed span rows.');
+        self::assertSame(
+            1,
+            $inner->depth,
+            'Indentation must follow the nested span, not its parent.',
+        );
     }
 
     /**

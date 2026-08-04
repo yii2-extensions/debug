@@ -120,7 +120,7 @@ if ($hasProfileBlocks) {
             [
                 'attribute' => 'info',
                 'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderInfoCell($data),
-                'format' => 'html',
+                'format' => 'raw',
                 'options' => ['width' => '60%'],
             ],
         ],

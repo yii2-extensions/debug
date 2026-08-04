@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace yii\debug\tests\profile;
 
 use PHPUnit\Framework\Attributes\Group;
+use yii\debug\helpers\CellMore;
 use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRow};
 use yii\debug\tests\support\TestCase;
 
+use function str_repeat;
+
 /**
  * Unit tests for {@see ProfileCellRenderer} covering the typed cell renderers used by the profile grid (time
- * formatting with the hover tooltip, duration formatting, two-tone category label, indented info cell with
- * HTML-escaped content).
+ * formatting with the hover tooltip, duration formatting, two-tone category label, and the indented info cell with
+ * its SQL highlighting and long-statement clamp).
  */
 #[Group('panel')]
 #[Group('profile')]
@@ -85,6 +88,23 @@ final class ProfileCellRendererTest extends TestCase
         );
     }
 
+    public function testRenderInfoCellClampsLongStatements(): void
+    {
+        $long = 'SELECT ' . str_repeat('a', CellMore::THRESHOLD);
+        $html = ProfileCellRenderer::renderInfoCell(self::makeRow(category: 'yii\\db\\Command::query', info: $long));
+
+        self::assertStringContainsString(
+            'yii-debug-cell-more',
+            $html,
+            'A long statement must collapse behind the clamp.',
+        );
+        self::assertStringContainsString(
+            str_repeat('a', CellMore::THRESHOLD),
+            $html,
+            'Clamping must not truncate the statement.',
+        );
+    }
+
     public function testRenderInfoCellEmitsOneIndentArrowPerLevel(): void
     {
         $html = ProfileCellRenderer::renderInfoCell(self::makeRow(info: 'nested', level: 3));
@@ -120,6 +140,48 @@ final class ProfileCellRendererTest extends TestCase
             '<script>alert',
             $html,
             'Raw script tags must not leak into the output.',
+        );
+    }
+
+    public function testRenderInfoCellHighlightsSqlForDbCommandBlocks(): void
+    {
+        $html = ProfileCellRenderer::renderInfoCell(
+            self::makeRow(category: 'yii\\db\\Command::query', info: 'SELECT * FROM "user"'),
+        );
+
+        self::assertStringContainsString(
+            'yii-debug-db-sql',
+            $html,
+            'SQL must reuse the queries-grid presentation.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-sql-kw',
+            $html,
+            'Keywords must carry their token span.',
+        );
+    }
+
+    public function testRenderInfoCellKeepsPlainInfoUnhighlighted(): void
+    {
+        $html = ProfileCellRenderer::renderInfoCell(self::makeRow(category: 'application', info: 'SELECT me'));
+
+        self::assertStringNotContainsString(
+            'yii-debug-db-sql',
+            $html,
+            'Only DB command blocks may highlight.',
+        );
+    }
+
+    public function testRenderInfoCellLeavesShortStatementsUnclamped(): void
+    {
+        $html = ProfileCellRenderer::renderInfoCell(
+            self::makeRow(category: 'yii\\db\\Command::query', info: 'SELECT 1'),
+        );
+
+        self::assertStringNotContainsString(
+            'yii-debug-cell-more',
+            $html,
+            'Short statements must stay inline.',
         );
     }
 

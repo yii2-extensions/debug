@@ -27,7 +27,6 @@ final class TimelineSpanRowTest extends TestCase
                 memory: 0,
                 memoryDiff: 0,
             ),
-            0,
             5,
             0.1,
         );
@@ -49,7 +48,6 @@ final class TimelineSpanRowTest extends TestCase
                 memory: 1572864,
                 memoryDiff: 1048576,
             ),
-            0,
             0.0,
             100.0,
         );
@@ -86,7 +84,6 @@ final class TimelineSpanRowTest extends TestCase
                 memory: 1048576,
                 memoryDiff: -1048576,
             ),
-            0,
             0.0,
             100.0,
         );
@@ -108,7 +105,6 @@ final class TimelineSpanRowTest extends TestCase
                 memory: 0,
                 memoryDiff: 0,
             ),
-            0,
             0.0,
             100.0,
         );
@@ -130,7 +126,6 @@ final class TimelineSpanRowTest extends TestCase
                 memory: 0,
                 memoryDiff: 0,
             ),
-            0,
             0.0,
             100.0,
         );
@@ -253,7 +248,7 @@ final class TimelineSpanRowTest extends TestCase
 
     public function testFromRendersAnEmptyBlockWithSafeDefaults(): void
     {
-        $row = TimelineSpanRow::from(self::block(), 0, 0.0, 0.0);
+        $row = TimelineSpanRow::from(self::block(), 0.0, 0.0);
 
         self::assertSame('', $row->category, 'Empty category stays empty.');
         self::assertSame(0.0, $row->duration, 'Zero duration stays `0.0`.');
@@ -279,13 +274,11 @@ final class TimelineSpanRowTest extends TestCase
     {
         $first = TimelineSpanRow::from(
             self::block(memory: 131072, memoryDiff: 89129),
-            0,
             0.0,
             100.0,
         );
         $second = TimelineSpanRow::from(
             self::block(memory: 89129, memoryDiff: 131072),
-            0,
             0.0,
             100.0,
         );
@@ -324,6 +317,6 @@ final class TimelineSpanRowTest extends TestCase
 
     private static function spanFor(string $category): TimelineSpanRow
     {
-        return TimelineSpanRow::from(self::block(category: $category), 0, 0.0, 100.0);
+        return TimelineSpanRow::from(self::block(category: $category), 0.0, 100.0);
     }
 }

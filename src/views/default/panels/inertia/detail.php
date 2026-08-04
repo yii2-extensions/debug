@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use UIAwesome\Html\Flow\{Div, P, Pre};
 use UIAwesome\Html\Heading\{H1, H2};
+use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
@@ -45,12 +46,18 @@ $typeOf = static fn(mixed $value): string => match (true) {
     default => gettype($value),
 };
 
+/**
+ * Renders a prop value as a single-line summary, collapsing long payloads behind the shared clamp so the whole value
+ * stays inspectable instead of being cut off server side. The Raw payload block below carries the pretty-printed page.
+ *
+ * Encoding cannot fail here: every captured value already went through `DebugValue`, which flattens NAN/INF, invalid
+ * UTF-8, recursion, and over-deep nesting into encodable scalars. `JSON_THROW_ON_ERROR` states that contract instead
+ * of carrying a fallback branch no input can reach.
+ */
 $previewOf = static function (mixed $value): string {
-    $json = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    $json = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-    $json = $json === false ? '—' : $json;
-
-    return mb_strlen($json) > 100 ? mb_substr($json, 0, 100) . '…' : $json;
+    return CellMore::clamp(Encode::content($json), $json);
 };
 
 $summaryItems = [
@@ -162,32 +169,28 @@ foreach ($props as $key => $value) {
         ->html(
             Td::tag()->content((string) $i),
             Td::tag()
-                ->class('yii-debug-cell-mono')
+                ->class('yii-debug-cell-mono yii-debug-cell-nowrap')
                 ->html(Strong::tag()->content((string) $key)),
             Td::tag()
                 ->class('yii-debug-cell-pill')
                 ->html($origin),
             Td::tag()
-                ->class('yii-debug-cell-mono')
+                ->class('yii-debug-cell-mono yii-debug-cell-nowrap')
                 ->content($typeOf($value)),
             Td::tag()
-                ->class('yii-debug-cell-mono')
-                ->content($previewOf($value)),
+                ->class('yii-debug-cell-mono yii-debug-cell-payload')
+                ->html($previewOf($value)),
         );
 
     $i++;
 }
 
-$pageJson = json_encode($page, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-$pageJson = $pageJson === false ? '{}' : $pageJson;
+$pageJson = json_encode(
+    $page,
+    JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+);
 
-$rawBlock = Pre::tag()
-    ->content($pageJson)
-    ->render();
-
-if (strlen($pageJson) > 600) {
-    $rawBlock = CellMore::wrap($rawBlock);
-}
+$rawBlock = CellMore::clamp(Pre::tag()->content($pageJson)->render(), $pageJson);
 ?>
 <?= Div::tag()
     ->class('yii-debug-table-wrap')

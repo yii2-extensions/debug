@@ -103,47 +103,19 @@ class DataProvider extends ArrayDataProvider
     }
 
     /**
-     * Derives the per-row CSS layout and the nested child counts, then narrows every block into a typed span row.
+     * Derives the per-row CSS layout, then narrows every block into a typed span row.
      *
      * @return list<TimelineSpanRow> Prepared span rows ready for the view.
      */
     #[Override]
     protected function prepareModels(): array
     {
-        $rows = [];
+        $spans = [];
 
         foreach ($this->allModels as $model) {
             if ($model instanceof ProfileRow) {
-                $rows[] = $model;
+                $spans[] = TimelineSpanRow::from($model, $this->getLeft($model), $this->getWidth($model));
             }
-        }
-
-        $depths = [];
-        $open = [];
-
-        foreach ($rows as $index => $row) {
-            $depths[$index] ??= 0;
-
-            foreach ($open as $openIndex => $closesAt) {
-                if ($closesAt > $row->timestamp) {
-                    $depths[$openIndex] = ($depths[$openIndex] ?? 0) + 1;
-                } else {
-                    unset($open[$openIndex]);
-                }
-            }
-
-            $open[$index] = $row->timestamp + $row->duration;
-        }
-
-        $spans = [];
-
-        foreach ($rows as $index => $row) {
-            $spans[] = TimelineSpanRow::from(
-                $row,
-                $depths[$index] ?? 0,
-                $this->getLeft($row),
-                $this->getWidth($row),
-            );
         }
 
         return $spans;
