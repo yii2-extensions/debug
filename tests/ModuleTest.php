@@ -144,6 +144,44 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testBeforeActionSkipsUnresolvedLogTargetConfigurations(): void
+    {
+        $module = new Module('debug');
+
+        $module->allowedIPs = ['*'];
+        $module->enableDebugLogs = false;
+
+        Yii::$app->setModule('debug', $module);
+
+        $fakeTarget = new class extends LogTargetBase {
+            public function export(): void {}
+        };
+
+        $fakeTarget->enabled = true;
+
+        $dispatcher = new Dispatcher(['targets' => ['file' => $fakeTarget]]);
+
+        $dispatcher->targets['pending'] = ['class' => LogTargetBase::class];
+
+        $module->set('log', $dispatcher);
+
+        $action = new Action('index', new Controller('default', $module));
+
+        self::assertTrue(
+            $module->beforeAction($action),
+            'Raw configuration entries must not abort the walk.',
+        );
+        self::assertFalse(
+            $fakeTarget->enabled,
+            'Resolved targets must still be disabled.',
+        );
+        self::assertSame(
+            ['class' => LogTargetBase::class],
+            $dispatcher->targets['pending'],
+            'Unresolved entries must be left untouched.',
+        );
+    }
+
     public function testBootstrapClosuresWireToolbarAndDebugHeaderListeners(): void
     {
         $module = new Module('debug');

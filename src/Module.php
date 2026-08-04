@@ -27,7 +27,7 @@ use yii\debug\panels\{
     UserPanel,
 };
 use yii\helpers\{IpHelper, Json, Url};
-use yii\log\Dispatcher;
+use yii\log\{Dispatcher, Target};
 use yii\rbac\BaseManager;
 use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
 
@@ -195,7 +195,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
             if ($log instanceof Dispatcher) {
                 foreach ($log->targets as $target) {
-                    $target->enabled = false;
+                    // Entries stay raw configuration arrays until Dispatcher::init() resolves them.
+                    if ($target instanceof Target) {
+                        $target->enabled = false;
+                    }
                 }
             }
         }
