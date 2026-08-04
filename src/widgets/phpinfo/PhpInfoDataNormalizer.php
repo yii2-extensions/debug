@@ -12,7 +12,6 @@ use function array_values;
 use function basename;
 use function count;
 use function explode;
-use function function_exists;
 use function getenv;
 use function html_entity_decode;
 use function implode;
@@ -955,6 +954,7 @@ final class PhpInfoDataNormalizer
             }
         }
 
+        // `function_exists` stays unimported so `MockerExtension` can swap it for the posix-less coverage case.
         if (function_exists('posix_getpwuid') && function_exists('posix_getuid')) {
             $info = @posix_getpwuid(@posix_getuid());
 

@@ -541,11 +541,14 @@ final class PhpInfoRendererTest extends TestCase
 
     public function testRenderViaNormalizerSnapshotProducesExpectedAnchors(): void
     {
-        $body = '<h2>apcu</h2><table>'
-            . '<tr><td>Version</td><td>5.1</td></tr>'
-            . '<tr><td>Debug</td><td>disabled</td></tr>'
-            . '<tr><td>MMAP</td><td>enabled</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>apcu</h2>
+        <table>
+        <tr><td>Version</td><td>5.1</td></tr>
+        <tr><td>Debug</td><td>disabled</td></tr>
+        <tr><td>MMAP</td><td>enabled</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, '8.5.3', 'cli', 'Linux', '128M');
         $html = PhpInfoRenderer::render($view);

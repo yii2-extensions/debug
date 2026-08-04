@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests;
 
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Xepozz\InternalMocker\MockerState;
+use yii\debug\tests\provider\PhpInfoDataNormalizerProvider;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\phpinfo\{
     PhpInfoCompactModule,
@@ -18,6 +19,8 @@ use yii\debug\widgets\phpinfo\{
 /**
  * Unit tests for {@see PhpInfoDataNormalizer} covering the parsing of the raw {@see phpinfo()} HTML output, the
  * tile-kind classification (pill / path / token list) and the wrapping of module blocks into deep-linkable sections.
+ *
+ * {@see PhpInfoDataNormalizerProvider} for test case data providers.
  */
 #[Group('panel')]
 #[Group('phpinfo')]
@@ -53,16 +56,18 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputClassifiesAndEnhancesModuleTables(): void
     {
-        $body = '<h2>curl</h2>'
-            . '<table>'
-            . '<tr><td class="e">cURL support</td><td class="v">enabled</td></tr>'
-            . '<tr><td class="e">Features</td></tr>'
-            . '<tr><td class="e">HTTP2</td><td class="v">Yes</td></tr>'
-            . '</table>'
-            . '<table>'
-            . '<tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
-            . '<tr><td class="e">curl.cainfo</td><td class="v"><i>no value</i></td><td class="v"><i>no value</i></td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>curl</h2>
+        <table>
+        <tr><td class="e">cURL support</td><td class="v">enabled</td></tr>
+        <tr><td class="e">Features</td></tr>
+        <tr><td class="e">HTTP2</td><td class="v">Yes</td></tr>
+        </table>
+        <table>
+        <tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>
+        <tr><td class="e">curl.cainfo</td><td class="v"><i>no value</i></td><td class="v"><i>no value</i></td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -252,11 +257,13 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputDoesNotRedactOrdinaryModuleDirectives(): void
     {
-        $body = '<h2>session</h2>'
-            . '<table>'
-            . '<tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
-            . '<tr><td class="e">session.cookie_path</td><td class="v">/</td><td class="v">/</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>session</h2>
+        <table>
+        <tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>
+        <tr><td class="e">session.cookie_path</td><td class="v">/</td><td class="v">/</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -274,8 +281,10 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputDoesNotRedactTokenizerSupport(): void
     {
-        $body = '<h2>tokenizer</h2>'
-            . '<table><tr><td class="e">Tokenizer Support</td><td class="v">enabled</td></tr></table>';
+        $body = <<<'HTML'
+        <h2>tokenizer</h2>
+        <table><tr><td class="e">Tokenizer Support</td><td class="v">enabled</td></tr></table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
         $tile = $view->compactModules[0]->tiles[0] ?? null;
@@ -330,14 +339,16 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputGroupsPhpVariablesBySource(): void
     {
-        $body = '<h2>PHP Variables</h2>'
-            . '<table>'
-            . '<tr class="h"><th>Variable</th><th>Value</th></tr>'
-            . '<tr><td class="e">$_REQUEST[\'page\']</td><td class="v">1</td></tr>'
-            . '<tr><td class="e">$_COOKIE[\'theme\']</td><td class="v">dark</td></tr>'
-            . '<tr><td class="e">$_SERVER[\'REQUEST_METHOD\']</td><td class="v">GET</td></tr>'
-            . '<tr><td class="e">APP_ENV</td><td class="v">dev</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>PHP Variables</h2>
+        <table>
+        <tr class="h"><th>Variable</th><th>Value</th></tr>
+        <tr><td class="e">$_REQUEST['page']</td><td class="v">1</td></tr>
+        <tr><td class="e">$_COOKIE['theme']</td><td class="v">dark</td></tr>
+        <tr><td class="e">$_SERVER['REQUEST_METHOD']</td><td class="v">GET</td></tr>
+        <tr><td class="e">APP_ENV</td><td class="v">dev</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -402,10 +413,13 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputKeepsLongValueListsInStandaloneModules(): void
     {
-        $body = '<h2>PDO</h2><table>'
-            . '<tr><td class="e">PDO support</td><td class="v">enabled</td></tr>'
-            . '<tr><td class="e">PDO drivers</td><td class="v">mysql, pgsql, sqlite, oci, sqlsrv</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>PDO</h2>
+        <table>
+        <tr><td class="e">PDO support</td><td class="v">enabled</td></tr>
+        <tr><td class="e">PDO drivers</td><td class="v">mysql, pgsql, sqlite, oci, sqlsrv</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -417,15 +431,84 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputKeepsModuleStandaloneWhenAFactValueIsEmpty(): void
+    {
+        $body = '<h2>example</h2><table><tr><td class="e">Statistics</td><td class="v"></td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertSame(
+            [],
+            $view->compactModules,
+            'A blank value must block the Overview summary.',
+        );
+        self::assertStringContainsString(
+            'id="phpinfo-example"',
+            $view->modulesHtml,
+            'The module must keep its own section instead.',
+        );
+    }
+
+    #[DataProviderExternal(PhpInfoDataNormalizerProvider::class, 'dataTableHeads')]
+    public function testFromOutputLabelsDataTablesByTheirLeadingHeader(string $headers, string $expectedLabel): void
+    {
+        $body = <<<HTML
+        <h2>example</h2>
+        <table>
+        <tr class="h">{$headers}</tr>
+        <tr><td class="e">first</td><td class="v">second</td></tr>
+        </table>
+        HTML;
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringContainsString(
+            "<span>{$expectedLabel}</span>",
+            $view->modulesHtml,
+            'Head bar must name the data table.',
+        );
+    }
+
+    public function testFromOutputMarksLongFactValuesAsWide(): void
+    {
+        $long = str_repeat('a', 73);
+        // A fourth fact keeps the module out of the Overview summary, so the rows reach the fact-row normalizer.
+        $body = <<<HTML
+        <h2>example</h2>
+        <table>
+        <tr><td class="e">Short</td><td class="v">brief</td></tr>
+        <tr><td class="e">Another</td><td class="v">value</td></tr>
+        <tr><td class="e">Third</td><td class="v">value</td></tr>
+        <tr><td class="e">Long</td><td class="v">{$long}</td></tr>
+        </table>
+        HTML;
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringContainsString(
+            'class="yii-debug-phpinfo-fact yii-debug-phpinfo-fact-wide"',
+            $view->modulesHtml,
+            'Values beyond 72 characters must claim the full row.',
+        );
+        self::assertStringContainsString(
+            '<tr class="yii-debug-phpinfo-fact">',
+            $view->modulesHtml,
+            'Short values must keep the compact row.',
+        );
+    }
+
     public function testFromOutputOmitsModulesWithoutContentRows(): void
     {
-        $body = '<h2>Additional Modules</h2>'
-            . '<table><tr class="h"><th>Module Name</th></tr></table>'
-            . '<h2>Core</h2><table>'
-            . '<tr><td>Version</td><td>8.5</td></tr>'
-            . '<tr><td>Debug</td><td>disabled</td></tr>'
-            . '<tr><td>Thread Safety</td><td>disabled</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>Additional Modules</h2>
+        <table><tr class="h"><th>Module Name</th></tr></table>
+        <h2>Core</h2>
+        <table>
+        <tr><td>Version</td><td>8.5</td></tr>
+        <tr><td>Debug</td><td>disabled</td></tr>
+        <tr><td>Thread Safety</td><td>disabled</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -443,12 +526,20 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputProducesTocEntryPerDetailedModuleH2(): void
     {
-        $body = '<h2>apcu</h2><table><tr><td>Version</td><td>5.1.0</td></tr></table>'
-            . '<table><tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
-            . '<tr><td>apc.enabled</td><td>On</td><td>On</td></tr></table>'
-            . '<h2>Core</h2><table><tr><td>PHP Version</td><td>8.5</td></tr></table>'
-            . '<table><tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
-            . '<tr><td>memory_limit</td><td>128M</td><td>128M</td></tr></table>';
+        $body = <<<'HTML'
+        <h2>apcu</h2>
+        <table><tr><td>Version</td><td>5.1.0</td></tr></table>
+        <table>
+        <tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>
+        <tr><td>apc.enabled</td><td>On</td><td>On</td></tr>
+        </table>
+        <h2>Core</h2>
+        <table><tr><td>PHP Version</td><td>8.5</td></tr></table>
+        <table>
+        <tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>
+        <tr><td>memory_limit</td><td>128M</td><td>128M</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput(
             $body,
@@ -477,11 +568,14 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputProducesUniqueSlugsForTocEntries(): void
     {
-        $body = '<h2>apcu</h2><table>'
-            . '<tr><td>Version</td><td>5.1</td></tr>'
-            . '<tr><td>Debug</td><td>disabled</td></tr>'
-            . '<tr><td>MMAP</td><td>enabled</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>apcu</h2>
+        <table>
+        <tr><td>Version</td><td>5.1</td></tr>
+        <tr><td>Debug</td><td>disabled</td></tr>
+        <tr><td>MMAP</td><td>enabled</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput(
             $body,
@@ -509,19 +603,21 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputRedactsSensitiveEnvironmentAndRuntimeVariables(): void
     {
-        $body = '<h2>PHP Variables</h2>'
-            . '<table>'
-            . '<tr class="h"><th>Variable</th><th>Value</th></tr>'
-            . '<tr><td class="e">$_COOKIE[\'XSRF-TOKEN\']</td><td class="v">sensitive-cookie-value</td></tr>'
-            . '<tr><td class="e">APP_KEY</td><td class="v">sensitive-app-key</td></tr>'
-            . '<tr><td class="e">$_SERVER[\'PHP_AUTH_PW\']</td><td class="v">sensitive-basic-auth-value</td></tr>'
-            . '<tr><td class="e">WEBHOOK_SIGNATURE</td><td class="v">sensitive-signature-value</td></tr>'
-            . '<tr><td class="e">database_url</td><td class="v">sensitive-database-url</td></tr>'
-            . '<tr><td class="e">PWD</td><td class="v">/srv/app</td></tr>'
-            . '<tr><td class="e">OLDPWD</td><td class="v">/srv</td></tr>'
-            . '<tr><td class="e">CHPWD_STATUS</td><td class="v">unchanged</td></tr>'
-            . '<tr><td class="e">APP_NAME</td><td class="v">Yii application</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>PHP Variables</h2>
+        <table>
+        <tr class="h"><th>Variable</th><th>Value</th></tr>
+        <tr><td class="e">$_COOKIE['XSRF-TOKEN']</td><td class="v">sensitive-cookie-value</td></tr>
+        <tr><td class="e">APP_KEY</td><td class="v">sensitive-app-key</td></tr>
+        <tr><td class="e">$_SERVER['PHP_AUTH_PW']</td><td class="v">sensitive-basic-auth-value</td></tr>
+        <tr><td class="e">WEBHOOK_SIGNATURE</td><td class="v">sensitive-signature-value</td></tr>
+        <tr><td class="e">database_url</td><td class="v">sensitive-database-url</td></tr>
+        <tr><td class="e">PWD</td><td class="v">/srv/app</td></tr>
+        <tr><td class="e">OLDPWD</td><td class="v">/srv</td></tr>
+        <tr><td class="e">CHPWD_STATUS</td><td class="v">unchanged</td></tr>
+        <tr><td class="e">APP_NAME</td><td class="v">Yii application</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -579,11 +675,13 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputRedactsSensitiveVariablesWhenTableHasNoVariableHeader(): void
     {
-        $body = '<h2>Environment</h2>'
-            . '<table>'
-            . '<tr><td class="e">DB_PASSWORD</td><td class="v">sensitive-database-password</td></tr>'
-            . '<tr><td class="e">APP_NAME</td><td class="v">Yii application</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>Environment</h2>
+        <table>
+        <tr><td class="e">DB_PASSWORD</td><td class="v">sensitive-database-password</td></tr>
+        <tr><td class="e">APP_NAME</td><td class="v">Yii application</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -636,9 +734,11 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputSeparatesPhpCreditsFromPhpVariables(): void
     {
-        $body = '<h2>PHP Variables</h2><table><tr><td>Variable</td><td>Value</td></tr></table>'
-            . '<h1>PHP Credits</h1><table><tr><td>PHP Group</td><td>Contributors</td></tr></table>'
-            . '<h2>PHP License</h2><table><tr><td>License text</td></tr></table>';
+        $body = <<<'HTML'
+        <h2>PHP Variables</h2><table><tr><td>Variable</td><td>Value</td></tr></table>
+        <h1>PHP Credits</h1><table><tr><td>PHP Group</td><td>Contributors</td></tr></table>
+        <h2>PHP License</h2><table><tr><td>License text</td></tr></table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
         $titles = [];
@@ -721,15 +821,21 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputSummarizesSmallFactsOnlyModules(): void
     {
-        $body = '<h2>calendar</h2>'
-            . '<table><tr><td class="e">Calendar support</td><td class="v">enabled</td></tr></table>'
-            . '<h2>fileinfo</h2>'
-            . '<table><tr><td class="e">fileinfo support</td><td class="v">enabled</td></tr>'
-            . '<tr><td class="e">libmagic</td><td class="v">5.46</td></tr></table>'
-            . '<h2>bcmath</h2>'
-            . '<table><tr><td class="e">BCMath support</td><td class="v">enabled</td></tr></table>'
-            . '<table><tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
-            . '<tr><td class="e">bcmath.scale</td><td class="v">0</td><td class="v">0</td></tr></table>';
+        $body = <<<'HTML'
+        <h2>calendar</h2>
+        <table><tr><td class="e">Calendar support</td><td class="v">enabled</td></tr></table>
+        <h2>fileinfo</h2>
+        <table>
+        <tr><td class="e">fileinfo support</td><td class="v">enabled</td></tr>
+        <tr><td class="e">libmagic</td><td class="v">5.46</td></tr>
+        </table>
+        <h2>bcmath</h2>
+        <table><tr><td class="e">BCMath support</td><td class="v">enabled</td></tr></table>
+        <table>
+        <tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>
+        <tr><td class="e">bcmath.scale</td><td class="v">0</td><td class="v">0</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -782,11 +888,15 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputUsesNativePhpCreditsTableTitles(): void
     {
-        $body = '<h2>PHP Variables</h2>'
-            . '<h1>PHP Credits</h1>'
-            . '<table><tr class="h"><th>PHP Group</th></tr><tr><td>Contributors</td></tr></table>'
-            . '<table><tr class="h"><th>PHP Authors</th></tr>'
-            . '<tr><td class="e">Zend Engine</td><td class="v">Authors</td></tr></table>';
+        $body = <<<'HTML'
+        <h2>PHP Variables</h2>
+        <h1>PHP Credits</h1>
+        <table><tr class="h"><th>PHP Group</th></tr><tr><td>Contributors</td></tr></table>
+        <table>
+        <tr class="h"><th>PHP Authors</th></tr>
+        <tr><td class="e">Zend Engine</td><td class="v">Authors</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
 
@@ -819,11 +929,14 @@ final class PhpInfoDataNormalizerTest extends TestCase
 
     public function testFromOutputWrapsModulesHtmlWithSectionChrome(): void
     {
-        $body = '<h2>apcu</h2><table>'
-            . '<tr><td>Version</td><td>5.1</td></tr>'
-            . '<tr><td>Debug</td><td>disabled</td></tr>'
-            . '<tr><td>MMAP</td><td>enabled</td></tr>'
-            . '</table>';
+        $body = <<<'HTML'
+        <h2>apcu</h2>
+        <table>
+        <tr><td>Version</td><td>5.1</td></tr>
+        <tr><td>Debug</td><td>disabled</td></tr>
+        <tr><td>MMAP</td><td>enabled</td></tr>
+        </table>
+        HTML;
 
         $view = PhpInfoDataNormalizer::fromOutput(
             $body,
