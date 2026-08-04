@@ -49,13 +49,13 @@ $typeOf = static fn(mixed $value): string => match (true) {
 /**
  * Renders a prop value as a single-line summary, collapsing long payloads behind the shared clamp so the whole value
  * stays inspectable instead of being cut off server side. The Raw payload block below carries the pretty-printed page.
+ *
+ * Encoding cannot fail here: every captured value already went through `DebugValue`, which flattens NAN/INF, invalid
+ * UTF-8, recursion, and over-deep nesting into encodable scalars. `JSON_THROW_ON_ERROR` states that contract instead
+ * of carrying a fallback branch no input can reach.
  */
 $previewOf = static function (mixed $value): string {
-    $json = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-    if ($json === false) {
-        return Encode::content('—');
-    }
+    $json = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     return CellMore::clamp(Encode::content($json), $json);
 };
@@ -185,8 +185,10 @@ foreach ($props as $key => $value) {
     $i++;
 }
 
-$pageJson = json_encode($page, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-$pageJson = $pageJson === false ? '{}' : $pageJson;
+$pageJson = json_encode(
+    $page,
+    JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+);
 
 $rawBlock = CellMore::clamp(Pre::tag()->content($pageJson)->render(), $pageJson);
 ?>
