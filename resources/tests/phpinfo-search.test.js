@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   formatPhpInfoFilteredCount,
   formatPhpInfoSearchStatus,
+  matchesPhpInfoCompactModule,
   normalizePhpInfoQuery,
   resolvePhpInfoTocGroupState,
 } from "../src/panels/phpinfo-search.js";
@@ -19,6 +20,21 @@ test("formatPhpInfoFilteredCount keeps the original total visible", () => {
 test("normalizePhpInfoQuery trims and normalizes case", () => {
   assert.equal(normalizePhpInfoQuery("  Memory_Limit  "), "memory_limit");
   assert.equal(normalizePhpInfoQuery(null), "");
+});
+
+test("matchesPhpInfoCompactModule searches its title and summarized facts", () => {
+  assert.equal(
+    matchesPhpInfoCompactModule("xmlreader", "XMLReader enabled", "xmlreader"),
+    true,
+  );
+  assert.equal(
+    matchesPhpInfoCompactModule("fileinfo", "libmagic 5.46", "libmagic"),
+    true,
+  );
+  assert.equal(
+    matchesPhpInfoCompactModule("calendar", "Calendar support enabled", "pdo"),
+    false,
+  );
 });
 
 test("formatPhpInfoSearchStatus describes matching settings", () => {

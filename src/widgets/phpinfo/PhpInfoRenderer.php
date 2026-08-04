@@ -132,10 +132,106 @@ final class PhpInfoRenderer
         return Div::tag()
             ->class('yii-debug-phpinfo-shell')
             ->html(
-                self::renderToc($view->tocEntries),
+                self::renderToc($view->tocEntries, count($view->compactModules)),
                 self::renderMain($view),
             )
             ->render();
+    }
+
+    private static function renderCompactModule(PhpInfoCompactModule $module): Section
+    {
+        $rows = [];
+
+        foreach ($module->tiles as $tile) {
+            $rows[] = Div::tag()
+                ->class('yii-debug-phpinfo-extension-fact')
+                ->html(
+                    Dt::tag()->content($tile->label),
+                    Dd::tag()->html(self::renderTileValue($tile)),
+                );
+        }
+
+        return Section::tag()
+            ->addDataAttribute('section', $module->title)
+            ->addDataAttribute('yii-debug-phpinfo-compact-module', true)
+            ->class('yii-debug-phpinfo-extension')
+            ->id($module->slug)
+            ->html(
+                Header::tag()
+                    ->class('yii-debug-phpinfo-extension-head')
+                    ->html(Code::tag()->content($module->title)),
+                Dl::tag()
+                    ->class('yii-debug-phpinfo-extension-facts')
+                    ->html(...$rows),
+            );
+    }
+
+    /**
+     * @param list<PhpInfoCompactModule> $modules
+     */
+    private static function renderCompactModules(array $modules): Section
+    {
+        $groupedModules = [];
+
+        foreach (array_keys(self::TOC_GROUPS) as $label) {
+            $groupedModules[$label] = [];
+        }
+
+        $groupedModules['Other'] = [];
+
+        foreach ($modules as $module) {
+            $groupedModules[self::resolveTocGroup($module->title)][] = $module;
+        }
+
+        $groups = [];
+
+        foreach ($groupedModules as $label => $groupModules) {
+            if ($groupModules === []) {
+                continue;
+            }
+
+            $cards = [];
+
+            foreach ($groupModules as $module) {
+                $cards[] = self::renderCompactModule($module);
+            }
+
+            $groups[] = Section::tag()
+                ->addAriaAttribute('label', $label)
+                ->class('yii-debug-phpinfo-extension-group')
+                ->html(
+                    Header::tag()
+                        ->class('yii-debug-phpinfo-extension-group-head')
+                        ->html(
+                            Span::tag()->content($label),
+                            Span::tag()
+                                ->class('yii-debug-phpinfo-extension-group-count')
+                                ->content((string) count($groupModules)),
+                        ),
+                    Div::tag()
+                        ->class('yii-debug-phpinfo-extension-grid')
+                        ->html(...$cards),
+                );
+        }
+
+        return Section::tag()
+            ->addAriaAttribute('label', 'Loaded extensions')
+            ->class('yii-debug-phpinfo-overview-hero-section yii-debug-phpinfo-extensions')
+            ->html(
+                Header::tag()
+                    ->class('yii-debug-phpinfo-overview-block-head')
+                    ->html(
+                        Span::tag()
+                            ->class('yii-debug-phpinfo-overview-block-eyebrow')
+                            ->content('Loaded extensions'),
+                        Span::tag()
+                            ->class('yii-debug-phpinfo-extensions-count')
+                            ->content(count($modules) . ' summarized'),
+                    ),
+                Div::tag()
+                    ->class('yii-debug-phpinfo-extension-groups')
+                    ->html(...$groups),
+            );
     }
 
     /**
@@ -175,6 +271,10 @@ final class PhpInfoRenderer
 
         foreach ($view->sections as $section) {
             $heroChildren[] = self::renderSection($section);
+        }
+
+        if ($view->compactModules !== []) {
+            $heroChildren[] = self::renderCompactModules($view->compactModules);
         }
 
         $overviewBody = Div::tag()
@@ -386,7 +486,7 @@ final class PhpInfoRenderer
      *
      * @param list<PhpInfoTocEntry> $entries
      */
-    private static function renderToc(array $entries): Aside
+    private static function renderToc(array $entries, int $compactModuleCount): Aside
     {
         $groupedEntries = [];
 
@@ -458,8 +558,13 @@ final class PhpInfoRenderer
                 Header::tag()
                     ->class('yii-debug-phpinfo-toc-title')
                     ->html(
-                        Span::tag()->content((string) $moduleCount),
+                        Span::tag()->content((string) ($moduleCount + $compactModuleCount)),
                         Span::tag()->content('modules'),
+                        $compactModuleCount > 0
+                            ? Span::tag()
+                                ->class('yii-debug-phpinfo-toc-title-note')
+                                ->content($compactModuleCount . ' in Overview')
+                            : '',
                     ),
                 ...$navigation,
             );

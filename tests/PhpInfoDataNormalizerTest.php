@@ -7,7 +7,13 @@ namespace yii\debug\tests;
 use PHPUnit\Framework\Attributes\Group;
 use Xepozz\InternalMocker\MockerState;
 use yii\debug\tests\support\TestCase;
-use yii\debug\widgets\phpinfo\{PhpInfoDataNormalizer, PhpInfoTile, PhpInfoView};
+use yii\debug\widgets\phpinfo\{
+    PhpInfoCompactModule,
+    PhpInfoDataNormalizer,
+    PhpInfoTile,
+    PhpInfoTocEntry,
+    PhpInfoView,
+};
 
 /**
  * Unit tests for {@see PhpInfoDataNormalizer} covering the parsing of the raw {@see phpinfo()} HTML output, the
@@ -266,6 +272,18 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputDoesNotRedactTokenizerSupport(): void
+    {
+        $body = '<h2>tokenizer</h2>'
+            . '<table><tr><td class="e">Tokenizer Support</td><td class="v">enabled</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+        $tile = $view->compactModules[0]->tiles[0] ?? null;
+
+        self::assertNotNull($tile, 'Tokenizer must be summarized as a compact module.');
+        self::assertSame('enabled', $tile->displayValue, 'Module labels containing TOKEN must not trigger redaction.');
+    }
+
     public function testFromOutputDowngradesTokenListToTextWhenTokenContainsWhitespace(): void
     {
         $body = '<table><tr><td>Registered PHP Streams</td><td>https,ftp with space,ssh2</td></tr></table>';
@@ -310,6 +328,51 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputGroupsPhpVariablesBySource(): void
+    {
+        $body = '<h2>PHP Variables</h2>'
+            . '<table>'
+            . '<tr class="h"><th>Variable</th><th>Value</th></tr>'
+            . '<tr><td class="e">$_REQUEST[\'page\']</td><td class="v">1</td></tr>'
+            . '<tr><td class="e">$_COOKIE[\'theme\']</td><td class="v">dark</td></tr>'
+            . '<tr><td class="e">$_SERVER[\'REQUEST_METHOD\']</td><td class="v">GET</td></tr>'
+            . '<tr><td class="e">APP_ENV</td><td class="v">dev</td></tr>'
+            . '</table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertSame(
+            4,
+            substr_count($view->modulesHtml, 'data-yii-debug-phpinfo-collapsible="true"'),
+            'PHP Variables must render one collapsible table per populated source group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~<summary[^>]*>.*?<span>Request</span>.*?</summary>.*?\$_REQUEST~s',
+            $view->modulesHtml,
+            'Request superglobals must render in the Request group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~<summary[^>]*>.*?<span>Cookies</span>.*?</summary>.*?\$_COOKIE~s',
+            $view->modulesHtml,
+            'Cookie variables must render in the Cookies group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~<summary[^>]*>.*?<span>Server</span>.*?</summary>.*?\$_SERVER~s',
+            $view->modulesHtml,
+            'Server variables must render in the Server group.',
+        );
+        self::assertMatchesRegularExpression(
+            '~<summary[^>]*>.*?<span>Environment</span>.*?</summary>.*?APP_ENV~s',
+            $view->modulesHtml,
+            'Environment variables must render in the Environment group.',
+        );
+        self::assertSame(
+            1,
+            substr_count($view->modulesHtml, 'data-yii-debug-phpinfo-default-open="true"'),
+            'Only the first populated variable group must be expanded initially.',
+        );
+    }
+
     public function testFromOutputKeepsAbsolutePathVerbatimWhenHomeNotResolved(): void
     {
         $body = '<table><tr><td>Loaded Configuration File</td><td>/etc/php/cli/php.ini</td></tr></table>';
@@ -337,10 +400,55 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
-    public function testFromOutputProducesTocEntryPerModuleH2(): void
+    public function testFromOutputKeepsLongValueListsInStandaloneModules(): void
+    {
+        $body = '<h2>PDO</h2><table>'
+            . '<tr><td class="e">PDO support</td><td class="v">enabled</td></tr>'
+            . '<tr><td class="e">PDO drivers</td><td class="v">mysql, pgsql, sqlite, oci, sqlsrv</td></tr>'
+            . '</table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertSame([], $view->compactModules, 'Capability lists must not be compressed into a small card.');
+        self::assertStringContainsString(
+            'id="phpinfo-pdo"',
+            $view->modulesHtml,
+            'PDO driver information must retain its own panel.',
+        );
+    }
+
+    public function testFromOutputOmitsModulesWithoutContentRows(): void
+    {
+        $body = '<h2>Additional Modules</h2>'
+            . '<table><tr class="h"><th>Module Name</th></tr></table>'
+            . '<h2>Core</h2><table>'
+            . '<tr><td>Version</td><td>8.5</td></tr>'
+            . '<tr><td>Debug</td><td>disabled</td></tr>'
+            . '<tr><td>Thread Safety</td><td>disabled</td></tr>'
+            . '</table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertSame(
+            ['Overview', 'Core'],
+            array_map(static fn(PhpInfoTocEntry $entry): string => $entry->title, $view->tocEntries),
+            'A title-only phpinfo table must not create an empty navigation destination.',
+        );
+        self::assertStringNotContainsString(
+            'phpinfo-additional-modules',
+            $view->modulesHtml,
+            'Empty modules must be omitted from the rendered content.',
+        );
+    }
+
+    public function testFromOutputProducesTocEntryPerDetailedModuleH2(): void
     {
         $body = '<h2>apcu</h2><table><tr><td>Version</td><td>5.1.0</td></tr></table>'
-            . '<h2>Core</h2><table><tr><td>PHP Version</td><td>8.5</td></tr></table>';
+            . '<table><tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
+            . '<tr><td>apc.enabled</td><td>On</td><td>On</td></tr></table>'
+            . '<h2>Core</h2><table><tr><td>PHP Version</td><td>8.5</td></tr></table>'
+            . '<table><tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
+            . '<tr><td>memory_limit</td><td>128M</td><td>128M</td></tr></table>';
 
         $view = PhpInfoDataNormalizer::fromOutput(
             $body,
@@ -363,13 +471,17 @@ final class PhpInfoDataNormalizerTest extends TestCase
                 'Core',
             ],
             $titles,
-            "Every '<h2>' must produce a TOC entry.",
+            "Every detailed '<h2>' module must produce a TOC entry.",
         );
     }
 
     public function testFromOutputProducesUniqueSlugsForTocEntries(): void
     {
-        $body = '<h2>apcu</h2><table></table>';
+        $body = '<h2>apcu</h2><table>'
+            . '<tr><td>Version</td><td>5.1</td></tr>'
+            . '<tr><td>Debug</td><td>disabled</td></tr>'
+            . '<tr><td>MMAP</td><td>enabled</td></tr>'
+            . '</table>';
 
         $view = PhpInfoDataNormalizer::fromOutput(
             $body,
@@ -459,51 +571,6 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
-    public function testFromOutputGroupsPhpVariablesBySource(): void
-    {
-        $body = '<h2>PHP Variables</h2>'
-            . '<table>'
-            . '<tr class="h"><th>Variable</th><th>Value</th></tr>'
-            . '<tr><td class="e">$_REQUEST[\'page\']</td><td class="v">1</td></tr>'
-            . '<tr><td class="e">$_COOKIE[\'theme\']</td><td class="v">dark</td></tr>'
-            . '<tr><td class="e">$_SERVER[\'REQUEST_METHOD\']</td><td class="v">GET</td></tr>'
-            . '<tr><td class="e">APP_ENV</td><td class="v">dev</td></tr>'
-            . '</table>';
-
-        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
-
-        self::assertSame(
-            4,
-            substr_count($view->modulesHtml, 'data-yii-debug-phpinfo-collapsible="true"'),
-            'PHP Variables must render one collapsible table per populated source group.',
-        );
-        self::assertMatchesRegularExpression(
-            '~<summary[^>]*>.*?<span>Request</span>.*?</summary>.*?\$_REQUEST~s',
-            $view->modulesHtml,
-            'Request superglobals must render in the Request group.',
-        );
-        self::assertMatchesRegularExpression(
-            '~<summary[^>]*>.*?<span>Cookies</span>.*?</summary>.*?\$_COOKIE~s',
-            $view->modulesHtml,
-            'Cookie variables must render in the Cookies group.',
-        );
-        self::assertMatchesRegularExpression(
-            '~<summary[^>]*>.*?<span>Server</span>.*?</summary>.*?\$_SERVER~s',
-            $view->modulesHtml,
-            'Server variables must render in the Server group.',
-        );
-        self::assertMatchesRegularExpression(
-            '~<summary[^>]*>.*?<span>Environment</span>.*?</summary>.*?APP_ENV~s',
-            $view->modulesHtml,
-            'Environment variables must render in the Environment group.',
-        );
-        self::assertSame(
-            1,
-            substr_count($view->modulesHtml, 'data-yii-debug-phpinfo-default-open="true"'),
-            'Only the first populated variable group must be expanded initially.',
-        );
-    }
-
     public function testFromOutputResolvesHomeDirectoryFromPosixWhenEnvUnset(): void
     {
         $body = '<table><tr><td>Loaded Configuration File</td><td>/tmp/php.ini</td></tr></table>';
@@ -556,43 +623,6 @@ final class PhpInfoDataNormalizerTest extends TestCase
             'id="phpinfo-php-credits"',
             $view->modulesHtml,
             'PHP Credits must expose its own deep-linkable section.',
-        );
-    }
-
-    public function testFromOutputUsesNativePhpCreditsTableTitles(): void
-    {
-        $body = '<h2>PHP Variables</h2>'
-            . '<h1>PHP Credits</h1>'
-            . '<table><tr class="h"><th>PHP Group</th></tr><tr><td>Contributors</td></tr></table>'
-            . '<table><tr class="h"><th>PHP Authors</th></tr>'
-            . '<tr><td class="e">Zend Engine</td><td class="v">Authors</td></tr></table>';
-
-        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
-
-        self::assertStringContainsString(
-            '<span>PHP Group</span>',
-            $view->modulesHtml,
-            'A one-cell phpinfo heading must become the table card title.',
-        );
-        self::assertStringContainsString(
-            '<span>PHP Authors</span>',
-            $view->modulesHtml,
-            'PHP Credits fact tables must retain their native titles.',
-        );
-        self::assertStringNotContainsString(
-            '<span>Notes</span>',
-            $view->modulesHtml,
-            'Native PHP Credits headings must replace the generic Notes label.',
-        );
-        self::assertStringNotContainsString(
-            '<span>Module information</span>',
-            $view->modulesHtml,
-            'Native PHP Credits headings must replace the generic module-information label.',
-        );
-        self::assertStringContainsString(
-            '<span class="yii-debug-phpinfo-table-section-count">1 note</span>',
-            $view->modulesHtml,
-            'The title row must not inflate a note table count.',
         );
     }
 
@@ -656,6 +686,42 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputSummarizesSmallFactsOnlyModules(): void
+    {
+        $body = '<h2>calendar</h2>'
+            . '<table><tr><td class="e">Calendar support</td><td class="v">enabled</td></tr></table>'
+            . '<h2>fileinfo</h2>'
+            . '<table><tr><td class="e">fileinfo support</td><td class="v">enabled</td></tr>'
+            . '<tr><td class="e">libmagic</td><td class="v">5.46</td></tr></table>'
+            . '<h2>bcmath</h2>'
+            . '<table><tr><td class="e">BCMath support</td><td class="v">enabled</td></tr></table>'
+            . '<table><tr class="h"><th>Directive</th><th>Local Value</th><th>Master Value</th></tr>'
+            . '<tr><td class="e">bcmath.scale</td><td class="v">0</td><td class="v">0</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertSame(
+            ['calendar', 'fileinfo'],
+            array_map(static fn(PhpInfoCompactModule $module): string => $module->title, $view->compactModules),
+            'One- and two-value modules without other tables must move into the Overview.',
+        );
+        self::assertSame(
+            ['Overview', 'bcmath'],
+            array_map(static fn(PhpInfoTocEntry $entry): string => $entry->title, $view->tocEntries),
+            'Modules with directives must retain a standalone TOC entry.',
+        );
+        self::assertStringNotContainsString(
+            'id="phpinfo-calendar"',
+            $view->modulesHtml,
+            'Compact modules must not retain a duplicate standalone section.',
+        );
+        self::assertStringContainsString(
+            'id="phpinfo-bcmath"',
+            $view->modulesHtml,
+            'Modules with configuration must remain in the detailed modules HTML.',
+        );
+    }
+
     public function testFromOutputSurfacesPathTokensForStandaloneAbsolutePath(): void
     {
         $body = '<table><tr><td>Loaded Configuration File</td><td>/etc/php/cli/php.ini</td></tr></table>';
@@ -681,9 +747,50 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputUsesNativePhpCreditsTableTitles(): void
+    {
+        $body = '<h2>PHP Variables</h2>'
+            . '<h1>PHP Credits</h1>'
+            . '<table><tr class="h"><th>PHP Group</th></tr><tr><td>Contributors</td></tr></table>'
+            . '<table><tr class="h"><th>PHP Authors</th></tr>'
+            . '<tr><td class="e">Zend Engine</td><td class="v">Authors</td></tr></table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringContainsString(
+            '<span>PHP Group</span>',
+            $view->modulesHtml,
+            'A one-cell phpinfo heading must become the table card title.',
+        );
+        self::assertStringContainsString(
+            '<span>PHP Authors</span>',
+            $view->modulesHtml,
+            'PHP Credits fact tables must retain their native titles.',
+        );
+        self::assertStringNotContainsString(
+            '<span>Notes</span>',
+            $view->modulesHtml,
+            'Native PHP Credits headings must replace the generic Notes label.',
+        );
+        self::assertStringNotContainsString(
+            '<span>Module information</span>',
+            $view->modulesHtml,
+            'Native PHP Credits headings must replace the generic module-information label.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-phpinfo-table-section-count">1 note</span>',
+            $view->modulesHtml,
+            'The title row must not inflate a note table count.',
+        );
+    }
+
     public function testFromOutputWrapsModulesHtmlWithSectionChrome(): void
     {
-        $body = '<h2>apcu</h2><table><tr><td>Version</td><td>5.1</td></tr></table>';
+        $body = '<h2>apcu</h2><table>'
+            . '<tr><td>Version</td><td>5.1</td></tr>'
+            . '<tr><td>Debug</td><td>disabled</td></tr>'
+            . '<tr><td>MMAP</td><td>enabled</td></tr>'
+            . '</table>';
 
         $view = PhpInfoDataNormalizer::fromOutput(
             $body,

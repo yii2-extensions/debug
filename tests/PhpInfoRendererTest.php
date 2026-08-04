@@ -7,6 +7,7 @@ namespace yii\debug\tests;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\phpinfo\{
+    PhpInfoCompactModule,
     PhpInfoDataNormalizer,
     PhpInfoRenderer,
     PhpInfoSection,
@@ -88,6 +89,37 @@ final class PhpInfoRendererTest extends TestCase
         );
     }
 
+    public function testRenderMarksLongOverviewValuesAsWide(): void
+    {
+        $section = new PhpInfoSection(
+            eyebrow: 'Build',
+            tiles: [
+                new PhpInfoTile(
+                    label: 'Build System',
+                    displayValue: 'A deliberately long build-system value that needs the complete card width',
+                    rawValue: 'A deliberately long build-system value that needs the complete card width',
+                    kind: PhpInfoTile::KIND_TEXT,
+                ),
+            ],
+        );
+
+        $html = PhpInfoRenderer::render(
+            new PhpInfoView(
+                sections: [$section],
+                tocEntries: [],
+                compactModules: [],
+                modulesHtml: '',
+                configureCommand: '',
+            ),
+        );
+
+        self::assertStringContainsString(
+            'class="yii-debug-phpinfo-overview-hero-metric is-wide"',
+            $html,
+            'Long technical values must span the overview card instead of wrapping inside a narrow grid cell.',
+        );
+    }
+
     public function testRenderMarksOverviewAsInitialTocSelection(): void
     {
         $html = PhpInfoRenderer::render(
@@ -121,6 +153,7 @@ final class PhpInfoRendererTest extends TestCase
         $view = new PhpInfoView(
             sections: [],
             tocEntries: [],
+            compactModules: [],
             modulesHtml: '<section id="phpinfo-apcu">module-body</section>',
             configureCommand: '',
         );
@@ -139,6 +172,7 @@ final class PhpInfoRendererTest extends TestCase
         $view = new PhpInfoView(
             sections: [],
             tocEntries: [],
+            compactModules: [],
             modulesHtml: '',
             configureCommand: './configure --foo',
         );
@@ -196,7 +230,13 @@ final class PhpInfoRendererTest extends TestCase
     public function testRenderSectionRendersEyebrowHeader(): void
     {
         $section = new PhpInfoSection(eyebrow: 'Runtime', tiles: []);
-        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
+        $view = new PhpInfoView(
+            sections: [$section],
+            tocEntries: [],
+            compactModules: [],
+            modulesHtml: '',
+            configureCommand: '',
+        );
 
         $html = PhpInfoRenderer::render($view);
 
@@ -221,7 +261,13 @@ final class PhpInfoRendererTest extends TestCase
             ],
         );
 
-        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
+        $view = new PhpInfoView(
+            sections: [$section],
+            tocEntries: [],
+            compactModules: [],
+            modulesHtml: '',
+            configureCommand: '',
+        );
         $html = PhpInfoRenderer::render($view);
 
         self::assertStringContainsString(
@@ -250,7 +296,13 @@ final class PhpInfoRendererTest extends TestCase
         );
 
         $section = new PhpInfoSection(eyebrow: 'Configuration', tiles: [$tile]);
-        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
+        $view = new PhpInfoView(
+            sections: [$section],
+            tocEntries: [],
+            compactModules: [],
+            modulesHtml: '',
+            configureCommand: '',
+        );
         $html = PhpInfoRenderer::render($view);
 
         self::assertStringContainsString(
@@ -280,7 +332,13 @@ final class PhpInfoRendererTest extends TestCase
         );
 
         $section = new PhpInfoSection(eyebrow: 'Configuration', tiles: [$tile]);
-        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
+        $view = new PhpInfoView(
+            sections: [$section],
+            tocEntries: [],
+            compactModules: [],
+            modulesHtml: '',
+            configureCommand: '',
+        );
         $html = PhpInfoRenderer::render($view);
 
         self::assertStringContainsString(
@@ -314,38 +372,19 @@ final class PhpInfoRendererTest extends TestCase
             ],
         );
 
-        $view = new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: '');
+        $view = new PhpInfoView(
+            sections: [$section],
+            tocEntries: [],
+            compactModules: [],
+            modulesHtml: '',
+            configureCommand: '',
+        );
         $html = PhpInfoRenderer::render($view);
 
         self::assertStringContainsString(
             'data-variant="success"',
             $html,
             'Success pill must carry the success variant attribute.',
-        );
-    }
-
-    public function testRenderMarksLongOverviewValuesAsWide(): void
-    {
-        $section = new PhpInfoSection(
-            eyebrow: 'Build',
-            tiles: [
-                new PhpInfoTile(
-                    label: 'Build System',
-                    displayValue: 'A deliberately long build-system value that needs the complete card width',
-                    rawValue: 'A deliberately long build-system value that needs the complete card width',
-                    kind: PhpInfoTile::KIND_TEXT,
-                ),
-            ],
-        );
-
-        $html = PhpInfoRenderer::render(
-            new PhpInfoView(sections: [$section], tocEntries: [], modulesHtml: '', configureCommand: ''),
-        );
-
-        self::assertStringContainsString(
-            'class="yii-debug-phpinfo-overview-hero-metric is-wide"',
-            $html,
-            'Long technical values must span the overview card instead of wrapping inside a narrow grid cell.',
         );
     }
 
@@ -360,9 +399,73 @@ final class PhpInfoRendererTest extends TestCase
         );
     }
 
+    public function testRenderSummarizesCompactModulesInOverview(): void
+    {
+        $view = new PhpInfoView(
+            sections: [],
+            tocEntries: [
+                new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview'),
+                new PhpInfoTocEntry(title: 'Core', slug: 'phpinfo-core'),
+            ],
+            compactModules: [
+                new PhpInfoCompactModule(
+                    title: 'calendar',
+                    slug: 'phpinfo-calendar',
+                    tiles: [
+                        new PhpInfoTile(
+                            label: 'Calendar support',
+                            displayValue: 'enabled',
+                            rawValue: 'enabled',
+                            kind: PhpInfoTile::KIND_PILL_SUCCESS,
+                        ),
+                    ],
+                ),
+            ],
+            modulesHtml: '<section id="phpinfo-core">Core</section>',
+            configureCommand: '',
+        );
+
+        $html = PhpInfoRenderer::render($view);
+
+        self::assertStringContainsString(
+            'Loaded extensions',
+            $html,
+            'Facts-only modules must surface in the Overview.',
+        );
+        self::assertStringContainsString(
+            'id="phpinfo-calendar"',
+            $html,
+            'Summarized modules must retain their original deep-link anchor.',
+        );
+        self::assertStringContainsString(
+            'data-yii-debug-phpinfo-compact-module="true"',
+            $html,
+            'Summarized modules must expose the search hook.',
+        );
+        self::assertStringNotContainsString(
+            'href="#phpinfo-calendar"',
+            $html,
+            'Summarized modules must not keep an almost-empty sidebar destination.',
+        );
+        self::assertStringContainsString(
+            '<span>2</span><span>modules</span>',
+            $html,
+            'The sidebar total must include detailed and summarized modules.',
+        );
+        self::assertStringContainsString(
+            '1 in Overview',
+            $html,
+            'The sidebar must explain where summarized modules moved.',
+        );
+    }
+
     public function testRenderViaNormalizerSnapshotProducesExpectedAnchors(): void
     {
-        $body = '<h2>apcu</h2><table><tr><td>Version</td><td>5.1</td></tr></table>';
+        $body = '<h2>apcu</h2><table>'
+            . '<tr><td>Version</td><td>5.1</td></tr>'
+            . '<tr><td>Debug</td><td>disabled</td></tr>'
+            . '<tr><td>MMAP</td><td>enabled</td></tr>'
+            . '</table>';
 
         $view = PhpInfoDataNormalizer::fromOutput($body, '8.5.3', 'cli', 'Linux', '128M');
         $html = PhpInfoRenderer::render($view);
@@ -403,6 +506,12 @@ final class PhpInfoRendererTest extends TestCase
      */
     private function emptyView(array $entries): PhpInfoView
     {
-        return new PhpInfoView(sections: [], tocEntries: $entries, modulesHtml: '', configureCommand: '');
+        return new PhpInfoView(
+            sections: [],
+            tocEntries: $entries,
+            compactModules: [],
+            modulesHtml: '',
+            configureCommand: '',
+        );
     }
 }

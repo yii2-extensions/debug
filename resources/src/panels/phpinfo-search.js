@@ -17,6 +17,13 @@ export function normalizePhpInfoQuery(value) {
     .toLowerCase();
 }
 
+export function matchesPhpInfoCompactModule(title, content, query) {
+  return (
+    normalizePhpInfoQuery(title).indexOf(query) !== -1 ||
+    normalizePhpInfoQuery(content).indexOf(query) !== -1
+  );
+}
+
 function plural(count, singular, pluralForm) {
   return count + " " + (count === 1 ? singular : pluralForm);
 }
@@ -146,11 +153,26 @@ export function initPhpInfoSearch(root) {
   var status = root.querySelector("[data-yii-debug-phpinfo-status]");
   var empty = root.querySelector("[data-yii-debug-phpinfo-empty]");
   var sections = toArray(root.querySelectorAll(".yii-debug-phpinfo-section"));
+  var compactModules = toArray(
+    root.querySelectorAll("[data-yii-debug-phpinfo-compact-module]"),
+  );
+  var compactGroups = toArray(
+    root.querySelectorAll(".yii-debug-phpinfo-extension-group"),
+  );
+  var overviewStaticSections = toArray(
+    root.querySelectorAll(
+      "#phpinfo-overview .yii-debug-phpinfo-overview-hero-section:not(.yii-debug-phpinfo-extensions)",
+    ),
+  );
+  var configureDetails = root.querySelector(
+    "#phpinfo-overview > .yii-debug-phpinfo-overview-details",
+  );
   var tocLinks = toArray(root.querySelectorAll(".yii-debug-phpinfo-toc-link"));
   var tocGroups = toArray(
     root.querySelectorAll("[data-yii-debug-phpinfo-toc-group]"),
   );
   var sectionById = Object.create(null);
+  var compactById = Object.create(null);
   var selectedId;
 
   if (!sections.length) return;
@@ -158,6 +180,27 @@ export function initPhpInfoSearch(root) {
   sections.forEach(function (section) {
     sectionById[section.id] = section;
   });
+
+  compactModules.forEach(function (module) {
+    compactById[module.id] = module;
+  });
+
+  function resetCompactModules() {
+    compactModules.forEach(function (module) {
+      module.hidden = false;
+      module.classList.remove("is-search-match");
+    });
+
+    compactGroups.forEach(function (group) {
+      group.hidden = false;
+    });
+
+    overviewStaticSections.forEach(function (section) {
+      section.hidden = false;
+    });
+
+    if (configureDetails) configureDetails.hidden = false;
+  }
 
   function updateToc(activeId, visibleIds) {
     tocLinks.forEach(function (link) {
@@ -189,6 +232,8 @@ export function initPhpInfoSearch(root) {
   }
 
   function showSelected() {
+    resetCompactModules();
+
     sections.forEach(function (section) {
       resetSection(section);
       section.hidden = section.id !== selectedId;
@@ -229,6 +274,9 @@ export function initPhpInfoSearch(root) {
     var matchCount = 0;
     var matchModuleCount = 0;
     var titleMatchCount = 0;
+    var compactMatchCount = 0;
+
+    resetCompactModules();
 
     sections.forEach(function (section) {
       resetSection(section);
@@ -236,9 +284,37 @@ export function initPhpInfoSearch(root) {
       var title = normalizePhpInfoQuery(section.getAttribute("data-section"));
       var titleMatch = title.indexOf(query) !== -1;
       var sectionMatchCount = 0;
+      var compactSectionMatchCount = 0;
 
       if (titleMatch) {
         titleMatchCount++;
+      } else if (section.id === "phpinfo-overview") {
+        compactModules.forEach(function (module) {
+          var moduleMatch = matchesPhpInfoCompactModule(
+            module.getAttribute("data-section"),
+            module.textContent,
+            query,
+          );
+
+          module.hidden = !moduleMatch;
+          module.classList.toggle("is-search-match", moduleMatch);
+
+          if (moduleMatch) compactSectionMatchCount++;
+        });
+
+        compactGroups.forEach(function (group) {
+          group.hidden = !toArray(
+            group.querySelectorAll("[data-yii-debug-phpinfo-compact-module]"),
+          ).some(function (module) {
+            return !module.hidden;
+          });
+        });
+
+        overviewStaticSections.forEach(function (overviewSection) {
+          overviewSection.hidden = true;
+        });
+
+        if (configureDetails) configureDetails.hidden = true;
       } else if (section.classList.contains("yii-debug-phpinfo-module")) {
         toArray(section.querySelectorAll(".yii-debug-table-wrap")).forEach(
           function (wrap) {
@@ -272,7 +348,8 @@ export function initPhpInfoSearch(root) {
         );
       }
 
-      var visible = titleMatch || sectionMatchCount > 0;
+      var visible =
+        titleMatch || sectionMatchCount > 0 || compactSectionMatchCount > 0;
 
       section.hidden = !visible;
 
@@ -282,6 +359,8 @@ export function initPhpInfoSearch(root) {
         matchCount += sectionMatchCount;
         matchModuleCount++;
       }
+
+      compactMatchCount += compactSectionMatchCount;
     });
 
     updateToc("", visibleIds);
@@ -290,12 +369,12 @@ export function initPhpInfoSearch(root) {
       status.textContent = formatPhpInfoSearchStatus(
         matchCount,
         matchModuleCount,
-        titleMatchCount,
+        titleMatchCount + compactMatchCount,
       );
     }
 
     if (empty) {
-      empty.hidden = matchCount + titleMatchCount !== 0;
+      empty.hidden = matchCount + titleMatchCount + compactMatchCount !== 0;
     }
 
     if (clear) clear.hidden = false;
@@ -314,7 +393,11 @@ export function initPhpInfoSearch(root) {
 
   var hashId = window.location.hash.replace(/^#/, "");
 
-  selectedId = sectionById[hashId] ? hashId : sections[0].id;
+  selectedId = sectionById[hashId]
+    ? hashId
+    : compactById[hashId]
+      ? "phpinfo-overview"
+      : sections[0].id;
   showSelected();
 
   if (search) {
@@ -345,7 +428,11 @@ export function initPhpInfoSearch(root) {
   window.addEventListener("hashchange", function () {
     var id = window.location.hash.replace(/^#/, "");
 
-    if (sectionById[id]) selectSection(id, false);
+    if (sectionById[id]) {
+      selectSection(id, false);
+    } else if (compactById[id]) {
+      selectSection("phpinfo-overview", false);
+    }
   });
 }
 

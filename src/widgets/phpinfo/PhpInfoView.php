@@ -24,6 +24,13 @@ final readonly class PhpInfoView
          */
         public array $tocEntries,
         /**
+         * Small modules summarized in the Overview because they expose only one or two informational values and no
+         * directives, statistics, notes, or other tables.
+         *
+         * @var list<PhpInfoCompactModule>
+         */
+        public array $compactModules,
+        /**
          * Modules HTML produced by {@see phpinfo()} (already wrapped in `<section>` chrome by the normalizer); empty
          * string when no module heading is present in the output.
          */

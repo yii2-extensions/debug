@@ -79,13 +79,15 @@ final class PhpInfoDataNormalizer
         $overviewRows = self::parseOverviewRows($overviewSrc);
 
         $tocEntries = [new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview')];
+        $compactModules = [];
 
-        $modulesHtml = self::wrapModulesHtml($modulesSrc, $tocEntries);
+        $modulesHtml = self::wrapModulesHtml($modulesSrc, $tocEntries, $compactModules, $home);
         $sections = self::buildSections($overviewRows, $phpVersion, $sapi, $os, $memoryLimit, $home);
 
         return new PhpInfoView(
             sections: $sections,
             tocEntries: $tocEntries,
+            compactModules: $compactModules,
             modulesHtml: $modulesHtml,
             configureCommand: self::pluck($overviewRows, 'Configure Command'),
         );
@@ -415,6 +417,54 @@ final class PhpInfoDataNormalizer
     }
 
     /**
+     * Returns a compact Overview module when the block contains exactly one facts table with one or two values.
+     * Modules with directives, notes, statistics, multiple tables, or long value lists retain their own panel.
+     */
+    private static function extractCompactModule(
+        string $title,
+        string $slug,
+        string $moduleBody,
+        string $home,
+    ): PhpInfoCompactModule|null {
+        preg_match_all('%<table\b[^>]*>(.*?)</table>%si', $moduleBody, $tables, PREG_SET_ORDER);
+
+        if (count($tables) !== 1 || self::classifyModuleTable($tables[0][1]) !== self::TABLE_KIND_FACTS) {
+            return null;
+        }
+
+        preg_match_all('%<tr\b[^>]*>(.*?)</tr>%si', $tables[0][1], $rows, PREG_SET_ORDER);
+
+        $tiles = [];
+
+        foreach ($rows as $row) {
+            preg_match_all('%<(?:th|td)\b[^>]*>(.*?)</(?:th|td)>%si', $row[1], $cells, PREG_SET_ORDER);
+
+            if (count($cells) < 2) {
+                continue;
+            }
+
+            $label = trim(html_entity_decode(strip_tags($cells[0][1]), ENT_QUOTES, 'UTF-8'));
+            $value = trim(html_entity_decode(strip_tags($cells[1][1]), ENT_QUOTES, 'UTF-8'));
+
+            if ($label === '' || $value === '') {
+                return null;
+            }
+
+            if (str_contains($value, ',') && count(self::splitTrimmed($value, ',')) > 3) {
+                return null;
+            }
+
+            $tiles[] = self::buildTile($label, $value, $home);
+        }
+
+        if ($tiles === [] || count($tiles) > 2) {
+            return null;
+        }
+
+        return new PhpInfoCompactModule(title: $title, slug: $slug, tiles: $tiles);
+    }
+
+    /**
      * @return list<string>
      */
     private static function extractFirstHeaderCells(string $tableBody): array
@@ -459,6 +509,33 @@ final class PhpInfoDataNormalizer
             && preg_match(self::SENSITIVE_VARIABLE_PATTERN, $key) === 1;
     }
 
+    private static function moduleBodyHasContent(string $moduleBody): bool
+    {
+        preg_match_all('%<table\b[^>]*>(.*?)</table>%si', $moduleBody, $tables, PREG_SET_ORDER);
+
+        foreach ($tables as $table) {
+            $tableBody = $table[1];
+
+            if (self::extractTableTitle($tableBody) !== '') {
+                $withoutTitle = preg_replace(
+                    '%^\s*<tr\b[^>]*class="[^"]*\bh\b[^"]*"[^>]*>.*?</tr>%si',
+                    '',
+                    $tableBody,
+                    1,
+                );
+                $tableBody = $withoutTitle ?? $tableBody;
+            }
+
+            if (trim(strip_tags($tableBody)) !== '') {
+                return true;
+            }
+        }
+
+        $withoutTables = preg_replace('%<table\b[^>]*>.*?</table>%si', '', $moduleBody);
+
+        return trim(strip_tags($withoutTables ?? $moduleBody)) !== '';
+    }
+
     private static function moduleTableLabel(string $kind, string $tableBody): string
     {
         if ($kind === self::TABLE_KIND_DIRECTIVES) {
@@ -482,6 +559,40 @@ final class PhpInfoDataNormalizer
             'variable' => 'Variables',
             default => 'Data',
         };
+    }
+
+    private static function normalizeFactRows(string $tableBody): string
+    {
+        $normalized = preg_replace_callback(
+            '%<tr\b([^>]*)>(.*?)</tr>%si',
+            static function (array $row): string {
+                preg_match_all('%<(?:th|td)\b[^>]*>(.*?)</(?:th|td)>%si', $row[2], $cells, PREG_SET_ORDER);
+
+                if (count($cells) === 1) {
+                    $content = trim($cells[0][1]);
+                    $attributes = self::addRowClass($row[1], 'yii-debug-phpinfo-fact-subheading', true);
+
+                    return sprintf(
+                        '<tr %s><th colspan="2" class="yii-debug-phpinfo-fact-subheading-cell">%s</th></tr>',
+                        $attributes,
+                        $content,
+                    );
+                }
+
+                $value = isset($cells[1])
+                    ? trim(html_entity_decode(strip_tags($cells[1][1]), ENT_QUOTES, 'UTF-8'))
+                    : '';
+                $class = mb_strlen($value) > 72
+                    ? 'yii-debug-phpinfo-fact yii-debug-phpinfo-fact-wide'
+                    : 'yii-debug-phpinfo-fact';
+                $attributes = self::addRowClass($row[1], $class, true);
+
+                return '<tr ' . $attributes . '>' . self::renderFactStatusPills($row[2]) . '</tr>';
+            },
+            $tableBody,
+        );
+
+        return $normalized ?? $tableBody;
     }
 
     private static function normalizeModuleTable(
@@ -606,40 +717,6 @@ final class PhpInfoDataNormalizer
         return $rendered === [] ? null : implode('', $rendered);
     }
 
-    private static function normalizeFactRows(string $tableBody): string
-    {
-        $normalized = preg_replace_callback(
-            '%<tr\b([^>]*)>(.*?)</tr>%si',
-            static function (array $row): string {
-                preg_match_all('%<(?:th|td)\b[^>]*>(.*?)</(?:th|td)>%si', $row[2], $cells, PREG_SET_ORDER);
-
-                if (count($cells) === 1) {
-                    $content = trim($cells[0][1]);
-                    $attributes = self::addRowClass($row[1], 'yii-debug-phpinfo-fact-subheading', true);
-
-                    return sprintf(
-                        '<tr %s><th colspan="2" class="yii-debug-phpinfo-fact-subheading-cell">%s</th></tr>',
-                        $attributes,
-                        $content,
-                    );
-                }
-
-                $value = isset($cells[1])
-                    ? trim(html_entity_decode(strip_tags($cells[1][1]), ENT_QUOTES, 'UTF-8'))
-                    : '';
-                $class = mb_strlen($value) > 72
-                    ? 'yii-debug-phpinfo-fact yii-debug-phpinfo-fact-wide'
-                    : 'yii-debug-phpinfo-fact';
-                $attributes = self::addRowClass($row[1], $class, true);
-
-                return '<tr ' . $attributes . '>' . self::renderFactStatusPills($row[2]) . '</tr>';
-            },
-            $tableBody,
-        );
-
-        return $normalized ?? $tableBody;
-    }
-
     /**
      * @return array<string, string>
      */
@@ -744,29 +821,6 @@ final class PhpInfoDataNormalizer
         return $rendered ?? $rowContent;
     }
 
-    private static function resolveVariableGroup(string $key): string
-    {
-        foreach (['$_REQUEST[', '$_GET[', '$_POST[', '$_FILES['] as $prefix) {
-            if (str_starts_with($key, $prefix)) {
-                return 'Request';
-            }
-        }
-
-        if (str_starts_with($key, '$_COOKIE[')) {
-            return 'Cookies';
-        }
-
-        if (str_starts_with($key, '$_SERVER[')) {
-            return 'Server';
-        }
-
-        if (str_starts_with($key, '$_ENV[') || ($key !== '' && strtolower($key) !== $key)) {
-            return 'Environment';
-        }
-
-        return 'Other';
-    }
-
     /**
      * Walks `$_SERVER` / `getenv()` / `posix_getpwuid()` looking for the active user's home directory; returns an
      * empty string when none of the signals are populated (Yii's built-in dev server is the typical case).
@@ -790,6 +844,29 @@ final class PhpInfoDataNormalizer
         }
 
         return '';
+    }
+
+    private static function resolveVariableGroup(string $key): string
+    {
+        foreach (['$_REQUEST[', '$_GET[', '$_POST[', '$_FILES['] as $prefix) {
+            if (str_starts_with($key, $prefix)) {
+                return 'Request';
+            }
+        }
+
+        if (str_starts_with($key, '$_COOKIE[')) {
+            return 'Cookies';
+        }
+
+        if (str_starts_with($key, '$_SERVER[')) {
+            return 'Server';
+        }
+
+        if (str_starts_with($key, '$_ENV[') || ($key !== '' && strtolower($key) !== $key)) {
+            return 'Environment';
+        }
+
+        return 'Other';
     }
 
     private static function shortenPath(string $path, string $home): string
@@ -840,67 +917,79 @@ final class PhpInfoDataNormalizer
     }
 
     /**
-     * Wraps every module heading block in `<section class="...">` chrome and prepends every `<table>` with the
-     * panel's `<div class="yii-debug-table-wrap">` wrap. Appends one {@see PhpInfoTocEntry} to `$tocEntries` per
-     * captured heading. PHP emits regular modules as `<h2>` and its credits block as `<h1>`.
+     * Normalizes every phpinfo module. Small facts-only modules move into `$compactModules`; modules with meaningful
+     * detail keep their standalone section and TOC entry. PHP emits regular modules as `<h2>` and Credits as `<h1>`.
      *
      * @param list<PhpInfoTocEntry> $tocEntries
+     * @param list<PhpInfoCompactModule> $compactModules
      */
-    private static function wrapModulesHtml(string $modulesSrc, array &$tocEntries): string
-    {
-        $rowHeaders = preg_replace(
-            '%<td class="e">(.*?)</td>%s',
-            '<th scope="row" class="e">$1</th>',
+    private static function wrapModulesHtml(
+        string $modulesSrc,
+        array &$tocEntries,
+        array &$compactModules,
+        string $home,
+    ): string {
+        preg_match_all(
+            '%<h([12])[^>]*>(.*?)</h\1>(.*?)(?=<h[12]\b[^>]*>|$)%si',
             $modulesSrc,
-        );
-        $modulesSrc = $rowHeaders ?? $modulesSrc;
-
-        $modulesSrc = self::wrapModuleTables($modulesSrc);
-
-        $captured = [];
-
-        $wrapped = preg_replace_callback(
-            '%<h([12])[^>]*>(.*?)</h\1>%s',
-            static function (array $m) use (&$captured): string {
-                $title = trim(html_entity_decode(strip_tags($m[2]), ENT_QUOTES, 'UTF-8'));
-                $slug = self::slugify($title);
-
-                $captured[] = new PhpInfoTocEntry(title: $title, slug: $slug);
-
-                $encodedSlug = Encode::value($slug);
-                $encodedTitle = Encode::value($title);
-                $encodedContent = Encode::content($title);
-
-                return sprintf(
-                    '</section><section class="yii-debug-phpinfo-section yii-debug-phpinfo-module" id="%s" data-section="%s"><header class="yii-debug-phpinfo-module-head"><span class="yii-debug-phpinfo-module-dot" aria-hidden="true"></span><h2 id="%s-heading">%s</h2></header>',
-                    $encodedSlug,
-                    $encodedTitle,
-                    $encodedSlug,
-                    $encodedContent,
-                );
-            },
-            $modulesSrc,
+            $modules,
+            PREG_SET_ORDER,
         );
 
-        $modulesSrc = $wrapped ?? $modulesSrc;
+        $rendered = [];
 
-        $stripped = preg_replace('%^\s*</section>%', '', $modulesSrc);
+        foreach ($modules as $module) {
+            $title = trim(html_entity_decode(strip_tags($module[2]), ENT_QUOTES, 'UTF-8'));
+            $slug = self::slugify($title);
+            $body = $module[3];
 
-        $modulesSrc = $stripped ?? $modulesSrc;
+            if (!self::moduleBodyHasContent($body)) {
+                continue;
+            }
 
-        foreach ($captured as $entry) {
-            $tocEntries[] = $entry;
+            $compactModule = self::extractCompactModule($title, $slug, $body, $home);
+
+            if ($compactModule !== null) {
+                $compactModules[] = $compactModule;
+
+                continue;
+            }
+
+            $rowHeaders = preg_replace(
+                '%<td class="e">(.*?)</td>%s',
+                '<th scope="row" class="e">$1</th>',
+                $body,
+            );
+            $body = $rowHeaders ?? $body;
+            $body = self::wrapModuleTables(
+                $body,
+                in_array(strtolower($title), ['environment', 'php variables'], true),
+            );
+
+            $tocEntries[] = new PhpInfoTocEntry(title: $title, slug: $slug);
+            $encodedSlug = Encode::value($slug);
+            $encodedTitle = Encode::value($title);
+            $encodedContent = Encode::content($title);
+
+            $rendered[] = sprintf(
+                '<section class="yii-debug-phpinfo-section yii-debug-phpinfo-module" id="%s" data-section="%s"><header class="yii-debug-phpinfo-module-head"><span class="yii-debug-phpinfo-module-dot" aria-hidden="true"></span><h2 id="%s-heading">%s</h2></header>%s</section>',
+                $encodedSlug,
+                $encodedTitle,
+                $encodedSlug,
+                $encodedContent,
+                $body,
+            );
         }
 
-        return $modulesSrc;
+        return implode('', $rendered);
     }
 
-    private static function wrapModuleTables(string $modulesSrc): string
+    private static function wrapModuleTables(string $modulesSrc, bool $redactSensitiveVariables): string
     {
         $wrapped = preg_replace_callback(
             '%<table\b[^>]*>(.*?)</table>%si',
-            static function (array $table): string {
-                $body = self::redactSensitiveRows($table[1]);
+            static function (array $table) use ($redactSensitiveVariables): string {
+                $body = $redactSensitiveVariables ? self::redactSensitiveRows($table[1]) : $table[1];
 
                 return self::normalizeVariableTables($body) ?? self::normalizeModuleTable($body);
             },
