@@ -14,11 +14,10 @@ use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Aside, Section};
 use yii\debug\helpers\Icon;
 
-use function array_keys;
 use function count;
+use function implode;
 use function in_array;
 use function mb_strlen;
-use function strtolower;
 
 /**
  * Renders the phpinfo page.
@@ -31,101 +30,9 @@ use function strtolower;
 final class PhpInfoRenderer
 {
     /**
-     * Known phpinfo modules grouped by the job they perform. Unknown and third-party modules fall back to "Other".
-     *
-     * @var array<string, list<string>>
-     */
-    private const array TOC_GROUPS = [
-        'Core & Runtime' => [
-            'apcu',
-            'core',
-            'date',
-            'ffi',
-            'filter',
-            'hash',
-            'json',
-            'pcre',
-            'phar',
-            'random',
-            'reflection',
-            'session',
-            'spl',
-            'standard',
-            'xdebug',
-            'zend opcache',
-        ],
-        'Database' => [
-            'mongodb',
-            'mysqli',
-            'mysqlnd',
-            'oci8',
-            'odbc',
-            'pdo',
-            'pdo_dblib',
-            'pdo_mysql',
-            'pdo_oci',
-            'pdo_odbc',
-            'pdo_pgsql',
-            'pdo_sqlite',
-            'pgsql',
-            'redis',
-            'sqlite3',
-        ],
-        'Text & Localization' => [
-            'ctype',
-            'gettext',
-            'iconv',
-            'intl',
-            'mbstring',
-            'tokenizer',
-        ],
-        'Network & Security' => [
-            'curl',
-            'ftp',
-            'openssl',
-            'sockets',
-            'sodium',
-            'ssh2',
-        ],
-        'XML, Data & Media' => [
-            'dom',
-            'exif',
-            'fileinfo',
-            'gd',
-            'imagick',
-            'libxml',
-            'simplexml',
-            'xml',
-            'xmlreader',
-            'xmlwriter',
-            'xsl',
-        ],
-        'System & Compression' => [
-            'bz2',
-            'calendar',
-            'pcntl',
-            'posix',
-            'readline',
-            'shmop',
-            'sysvmsg',
-            'sysvsem',
-            'sysvshm',
-            'zip',
-            'zlib',
-        ],
-        'Environment' => [
-            'additional modules',
-            'apache2handler',
-            'cgi-fcgi',
-            'environment',
-            'php credits',
-            'php license',
-            'php variables',
-        ],
-    ];
-
-    /**
      * Renders the full phpinfo page (TOC sidebar + main column).
+     *
+     * @param PhpInfoView $view Normalized page model produced by {@see PhpInfoDataNormalizer::fromOutput()}.
      */
     public static function render(PhpInfoView $view): string
     {
@@ -138,50 +45,85 @@ final class PhpInfoRenderer
             ->render();
     }
 
-    private static function renderCompactModule(PhpInfoCompactModule $module): Section
+    /**
+     * Returns a pluralized module count ('1 module', '24 modules') matching the wording of the search JS.
+     *
+     * @param int $count Number of modules to announce.
+     */
+    private static function formatModuleCount(int $count): string
     {
-        $rows = [];
+        return $count . ($count === 1 ? ' module' : ' modules');
+    }
+
+    /**
+     * Renders one summarized module as an extension pill (LED + name + version or on/off state).
+     *
+     * The pill shares the Config panel's `yii-debug-ext-pill` markup, so both extension strips stay identical. Facts
+     * the compact slot cannot show land in the `title` attribute and in a screen-reader-only span, which also keeps
+     * them reachable from the search filter.
+     *
+     * @param PhpInfoCompactModule $module Module summarized in the Overview instead of receiving its own section.
+     */
+    private static function renderCompactModule(PhpInfoCompactModule $module): Span
+    {
+        $enabled = true;
+        $facts = [];
+        $state = '';
 
         foreach ($module->tiles as $tile) {
-            $rows[] = Div::tag()
-                ->class('yii-debug-phpinfo-extension-fact')
-                ->html(
-                    Dt::tag()->content($tile->label),
-                    Dd::tag()->html(self::renderTileValue($tile)),
-                );
+            $facts[] = "{$tile->label}: {$tile->displayValue}";
+
+            if ($tile->kind === PhpInfoTile::KIND_PILL_MUTED) {
+                $enabled = false;
+
+                continue;
+            }
+
+            if ($state === '' && $tile->kind !== PhpInfoTile::KIND_PILL_SUCCESS) {
+                $state = $tile->displayValue;
+            }
         }
 
-        return Section::tag()
+        $summary = implode(' · ', $facts);
+
+        if ($state === '') {
+            $state = $enabled ? 'on' : 'off';
+        }
+
+        return Span::tag()
             ->addDataAttribute('section', $module->title)
             ->addDataAttribute('yii-debug-phpinfo-compact-module', true)
-            ->class('yii-debug-phpinfo-extension')
+            ->class('yii-debug-ext-pill ' . ($enabled ? 'is-on' : 'is-off'))
             ->id($module->slug)
+            ->title($summary)
             ->html(
-                Header::tag()
-                    ->class('yii-debug-phpinfo-extension-head')
-                    ->html(Code::tag()->content($module->title)),
-                Dl::tag()
-                    ->class('yii-debug-phpinfo-extension-facts')
-                    ->html(...$rows),
+                Span::tag()
+                    ->addAriaAttribute('hidden', 'true')
+                    ->class('yii-debug-ext-pill-dot'),
+                Span::tag()
+                    ->class('yii-debug-ext-pill-label')
+                    ->content($module->title),
+                Span::tag()
+                    ->class('yii-debug-ext-pill-state')
+                    ->content($state),
+                Span::tag()
+                    ->class('yii-debug-sr-only')
+                    ->content($summary),
             );
     }
 
     /**
-     * @param list<PhpInfoCompactModule> $modules
+     * Renders the "Loaded extensions" disclosure holding every summarized module, bucketed by
+     * {@see PhpInfoModuleGroup}.
+     *
+     * @param list<PhpInfoCompactModule> $modules Modules summarized in the Overview.
      */
     private static function renderCompactModules(array $modules): Details
     {
-        $groupedModules = [];
-
-        foreach (array_keys(self::TOC_GROUPS) as $label) {
-            $groupedModules[$label] = [];
-        }
-
-        $groupedModules['Other'] = [];
-
-        foreach ($modules as $module) {
-            $groupedModules[self::resolveTocGroup($module->title)][] = $module;
-        }
+        $groupedModules = PhpInfoModuleGroup::bucket(
+            $modules,
+            static fn(PhpInfoCompactModule $module): string => $module->title,
+        );
 
         $groups = [];
 
@@ -211,7 +153,7 @@ final class PhpInfoRenderer
                                 ->content((string) count($groupModules)),
                         ),
                     Div::tag()
-                        ->class('yii-debug-phpinfo-extension-grid')
+                        ->class('yii-debug-ext-strip')
                         ->html(...$cards),
                 );
         }
@@ -225,13 +167,11 @@ final class PhpInfoRenderer
                     ->class('yii-debug-phpinfo-overview-block-head yii-debug-phpinfo-extensions-summary')
                     ->html(
                         Span::tag()
-                            ->class('yii-debug-phpinfo-overview-block-eyebrow')
+                            ->class('yii-debug-phpinfo-overview-details-label')
                             ->content('Loaded extensions'),
                         Span::tag()
-                            ->addDataAttribute('yii-debug-phpinfo-extensions-count', true)
-                            ->addDataAttribute('yii-debug-phpinfo-total', count($modules))
-                            ->class('yii-debug-phpinfo-extensions-count')
-                            ->content(count($modules) . (count($modules) === 1 ? ' module' : ' modules')),
+                            ->class('yii-debug-phpinfo-overview-details-hint')
+                            ->content('click to expand'),
                     ),
                 Div::tag()
                     ->class('yii-debug-phpinfo-extension-groups')
@@ -241,6 +181,8 @@ final class PhpInfoRenderer
 
     /**
      * Renders the Configure Command details disclosure; empty string when the command is empty.
+     *
+     * @param string $command Configure Command value reported by {@see phpinfo()}.
      */
     private static function renderConfigureCommand(string $command): string
     {
@@ -269,6 +211,8 @@ final class PhpInfoRenderer
 
     /**
      * Renders the main column (search input + Overview section + Configure Command details + raw modules HTML).
+     *
+     * @param PhpInfoView $view Normalized page model.
      */
     private static function renderMain(PhpInfoView $view): Div
     {
@@ -301,7 +245,6 @@ final class PhpInfoRenderer
                 self::renderSearch(),
                 Div::tag()
                     ->id('yii-debug-phpinfo-results')
-                    ->class('yii-debug-phpinfo-results')
                     ->html($overviewSection, $view->modulesHtml),
             );
     }
@@ -362,6 +305,8 @@ final class PhpInfoRenderer
 
     /**
      * Renders one Overview section (`<section>` with eyebrow header + optional hero headline + tile grid `<dl>`).
+     *
+     * @param PhpInfoSection $section Section to render.
      */
     private static function renderSection(PhpInfoSection $section): Section
     {
@@ -408,6 +353,8 @@ final class PhpInfoRenderer
     /**
      * Renders one tile (`<div class="yii-debug-phpinfo-overview-hero-metric"><dt>label</dt><dd>value</dd></div>`),
      * branching on `$tile->kind` for the value layout.
+     *
+     * @param PhpInfoTile $tile Tile to render.
      */
     private static function renderTile(PhpInfoTile $tile): Div
     {
@@ -434,20 +381,14 @@ final class PhpInfoRenderer
 
     /**
      * Renders the inner `<dd>` content for one tile.
+     *
+     * @param PhpInfoTile $tile Tile whose value is being rendered.
      */
     private static function renderTileValue(PhpInfoTile $tile): string
     {
-        if ($tile->kind === PhpInfoTile::KIND_PILL_SUCCESS) {
+        if ($tile->kind === PhpInfoTile::KIND_PILL_SUCCESS || $tile->kind === PhpInfoTile::KIND_PILL_MUTED) {
             return Span::tag()
-                ->addDataAttribute('variant', 'success')
-                ->class('yii-debug-phpinfo-overview-pill')
-                ->content($tile->displayValue)
-                ->render();
-        }
-
-        if ($tile->kind === PhpInfoTile::KIND_PILL_MUTED) {
-            return Span::tag()
-                ->addDataAttribute('variant', 'muted')
+                ->addDataAttribute('variant', $tile->kind === PhpInfoTile::KIND_PILL_SUCCESS ? 'success' : 'muted')
                 ->class('yii-debug-phpinfo-overview-pill')
                 ->content($tile->displayValue)
                 ->render();
@@ -489,18 +430,12 @@ final class PhpInfoRenderer
     /**
      * Renders the TOC sidebar (`<aside>`) with one `<a>` per captured entry.
      *
-     * @param list<PhpInfoTocEntry> $entries
+     * @param list<PhpInfoTocEntry> $entries TOC entries in display order, Overview first.
+     * @param int $compactModuleCount Number of modules summarized in the Overview instead of getting a TOC entry.
      */
     private static function renderToc(array $entries, int $compactModuleCount): Aside
     {
-        $groupedEntries = [];
-
-        foreach (array_keys(self::TOC_GROUPS) as $label) {
-            $groupedEntries[$label] = [];
-        }
-
-        $groupedEntries['Other'] = [];
-        $moduleCount = 0;
+        $moduleEntries = [];
         $overviewItem = null;
 
         foreach ($entries as $entry) {
@@ -510,10 +445,14 @@ final class PhpInfoRenderer
                 continue;
             }
 
-            $groupedEntries[self::resolveTocGroup($entry->title)][] = $entry;
-            $moduleCount++;
+            $moduleEntries[] = $entry;
         }
 
+        $groupedEntries = PhpInfoModuleGroup::bucket(
+            $moduleEntries,
+            static fn(PhpInfoTocEntry $entry): string => $entry->title,
+        );
+        $moduleCount = count($moduleEntries);
         $groups = [];
 
         foreach ($groupedEntries as $label => $groupEntries) {
@@ -536,7 +475,7 @@ final class PhpInfoRenderer
                         ->html(
                             Span::tag()->content($label),
                             Span::tag()
-                                ->addAriaAttribute('label', count($groupEntries) . ' modules')
+                                ->addAriaAttribute('label', self::formatModuleCount(count($groupEntries)))
                                 ->class('yii-debug-phpinfo-toc-group-count')
                                 ->content((string) count($groupEntries)),
                         ),
@@ -575,6 +514,12 @@ final class PhpInfoRenderer
             );
     }
 
+    /**
+     * Renders one TOC anchor, flagging the active entry for both styling and assistive technology.
+     *
+     * @param PhpInfoTocEntry $entry Entry to link.
+     * @param bool $active Whether the entry is the current destination.
+     */
     private static function renderTocLink(PhpInfoTocEntry $entry, bool $active = false): A
     {
         $link = A::tag()
@@ -584,18 +529,5 @@ final class PhpInfoRenderer
             ->href("#{$entry->slug}");
 
         return $active ? $link->addAriaAttribute('current', 'page') : $link;
-    }
-
-    private static function resolveTocGroup(string $title): string
-    {
-        $normalizedTitle = strtolower($title);
-
-        foreach (self::TOC_GROUPS as $label => $modules) {
-            if (in_array($normalizedTitle, $modules, true)) {
-                return $label;
-            }
-        }
-
-        return 'Other';
     }
 }

@@ -448,9 +448,19 @@ final class PhpInfoRendererTest extends TestCase
             'Summarized modules must live in an identifiable disclosure.',
         );
         self::assertStringContainsString(
-            '1 module',
+            'class="yii-debug-ext-pill is-on"',
             $html,
-            'The disclosure must expose its summarized module count.',
+            'Summaries must reuse the Config panel pill, enabled variant.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-ext-pill-state">on</span>',
+            $html,
+            'A module without a version must fall back to the on/off state.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-sr-only">Calendar support: enabled</span>',
+            $html,
+            'Facts the pill cannot show must stay reachable and searchable.',
         );
         self::assertStringNotContainsString(
             'href="#phpinfo-calendar"',
@@ -466,6 +476,66 @@ final class PhpInfoRendererTest extends TestCase
             '1 in Overview',
             $html,
             'The sidebar must explain where summarized modules moved.',
+        );
+    }
+
+    public function testRenderSurfacesVersionAndDisabledStateInCompactPills(): void
+    {
+        $view = new PhpInfoView(
+            sections: [],
+            tocEntries: [new PhpInfoTocEntry(title: 'Overview', slug: 'phpinfo-overview')],
+            compactModules: [
+                new PhpInfoCompactModule(
+                    title: 'pdo_sqlite',
+                    slug: 'phpinfo-pdo-sqlite',
+                    tiles: [
+                        new PhpInfoTile(
+                            label: 'PDO Driver for SQLite 3.x',
+                            displayValue: 'enabled',
+                            rawValue: 'enabled',
+                            kind: PhpInfoTile::KIND_PILL_SUCCESS,
+                        ),
+                        new PhpInfoTile(
+                            label: 'SQLite Library',
+                            displayValue: '3.53.3',
+                            rawValue: '3.53.3',
+                            kind: PhpInfoTile::KIND_TEXT,
+                        ),
+                    ],
+                ),
+                new PhpInfoCompactModule(
+                    title: 'sysvshm',
+                    slug: 'phpinfo-sysvshm',
+                    tiles: [
+                        new PhpInfoTile(
+                            label: 'sysvshm support',
+                            displayValue: 'disabled',
+                            rawValue: 'disabled',
+                            kind: PhpInfoTile::KIND_PILL_MUTED,
+                        ),
+                    ],
+                ),
+            ],
+            modulesHtml: '',
+            configureCommand: '',
+        );
+
+        $html = PhpInfoRenderer::render($view);
+
+        self::assertStringContainsString(
+            '<span class="yii-debug-ext-pill-state">3.53.3</span>',
+            $html,
+            'The state slot must prefer the version over a redundant on.',
+        );
+        self::assertStringContainsString(
+            'class="yii-debug-ext-pill is-off"',
+            $html,
+            'A module reporting only a muted fact must render as `is-off`.',
+        );
+        self::assertStringContainsString(
+            'title="PDO Driver for SQLite 3.x: enabled · SQLite Library: 3.53.3"',
+            $html,
+            'Every fact must survive in the tooltip.',
         );
     }
 

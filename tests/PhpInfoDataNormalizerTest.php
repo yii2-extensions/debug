@@ -82,7 +82,7 @@ final class PhpInfoDataNormalizerTest extends TestCase
             'Enabled module capabilities must render as success pills.',
         );
         self::assertStringContainsString(
-            'class="yii-debug-phpinfo-fact-subheading-cell">Features</th>',
+            '<tr class="yii-debug-phpinfo-fact-subheading"><th colspan="2">Features</th></tr>',
             $view->modulesHtml,
             'Single-cell labels inside fact tables must become full-width subsection headings.',
         );
@@ -574,6 +574,33 @@ final class PhpInfoDataNormalizerTest extends TestCase
             '>unchanged</td>',
             $view->modulesHtml,
             'Environment names containing CHPWD must not be treated as credentials.',
+        );
+    }
+
+    public function testFromOutputRedactsSensitiveVariablesWhenTableHasNoVariableHeader(): void
+    {
+        $body = '<h2>Environment</h2>'
+            . '<table>'
+            . '<tr><td class="e">DB_PASSWORD</td><td class="v">sensitive-database-password</td></tr>'
+            . '<tr><td class="e">APP_NAME</td><td class="v">Yii application</td></tr>'
+            . '</table>';
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringNotContainsString(
+            'sensitive-database-password',
+            $view->modulesHtml,
+            'Redaction must survive the fallback taken when grouping is impossible.',
+        );
+        self::assertStringContainsString(
+            'aria-label="Sensitive value hidden">redacted</span>',
+            $view->modulesHtml,
+            'Placeholder must replace the credential.',
+        );
+        self::assertStringContainsString(
+            '>Yii application</td>',
+            $view->modulesHtml,
+            'Ordinary values must stay visible.',
         );
     }
 

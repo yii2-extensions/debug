@@ -28,10 +28,6 @@ function plural(count, singular, pluralForm) {
   return count + " " + (count === 1 ? singular : pluralForm);
 }
 
-export function formatPhpInfoModuleCount(count) {
-  return plural(count, "module", "modules");
-}
-
 export function formatPhpInfoSearchStatus(
   matchCount,
   matchModuleCount,
@@ -172,9 +168,6 @@ export function initPhpInfoSearch(root) {
   var compactDetails = root.querySelector(
     "[data-yii-debug-phpinfo-extensions]",
   );
-  var compactCount = root.querySelector(
-    "[data-yii-debug-phpinfo-extensions-count]",
-  );
   var overviewStaticSections = toArray(
     root.querySelectorAll(
       "#phpinfo-overview .yii-debug-phpinfo-overview-hero-section:not(.yii-debug-phpinfo-extensions)",
@@ -223,12 +216,6 @@ export function initPhpInfoSearch(root) {
         count.textContent = count.getAttribute("data-yii-debug-phpinfo-total");
       }
     });
-
-    if (compactCount) {
-      compactCount.textContent = formatPhpInfoModuleCount(
-        Number(compactCount.getAttribute("data-yii-debug-phpinfo-total")),
-      );
-    }
 
     overviewStaticSections.forEach(function (section) {
       section.hidden = false;
@@ -379,17 +366,6 @@ export function initPhpInfoSearch(root) {
             );
           }
         });
-
-        if (compactCount && compactSectionMatchCount > 0) {
-          var compactTotal = Number(
-            compactCount.getAttribute("data-yii-debug-phpinfo-total"),
-          );
-
-          compactCount.textContent = formatPhpInfoFilteredCount(
-            compactSectionMatchCount,
-            formatPhpInfoModuleCount(compactTotal),
-          );
-        }
 
         if (compactDetails) {
           compactDetails.open = compactSectionMatchCount > 0;

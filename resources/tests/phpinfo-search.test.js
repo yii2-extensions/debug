@@ -3,17 +3,11 @@ import test from "node:test";
 
 import {
   formatPhpInfoFilteredCount,
-  formatPhpInfoModuleCount,
   formatPhpInfoSearchStatus,
   matchesPhpInfoCompactModule,
   normalizePhpInfoQuery,
   resolvePhpInfoTocGroupState,
 } from "../src/panels/phpinfo-search.js";
-
-test("formatPhpInfoModuleCount pluralizes the disclosure total", () => {
-  assert.equal(formatPhpInfoModuleCount(1), "1 module");
-  assert.equal(formatPhpInfoModuleCount(24), "24 modules");
-});
 
 test("formatPhpInfoFilteredCount keeps the original total visible", () => {
   assert.equal(formatPhpInfoFilteredCount(1, "142 rows"), "1 of 142 rows");
