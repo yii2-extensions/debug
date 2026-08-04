@@ -169,7 +169,7 @@ final class PhpInfoRenderer
     /**
      * @param list<PhpInfoCompactModule> $modules
      */
-    private static function renderCompactModules(array $modules): Section
+    private static function renderCompactModules(array $modules): Details
     {
         $groupedModules = [];
 
@@ -205,6 +205,8 @@ final class PhpInfoRenderer
                         ->html(
                             Span::tag()->content($label),
                             Span::tag()
+                                ->addDataAttribute('yii-debug-phpinfo-extension-group-count', true)
+                                ->addDataAttribute('yii-debug-phpinfo-total', count($groupModules))
                                 ->class('yii-debug-phpinfo-extension-group-count')
                                 ->content((string) count($groupModules)),
                         ),
@@ -214,19 +216,22 @@ final class PhpInfoRenderer
                 );
         }
 
-        return Section::tag()
+        return Details::tag()
             ->addAriaAttribute('label', 'Loaded extensions')
+            ->addDataAttribute('yii-debug-phpinfo-extensions', true)
             ->class('yii-debug-phpinfo-overview-hero-section yii-debug-phpinfo-extensions')
             ->html(
-                Header::tag()
-                    ->class('yii-debug-phpinfo-overview-block-head')
+                Summary::tag()
+                    ->class('yii-debug-phpinfo-overview-block-head yii-debug-phpinfo-extensions-summary')
                     ->html(
                         Span::tag()
                             ->class('yii-debug-phpinfo-overview-block-eyebrow')
                             ->content('Loaded extensions'),
                         Span::tag()
+                            ->addDataAttribute('yii-debug-phpinfo-extensions-count', true)
+                            ->addDataAttribute('yii-debug-phpinfo-total', count($modules))
                             ->class('yii-debug-phpinfo-extensions-count')
-                            ->content(count($modules) . ' summarized'),
+                            ->content(count($modules) . (count($modules) === 1 ? ' module' : ' modules')),
                     ),
                 Div::tag()
                     ->class('yii-debug-phpinfo-extension-groups')

@@ -28,6 +28,10 @@ function plural(count, singular, pluralForm) {
   return count + " " + (count === 1 ? singular : pluralForm);
 }
 
+export function formatPhpInfoModuleCount(count) {
+  return plural(count, "module", "modules");
+}
+
 export function formatPhpInfoSearchStatus(
   matchCount,
   matchModuleCount,
@@ -131,12 +135,18 @@ function resetSection(section) {
 
 function markLocalOverrides(sections) {
   sections.forEach(function (section) {
-    toArray(section.querySelectorAll("tr")).forEach(function (row) {
+    toArray(
+      section.querySelectorAll(
+        ".yii-debug-phpinfo-table-section.is-directives tr",
+      ),
+    ).forEach(function (row) {
       if (row.classList.contains("h")) return;
 
+      var label = row.querySelector('th[scope="row"]');
       var values = toArray(row.querySelectorAll("td"));
 
       if (
+        label !== null &&
         values.length === 2 &&
         values[0].textContent.trim() !== values[1].textContent.trim()
       ) {
@@ -159,6 +169,12 @@ export function initPhpInfoSearch(root) {
   var compactGroups = toArray(
     root.querySelectorAll(".yii-debug-phpinfo-extension-group"),
   );
+  var compactDetails = root.querySelector(
+    "[data-yii-debug-phpinfo-extensions]",
+  );
+  var compactCount = root.querySelector(
+    "[data-yii-debug-phpinfo-extensions-count]",
+  );
   var overviewStaticSections = toArray(
     root.querySelectorAll(
       "#phpinfo-overview .yii-debug-phpinfo-overview-hero-section:not(.yii-debug-phpinfo-extensions)",
@@ -173,12 +189,17 @@ export function initPhpInfoSearch(root) {
   );
   var sectionById = Object.create(null);
   var compactById = Object.create(null);
+  var compactDetailsOpenBeforeFilter = false;
+  var filterActive = false;
+  var filterTimer;
   var selectedId;
 
   if (!sections.length) return;
 
   sections.forEach(function (section) {
-    sectionById[section.id] = section;
+    if (section.id !== "") {
+      sectionById[section.id] = section;
+    }
   });
 
   compactModules.forEach(function (module) {
@@ -193,13 +214,46 @@ export function initPhpInfoSearch(root) {
 
     compactGroups.forEach(function (group) {
       group.hidden = false;
+
+      var count = group.querySelector(
+        "[data-yii-debug-phpinfo-extension-group-count]",
+      );
+
+      if (count) {
+        count.textContent = count.getAttribute("data-yii-debug-phpinfo-total");
+      }
     });
+
+    if (compactCount) {
+      compactCount.textContent = formatPhpInfoModuleCount(
+        Number(compactCount.getAttribute("data-yii-debug-phpinfo-total")),
+      );
+    }
 
     overviewStaticSections.forEach(function (section) {
       section.hidden = false;
     });
 
     if (configureDetails) configureDetails.hidden = false;
+  }
+
+  function beginFilter() {
+    if (filterActive) return;
+
+    compactDetailsOpenBeforeFilter = compactDetails
+      ? compactDetails.open
+      : false;
+    filterActive = true;
+  }
+
+  function endFilter() {
+    if (!filterActive) return;
+
+    if (compactDetails) {
+      compactDetails.open = compactDetailsOpenBeforeFilter;
+    }
+
+    filterActive = false;
   }
 
   function updateToc(activeId, visibleIds) {
@@ -253,6 +307,7 @@ export function initPhpInfoSearch(root) {
   }
 
   function selectSection(id, updateHash) {
+    endFilter();
     selectedId = sectionById[id] ? id : sections[0].id;
 
     if (search) search.value = "";
@@ -266,9 +321,12 @@ export function initPhpInfoSearch(root) {
     var query = normalizePhpInfoQuery(search ? search.value : "");
 
     if (!query) {
+      endFilter();
       showSelected();
       return;
     }
+
+    beginFilter();
 
     var visibleIds = Object.create(null);
     var matchCount = 0;
@@ -303,12 +361,39 @@ export function initPhpInfoSearch(root) {
         });
 
         compactGroups.forEach(function (group) {
-          group.hidden = !toArray(
+          var visibleModules = toArray(
             group.querySelectorAll("[data-yii-debug-phpinfo-compact-module]"),
-          ).some(function (module) {
+          ).filter(function (module) {
             return !module.hidden;
           });
+          var groupCount = group.querySelector(
+            "[data-yii-debug-phpinfo-extension-group-count]",
+          );
+
+          group.hidden = visibleModules.length === 0;
+
+          if (groupCount && visibleModules.length > 0) {
+            groupCount.textContent = formatPhpInfoFilteredCount(
+              visibleModules.length,
+              groupCount.getAttribute("data-yii-debug-phpinfo-total"),
+            );
+          }
         });
+
+        if (compactCount && compactSectionMatchCount > 0) {
+          var compactTotal = Number(
+            compactCount.getAttribute("data-yii-debug-phpinfo-total"),
+          );
+
+          compactCount.textContent = formatPhpInfoFilteredCount(
+            compactSectionMatchCount,
+            formatPhpInfoModuleCount(compactTotal),
+          );
+        }
+
+        if (compactDetails) {
+          compactDetails.open = compactSectionMatchCount > 0;
+        }
 
         overviewStaticSections.forEach(function (overviewSection) {
           overviewSection.hidden = true;
@@ -337,8 +422,10 @@ export function initPhpInfoSearch(root) {
               wrap.open = matchingRows.length > 0;
             }
 
+            var matchingRowSet = new Set(matchingRows);
+
             rows.forEach(function (row) {
-              var rowMatch = matchingRows.indexOf(row) !== -1;
+              var rowMatch = matchingRowSet.has(row);
               var header = row.classList.contains("h");
 
               row.hidden = !rowMatch && !(header && matchingRows.length > 0);
@@ -381,27 +468,49 @@ export function initPhpInfoSearch(root) {
   }
 
   function clearSearch() {
+    window.clearTimeout(filterTimer);
+
     if (search) {
       search.value = "";
       search.focus();
     }
 
+    endFilter();
     showSelected();
+  }
+
+  function revealCompactModule(module, scroll) {
+    selectSection("phpinfo-overview", false);
+
+    if (compactDetails) compactDetails.open = true;
+
+    if (scroll && module && typeof module.scrollIntoView === "function") {
+      window.setTimeout(function () {
+        module.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+    }
   }
 
   markLocalOverrides(sections);
 
   var hashId = window.location.hash.replace(/^#/, "");
 
+  var hashCompactModule = compactById[hashId] || null;
+
   selectedId = sectionById[hashId]
     ? hashId
-    : compactById[hashId]
+    : hashCompactModule
       ? "phpinfo-overview"
       : sections[0].id;
   showSelected();
 
+  if (hashCompactModule) revealCompactModule(hashCompactModule, true);
+
   if (search) {
-    search.addEventListener("input", applyFilter);
+    search.addEventListener("input", function () {
+      window.clearTimeout(filterTimer);
+      filterTimer = window.setTimeout(applyFilter, 120);
+    });
     search.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && search.value !== "") {
         event.preventDefault();
@@ -431,7 +540,7 @@ export function initPhpInfoSearch(root) {
     if (sectionById[id]) {
       selectSection(id, false);
     } else if (compactById[id]) {
-      selectSection("phpinfo-overview", false);
+      revealCompactModule(compactById[id], true);
     }
   });
 }

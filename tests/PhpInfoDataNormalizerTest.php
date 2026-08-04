@@ -516,6 +516,7 @@ final class PhpInfoDataNormalizerTest extends TestCase
             . '<tr><td class="e">APP_KEY</td><td class="v">sensitive-app-key</td></tr>'
             . '<tr><td class="e">$_SERVER[\'PHP_AUTH_PW\']</td><td class="v">sensitive-basic-auth-value</td></tr>'
             . '<tr><td class="e">WEBHOOK_SIGNATURE</td><td class="v">sensitive-signature-value</td></tr>'
+            . '<tr><td class="e">database_url</td><td class="v">sensitive-database-url</td></tr>'
             . '<tr><td class="e">PWD</td><td class="v">/srv/app</td></tr>'
             . '<tr><td class="e">OLDPWD</td><td class="v">/srv</td></tr>'
             . '<tr><td class="e">CHPWD_STATUS</td><td class="v">unchanged</td></tr>'
@@ -543,6 +544,11 @@ final class PhpInfoDataNormalizerTest extends TestCase
             'sensitive-signature-value',
             $view->modulesHtml,
             'Signature values must never reach the rendered phpinfo HTML.',
+        );
+        self::assertStringNotContainsString(
+            'sensitive-database-url',
+            $view->modulesHtml,
+            'Lowercase credential-like variable values must never reach the rendered phpinfo HTML.',
         );
         self::assertStringContainsString(
             'aria-label="Sensitive value hidden">redacted</span>',

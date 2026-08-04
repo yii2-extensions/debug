@@ -502,11 +502,7 @@ final class PhpInfoDataNormalizer
 
     private static function isSensitiveVariableKey(string $key): bool
     {
-        $isRuntimeVariable = str_starts_with($key, '$_');
-        $isEnvironmentVariable = $key !== '' && strtolower($key) !== $key;
-
-        return ($isRuntimeVariable || $isEnvironmentVariable)
-            && preg_match(self::SENSITIVE_VARIABLE_PATTERN, $key) === 1;
+        return preg_match(self::SENSITIVE_VARIABLE_PATTERN, $key) === 1;
     }
 
     private static function moduleBodyHasContent(string $moduleBody): bool
@@ -989,9 +985,10 @@ final class PhpInfoDataNormalizer
         $wrapped = preg_replace_callback(
             '%<table\b[^>]*>(.*?)</table>%si',
             static function (array $table) use ($redactSensitiveVariables): string {
-                $body = $redactSensitiveVariables ? self::redactSensitiveRows($table[1]) : $table[1];
+                $variableBody = $redactSensitiveVariables ? self::redactSensitiveRows($table[1]) : $table[1];
+                $variableTable = self::normalizeVariableTables($variableBody);
 
-                return self::normalizeVariableTables($body) ?? self::normalizeModuleTable($body);
+                return $variableTable ?? self::normalizeModuleTable($table[1]);
             },
             $modulesSrc,
         );

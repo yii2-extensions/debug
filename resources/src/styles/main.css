@@ -5260,7 +5260,7 @@
     &::before {
       content: "›";
       color: var(--yii-debug-panel-muted);
-      font-size: var(--yii-debug-fs-md);
+      font-size: 1.1em;
       line-height: 1;
       transition: transform 120ms ease;
     }
@@ -5607,6 +5607,42 @@
    */
   .yii-debug-phpinfo-extensions {
     grid-column: 1 / -1;
+
+    &:not([open]) {
+      gap: 0;
+    }
+
+    &:not([open]) > .yii-debug-phpinfo-extensions-summary {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    &[open] > .yii-debug-phpinfo-extensions-summary::after {
+      transform: rotate(90deg);
+    }
+  }
+
+  .yii-debug-phpinfo-extensions-summary {
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::after {
+      content: "›";
+      color: var(--yii-debug-panel-muted);
+      font-size: 1.1em;
+      line-height: 1;
+      transition: transform 120ms ease;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--yii-debug-panel-link-hover);
+      outline: 0;
+    }
   }
 
   .yii-debug-phpinfo-extensions-count,
@@ -5625,7 +5661,7 @@
   .yii-debug-phpinfo-extension-groups {
     display: flex;
     flex-direction: column;
-    gap: var(--yii-debug-space-4);
+    gap: var(--yii-debug-space-3);
   }
 
   .yii-debug-phpinfo-extension-group {
@@ -5645,17 +5681,23 @@
 
   .yii-debug-phpinfo-extension-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: var(--yii-debug-space-2);
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    overflow: hidden;
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-sm);
+    background: var(--yii-debug-panel-border);
+    gap: 1px;
   }
 
   .yii-debug-phpinfo-extension {
+    display: grid;
+    grid-template-columns: minmax(90px, 0.7fr) minmax(0, 1.3fr);
+    align-items: start;
+    gap: var(--yii-debug-space-2);
     min-width: 0;
     scroll-margin-top: var(--yii-debug-space-3);
-    padding: var(--yii-debug-space-3);
-    border: var(--yii-debug-border);
-    border-radius: var(--yii-debug-radius-sm);
-    background: var(--yii-debug-panel-surface-muted);
+    padding: 9px 10px;
+    background: var(--yii-debug-panel-surface);
 
     &:target {
       border-color: color-mix(
@@ -5682,7 +5724,7 @@
   }
 
   .yii-debug-phpinfo-extension-head {
-    margin-bottom: var(--yii-debug-space-2);
+    margin: 1px 0 0;
 
     code {
       padding: 0;
@@ -5696,7 +5738,7 @@
   .yii-debug-phpinfo-extension-facts {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     margin: 0;
   }
 
@@ -5727,6 +5769,16 @@
         background: transparent;
         color: inherit;
       }
+    }
+  }
+
+  @media (width <= 560px) {
+    .yii-debug-phpinfo-extension-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .yii-debug-phpinfo-extension {
+      grid-template-columns: minmax(85px, 0.7fr) minmax(0, 1.3fr);
     }
   }
 

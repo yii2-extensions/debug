@@ -3,11 +3,17 @@ import test from "node:test";
 
 import {
   formatPhpInfoFilteredCount,
+  formatPhpInfoModuleCount,
   formatPhpInfoSearchStatus,
   matchesPhpInfoCompactModule,
   normalizePhpInfoQuery,
   resolvePhpInfoTocGroupState,
 } from "../src/panels/phpinfo-search.js";
+
+test("formatPhpInfoModuleCount pluralizes the disclosure total", () => {
+  assert.equal(formatPhpInfoModuleCount(1), "1 module");
+  assert.equal(formatPhpInfoModuleCount(24), "24 modules");
+});
 
 test("formatPhpInfoFilteredCount keeps the original total visible", () => {
   assert.equal(formatPhpInfoFilteredCount(1, "142 rows"), "1 of 142 rows");
@@ -38,6 +44,7 @@ test("matchesPhpInfoCompactModule searches its title and summarized facts", () =
 });
 
 test("formatPhpInfoSearchStatus describes matching settings", () => {
+  assert.equal(formatPhpInfoSearchStatus(0, 0, 0), "");
   assert.equal(formatPhpInfoSearchStatus(1, 1, 0), "1 match in 1 module");
   assert.equal(formatPhpInfoSearchStatus(4, 2, 0), "4 matches in 2 modules");
 });
@@ -51,6 +58,10 @@ test("formatPhpInfoSearchStatus keeps module-name matches distinct", () => {
 });
 
 test("resolvePhpInfoTocGroupState opens only the active module group", () => {
+  assert.deepEqual(resolvePhpInfoTocGroupState([], "", null), {
+    hidden: true,
+    open: false,
+  });
   assert.deepEqual(
     resolvePhpInfoTocGroupState(
       ["phpinfo-core", "phpinfo-date"],

@@ -442,6 +442,16 @@ final class PhpInfoRendererTest extends TestCase
             $html,
             'Summarized modules must expose the search hook.',
         );
+        self::assertStringContainsString(
+            'data-yii-debug-phpinfo-extensions="true"',
+            $html,
+            'Summarized modules must live in an identifiable disclosure.',
+        );
+        self::assertStringContainsString(
+            '1 module',
+            $html,
+            'The disclosure must expose its summarized module count.',
+        );
         self::assertStringNotContainsString(
             'href="#phpinfo-calendar"',
             $html,
