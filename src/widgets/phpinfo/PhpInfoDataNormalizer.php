@@ -29,7 +29,6 @@ use function preg_replace_callback;
 use function rtrim;
 use function sprintf;
 use function str_contains;
-use function str_replace;
 use function str_starts_with;
 use function strip_tags;
 use function stripos;
@@ -54,62 +53,55 @@ use const PREG_SET_ORDER;
 final class PhpInfoDataNormalizer
 {
     /**
+     * Matches a `class` attribute together with its leading whitespace, in either quoting style.
+     */
+    private const string CLASS_ATTRIBUTE_PATTERN = '/\s*\bclass=("[^"]*"|\'[^\']*\')/i';
+    /**
      * Matches the key cell of a phpinfo row (`class="e"`), whether it is still a `<td>` or already a row header.
      */
     private const string KEY_CELL_PATTERN = '%<(?:th|td)\b[^>]*class="[^"]*\be\b[^"]*"[^>]*>(.*?)</(?:th|td)>%si';
-
     /**
      * Matches phpinfo's header row (`<tr class="h">`) anchored at the start of a table body.
      */
     private const string LEADING_HEADER_ROW_PATTERN = '%^\s*<tr\b[^>]*class="[^"]*\bh\b[^"]*"[^>]*>.*?</tr>%si';
-
     /**
      * phpinfo() exposes environment variables and superglobals verbatim. Keep credentials out of the rendered HTML
      * while leaving ordinary module directives (for example, session.cookie_path) untouched.
      */
     private const string SENSITIVE_VARIABLE_PATTERN
         = '/password|passwd|token|secret|credential|authorization|signature|php[_-]?auth|auth[_-]?key|cookie|session[_-]?(?:id|key|token)|xsrf|csrf|(?:api|app|private|access|encryption|signing)[_-]?key|(?:database|db)[_-]?url|dsn/i';
-
     /**
      * Values reported by extensions for a capability that is unavailable.
      */
     private const array STATUS_MUTED = ['disabled', 'inactive', 'no', 'not compiled in', 'not supported', 'off'];
-
     /**
      * Values reported by extensions for a capability that is available.
      */
     private const array STATUS_SUCCESS = ['active', 'enabled', 'on', 'supported', 'up and running', 'yes'];
-
     /**
      * Matches a `<th>` or `<td>` and captures its content.
      */
     private const string TABLE_CELL_PATTERN = '%<(?:th|td)\b[^>]*>(.*?)</(?:th|td)>%si';
-
     /**
      * Free-form key/value table ('Variable | Value', statistics, contributor lists).
      */
     private const string TABLE_KIND_DATA = 'data';
-
     /**
      * `php.ini` directive table with local and master values.
      */
     private const string TABLE_KIND_DIRECTIVES = 'directives';
-
     /**
      * Module information table: capability flags and versions.
      */
     private const string TABLE_KIND_FACTS = 'facts';
-
     /**
      * Single-column prose table (licenses, credits blurbs).
      */
     private const string TABLE_KIND_NOTE = 'note';
-
     /**
      * Matches a `<table>` and captures its body.
      */
     private const string TABLE_PATTERN = '%<table\b[^>]*>(.*?)</table>%si';
-
     /**
      * Matches a `<tr>` and captures its attributes and its content.
      */
@@ -154,22 +146,19 @@ final class PhpInfoDataNormalizer
     }
 
     /**
-     * Merges a class into a `<tr>` attribute string, dropping phpinfo's own `class="h"` marker.
+     * Replaces the class of a `<tr>` attribute string, preserving any other attribute.
+     *
+     * Rows reaching this point are restyled wholesale, so phpinfo's own presentational markers (`h`, `v`) are dropped
+     * rather than merged.
      *
      * @param string $attributes Raw attribute string captured from the source row.
-     * @param string $class Class to add.
+     * @param string $class Class to apply.
      */
     private static function addRowClass(string $attributes, string $class): string
     {
-        $attributes = trim(str_replace(['class="h"', "class='h'"], '', trim($attributes)));
+        $withoutClass = (string) preg_replace(self::CLASS_ATTRIBUTE_PATTERN, '', trim($attributes));
 
-        if (str_contains($attributes, 'class="')) {
-            $withClass = preg_replace('/class="([^"]*)"/', 'class="$1 ' . $class . '"', $attributes, 1);
-
-            return $withClass ?? $attributes;
-        }
-
-        return trim($attributes . ' class="' . $class . '"');
+        return trim("{$withoutClass} class=\"{$class}\"");
     }
 
     /**

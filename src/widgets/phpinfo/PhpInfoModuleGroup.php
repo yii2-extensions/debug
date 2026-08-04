@@ -27,7 +27,6 @@ final class PhpInfoModuleGroup
      * Reporting blocks that {@see phpinfo()} emits as modules but that describe the environment, not an extension.
      */
     public const string ENVIRONMENT = 'Environment';
-
     /**
      * Bucket for unknown and third-party modules.
      */
