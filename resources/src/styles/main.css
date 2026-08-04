@@ -5938,7 +5938,7 @@
         &::before {
           content: "›";
           color: var(--yii-debug-panel-muted);
-          font-size: var(--yii-debug-fs-md);
+          font-size: 1.1em;
           line-height: 1;
           transition: transform 120ms ease;
         }
