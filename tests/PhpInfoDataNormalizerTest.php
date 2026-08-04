@@ -384,6 +384,32 @@ final class PhpInfoDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromOutputIgnoresColspanSubheadingsWhenSummarizingAModule(): void
+    {
+        // `php_info_print_table_colspan_header()` emits a single-cell row inside an otherwise two-column facts table.
+        $body = <<<'HTML'
+        <h2>ftp</h2>
+        <table>
+        <tr><td class="e">FTP support</td><td class="v">enabled</td></tr>
+        <tr><td class="e">Features</td></tr>
+        <tr><td class="e">FTPS support</td><td class="v">enabled</td></tr>
+        </table>
+        HTML;
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+        $module = $view->compactModules[0] ?? null;
+
+        self::assertNotNull(
+            $module,
+            'A subheading must not stop the module from being summarized.',
+        );
+        self::assertSame(
+            ['FTP support', 'FTPS support'],
+            array_map(static fn(PhpInfoTile $tile): string => $tile->label, $module->tiles),
+            'Only the two-cell rows may become tiles.',
+        );
+    }
+
     public function testFromOutputKeepsAbsolutePathVerbatimWhenHomeNotResolved(): void
     {
         $body = '<table><tr><td>Loaded Configuration File</td><td>/etc/php/cli/php.ini</td></tr></table>';
@@ -789,6 +815,29 @@ final class PhpInfoDataNormalizerTest extends TestCase
             '/home/dev/projects/app/php.ini',
             $tile->rawValue,
             'Raw path must be preserved alongside the shortened display value.',
+        );
+    }
+
+    public function testFromOutputShortensHomeDirectoryInsideConfigureCommand(): void
+    {
+        $_SERVER['HOME'] = '/home/dev';
+
+        $body = <<<'HTML'
+        <table><tr><td>Configure Command</td>
+        <td>'./configure' '--prefix=/home/dev/.local/php' '--with-config=/opt/home/dev/etc'</td></tr></table>
+        HTML;
+
+        $view = PhpInfoDataNormalizer::fromOutput($body, 'x', 'cli', 'Linux', '');
+
+        self::assertStringContainsString(
+            "'--prefix=~/.local/php'",
+            $view->configureCommand,
+            'Account name must not leak through build flags.',
+        );
+        self::assertStringContainsString(
+            "'--with-config=/opt/home/dev/etc'",
+            $view->configureCommand,
+            'A directory merely ending in the home path must survive.',
         );
     }
 

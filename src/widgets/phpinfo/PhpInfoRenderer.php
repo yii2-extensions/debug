@@ -169,9 +169,7 @@ final class PhpInfoRenderer
                         Span::tag()
                             ->class('yii-debug-phpinfo-overview-details-label')
                             ->content('Loaded extensions'),
-                        Span::tag()
-                            ->class('yii-debug-phpinfo-overview-details-hint')
-                            ->content('click to expand'),
+                        self::renderDisclosureHint(),
                     ),
                 Div::tag()
                     ->class('yii-debug-phpinfo-extension-groups')
@@ -198,15 +196,35 @@ final class PhpInfoRenderer
                         Span::tag()
                             ->class('yii-debug-phpinfo-overview-details-label')
                             ->content('Configure Command'),
-                        Span::tag()
-                            ->class('yii-debug-phpinfo-overview-details-hint')
-                            ->content('click to expand'),
+                        self::renderDisclosureHint(),
                     ),
                 Pre::tag()
                     ->class('yii-debug-phpinfo-overview-details-body')
                     ->content($command),
             )
             ->render();
+    }
+
+    /**
+     * Renders the affordance shown on the right of a disclosure summary.
+     *
+     * Both wordings ship in the markup and CSS reveals the one matching the `open` state, so the hint stays truthful
+     * without a script. The `<summary>` element already announces the state through `aria-expanded`, so the hidden
+     * wording is kept out of the accessibility tree.
+     */
+    private static function renderDisclosureHint(): Span
+    {
+        return Span::tag()
+            ->class('yii-debug-phpinfo-overview-details-hint')
+            ->addAriaAttribute('hidden', 'true')
+            ->html(
+                Span::tag()
+                    ->addDataAttribute('yii-debug-phpinfo-hint', 'collapsed')
+                    ->content('click to expand'),
+                Span::tag()
+                    ->addDataAttribute('yii-debug-phpinfo-hint', 'expanded')
+                    ->content('click to collapse'),
+            );
     }
 
     /**

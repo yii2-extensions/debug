@@ -28,23 +28,28 @@ function plural(count, singular, pluralForm) {
   return count + " " + (count === 1 ? singular : pluralForm);
 }
 
+/**
+ * Names each kind of hit separately. Reusing "module" for a matching section
+ * name, a matching extension and the section a matching row lives in made the
+ * summary ambiguous, so every count now carries its own noun.
+ */
 export function formatPhpInfoSearchStatus(
-  matchCount,
-  matchModuleCount,
-  titleMatchCount,
+  rowMatchCount,
+  moduleMatchCount,
+  extensionMatchCount,
 ) {
   var parts = [];
 
-  if (titleMatchCount > 0) {
-    parts.push(plural(titleMatchCount, "module", "modules"));
+  if (moduleMatchCount > 0) {
+    parts.push(plural(moduleMatchCount, "module", "modules"));
   }
 
-  if (matchCount > 0) {
-    parts.push(
-      plural(matchCount, "match", "matches") +
-        " in " +
-        plural(matchModuleCount, "module", "modules"),
-    );
+  if (extensionMatchCount > 0) {
+    parts.push(plural(extensionMatchCount, "extension", "extensions"));
+  }
+
+  if (rowMatchCount > 0) {
+    parts.push(plural(rowMatchCount, "matching row", "matching rows"));
   }
 
   return parts.join(" · ");
@@ -317,7 +322,6 @@ export function initPhpInfoSearch(root) {
 
     var visibleIds = Object.create(null);
     var matchCount = 0;
-    var matchModuleCount = 0;
     var titleMatchCount = 0;
     var compactMatchCount = 0;
 
@@ -418,11 +422,7 @@ export function initPhpInfoSearch(root) {
 
       if (visible) visibleIds[section.id] = true;
 
-      if (sectionMatchCount > 0) {
-        matchCount += sectionMatchCount;
-        matchModuleCount++;
-      }
-
+      matchCount += sectionMatchCount;
       compactMatchCount += compactSectionMatchCount;
     });
 
@@ -431,8 +431,8 @@ export function initPhpInfoSearch(root) {
     if (status) {
       status.textContent = formatPhpInfoSearchStatus(
         matchCount,
-        matchModuleCount,
-        titleMatchCount + compactMatchCount,
+        titleMatchCount,
+        compactMatchCount,
       );
     }
 

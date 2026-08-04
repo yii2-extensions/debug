@@ -23,6 +23,7 @@ use function posix_getpwuid;
 use function posix_getuid;
 use function preg_match;
 use function preg_match_all;
+use function preg_quote;
 use function preg_replace;
 use function preg_replace_callback;
 use function rtrim;
@@ -140,7 +141,7 @@ final class PhpInfoDataNormalizer
             tocEntries: $tocEntries,
             compactModules: $compactModules,
             modulesHtml: $modulesHtml,
-            configureCommand: self::pluck($overviewRows, 'Configure Command'),
+            configureCommand: self::shortenHomePaths(self::pluck($overviewRows, 'Configure Command'), $home),
         );
     }
 
@@ -1010,6 +1011,27 @@ final class PhpInfoDataNormalizer
         }
 
         return 'Other';
+    }
+
+    /**
+     * Replaces every home directory occurrence inside free-form text with `~`, keeping the Configure Command in step
+     * with the shortened Configuration paths instead of leaking the account name.
+     *
+     * The lookbehind anchors the match to a path boundary, so an unrelated directory ending in the home path (for
+     * example `/opt/home/dev`) survives untouched.
+     *
+     * @param string $value Text that may embed absolute paths.
+     * @param string $home Home directory; empty string leaves the text untouched.
+     */
+    private static function shortenHomePaths(string $value, string $home): string
+    {
+        if ($home === '') {
+            return $value;
+        }
+
+        $pattern = '#(?<![\w/])' . preg_quote($home, '#') . '/#';
+
+        return (string) preg_replace($pattern, '~/', $value);
     }
 
     /**

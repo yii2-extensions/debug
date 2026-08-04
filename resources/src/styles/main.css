@@ -5797,12 +5797,31 @@
     text-transform: uppercase;
   }
 
+  /**
+   * Both wordings ship in the markup; only the one matching the disclosure
+   * state is revealed, so the affordance never invites a click it cannot
+   * honour. `<summary>` already exposes the state via `aria-expanded`.
+   */
   .yii-debug-phpinfo-overview-details-hint {
     color: var(--yii-debug-panel-muted);
     font-family: var(--yii-debug-font-mono);
     font-size: var(--yii-debug-fs-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
+
+    [data-yii-debug-phpinfo-hint="expanded"] {
+      display: none;
+    }
+  }
+
+  details[open] > summary .yii-debug-phpinfo-overview-details-hint {
+    [data-yii-debug-phpinfo-hint="collapsed"] {
+      display: none;
+    }
+
+    [data-yii-debug-phpinfo-hint="expanded"] {
+      display: inline;
+    }
   }
 
   .yii-debug-phpinfo-overview-details-body {

@@ -37,17 +37,22 @@ test("matchesPhpInfoCompactModule searches its title and summarized facts", () =
   );
 });
 
-test("formatPhpInfoSearchStatus describes matching settings", () => {
+test("formatPhpInfoSearchStatus counts matching rows", () => {
   assert.equal(formatPhpInfoSearchStatus(0, 0, 0), "");
-  assert.equal(formatPhpInfoSearchStatus(1, 1, 0), "1 match in 1 module");
-  assert.equal(formatPhpInfoSearchStatus(4, 2, 0), "4 matches in 2 modules");
+  assert.equal(formatPhpInfoSearchStatus(1, 0, 0), "1 matching row");
+  assert.equal(formatPhpInfoSearchStatus(4, 0, 0), "4 matching rows");
 });
 
-test("formatPhpInfoSearchStatus keeps module-name matches distinct", () => {
-  assert.equal(formatPhpInfoSearchStatus(0, 0, 1), "1 module");
+test("formatPhpInfoSearchStatus names modules, extensions and rows apart", () => {
+  assert.equal(formatPhpInfoSearchStatus(0, 1, 0), "1 module");
+  assert.equal(formatPhpInfoSearchStatus(0, 0, 1), "1 extension");
   assert.equal(
-    formatPhpInfoSearchStatus(2, 1, 1),
-    "1 module · 2 matches in 1 module",
+    formatPhpInfoSearchStatus(1, 0, 1),
+    "1 extension · 1 matching row",
+  );
+  assert.equal(
+    formatPhpInfoSearchStatus(2, 2, 3),
+    "2 modules · 3 extensions · 2 matching rows",
   );
 });
 
