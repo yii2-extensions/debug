@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: replace mutation-prone string concatenations with equivalent interpolation and formatting, removing 213 surviving mutants across debugger URLs, summaries, panels, and renderers.
 - refactor: remove redundant sidebar URL guards and eliminate 50 surviving mutants across mail search and sidebar navigation.
 - refactor: rework phpinfo with grouped module navigation, scoped search, compact extension summaries, accessible disclosures, and redaction of sensitive environment values from rendered output.
+- feat(ui): highlight SQL in the Profiling info cell and collapse long statements behind the shared clamp, and show Inertia prop values in full behind the same clamp instead of truncating them at 100 characters.
 
 ## 0.1.1 May 18, 2026
 

@@ -1261,10 +1261,17 @@
     }
   }
 
-  /* Generic cell utilities applied via GridView contentOptions. */
+  /**
+   * Generic cell utilities, applied via GridView contentOptions or directly on
+   * the hand-built tables. Both flavours honour them so a cell keeps the same
+   * behaviour wherever it is used.
+   */
   .yii-debug-grid td.yii-debug-cell-nowrap,
   .yii-debug-grid td.yii-debug-cell-numeric,
-  .yii-debug-grid td.yii-debug-cell-pill {
+  .yii-debug-grid td.yii-debug-cell-pill,
+  .yii-debug-table td.yii-debug-cell-nowrap,
+  .yii-debug-table td.yii-debug-cell-numeric,
+  .yii-debug-table td.yii-debug-cell-pill {
     white-space: nowrap;
   }
 
@@ -1331,6 +1338,17 @@
 
   .yii-debug-grid td.yii-debug-cell-mono {
     font-family: var(--yii-debug-font-mono);
+  }
+
+  /**
+   * Payload cells (Inertia prop values) hold a JSON summary that has no spaces
+   * to break on. `width: 100%` hands the column the slack the sized columns
+   * leave, and `anywhere` lets the value wrap inside it rather than widening
+   * the table past the panel.
+   */
+  td.yii-debug-cell-payload {
+    width: 100%;
+    overflow-wrap: anywhere;
   }
 
   .yii-debug-grid td.yii-debug-cell-numeric {

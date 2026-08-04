@@ -8,6 +8,8 @@ use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Form\Button;
 use UIAwesome\Html\Form\Values\ButtonType;
 
+use function strlen;
+
 /**
  * Wraps long grid-cell content in a collapsible clamp with an expand/collapse pill toggle.
  *
@@ -17,6 +19,30 @@ use UIAwesome\Html\Form\Values\ButtonType;
  */
 final class CellMore
 {
+    /**
+     * Source length (bytes) beyond which a cell is worth collapsing.
+     */
+    public const int THRESHOLD = 600;
+
+    /**
+     * Wraps the content only when its source payload is long enough to be worth collapsing.
+     *
+     * The decision reads the raw source rather than the rendered markup, so highlighting or trace lists never tip a
+     * short value over the threshold.
+     *
+     * Usage example:
+     * ```php
+     * \yii\debug\helpers\CellMore::clamp($highlightedSql, $row->query);
+     * ```
+     *
+     * @param string $content Rendered cell HTML.
+     * @param string $source Raw payload the content was rendered from.
+     */
+    public static function clamp(string $content, string $source): string
+    {
+        return strlen($source) > self::THRESHOLD ? self::wrap($content) : $content;
+    }
+
     /**
      * Wraps the rendered cell content in the collapsible clamp container.
      *

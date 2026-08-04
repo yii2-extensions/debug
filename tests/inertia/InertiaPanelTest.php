@@ -143,6 +143,37 @@ final class InertiaPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailKeepsLongPropValuesInspectableBehindTheClamp(): void
+    {
+        $panel = $this->makePanel(InertiaPanel::class);
+        $needle = str_repeat('z', 700);
+
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
+            'component' => 'site/index',
+            'props' => ['blob' => $needle, 'short' => 'ok'],
+            'url' => '/site/index',
+            'version' => 'v1',
+        ], ['X-Inertia' => 'true'], [], 200));
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            $needle,
+            $html,
+            'The value must survive whole instead of being cut server side.',
+        );
+        self::assertStringNotContainsString(
+            '…',
+            $html,
+            'No ellipsis may stand in for dropped content.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-cell-payload',
+            $html,
+            'Prop values must claim the wrapping payload cell.',
+        );
+    }
+
     public function testGetDetailMarksSharedAndPageProps(): void
     {
         $panel = $this->makePanel(InertiaPanel::class);
