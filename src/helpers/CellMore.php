@@ -20,6 +20,13 @@ use function strlen;
 final class CellMore
 {
     /**
+     * Row count beyond which a table is worth collapsing.
+     *
+     * Table height tracks the number of rows, not the payload size: a handful of verbose rows reads fine, while many
+     * terse ones still push the page past the viewport.
+     */
+    public const int ROW_THRESHOLD = 12;
+    /**
      * Source length (bytes) beyond which a cell is worth collapsing.
      */
     public const int THRESHOLD = 600;

@@ -8,7 +8,7 @@ use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
-use yii\debug\helpers\{CellMore, Coerce, EmptyState};
+use yii\debug\helpers\{CellMore, Coerce, Disclosure, EmptyState};
 use yii\debug\panels\InertiaPanel;
 
 /** @var InertiaPanel $panel Panel providing the detail content. */
@@ -190,7 +190,7 @@ $pageJson = json_encode(
     JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
 );
 
-$rawBlock = CellMore::clamp(Pre::tag()->content($pageJson)->render(), $pageJson);
+$rawBlock = Disclosure::render('Raw payload', Pre::tag()->content($pageJson)->render());
 ?>
 <?= Div::tag()
     ->class('yii-debug-table-wrap')
@@ -199,28 +199,36 @@ $rawBlock = CellMore::clamp(Pre::tag()->content($pageJson)->render(), $pageJson)
             ->class('yii-debug-table yii-debug-table-mono')
             ->html(Tbody::tag()->html(...$infoRows)),
     ) ?>
+<?php
+$propsTable = Div::tag()
+    ->class('yii-debug-table-wrap')
+    ->html(
+        Table::tag()
+            ->class('yii-debug-table')
+            ->html(
+                Thead::tag()->html(
+                    Tr::tag()->html(
+                        Th::tag()->scope('col')->content('#'),
+                        Th::tag()->scope('col')->content('Prop'),
+                        Th::tag()->scope('col')->content('Origin'),
+                        Th::tag()->scope('col')->content('Type'),
+                        Th::tag()->scope('col')->content('Value'),
+                    ),
+                ),
+                Tbody::tag()->html(...$propRows),
+            ),
+    )
+    ->render();
+
+// A page shipping dozens of props is what stretches the panel, so the table itself collapses once it grows tall.
+if (count($propRows) > CellMore::ROW_THRESHOLD) {
+    $propsTable = CellMore::wrap($propsTable);
+}
+?>
 <?= H2::tag()->content('Props') ?>
 <?php if ($propRows === []): ?>
     <?= P::tag()->content('The page rendered without props.') ?>
 <?php else: ?>
-    <?= Div::tag()
-        ->class('yii-debug-table-wrap')
-        ->html(
-            Table::tag()
-                ->class('yii-debug-table')
-                ->html(
-                    Thead::tag()->html(
-                        Tr::tag()->html(
-                            Th::tag()->scope('col')->content('#'),
-                            Th::tag()->scope('col')->content('Prop'),
-                            Th::tag()->scope('col')->content('Origin'),
-                            Th::tag()->scope('col')->content('Type'),
-                            Th::tag()->scope('col')->content('Value'),
-                        ),
-                    ),
-                    Tbody::tag()->html(...$propRows),
-                ),
-        ) ?>
+    <?= $propsTable ?>
 <?php endif; ?>
-<?= H2::tag()->content('Raw payload') ?>
 <?= $rawBlock;

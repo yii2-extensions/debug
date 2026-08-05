@@ -12,7 +12,7 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Code, Label, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Aside, Section};
-use yii\debug\helpers\Icon;
+use yii\debug\helpers\{Disclosure, Icon};
 
 use function count;
 use function implode;
@@ -161,15 +161,15 @@ final class PhpInfoRenderer
         return Details::tag()
             ->addAriaAttribute('label', 'Loaded extensions')
             ->addDataAttribute('yii-debug-phpinfo-extensions', true)
-            ->class('yii-debug-phpinfo-overview-hero-section yii-debug-phpinfo-extensions')
+            ->class('yii-debug-disclosure yii-debug-phpinfo-extensions')
             ->html(
                 Summary::tag()
-                    ->class('yii-debug-phpinfo-overview-block-head yii-debug-phpinfo-extensions-summary')
+                    ->class('yii-debug-disclosure-summary')
                     ->html(
                         Span::tag()
-                            ->class('yii-debug-phpinfo-overview-details-label')
+                            ->class('yii-debug-disclosure-title')
                             ->content('Loaded extensions'),
-                        self::renderDisclosureHint(),
+                        Disclosure::hint(),
                     ),
                 Div::tag()
                     ->class('yii-debug-phpinfo-extension-groups')
@@ -189,42 +189,21 @@ final class PhpInfoRenderer
         }
 
         return Details::tag()
-            ->class('yii-debug-phpinfo-overview-details')
+            ->class('yii-debug-disclosure')
             ->html(
                 Summary::tag()
+                    ->class('yii-debug-disclosure-summary')
                     ->html(
                         Span::tag()
-                            ->class('yii-debug-phpinfo-overview-details-label')
+                            ->class('yii-debug-disclosure-title')
                             ->content('Configure Command'),
-                        self::renderDisclosureHint(),
+                        Disclosure::hint(),
                     ),
-                Pre::tag()
-                    ->class('yii-debug-phpinfo-overview-details-body')
-                    ->content($command),
+                Div::tag()
+                    ->class('yii-debug-disclosure-body')
+                    ->html(Pre::tag()->content($command)),
             )
             ->render();
-    }
-
-    /**
-     * Renders the affordance shown on the right of a disclosure summary.
-     *
-     * Both wordings ship in the markup and CSS reveals the one matching the `open` state, so the hint stays truthful
-     * without a script. The `<summary>` element already announces the state through `aria-expanded`, so the hidden
-     * wording is kept out of the accessibility tree.
-     */
-    private static function renderDisclosureHint(): Span
-    {
-        return Span::tag()
-            ->class('yii-debug-phpinfo-overview-details-hint')
-            ->addAriaAttribute('hidden', 'true')
-            ->html(
-                Span::tag()
-                    ->addDataAttribute('yii-debug-phpinfo-hint', 'collapsed')
-                    ->content('click to expand'),
-                Span::tag()
-                    ->addDataAttribute('yii-debug-phpinfo-hint', 'expanded')
-                    ->content('click to collapse'),
-            );
     }
 
     /**
