@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\base\{View, ViewEvent};
+use yii\debug\helpers\CellMore;
 use yii\debug\panels\inertia\InertiaSnapshot;
 use yii\debug\panels\InertiaPanel;
 use yii\debug\tests\support\TestCase;
@@ -140,6 +141,49 @@ final class InertiaPanelTest extends TestCase
             200,
             $saved['statusCode'] ?? null,
             'Status code must be captured.',
+        );
+    }
+
+    public function testGetDetailCollapsesThePropsTableOnlyOnceItGrowsTall(): void
+    {
+        $short = $this->renderPropsTable(CellMore::ROW_THRESHOLD);
+        $tall = $this->renderPropsTable(CellMore::ROW_THRESHOLD + 1);
+
+        self::assertStringNotContainsString(
+            'yii-debug-cell-more',
+            $short,
+            'A table at the threshold must stay fully visible.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-cell-more',
+            $tall,
+            'One row past the threshold must fold the table.',
+        );
+        self::assertStringContainsString(
+            'prop' . CellMore::ROW_THRESHOLD,
+            $tall,
+            'Folding must keep every row in the markup.',
+        );
+    }
+
+    public function testGetDetailExposesTheExpandAffordanceOnAFoldedPropsTable(): void
+    {
+        $html = $this->renderPropsTable(CellMore::ROW_THRESHOLD + 1);
+
+        self::assertStringContainsString(
+            'data-yii-debug-toggle="cell-more"',
+            $html,
+            'The toggle must carry the delegation hook that swaps the label.',
+        );
+        self::assertStringContainsString(
+            'aria-expanded="false"',
+            $html,
+            'A folded table must announce itself as collapsed.',
+        );
+        self::assertStringContainsString(
+            '[+] Show more',
+            $html,
+            'The collapsed toggle must invite expansion.',
         );
     }
 
@@ -515,5 +559,30 @@ final class InertiaPanelTest extends TestCase
             $snapshot->data(),
             'The display payload must retain every captured Inertia field.',
         );
+    }
+
+    /**
+     * Renders the detail for a page carrying `$count` trivially small props.
+     *
+     * @param int $count Number of props to ship.
+     */
+    private function renderPropsTable(int $count): string
+    {
+        $props = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $props["prop{$i}"] = $i;
+        }
+
+        $panel = $this->makePanel(InertiaPanel::class);
+
+        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
+            'component' => 'site/index',
+            'props' => $props,
+            'url' => '/site/index',
+            'version' => 'v1',
+        ], ['X-Inertia' => 'true'], [], 200));
+
+        return $panel->getDetail();
     }
 }

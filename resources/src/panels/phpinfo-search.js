@@ -179,7 +179,7 @@ export function initPhpInfoSearch(root) {
     ),
   );
   var configureDetails = root.querySelector(
-    "#phpinfo-overview > .yii-debug-phpinfo-overview-details",
+    "#phpinfo-overview > .yii-debug-disclosure",
   );
   var tocLinks = toArray(root.querySelectorAll(".yii-debug-phpinfo-toc-link"));
   var tocGroups = toArray(

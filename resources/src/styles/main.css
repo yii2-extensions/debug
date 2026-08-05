@@ -216,6 +216,20 @@
     min-width: 0;
   }
 
+  /**
+   * Panel sections carry only a bottom margin on their heading, so a section
+   * that follows a table used to sit flush against it while others inherited
+   * a gap by accident. Separate every section from what precedes it, and let
+   * the first one start at the top of the panel.
+   */
+  .yii-debug-main > * + :is(h2, .yii-debug-disclosure) {
+    margin-top: var(--yii-debug-space-5);
+  }
+
+  .yii-debug-main > .yii-debug-sr-only:first-child + :is(h2, .yii-debug-disclosure) {
+    margin-top: 0;
+  }
+
   .yii-debug-mini-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -1285,6 +1299,97 @@
   }
 
   /**
+   * Shared collapsible section. The summary carries the heading and, on the
+   * far side, the expand/collapse hint; both wordings ship in the markup and
+   * only the one matching the `open` state is revealed, so the affordance
+   * never invites a click it cannot honour.
+   */
+  .yii-debug-disclosure {
+    overflow: hidden;
+    margin-bottom: var(--yii-debug-space-5);
+    border: var(--yii-debug-border);
+    border-radius: var(--yii-debug-radius-lg);
+    background: var(--yii-debug-panel-surface);
+
+    &[open] > .yii-debug-disclosure-summary {
+      border-bottom: var(--yii-debug-border);
+    }
+  }
+
+  .yii-debug-disclosure-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--yii-debug-space-3);
+    padding: 10px var(--yii-debug-space-4);
+    cursor: pointer;
+    list-style: none;
+    transition: background-color 120ms ease;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: var(--yii-debug-panel-surface-hover);
+      outline: 0;
+    }
+  }
+
+  /* Accent label shared with the Config panel section headings. */
+  .yii-debug-disclosure-title {
+    color: var(--yii-debug-panel-primary-strong);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .yii-debug-disclosure-hint {
+    color: var(--yii-debug-panel-muted);
+    font-family: var(--yii-debug-font-mono);
+    font-size: var(--yii-debug-fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: color 120ms ease;
+
+    [data-yii-debug-hint="expanded"] {
+      display: none;
+    }
+  }
+
+  .yii-debug-disclosure-summary:hover .yii-debug-disclosure-hint,
+  .yii-debug-disclosure-summary:focus-visible .yii-debug-disclosure-hint {
+    color: var(--yii-debug-panel-link-hover);
+  }
+
+  details[open] > summary .yii-debug-disclosure-hint {
+    [data-yii-debug-hint="collapsed"] {
+      display: none;
+    }
+
+    [data-yii-debug-hint="expanded"] {
+      display: inline;
+    }
+  }
+
+  .yii-debug-disclosure-body {
+    padding: var(--yii-debug-space-4);
+
+    > pre {
+      margin: 0;
+      overflow-wrap: anywhere;
+      color: var(--yii-debug-panel-text);
+      font-family: var(--yii-debug-font-mono);
+      font-size: var(--yii-debug-fs-xs);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+  }
+
+  /**
    * Long-content clamp for grid cells: the body collapses to a few lines
    * behind a fade-out, and the pill toggle expands it in place (wired by
    * the `cell-more` delegation in debug.min.js).
@@ -1293,6 +1398,14 @@
     position: relative;
     max-height: 156px;
     overflow: hidden;
+  }
+
+  /**
+   * A clamped table folds taller than a clamped cell: 156px leaves barely
+   * three rows, too few to judge whether the rest is worth expanding.
+   */
+  .yii-debug-cell-more-body:has(.yii-debug-table) {
+    max-height: 420px;
   }
 
   .yii-debug-cell-more-body::after {
@@ -5440,7 +5553,7 @@
   .yii-debug-phpinfo-search-clear[hidden],
   .yii-debug-phpinfo-search-empty[hidden],
   .yii-debug-phpinfo-overview-hero-section[hidden],
-  .yii-debug-phpinfo-overview-details[hidden],
+  .yii-debug-disclosure[hidden],
   .yii-debug-phpinfo-extension-group[hidden],
   .yii-debug-ext-pill[hidden],
   .yii-debug-table-wrap[hidden],
@@ -5589,44 +5702,12 @@
    * Overview as compact, grouped runtime summaries while retaining their old
    * anchor ids for deep links and search.
    */
+
   .yii-debug-phpinfo-extensions {
     grid-column: 1 / -1;
 
-    &:not([open]) {
-      gap: 0;
-    }
-
-    &:not([open]) > .yii-debug-phpinfo-extensions-summary {
-      padding-bottom: 0;
-      border-bottom: 0;
-    }
-  }
-
-  /**
-   * Same affordance as the Configure Command disclosure: uppercase accent
-   * label on the left, "click to expand" hint on the right. Keeping both
-   * disclosures identical means one thing to learn instead of two.
-   */
-  .yii-debug-phpinfo-extensions-summary {
-    cursor: pointer;
-    list-style: none;
-
-    &::-webkit-details-marker {
-      display: none;
-    }
-
-    &:hover .yii-debug-phpinfo-overview-details-hint,
-    &:focus-visible .yii-debug-phpinfo-overview-details-hint {
-      color: var(--yii-debug-panel-link-hover);
-    }
-
-    &:focus-visible {
-      outline: 0;
-    }
-
-    .yii-debug-phpinfo-overview-details-hint {
-      margin-left: auto;
-      transition: color 120ms ease;
+    > .yii-debug-phpinfo-extension-groups {
+      padding: var(--yii-debug-space-4);
     }
   }
 
@@ -5773,86 +5854,12 @@
     }
   }
 
-  .yii-debug-phpinfo-overview-details {
-    margin-bottom: var(--yii-debug-space-3);
-    border: var(--yii-debug-border);
-    border-radius: var(--yii-debug-radius-md);
-    background: var(--yii-debug-panel-surface);
-    box-shadow: var(--yii-debug-shadow-sm);
-    overflow: hidden;
-
-    summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--yii-debug-space-2);
-      padding: 10px var(--yii-debug-space-3);
-      list-style: none;
-      cursor: pointer;
-      color: var(--yii-debug-panel-text);
-      transition: background-color 120ms ease;
-
-      &::-webkit-details-marker {
-        display: none;
-      }
-
-      &:hover {
-        background: var(--yii-debug-panel-surface-hover);
-      }
-    }
-
-    &[open] summary {
-      border-bottom: var(--yii-debug-border);
-    }
-  }
-
-  .yii-debug-phpinfo-overview-details-label {
-    color: var(--yii-debug-panel-primary-strong);
-    font-family: var(--yii-debug-font-mono);
-    font-size: var(--yii-debug-fs-xs);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
   /**
    * Both wordings ship in the markup; only the one matching the disclosure
    * state is revealed, so the affordance never invites a click it cannot
    * honour. `<summary>` already exposes the state via `aria-expanded`.
    */
-  .yii-debug-phpinfo-overview-details-hint {
-    color: var(--yii-debug-panel-muted);
-    font-family: var(--yii-debug-font-mono);
-    font-size: var(--yii-debug-fs-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
 
-    [data-yii-debug-phpinfo-hint="expanded"] {
-      display: none;
-    }
-  }
-
-  details[open] > summary .yii-debug-phpinfo-overview-details-hint {
-    [data-yii-debug-phpinfo-hint="collapsed"] {
-      display: none;
-    }
-
-    [data-yii-debug-phpinfo-hint="expanded"] {
-      display: inline;
-    }
-  }
-
-  .yii-debug-phpinfo-overview-details-body {
-    margin: 0;
-    padding: var(--yii-debug-space-3);
-    background: var(--yii-debug-panel-surface-muted);
-    color: var(--yii-debug-panel-text);
-    font-family: var(--yii-debug-font-mono);
-    font-size: var(--yii-debug-fs-xs);
-    line-height: 1.6;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
 
   .yii-debug-phpinfo-overview-token {
     padding: 1px 8px;

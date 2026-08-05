@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: remove redundant sidebar URL guards and eliminate 50 surviving mutants across mail search and sidebar navigation.
 - refactor: rework phpinfo with grouped module navigation, scoped search, compact extension summaries, accessible disclosures, and redaction of sensitive environment values from rendered output.
 - feat(ui): highlight SQL in the Profiling info cell and collapse long statements behind the shared clamp, and show Inertia prop values in full behind the same clamp instead of truncating them at 100 characters.
+- feat(ui): collapse the Inertia props table behind the shared clamp once it exceeds twelve rows, so a page shipping dozens of props no longer stretches the panel.
+- feat(ui): extract the collapsible section into a shared `Disclosure` helper, render the Inertia raw payload through it, and give panel sections a consistent gap instead of letting a heading sit flush against the block above it.
 
 ## 0.1.1 May 18, 2026
 
