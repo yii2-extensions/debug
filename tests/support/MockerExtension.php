@@ -19,9 +19,9 @@ use Xepozz\InternalMocker\MockerState;
 /**
  * PHPUnit extension that swaps PHP built-in functions inside production namespaces.
  *
- * Lets unit tests cover the defensive branches that depend on `preg_replace()` returning `null`, `is_string()` /
- * `is_iterable()` returning `false`, or a filesystem call failing — guards that Yii's runtime contracts and a healthy
- * disk make unreachable under normal fixtures.
+ * Lets unit tests suppress retry delays or cover defensive branches that depend on `preg_replace()` returning `null`,
+ * `is_string()` / `is_iterable()` returning `false`, or a filesystem call failing — guards that Yii's runtime
+ * contracts and a healthy disk make unreachable under normal fixtures.
  */
 final class MockerExtension implements Extension
 {
@@ -51,6 +51,7 @@ final class MockerExtension implements Extension
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_iterable'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_string'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'count'],
+            ['namespace' => 'yii\debug\controllers', 'name' => 'sleep'],
             ['namespace' => 'yii\debug\widgets\phpinfo', 'name' => 'function_exists'],
             ['namespace' => 'yii\debug\panels', 'name' => 'ob_start'],
             ['namespace' => 'yii\debug\panels', 'name' => 'phpinfo'],

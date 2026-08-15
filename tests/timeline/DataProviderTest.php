@@ -22,6 +22,33 @@ use yii\web\Controller;
 #[Group('timeline')]
 final class DataProviderTest extends TestCase
 {
+    public function testGeometryUsesRequestStartAndDuration(): void
+    {
+        $panel = $this->stubPanel();
+
+        $this->setInaccessibleProperty($panel, 'start', 1_000.0);
+        $this->setInaccessibleProperty($panel, 'duration', 200.0);
+
+        $provider = new DataProvider($panel);
+        $row = new ProfileRow(1_025.0, 10.0, 'span', '', 0, 0, 0, 0, []);
+
+        self::assertSame(
+            25.0,
+            $provider->getTime($row),
+            'Elapsed time must be relative to the request start.',
+        );
+        self::assertSame(
+            12.5,
+            $provider->getLeft($row),
+            'Left offset must be the elapsed share of the request duration.',
+        );
+        self::assertSame(
+            5.0,
+            $provider->getWidth($row),
+            'Width must be the span share of the request duration.',
+        );
+    }
+
     public function testGetRulersDropsTickCrowdingTheRightEdge(): void
     {
         self::assertSame(
@@ -42,6 +69,11 @@ final class DataProviderTest extends TestCase
             [0 => 0.0, 2000 => 2000 / 6500 * 100, 4000 => 4000 / 6500 * 100, 6000 => 6000 / 6500 * 100],
             $this->rulersFor(6500.0),
             'A tick landing exactly on the quarter-step limit must be kept.',
+        );
+        self::assertSame(
+            [0 => 0.0, 1 => 80.0],
+            $this->rulersFor(1.25),
+            'A unit tick equal to the complete ruler limit must be kept.',
         );
     }
 

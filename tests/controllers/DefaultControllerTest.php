@@ -9,15 +9,16 @@ use LogicException;
 use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
+use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\base\{ActionEvent, InvalidConfigException};
 use yii\db\Connection;
 use yii\debug\controllers\DefaultController;
 use yii\debug\{LogTarget, Module};
 use yii\debug\panels\config\ConfigSnapshot;
+use yii\debug\panels\{ConfigPanel, MailPanel};
 use yii\debug\panels\db\DbSnapshot;
 use yii\debug\panels\log\LogSnapshot;
-use yii\debug\panels\MailPanel;
 use yii\debug\panels\request\RequestSnapshot;
 use yii\debug\tests\support\stub\{MinimalToolbarPanel, StubSnapshot};
 use yii\debug\tests\support\TestCase;
@@ -98,7 +99,14 @@ final class DefaultControllerTest extends TestCase
         $this->writeSnapshot(
             $module,
             'tag-index',
-            [],
+            [
+                'config' => ConfigSnapshot::capture(
+                    [
+                        'application' => ['yii' => 'captured-index-yii'],
+                        'php' => ['version' => 'captured-index-php'],
+                    ],
+                ),
+            ],
         );
 
         $controller = new DefaultController('default', $module);
@@ -111,6 +119,19 @@ final class DefaultControllerTest extends TestCase
             '',
             $html,
             'Rendered index must not be empty.',
+        );
+
+        $shell = Yii::$app->view->params['debugShell'] ?? null;
+
+        self::assertInstanceOf(
+            ShellContext::class,
+            $shell,
+            'Index must install the typed shell context.',
+        );
+        self::assertSame(
+            'captured-index-php',
+            $shell->phpVersion,
+            'Index must load the latest entry before building its shell.',
         );
     }
 
@@ -148,6 +169,11 @@ final class DefaultControllerTest extends TestCase
             'db-explain',
             $actions,
             "'db-explain' action must be adopted from the DbPanel.",
+        );
+        self::assertArrayHasKey(
+            'queue-job',
+            $actions,
+            "'queue-job' action must be adopted from the QueuePanel.",
         );
     }
 
@@ -211,6 +237,14 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
+        MockerState::addCondition(
+            'yii\debug\controllers',
+            'sleep',
+            [],
+            0,
+            true,
+        );
+
         $this->writeSnapshot(
             $module,
             'tag-toolbar',
@@ -232,6 +266,11 @@ final class DefaultControllerTest extends TestCase
             404,
             Yii::$app->response->getStatusCode(),
             "Response must emit a '404' status code.",
+        );
+        self::assertSame(
+            array_fill(0, 5, [1]),
+            array_column(MockerState::getTraces('yii\debug\controllers', 'sleep'), 'arguments'),
+            'Toolbar metadata must retry five times with a one-second wait between attempts.',
         );
     }
 
@@ -265,6 +304,24 @@ final class DefaultControllerTest extends TestCase
         self::assertNotNull(
             $result['configUrl'] ?? null,
             "'configUrl' must surface when the Config panel is wired.",
+        );
+
+        $iconBaseUrl = $result['iconBaseUrl'];
+
+        self::assertStringStartsWith(
+            '/assets/',
+            $iconBaseUrl,
+            "'iconBaseUrl' must use the published asset URL, not its filesystem path.",
+        );
+        self::assertStringEndsWith(
+            '/svg/',
+            $iconBaseUrl,
+            "'iconBaseUrl' must point to the published SVG directory.",
+        );
+        self::assertSame(
+            "{$iconBaseUrl}yii.svg",
+            $result['logo'],
+            'Published Yii logo must use the SVG asset URL.',
         );
     }
 
@@ -387,12 +444,32 @@ final class DefaultControllerTest extends TestCase
             "'index' must resolve to an action object.",
         );
 
-        $controller->beforeAction($action); // @phpstan-ignore argument.type
+        self::assertTrue(
+            $controller->beforeAction($action), // @phpstan-ignore argument.type
+            'Accepted action must preserve the parent guard result.',
+        );
 
         self::assertSame(
             Response::FORMAT_HTML,
             Yii::$app->response->format,
             "'beforeAction' must force the HTML response format.",
+        );
+
+        $shell = Yii::$app->view->params['debugShell'] ?? null;
+
+        self::assertInstanceOf(
+            ShellContext::class,
+            $shell,
+            "'beforeAction' must install a typed bare shell context.",
+        );
+        self::assertFalse(
+            $shell->useShell,
+            'Bare action context must not render the full debug shell.',
+        );
+        self::assertArrayHasKey(
+            'lang',
+            $shell->debugThemeAttributes,
+            'Bare shell document attributes must declare a language.',
         );
     }
 
@@ -426,7 +503,41 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
+        $configPanel = $module->panels['config'] ?? null;
+
+        self::assertInstanceOf(
+            ConfigPanel::class,
+            $configPanel,
+            'Config panel must be wired.',
+        );
+
+        $this->hydratePanel(
+            $configPanel,
+            ConfigSnapshot::capture(
+                [
+                    'application' => ['yii' => 'captured-yii-version'],
+                    'php' => ['version' => 'captured-php-version'],
+                ],
+            ),
+        );
+
         $controller = new DefaultController('default', $module);
+
+        $summary = new RequestSummary(
+            tag: 'tag-shell',
+            url: 'dummy',
+            ajax: false,
+            method: 'GET',
+            ip: '127.0.0.1',
+            time: 1_700_000_000.0,
+            statusCode: 200,
+            sqlCount: 0,
+            excessiveCallersCount: 0,
+            mailCount: 0,
+            mailFiles: [],
+            processingTime: null,
+            peakMemory: 1_048_576,
+        );
 
         $context = $this->invoke(
             $controller,
@@ -435,21 +546,7 @@ final class DefaultControllerTest extends TestCase
                 ShellContext::MODE_INDEX,
                 [],
                 null,
-                new RequestSummary(
-                    tag: 'tag-shell',
-                    url: 'dummy',
-                    ajax: false,
-                    method: 'GET',
-                    ip: '127.0.0.1',
-                    time: 1_700_000_000.0,
-                    statusCode: 200,
-                    sqlCount: 0,
-                    excessiveCallersCount: 0,
-                    mailCount: 0,
-                    mailFiles: [],
-                    processingTime: null,
-                    peakMemory: 1_048_576,
-                ),
+                $summary,
                 new SidebarView(null, []),
             ],
         );
@@ -466,6 +563,48 @@ final class DefaultControllerTest extends TestCase
         self::assertNotNull(
             $context->peakMemory,
             'Numeric peak memory must be formatted for the shell header.',
+        );
+        self::assertSame(
+            'captured-yii-version',
+            $context->yiiVersion,
+            'Shell must prefer the Yii version stored with the debug entry.',
+        );
+        self::assertSame(
+            'captured-php-version',
+            $context->phpVersion,
+            'Shell must prefer the PHP version stored with the debug entry.',
+        );
+        self::assertTrue(
+            $context->useShell,
+            'Index context must render the full debug shell.',
+        );
+        self::assertArrayHasKey(
+            'lang',
+            $context->debugThemeAttributes,
+            'Full shell document attributes must declare a language.',
+        );
+
+        $activeContext = $this->invoke(
+            $controller,
+            'createShellContext',
+            [
+                ShellContext::MODE_VIEW,
+                ['manifest-tag' => $summary],
+                'active-tag',
+                null,
+                new SidebarView(null, []),
+            ],
+        );
+
+        self::assertInstanceOf(
+            ShellContext::class,
+            $activeContext,
+            'The factory must return a typed active shell context.',
+        );
+        self::assertStringContainsString(
+            'tag=active-tag',
+            $activeContext->configUrl ?? '',
+            'Configuration link must target the explicitly active entry.',
         );
     }
 
@@ -513,6 +652,40 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
+    public function testLoadDataDoesNotRetryByDefault(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot($module, 'tag-other', []);
+
+        MockerState::addCondition(
+            'yii\debug\controllers',
+            'sleep',
+            [],
+            0,
+            true,
+        );
+
+        $controller = new DefaultController('default', $module);
+
+        try {
+            $controller->loadData('tag-missing');
+            self::fail('Missing tag must throw after the initial attempt.');
+        } catch (NotFoundHttpException $exception) {
+            self::assertSame(
+                "Unable to find debug data tagged with 'tag-missing'.",
+                $exception->getMessage(),
+                'Missing tag must report the requested identifier.',
+            );
+        }
+
+        self::assertSame(
+            [],
+            MockerState::getTraces('yii\debug\controllers', 'sleep'),
+            'Default load must not wait or retry.',
+        );
+    }
+
     public function testLoadDataPopulatesSummaryWhenTagIsKnown(): void
     {
         $module = $this->bootDebugModule();
@@ -531,6 +704,37 @@ final class DefaultControllerTest extends TestCase
             'tag-load',
             $controller->summary?->tag,
             'Loaded summary must echo the active tag.',
+        );
+    }
+
+    public function testLoadDataReloadsManifestAfterWaitingForLateTag(): void
+    {
+        $module = $this->bootDebugModule();
+        $controller = new DefaultController('default', $module);
+
+        MockerState::addCondition(
+            'yii\debug\controllers',
+            'sleep',
+            [1],
+            function (int $seconds) use ($module): int {
+                self::assertSame(
+                    1,
+                    $seconds,
+                    'Retry wait must receive the documented interval.',
+                );
+
+                $this->writeSnapshot($module, 'tag-late', []);
+
+                return 0;
+            },
+        );
+
+        $controller->loadData('tag-late', 1);
+
+        self::assertSame(
+            'tag-late',
+            $controller->summary?->tag,
+            'Retry must reload the manifest and load a tag that appeared during the wait.',
         );
     }
 
@@ -577,7 +781,7 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $_GET['yii_debug_theme'] = 'dark';
+        $_GET['yii_debug_theme'] = 'DARK';
 
         $controller = new DefaultController('default', $module);
 
@@ -586,7 +790,7 @@ final class DefaultControllerTest extends TestCase
         self::assertSame(
             'dark',
             $theme,
-            "'yii_debug_theme=dark' must select the dark theme.",
+            "The 'yii_debug_theme' query value must select the dark theme case-insensitively.",
         );
     }
 
@@ -799,13 +1003,30 @@ final class DefaultControllerTest extends TestCase
 
         $controller = new DefaultController('default', $module);
 
-        $this->expectException(NotFoundHttpException::class);
-        $this->expectExceptionMessage(
-            "Unable to find debug data tagged with 'tag-rotated'.",
+        MockerState::addCondition(
+            'yii\debug\controllers',
+            'sleep',
+            [],
+            0,
+            true,
         );
 
-        // 'maxRetry = 0' avoids the 'sleep(1)' loop while still exercising the retry guard.
-        $controller->loadData('tag-rotated');
+        try {
+            $controller->loadData('tag-rotated', 1);
+            self::fail('Missing tag must throw after the configured retry.');
+        } catch (NotFoundHttpException $exception) {
+            self::assertSame(
+                "Unable to find debug data tagged with 'tag-rotated'.",
+                $exception->getMessage(),
+                'Missing tag must report the requested identifier.',
+            );
+        }
+
+        self::assertSame(
+            [[1]],
+            array_column(MockerState::getTraces('yii\debug\controllers', 'sleep'), 'arguments'),
+            'One retry must wait exactly once for one second between the two attempts.',
+        );
     }
 
     private function bootDebugModule(): Module

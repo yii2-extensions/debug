@@ -239,6 +239,11 @@ final class HistoryRowRendererTest extends TestCase
             $html,
             'Warning tooltip must explain the threshold breach.',
         );
+        self::assertStringContainsString(
+            'panel=db&amp;tag=flood',
+            $html,
+            'SQL count must link to the request database panel.',
+        );
     }
 
     public function testRenderSqlCountCellPluralizesExcessiveCallersCount(): void
@@ -311,10 +316,10 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderStatusCellMapsCommandWithZeroToSuccess(): void
     {
-        self::assertStringContainsString(
-            'yii-debug-status-2xx',
+        self::assertSame(
+            '<span class="yii-debug-badge yii-debug-status-2xx">200</span>',
             HistoryRowRenderer::renderStatusCell(self::row(['method' => 'COMMAND', 'statusCode' => 0])),
-            "COMMAND with status '0' must display as a '2xx'.",
+            "COMMAND with status '0' must display as status '200'.",
         );
     }
 
@@ -355,9 +360,9 @@ final class HistoryRowRendererTest extends TestCase
         $html = HistoryRowRenderer::renderSummary($summary);
 
         self::assertStringContainsString(
-            'captured request',
+            'captured requests',
             $html,
-            'Summary must label the total figure.',
+            'Multiple requests must use the plural summary label.',
         );
         self::assertStringContainsString(
             'yii-debug-grid-summary-stat-2xx',
@@ -373,6 +378,21 @@ final class HistoryRowRendererTest extends TestCase
             '2xx',
             $html,
             'Bucket labels must surface.',
+        );
+        self::assertStringContainsString(
+            'Debug%5BstatusCode%5D=200',
+            $html,
+            "The '2xx' bucket must link to its sample status filter.",
+        );
+        self::assertStringContainsString(
+            'Debug%5BstatusCode%5D=404',
+            $html,
+            "The '4xx' bucket must link to its sample status filter.",
+        );
+        self::assertStringContainsString(
+            'yii-debug-grid-pagesize',
+            $html,
+            'History summary must include the shared page-size selector.',
         );
     }
 
@@ -391,6 +411,28 @@ final class HistoryRowRendererTest extends TestCase
         );
     }
 
+    public function testRenderSummaryUsesSingularLabelForOneRequest(): void
+    {
+        $summary = new HistorySummary(
+            totalRequests: 1,
+            statusBuckets: [],
+            statusCodeFilter: null,
+        );
+
+        $html = HistoryRowRenderer::renderSummary($summary);
+
+        self::assertStringContainsString(
+            'captured request',
+            $html,
+            'One request must use the singular summary label.',
+        );
+        self::assertStringNotContainsString(
+            'captured requests',
+            $html,
+            'One request must not use the plural summary label.',
+        );
+    }
+
     public function testRenderTagCellLinksToPanelView(): void
     {
         $html = HistoryRowRenderer::renderTagCell(
@@ -403,6 +445,11 @@ final class HistoryRowRendererTest extends TestCase
             'Tag link must carry the tag-link CSS class.',
         );
         self::assertStringContainsString('abc', $html, 'Tag value must surface inside the link.');
+        self::assertStringContainsString(
+            'tag=abc',
+            $html,
+            'Tag cell must link to the matching request view.',
+        );
     }
 
     public function testRenderTimeCellRendersCompactClockWithFullTooltip(): void

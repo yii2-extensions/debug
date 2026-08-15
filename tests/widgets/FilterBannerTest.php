@@ -11,6 +11,7 @@ use yii\debug\{LogTarget, Module};
 use yii\debug\models\search\LogSearch;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\FilterBanner;
+use yii\helpers\{Html, Url};
 use yii\web\Controller;
 
 /**
@@ -57,6 +58,32 @@ final class FilterBannerTest extends TestCase
             $html,
             'Multiple active filters must use the plural label form.',
         );
+        self::assertSame(
+            2,
+            substr_count($html, 'class="yii-debug-active-filter-pill"'),
+            'Every active filter must render its own removal pill.',
+        );
+
+        $controller = Yii::$app->controller;
+
+        self::assertInstanceOf(
+            Controller::class,
+            $controller,
+            'Filter links require the active controller route.',
+        );
+
+        $expectedCategoryRemovalUrl = Url::to(
+            [
+                "/{$controller->getRoute()}",
+                'LogSearch' => ['message' => 'login'],
+            ],
+        );
+
+        self::assertStringContainsString(
+            'href="' . Html::encode($expectedCategoryRemovalUrl) . '"',
+            $html,
+            'Category removal must preserve the other active filter.',
+        );
     }
 
     public function testRunRendersSingularLabelForSingleActiveFilter(): void
@@ -94,7 +121,7 @@ final class FilterBannerTest extends TestCase
     {
         $this->bootApp();
 
-        $_GET['LogSearch'] = ['category' => 'app', 'message' => '', 'level' => null, 'bag' => ['nested']];
+        $_GET['LogSearch'] = ['message' => '', 'bag' => ['nested'], 'category' => 'app', 'level' => null];
 
         $html = FilterBanner::widget(['searchModel' => new LogSearch()]);
 

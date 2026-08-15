@@ -251,7 +251,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * Persists a complete version-3 JSON fixture through the production storage boundary.
+     * Persists a complete version-4 JSON fixture through the production storage boundary.
      *
      * @param array<string, PanelSnapshot> $panels
      * @param array<string, mixed> $summary
