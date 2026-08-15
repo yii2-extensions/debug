@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\storage;
 
+use PHPForge\Debug\Storage\{DebugSnapshot, HydrationException, PanelFailure, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use yii\debug\storage\{DebugSnapshot, HydrationException, PanelFailure, RequestSummary};
 
 /**
  * Unit tests for {@see DebugSnapshot} covering its version guard and serialized panel failures.

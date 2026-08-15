@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\storage;
 
+use PHPForge\Debug\Storage\{DebugSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use Xepozz\InternalMocker\MockerState;
 use yii\base\InvalidConfigException;
-use yii\debug\storage\{DebugSnapshot, RequestSummary, SnapshotStore};
+use yii\debug\storage\SnapshotStore;
 use yii\debug\tests\support\TestCase;
 use yii\helpers\FileHelper;
 
@@ -27,21 +28,34 @@ final class SnapshotStoreTest extends TestCase
         FileHelper::createDirectory($this->path);
         file_put_contents("{$this->path}/invalid.json", '{invalid');
 
-        self::assertNull($this->store()->readSnapshot('invalid'));
+        self::assertNull(
+            $this->store()->readSnapshot('invalid'),
+            'Malformed JSON must read as `null`.',
+        );
     }
 
     public function testLoadManifestReturnsNothingWhenTheLockFileCannotBeOpened(): void
     {
         $store = $this->store();
 
-        $store->updateManifest($this->summary('tag-1', 1_700_000_000.0), 10);
+        $summary = $this->summary('tag-1', 1_700_000_000.0);
 
-        MockerState::addCondition('yii\\debug\\storage', 'fopen', [], false, true);
+        $store->writeSnapshot(new DebugSnapshot($summary, [], []), 10);
+
+        MockerState::addCondition('PHPForge\\Debug\\Storage', 'fopen', [], false, true);
 
         self::assertSame(
             [],
             $store->loadManifest(),
             'An unopenable lock file must yield an empty manifest instead of throwing.',
+        );
+    }
+
+    public function testReadSnapshotRejectsTagThatEscapesTheStorageDirectory(): void
+    {
+        self::assertNull(
+            $this->store()->readSnapshot('../outside'),
+            'Unsafe read tag must yield `null`.',
         );
     }
 
@@ -59,12 +73,16 @@ final class SnapshotStoreTest extends TestCase
     {
         $store = $this->store();
 
-        $store->writeSnapshot('kept', new DebugSnapshot($this->summary('kept', 1_700_000_000.0), [], []));
+        $kept = $this->summary('kept', 1_700_000_000.0);
+
+        $store->writeSnapshot(new DebugSnapshot($kept, [], []), 2);
 
         file_put_contents("{$this->path}/orphan.json", '{}');
 
         for ($index = 0; $index < 13; $index++) {
-            $store->updateManifest($this->summary("tag-{$index}", 1_700_000_000.0 + $index), 2);
+            $summary = $this->summary("tag-{$index}", 1_700_000_000.0 + $index);
+
+            $store->writeSnapshot(new DebugSnapshot($summary, [], []), 2);
         }
 
         self::assertFileDoesNotExist(
@@ -79,81 +97,81 @@ final class SnapshotStoreTest extends TestCase
         $older = $this->summary('older', 1_700_000_000.0);
         $newer = $this->summary('newer', 1_700_000_001.0);
 
-        $store->writeSnapshot('newer', new DebugSnapshot($newer, ['panel' => ['value' => 1]], []));
-        $store->updateManifest($older, 10);
-        $store->updateManifest($newer, 10);
+        $store->writeSnapshot(new DebugSnapshot($older, [], []), 10);
+        $store->writeSnapshot(new DebugSnapshot($newer, ['panel' => ['value' => 1]], []), 10);
 
         $snapshot = $store->readSnapshot('newer');
 
-        self::assertNotNull($snapshot);
-        self::assertSame('newer', $snapshot->summary->tag);
-        self::assertSame(['value' => 1], $snapshot->panels['panel'] ?? null);
-        self::assertSame(['newer', 'older'], array_keys($store->loadManifest()));
+        self::assertNotNull(
+            $snapshot,
+            'Persisted snapshot must remain readable.',
+        );
+        self::assertSame(
+            'newer',
+            $snapshot->summary->tag,
+            'Request tag must survive persistence.',
+        );
+        self::assertSame(
+            ['value' => 1],
+            $snapshot->panels['panel'] ?? null,
+            'Panel payload must survive persistence.',
+        );
+        self::assertSame(
+            ['newer', 'older'],
+            array_keys($store->loadManifest()),
+            'Manifest entries must be ordered newest first.',
+        );
     }
 
-    public function testTagsCannotEscapeTheStorageDirectory(): void
+    public function testThrowInvalidConfigExceptionForTagThatEscapesTheStorageDirectory(): void
     {
-        self::assertNull($this->store()->readSnapshot('../outside'));
-
         $summary = $this->summary('../outside', 1_700_000_000.0);
 
         $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage('Invalid debug snapshot tag: ../outside');
 
-        $this->store()->writeSnapshot('../outside', new DebugSnapshot($summary, [], []));
+        $this->store()->writeSnapshot(new DebugSnapshot($summary, [], []), 10);
     }
 
     public function testThrowInvalidConfigExceptionWhenTheSnapshotCannotBeMovedIntoPlace(): void
     {
-        MockerState::addCondition('yii\\debug\\storage', 'rename', [], false, true);
+        MockerState::addCondition('PHPForge\\Debug\\Storage', 'rename', [], false, true);
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage('Unable to replace debug data file');
 
-        $this->store()->writeSnapshot(
-            'blocked',
-            new DebugSnapshot($this->summary('blocked', 1_700_000_000.0), [], []),
-        );
+        $summary = $this->summary('blocked', 1_700_000_000.0);
+
+        $this->store()->writeSnapshot(new DebugSnapshot($summary, [], []), 10);
     }
 
     public function testThrowInvalidConfigExceptionWhenTheTemporaryFileCannotBeCreated(): void
     {
-        MockerState::addCondition('yii\\debug\\storage', 'tempnam', [], false, true);
+        MockerState::addCondition('PHPForge\\Debug\\Storage', 'tempnam', [], false, true);
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage('Unable to write temporary debug data file');
 
-        $this->store()->writeSnapshot(
-            'blocked',
-            new DebugSnapshot($this->summary('blocked', 1_700_000_000.0), [], []),
-        );
+        $summary = $this->summary('blocked', 1_700_000_000.0);
+
+        $this->store()->writeSnapshot(new DebugSnapshot($summary, [], []), 10);
     }
 
     public function testThrowInvalidConfigExceptionWhenTheTemporaryFileCannotBeWritten(): void
     {
-        MockerState::addCondition('yii\\debug\\storage', 'file_put_contents', [], false, true);
+        MockerState::addCondition('PHPForge\\Debug\\Storage', 'file_put_contents', [], false, true);
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage('Unable to write temporary debug data file');
 
-        $this->store()->writeSnapshot(
-            'blocked',
-            new DebugSnapshot($this->summary('blocked', 1_700_000_000.0), [], []),
-        );
+        $summary = $this->summary('blocked', 1_700_000_000.0);
+
+        $this->store()->writeSnapshot(new DebugSnapshot($summary, [], []), 10);
     }
 
-    public function testWritingJsonSnapshotRemovesLegacySerializedFiles(): void
-    {
-        FileHelper::createDirectory($this->path);
-        file_put_contents("{$this->path}/legacy.data", 'serialized payload');
-
-        $summary = $this->summary('current', 1_700_000_000.0);
-
-        $this->store()->writeSnapshot('current', new DebugSnapshot($summary, [], []));
-
-        self::assertFileDoesNotExist("{$this->path}/legacy.data");
-        self::assertFileExists("{$this->path}/current.json");
-    }
-
+    /**
+     * Creates an isolated temporary storage path.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -161,6 +179,9 @@ final class SnapshotStoreTest extends TestCase
         $this->path = sys_get_temp_dir() . '/yii-debug-storage-' . uniqid('', true);
     }
 
+    /**
+     * Removes the temporary storage directory.
+     */
     protected function tearDown(): void
     {
         FileHelper::removeDirectory($this->path);
@@ -168,11 +189,24 @@ final class SnapshotStoreTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Creates a store for the isolated temporary path.
+     *
+     * @return SnapshotStore Store configured for the current test.
+     */
     private function store(): SnapshotStore
     {
         return new SnapshotStore($this->path, 0o777, null);
     }
 
+    /**
+     * Creates representative request metadata.
+     *
+     * @param string $tag Request tag.
+     * @param float $time Request start timestamp.
+     *
+     * @return RequestSummary Representative request metadata.
+     */
     private function summary(string $tag, float $time): RequestSummary
     {
         return new RequestSummary(

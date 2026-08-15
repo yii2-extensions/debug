@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\panels\mail;
 
 use DateTimeInterface;
+use PHPForge\Debug\Storage\{PanelRow, Payload};
 use yii\debug\helpers\Coerce;
-use yii\debug\storage\{PanelRow, Payload};
 
 use function array_filter;
 use function array_map;

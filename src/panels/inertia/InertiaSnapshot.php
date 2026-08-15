@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\inertia;
 
-use yii\debug\storage\{DebugArray, DebugValue, PanelSnapshot, Payload};
+use PHPForge\Debug\Storage\{DebugArray, DebugValue, PanelSnapshot, Payload};
 
 /**
  * Canonical Inertia response snapshot.

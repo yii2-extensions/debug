@@ -6,6 +6,7 @@ namespace yii\debug\tests\controllers;
 
 use Exception;
 use LogicException;
+use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use Yii;
@@ -18,7 +19,6 @@ use yii\debug\panels\db\DbSnapshot;
 use yii\debug\panels\log\LogSnapshot;
 use yii\debug\panels\MailPanel;
 use yii\debug\panels\request\RequestSnapshot;
-use yii\debug\storage\{PanelSnapshot, RequestSummary};
 use yii\debug\tests\support\stub\{MinimalToolbarPanel, StubSnapshot};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\shell\ShellContext;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\timeline;
 
-use yii\debug\storage\{PanelSnapshot, Payload};
+use PHPForge\Debug\Storage\{PanelSnapshot, Payload};
 
 /**
  * Canonical timing and peak-memory snapshot for the Timeline panel.

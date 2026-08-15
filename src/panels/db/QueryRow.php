@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\db;
 
-use yii\debug\storage\{PanelRow, Payload};
+use PHPForge\Debug\Storage\{PanelRow, Payload};
 
 use function array_values;
 use function max;

@@ -55,10 +55,10 @@ final class MockerExtension implements Extension
             ['namespace' => 'yii\debug\panels', 'name' => 'ob_start'],
             ['namespace' => 'yii\debug\panels', 'name' => 'phpinfo'],
             ['namespace' => 'yii\debug\panels', 'name' => 'ob_get_clean'],
-            ['namespace' => 'yii\debug\storage', 'name' => 'file_put_contents'],
-            ['namespace' => 'yii\debug\storage', 'name' => 'fopen'],
-            ['namespace' => 'yii\debug\storage', 'name' => 'rename'],
-            ['namespace' => 'yii\debug\storage', 'name' => 'tempnam'],
+            ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'file_put_contents'],
+            ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'fopen'],
+            ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'rename'],
+            ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'tempnam'],
         ];
 
         (new Mocker(stubPath: __DIR__ . '/mocker-stubs.php'))->load($mocks);

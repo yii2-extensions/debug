@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\controllers;
 
 use Override;
+use PHPForge\Debug\Storage\{ExceptionSnapshot, RequestSummary};
 use Throwable;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
@@ -13,7 +14,6 @@ use yii\debug\LogTarget;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\{ConfigPanel, MailPanel};
-use yii\debug\storage\{ExceptionSnapshot, RequestSummary};
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarView};
 use yii\helpers\Url;

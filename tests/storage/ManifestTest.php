@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\storage;
 
+use PHPForge\Debug\Storage\{DebugSnapshot, HydrationException, Manifest, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use yii\debug\storage\{DebugSnapshot, HydrationException, Manifest, RequestSummary};
 
 /**
  * Unit tests for {@see Manifest} covering the versioned index and the tag/key consistency guard.

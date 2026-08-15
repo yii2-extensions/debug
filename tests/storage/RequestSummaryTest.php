@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\storage;
 
+use PHPForge\Debug\Storage\{HydrationException, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\storage\{HydrationException, RequestSummary};
 use yii\debug\tests\support\TestCase;
 
 #[Group('storage')]

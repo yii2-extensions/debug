@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\actions\db;
 
+use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\Controller as BaseController;
@@ -13,7 +14,6 @@ use yii\debug\controllers\DefaultController;
 use yii\debug\Module;
 use yii\debug\panels\db\{DbSnapshot, QueryRow};
 use yii\debug\panels\DbPanel;
-use yii\debug\storage\PanelSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\web\AssetManager;
 use yii\web\HttpException;

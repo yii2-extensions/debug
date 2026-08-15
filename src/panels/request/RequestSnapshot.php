@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\request;
 
-use yii\debug\storage\{DebugArray, HydrationException, PanelSnapshot, Payload};
+use PHPForge\Debug\Storage\{DebugArray, HydrationException, PanelSnapshot, Payload};
 
 use function is_int;
 

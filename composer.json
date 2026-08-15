@@ -31,6 +31,7 @@
         "ext-mbstring": "*",
         "ext-pdo": "*",
         "composer-runtime-api": "^2.0",
+        "php-forge/debug-core": "^0.1@dev",
         "symfony/mime": "^7.4",
         "ui-awesome/html": "^0.6",
         "ui-awesome/html-core": "^0.8",
@@ -64,12 +65,6 @@
             "yii\\debug\\tests\\": "tests"
         }
     },
-    "repositories": [
-        {
-            "type": "composer",
-            "url": "https://asset-packagist.org"
-        }
-    ],
     "extra": {
         "branch-alias": {
             "dev-main": "0.2.x-dev"
@@ -98,5 +93,11 @@
         "rector": "./vendor/bin/rector process",
         "static": "./vendor/bin/phpstan --memory-limit=-1",
         "tests": "./vendor/bin/phpunit"
-    }
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ]
 }

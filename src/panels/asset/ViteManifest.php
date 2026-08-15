@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\asset;
 
-use yii\debug\storage\Payload;
+use PHPForge\Debug\Storage\Payload;
 
 use function array_map;
 

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\request;
 
+use PHPForge\Debug\Storage\HydrationException;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\{Action, InlineAction};
 use yii\debug\panels\request\RequestSnapshot;
 use yii\debug\panels\RequestPanel;
-use yii\debug\storage\HydrationException;
 use yii\debug\tests\support\TestCase;
 use yii\web\{Controller, Session};
 

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\log;
 
+use PHPForge\Debug\Storage\HydrationException;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\log\LogRow;
-use yii\debug\storage\HydrationException;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 

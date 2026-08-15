@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub;
 
-use yii\debug\storage\{DebugArray, PanelSnapshot};
+use PHPForge\Debug\Storage\{DebugArray, PanelSnapshot};
 
 /**
  * JSON-safe snapshot used by custom test panels.

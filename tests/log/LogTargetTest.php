@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\log;
 
+use PHPForge\Debug\Storage\{DebugSnapshot, ExceptionSnapshot, PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\{Exception as YiiException, InvalidConfigException};
 use yii\debug\{LogTarget, Module, Panel};
 use yii\debug\panels\config\ConfigSnapshot;
 use yii\debug\panels\{ConfigPanel, DbPanel, LogPanel, MailPanel};
-use yii\debug\storage\{DebugSnapshot, ExceptionSnapshot, PanelSnapshot, RequestSummary};
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 

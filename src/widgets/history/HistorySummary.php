@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
-use yii\debug\storage\RequestSummary;
+use PHPForge\Debug\Storage\RequestSummary;
 
 use function count;
 use function ksort;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\storage;
 
+use PHPForge\Debug\Storage\{DebugArray, DebugValue};
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use yii\debug\storage\{DebugArray, DebugValue};
 
 /**
  * Unit tests for {@see DebugArray} covering the array-typed facade over {@see DebugValue}.

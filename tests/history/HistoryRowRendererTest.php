@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\history;
 
+use PHPForge\Debug\Storage\RequestSummary;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\controllers\DefaultController;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
-use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryStatusBucket, HistorySummary};
 
