@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
+use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\helpers\{Coerce, Icon, Vocabulary};
 use yii\debug\Panel;
-use yii\debug\storage\RequestSummary;
 
 use function array_key_first;
 use function array_key_last;

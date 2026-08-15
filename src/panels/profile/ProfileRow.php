@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\profile;
 
+use PHPForge\Debug\Storage\{PanelRow, Payload};
 use yii\debug\helpers\Coerce;
-use yii\debug\storage\{PanelRow, Payload};
 
 use function is_array;
 use function max;

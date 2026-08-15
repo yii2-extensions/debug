@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\tests\storage;
 
 use LogicException;
+use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException};
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
-use yii\debug\storage\{ExceptionSnapshot, HydrationException};
 use yii\debug\tests\support\TestCase;
 
 #[Group('storage')]

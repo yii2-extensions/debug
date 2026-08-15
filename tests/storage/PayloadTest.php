@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\storage;
 
+use PHPForge\Debug\Storage\{HydrationException, Payload};
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use yii\debug\storage\{HydrationException, Payload};
 
 /**
  * Unit tests for {@see Payload} covering the strict type guards applied at the decoded-JSON boundary.

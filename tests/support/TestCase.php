@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support;
 
+use PHPForge\Debug\Storage\{
+    DebugSnapshot,
+    PanelFailure,
+    PanelSnapshot,
+    RequestSummary,
+};
 use ReflectionClass;
 use ReflectionProperty;
 use Yii;
 use yii\base\Application;
 use yii\debug\{LogTarget, Module, Panel};
-use yii\debug\storage\{
-    DebugSnapshot,
-    PanelFailure,
-    PanelSnapshot,
-    RequestSummary,
-    SnapshotStore,
-};
+use yii\debug\storage\SnapshotStore;
 use yii\di\Container;
 use yii\helpers\ArrayHelper;
 use yii\web\{Controller, Session};
@@ -251,7 +251,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * Persists a complete version-3 JSON fixture through the production storage boundary.
+     * Persists a complete version-4 JSON fixture through the production storage boundary.
      *
      * @param array<string, PanelSnapshot> $panels
      * @param array<string, mixed> $summary
@@ -278,8 +278,10 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
             $panelFailures[$id] = PanelFailure::fromThrowable(PanelFailure::CAPTURE, $throwable);
         }
 
-        $store->writeSnapshot($tag, new DebugSnapshot($requestSummary, $payloads, $panelFailures));
-        $store->updateManifest($requestSummary, $module->historySize);
+        $store->writeSnapshot(
+            new DebugSnapshot($requestSummary, $payloads, $panelFailures),
+            $module->historySize,
+        );
     }
 
     private function resolveReflectionProperty(object $object, string $propertyName): ReflectionProperty

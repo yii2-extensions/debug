@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\request;
 
+use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\helpers\{Coerce, Vocabulary};
-use yii\debug\storage\RequestSummary;
 
 use function array_key_exists;
 use function date;

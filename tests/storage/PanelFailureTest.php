@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\storage;
 
+use PHPForge\Debug\Storage\{ExceptionSnapshot, PanelFailure};
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use yii\debug\storage\{ExceptionSnapshot, PanelFailure};
 
 /**
  * Unit tests for {@see PanelFailure} covering the isolated panel-failure envelope and its stage guard.

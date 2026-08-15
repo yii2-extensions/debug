@@ -5,17 +5,13 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use Override;
+use PHPForge\Debug\Storage\{DebugSnapshot, PanelFailure, RequestSummary};
 use Throwable;
 use Yii;
 use yii\base\Exception;
 use yii\debug\panels\{DbPanel, MailPanel};
 use yii\debug\panels\profile\ProfilingSnapshot;
-use yii\debug\storage\{
-    DebugSnapshot,
-    PanelFailure,
-    RequestSummary,
-    SnapshotStore,
-};
+use yii\debug\storage\SnapshotStore;
 use yii\log\Target;
 
 use function array_values;
@@ -96,9 +92,13 @@ class LogTarget extends Target
         }
 
         $store = $this->store();
-        $store->writeSnapshot($this->tag, new DebugSnapshot($summary, $panels, $failures));
 
-        foreach ($store->updateManifest($summary, $this->module->historySize) as $removed) {
+        foreach (
+            $store->writeSnapshot(
+                new DebugSnapshot($summary, $panels, $failures),
+                $this->module->historySize,
+            ) as $removed
+        ) {
             $this->removeMailFiles($removed);
         }
     }

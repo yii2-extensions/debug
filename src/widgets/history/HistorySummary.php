@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
-use yii\debug\storage\RequestSummary;
+use PHPForge\Debug\Storage\RequestSummary;
 
 use function count;
 use function ksort;
@@ -57,17 +57,16 @@ final readonly class HistorySummary
                 $codes[$statusCode] = $statusCode;
             }
 
-            $bucket = match (true) {
-                $statusCode >= 500 && $statusCode < 600 => '5xx',
-                $statusCode >= 400 && $statusCode < 500 => '4xx',
-                $statusCode >= 300 && $statusCode < 400 => '3xx',
-                $statusCode >= 200 && $statusCode < 300 => '2xx',
-                default => null,
-            };
-
-            if ($bucket === null) {
+            if ($statusCode < 200 || $statusCode >= 600) {
                 continue;
             }
+
+            $bucket = match (true) {
+                $statusCode >= 500 => '5xx',
+                $statusCode >= 400 => '4xx',
+                $statusCode >= 300 => '3xx',
+                default => '2xx',
+            };
 
             $buckets[$bucket]++;
             $sample[$bucket] ??= $statusCode;
@@ -76,14 +75,14 @@ final readonly class HistorySummary
         $statusBuckets = [];
 
         foreach ($buckets as $label => $count) {
-            if ($count === 0) {
+            if (!isset($sample[$label])) {
                 continue;
             }
 
             $statusBuckets[] = new HistoryStatusBucket(
                 label: $label,
                 count: $count,
-                sampleCode: $sample[$label] ?? 0,
+                sampleCode: $sample[$label],
                 variant: $label,
             );
         }

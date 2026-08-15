@@ -51,6 +51,9 @@
 composer require yii2-extensions/debug:^0.2 --dev
 ```
 
+The package installs `php-forge/debug-core` transitively. The core owns the portable snapshot and persistence model;
+this package contains only the Yii2 lifecycle, collector, controller, and asset integration.
+
 ### Basic Usage
 
 Enable the debug module in your application configuration (`config/web.php`).

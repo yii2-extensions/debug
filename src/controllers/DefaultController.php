@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\controllers;
 
 use Override;
+use PHPForge\Debug\Storage\{ExceptionSnapshot, RequestSummary};
 use Throwable;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
@@ -13,7 +14,6 @@ use yii\debug\LogTarget;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\{ConfigPanel, MailPanel};
-use yii\debug\storage\{ExceptionSnapshot, RequestSummary};
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarView};
 use yii\helpers\Url;
@@ -23,9 +23,7 @@ use yii\web\{Controller, NotFoundHttpException};
 use function array_key_first;
 use function is_file;
 use function is_string;
-use function mb_strpos;
-use function rtrim;
-use function sleep;
+use function strpos;
 use function strtolower;
 
 /**
@@ -72,8 +70,8 @@ class DefaultController extends Controller
         $filePath = Yii::getAlias($mailPanel->mailPath) . '/' . basename($file);
 
         if (
-            mb_strpos($file, '\\') !== false
-            || mb_strpos($file, '/') !== false
+            strpos($file, '\\') !== false
+            || strpos($file, '/') !== false
             || !is_file($filePath)
         ) {
             throw new NotFoundHttpException(
@@ -235,7 +233,6 @@ class DefaultController extends Controller
             $publishedUrl = $published[1] ?? null;
 
             if (is_string($publishedUrl)) {
-                $publishedUrl = rtrim($publishedUrl, '/');
                 $iconBaseUrl = "{$publishedUrl}/svg/";
             }
         } catch (Throwable) {
@@ -359,10 +356,6 @@ class DefaultController extends Controller
     public function getManifest(bool $forceReload = false): array
     {
         if ($this->manifest === null || $forceReload) {
-            if ($forceReload) {
-                clearstatcache();
-            }
-
             $this->manifest = $this->getLogTarget()->loadManifest();
         }
 
@@ -402,7 +395,9 @@ class DefaultController extends Controller
                 return;
             }
 
-            sleep(1);
+            if ($retry < $maxRetry) {
+                sleep(1);
+            }
         }
 
         throw new NotFoundHttpException(

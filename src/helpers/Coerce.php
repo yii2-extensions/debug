@@ -16,7 +16,7 @@ use function is_string;
  *
  * Framework callbacks, logger entries, request parameters, and renderer rows remain mixed even though persisted
  * snapshots use strict JSON DTOs. This helper is limited to those external runtime boundaries; snapshot hydration is
- * handled by {@see \yii\debug\storage\Payload} without scalar coercion.
+ * handled by {@see \PHPForge\Debug\Storage\Payload} without scalar coercion.
  */
 final class Coerce
 {

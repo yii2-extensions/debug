@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\profile;
 
+use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use yii\debug\panels\profile\ProfilingSnapshot;
 use yii\debug\panels\ProfilingPanel;
-use yii\debug\storage\ExceptionSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 

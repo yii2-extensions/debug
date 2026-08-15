@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\request;
 
+use PHPForge\Debug\Storage\RequestSummary;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\request\RequestDataNormalizer;
-use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
 
 /**

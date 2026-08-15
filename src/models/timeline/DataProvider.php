@@ -13,6 +13,7 @@ use yii\debug\panels\TimelinePanel;
 use function floor;
 use function log10;
 use function max;
+use function range;
 
 /**
  * Wraps the timeline records as a sortable provider that derives per-row CSS layout fields for the timeline view.
@@ -68,19 +69,22 @@ class DataProvider extends ArrayDataProvider
 
         $normalized = $rough / $magnitude;
 
-        $factor = match (true) {
-            $normalized <= 1.0 => 1,
-            $normalized <= 2.0 => 2,
-            $normalized <= 5.0 => 5,
-            default => 10,
+        $step = match (true) {
+            $normalized <= 1.0 => $magnitude,
+            $normalized <= 2.0 => 2 * $magnitude,
+            $normalized <= 5.0 => 5 * $magnitude,
+            default => 10 * $magnitude,
         };
 
-        $step = $factor * $magnitude;
         $data = [0 => 0.0];
         $limit = $duration - $step / 4;
 
-        for ($ms = $step; $ms <= $limit; $ms += $step) {
-            $data[$ms] = $ms / $duration * 100;
+        if ($step > $limit) {
+            return $data;
+        }
+
+        foreach (range($step, $limit, $step) as $ms) {
+            $data[(int) $ms] = $ms / $duration * 100;
         }
 
         return $data;

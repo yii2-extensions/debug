@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(ui): collapse the Inertia props table behind the shared clamp once it exceeds twelve rows, so a page shipping dozens of props no longer stretches the panel.
 - feat(ui): extract the collapsible section into a shared `Disclosure` helper, render the Inertia raw payload through it, and give panel sections a consistent gap instead of letting a heading sit flush against the block above it.
 - chore(deps): update dependencies in `composer.json`.
+- refactor!: move the shared snapshot contracts and JSON persistence into `php-forge/debug-core` and remove the former Yii2 storage DTO namespace.
 
 ## 0.1.1 May 18, 2026
 

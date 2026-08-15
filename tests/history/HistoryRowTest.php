@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\history;
 
+use PHPForge\Debug\Storage\RequestSummary;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\history\HistoryRow;
 

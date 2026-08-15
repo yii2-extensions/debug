@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use Exception;
+use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use yii\base\InvalidConfigException;
 use yii\debug\{LogTarget, Module, Panel};
-use yii\debug\storage\ExceptionSnapshot;
 use yii\debug\tests\support\stub\CustomPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;

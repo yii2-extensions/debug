@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\asset;
 
-use yii\debug\storage\{PanelRow, Payload};
+use PHPForge\Debug\Storage\{PanelRow, Payload};
 
 /**
  * Typed entry of a Vite build manifest.

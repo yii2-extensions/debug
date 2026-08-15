@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\dump;
 
-use yii\debug\storage\{PanelSnapshot, Payload};
+use PHPForge\Debug\Storage\{PanelSnapshot, Payload};
 
 use function array_map;
 use function is_array;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\queue;
 
+use PHPForge\Debug\Storage\{HydrationException, PanelRow, Payload};
 use yii\debug\helpers\Coerce;
-use yii\debug\storage\{HydrationException, PanelRow, Payload};
 
 use function in_array;
 use function is_array;

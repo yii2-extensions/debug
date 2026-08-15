@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use Closure;
+use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException, PanelSnapshot};
 use Throwable;
 use yii\base\{Component, InvalidConfigException, ViewContextInterface};
 use yii\debug\helpers\Coerce;
-use yii\debug\storage\{ExceptionSnapshot, HydrationException, PanelSnapshot};
 use yii\helpers\{ArrayHelper, StringHelper, Url, VarDumper};
 
 use function array_key_exists;

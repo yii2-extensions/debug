@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\log;
 
+use PHPForge\Debug\Storage\{PanelSnapshot, Payload};
 use yii\debug\helpers\Coerce;
-use yii\debug\storage\{PanelSnapshot, Payload};
 
 use function array_map;
 use function count;

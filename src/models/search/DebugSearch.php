@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Storage\RequestSummary;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\storage\RequestSummary;
 use yii\debug\widgets\history\HistoryRow;
 
 use function array_map;

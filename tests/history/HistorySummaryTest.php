@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\history;
 
+use PHPForge\Debug\Storage\RequestSummary;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\storage\RequestSummary;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\history\HistorySummary;
 
@@ -97,6 +97,58 @@ final class HistorySummaryTest extends TestCase
             201,
             $summary->statusBuckets[0]->sampleCode,
             'Sample code must be the first observed in the bucket.',
+        );
+    }
+
+    public function testFromManifestKeepsStatusFamilyBoundariesExclusive(): void
+    {
+        $summary = HistorySummary::fromManifest(
+            [
+                $this->summary(0),
+                $this->summary(199),
+                $this->summary(200),
+                $this->summary(299),
+                $this->summary(300),
+                $this->summary(399),
+                $this->summary(400),
+                $this->summary(499),
+                $this->summary(500),
+                $this->summary(599),
+                $this->summary(600),
+            ],
+        );
+
+        $counts = [];
+
+        foreach ($summary->statusBuckets as $bucket) {
+            $counts[$bucket->label] = $bucket->count;
+        }
+
+        self::assertSame(
+            [
+                '2xx' => 2,
+                '3xx' => 2,
+                '4xx' => 2,
+                '5xx' => 2,
+            ],
+            $counts,
+            'Each status family must include its lower boundary and exclude the next family boundary.',
+        );
+        self::assertSame(
+            [
+                199 => 199,
+                200 => 200,
+                299 => 299,
+                300 => 300,
+                399 => 399,
+                400 => 400,
+                499 => 499,
+                500 => 500,
+                599 => 599,
+                600 => 600,
+            ],
+            $summary->statusCodeFilter,
+            'Status filter must keep positive codes while excluding an uncaptured zero status.',
         );
     }
 

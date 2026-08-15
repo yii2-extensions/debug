@@ -8,15 +8,18 @@ the debug module remains unchanged.
 ### Clear stored debug snapshots
 
 The on-disk snapshot and manifest format is now versioned JSON. Each request is written atomically to `<tag>.json`,
-and request summaries are indexed in `index.json`. Snapshots written by 0.1 are intentionally incompatible; legacy
-`.data` files are discarded when the storage directory is initialized.
-
-Storage is at version `4`. Files carrying an older version are rejected on read and the request is simply captured
-again, so no manual cleanup is required — browse the site once after upgrading to repopulate the history.
+and request summaries are indexed in `index.json`. Storage is at version `4`; older snapshots aren't migrated or
+deleted automatically. Clear the debug storage directory once during the upgrade, then browse the site to repopulate
+the history.
 
 Panel persistence is now an explicit DTO contract. `Panel::$data`, `Panel::save()`, and `Panel::load()` were removed.
 Panels capture a `PanelSnapshot` through `capture()` and hydrate validated JSON through `hydrate()`. The legacy
 `FlattenException` serialization wrapper was replaced by the non-executable `ExceptionSnapshot` DTO.
+
+The storage contracts now live in `php-forge/debug-core` under `PHPForge\Debug\Storage`. The former
+`yii\debug\storage` DTO names were removed; import the core namespace directly.
+`yii\debug\storage\SnapshotStore` remains a Yii2 facade so filesystem failures continue to surface as
+`yii\base\InvalidConfigException`.
 
 ### Read typed rows in custom columns and callbacks
 

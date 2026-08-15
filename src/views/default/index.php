@@ -7,7 +7,7 @@ use yii\debug\GridViewConfig;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Panel;
 use yii\debug\panels\DbPanel;
-use yii\debug\storage\RequestSummary;
+use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\widgets\FilterBanner;
 use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryScale, HistorySummary};
 use yii\grid\{GridView, SerialColumn};

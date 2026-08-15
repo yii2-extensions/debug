@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\storage;
 
+use PHPForge\Debug\Storage\{DebugValue, HydrationException};
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use stdClass;
 use Stringable;
-use yii\debug\storage\{DebugValue, HydrationException};
 use yii\debug\tests\support\TestCase;
 
 /**
