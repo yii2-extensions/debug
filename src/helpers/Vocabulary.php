@@ -12,10 +12,10 @@ use function strtoupper;
  * Maps HTTP methods, status codes, SQL statement types, and log levels to the fixed semantic hue vocabulary.
  *
  * Single source of truth for the `yii-debug-verb-*`, `yii-debug-status-*`, and `yii-debug-level-*` CSS class suffixes
- * whose hues live in `resources/src/styles/tokens.css`.
+ * whose hues live in `php-forge/debug-core/resources/src/styles/tokens.css`.
  *
- * The client-side mirrors in `resources/src/core/history-cursor.js` and `resources/src/toolbar/element.js` must stay
- * in sync with these maps.
+ * The client-side mirrors in `php-forge/debug-core/resources/src/core/history-cursor.js` and
+ * `php-forge/debug-core/resources/src/toolbar/element.js` must stay in sync with these maps.
  */
 final class Vocabulary
 {

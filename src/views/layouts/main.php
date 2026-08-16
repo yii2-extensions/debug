@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Helper\{Attributes, Encode};
+use yii\debug\Module;
+use yii\debug\helpers\Icon;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarRenderer;
-use yii\helpers\Html;
+use yii\helpers\{Html, Url};
 use yii\web\View;
 
 /**
@@ -37,34 +39,30 @@ if (!$shellContext instanceof ShellContext) {
 </head>
 <body class="yii-debug">
 <?php $this->beginBody() ?>
-<?php if ($shellContext->useShell): ?>
-    <div class="yii-debug-page default-<?= Encode::value($shellContext->mode) ?>">
-        <?= $this->render(
-            '../default/_shell_header',
-            [
-                'debugTheme' => $shellContext->resolvedTheme,
-                'themeIconSun' => $shellContext->themeIconSun,
-                'themeIconMoon' => $shellContext->themeIconMoon,
-                'yiiVersion' => $shellContext->yiiVersion,
-                'phpVersion' => $shellContext->phpVersion,
-                'peakMemory' => $shellContext->peakMemory,
-                'configUrl' => $shellContext->configUrl,
-            ],
-        ) ?>
-
-        <div class="yii-debug-layout">
-            <?= $shellContext->sidebar !== null ? SidebarRenderer::render($shellContext->sidebar) : '' ?>
-
-            <main class="yii-debug-main yii-debug-card">
-                <?= $content ?>
-            </main>
-        </div>
-    </div>
-<?php else: ?>
-    <main class="yii-debug-main-bare">
-        <?= $content ?>
-    </main>
-<?php endif; ?>
+<?= $this->renderFile(
+    Module::VIEW_PATH_ALIAS . '/_shell.php',
+    [
+        'actionIcon' => Icon::render('config'),
+        'actionLabel' => 'Config',
+        'actionTitle' => $shellContext->configUrl === null
+            ? 'No requests captured yet'
+            : 'Open the Configuration panel',
+        'actionUrl' => $shellContext->configUrl,
+        'content' => $content,
+        'debugTheme' => $shellContext->resolvedTheme,
+        'historyUrl' => Url::to(['index']),
+        'mode' => $shellContext->mode,
+        'peakMemory' => $shellContext->peakMemory,
+        'phpIcon' => Icon::render('php-alt'),
+        'phpVersion' => $shellContext->phpVersion,
+        'sidebar' => $shellContext->sidebar !== null ? SidebarRenderer::render($shellContext->sidebar) : '',
+        'themeIconMoon' => $shellContext->themeIconMoon,
+        'themeIconSun' => $shellContext->themeIconSun,
+        'useShell' => $shellContext->useShell,
+        'yiiIcon' => Icon::render('yii'),
+        'yiiVersion' => $shellContext->yiiVersion,
+    ],
+) ?>
 <?php $this->endBody() ?>
 </body>
 </html>

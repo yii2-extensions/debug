@@ -150,7 +150,7 @@ class Panel extends Component implements ViewContextInterface
     /**
      * Returns the icon key used on the panel's toolbar chip, or `null` to render no icon.
      *
-     * The key is matched against an SVG file shipped at `src/assets/svg/{key}.svg` and rendered as a CSS-mask glyph
+     * The key is matched against the SVG library shipped by `php-forge/debug-core` and rendered as a CSS-mask glyph
      * that takes its color from the surrounding chip text.
      *
      * @return string|null Icon key, or `null` to render no icon.

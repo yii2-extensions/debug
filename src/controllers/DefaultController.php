@@ -12,7 +12,7 @@ use yii\base\{Exception, InvalidConfigException, Response};
 use yii\debug\helpers\{Coerce, Format, Icon};
 use yii\debug\LogTarget;
 use yii\debug\models\search\DebugSearch;
-use yii\debug\Panel;
+use yii\debug\{Module, Panel};
 use yii\debug\panels\{ConfigPanel, MailPanel};
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarView};
@@ -228,7 +228,7 @@ class DefaultController extends Controller
         $iconBaseUrl = '';
 
         try {
-            $published = Yii::$app->assetManager->publish(Yii::getAlias('@yii/debug/assets'));
+            $published = Yii::$app->assetManager->publish(Module::SOURCE_PATH);
 
             $publishedUrl = $published[1] ?? null;
 

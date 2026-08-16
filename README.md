@@ -51,8 +51,9 @@
 composer require yii2-extensions/debug:^0.2 --dev
 ```
 
-The package installs `php-forge/debug-core` transitively. The core owns the portable snapshot and persistence model;
-this package contains only the Yii2 lifecycle, collector, controller, and asset integration.
+The package installs `php-forge/debug-core` transitively. The core owns the portable snapshot and persistence model,
+shared views, and frontend files; this package owns the Yii2 lifecycle, collectors, controllers, view rendering,
+toolbar injection, and asset bundle definitions.
 
 ### Basic Usage
 
@@ -68,7 +69,10 @@ if (YII_ENV_DEV) {
 }
 ```
 
-The toolbar appears at the bottom of every rendered page; click any panel chip to open the full debugger.
+The toolbar appears at the bottom of every rendered page; click any panel chip to open the full debugger. The complete
+frontend, including the panel stylesheet, JavaScript, fonts, icons, and toolbar Web Component, is provided by
+`php-forge/debug-core`. This package publishes those shared assets and supplies the Yii2-specific panels and data.
+Shared PHP templates are resolved through the adapter-owned `@yiiDebugViews` alias.
 
 When upgrading from 0.1, review the [0.2 upgrade guide](UPGRADE.md) before deploying the package.
 
