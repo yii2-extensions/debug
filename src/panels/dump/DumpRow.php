@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\dump;
 
+use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Storage\{PanelRow, Payload};
-use yii\debug\helpers\Coerce;
 
 /**
  * Typed dump row narrowed once from the Yii logger tuple and persisted in that form.

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\asset;
 
-use yii\debug\helpers\Fqcn;
+use PHPForge\Debug\Helper\Fqcn;
 use yii\helpers\Inflector;
 
 use function count;

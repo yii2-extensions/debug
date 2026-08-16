@@ -8,7 +8,7 @@ use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\helpers\EmptyState;
+use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\QueueSearch;
 use yii\debug\panels\queue\{JobRecord, QueueCardRenderer, QueueGridRenderer, QueueSummary};
 use yii\debug\panels\QueuePanel;

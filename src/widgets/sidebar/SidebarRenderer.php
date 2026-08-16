@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
+use PHPForge\Debug\Helper\{Icon, Vocabulary};
 use UIAwesome\Html\Core\Component\{Item, Menu};
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Form\Button;
@@ -12,7 +13,6 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Aside, Section};
-use yii\debug\helpers\{Icon, Vocabulary};
 use yii\helpers\Url;
 
 /**

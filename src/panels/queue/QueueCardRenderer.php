@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\queue;
 
+use PHPForge\Debug\Helper\{Avatar, Fqcn};
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\Interactive\{Details, Summary};
 use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\Article;
-use yii\debug\helpers\{Avatar, Fqcn};
 
 use function array_is_list;
 use function count;

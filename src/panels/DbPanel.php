@@ -6,13 +6,13 @@ namespace yii\debug\panels;
 
 use Override;
 use PDO;
+use PHPForge\Debug\Helper\{Coerce, Vocabulary};
 use Yii;
 use yii\base\{Event, InvalidConfigException};
 use yii\data\Sort;
 use yii\db\Connection;
 use yii\debug\actions\db\ExplainAction;
 use yii\debug\db\DebugPdoStatement;
-use yii\debug\helpers\{Coerce, Vocabulary};
 use yii\debug\models\search\DbSearch;
 use yii\debug\Panel;
 use yii\debug\panels\db\{DbSnapshot, QueryRow};

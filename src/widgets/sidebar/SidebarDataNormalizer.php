@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
+use PHPForge\Debug\Helper\{Coerce, Icon, Vocabulary};
 use PHPForge\Debug\Storage\RequestSummary;
-use yii\debug\helpers\{Coerce, Icon, Vocabulary};
 use yii\debug\Panel;
 
 use function array_key_first;

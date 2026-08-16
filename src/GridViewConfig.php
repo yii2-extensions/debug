@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use PHPForge\Debug\Helper\Coerce;
 use UIAwesome\Html\Form\{Option, Select};
 use UIAwesome\Html\Phrasing\{Label, Span};
 use Yii;
-use yii\debug\helpers\Coerce;
 use yii\debug\widgets\DebugDataColumn;
 
 use function in_array;

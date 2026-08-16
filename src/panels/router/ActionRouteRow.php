@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\router;
 
-use yii\debug\helpers\Coerce;
+use PHPForge\Debug\Helper\Coerce;
 
 /**
  * Typed view-model for one row in the Action Routes table.

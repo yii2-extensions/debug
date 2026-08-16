@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\queue;
 
+use PHPForge\Debug\Helper\Fqcn;
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
-use yii\debug\helpers\Fqcn;
 
 use function abs;
 use function date;

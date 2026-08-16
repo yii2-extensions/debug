@@ -6,10 +6,10 @@ namespace yii\debug\panels;
 
 use JsonSerializable;
 use Override;
+use PHPForge\Debug\Helper\Coerce;
 use ReflectionMethod;
 use Yii;
 use yii\base\{InvalidConfigException, View, ViewEvent};
-use yii\debug\helpers\Coerce;
 use yii\debug\Panel;
 use yii\debug\panels\inertia\InertiaSnapshot;
 

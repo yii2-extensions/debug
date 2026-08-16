@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\log;
 
+use PHPForge\Debug\Helper\{CellMore, Fqcn};
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
-use yii\debug\helpers\{CellMore, Fqcn, Vocabulary};
+use yii\debug\helpers\Vocabulary;
 use yii\debug\panels\db\SqlHighlighter;
 use yii\debug\panels\LogPanel;
 use yii\log\Logger;

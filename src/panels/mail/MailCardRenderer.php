@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\mail;
 
+use PHPForge\Debug\Helper\{Avatar, Icon};
 use UIAwesome\Html\Flow\{Div, Pre};
 use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\Helper\Encode;
@@ -12,7 +13,6 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\Article;
-use yii\debug\helpers\{Avatar, Icon};
 
 use function array_map;
 use function date;

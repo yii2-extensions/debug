@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Helper\Coerce;
 use ReflectionClass;
 use Yii;
 use yii\base\Application;
-use yii\debug\helpers\Coerce;
 use yii\debug\{Panel, VersionResolver};
 use yii\debug\panels\config\{ConfigDataNormalizer, ConfigSnapshot};
 

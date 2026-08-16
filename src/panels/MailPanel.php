@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Helper\Coerce;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Part\{AbstractPart, TextPart};
 use Throwable;
 use Yii;
 use yii\base\Event;
-use yii\debug\helpers\Coerce;
 use yii\debug\{LogTarget, Panel};
 use yii\debug\models\search\MailSearch;
 use yii\debug\panels\mail\{MailMessage, MailSnapshot};

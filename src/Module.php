@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use Override;
+use PHPForge\Debug\Helper\{Coerce, Icon};
 use RuntimeException;
 use Throwable;
 use Yii;
 use yii\base\{Action, Application, BootstrapInterface, Event, InvalidConfigException, View as BaseView};
-use yii\debug\helpers\{Coerce, Icon};
 use yii\debug\panels\{
     AssetPanel,
     ConfigPanel,

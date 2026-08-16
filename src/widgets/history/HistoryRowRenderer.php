@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
+use PHPForge\Debug\Helper\{Format, Gauge, Vocabulary};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use Yii;
 use yii\debug\GridViewConfig;
-use yii\debug\helpers\{Format, Gauge, Vocabulary};
 use yii\debug\models\search\DebugSearch;
 use yii\debug\panels\DbPanel;
 use yii\helpers\Url;

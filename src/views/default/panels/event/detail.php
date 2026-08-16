@@ -8,7 +8,7 @@ use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\helpers\EmptyState;
+use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\EventSearch;
 use yii\debug\panels\event\{EventCellRenderer, EventRow};
 use yii\debug\panels\EventPanel;

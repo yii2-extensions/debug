@@ -8,7 +8,7 @@ use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
-use yii\debug\helpers\{CellMore, Coerce, Disclosure, EmptyState};
+use PHPForge\Debug\Helper\{CellMore, Coerce, Disclosure, EmptyState};
 use yii\debug\panels\InertiaPanel;
 
 /** @var InertiaPanel $panel Panel providing the detail content. */

@@ -6,9 +6,9 @@ namespace yii\debug\panels;
 
 use Closure;
 use Override;
+use PHPForge\Debug\Helper\Coerce;
 use UIAwesome\Html\Helper\Encode;
 use Yii;
-use yii\debug\helpers\Coerce;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
 use yii\debug\panels\dump\{DumpRow, DumpSnapshot};

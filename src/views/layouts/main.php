@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use UIAwesome\Html\Helper\{Attributes, Encode};
 use yii\debug\Module;
-use yii\debug\helpers\Icon;
+use PHPForge\Debug\Helper\Icon;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarRenderer;
 use yii\helpers\{Html, Url};

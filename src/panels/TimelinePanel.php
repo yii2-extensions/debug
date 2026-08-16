@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Helper\Coerce;
 use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\debug\helpers\Coerce;
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\Svg;
 use yii\debug\Panel;

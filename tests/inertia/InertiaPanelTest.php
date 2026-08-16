@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\tests\inertia;
 
 use JsonSerializable;
+use PHPForge\Debug\Helper\CellMore;
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\base\{View, ViewEvent};
-use yii\debug\helpers\CellMore;
 use yii\debug\panels\inertia\InertiaSnapshot;
 use yii\debug\panels\InertiaPanel;
 use yii\debug\tests\support\TestCase;

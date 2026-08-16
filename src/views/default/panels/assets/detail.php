@@ -8,7 +8,7 @@ use UIAwesome\Html\List\{Li, Ol};
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
-use yii\debug\helpers\{Coerce, EmptyState, Icon};
+use PHPForge\Debug\Helper\{Coerce, EmptyState, Icon};
 use yii\debug\panels\asset\{AssetCardRenderer, AssetSummary, ViteManifest};
 
 /**

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\profile;
 
+use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Storage\{PanelSnapshot, Payload};
 use Yii;
-use yii\debug\helpers\Coerce;
 use yii\debug\panels\MemorySample;
 
 use function array_map;

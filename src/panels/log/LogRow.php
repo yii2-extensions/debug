@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\log;
 
+use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Storage\{PanelRow, Payload};
-use yii\debug\helpers\Coerce;
 use yii\helpers\VarDumper;
 
 use function is_string;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use UIAwesome\Html\Flow\P;
 use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\Code;
-use yii\debug\helpers\EmptyState;
+use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\panels\UserPanel;
 use yii\debug\widgets\Tabs;
 use yii\web\View;
