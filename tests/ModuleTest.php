@@ -474,6 +474,7 @@ final class ModuleTest extends TestCase
             "String 'pageTitle' must surface verbatim from 'htmlTitle()'.",
         );
     }
+
     public function testInitConfiguresSharedViewAlias(): void
     {
         Yii::setAlias(Module::VIEW_PATH_ALIAS, '@runtime/not-debug-core');

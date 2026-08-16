@@ -739,5 +739,4 @@ class Module extends \yii\base\Module implements BootstrapInterface
             self::VIEW_PATH_ALIAS,
         );
     }
-
 }
