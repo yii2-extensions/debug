@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\config;
 
-use yii\debug\helpers\Coerce;
+use PHPForge\Debug\Helper\Coerce;
 
 use function is_array;
 

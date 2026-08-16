@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\event;
 
+use PHPForge\Debug\Helper\Fqcn;
 use UIAwesome\Html\Phrasing\Span;
-use yii\debug\helpers\Fqcn;
 
 use function date;
 use function sprintf;

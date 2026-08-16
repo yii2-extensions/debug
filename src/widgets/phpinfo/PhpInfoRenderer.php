@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\phpinfo;
 
+use PHPForge\Debug\Helper\{Disclosure, Icon};
 use UIAwesome\Html\Flow\{Div, Pre};
 use UIAwesome\Html\Form\{Button, InputSearch};
 use UIAwesome\Html\Interactive\{Details, Summary};
@@ -12,7 +13,6 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Code, Label, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Aside, Section};
-use yii\debug\helpers\{Disclosure, Icon};
 
 use function count;
 use function implode;

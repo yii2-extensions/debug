@@ -6,11 +6,11 @@ namespace yii\debug\panels;
 
 use Closure;
 use Override;
+use PHPForge\Debug\Helper\Coerce;
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Strong;
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\debug\helpers\Coerce;
 use yii\debug\Panel;
 use yii\debug\panels\asset\{AssetBundleNormalizer, AssetBundleRow, AssetSnapshot, ViteChunk, ViteManifest};
 use yii\helpers\ArrayHelper;

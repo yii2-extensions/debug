@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\controllers;
 
 use Override;
+use PHPForge\Debug\Helper\{Coerce, Format, Icon};
 use PHPForge\Debug\Storage\{ExceptionSnapshot, RequestSummary};
 use Throwable;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
-use yii\debug\helpers\{Coerce, Format, Icon};
 use yii\debug\LogTarget;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\{Module, Panel};

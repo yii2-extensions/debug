@@ -9,7 +9,7 @@ use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\helpers\EmptyState;
+use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\ProfileSearch;
 use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRow};
 use yii\debug\panels\ProfilingPanel;

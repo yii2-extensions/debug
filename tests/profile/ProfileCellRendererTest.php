@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\profile;
 
+use PHPForge\Debug\Helper\CellMore;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\helpers\CellMore;
 use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRow};
 use yii\debug\tests\support\TestCase;
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\request;
 
+use PHPForge\Debug\Helper\Vocabulary;
 use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Form\InputSearch;
 use UIAwesome\Html\Heading\H2;
@@ -11,7 +12,6 @@ use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
 use Yii;
-use yii\debug\helpers\Vocabulary;
 use yii\debug\widgets\Tabs;
 use yii\helpers\VarDumper;
 

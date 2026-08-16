@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Helper\Coerce;
 use Yii;
-use yii\debug\helpers\Coerce;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
 use yii\debug\panels\log\{LogCounts, LogRow, LogSnapshot};

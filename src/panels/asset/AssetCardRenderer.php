@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\asset;
 
+use PHPForge\Debug\Helper\Icon;
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Heading\{H2, H3};
 use UIAwesome\Html\List\{Dd, Dl, Dt};
@@ -11,7 +12,6 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Sectioning\{Article, Section};
-use yii\debug\helpers\Icon;
 use yii\helpers\Inflector;
 
 use function array_map;

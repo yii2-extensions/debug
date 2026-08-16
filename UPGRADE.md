@@ -70,6 +70,14 @@ been removed.
 
 ### Update extensions that used internal helpers
 
+Framework-neutral helpers now live under `PHPForge\Debug\Helper`. Replace imports of `yii\debug\helpers\Avatar`,
+`CellMore`, `Coerce`, `Disclosure`, `EmptyState`, `Format`, `Fqcn`, `Gauge`, and `Icon` with their core namespace
+equivalents. The neutral `Vocabulary::verb()`, `Vocabulary::sqlVerb()`, and `Vocabulary::statusClass()` methods moved
+to `PHPForge\Debug\Helper\Vocabulary`. No compatibility aliases are provided.
+
+`yii\debug\helpers\Vocabulary` remains available only for the Yii2-specific `logLevel()` mapping backed by
+`yii\log\Logger`.
+
 The following implementation helpers were removed and are no longer extension points:
 
 - `components/search/Filter` and the `components/search/matchers` classes;

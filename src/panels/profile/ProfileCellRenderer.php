@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\profile;
 
+use PHPForge\Debug\Helper\{CellMore, Fqcn, Gauge};
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Phrasing\Span;
-use yii\debug\helpers\{CellMore, Fqcn, Gauge};
 use yii\debug\panels\db\SqlHighlighter;
 
 use function date;

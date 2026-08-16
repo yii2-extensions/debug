@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\timeline;
 
+use PHPForge\Debug\Helper\{Format, Fqcn};
 use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Form\{Button, Form, InputHidden, InputNumber, InputText};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Em, Label, Span, Strong};
 use UIAwesome\Html\Root\{Footer, Header};
 use UIAwesome\Html\Sectioning\Section;
-use yii\debug\helpers\{Format, Fqcn};
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\{DataProvider, Svg};
 use yii\debug\panels\TimelinePanel;

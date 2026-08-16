@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Helper\{Coerce, Format};
 use Yii;
-use yii\debug\helpers\{Coerce, Format};
 use yii\debug\models\search\ProfileSearch;
 use yii\debug\Panel;
 use yii\debug\panels\profile\{ProfileRow, ProfilingSnapshot};

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\user;
 
-use yii\debug\helpers\Icon;
+use PHPForge\Debug\Helper\Icon;
 
 use function ctype_digit;
 use function date;

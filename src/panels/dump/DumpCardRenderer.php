@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\dump;
 
+use PHPForge\Debug\Helper\Coerce;
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\List\{Li, Ul};
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\Header;
-use yii\debug\helpers\Coerce;
 use yii\debug\panels\DumpPanel;
 
 use function array_map;
