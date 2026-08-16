@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use RuntimeException;
 use stdClass;
 use Yii;
 use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfigException};
@@ -438,6 +439,31 @@ final class ModuleTest extends TestCase
             $html,
             "Default height percentage must be '50'.",
         );
+    }
+
+    public function testGetYiiLogoThrowsWhenSharedFrontendAssetIsMissing(): void
+    {
+        $sourcePath = Yii::getAlias(Module::SOURCE_PATH);
+
+        Yii::setAlias(Module::SOURCE_PATH, '@runtime/missing-debug-core-assets');
+        $this->setInaccessibleStaticProperty(Icon::class, 'cache', []);
+        $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+
+        try {
+            Module::getYiiLogo();
+
+            self::fail('A missing packaged Yii logo must raise an explicit runtime error.');
+        } catch (RuntimeException $exception) {
+            self::assertSame(
+                'Unable to read the packaged Yii logo.',
+                $exception->getMessage(),
+                'A missing packaged Yii logo must report the failing asset boundary.',
+            );
+        } finally {
+            Yii::setAlias(Module::SOURCE_PATH, $sourcePath);
+            $this->setInaccessibleStaticProperty(Icon::class, 'cache', []);
+            $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+        }
     }
 
     public function testGetYiiLogoUsesSharedFrontendAsset(): void

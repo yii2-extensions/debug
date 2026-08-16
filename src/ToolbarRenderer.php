@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use yii\base\View;
 use yii\helpers\Html;
-use yii\web\{AssetManager, View};
+use yii\web\AssetManager;
 
 use function strripos;
 use function substr_replace;
@@ -48,31 +49,6 @@ final readonly class ToolbarRenderer
         return $offset === false
             ? "{$html}{$toolbar}"
             : substr_replace($html, $toolbar, $offset, 0);
-    }
-
-    /**
-     * Renders the shared toolbar element and the Yii2-published runtime.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $html = $renderer->render('/debug/default/toolbar-data?tag=request-1');
-     * ```
-     *
-     * @param string $dataUrl Toolbar payload URL.
-     * @param list<string> $skipUrls Same-origin URLs excluded from AJAX tracking.
-     * @param string $position Initial toolbar position.
-     * @param int $height Initial drawer height percentage.
-     *
-     * @return string Toolbar element followed by its published runtime tag.
-     */
-    public function render(
-        string $dataUrl,
-        array $skipUrls = [],
-        string $position = 'bottom',
-        int $height = 50,
-    ): string {
-        return $this->renderElement($dataUrl, $skipUrls, $position, $height) . $this->scriptTag();
     }
 
     /**

@@ -8,7 +8,7 @@ use Override;
 use RuntimeException;
 use Throwable;
 use Yii;
-use yii\base\{Action, Application, BootstrapInterface, Event, InvalidConfigException};
+use yii\base\{Action, Application, BootstrapInterface, Event, InvalidConfigException, View as BaseView};
 use yii\debug\helpers\{Coerce, Icon};
 use yii\debug\panels\{
     AssetPanel,
@@ -715,23 +715,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Creates the Yii2-specific toolbar renderer.
      *
-     * @param View|null $view View handling the current response or `null` to use the application view.
-     *
-     * @throws InvalidConfigException When the application does not provide a web view.
+     * @param BaseView|null $view View handling the current response or `null` to use the application view.
      *
      * @return ToolbarRenderer Configured toolbar renderer.
      */
-    private function toolbarRenderer(View|null $view = null): ToolbarRenderer
+    private function toolbarRenderer(BaseView|null $view = null): ToolbarRenderer
     {
-        if ($view === null) {
-            $applicationView = Yii::$app->getView();
-
-            if (!$applicationView instanceof View) {
-                throw new InvalidConfigException('The debug toolbar requires a Yii web view.');
-            }
-
-            $view = $applicationView;
-        }
+        $view ??= Yii::$app->getView();
 
         return new ToolbarRenderer(
             $view,
