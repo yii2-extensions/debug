@@ -32,6 +32,15 @@ final class IconTest extends TestCase
         $this->setInaccessibleStaticProperty(Icon::class, 'cache', []);
     }
 
+    public function testRenderReturnsEmptyStringWhenNameIsUnsafe(): void
+    {
+        self::assertSame(
+            '',
+            Icon::render('../yii'),
+            'Unsafe icon names must be rejected before filesystem resolution.',
+        );
+    }
+
     public function testRenderReturnsEmptyStringWhenSvgFileMissing(): void
     {
         self::assertSame(
@@ -55,5 +64,12 @@ final class IconTest extends TestCase
             $markup,
             'Rendered markup must include the opening `<svg>` tag.',
         );
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->mockWebApplication();
     }
 }

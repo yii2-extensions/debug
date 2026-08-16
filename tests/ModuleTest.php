@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use RuntimeException;
 use stdClass;
 use Yii;
 use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfigException};
 use yii\caching\FileCache;
 use yii\debug\controllers\DefaultController;
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, VersionResolver};
+use yii\debug\helpers\Icon;
 use yii\debug\panels\LogPanel;
 use yii\debug\tests\provider\ModuleProvider;
 use yii\debug\tests\support\stub\NotALogTarget;
@@ -19,6 +21,7 @@ use yii\log\{Dispatcher, Target as LogTargetBase};
 use yii\web\{AssetManager, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
 
 use function array_keys;
+use function base64_encode;
 use function is_array;
 use function is_string;
 
@@ -342,6 +345,11 @@ final class ModuleTest extends TestCase
             $asset->js,
             'DebugAsset must ship one consolidated panel script.',
         );
+        self::assertSame(
+            Yii::getAlias(Module::SOURCE_PATH),
+            $asset->sourcePath,
+            'DebugAsset must publish the framework-neutral core frontend.',
+        );
     }
 
     public function testDebugAssetShipsSingleMainStylesheet(): void
@@ -433,6 +441,40 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testGetYiiLogoThrowsWhenSharedFrontendAssetIsMissing(): void
+    {
+        $sourcePath = Yii::getAlias(Module::SOURCE_PATH);
+
+        Yii::setAlias(Module::SOURCE_PATH, '@runtime/missing-debug-core-assets');
+        $this->setInaccessibleStaticProperty(Icon::class, 'cache', []);
+        $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+
+        try {
+            Module::getYiiLogo();
+
+            self::fail('A missing packaged Yii logo must raise an explicit runtime error.');
+        } catch (RuntimeException $exception) {
+            self::assertSame(
+                'Unable to read the packaged Yii logo.',
+                $exception->getMessage(),
+                'A missing packaged Yii logo must report the failing asset boundary.',
+            );
+        } finally {
+            Yii::setAlias(Module::SOURCE_PATH, $sourcePath);
+            $this->setInaccessibleStaticProperty(Icon::class, 'cache', []);
+            $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+        }
+    }
+
+    public function testGetYiiLogoUsesSharedFrontendAsset(): void
+    {
+        self::assertSame(
+            'data:image/svg+xml;base64,' . base64_encode(Icon::render('yii')),
+            Module::getYiiLogo(),
+            "'getYiiLogo()' must use the shared Yii logo file by default.",
+        );
+    }
+
     public function testHtmlTitleResolvesCallableTitle(): void
     {
         $module = new Module('debug');
@@ -456,6 +498,19 @@ final class ModuleTest extends TestCase
             'My Debug',
             $module->htmlTitle(),
             "String 'pageTitle' must surface verbatim from 'htmlTitle()'.",
+        );
+    }
+
+    public function testInitConfiguresSharedViewAlias(): void
+    {
+        Yii::setAlias(Module::VIEW_PATH_ALIAS, '@runtime/not-debug-core');
+
+        $module = new Module('debug');
+
+        self::assertSame(
+            Yii::getAlias($module->viewPath),
+            Yii::getAlias(Module::VIEW_PATH_ALIAS),
+            'The adapter-owned alias must target the shared Debug Core templates.',
         );
     }
 
@@ -1042,7 +1097,23 @@ final class ModuleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->mockWebApplication();
+
+        $assetBasePath = dirname(__DIR__) . '/runtime/assets';
+
+        if (!is_dir($assetBasePath) && !mkdir($assetBasePath, 0o755, true) && !is_dir($assetBasePath)) {
+            self::fail("Could not create asset base path: {$assetBasePath}");
+        }
+
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'assetManager' => [
+                        'basePath' => $assetBasePath,
+                        'baseUrl' => '/assets',
+                    ],
+                ],
+            ],
+        );
     }
 
     /**

@@ -293,6 +293,37 @@ final class DbPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailUsesHydratedRowsInsteadOfCurrentRequestTimings(): void
+    {
+        $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
+
+        $this->primeDbPanel($panel, [], []);
+        $this->hydratePanel($panel, new DbSnapshot([$this->makeRowWithDuration(1.5)]));
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            '<strong>1</strong> queries',
+            $html,
+            'The detail summary must count rows from the hydrated snapshot.',
+        );
+        self::assertStringContainsString(
+            '<strong>1.500</strong> ms total',
+            $html,
+            'The detail summary must total durations from the hydrated snapshot.',
+        );
+        self::assertStringContainsString(
+            'SELECT',
+            $html,
+            'The detail grid must render the hydrated query.',
+        );
+        self::assertStringNotContainsString(
+            'No database queries in this request',
+            $html,
+            'Hydrated queries must not render the empty-state card.',
+        );
+    }
+
     public function testGetExcessiveCallersReturnsCallersAtOrAboveThreshold(): void
     {
         $panel = $this->makePanel(DbPanel::class);

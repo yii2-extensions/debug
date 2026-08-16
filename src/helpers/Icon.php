@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace yii\debug\helpers;
 
 use UIAwesome\Html\Svg\Svg;
+use Yii;
+use yii\debug\Module;
 
-use function dirname;
 use function is_file;
+use function preg_match;
 
 /**
  * Renders SVG icons bundled with the debug extension via {@see Svg::tag()}.
  *
- * Icons live as `.svg` files under `src/assets/svg/` and are looked up by name (without extension). Results are cached
- * in-memory for the request, so repeated lookups (panel icons, chevrons, etc.) do not re-read the file or re-run the
- * libxml-based sanitization process.
+ * Icons live in the framework-neutral core asset library and are looked up by name (without extension). Results are
+ * cached in-memory for the request, so repeated lookups do not re-read the file or re-run sanitization.
  */
 final class Icon
 {
@@ -36,7 +37,11 @@ final class Icon
             return self::$cache[$name];
         }
 
-        $path = dirname(__DIR__) . '/assets/svg/' . $name . '.svg';
+        if (preg_match('/\A[a-z0-9][a-z0-9-]*\z/', $name) !== 1) {
+            return self::$cache[$name] = '';
+        }
+
+        $path = Yii::getAlias(Module::SOURCE_PATH . '/svg/' . $name . '.svg');
 
         if (!is_file($path)) {
             return self::$cache[$name] = '';

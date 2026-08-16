@@ -809,7 +809,7 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
-    public function testShellHeaderRendersPeakMemoryAndDisabledConfigChip(): void
+    public function testSharedShellRendersPeakMemoryAndDisabledConfigChip(): void
     {
         $module = $this->bootDebugModule();
 
@@ -817,18 +817,26 @@ final class DefaultControllerTest extends TestCase
 
         Yii::$app->controller = $controller;
 
-        // Render the shell header partial directly to exercise the 'peakMemory !== null' branch and the
-        // 'configUrl === null' (disabled config chip) branch in one pass.
-        $html = $controller->renderPartial(
-            '_shell_header',
+        $html = Yii::$app->view->renderFile(
+            Module::VIEW_PATH_ALIAS . '/_shell.php',
             [
+                'actionIcon' => '<svg/>',
+                'actionLabel' => 'Config',
+                'actionTitle' => 'No requests captured yet',
+                'actionUrl' => null,
+                'content' => '<p>Content</p>',
                 'debugTheme' => 'light',
-                'themeIconSun' => '<svg/>',
-                'themeIconMoon' => '<svg/>',
-                'yiiVersion' => '2.0.0',
-                'phpVersion' => '8.5.0',
+                'historyUrl' => '/debug',
+                'mode' => 'index',
                 'peakMemory' => '1.21 MB',
-                'configUrl' => null,
+                'phpIcon' => '<svg/>',
+                'phpVersion' => '8.5.0',
+                'sidebar' => '<aside>Sidebar</aside>',
+                'themeIconMoon' => '<svg/>',
+                'themeIconSun' => '<svg/>',
+                'useShell' => true,
+                'yiiIcon' => '<svg/>',
+                'yiiVersion' => '2.0.0',
             ],
         );
 
@@ -840,7 +848,7 @@ final class DefaultControllerTest extends TestCase
         self::assertStringContainsString(
             'is-disabled',
             $html,
-            "Null 'configUrl' must render the disabled config chip.",
+            "Null 'actionUrl' must render the disabled config chip.",
         );
     }
 

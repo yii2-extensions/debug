@@ -25,11 +25,11 @@ use yii\web\View;
  * @var int $sumDuplicates Number of duplicated queries.
  * @var View $this View component instance.
  */
-$timings = $panel->calculateTimings();
+$rows = $panel->getRows();
 
-$hasQueries = $timings !== [];
+$hasQueries = $rows !== [];
 
-$totalMs = number_format(array_sum(array_column($timings, 'duration')) * 1000, 3);
+$totalMs = number_format(array_sum(array_column($rows, 'duration')), 3);
 
 $tag = $panel->tag;
 
@@ -38,7 +38,7 @@ $explainUrlBuilder = static fn(int $seq): string => Url::to(['db-explain', 'seq'
 $summaryItems = [
     Span::tag()
         ->html(
-            Strong::tag()->content((string) count($timings)),
+            Strong::tag()->content((string) count($rows)),
             ' queries',
         ),
     Span::tag()
