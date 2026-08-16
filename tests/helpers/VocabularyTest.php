@@ -40,5 +40,4 @@ final class VocabularyTest extends TestCase
             );
         }
     }
-
 }
