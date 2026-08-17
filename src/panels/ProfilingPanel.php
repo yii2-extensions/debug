@@ -5,23 +5,19 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Helper\{Coerce, Format};
+use PHPForge\Debug\Helper\Format;
+use PHPForge\Debug\Panel\MemorySample;
+use PHPForge\Debug\Panel\Profile\{ProfileRow, ProfilingSnapshot};
 use Yii;
 use yii\debug\models\search\ProfileSearch;
 use yii\debug\Panel;
-use yii\debug\panels\profile\{ProfileRow, ProfilingSnapshot};
 use yii\helpers\Url;
-use yii\log\Logger;
-
-use function memory_get_peak_usage;
-use function microtime;
 
 /**
- * Captures profile-level log messages emitted by `Yii::beginProfile()` and renders the per-block timings in the
- * Profiling panel.
+ * Renders the per-block timings captured by the Profiling collector.
  *
- * Records the request peak memory and total processing time alongside the profile messages, so the detail view can
- * surface the totals next to the sortable per-block grid and link to the Timeline panel.
+ * Presents the request peak memory and total processing time next to the sortable per-block grid and links to the
+ * Timeline panel; data acquisition lives in {@see \yii\debug\collectors\ProfilingCollector}.
  */
 class ProfilingPanel extends Panel implements ProvidesMemorySamples
 {
@@ -29,24 +25,6 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples
     protected const string NAME = 'Profiling';
 
     private ProfilingSnapshot|null $snapshot = null;
-
-    /**
-     * Snapshots the captured profile messages, the peak memory usage, and the total request time.
-     */
-    public function capture(): ProfilingSnapshot
-    {
-        $messages = $this->getLogMessages(Logger::LEVEL_PROFILE);
-
-        $requestStart = Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? microtime(true);
-
-        $this->snapshot = ProfilingSnapshot::capture(
-            memory_get_peak_usage(),
-            microtime(true) - $requestStart,
-            $messages,
-        );
-
-        return $this->snapshot;
-    }
 
     /**
      * Renders the detail view with the profile grid, total time, peak memory, and the Timeline panel cross-link.

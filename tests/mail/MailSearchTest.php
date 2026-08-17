@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\mail;
 
+use PHPForge\Debug\Panel\Mail\MailMessage;
 use PHPUnit\Framework\Attributes\Group;
 use yii\data\{Pagination, Sort};
 use yii\debug\models\search\MailSearch;
-use yii\debug\panels\mail\MailMessage;
 use yii\debug\tests\support\TestCase;
 
 /**

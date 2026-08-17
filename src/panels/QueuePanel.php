@@ -5,32 +5,26 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use Throwable;
+use PHPForge\Debug\Panel\Queue\{JobRecord, QueueSnapshot};
 use Yii;
-use yii\base\Event;
 use yii\debug\actions\queue\JobAction;
 use yii\debug\models\search\QueueSearch;
 use yii\debug\Panel;
-use yii\debug\panels\queue\{JobPayloadInspector, JobRecord, QueueDriverDetector, QueueSnapshot};
 
 use function class_exists;
 use function count;
 use function interface_exists;
 use function is_array;
-use function is_int;
 use function is_object;
-use function is_scalar;
 use function is_string;
 use function is_subclass_of;
-use function microtime;
-use function spl_object_id;
 
 /**
- * Captures every queue lifecycle event (`afterPush`, `afterExec`, `afterError`) emitted by any class extending
- * `yii\queue\Queue` from `yiisoft/yii2-queue`.
+ * Renders the queue lifecycle events captured by the Queue collector.
  *
- * Listeners are attached via `Event::on()` using the queue base class FQCN as a string, so the panel registers cleanly
- * even when the `yiisoft/yii2-queue` package is not installed; in that case the empty-state view is shown.
+ * Presents every `afterPush`, `afterExec`, and `afterError` record emitted by any class extending `yii\queue\Queue`
+ * from `yiisoft/yii2-queue`; data acquisition lives in {@see \yii\debug\collectors\QueueCollector}. When the package
+ * is not installed the empty-state view is shown.
  */
 class QueuePanel extends Panel
 {
@@ -38,54 +32,12 @@ class QueuePanel extends Panel
     protected const string NAME = 'Queue';
 
     /**
-     * Queue base class whose events are listened on; the abstract base `yii\queue\Queue` from `yiisoft/yii2-queue`
-     * that every concrete driver extends.
+     * Queue base class used to detect configured queue components; the abstract base `yii\queue\Queue` from
+     * `yiisoft/yii2-queue` that every concrete driver extends.
      */
     private const string QUEUE_BASE_CLASS = 'yii\queue\Queue';
 
-    /**
-     * Map of `spl_object_id($queueComponent) => component-id` populated lazily inside event listeners so each event's
-     * sender can be matched back to its registered name in `Yii::$app->components`.
-     *
-     * @var array<int, string>
-     */
-    private array $componentIdCache = [];
-
-    /**
-     * @var array<int, float> Track exec start times keyed by `spl_object_id($job)` so the matching `afterExec` /
-     * `afterError` event can compute the elapsed duration without depending on the queue driver.
-     */
-    private array $execStarts = [];
-
-    /**
-     * @var list<array{
-     *   eventType: string,
-     *   componentId: string,
-     *   driverName: string,
-     *   driverClass: string,
-     *   isAsync: bool,
-     *   jobClass: string,
-     *   payloadFields: array<string, mixed>,
-     *   time: float,
-     *   jobId: string,
-     *   ttr: int|null,
-     *   delay: int|null,
-     *   priority: int|null,
-     *   attempt: int|null,
-     *   duration: float|null,
-     *   error: string,
-     * }> Queue lifecycle events captured for the current request, in fire order.
-     */
-    private array $records = [];
     private QueueSnapshot|null $snapshot = null;
-
-    /**
-     * Snapshots the captured queue records.
-     */
-    public function capture(): QueueSnapshot
-    {
-        return QueueSnapshot::capture($this->records);
-    }
 
     /**
      * Renders the detail view with the queue cards list.
@@ -126,8 +78,7 @@ class QueuePanel extends Panel
     }
 
     /**
-     * Registers the `queue-job` action and subscribes to the four queue lifecycle events (`afterPush`, `beforeExec`,
-     * `afterExec`, `afterError`).
+     * Registers the `queue-job` action.
      */
     public function init(): void
     {
@@ -137,19 +88,13 @@ class QueuePanel extends Panel
             'class' => JobAction::class,
             'panel' => $this,
         ];
-
-        Event::on(self::QUEUE_BASE_CLASS, 'afterPush', $this->onPush(...));
-        Event::on(self::QUEUE_BASE_CLASS, 'beforeExec', $this->onBeforeExec(...));
-        Event::on(self::QUEUE_BASE_CLASS, 'afterExec', $this->onAfterExec(...));
-        Event::on(self::QUEUE_BASE_CLASS, 'afterError', $this->onAfterError(...));
     }
 
     /**
      * Builds the toolbar items.
      *
-     * Reads from {@see resolveRecords()} so the live request render and the toolbar AJAX replay (which only sees the
-     * hydrated snapshot) report the same numbers. Hides the button entirely on apps that don't configure any queue
-     * component, and surfaces an `Errors` chip in `danger` when at least one error event was captured.
+     * Hides the button entirely on apps that don't configure any queue component, and surfaces an `Errors` chip in
+     * `danger` when at least one error event was captured.
      *
      * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no queue component is configured and no
      * events were captured.
@@ -157,7 +102,7 @@ class QueuePanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        $records = $this->resolveRecords();
+        $records = $this->getRecords();
 
         if ($records === [] && $this->hasQueueComponentConfigured() === false) {
             return [];
@@ -182,46 +127,6 @@ class QueuePanel extends Panel
         }
 
         return $items;
-    }
-
-    /**
-     * Releases the per-job `$execStarts` slot on long-running workers so the map cannot grow indefinitely.
-     */
-    private function clearExecStart(Event $event): void
-    {
-        $job = $this->jobOf($event);
-
-        if ($job !== null) {
-            unset($this->execStarts[spl_object_id($job)]);
-        }
-    }
-
-    /**
-     * Resolves the registered component id for the queue object that emitted `$event`, caching the lookup per object.
-     *
-     * Returns `''` when the sender is not an object or cannot be matched against any registered component.
-     */
-    private function componentIdOf(Event $event): string
-    {
-        $sender = $event->sender;
-
-        if (!is_object($sender)) {
-            return '';
-        }
-
-        $key = spl_object_id($sender);
-
-        if (isset($this->componentIdCache[$key])) {
-            return $this->componentIdCache[$key];
-        }
-
-        foreach (Yii::$app->getComponents(false) as $rawId => $component) {
-            if ($component === $sender) {
-                return $this->componentIdCache[$key] = (string) $rawId;
-            }
-        }
-
-        return $this->componentIdCache[$key] = '';
     }
 
     /**
@@ -253,14 +158,6 @@ class QueuePanel extends Panel
     }
 
     /**
-     * Returns the exception message when `$error` is a {@see Throwable}, or `''` otherwise.
-     */
-    private function errorMessageOf(mixed $error): string
-    {
-        return $error instanceof Throwable ? $error->getMessage() : '';
-    }
-
-    /**
      * Returns whether the application registers at least one queue component.
      *
      * Walks `Yii::$app->components` without instantiating lazy components so the panel can keep the Queue button
@@ -285,160 +182,5 @@ class QueuePanel extends Panel
         }
 
         return false;
-    }
-
-    /**
-     * Extracts the `job` public property from an event, returning `null` when the property is missing or not an
-     * object.
-     */
-    private function jobOf(Event $event): object|null
-    {
-        $props = (array) $event;
-
-        return is_object($props['job'] ?? null) ? $props['job'] : null;
-    }
-
-    /**
-     * Builds one typed record from a queue lifecycle event.
-     *
-     * Reads the event's public properties (`job`, `id`, `ttr`, `delay`, `priority`, `attempt`, `error`) by casting it
-     * to an array; the base class {@see Event} doesn't declare those fields, so the cast is the simplest way to
-     * expose them without dynamic property access. Computes the exec duration by pairing the matching `beforeExec`
-     * timestamp captured in {@see $execStarts}.
-     *
-     * @param string $eventType One of `JobRecord::TYPE_*`.
-     * @param Event $event Queue lifecycle event.
-     *
-     * @return array{
-     *   eventType: string,
-     *   componentId: string,
-     *   driverName: string,
-     *   driverClass: string,
-     *   isAsync: bool,
-     *   jobClass: string,
-     *   payloadFields: array<string, mixed>,
-     *   time: float,
-     *   jobId: string,
-     *   ttr: int|null,
-     *   delay: int|null,
-     *   priority: int|null,
-     *   attempt: int|null,
-     *   duration: float|null,
-     *   error: string,
-     * } Typed record ready for {@see $records}.
-     */
-    private function makeRecord(string $eventType, Event $event): array
-    {
-        $props = (array) $event;
-
-        $job = is_object($props['job'] ?? null) ? $props['job'] : null;
-
-        $jobClass = $job === null ? '' : $job::class;
-
-        $sender = $event->sender;
-
-        $driverClass = is_object($sender) ? $sender::class : '';
-
-        [$driverName, $isAsync] = QueueDriverDetector::detect($driverClass);
-
-        $duration = null;
-
-        if ($job !== null && ($eventType === JobRecord::TYPE_EXEC || $eventType === JobRecord::TYPE_ERROR)) {
-            $start = $this->execStarts[spl_object_id($job)] ?? null;
-
-            if ($start !== null) {
-                $duration = microtime(true) - $start;
-            }
-        }
-
-        return [
-            'eventType' => $eventType,
-            'componentId' => $this->componentIdOf($event),
-            'driverName' => $driverName,
-            'driverClass' => $driverClass,
-            'isAsync' => $isAsync,
-            'jobClass' => $jobClass,
-            'payloadFields' => $job === null ? [] : JobPayloadInspector::extract($job),
-            'time' => microtime(true),
-            'jobId' => $this->scalarToString($props['id'] ?? null),
-            'ttr' => $this->valueToNullableInt($props['ttr'] ?? null),
-            'delay' => $this->valueToNullableInt($props['delay'] ?? null),
-            'priority' => $this->valueToNullableInt($props['priority'] ?? null),
-            'attempt' => $this->valueToNullableInt($props['attempt'] ?? null),
-            'duration' => $duration,
-            'error' => $eventType === JobRecord::TYPE_ERROR ? $this->errorMessageOf($props['error'] ?? null) : '',
-        ];
-    }
-
-    /**
-     * Records an `error` event and releases the matching exec-start slot.
-     */
-    private function onAfterError(Event $event): void
-    {
-        $this->records[] = $this->makeRecord(JobRecord::TYPE_ERROR, $event);
-        $this->clearExecStart($event);
-    }
-
-    /**
-     * Records an `exec` event and releases the matching exec-start slot.
-     */
-    private function onAfterExec(Event $event): void
-    {
-        $this->records[] = $this->makeRecord(JobRecord::TYPE_EXEC, $event);
-        $this->clearExecStart($event);
-    }
-
-    /**
-     * Stamps the job's exec start timestamp in {@see $execStarts}, so `afterExec` / `afterError` can compute the
-     * duration.
-     */
-    private function onBeforeExec(Event $event): void
-    {
-        $job = $this->jobOf($event);
-
-        if ($job !== null) {
-            $this->execStarts[spl_object_id($job)] = microtime(true);
-        }
-    }
-
-    /**
-     * Records a `push` event.
-     */
-    private function onPush(Event $event): void
-    {
-        $this->records[] = $this->makeRecord(JobRecord::TYPE_PUSH, $event);
-    }
-
-    /**
-     * Returns the captured records from whichever source is populated for the current request.
-     *
-     * During the original request (while listeners are still firing) returns {@see $records}; during the toolbar AJAX
-     * replay or the detail-page render returns the records held by the hydrated snapshot.
-     *
-     * @return list<JobRecord> Captured records in capture order.
-     */
-    private function resolveRecords(): array
-    {
-        if ($this->records !== []) {
-            return QueueSnapshot::capture($this->records)->entries();
-        }
-
-        return $this->getRecords();
-    }
-
-    /**
-     * Stringifies the value when it is scalar, falling back to `''` otherwise.
-     */
-    private function scalarToString(mixed $value): string
-    {
-        return is_scalar($value) ? (string) $value : '';
-    }
-
-    /**
-     * Returns the value when it is already an int, falling back to `null` otherwise.
-     */
-    private function valueToNullableInt(mixed $value): int|null
-    {
-        return is_int($value) ? $value : null;
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use Throwable;
+use PHPForge\Debug\Panel\User\UserSnapshot;
 use Yii;
 use yii\base\{InvalidConfigException, Model};
 use yii\data\{ArrayDataProvider, DataProviderInterface};
@@ -14,26 +14,23 @@ use yii\debug\controllers\UserController;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
 use yii\debug\Panel;
-use yii\debug\panels\user\UserSnapshot;
-use yii\di\Instance;
 use yii\filters\{AccessControl, AccessRule};
 use yii\helpers\VarDumper;
-use yii\rbac\{BaseManager, Item};
-use yii\web\{IdentityInterface, User};
+use yii\web\User;
 
 use function class_exists;
-use function get_object_vars;
 use function is_array;
 use function is_scalar;
 use function is_string;
 
 /**
- * Captures the authenticated identity and renders it in the User panel, optionally allowing the developer to switch to
+ * Renders the authenticated identity captured by the User collector, optionally allowing the developer to switch to
  * another user.
  *
- * Captures the identity's attributes, RBAC roles, and permissions; surfaces them through the detail view with `Reveal`
- * buttons on sensitive fields; and (when the configured access rule allows) lists candidate identities in a GridView so
- * the developer can impersonate one with a single click.
+ * Presents the identity's attributes, RBAC roles, and permissions through the detail view with `Reveal` buttons on
+ * sensitive fields; and (when the configured access rule allows) lists candidate identities in a GridView so the
+ * developer can impersonate one with a single click. Data acquisition lives in
+ * {@see \yii\debug\collectors\UserCollector}.
  */
 class UserPanel extends Panel
 {
@@ -140,71 +137,6 @@ class UserPanel extends Panel
         }
 
         return $rule->allows($action, $userSwitch->getMainUser(), Yii::$app->request) === true;
-    }
-
-    /**
-     * Snapshots the identity attributes, the RBAC roles, and the permissions for the active user.
-     *
-     * Returns `null` when there is no resolvable identity, so the detail view falls back to its empty state.
-     */
-    public function capture(): UserSnapshot|null
-    {
-        $user = $this->getUser();
-
-        if ($user === null || !$user->identity instanceof IdentityInterface) {
-            return null;
-        }
-
-        $identity = $user->identity;
-
-        $userId = $user->getId();
-
-        $roles = null;
-        $permissions = null;
-
-        $module = $this->module;
-
-        if ($module !== null && $userId !== null) {
-            try {
-                $authManager = Instance::ensure($module->authManager, BaseManager::class);
-
-                $roles = $this->normalizeRbacItems($authManager->getRolesByUser($userId));
-                $permissions = $this->normalizeRbacItems($authManager->getPermissionsByUser($userId));
-            } catch (Throwable) {
-                // Ignore auth manager misconfiguration so the identity panel remains available.
-            }
-        }
-
-        $rawIdentityData = $this->identityData($identity);
-
-        $identityData = [];
-
-        foreach ($rawIdentityData as $key => $value) {
-            $identityData[$key] = VarDumper::dumpAsString($value);
-        }
-
-        // If the identity is a model, let it specify the attribute labels
-        if ($identity instanceof Model) {
-            $attributes = [];
-
-            foreach (array_keys($identityData) as $attribute) {
-                $attributes[] = [
-                    'attribute' => $attribute,
-                    'label' => $identity->getAttributeLabel($attribute),
-                ];
-            }
-        } else {
-            // Let the DetailView widget figure the labels out
-            $attributes = null;
-        }
-
-        return UserSnapshot::capture([
-            'id' => $identity->getId(),
-            'identity' => $identityData,
-            'attributes' => $attributes,
-            'roles' => $roles,
-            'permissions' => $permissions,
-        ]);
     }
 
     /**
@@ -338,18 +270,6 @@ class UserPanel extends Panel
     }
 
     /**
-     * Returns the value when it is already a string, otherwise renders it with {@see VarDumper::export()}.
-     */
-    protected function dataToString(mixed $data): string
-    {
-        if (is_string($data)) {
-            return $data;
-        }
-
-        return VarDumper::export($data);
-    }
-
-    /**
      * Builds the toolbar item with the active identity id, switching the chip to a `warning` tone when impersonation
      * is active.
      *
@@ -386,25 +306,6 @@ class UserPanel extends Panel
         }
 
         return [$item];
-    }
-
-    /**
-     * Returns the identity attributes as a string-keyed map suitable for {@see \yii\widgets\DetailView::$model}.
-     *
-     * Reads {@see Model::getAttributes()} when the identity is a {@see Model}; otherwise falls back to
-     * {@see get_object_vars()} on the identity object.
-     *
-     * @param IdentityInterface $identity Active identity object.
-     *
-     * @return array<string, mixed> Attribute map ready to feed the detail view.
-     */
-    protected function identityData(IdentityInterface $identity): array
-    {
-        if ($identity instanceof Model) {
-            return self::normalizeStringKeyArray($identity->getAttributes());
-        }
-
-        return self::normalizeStringKeyArray(get_object_vars($identity));
     }
 
     /**
@@ -493,56 +394,6 @@ class UserPanel extends Panel
         if (is_subclass_of($identityClass, ActiveRecord::class)) {
             $this->filterModel = new UserSearch();
         }
-    }
-
-    /**
-     * Narrows the RBAC items returned by the auth manager into typed rows suitable for an {@see ArrayDataProvider}.
-     *
-     * @param array<int|string, Item> $items RBAC items indexed by item name.
-     *
-     * @return array<int, array{
-     *   name: string,
-     *   description: string,
-     *   ruleName: string|null,
-     *   data: string,
-     *   createdAt: int,
-     *   updatedAt: int
-     * }> Rows in iteration order.
-     */
-    private function normalizeRbacItems(array $items): array
-    {
-        $normalized = [];
-
-        foreach ($items as $item) {
-            $normalized[] = [
-                'name' => $item->name,
-                'description' => $item->description,
-                'ruleName' => $item->ruleName,
-                'data' => $this->dataToString($item->data),
-                'createdAt' => $item->createdAt,
-                'updatedAt' => $item->updatedAt,
-            ];
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Stringifies every key of the input array, so the detail view sees a `string => mixed` map.
-     *
-     * @param array<int|string, mixed> $data Raw identity data.
-     *
-     * @return array<string, mixed> Same entries with their keys coerced to strings.
-     */
-    private static function normalizeStringKeyArray(array $data): array
-    {
-        $normalized = [];
-
-        foreach ($data as $key => $value) {
-            $normalized[(string) $key] = $value;
-        }
-
-        return $normalized;
     }
 
     private function rbacProvider(string $key): ArrayDataProvider|null

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Panel\Queue\JobRecord;
 use yii\data\ArrayDataProvider;
-use yii\debug\panels\queue\JobRecord;
 
 /**
  * Backs the filter form above the Queue panel's cards list of captured job events.

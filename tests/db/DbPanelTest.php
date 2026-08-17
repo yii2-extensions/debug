@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\db;
 
-use PDO;
+use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\db\Connection;
+use yii\debug\collectors\DbCollector;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\LogTarget;
-use yii\debug\panels\db\{DbSnapshot, QueryRow};
 use yii\debug\panels\DbPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -20,194 +20,13 @@ use yii\log\Logger;
 use function is_string;
 
 /**
- * Unit tests for {@see DbPanel} covering query timing aggregation, EXPLAIN gating, threshold checks, the SQL command
- * verb extractor, the badge variant mapping, toolbar/summary rendering, and snapshot hydration.
+ * Unit tests for {@see DbPanel} covering EXPLAIN gating, threshold checks,
+ * the badge variant mapping, toolbar/summary rendering, and snapshot hydration.
  */
 #[Group('panel')]
 #[Group('db')]
 final class DbPanelTest extends TestCase
 {
-    public function testCalculateTimingsCachesNormalizedTimings(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->primeDbPanel($panel, $this->fakeMessages(2), []);
-
-        $first = $panel->calculateTimings();
-
-        self::assertCount(
-            2,
-            $first,
-            'Captured messages must yield two timings.',
-        );
-        self::assertSame(
-            $first,
-            $panel->calculateTimings(),
-            'Second call must return the cached list.',
-        );
-    }
-
-    public function testCalculateTimingsSkipsRawTimingsThatNormalizeToNull(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        // The category must be one of `dbEventNames`, otherwise the pair never survives the profile-log filter and the
-        // assertion below would hold vacuously, without the timing loop ever running.
-        $this->primeDbPanel($panel, [
-            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', 0.0, [], 0],
-            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', 0.001, [], 0],
-        ], []);
-
-        self::assertCount(
-            2,
-            $panel->getProfileLogs(),
-            'Both profile messages must reach the timing loop.',
-        );
-
-        self::assertSame(
-            [],
-            $panel->calculateTimings(),
-            "Raw timings whose 'info' cannot be coerced to a string must be dropped.",
-        );
-    }
-
-    public function testCalculateTimingsSkipsTraceFramesWithNonStringFile(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->primeDbPanel($panel, [
-            ...$this->makeMessage(
-                'SELECT 1',
-                0.001,
-                0.0,
-                trace: [
-                    ['file' => 123, 'line' => 1],
-                    ['file' => '/keep/bar.php', 'line' => 2],
-                ],
-            ),
-        ], []);
-        $panel->ignoredPathsInBacktrace = ['/x'];
-
-        $timings = $panel->calculateTimings();
-
-        $first = $timings[0] ?? self::fail('Expected one timing.');
-
-        self::assertCount(
-            2,
-            $first['trace'],
-            'Frames with a non-string file must be left untouched.',
-        );
-    }
-
-    public function testCalculateTimingsSkipsTracesUnderIgnoredPaths(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->primeDbPanel($panel, [
-            ...$this->makeMessage(
-                'SELECT 1',
-                0.001,
-                0.0,
-                trace: [
-                    ['file' => '/tmp/ignored/foo.php', 'line' => 1],
-                    ['file' => '/tmp/kept/bar.php', 'line' => 2],
-                ],
-            ),
-        ], []);
-        $panel->ignoredPathsInBacktrace = ['/tmp/ignored'];
-
-        $timings = $panel->calculateTimings();
-
-        self::assertCount(
-            1,
-            $timings,
-            'One timing must remain.',
-        );
-
-        $first = $timings[0] ?? self::fail('Expected one timing.');
-
-        self::assertCount(
-            1,
-            $first['trace'],
-            'Ignored-path frame must be dropped from the trace.',
-        );
-    }
-
-    public function testCanBeExplainedReturnsFalseForUnsupportedVerb(): void
-    {
-        self::assertFalse(
-            DbPanel::canBeExplained('PRAGMA'),
-            'PRAGMA must not be marked as EXPLAIN-able.',
-        );
-        self::assertFalse(
-            DbPanel::canBeExplained(''),
-            'Empty verb must not be marked as EXPLAIN-able.',
-        );
-    }
-
-    public function testCanBeExplainedReturnsTrueForSupportedVerbs(): void
-    {
-        foreach (['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'REPLACE', 'WITH'] as $verb) {
-            self::assertTrue(
-                DbPanel::canBeExplained($verb),
-                "Verb '{$verb}' must be EXPLAIN-able.",
-            );
-            self::assertTrue(
-                DbPanel::canBeExplained(strtolower($verb)),
-                "Verb '{$verb}' must be EXPLAIN-able regardless of case.",
-            );
-        }
-    }
-
-    public function testCaptureReturnsNoRowsWithoutProfileLogs(): void
-    {
-        DebugPdoStatement::$rowCounts = [3, 7];
-
-        $panel = $this->makePanel(DbPanel::class);
-
-        self::assertSame([], $panel->capture()->entries(), 'An empty profile log yields no query rows.');
-
-        DebugPdoStatement::$rowCounts = [];
-    }
-
-    public function testCountCallerCalsGroupsByTraceHash(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->primeDbPanel($panel, $this->fakeMessages(3), []);
-
-        $counts = $panel->countCallerCals();
-
-        self::assertNotEmpty(
-            $counts,
-            'Caller counts must reflect captured timings.',
-        );
-        self::assertSame(
-            3,
-            array_sum($counts),
-            'Total caller calls must match the message count.',
-        );
-    }
-
-    public function testCountDuplicateQueryCountsRepeatedSqlStatements(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $timings = [
-            $this->makeTiming('SELECT 1'),
-            $this->makeTiming('SELECT 1'),
-            $this->makeTiming('SELECT 2'),
-        ];
-
-        $counts = $panel->countDuplicateQuery($timings);
-
-        self::assertSame(
-            ['SELECT 1' => 2, 'SELECT 2' => 1],
-            $counts,
-            'Duplicate counts must group identical SQL statements.',
-        );
-    }
-
     public function testGetDbReturnsConfiguredConnection(): void
     {
         $this->mockWebApplication(
@@ -227,7 +46,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->primeDbPanel($panel, [], []);
+        $this->hydrateFromLive($panel, [], []);
 
         self::assertStringNotContainsString(
             'Explain all',
@@ -240,7 +59,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->primeDbPanel($panel, [
+        $this->hydrateFromLive($panel, [
             ...$this->makeMessage('SELECT 1', 0.001, 0.0),
             ...$this->makeMessage('SELECT 1', 0.001, 0.001),
         ], []);
@@ -258,7 +77,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->primeDbPanel($panel, [], []);
+        $this->hydrateFromLive($panel, [], []);
 
         $html = $panel->getDetail();
 
@@ -283,7 +102,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
+        $this->hydrateFromLive($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
 
         $html = $panel->getDetail();
 
@@ -297,7 +116,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->primeDbPanel($panel, [], []);
+        $this->hydrateFromLive($panel, [], []);
         $this->hydratePanel($panel, new DbSnapshot([$this->makeRowWithDuration(1.5)]));
 
         $html = $panel->getDetail();
@@ -328,9 +147,9 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->primeDbPanel($panel, $this->fakeMessages(3), []);
+        $this->hydrateFromLive($panel, $this->fakeMessages(3), []);
 
-        $panel->excessiveCallerThreshold = 2;
+        $this->setDbCollectorThreshold($panel, 2);
 
         self::assertCount(
             1,
@@ -348,7 +167,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->primeDbPanel($panel, $this->fakeMessages(5), []);
+        $this->hydrateFromLive($panel, $this->fakeMessages(5), []);
 
         self::assertSame(
             [],
@@ -359,56 +178,6 @@ final class DbPanelTest extends TestCase
             0,
             $panel->getExcessiveCallersCount(),
             'Null threshold must report zero count.',
-        );
-    }
-
-    public function testGetModelsAssemblesTimingsWithMillisecondScaling(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT * FROM t', 0.005, 0.010)], [42]);
-
-        $models = $this->invoke($panel, 'getModels');
-
-        self::assertIsArray($models, 'Must produce a list of rows.');
-
-        $row = $models[0] ?? self::fail('Expected one row.');
-
-        self::assertInstanceOf(QueryRow::class, $row, 'Rows must be typed.');
-        self::assertSame(
-            'SELECT',
-            $row->type,
-            'Verb must be uppercased.',
-        );
-        self::assertEqualsWithDelta(
-            5.0,
-            $row->duration,
-            1e-9,
-            'Duration must be scaled to milliseconds.',
-        );
-        self::assertEqualsWithDelta(
-            10.0,
-            $row->timestamp,
-            1e-9,
-            'Timestamp must be scaled to milliseconds.',
-        );
-        self::assertSame(
-            42,
-            $row->rows,
-            'Saved row count must round-trip.',
-        );
-    }
-
-    public function testGetModelsResolvesStableRows(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
-
-        self::assertEquals(
-            $this->invoke($panel, 'getModels'),
-            $this->invoke($panel, 'getModels'),
-            'Repeated reads must resolve the same rows.',
         );
     }
 
@@ -428,62 +197,15 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testGetProfileLogsCachesResult(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $first = $panel->getProfileLogs();
-        $second = $panel->getProfileLogs();
-
-        self::assertSame(
-            $first,
-            $second,
-            'Must return the cached list on subsequent calls.',
-        );
-    }
-
-    public function testGetQueryTypeExtractsLeadingVerb(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        self::assertSame(
-            'SELECT',
-            $this->invoke(
-                $panel,
-                'getQueryType',
-                ['select * from t'],
-            ),
-            'Lowercase verb must be upcased.',
-        );
-        self::assertSame(
-            'INSERT',
-            $this->invoke(
-                $panel,
-                'getQueryType',
-                ['  INSERT INTO t VALUES (1)'],
-            ),
-            'Leading whitespace must be trimmed.',
-        );
-        self::assertSame(
-            '',
-            $this->invoke(
-                $panel,
-                'getQueryType',
-                ['123 not sql'],
-            ),
-            'Non-letter prefix must yield an empty verb.',
-        );
-    }
-
     public function testGetToolbarItemsEmitsWarningForExcessiveCallers(): void
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->primeDbPanel($panel, [
+        $this->hydrateFromLive($panel, [
             ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
             ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 1]]),
         ], []);
-        $panel->excessiveCallerThreshold = 0;
+        $this->setDbCollectorThreshold($panel, 0);
 
         $first = $this->firstToolbarItem($panel);
 
@@ -507,7 +229,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
+        $this->hydrateFromLive($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
         $panel->criticalQueryThreshold = 0;
 
         $first = $this->firstToolbarItem($panel);
@@ -537,8 +259,8 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->primeDbPanel($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
-        $panel->excessiveCallerThreshold = 0;
+        $this->hydrateFromLive($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
+        $this->setDbCollectorThreshold($panel, 0);
 
         $first = $this->firstToolbarItem($panel);
 
@@ -575,7 +297,7 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->primeDbPanel($panel, [
+        $this->hydrateFromLive($panel, [
             ...$this->makeMessage('SELECT * FROM t', 0.001, 0.0),
             ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.002, 0.001),
             ...$this->makeMessage('SELECT id FROM t', 0.003, 0.003),
@@ -630,73 +352,6 @@ final class DbPanelTest extends TestCase
                 'hasExplain',
             ),
             'SQLite driver must support EXPLAIN.',
-        );
-    }
-
-    public function testInitAppliesStatementClassOnAfterOpenEvent(): void
-    {
-        $db = $this->makeSqliteConnection();
-
-        $this->mockWebApplication(
-            ['components' => ['db' => $db]],
-        );
-
-        $panel = new DbPanel();
-
-        $db->open();
-
-        self::assertNotNull(
-            $db->pdo,
-            'PDO must be open.',
-        );
-        self::assertSame(
-            [DebugPdoStatement::class, []],
-            $db->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
-            'PDO statement class must be set on connection opening after init.',
-        );
-
-        unset($panel);
-    }
-
-    public function testInitAppliesStatementClassToAlreadyOpenedConnection(): void
-    {
-        $db = $this->makeSqliteConnection();
-
-        $db->open();
-
-        $this->mockWebApplication(
-            ['components' => ['db' => $db]],
-        );
-
-        $panel = new DbPanel();
-
-        self::assertNotNull(
-            $db->pdo,
-            'PDO must be open.',
-        );
-        self::assertSame(
-            [DebugPdoStatement::class, []],
-            $db->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
-            'PDO statement class must be set on a pre-opened connection.',
-        );
-
-        unset($panel);
-    }
-
-    public function testInitIsAnoopWhenDbComponentIsMissing(): void
-    {
-        $this->mockWebApplication();
-
-        $panel = new DbPanel();
-
-        $panel->db = 'absent';
-
-        $panel->init();
-
-        self::assertArrayHasKey(
-            'db-explain',
-            $panel->actions,
-            "Init must always register the 'db-explain' action.",
         );
     }
 
@@ -764,99 +419,6 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testNormalizeTimingFillsDefaultsForOptionalFields(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $normalized = $this->invoke(
-            $panel,
-            'normalizeTiming',
-            [
-                [
-                    'info' => 'SELECT 1',
-                    'timestamp' => 0.5,
-                    'duration' => 0.001,
-                ],
-            ],
-        );
-
-        self::assertIsArray(
-            $normalized,
-            'Valid raw timing must produce an array.',
-        );
-        self::assertSame(
-            'SELECT 1',
-            $normalized['info'] ?? null,
-            "'info' must round-trip.",
-        );
-        self::assertSame(
-            '',
-            $normalized['category'] ?? null,
-            "Missing 'category' must collapse to ''.",
-        );
-        self::assertSame(
-            0,
-            $normalized['level'] ?? null,
-            "Missing 'level' must collapse to '0'.",
-        );
-    }
-
-    public function testNormalizeTimingReturnsNullForIncompletePayloads(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'normalizeTiming',
-                ['not an array'],
-            ),
-            "Non-array raw timing must yield 'null'.",
-        );
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'normalizeTiming',
-                [
-                    [
-                        'info' => null,
-                        'timestamp' => 0.0,
-                        'duration' => 0.0,
-                    ],
-                ],
-            ),
-            "Missing 'info' must yield 'null'.",
-        );
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'normalizeTiming',
-                [
-                    [
-                        'info' => 'x',
-                        'timestamp' => null,
-                        'duration' => 0.0,
-                    ],
-                ],
-            ),
-            "Missing 'timestamp' must yield 'null'.",
-        );
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'normalizeTiming',
-                [
-                    [
-                        'info' => 'x',
-                        'timestamp' => 0.0,
-                        'duration' => null,
-                    ],
-                ],
-            ),
-            "Missing 'duration' must yield 'null'.",
-        );
-    }
-
     public function testSnapshotSerializesRowsToArrays(): void
     {
         $row = $this->makeRow();
@@ -918,50 +480,6 @@ final class DbPanelTest extends TestCase
         );
 
         $panel->getDb();
-    }
-
-    public function testTraceHashAlgoIsCachedAcrossCalls(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $first = $this->invoke(
-            $panel,
-            'traceHashAlgo',
-        );
-        $second = $this->invoke(
-            $panel,
-            'traceHashAlgo',
-        );
-
-        self::assertSame(
-            $first,
-            $second,
-            'traceHashAlgo must return the same algorithm across calls.',
-        );
-        self::assertContains(
-            $first,
-            ['xxh3', 'crc32'],
-            'Algorithm must be one of the two candidates.',
-        );
-    }
-
-    public function testTypeBadgeVariantMapsVerbsToVocabularySuffixes(): void
-    {
-        $mappings = [
-            'SELECT' => 'get', 'SHOW' => 'get', 'EXPLAIN' => 'get', 'DESCRIBE' => 'get', 'PRAGMA' => 'get',
-            'INSERT' => 'post',
-            'UPDATE' => 'put', 'REPLACE' => 'put', 'UPSERT' => 'put',
-            'DELETE' => 'delete', 'DROP' => 'delete', 'TRUNCATE' => 'delete',
-            'BOGUS' => 'other', '' => 'other',
-        ];
-
-        foreach ($mappings as $verb => $expected) {
-            self::assertSame(
-                $expected,
-                DbPanel::typeBadgeVariant($verb),
-                "Verb '{$verb}' must map to '{$expected}'.",
-            );
-        }
     }
 
     /**
@@ -1035,6 +553,38 @@ final class DbPanelTest extends TestCase
     }
 
     /**
+     * Captures the given live sources through the module's Database collector and hydrates the panel from the result.
+     *
+     * @param array<int, array<int|string, mixed>> $messages Raw profile tuples.
+     * @param array<int, int> $rowCounts Row counts reported by the driver, in execution order.
+     */
+    private function hydrateFromLive(DbPanel $panel, array $messages, array $rowCounts): void
+    {
+        $module = $panel->module ?? self::fail('Module must be wired.');
+        $coordinator = $module->getCollectorCoordinator();
+        $collector = $coordinator->collector('db');
+
+        self::assertInstanceOf(DbCollector::class, $collector, 'Db collector must be registered.');
+
+        $coordinator->startup();
+
+        $logTarget = $module->logTarget;
+
+        self::assertInstanceOf(LogTarget::class, $logTarget, 'Log target must be wired.');
+
+        $logTarget->messages = $messages;
+        DebugPdoStatement::$rowCounts = $rowCounts;
+
+        $snapshot = $collector->capture();
+
+        $coordinator->shutdown();
+
+        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+
+        $this->hydratePanel($panel, $snapshot);
+    }
+
+    /**
      * Returns the begin+end profile-log pair Yii's logger emits for prepared statements, ready to be spread into a
      * messages list with `...`.
      *
@@ -1090,40 +640,14 @@ final class DbPanelTest extends TestCase
     }
 
     /**
-     * @return array{
-     *   info: string, category: string, timestamp: float, trace: array<int, array<string, mixed>>,
-     *   level: int, duration: float, memory: int, memoryDiff: int, traceHash: string
-     * }
+     * Sets the excessive-caller threshold on the module's Database collector.
      */
-    private function makeTiming(string $info, float $duration = 0.0): array
+    private function setDbCollectorThreshold(DbPanel $panel, int $threshold): void
     {
-        return [
-            'info' => $info,
-            'category' => '',
-            'timestamp' => 0.0,
-            'trace' => [],
-            'level' => 0,
-            'duration' => $duration,
-            'memory' => 0,
-            'memoryDiff' => 0,
-            'traceHash' => '',
-        ];
-    }
+        $collector = $panel->module?->getCollectorCoordinator()->collector('db');
 
-    /**
-     * Primes the panel's live sources so the pre-capture path resolves the given queries.
-     *
-     * @param array<int, array<int|string, mixed>> $messages Raw profile tuples.
-     * @param array<int, int> $rowCounts Row counts reported by the driver, in execution order.
-     */
-    private function primeDbPanel(DbPanel $panel, array $messages, array $rowCounts): void
-    {
-        $module = $panel->module ?? self::fail('Module must be wired.');
-        $logTarget = $module->logTarget;
+        self::assertInstanceOf(DbCollector::class, $collector, 'Db collector must be registered.');
 
-        self::assertInstanceOf(LogTarget::class, $logTarget, 'Log target must be wired.');
-
-        $logTarget->messages = $messages;
-        DebugPdoStatement::$rowCounts = $rowCounts;
+        $collector->excessiveCallerThreshold = $threshold;
     }
 }

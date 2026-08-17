@@ -4,12 +4,31 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use InvalidArgumentException;
 use Override;
+use PHPForge\Debug\Collector\{CollectorCoordinator, CollectorInterface};
 use PHPForge\Debug\Helper\{Coerce, Icon};
 use RuntimeException;
 use Throwable;
 use Yii;
 use yii\base\{Action, Application, BootstrapInterface, Event, InvalidConfigException, View as BaseView};
+use yii\debug\collectors\{
+    AssetCollector,
+    Collector,
+    ConfigCollector,
+    DbCollector,
+    DumpCollector,
+    EventCollector,
+    InertiaCollector,
+    LogCollector,
+    MailCollector,
+    ProfilingCollector,
+    QueueCollector,
+    RequestCollector,
+    RouterCollector,
+    TimelineCollector,
+    UserCollector,
+};
 use yii\debug\panels\{
     AssetPanel,
     ConfigPanel,
@@ -91,6 +110,15 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * @var (callable(Action|null): bool)|null
      */
     public mixed $checkAccessCallback = null;
+    /**
+     * Debug collectors resolved from instances, class names, or Yii configuration arrays during {@see init()}.
+     *
+     * Collector IDs come from {@see CollectorInterface::id()} and remain independent from the array keys used in
+     * configuration.
+     *
+     * @var array<array-key, array<string, mixed>|CollectorInterface|string>
+     */
+    public array $collectors = [];
     /**
      * Namespace for the debugger controllers.
      */
@@ -183,6 +211,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public string $viewPath = '@vendor/php-forge/debug-core/resources/views';
 
+    private CollectorCoordinator|null $collectorCoordinator = null;
+
     /**
      * Cached `data:image/svg+xml;base64` URI of the Yii logo, populated lazily by {@see getYiiLogo()}.
      */
@@ -248,6 +278,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $app->on(
             Application::EVENT_BEFORE_REQUEST,
+            function (): void {
+                $this->getCollectorCoordinator()->startup();
+            },
+        );
+        $app->on(
+            Application::EVENT_BEFORE_REQUEST,
             function () use ($app): void {
                 $app->getResponse()->on(Response::EVENT_AFTER_PREPARE, [$this, 'setDebugHeaders']);
             },
@@ -284,6 +320,26 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 ],
             ],
             false,
+        );
+    }
+
+    /**
+     * Returns the validated collector coordinator used by the request log target.
+     *
+     * Usage example:
+     *
+     * ```php
+     * $coordinator = $module->getCollectorCoordinator();
+     * ```
+     *
+     * @throws InvalidConfigException When module initialization has not completed.
+     *
+     * @return CollectorCoordinator Configured collector coordinator.
+     */
+    public function getCollectorCoordinator(): CollectorCoordinator
+    {
+        return $this->collectorCoordinator ?? throw new InvalidConfigException(
+            'Debug collectors have not been initialized.',
         );
     }
 
@@ -373,6 +429,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $this->dataPath = $alias;
 
+        $this->initCollectors();
         $this->initPanels();
     }
 
@@ -501,6 +558,34 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Built-in collectors paired by stable ID with their presentation panels.
+     *
+     * Array keys are a configuration-merge convenience and must match each collector's {@see CollectorInterface::id()}
+     * so a user entry under the same key replaces the built-in collector.
+     *
+     * @return array<string, class-string<CollectorInterface>> Collector classes indexed by collector id.
+     */
+    protected function coreCollectors(): array
+    {
+        return [
+            'asset' => AssetCollector::class,
+            'config' => ConfigCollector::class,
+            'db' => DbCollector::class,
+            'dump' => DumpCollector::class,
+            'event' => EventCollector::class,
+            'inertia' => InertiaCollector::class,
+            'log' => LogCollector::class,
+            'mail' => MailCollector::class,
+            'profiling' => ProfilingCollector::class,
+            'queue' => QueueCollector::class,
+            'request' => RequestCollector::class,
+            'router' => RouterCollector::class,
+            'timeline' => TimelineCollector::class,
+            'user' => UserCollector::class,
+        ];
+    }
+
+    /**
      * Returns the built-in panel configurations, ordered as the request itself unfolds.
      *
      * Three groups follow one another: what came in and how it was dispatched (request, routing, page render,
@@ -540,6 +625,35 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Resolves configured collectors and validates their stable IDs before request capture.
+     *
+     * @throws InvalidConfigException When a collector configuration or ID is invalid.
+     */
+    protected function initCollectors(): void
+    {
+        $merged = [...array_diff_key($this->coreCollectors(), $this->collectors), ...$this->collectors];
+        $collectors = [];
+
+        foreach ($merged as $config) {
+            $collector = $this->buildCollector($config);
+
+            if ($collector instanceof Collector) {
+                $collector->module = $this;
+            }
+
+            $collectors[] = $collector;
+        }
+
+        $this->collectors = $collectors;
+
+        try {
+            $this->collectorCoordinator = new CollectorCoordinator($collectors);
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidConfigException($exception->getMessage(), 0, $exception);
+        }
+    }
+
+    /**
      * Merges custom panels on top of the built-in core panels and instantiates each entry, dropping any panel whose
      * {@see Panel::isEnabled()} returns `false`.
      *
@@ -573,6 +687,46 @@ class Module extends \yii\base\Module implements BootstrapInterface
     protected function resetGlobalSettings(): void
     {
         Yii::$app->assetManager->bundles = [];
+    }
+
+    /**
+     * Resolves a collector instance, class name, or Yii configuration array.
+     *
+     * @param array<string, mixed>|CollectorInterface|string $config Collector configuration.
+     *
+     * @throws InvalidConfigException When the configuration does not resolve to a collector.
+     *
+     * @return CollectorInterface Resolved collector.
+     */
+    private function buildCollector(CollectorInterface|array|string $config): CollectorInterface
+    {
+        if ($config instanceof CollectorInterface) {
+            return $config;
+        }
+
+        if (is_string($config)) {
+            $class = $config;
+            $properties = [];
+        } else {
+            $class = $config['class'] ?? null;
+            $properties = $config;
+
+            unset($properties['class']);
+        }
+
+        if (!is_string($class) || !class_exists($class)) {
+            throw new InvalidConfigException('Debug collector configuration must declare a valid class name.');
+        }
+
+        $collector = Yii::$container->get($class, [], $properties);
+
+        if (!$collector instanceof CollectorInterface) {
+            throw new InvalidConfigException(
+                'Debug collector class must implement ' . CollectorInterface::class . ": {$class}.",
+            );
+        }
+
+        return $collector;
     }
 
     /**

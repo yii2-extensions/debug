@@ -7,7 +7,7 @@ use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\Code;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\panels\UserPanel;
-use yii\debug\widgets\Tabs;
+use PHPForge\Debug\Helper\Tabs;
 use yii\web\View;
 
 /**

@@ -4,20 +4,17 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\queue;
 
+use PHPForge\Debug\Panel\Queue\JobRecord;
+use PHPForge\Debug\Panel\Queue\QueueSnapshot;
 use PHPUnit\Framework\Attributes\Group;
-use RuntimeException;
 use stdClass;
-use Throwable;
 use Yii;
-use yii\base\{Component, Event};
-use yii\debug\panels\queue\JobRecord;
-use yii\debug\panels\queue\QueueSnapshot;
 use yii\debug\panels\QueuePanel;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see QueuePanel} covering the queue lifecycle capture, snapshot hydration, the toolbar
- * sitems, and the helpers that resolve component ids and queue base classes.
+ * Unit tests for {@see QueuePanel} covering snapshot hydration, the toolbar
+ * items, the `queue-job` action registration, and the queue base-class detection.
  */
 #[Group('panel')]
 #[Group('queue')]
@@ -42,74 +39,6 @@ final class QueuePanelTest extends TestCase
             [],
             $panel->getRecords(),
             "Missing 'records' key must collapse to '[]'.",
-        );
-    }
-
-    public function testComponentIdOfReturnsCachedRegisteredId(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $queueComponent = new Component();
-
-        Yii::$app->set('myQueue', $queueComponent);
-        Yii::$app->get('myQueue'); // force instantiation so `getComponents(false)` exposes it
-
-        $event = new Event();
-
-        $event->sender = $queueComponent;
-
-        self::assertSame(
-            'myQueue',
-            $this->invoke(
-                $panel,
-                'componentIdOf',
-                [$event]
-            ),
-            'Component id must round-trip from the registered name.',
-        );
-        self::assertSame(
-            'myQueue',
-            $this->invoke(
-                $panel,
-                'componentIdOf',
-                [$event]
-            ),
-            'Cached lookup must return the same id on repeat.',
-        );
-    }
-
-    public function testComponentIdOfReturnsEmptyForNonObjectSender(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $event = new Event();
-
-        self::assertSame(
-            '',
-            $this->invoke(
-                $panel,
-                'componentIdOf',
-                [$event],
-            ),
-            "Non-object sender must collapse to '[]'.",
-        );
-    }
-
-    public function testComponentIdOfReturnsEmptyForUnregisteredSender(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $event = new Event();
-        $event->sender = new stdClass();
-
-        self::assertSame(
-            '',
-            $this->invoke(
-                $panel,
-                'componentIdOf',
-                [$event]
-            ),
-            "Unregistered sender must collapse to '[]'.",
         );
     }
 
@@ -156,30 +85,6 @@ final class QueuePanelTest extends TestCase
                 [42]
             ),
             'Non-class scalar must not match.',
-        );
-    }
-
-    public function testErrorMessageOfReturnsExceptionMessageOrEmpty(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        self::assertSame(
-            'boom',
-            $this->invoke(
-                $panel,
-                'errorMessageOf',
-                [new RuntimeException('boom')],
-            ),
-            'Throwable must surface its message.',
-        );
-        self::assertSame(
-            '',
-            $this->invoke(
-                $panel,
-                'errorMessageOf',
-                ['not-throwable']
-            ),
-            "Non-throwable input must collapse to ''.",
         );
     }
 
@@ -335,11 +240,7 @@ final class QueuePanelTest extends TestCase
             $records[] = $this->makeRecord(['eventType' => $i === 2 ? JobRecord::TYPE_ERROR : JobRecord::TYPE_PUSH]);
         }
 
-        $this->setInaccessibleProperty(
-            $panel,
-            'records',
-            $records,
-        );
+        $this->hydratePanel($panel, QueueSnapshot::capture($records));
 
         $items = $this->invoke(
             $panel,
@@ -422,42 +323,7 @@ final class QueuePanelTest extends TestCase
         );
     }
 
-    public function testInitCapturesErrorEventAndExtractsMessage(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $job = new stdClass();
-
-        Event::trigger(
-            'yii\\queue\\Queue',
-            'beforeExec',
-            $this->makeQueueEvent(job: $job),
-        );
-        Event::trigger(
-            'yii\\queue\\Queue',
-            'afterError',
-            $this->makeQueueEvent(job: $job, error: new RuntimeException('job failed')),
-        );
-
-        $records = $panel->capture()->entries();
-
-        $errorRecord = $records[0] ?? self::fail('Expected the error record.');
-
-        self::assertSame(
-            JobRecord::TYPE_ERROR,
-            $errorRecord->eventType,
-            "Captured event must be 'error'."
-        );
-        self::assertSame(
-            'job failed',
-            $errorRecord->error,
-            'Error message must round-trip.'
-        );
-
-        Event::offAll();
-    }
-
-    public function testInitRegistersQueueJobActionAndPushListener(): void
+    public function testInitRegistersTheQueueJobAction(): void
     {
         $panel = $this->makePanel(QueuePanel::class);
 
@@ -466,234 +332,6 @@ final class QueuePanelTest extends TestCase
             $panel->actions,
             "Init must register the 'queue-job' action.",
         );
-
-        Event::trigger(
-            'yii\\queue\\Queue',
-            'afterPush',
-            $this->makeQueueEvent(jobId: 'job-7'),
-        );
-
-        $records = $panel->capture()->entries();
-
-        self::assertCount(
-            1,
-            $records,
-            'Wildcard listener must capture push events.',
-        );
-
-        $record = $records[0];
-
-        self::assertSame(
-            JobRecord::TYPE_PUSH,
-            $record->eventType,
-            "Captured event type must be 'push'."
-        );
-        self::assertSame(
-            'job-7',
-            $record->jobId,
-            "'jobId' must round-trip from the event.",
-        );
-
-        Event::offAll();
-    }
-
-    public function testInitTracksExecDurationViaBeforeAndAfterExecPair(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $job = new stdClass();
-
-        Event::trigger(
-            'yii\\queue\\Queue',
-            'beforeExec',
-            $this->makeQueueEvent(job: $job),
-        );
-        Event::trigger(
-            'yii\\queue\\Queue',
-            'afterExec',
-            $this->makeQueueEvent(job: $job),
-        );
-
-        $records = $panel->capture()->entries();
-
-        $execRecord = $records[0] ?? self::fail('Expected one record.');
-
-        self::assertSame(
-            JobRecord::TYPE_EXEC,
-            $execRecord->eventType,
-            "Captured event must be 'exec'."
-        );
-        self::assertNotNull(
-            $execRecord->duration,
-            'Exec duration must be computed from begin/end pair.'
-        );
-
-        Event::offAll();
-    }
-
-    public function testJobOfReturnsTheJobObjectOrNullWhenMissing(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $job = new stdClass();
-
-        self::assertSame(
-            $job,
-            $this->invoke($panel, 'jobOf', [$this->makeQueueEvent(job: $job)]),
-            'Job object must round-trip from the event.',
-        );
-        self::assertNull(
-            $this->invoke($panel, 'jobOf', [new Event()]),
-            "Missing 'job' property must yield 'null'."
-        );
-    }
-
-    public function testResolveRecordsFallsBackToSavedPayloadWhenLiveIsEmpty(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $this->hydratePanel($panel, QueueSnapshot::capture([['eventType' => 'saved', 'jobClass' => 'saved-job']]));
-
-        $records = $this->invoke(
-            $panel,
-            'resolveRecords',
-        );
-
-        self::assertIsArray($records, 'Resolved records must be a list.');
-
-        $first = $records[0] ?? self::fail('Expected one record.');
-
-        self::assertInstanceOf(JobRecord::class, $first, 'Resolved records must be typed.');
-        self::assertSame('saved-job', $first->jobClass, 'Saved payload must be used when live is empty.');
-    }
-
-    public function testResolveRecordsPrefersLiveOverSavedPayload(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        $this->setInaccessibleProperty(
-            $panel,
-            'records',
-            [['eventType' => 'live', 'jobClass' => 'live-job']],
-        );
-
-        $this->hydratePanel($panel, QueueSnapshot::capture([['eventType' => 'saved', 'jobClass' => 'saved-job']]));
-
-        $records = $this->invoke($panel, 'resolveRecords');
-
-        self::assertIsArray($records, 'Resolved records must be a list.');
-
-        $first = $records[0] ?? self::fail('Expected one record.');
-
-        self::assertInstanceOf(JobRecord::class, $first, 'Resolved records must be typed.');
-        self::assertSame('push', $first->eventType, 'Unknown live event types collapse to `push`.');
-        self::assertSame('live-job', $first->jobClass, 'Live records must shadow the saved payload.');
-    }
-
-    public function testResolveRecordsReturnsEmptyWhenLiveAndSavedAreEmpty(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        self::assertSame(
-            [],
-            $this->invoke($panel, 'resolveRecords'),
-            "No live and no saved means '[]'.",
-        );
-    }
-
-    public function testScalarToStringCoercesScalarsToStringAndDropsOthers(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        self::assertSame(
-            '42',
-            $this->invoke($panel, 'scalarToString', [42]),
-            'Int must coerce to string.',
-        );
-        self::assertSame(
-            'hello',
-            $this->invoke($panel, 'scalarToString', ['hello']),
-            'String must pass through.',
-        );
-        self::assertSame(
-            '',
-            $this->invoke($panel, 'scalarToString', [new stdClass()]),
-            "Object must collapse to ''.",
-        );
-    }
-
-    public function testValueToNullableIntKeepsIntsAndDropsOthers(): void
-    {
-        $panel = $this->makePanel(QueuePanel::class);
-
-        self::assertSame(
-            42,
-            $this->invoke(
-                $panel,
-                'valueToNullableInt',
-                [42],
-            ),
-            'Int must round-trip.',
-        );
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'valueToNullableInt',
-                ['42'],
-            ),
-            "String must yield 'null'.",
-        );
-        self::assertNull(
-            $this->invoke(
-                $panel,
-                'valueToNullableInt',
-                [null],
-            ),
-            "'null' must yield 'null'."
-        );
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        if (!class_exists('yii\\queue\\Queue', false)) {
-            eval('namespace yii\\queue; abstract class Queue extends \\yii\\base\\Component {}');
-        }
-    }
-
-    /**
-     * @param object|null $job Job object exposed as the event's `job` public property.
-     * @param Throwable|null $error Exception exposed as the event's `error` public property.
-     */
-    private function makeQueueEvent(
-        object|null $job = null,
-        string $jobId = '',
-        int|null $ttr = null,
-        int|null $delay = null,
-        int|null $priority = null,
-        int|null $attempt = null,
-        mixed $error = null,
-    ): Event {
-        $event = new class extends Event {
-            public object|null $job = null;
-            public string $id = '';
-            public int|null $ttr = null;
-            public int|null $delay = null;
-            public int|null $priority = null;
-            public int|null $attempt = null;
-            public mixed $error = null;
-        };
-
-        $event->job = $job ?? new stdClass();
-        $event->id = $jobId;
-        $event->ttr = $ttr;
-        $event->delay = $delay;
-        $event->priority = $priority;
-        $event->attempt = $attempt;
-        $event->error = $error;
-
-        return $event;
     }
 
     /**

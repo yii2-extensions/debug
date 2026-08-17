@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\models\timeline;
 
+use PHPForge\Debug\Panel\MemorySample;
 use Stringable;
 use UIAwesome\Html\Svg\{Defs, G, LinearGradient, Polygon, Polyline, Stop, Svg as SvgBuilder};
 use yii\base\BaseObject;
-use yii\debug\panels\{MemorySample, ProvidesMemorySamples, TimelinePanel};
+use yii\debug\panels\{ProvidesMemorySamples, TimelinePanel};
 use yii\helpers\StringHelper;
 
 use function is_string;

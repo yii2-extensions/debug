@@ -4,50 +4,22 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\profile;
 
+use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
-use yii\debug\panels\profile\ProfilingSnapshot;
 use yii\debug\panels\ProfilingPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see ProfilingPanel} covering the profile capture, the typed row decoration, the toolbar items
+ * Unit tests for {@see ProfilingPanel} covering the typed row decoration, the toolbar items
  * (time + memory), the title-blanking on the toolbar payload, and snapshot hydration.
  */
 #[Group('panel')]
 #[Group('profile')]
 final class ProfilingPanelTest extends TestCase
 {
-    public function testCaptureReturnsTypedPayloadWithMemoryAndTime(): void
-    {
-        $panel = $this->makePanel(ProfilingPanel::class);
-
-        $snapshot = $panel->capture();
-
-        self::assertGreaterThan(
-            0,
-            $snapshot->memory,
-            "'memory' must reflect a positive peak.",
-        );
-        self::assertGreaterThanOrEqual(
-            0.0,
-            $snapshot->time,
-            "'time' must be non-negative.",
-        );
-        self::assertSame(
-            [],
-            $snapshot->entries(),
-            'Empty log target yields no profile blocks.',
-        );
-        self::assertSame(
-            [],
-            $snapshot->samples(),
-            'Empty log target yields no memory samples.',
-        );
-    }
-
     public function testCaptureScalesMemorySampleTimeToMilliseconds(): void
     {
         $snapshot = ProfilingSnapshot::capture(

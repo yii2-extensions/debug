@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\router;
 
+use PHPForge\Debug\Panel\Router\RouterSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use yii\debug\models\router\CurrentRoute;
-use yii\debug\panels\router\RouterSnapshot;
 use yii\log\Logger;
 
 /**

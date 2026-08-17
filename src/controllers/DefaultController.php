@@ -10,10 +10,11 @@ use PHPForge\Debug\Storage\{ExceptionSnapshot, RequestSummary};
 use Throwable;
 use Yii;
 use yii\base\{Exception, InvalidConfigException, Response};
+use yii\debug\collectors\MailCollector;
 use yii\debug\LogTarget;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\{Module, Panel};
-use yii\debug\panels\{ConfigPanel, MailPanel};
+use yii\debug\panels\ConfigPanel;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarView};
 use yii\helpers\Url;
@@ -65,9 +66,7 @@ class DefaultController extends Controller
      */
     public function actionDownloadMail(string $file): Response
     {
-        $mailPanel = $this->getMailPanel();
-
-        $filePath = Yii::getAlias($mailPanel->mailPath) . '/' . basename($file);
+        $filePath = Yii::getAlias($this->getMailCollector()->mailPath) . '/' . basename($file);
 
         if (
             strpos($file, '\\') !== false
@@ -524,23 +523,23 @@ class DefaultController extends Controller
     }
 
     /**
-     * Returns the configured mail panel.
+     * Returns the registered mail collector.
      *
-     * @throws NotFoundHttpException When no mail panel is registered on the module.
+     * @throws NotFoundHttpException When no mail collector is registered on the module.
      *
-     * @return MailPanel Mail panel used to resolve captured mail files.
+     * @return MailCollector Mail collector used to resolve captured mail files.
      */
-    private function getMailPanel(): MailPanel
+    private function getMailCollector(): MailCollector
     {
-        $panel = $this->module->panels['mail'] ?? null;
+        $collector = $this->module->getCollectorCoordinator()->collector('mail');
 
-        if (!$panel instanceof MailPanel) {
+        if (!$collector instanceof MailCollector) {
             throw new NotFoundHttpException(
-                'Mail panel not found.',
+                'Mail collector not found.',
             );
         }
 
-        return $panel;
+        return $collector;
     }
 
     /**

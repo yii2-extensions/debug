@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\timeline;
 
+use PHPForge\Debug\Panel\Log\LogSnapshot;
+use PHPForge\Debug\Panel\MemorySample;
+use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
+use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use ReflectionClass;
 use Yii;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\Svg;
-use yii\debug\panels\log\LogSnapshot;
 use yii\debug\panels\{LogPanel, ProfilingPanel, TimelinePanel};
-use yii\debug\panels\MemorySample;
-use yii\debug\panels\profile\ProfilingSnapshot;
-use yii\debug\panels\timeline\TimelineSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use yii\debug\panels\mail\{MailCardRenderer, MailMessage};
+use PHPForge\Debug\Panel\Mail\{MailCardRenderer, MailMessage};
 use yii\helpers\Url;
 
 /**

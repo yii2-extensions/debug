@@ -7,13 +7,9 @@ namespace yii\debug;
 use Closure;
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException, PanelSnapshot};
-use Throwable;
-use yii\base\{Component, InvalidConfigException, ViewContextInterface};
+use yii\base\{Component, ViewContextInterface};
 use yii\helpers\{ArrayHelper, StringHelper, Url, VarDumper};
 
-use function array_key_exists;
-use function is_array;
-use function is_string;
 use function strlen;
 
 /**
@@ -305,79 +301,6 @@ class Panel extends Component implements ViewContextInterface
     public function setError(ExceptionSnapshot $error): void
     {
         $this->error = $error;
-    }
-
-    /**
-     * Returns the log messages captured by the debug log target, filtered by levels and categories.
-     *
-     * When `$stringify` is `true`, non-string first elements are exported via {@see VarDumper::export()}, with
-     * {@see Throwable} instances cast to their string form closures captured in exception traces are not directly
-     * serializable, so the cast guards the manifest from breaking on read-back.
-     *
-     * @param int $levels Bitmap of {@see \yii\log\Logger} level constants; `0` allows every level.
-     * @param array<int, string> $categories Allowed category names; `[]` allows every category.
-     * @param array<int, string> $except Category names to exclude; `[]` excludes none.
-     * @param bool $stringify `true` to convert non-string first elements (closures, exceptions) into strings.
-     *
-     * @throws InvalidConfigException When the debug log target is not initialized.
-     *
-     * @return array<int, array<int|string, mixed>> Filtered messages in capture order.
-     *
-     * @see \yii\log\Target::filterMessages()
-     */
-    protected function getLogMessages(
-        int $levels = 0,
-        array $categories = [],
-        array $except = [],
-        bool $stringify = false,
-    ): array {
-        $target = $this->getLogTarget();
-
-        $filteredMessages = LogTarget::filterMessages($target->messages, $levels, $categories, $except);
-
-        $messages = [];
-
-        foreach ($filteredMessages as $message) {
-            if (is_array($message)) {
-                $messages[] = $message;
-            }
-        }
-
-        if (!$stringify) {
-            return $messages;
-        }
-
-        foreach ($messages as $key => $message) {
-            if (!array_key_exists(0, $message) || is_string($message[0])) {
-                continue;
-            }
-
-            if ($message[0] instanceof Throwable) {
-                $messages[$key][0] = (string) $message[0];
-            } else {
-                $messages[$key][0] = VarDumper::export($message[0]);
-            }
-        }
-
-        return $messages;
-    }
-
-    /**
-     * Returns the debug log target wired to the owning module.
-     *
-     * @throws InvalidConfigException When the debug module has not initialized its log target.
-     */
-    protected function getLogTarget(): LogTarget
-    {
-        $logTarget = $this->module?->logTarget;
-
-        if (!$logTarget instanceof LogTarget) {
-            throw new InvalidConfigException(
-                'The debug module logTarget must be initialized before reading log messages.',
-            );
-        }
-
-        return $logTarget;
     }
 
     /**

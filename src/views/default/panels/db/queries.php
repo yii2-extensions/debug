@@ -10,7 +10,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\DbSearch;
-use yii\debug\panels\db\{DbQueryRenderer, QueryRow};
+use PHPForge\Debug\Panel\Db\{DbQueryRenderer, QueryRow};
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -134,7 +134,7 @@ if ($hasQueries) {
                 'attribute' => 'query',
                 'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderQueryCell(
                     $data,
-                    $panel,
+                    $panel->getTraceLine(...),
                     $hasExplain,
                     $explainUrlBuilder,
                 ),

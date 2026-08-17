@@ -10,7 +10,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\QueueSearch;
-use yii\debug\panels\queue\{JobRecord, QueueCardRenderer, QueueGridRenderer, QueueSummary};
+use PHPForge\Debug\Panel\Queue\{JobRecord, QueueCardRenderer, QueueGridRenderer, QueueSummary};
 use yii\debug\panels\QueuePanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;

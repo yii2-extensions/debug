@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\models\router;
 
+use PHPForge\Debug\Panel\Router\{CurrentRouteLogRow, RouterSnapshot};
 use yii\base\Model;
-use yii\debug\panels\router\{CurrentRouteLogRow, RouterSnapshot};
 
 use function count;
 

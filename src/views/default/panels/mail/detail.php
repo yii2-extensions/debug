@@ -12,7 +12,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\MailSearch;
-use yii\debug\panels\mail\MailMessage;
+use PHPForge\Debug\Panel\Mail\MailMessage;
 use yii\debug\panels\MailPanel;
 use yii\widgets\{ActiveForm, ListView};
 

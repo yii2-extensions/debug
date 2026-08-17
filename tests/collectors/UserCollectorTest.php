@@ -1,0 +1,311 @@
+<?php
+
+declare(strict_types=1);
+
+namespace yii\debug\tests\collectors;
+
+use PHPUnit\Framework\Attributes\Group;
+use Yii;
+use yii\debug\collectors\UserCollector;
+use yii\debug\{LogTarget, Module};
+use yii\debug\tests\support\stub\{Identity, ModelIdentity};
+use yii\debug\tests\support\TestCase;
+use yii\rbac\{BaseManager, Permission, Role};
+use yii\web\{IdentityInterface, User};
+
+use function array_column;
+
+/**
+ * Unit tests for {@see UserCollector} covering the identity capture, the RBAC roles/permissions narrowing, and the
+ * startup/shutdown lifecycle.
+ */
+#[Group('collector')]
+#[Group('user')]
+final class UserCollectorTest extends TestCase
+{
+    public function testCaptureCapturesIdentityAttributesAndLabelsForModelIdentity(): void
+    {
+        $collector = $this->bootstrapCollectorWithIdentity(new ModelIdentity());
+
+        $saved = $collector->capture()?->data();
+
+        self::assertNotNull(
+            $saved,
+            'Identity save must succeed.',
+        );
+        self::assertSame(
+            1,
+            $saved['id'] ?? null,
+            'Identity id must round-trip.',
+        );
+        $attributes = $saved['attributes'] ?? null;
+
+        self::assertIsArray($attributes);
+
+        self::assertSame(
+            ['id', 'username'],
+            array_column($attributes, 'attribute'),
+            'Model identity must surface attribute labels.',
+        );
+    }
+
+    public function testCaptureCapturesIdentityForNonModelIdentity(): void
+    {
+        $collector = $this->bootstrapCollectorWithIdentity(new Identity(7));
+
+        $saved = $collector->capture()?->data();
+
+        self::assertNotNull(
+            $saved,
+            'Identity save must succeed.',
+        );
+        self::assertSame(
+            7,
+            $saved['id'] ?? null,
+            'Identity id must round-trip.',
+        );
+        self::assertNull(
+            $saved['attributes'] ?? null,
+            'Non-Model identity must skip attribute labels.',
+        );
+    }
+
+    public function testCaptureIgnoresAuthManagerMisconfiguration(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                    ],
+                ],
+            ],
+        );
+
+        Yii::$app->user->login(new Identity(5));
+
+        $module = new Module('debug', null, ['authManager' => 'authManager']);
+
+        $module->logTarget = new LogTarget($module);
+
+        $collector = $this->wireCollector($module);
+
+        $saved = $collector->capture()?->data();
+
+        self::assertNotNull(
+            $saved,
+            'Capture must complete despite missing auth manager.',
+        );
+        self::assertNull(
+            $saved['roles'] ?? null,
+            "Roles provider must stay 'null' on auth manager failure.",
+        );
+        self::assertNull(
+            $saved['permissions'] ?? null,
+            "Permissions provider must stay 'null' on auth manager failure.",
+        );
+    }
+
+    public function testCapturePopulatesRbacRowsWhenAuthManagerWired(): void
+    {
+        $role = new Role();
+
+        $role->name = 'admin';
+        $role->description = 'Administrator';
+        $role->createdAt = 1;
+        $role->updatedAt = 2;
+
+        $permission = new Permission();
+
+        $permission->name = 'manage';
+        $permission->description = 'Manage';
+        $permission->createdAt = 3;
+        $permission->updatedAt = 4;
+
+        $authManager = self::createStub(BaseManager::class);
+
+        $authManager
+            ->method('getRolesByUser')
+            ->willReturn([$role->name => $role]);
+        $authManager
+            ->method('getPermissionsByUser')
+            ->willReturn([$permission->name => $permission]);
+
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                    ],
+                ],
+            ],
+        );
+
+        Yii::$app->user->login(new Identity(9));
+
+        $module = new Module('debug', null, ['authManager' => $authManager]);
+
+        $module->logTarget = new LogTarget($module);
+
+        $collector = $this->wireCollector($module);
+
+        $saved = $collector->capture()?->data();
+
+        self::assertNotNull(
+            $saved,
+            'Capture must complete.',
+        );
+        $roles = $saved['roles'] ?? null;
+        $permissions = $saved['permissions'] ?? null;
+
+        self::assertIsArray($roles);
+        self::assertIsArray($permissions);
+        self::assertCount(1, $roles, 'Role rows must surface.');
+        self::assertCount(1, $permissions, 'Permission rows must surface.');
+    }
+
+    public function testCaptureReturnsNullBeforeStartup(): void
+    {
+        $this->mockWebApplication();
+
+        self::assertNull(
+            (new UserCollector())->capture(),
+            'Idle collector must record nothing.',
+        );
+    }
+
+    public function testCaptureReturnsNullWhenNoIdentity(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                    ],
+                ],
+            ],
+        );
+
+        $collector = new UserCollector();
+
+        $collector->startup();
+
+        self::assertNull(
+            $collector->capture(),
+            'Guest must yield no snapshot.',
+        );
+    }
+
+    public function testCaptureReturnsNullWhenNoUserComponent(): void
+    {
+        $this->mockWebApplication();
+
+        $collector = new UserCollector();
+
+        $collector->userComponent = 'nonexistent';
+
+        $collector->startup();
+
+        self::assertNull(
+            $collector->capture(),
+            'Missing user component must yield no snapshot.',
+        );
+    }
+
+    public function testDataToStringExportsNonStringValues(): void
+    {
+        $collector = new UserCollector();
+
+        self::assertSame(
+            'value',
+            $this->invoke(
+                $collector,
+                'dataToString',
+                ['value'],
+            ),
+            'String input must round-trip unchanged.',
+        );
+
+        $exported = $this->invoke(
+            $collector,
+            'dataToString',
+            [['a' => 'b']],
+        );
+
+        self::assertIsString(
+            $exported,
+            'Export must produce a string.',
+        );
+        self::assertStringContainsString(
+            "'a'",
+            $exported,
+            "Non-string input must be exported via 'VarDumper::export()'.",
+        );
+    }
+
+    public function testIdPairsWithTheUserPanel(): void
+    {
+        self::assertSame(
+            'user',
+            (new UserCollector())->id(),
+            "Stable ID must be 'user'.",
+        );
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $_SESSION = [];
+    }
+
+    /**
+     * Builds a started collector wired to a logged-in identity on a fully configured web application.
+     *
+     * @param IdentityInterface $identity Identity to log in.
+     *
+     * @return UserCollector Started collector.
+     */
+    private function bootstrapCollectorWithIdentity(IdentityInterface $identity): UserCollector
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => $identity::class,
+                    ],
+                ],
+            ],
+        );
+
+        Yii::$app->user->login($identity);
+
+        $module = new Module('debug');
+
+        $module->logTarget = new LogTarget($module);
+
+        return $this->wireCollector($module);
+    }
+
+    /**
+     * Creates a started collector bound to the given module.
+     *
+     * @param Module $module Debug module supplying the auth manager.
+     *
+     * @return UserCollector Started collector.
+     */
+    private function wireCollector(Module $module): UserCollector
+    {
+        $collector = new UserCollector();
+
+        $collector->module = $module;
+
+        $collector->startup();
+
+        return $collector;
+    }
+}

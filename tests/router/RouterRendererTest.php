@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\router;
 
+use PHPForge\Debug\Panel\Router\CurrentRouteLogRow;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
-use yii\debug\panels\router\{CurrentRouteLogRow, RouterRenderer};
+use yii\debug\panels\router\RouterRenderer;
 use yii\debug\tests\support\TestCase;
 
 /**

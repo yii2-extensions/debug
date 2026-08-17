@@ -74,6 +74,28 @@ frontend, including the panel stylesheet, JavaScript, fonts, icons, and toolbar 
 `php-forge/debug-core`. This package publishes those shared assets and supplies the Yii2-specific panels and data.
 Shared PHP templates are resolved through the adapter-owned `@yiiDebugViews` alias.
 
+### Custom collectors and panels
+
+Register collectors explicitly through the debug module. A collector returns a typed
+`PHPForge\Debug\Storage\PanelSnapshot`; a panel with the same stable ID hydrates and presents that payload. Existing
+custom panels continue to capture normally when no matching collector is registered.
+
+```php
+$config['modules']['debug'] = [
+    'class' => \yii\debug\Module::class,
+    'collectors' => [
+        \App\Debug\OrderCollector::class,
+    ],
+    'panels' => [
+        'app.orders' => \App\Debug\OrderPanel::class,
+    ],
+];
+```
+
+`OrderCollector::id()` must return `app.orders`. Collector instances and Yii configuration arrays with a `class` key
+are accepted as alternatives to class names. Stored collector data without a matching panel remains available through
+an escaped JSON fallback.
+
 When upgrading from 0.1, review the [0.2 upgrade guide](UPGRADE.md) before deploying the package.
 
 ### Browser support

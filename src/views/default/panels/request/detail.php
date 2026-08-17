@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Heading\H1;
-use yii\debug\panels\request\{RequestSectionRenderer, RequestView};
+use PHPForge\Debug\Panel\Request\{RequestSectionRenderer, RequestView};
 
 /** @var RequestView $view Typed request view payload */
 ?>

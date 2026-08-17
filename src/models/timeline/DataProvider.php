@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\models\timeline;
 
 use Override;
+use PHPForge\Debug\Panel\Profile\ProfileRow;
+use PHPForge\Debug\Panel\Timeline\TimelineSpanRow;
 use yii\data\ArrayDataProvider;
-use yii\debug\panels\profile\ProfileRow;
-use yii\debug\panels\timeline\TimelineSpanRow;
 use yii\debug\panels\TimelinePanel;
 
 use function floor;

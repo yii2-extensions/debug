@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor!: move the shared snapshot contracts and JSON persistence into `php-forge/debug-core` and remove the former Yii2 storage DTO namespace.
 - refactor: consume the frontend files and shared views from `php-forge/debug-core` while keeping Yii2 asset bundle definitions, view rendering, and toolbar response injection in this adapter.
 - refactor!: move framework-neutral normalization and presentation helpers to `php-forge/debug-core`.
+- refactor!: move the framework-neutral panel presentation (snapshot DTOs, rows, renderers, normalizers, `Tabs`, log-level vocabulary) to `php-forge/debug-core` under `PHPForge\Debug\Panel`.
 
 ## 0.1.1 May 18, 2026
 

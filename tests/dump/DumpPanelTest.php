@@ -4,106 +4,20 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\dump;
 
+use PHPForge\Debug\Panel\Dump\DumpSnapshot;
 use PHPUnit\Framework\Attributes\Group;
-use yii\base\InvalidConfigException;
-use yii\debug\LogTarget;
-use yii\debug\panels\dump\DumpSnapshot;
-use yii\debug\panels\{DumpPanel, RouterPanel};
+use yii\debug\panels\DumpPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
-use function is_string;
-
 /**
- * Unit tests for {@see DumpPanel} covering the trace-log capture, the typed dump-row narrowing, the toolbar item
- * shortcut, the `varDump()` rendering pipeline (callback / highlighted / plain), and the rendered detail/summary views.
+ * Unit tests for {@see DumpPanel} covering the typed dump-row narrowing, the toolbar item shortcut, and the rendered
+ * detail and summary views.
  */
 #[Group('panel')]
 #[Group('dump')]
 final class DumpPanelTest extends TestCase
 {
-    public function testCaptureAppliesVarDumpToEachMessageHead(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        $panel->highlight = false;
-
-        $this->logTargetOf($panel)->messages = [
-            [['stringValue'], Logger::LEVEL_TRACE, 'application', 0.0, [], 0],
-        ];
-
-        $first = $panel->capture()->entries()[0] ?? self::fail('Expected one captured row.');
-
-        self::assertStringContainsString(
-            'stringValue',
-            $first->message,
-            'Dumped output must contain the value.',
-        );
-    }
-
-    public function testCaptureReportsMissingModuleThroughThePanelContract(): void
-    {
-        $panel = new DumpPanel();
-
-        $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage(
-            'The debug module logTarget must be initialized before reading log messages.',
-        );
-
-        $panel->capture();
-    }
-
-    public function testCaptureSkipsCategoriesOwnedByRouterPanel(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        $panel->highlight = false;
-        $panel->categories = [];
-
-        $module = $panel->module ?? self::fail('Module must be wired.');
-
-        $module->panels['router'] = new RouterPanel(['id' => 'router', 'module' => $module]);
-
-        $this->logTargetOf($panel)->messages = [
-            ['kept', Logger::LEVEL_TRACE, 'application', 0.0, [], 0],
-            ['dropped', Logger::LEVEL_TRACE, 'yii\\web\\UrlManager::parseRequest', 0.0, [], 0],
-        ];
-
-        self::assertCount(
-            1,
-            $panel->capture()->entries(),
-            'Router categories must be filtered.',
-        );
-    }
-
-    public function testCaptureSkipsMessagesWithoutFirstSlot(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        $panel->highlight = false;
-
-        $this->logTargetOf($panel)->messages = [
-            [1 => Logger::LEVEL_TRACE, 2 => 'application', 3 => 0.0, 4 => [], 5 => 0],
-            [['later-value'], Logger::LEVEL_TRACE, 'application', 1.0, [], 0],
-        ];
-
-        $entries = $panel->capture()->entries();
-
-        $first = $entries[0] ?? self::fail('Expected the malformed captured row.');
-        $second = $entries[1] ?? self::fail('Expected the later valid captured row.');
-
-        self::assertSame(
-            '',
-            $first->message,
-            'Missing first slot must collapse to an empty message.',
-        );
-        self::assertStringContainsString(
-            'later-value',
-            $second->message,
-            'A malformed message must not stop later payloads from being rendered.',
-        );
-    }
-
     public function testGetDetailRendersEmptyStateWhenNoDumpsCaptured(): void
     {
         $panel = $this->makePanel(DumpPanel::class);
@@ -387,73 +301,5 @@ final class DumpPanelTest extends TestCase
             ),
             'Non-array data must skip the toolbar item.',
         );
-    }
-
-    public function testVarDumpDelegatesToCallbackWhenSet(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        $panel->varDumpCallback = static fn(
-            mixed $value,
-            DumpPanel $panel,
-        ): string => 'custom:' . (is_string($value) ? $value : 'other');
-
-        self::assertSame(
-            'custom:hello',
-            $panel->varDump('hello'),
-            'Callback output must round-trip.',
-        );
-    }
-
-    public function testVarDumpEncodesPlainOutputWhenHighlightIsFalse(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        $panel->highlight = false;
-
-        $dump = $panel->varDump('<script>');
-
-        self::assertStringContainsString(
-            '&lt;script&gt;',
-            $dump,
-            "Plain mode must HTML-escape '<script>'.",
-        );
-        self::assertStringNotContainsString(
-            '<script>',
-            $dump,
-            'Plain mode must not leak raw HTML.',
-        );
-    }
-
-    public function testVarDumpKeepsHighlightedOutputUnchanged(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        $panel->highlight = true;
-
-        $dump = $panel->varDump('value');
-
-        self::assertStringContainsString(
-            '<',
-            $dump,
-            'Highlighted output must contain markup.',
-        );
-    }
-
-    /**
-     * Resolves the typed {@see \yii\debug\LogTarget} from a panel built by {@see TestCase::makePanel()}, narrowing the
-     * loose `LogTarget|array|string` declared on `\yii\debug\Module::$logTarget`.
-     */
-    private function logTargetOf(DumpPanel $panel): LogTarget
-    {
-        $logTarget = $panel->module?->logTarget;
-
-        self::assertInstanceOf(
-            LogTarget::class,
-            $logTarget,
-            'Log target must be wired.',
-        );
-
-        return $logTarget;
     }
 }

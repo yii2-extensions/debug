@@ -11,7 +11,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\ProfileSearch;
-use yii\debug\panels\profile\{ProfileCellRenderer, ProfileRow};
+use PHPForge\Debug\Panel\Profile\{ProfileCellRenderer, ProfileRow};
 use yii\debug\panels\ProfilingPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;

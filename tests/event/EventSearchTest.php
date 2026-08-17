@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\event;
 
+use PHPForge\Debug\Panel\Event\EventRow;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\EventSearch;
-use yii\debug\panels\event\EventRow;
 use yii\debug\tests\support\TestCase;
 
 /**

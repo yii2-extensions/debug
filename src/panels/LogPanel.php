@@ -5,21 +5,20 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Helper\Coerce;
+use PHPForge\Debug\Panel\Log\{LogCounts, LogRow, LogSnapshot};
+use PHPForge\Debug\Panel\MemorySample;
 use Yii;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
-use yii\debug\panels\log\{LogCounts, LogRow, LogSnapshot};
 use yii\log\Logger;
 
 use function array_map;
 
 /**
- * Captures error, warning, info, and trace log messages emitted during the request and renders them in the Logs panel.
+ * Renders the error, warning, info, and trace log messages captured by the Logs collector.
  *
- * Skips categories owned by the Router panel (to avoid duplicate rows in the routing trace) and decorates each row
- * with the previous/next message ids and the time-since-previous delta, so the detail view can render the navigation
- * buttons on each row.
+ * Decorates each row with the previous/next message ids and the time-since-previous delta, so the detail view can
+ * render the navigation buttons on each row; data acquisition lives in {@see \yii\debug\collectors\LogCollector}.
  */
 class LogPanel extends Panel implements ProvidesMemorySamples
 {
@@ -27,29 +26,6 @@ class LogPanel extends Panel implements ProvidesMemorySamples
     protected const string NAME = 'Logs';
 
     private LogSnapshot|null $snapshot = null;
-
-    /**
-     * Captures every error/warning/info/trace log message, excluding the categories owned by the Router panel.
-     */
-    public function capture(): LogSnapshot
-    {
-        $except = [];
-
-        $routerPanel = $this->module?->panels['router'] ?? null;
-
-        if ($routerPanel instanceof RouterPanel) {
-            $except = Coerce::stringList($routerPanel->getCategories());
-        }
-
-        $messages = $this->getLogMessages(
-            Logger::LEVEL_ERROR | Logger::LEVEL_INFO | Logger::LEVEL_WARNING | Logger::LEVEL_TRACE,
-            [],
-            $except,
-            true,
-        );
-
-        return LogSnapshot::capture($messages);
-    }
 
     /**
      * Renders the detail view with the logs grid.

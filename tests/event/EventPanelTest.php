@@ -4,34 +4,20 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\event;
 
+use PHPForge\Debug\Panel\Event\{EventRow, EventSnapshot};
 use PHPUnit\Framework\Attributes\Group;
-use stdClass;
-use yii\base\{Component, Event};
-use yii\debug\panels\event\{EventRow, EventSnapshot};
+use yii\base\Event;
 use yii\debug\panels\EventPanel;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see EventPanel} covering the wildcard event capture, snapshot hydration, the toolbar count
+ * Unit tests for {@see EventPanel} covering snapshot hydration, the toolbar count
  * chip, and the rendered detail/summary views.
  */
 #[Group('panel')]
 #[Group('event')]
 final class EventPanelTest extends TestCase
 {
-    public function testCaptureReturnsEventsCapturedSinceInit(): void
-    {
-        $panel = $this->makePanel(EventPanel::class);
-
-        self::assertSame(
-            [],
-            $panel->capture()->entries(),
-            'No fired events means an empty payload.',
-        );
-
-        Event::offAll();
-    }
-
     public function testGetDetailRendersEmptyStateWhenNoEventsCaptured(): void
     {
         $panel = $this->makePanel(EventPanel::class);
@@ -163,68 +149,5 @@ final class EventPanelTest extends TestCase
             ),
             'Empty data must skip the toolbar item.',
         );
-    }
-
-    public function testInitCapturesEventsFiredByWildcardListener(): void
-    {
-        $panel = $this->makePanel(EventPanel::class);
-
-        $sender = new Component();
-
-        $sender->trigger('test.event');
-
-        $saved = $panel->capture()->entries();
-
-        $captured = $saved[0] ?? self::fail('Expected one captured event.');
-
-        self::assertSame('test.event', $captured->name, 'Captured `name` must match the trigger.');
-        self::assertSame(
-            Component::class,
-            $captured->senderClass,
-            'Captured `senderClass` must match the sender FQCN.',
-        );
-        self::assertSame(
-            '0',
-            $captured->isStatic,
-            "Object sender must mark 'isStatic' as '0'.",
-        );
-
-        Event::offAll();
-    }
-
-    public function testInitMarksStaticEventsWithSenderClassFromString(): void
-    {
-        $panel = $this->makePanel(EventPanel::class);
-
-        $event = new Event();
-
-        $this->setInaccessibleProperty(
-            $event,
-            'sender',
-            stdClass::class,
-        );
-
-        Event::trigger(
-            stdClass::class,
-            'static.event',
-            $event,
-        );
-
-        $saved = $panel->capture()->entries();
-
-        $captured = $saved[0] ?? self::fail('Expected one captured event.');
-
-        self::assertSame(
-            '1',
-            $captured->isStatic,
-            "Static event must mark 'isStatic' as '1'.",
-        );
-        self::assertSame(
-            stdClass::class,
-            $captured->senderClass,
-            'Class-level sender must round-trip as a string.',
-        );
-
-        Event::offAll();
     }
 }

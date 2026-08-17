@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\actions\queue;
 
+use PHPForge\Debug\Panel\Queue\QueueSnapshot;
 use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
@@ -11,7 +12,6 @@ use yii\base\Controller as BaseController;
 use yii\debug\actions\queue\JobAction;
 use yii\debug\controllers\DefaultController;
 use yii\debug\Module;
-use yii\debug\panels\queue\QueueSnapshot;
 use yii\debug\panels\QueuePanel;
 use yii\debug\tests\support\TestCase;
 use yii\web\{AssetManager, HttpException};

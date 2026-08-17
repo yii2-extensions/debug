@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\widgets\sidebar;
 
+use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\{ConfigPanel, InertiaPanel, RequestPanel};
-use yii\debug\panels\inertia\InertiaSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarNavItem};
 
