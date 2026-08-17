@@ -515,7 +515,6 @@ final class HistoryRowRendererTest extends TestCase
         Yii::$app->setModule('debug', $module);
 
         $module->bootstrap(Yii::$app);
-
     }
 
     protected function tearDown(): void
