@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\log;
 
+use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Storage\HydrationException;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\log\LogSnapshot;
-use yii\debug\panels\{LogPanel, RouterPanel};
+use yii\debug\panels\LogPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see LogPanel} covering log capture, payload narrowing, toolbar items per level, the rendered detail
+ * Unit tests for {@see LogPanel} covering payload narrowing, toolbar items per level, the rendered detail
  * and summary views, and the typed row decoration with previous/next ids.
  */
 #[Group('panel')]
@@ -37,26 +37,6 @@ final class LogPanelTest extends TestCase
             1,
             $panel->getMessages(),
             'Non-array entries must be dropped at capture.',
-        );
-    }
-
-    public function testCaptureExcludesCategoriesOwnedByRouterPanel(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $module = $panel->module ?? self::fail('Module must be wired.');
-
-        $module->panels['router'] = new RouterPanel(
-            [
-                'id' => 'router',
-                'module' => $module,
-            ],
-        );
-
-        self::assertSame(
-            [],
-            $panel->capture()->entries(),
-            'Empty log target yields no rows.',
         );
     }
 
@@ -138,17 +118,6 @@ final class LogPanelTest extends TestCase
             1.5,
             $second->timeSincePrevious,
             'The elapsed time must compare adjacent rows.',
-        );
-    }
-
-    public function testCaptureReturnsTypedRows(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        self::assertSame(
-            [],
-            $panel->capture()->entries(),
-            'Empty log target yields no rows.',
         );
     }
 

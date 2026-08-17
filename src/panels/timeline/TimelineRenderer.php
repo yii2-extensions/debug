@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels\timeline;
 
 use PHPForge\Debug\Helper\{Format, Fqcn};
+use PHPForge\Debug\Panel\Timeline\TimelineSpanRow;
 use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Form\{Button, Form, InputHidden, InputNumber, InputText};
 use UIAwesome\Html\Palpable\A;

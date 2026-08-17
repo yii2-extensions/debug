@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels;
 
+use PHPForge\Debug\Panel\MemorySample;
+
 /**
  * Contract for panels that feed the timeline memory chart.
  *

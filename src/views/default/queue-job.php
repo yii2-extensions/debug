@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Palpable\A;
-use yii\debug\panels\queue\{JobRecord, QueueCardRenderer};
+use PHPForge\Debug\Panel\Queue\{JobRecord, QueueCardRenderer};
 use yii\helpers\Url;
 use yii\web\View;
 

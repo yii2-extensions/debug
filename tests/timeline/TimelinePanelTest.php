@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\timeline;
 
+use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
+use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use stdClass;
@@ -11,71 +13,19 @@ use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\Svg;
-use yii\debug\panels\profile\ProfilingSnapshot;
 use yii\debug\panels\{ProfilingPanel, TimelinePanel};
-use yii\debug\panels\timeline\TimelineSnapshot;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
 
 /**
- * Unit tests for {@see TimelinePanel} covering the snapshot capture, the strict `hydrate()` validation, the SVG renderer
+ * Unit tests for {@see TimelinePanel} covering the strict `hydrate()` validation, the SVG renderer
  * lazy factory, the cached span rows, and the toolbar metadata.
  */
 #[Group('panel')]
 #[Group('timeline')]
 final class TimelinePanelTest extends TestCase
 {
-    public function testCaptureCapturesStartEndAndMemory(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $_SERVER['REQUEST_TIME_FLOAT'] = 1_700_000_000.0;
-
-        $snapshot = $panel->capture();
-
-        self::assertEqualsWithDelta(
-            1_700_000_000.0,
-            $snapshot->start,
-            1e-3,
-            'Start must echo the request time.',
-        );
-        self::assertGreaterThanOrEqual(
-            $snapshot->start,
-            $snapshot->end,
-            'End must be greater than or equal to start.',
-        );
-        self::assertGreaterThan(
-            0,
-            $snapshot->memory,
-            'Memory peak must be positive.',
-        );
-    }
-
-    public function testCaptureFallsBackToMicrotimeWhenRequestTimeFloatMissing(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        unset($_SERVER['REQUEST_TIME_FLOAT']);
-
-        $before = microtime(true);
-
-        $snapshot = $panel->capture();
-
-        $after = microtime(true);
-
-        self::assertGreaterThanOrEqual(
-            $before,
-            $snapshot->start,
-            "Start must fall back to 'microtime(true)'.",
-        );
-        self::assertLessThanOrEqual(
-            $after,
-            $snapshot->start,
-            'Start must not jump past the call site.',
-        );
-    }
-
     public function testGetDetailRendersWithProfilingMessages(): void
     {
         $panel = $this->makeTimelinePanel();

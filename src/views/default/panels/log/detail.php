@@ -8,7 +8,7 @@ use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\models\search\LogSearch;
-use yii\debug\panels\log\{LogCellRenderer, LogCounts, LogRow};
+use PHPForge\Debug\Panel\Log\{LogCellRenderer, LogCounts, LogRow};
 use yii\debug\panels\LogPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -121,7 +121,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                 'attribute' => 'message',
                 'value' => static fn(LogRow $data): string => LogCellRenderer::renderMessageCell(
                     $data,
-                    $panel,
+                    $panel->getTraceLine(...),
                 ),
                 'format' => 'raw',
                 'options' => ['width' => '50%'],

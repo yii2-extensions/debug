@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\panels\router;
 
+use PHPForge\Debug\Helper\Tabs;
+use PHPForge\Debug\Panel\Router\{ActionRouteRow, RouterRuleRow};
 use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\List\{Dd, Dl, Dt};
@@ -12,7 +14,6 @@ use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
 use Yii;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
-use yii\debug\widgets\Tabs;
 
 use function count;
 

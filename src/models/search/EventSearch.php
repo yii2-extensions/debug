@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Panel\Event\EventRow;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\panels\event\EventRow;
 
 /**
  * Backs the filter form above the Event panel grid of captured framework events.

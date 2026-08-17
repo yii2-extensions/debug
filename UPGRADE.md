@@ -21,6 +21,51 @@ The storage contracts now live in `php-forge/debug-core` under `PHPForge\Debug\S
 `yii\debug\storage\SnapshotStore` remains a Yii2 facade so filesystem failures continue to surface as
 `yii\base\InvalidConfigException`.
 
+The phpinfo presentation classes also moved to `php-forge/debug-core`: import `PHPForge\Debug\PhpInfo\*` instead of
+the removed `yii\debug\widgets\phpinfo\*` namespace. `PhpInfoDataNormalizer::capture()` now buffers the live
+`phpinfo()` output that the view previously captured inline.
+
+### Configure capture through collectors
+
+Built-in data acquisition moved from panels to native collectors under `yii\debug\collectors\*`, registered by default
+and paired with their panels by stable ID (`asset`, `config`, `db`, `dump`, `event`, `inertia`, `log`, `mail`,
+`profiling`, `queue`, `request`, `router`, `timeline`, `user`). Panels are pure presentation now; collectors own the
+per-request lifecycle: they subscribe to framework events at `Application::EVENT_BEFORE_REQUEST` and detach again
+after the snapshot is exported, so long-running workers start every request clean.
+
+Capture-side panel options move to the matching collector entry under the new `collectors` module setting:
+
+- `panels.request.censoredVariableNames` / `censorString` / `displayVars` → `collectors.request.*`.
+- `panels.router.categories` (and `setCategories()`) → `collectors.router`.
+- `panels.dump.categories` / `depth` / `highlight` / `varDumpCallback` → `collectors.dump.*`; the callback now
+  receives the `DumpCollector` instead of the panel.
+- `panels.mail.mailPath` → `collectors.mail.mailPath`.
+- `panels.db.dbEventNames` / `excessiveCallerThreshold` / `ignoredPathsInBacktrace` → `collectors.db.*`; the panel
+  keeps `db` (EXPLAIN connection), `criticalQueryThreshold`, `defaultFilter`, and `defaultOrder`.
+- `panels.user.userComponent` also exists on `collectors.user`; the panel keeps its own copy for the switch UI.
+
+`Panel::capture()` remains only as the extension point for custom panels that register no collector.
+`Panel::getLogMessages()` and `Panel::getLogTarget()` were removed — extend `yii\debug\collectors\Collector`, which
+provides both, for custom capture logic.
+
+### Import the shared panel presentation from the core
+
+The framework-neutral presentation layer moved to `php-forge/debug-core`; import `PHPForge\Debug\Panel\<Domain>\*`
+instead of the removed `yii\debug\panels\<domain>\*` namespaces (`Asset`, `Config`, `Db`, `Dump`, `Event`, `Inertia`,
+`Log`, `Mail`, `Profile`, `Queue`, `Request`, `Router`, `Timeline`, `User`), plus `PHPForge\Debug\Panel\MemorySample`.
+Only the adapter-coupled `RouterRenderer` and `TimelineRenderer` remain under `yii\debug\panels\*`.
+
+Related moves and signature changes:
+
+- `yii\debug\widgets\Tabs` → `PHPForge\Debug\Helper\Tabs`.
+- `yii\debug\helpers\Vocabulary::logLevel()` → `PHPForge\Debug\Helper\Vocabulary::logLevel()`, with the level wire
+  values published as `PHPForge\Debug\Helper\LogLevel` constants.
+- `DbPanel::canBeExplained()` → `PHPForge\Debug\Panel\Db\DbQueryRenderer::canBeExplained()`;
+  `DbPanel::typeBadgeVariant()` was removed — call `Vocabulary::sqlVerb()` directly.
+- `LogCellRenderer::renderMessageCell()`, `DumpCardRenderer::renderMessageCell()`, and
+  `DbQueryRenderer::renderQueryCell()` receive a `Closure(array): string` trace-line renderer (pass
+  `$panel->getTraceLine(...)`) instead of the panel instance.
+
 ### Read typed rows in custom columns and callbacks
 
 Every panel whose rows have a known shape now narrows them **once, at capture time**, and persists them typed. The

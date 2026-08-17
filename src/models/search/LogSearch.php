@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Panel\Dump\DumpRow;
+use PHPForge\Debug\Panel\Log\LogRow;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\panels\dump\DumpRow;
-use yii\debug\panels\log\LogRow;
 
 /**
  * Backs the filter form above the Log panel grid of the active request's log messages.

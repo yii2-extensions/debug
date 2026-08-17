@@ -6,20 +6,21 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Helper\Coerce;
+use PHPForge\Debug\Panel\Profile\ProfileRow;
+use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\Svg;
 use yii\debug\Panel;
-use yii\debug\panels\profile\ProfileRow;
-use yii\debug\panels\timeline\TimelineSnapshot;
 
 /**
- * Captures the request's profile spans and renders them as a horizontal timeline chart.
+ * Renders the request's profile spans as a horizontal timeline chart.
  *
- * Joins the request start/end captured by {@see capture()} with the profile messages from {@see ProfilingPanel} to build
- * the per-span timeline and exposes an inline SVG memory-usage line through {@see getSvg()}.
+ * Joins the request start/end captured by {@see \yii\debug\collectors\TimelineCollector} with the profile messages
+ * from {@see ProfilingPanel} to build the per-span timeline and exposes an inline SVG memory-usage line through
+ * {@see getSvg()}.
  */
 class TimelinePanel extends Panel
 {
@@ -56,19 +57,6 @@ class TimelinePanel extends Panel
     private array $svgOptions = [
         'class' => Svg::class,
     ];
-
-    /**
-     * Snapshots the request start (`$_SERVER['REQUEST_TIME_FLOAT']` with `microtime(true)` fallback), end, and peak
-     * memory.
-     */
-    public function capture(): TimelineSnapshot
-    {
-        return new TimelineSnapshot(
-            start: Coerce::floatOrNull($_SERVER['REQUEST_TIME_FLOAT'] ?? null) ?? microtime(true),
-            end: microtime(true),
-            memory: memory_get_peak_usage(),
-        );
-    }
 
     /**
      * Renders the detail view with the timeline chart and the filter form.

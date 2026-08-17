@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\queue;
 
+use PHPForge\Debug\Panel\Queue\JobRecord;
 use PHPUnit\Framework\Attributes\Group;
 use yii\data\Sort;
 use yii\debug\models\search\QueueSearch;
-use yii\debug\panels\queue\JobRecord;
 use yii\debug\tests\support\TestCase;
 
 /**

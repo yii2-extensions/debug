@@ -6,6 +6,10 @@ namespace yii\debug\tests\controllers;
 
 use Exception;
 use LogicException;
+use PHPForge\Debug\Panel\Config\ConfigSnapshot;
+use PHPForge\Debug\Panel\Db\DbSnapshot;
+use PHPForge\Debug\Panel\Log\LogSnapshot;
+use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
@@ -13,13 +17,10 @@ use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\base\{ActionEvent, InvalidConfigException};
 use yii\db\Connection;
+use yii\debug\collectors\MailCollector;
 use yii\debug\controllers\DefaultController;
 use yii\debug\{LogTarget, Module};
-use yii\debug\panels\config\ConfigSnapshot;
-use yii\debug\panels\{ConfigPanel, MailPanel};
-use yii\debug\panels\db\DbSnapshot;
-use yii\debug\panels\log\LogSnapshot;
-use yii\debug\panels\request\RequestSnapshot;
+use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\support\stub\{MinimalToolbarPanel, StubSnapshot};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\shell\ShellContext;
@@ -42,15 +43,15 @@ final class DefaultControllerTest extends TestCase
 
         $controller = new DefaultController('default', $module);
 
-        $mailPanel = $module->panels['mail'] ?? null;
+        $mailCollector = $module->getCollectorCoordinator()->collector('mail');
 
         self::assertInstanceOf(
-            MailPanel::class,
-            $mailPanel,
-            'Mail panel must be wired.',
+            MailCollector::class,
+            $mailCollector,
+            'Mail collector must be wired.',
         );
 
-        $mailDir = Yii::getAlias($mailPanel->mailPath);
+        $mailDir = Yii::getAlias($mailCollector->mailPath);
 
         @mkdir($mailDir, 0o777, true);
 
@@ -924,6 +925,20 @@ final class DefaultControllerTest extends TestCase
         $controller->loadData($tag);
     }
 
+    public function testThrowNotFoundHttpExceptionWhenMailCollectorIsMissing(): void
+    {
+        $module = $this->bootDebugModule(collectorless: true);
+
+        $controller = new DefaultController('default', $module);
+
+        $this->expectException(NotFoundHttpException::class);
+        $this->expectExceptionMessage(
+            'Mail collector not found.',
+        );
+
+        $controller->actionDownloadMail('sample.eml');
+    }
+
     public function testThrowNotFoundHttpExceptionWhenMailFileDoesNotExist(): void
     {
         $module = $this->bootDebugModule();
@@ -950,23 +965,6 @@ final class DefaultControllerTest extends TestCase
         );
 
         $controller->actionDownloadMail('subdir/sample.eml');
-    }
-
-    public function testThrowNotFoundHttpExceptionWhenMailPanelIsMissing(): void
-    {
-        $module = $this->bootDebugModule();
-
-        // Drop the mail panel so 'getMailPanel()' must throw.
-        unset($module->panels['mail']);
-
-        $controller = new DefaultController('default', $module);
-
-        $this->expectException(NotFoundHttpException::class);
-        $this->expectExceptionMessage(
-            'Mail panel not found.',
-        );
-
-        $controller->actionDownloadMail('sample.eml');
     }
 
     public function testThrowNotFoundHttpExceptionWhenManifestIsEmptyForView(): void
@@ -1037,7 +1035,7 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
-    private function bootDebugModule(): Module
+    private function bootDebugModule(bool $collectorless = false): Module
     {
         $this->mockWebApplication(
             [
@@ -1054,7 +1052,14 @@ final class DefaultControllerTest extends TestCase
 
         @mkdir(Yii::getAlias('@runtime/assets'), 0o777, true);
 
-        $module = new Module('debug');
+        $module = $collectorless
+            ? new class ('debug') extends Module {
+                protected function coreCollectors(): array
+                {
+                    return [];
+                }
+            }
+        : new Module('debug');
 
         $module->allowedIPs = ['*'];
 

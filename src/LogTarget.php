@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use Override;
+use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Storage\{DebugSnapshot, PanelFailure, RequestSummary};
 use Throwable;
 use Yii;
 use yii\base\Exception;
-use yii\debug\panels\{DbPanel, MailPanel};
-use yii\debug\panels\profile\ProfilingSnapshot;
+use yii\debug\collectors\{DbCollector, MailCollector};
+use yii\debug\panels\JsonPanel;
 use yii\debug\storage\SnapshotStore;
 use yii\log\Target;
 
 use function array_values;
 use function count;
+use function is_array;
 use function is_float;
 use function is_int;
 use function microtime;
@@ -38,12 +40,19 @@ class LogTarget extends Target
     private SnapshotStore|null $store = null;
 
     /**
+     * Adopts the owning module and registers itself as the module's log target when none is wired yet, so collectors
+     * reading through {@see Module::$logTarget} see the messages this target accumulates.
+     *
      * @param array<string, mixed> $config
      */
     public function __construct(public Module $module, array $config = [])
     {
         parent::__construct($config);
         $this->tag = uniqid();
+
+        if (!$module->logTarget instanceof self) {
+            $module->logTarget = $this;
+        }
     }
 
     /**
@@ -69,37 +78,54 @@ class LogTarget extends Target
     public function export(): void
     {
         $summary = $this->collectSummary();
-        $panels = [];
-        $failures = [];
+        $coordinator = $this->module->getCollectorCoordinator();
 
-        foreach ($this->module->panels as $id => $panel) {
-            try {
-                $panelSnapshot = $panel->capture();
+        $coordinator->startup();
 
-                if ($panelSnapshot !== null) {
-                    $panels[$id] = $panelSnapshot->jsonSerialize();
-                }
+        $collectorSnapshot = $coordinator->capture($summary);
+        $panels = $collectorSnapshot->panels;
+        $failures = $collectorSnapshot->failures;
 
-                if ($panelSnapshot instanceof ProfilingSnapshot) {
-                    $summary = $summary->withProfiling(
-                        $panelSnapshot->time,
-                        $panelSnapshot->memory,
-                    );
-                }
-            } catch (Throwable $throwable) {
-                $failures[$id] = PanelFailure::fromThrowable(PanelFailure::CAPTURE, $throwable);
+        $profilingPayload = $panels['profiling'] ?? null;
+
+        if (is_array($profilingPayload)) {
+            $time = Coerce::floatOrNull($profilingPayload['time'] ?? null);
+            $memory = Coerce::intOrNull($profilingPayload['memory'] ?? null);
+
+            if ($time !== null && $memory !== null) {
+                $summary = $summary->withProfiling($time, $memory);
             }
         }
 
-        $store = $this->store();
+        try {
+            foreach ($this->module->panels as $id => $panel) {
+                if ($coordinator->hasCollector($id)) {
+                    continue;
+                }
 
-        foreach (
-            $store->writeSnapshot(
-                new DebugSnapshot($summary, $panels, $failures),
-                $this->module->historySize,
-            ) as $removed
-        ) {
-            $this->removeMailFiles($removed);
+                try {
+                    $panelSnapshot = $panel->capture();
+
+                    if ($panelSnapshot !== null) {
+                        $panels[$id] = $panelSnapshot->jsonSerialize();
+                    }
+                } catch (Throwable $throwable) {
+                    $failures[$id] = PanelFailure::fromThrowable(PanelFailure::CAPTURE, $throwable);
+                }
+            }
+
+            $store = $this->store();
+
+            foreach (
+                $store->writeSnapshot(
+                    new DebugSnapshot($summary, $panels, $failures),
+                    $this->module->historySize,
+                ) as $removed
+            ) {
+                $this->removeMailFiles($removed);
+            }
+        } finally {
+            $coordinator->shutdown();
         }
     }
 
@@ -123,6 +149,14 @@ class LogTarget extends Target
 
         if ($snapshot === null) {
             return null;
+        }
+
+        foreach ($snapshot->panels as $id => $_payload) {
+            $this->registerFallbackPanel($id);
+        }
+
+        foreach ($snapshot->failures as $id => $_failure) {
+            $this->registerFallbackPanel($id);
         }
 
         foreach ($this->module->panels as $id => $panel) {
@@ -161,10 +195,10 @@ class LogTarget extends Target
         $requestTime = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
         $mailFiles = [];
 
-        $mailPanel = $this->module->panels['mail'] ?? null;
+        $mailCollector = $this->module->getCollectorCoordinator()->collector('mail');
 
-        if ($mailPanel instanceof MailPanel) {
-            $mailFiles = $mailPanel->getMessagesFileName();
+        if ($mailCollector instanceof MailCollector) {
+            $mailFiles = $mailCollector->getMessagesFileName();
         }
 
         return new RequestSummary(
@@ -186,27 +220,39 @@ class LogTarget extends Target
 
     protected function getExcessiveDbCallersCount(): int
     {
-        $panel = $this->module->panels['db'] ?? null;
+        $collector = $this->module->getCollectorCoordinator()->collector('db');
 
-        return $panel instanceof DbPanel ? $panel->getExcessiveCallersCount() : 0;
+        return $collector instanceof DbCollector ? $collector->getExcessiveCallersCount() : 0;
     }
 
     protected function getSqlTotalCount(): int
     {
-        $panel = $this->module->panels['db'] ?? null;
+        $collector = $this->module->getCollectorCoordinator()->collector('db');
 
-        return $panel instanceof DbPanel ? (int) (count($panel->getProfileLogs()) / 2) : 0;
+        return $collector instanceof DbCollector ? (int) (count($collector->getProfileLogs()) / 2) : 0;
+    }
+
+    private function registerFallbackPanel(string $id): void
+    {
+        if (isset($this->module->panels[$id])) {
+            return;
+        }
+
+        $panel = new JsonPanel();
+        $panel->id = $id;
+        $panel->module = $this->module;
+        $this->module->panels[$id] = $panel;
     }
 
     private function removeMailFiles(RequestSummary $summary): void
     {
-        $mailPanel = $this->module->panels['mail'] ?? null;
+        $mailCollector = $this->module->getCollectorCoordinator()->collector('mail');
 
-        if (!$mailPanel instanceof MailPanel) {
+        if (!$mailCollector instanceof MailCollector) {
             return;
         }
 
-        $mailPath = Yii::getAlias($mailPanel->mailPath);
+        $mailPath = Yii::getAlias($mailCollector->mailPath);
 
         foreach ($summary->mailFiles as $file) {
             @unlink("{$mailPath}/{$file}");

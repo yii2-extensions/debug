@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\profile;
 
+use PHPForge\Debug\Panel\Profile\ProfileRow;
 use PHPUnit\Framework\Attributes\Group;
 use yii\data\{Pagination, Sort};
 use yii\debug\models\search\ProfileSearch;
-use yii\debug\panels\profile\ProfileRow;
 use yii\debug\tests\support\TestCase;
 
 /**

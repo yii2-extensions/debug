@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use yii\debug\panels\user\{UserDataNormalizer, UserIdentityRenderer};
+use PHPForge\Debug\Panel\User\{UserDataNormalizer, UserIdentityRenderer};
 use yii\web\View;
 
 /**

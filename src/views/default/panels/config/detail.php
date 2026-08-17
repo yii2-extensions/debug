@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Heading\H1;
-use yii\debug\panels\config\{ConfigCardRenderer, ConfigSummary};
+use PHPForge\Debug\Panel\Config\{ConfigCardRenderer, ConfigSummary};
 use yii\helpers\Url;
 
 /** @var ConfigSummary $summary Typed configuration summary. */

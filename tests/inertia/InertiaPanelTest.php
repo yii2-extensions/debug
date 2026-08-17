@@ -4,146 +4,21 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\inertia;
 
-use JsonSerializable;
 use PHPForge\Debug\Helper\CellMore;
+use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
 use PHPUnit\Framework\Attributes\Group;
-use stdClass;
-use Yii;
-use yii\base\{View, ViewEvent};
-use yii\debug\panels\inertia\InertiaSnapshot;
 use yii\debug\panels\InertiaPanel;
 use yii\debug\tests\support\TestCase;
-use yii\inertia\{Manager, Page};
+use yii\inertia\Manager;
 
 /**
  * Unit tests for {@see InertiaPanel} covering the component-gated enablement, the per-capture sidebar activation,
- * the page capture from the response and the root-view render params, the `X-Inertia-*` header snapshot, the
- * shared-prop keys, and the detail/toolbar rendering.
+ * and the detail/toolbar rendering.
  */
 #[Group('panel')]
 #[Group('inertia')]
 final class InertiaPanelTest extends TestCase
 {
-    public function testCaptureCapturesPageFromResponseData(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        Yii::$app->response->data = new Page('site/index', ['user' => ['id' => 1]], '/site/index', 'v1');
-
-        $saved = $panel->capture()->data();
-        $page = $saved['page'] ?? null;
-
-        self::assertIsArray($page);
-
-        self::assertSame(
-            'site/index',
-            $page['component'] ?? null,
-            'Component must come from the response page object.',
-        );
-        self::assertSame(
-            ['user' => ['id' => 1]],
-            $page['props'] ?? null,
-            'Props must round-trip through JSON intact.',
-        );
-        self::assertSame(
-            'v1',
-            $page['version'] ?? null,
-            'Version must be preserved.',
-        );
-    }
-
-    public function testCaptureCapturesPageFromRootViewRenderParams(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        $page = new Page('site/about', [], '/site/about', 'v2');
-
-        Yii::$app->view->trigger(
-            View::EVENT_BEFORE_RENDER,
-            new ViewEvent(['params' => ['page' => $page], 'viewFile' => __FILE__]),
-        );
-
-        $saved = $panel->capture()->data();
-        $capturedPage = $saved['page'] ?? null;
-
-        self::assertIsArray($capturedPage);
-
-        self::assertSame(
-            'site/about',
-            $capturedPage['component'] ?? null,
-            'Component must come from the render params.',
-        );
-    }
-
-    public function testCaptureCapturesPartialReloadHeaders(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        Yii::$app->request->headers->set('X-Inertia', 'true');
-        Yii::$app->request->headers->set('X-Inertia-Partial-Data', 'user,notifications');
-        Yii::$app->request->headers->set('X-Inertia-Partial-Component', 'site/index');
-
-        $saved = $panel->capture()->data();
-
-        self::assertSame(
-            [
-                'X-Inertia' => 'true',
-                'X-Inertia-Partial-Component' => 'site/index',
-                'X-Inertia-Partial-Data' => 'user,notifications',
-            ],
-            $saved['requestHeaders'] ?? null,
-            'Negotiation headers must be captured in display order.',
-        );
-    }
-
-    public function testCaptureCapturesResponseLocationHeader(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        Yii::$app->response->headers->set('X-Inertia-Location', 'https://example.test/users');
-
-        self::assertSame(
-            'https://example.test/users',
-            $panel->capture()->location,
-            'The external redirect target must be retained verbatim.',
-        );
-    }
-
-    public function testCaptureCapturesSharedPropKeys(): void
-    {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-            ['inertia' => ['class' => Manager::class, 'shared' => ['auth' => 1, 'appName' => 'demo']]],
-        );
-
-        $saved = $panel->capture()->data();
-
-        self::assertSame(
-            ['auth', 'appName'],
-            $saved['sharedKeys'] ?? null,
-            'Top-level shared keys must be captured.',
-        );
-    }
-
-    public function testCaptureReturnsNullPageForNonInertiaResponse(): void
-    {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
-
-        Yii::$app->response->data = ['plain' => true];
-
-        $saved = $panel->capture()->data();
-
-        self::assertNull(
-            $saved['page'] ?? null,
-            'Non-Inertia response must yield a `null` page.',
-        );
-        self::assertSame(
-            200,
-            $saved['statusCode'] ?? null,
-            'Status code must be captured.',
-        );
-    }
-
     public function testGetDetailCollapsesThePropsTableOnlyOnceItGrowsTall(): void
     {
         $short = $this->renderPropsTable(CellMore::ROW_THRESHOLD);
@@ -491,50 +366,6 @@ final class InertiaPanelTest extends TestCase
         self::assertTrue(
             $panel->isEnabled(),
             'Registered manager must enable the panel.',
-        );
-    }
-
-    public function testNormalizePageReturnsNullForInvalidJsonAndScalarPayloads(): void
-    {
-        $invalidJson = new class implements JsonSerializable {
-            public function jsonSerialize(): string
-            {
-                return "\xB1\x31";
-            }
-        };
-        $scalar = new class implements JsonSerializable {
-            public function jsonSerialize(): string
-            {
-                return 'scalar';
-            }
-        };
-
-        self::assertNull(
-            $this->invokeStatic(InertiaPanel::class, 'normalizePage', [$invalidJson]),
-            'A page that cannot be JSON encoded must normalize to null.',
-        );
-        self::assertNull(
-            $this->invokeStatic(InertiaPanel::class, 'normalizePage', [$scalar]),
-            'A scalar JSON payload must normalize to null.',
-        );
-    }
-
-    public function testSharedKeysReturnsEmptyListForMissingAndNonManagerComponents(): void
-    {
-        $this->makePanel(InertiaPanel::class);
-
-        self::assertSame(
-            [],
-            $this->invokeStatic(InertiaPanel::class, 'sharedKeys'),
-            'A missing manager must yield no shared keys.',
-        );
-
-        Yii::$app->set('inertia', new stdClass());
-
-        self::assertSame(
-            [],
-            $this->invokeStatic(InertiaPanel::class, 'sharedKeys'),
-            'A non-manager component must yield no shared keys.',
         );
     }
 

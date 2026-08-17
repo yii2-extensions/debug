@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\db;
 
+use PHPForge\Debug\Panel\Db\QueryRow;
 use PHPUnit\Framework\Attributes\Group;
 use yii\data\Sort;
 use yii\debug\models\search\DbSearch;
-use yii\debug\panels\db\QueryRow;
 use yii\debug\tests\support\TestCase;
 
 /**

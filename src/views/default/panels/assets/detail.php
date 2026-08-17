@@ -9,7 +9,7 @@ use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
 use PHPForge\Debug\Helper\{Coerce, EmptyState, Icon};
-use yii\debug\panels\asset\{AssetCardRenderer, AssetSummary, ViteManifest};
+use PHPForge\Debug\Panel\Asset\{AssetCardRenderer, AssetSummary, ViteManifest};
 
 /**
  * @var AssetSummary $summary Typed asset bundle summary.

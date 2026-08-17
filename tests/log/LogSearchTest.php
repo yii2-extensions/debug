@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\log;
 
+use PHPForge\Debug\Panel\Log\LogRow;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\LogSearch;
-use yii\debug\panels\log\LogRow;
 use yii\debug\tests\support\TestCase;
 
 /**

@@ -7,11 +7,9 @@ namespace yii\debug\tests;
 use Exception;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\Group;
-use yii\base\InvalidConfigException;
-use yii\debug\{LogTarget, Module, Panel};
+use yii\debug\{Module, Panel};
 use yii\debug\tests\support\stub\CustomPanel;
 use yii\debug\tests\support\TestCase;
-use yii\log\Logger;
 
 /**
  * Unit tests for {@see Panel} covering trace-line rendering, the `getToolbarData` template flow, and the
@@ -34,60 +32,6 @@ final class PanelTest extends TestCase
             '',
             $this->createPanel()->getDetail(),
             'Base Panel exposes no detail view.',
-        );
-    }
-
-    public function testGetLogMessagesStringifiesThrowableFirstElement(): void
-    {
-        [$panel, $module] = $this->createPanelWithModule();
-
-        $logTarget = new LogTarget($module);
-
-        $logTarget->messages = [[new Exception('boom'), Logger::LEVEL_ERROR, 'app', 0.0]];
-
-        $module->logTarget = $logTarget;
-
-        $messages = $this->invoke(
-            $panel,
-            'getLogMessages',
-            [0, [], [], true],
-        );
-
-        self::assertIsArray(
-            $messages,
-            "'getLogMessages' must return a list of log entries.",
-        );
-        self::assertCount(
-            1,
-            $messages,
-            'Single throwable message must round-trip into the filtered list.',
-        );
-
-        self::assertArrayHasKey(
-            0,
-            $messages,
-            'Filtered list must expose the first tuple slot.',
-        );
-
-        $first = $messages[0];
-
-        self::assertIsArray(
-            $first,
-            'Each entry must be a tagged log tuple.',
-        );
-        self::assertArrayHasKey(
-            0,
-            $first,
-            "Tagged log tuple must expose the 'value' slot.",
-        );
-        self::assertIsString(
-            $first[0],
-            'Throwable first element must be cast to its string form.',
-        );
-        self::assertStringContainsString(
-            'boom',
-            $first[0],
-            'Stringified throwable must retain its message text.',
         );
     }
 
@@ -363,18 +307,6 @@ final class PanelTest extends TestCase
         $this->expectExceptionMessage("Invalid debug snapshot value at '\$.panels.custom'");
 
         $panel->hydrate(['anything' => 1]);
-    }
-
-    public function testThrowInvalidConfigExceptionWhenLogTargetIsMissing(): void
-    {
-        $panel = $this->createPanel();
-
-        $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage(
-            'The debug module logTarget must be initialized',
-        );
-
-        $this->invoke($panel, 'getLogTarget');
     }
 
     protected function setUp(): void

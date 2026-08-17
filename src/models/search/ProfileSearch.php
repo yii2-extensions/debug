@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Panel\Profile\ProfileRow;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\panels\profile\ProfileRow;
 
 /**
  * Backs the filter form above the Profiling panel grid of profile blocks captured for the request.

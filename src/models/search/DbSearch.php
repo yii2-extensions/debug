@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Panel\Db\QueryRow;
 use yii\data\ArrayDataProvider;
-use yii\debug\panels\db\QueryRow;
 
 /**
  * Backs the filter form above the Database panel's query grid.

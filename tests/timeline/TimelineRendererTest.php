@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\timeline;
 
+use PHPForge\Debug\Panel\Profile\ProfileRow;
+use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\Module;
-use yii\debug\panels\profile\ProfileRow;
 use yii\debug\panels\timeline\TimelineRenderer;
-use yii\debug\panels\timeline\TimelineSnapshot;
 use yii\debug\panels\TimelinePanel;
 use yii\debug\tests\support\TestCase;
 

@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\log;
 
+use PHPForge\Debug\Panel\Config\ConfigSnapshot;
 use PHPForge\Debug\Storage\{DebugSnapshot, ExceptionSnapshot, PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\{Exception as YiiException, InvalidConfigException};
+use yii\debug\collectors\MailCollector;
 use yii\debug\{LogTarget, Module, Panel};
-use yii\debug\panels\config\ConfigSnapshot;
-use yii\debug\panels\{ConfigPanel, DbPanel, LogPanel, MailPanel};
+use yii\debug\panels\{ConfigPanel, LogPanel};
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -71,7 +72,7 @@ final class LogTargetTest extends TestCase
         );
     }
 
-    public function testCollectSummaryDefaultsDatabaseCountsToZeroWithoutDbPanel(): void
+    public function testCollectSummaryDefaultsDatabaseCountsToZeroWithoutProfileLogs(): void
     {
         Yii::$app->getRequest()->setUrl('dummy');
 
@@ -124,27 +125,26 @@ final class LogTargetTest extends TestCase
         );
     }
 
-    public function testCollectSummaryReadsSqlCountFromDbPanel(): void
+    public function testCollectSummaryReadsSqlCountFromDbCollector(): void
     {
         Yii::$app->getRequest()->setUrl('dummy');
 
         $module = $this->newModuleWithIsolatedDataPath();
 
-        $module->panels = [
-            'db' => new class extends DbPanel {
-                public function getProfileLogs(): array
-                {
-                    return [
-                        ['SELECT 1', Logger::LEVEL_PROFILE_BEGIN],
-                        ['SELECT 1', Logger::LEVEL_PROFILE_END],
-                        ['SELECT 2', Logger::LEVEL_PROFILE_BEGIN],
-                        ['SELECT 2', Logger::LEVEL_PROFILE_END],
-                    ];
-                }
-            },
+        $logTarget = new LogTarget($module);
+
+        $logTarget->messages = [
+            ['SELECT 1', Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', 0.0, [], 0],
+            ['SELECT 1', Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', 0.001, [], 0],
+            ['SELECT 2', Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', 0.002, [], 0],
+            ['SELECT 2', Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', 0.003, [], 0],
         ];
 
-        $summary = $this->invoke(new LogTarget($module), 'collectSummary');
+        $module->getCollectorCoordinator()->startup();
+
+        $summary = $this->invoke($logTarget, 'collectSummary');
+
+        $module->getCollectorCoordinator()->shutdown();
 
         self::assertInstanceOf(
             RequestSummary::class,
@@ -160,11 +160,14 @@ final class LogTargetTest extends TestCase
         $this->cleanupDataPath($module);
     }
 
-    public function testEvictedMailCleanupIsSkippedWithoutAMailPanel(): void
+    public function testEvictedMailCleanupIsSkippedWithoutAMailCollector(): void
     {
-        $module = $this->newModuleWithIsolatedDataPath();
-
-        unset($module->panels['mail']);
+        $module = new class ('debug') extends Module {
+            protected function coreCollectors(): array
+            {
+                return [];
+            }
+        };
 
         $logTarget = new LogTarget($module);
 
@@ -172,10 +175,9 @@ final class LogTargetTest extends TestCase
 
         $this->invoke($logTarget, 'removeMailFiles', [$evicted]);
 
-        self::assertNotContains(
-            'mail',
-            array_keys($module->panels),
-            'The fixture must register no mail panel.',
+        self::assertNull(
+            $module->getCollectorCoordinator()->collector('mail'),
+            'The fixture must register no mail collector.',
         );
     }
 
@@ -605,10 +607,15 @@ final class LogTargetTest extends TestCase
         $module->historySize = 1;
         $mailPath = "{$module->dataPath}/mail";
 
-        $mailPanel = new MailPanel();
+        $mailCollector = $module->getCollectorCoordinator()->collector('mail');
 
-        $mailPanel->mailPath = $mailPath;
-        $module->panels = ['mail' => $mailPanel];
+        self::assertInstanceOf(
+            MailCollector::class,
+            $mailCollector,
+            'Mail collector must be registered by default.',
+        );
+
+        $mailCollector->mailPath = $mailPath;
 
         @mkdir($mailPath, 0o777, true);
 
@@ -622,7 +629,9 @@ final class LogTargetTest extends TestCase
                 'message',
             );
 
-            $this->setInaccessibleProperty($mailPanel, 'messages', [['file' => $file]]);
+            $module->getCollectorCoordinator()->startup();
+
+            $this->setInaccessibleProperty($mailCollector, 'messages', [['file' => $file]]);
 
             $logTarget->tag = "mail-tag-{$index}";
 

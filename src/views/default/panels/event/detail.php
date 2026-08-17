@@ -10,7 +10,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\EventSearch;
-use yii\debug\panels\event\{EventCellRenderer, EventRow};
+use PHPForge\Debug\Panel\Event\{EventCellRenderer, EventRow};
 use yii\debug\panels\EventPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;

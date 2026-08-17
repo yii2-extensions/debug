@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Panel\Mail\MailMessage;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\panels\mail\MailMessage;
 
 /**
  * Backs the filter form above the Mail panel grid of messages dispatched during the request.

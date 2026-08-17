@@ -6,7 +6,7 @@ use UIAwesome\Html\Flow\{Div, P, Pre};
 use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\Em;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
-use yii\debug\panels\db\SqlHighlighter;
+use PHPForge\Debug\Panel\Db\SqlHighlighter;
 use yii\web\View;
 
 /**
