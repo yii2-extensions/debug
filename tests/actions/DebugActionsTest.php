@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace yii\debug\tests\controllers;
+namespace yii\debug\tests\actions;
 
 use Exception;
 use LogicException;
@@ -15,10 +15,17 @@ use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use Xepozz\InternalMocker\MockerState;
 use Yii;
-use yii\base\{ActionEvent, InvalidConfigException};
+use yii\base\InvalidConfigException;
 use yii\db\Connection;
+use yii\debug\actions\{
+    Action as DebugAction,
+    DownloadMailAction,
+    IndexAction,
+    PhpInfoAction,
+    ToolbarDataAction,
+    ViewAction,
+};
 use yii\debug\collectors\MailCollector;
-use yii\debug\controllers\DefaultController;
 use yii\debug\{LogTarget, Module};
 use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\support\stub\{MinimalToolbarPanel, StubSnapshot};
@@ -28,20 +35,20 @@ use yii\debug\widgets\sidebar\SidebarView;
 use yii\web\{AssetManager, NotFoundHttpException, Response};
 
 use function file_put_contents;
+use function is_array;
 use function mkdir;
 
 /**
- * Unit tests for {@see DefaultController} covering every public action.
+ * Unit tests for the standalone debugger actions covering every dispatched endpoint and the shared plumbing.
  */
-#[Group('controllers')]
-#[Group('default')]
-final class DefaultControllerTest extends TestCase
+#[Group('actions')]
+final class DebugActionsTest extends TestCase
 {
     public function testActionDownloadMailStreamsExistingMailFile(): void
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $mailCollector = $module->getCollectorCoordinator()->collector('mail');
 
@@ -59,7 +66,7 @@ final class DefaultControllerTest extends TestCase
 
         file_put_contents("{$mailDir}/{$file}", 'From: a@b');
 
-        $response = $controller->actionDownloadMail($file);
+        $response = $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => $file]);
 
         self::assertInstanceOf(
             Response::class,
@@ -80,11 +87,10 @@ final class DefaultControllerTest extends TestCase
 
         $_GET['cursor'] = 'tag-index-cursor';
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $html = $controller->actionIndex();
+        $html = $this->runDebugAction(new IndexAction('index'), $module);
 
         self::assertNotSame(
             '',
@@ -110,11 +116,10 @@ final class DefaultControllerTest extends TestCase
             ],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $html = $controller->actionIndex();
+        $html = $this->runDebugAction(new IndexAction('index'), $module);
 
         self::assertNotSame(
             '',
@@ -136,45 +141,40 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
+    public function testActionMapAdoptsEveryRegisteredPanelAction(): void
+    {
+        $module = $this->bootDebugModule();
+
+        self::assertArrayHasKey(
+            'index',
+            $module->actionMap,
+            "'index' must be registered as a built-in standalone action.",
+        );
+        self::assertArrayHasKey(
+            'db-explain',
+            $module->actionMap,
+            "'db-explain' action must be adopted from the DbPanel.",
+        );
+        self::assertArrayHasKey(
+            'queue-job',
+            $module->actionMap,
+            "'queue-job' action must be adopted from the QueuePanel.",
+        );
+    }
+
     public function testActionPhpInfoRendersPhpInfoView(): void
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $html = $controller->actionPhpInfo();
+        $html = $this->runDebugAction(new PhpInfoAction('php-info'), $module);
 
         self::assertNotSame(
             '',
             $html,
             "'phpinfo' view must render markup.",
-        );
-    }
-
-    public function testActionsAdoptsEveryRegisteredPanelAction(): void
-    {
-        $module = $this->bootDebugModule();
-
-        $controller = new DefaultController('default', $module);
-
-        $actions = $controller->actions();
-
-        self::assertNotSame(
-            [],
-            $actions,
-            'Controller actions map must aggregate at least one panel action.',
-        );
-        self::assertArrayHasKey(
-            'db-explain',
-            $actions,
-            "'db-explain' action must be adopted from the DbPanel.",
-        );
-        self::assertArrayHasKey(
-            'queue-job',
-            $actions,
-            "'queue-job' action must be adopted from the QueuePanel.",
         );
     }
 
@@ -195,14 +195,22 @@ final class DefaultControllerTest extends TestCase
             ['stub' => StubSnapshot::capture([])],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $result = $controller->actionToolbarData('tag-toolbar-stub');
+        $result = $this->runDebugAction(new ToolbarDataAction('toolbar-data'), $module, ['tag' => 'tag-toolbar-stub']);
+
+        self::assertIsArray(
+            $result,
+            'Payload must decode to an array.',
+        );
 
         $items = $result['items'] ?? [];
 
+        self::assertIsArray(
+            $items,
+            "'items' must be a list.",
+        );
         self::assertNotSame(
             [],
             $items,
@@ -212,7 +220,7 @@ final class DefaultControllerTest extends TestCase
         $stubItem = null;
 
         foreach ($items as $item) {
-            if (($item['id'] ?? null) === 'stub') {
+            if (is_array($item) && ($item['id'] ?? null) === 'stub') {
                 $stubItem = $item;
                 break;
             }
@@ -239,7 +247,7 @@ final class DefaultControllerTest extends TestCase
         $module = $this->bootDebugModule();
 
         MockerState::addCondition(
-            'yii\debug\controllers',
+            'yii\debug\actions',
             'sleep',
             [],
             0,
@@ -252,12 +260,15 @@ final class DefaultControllerTest extends TestCase
             [],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $result = $controller->actionToolbarData('does-not-exist');
+        $result = $this->runDebugAction(new ToolbarDataAction('toolbar-data'), $module, ['tag' => 'does-not-exist']);
 
+        self::assertIsArray(
+            $result,
+            'Payload must decode to an array.',
+        );
         self::assertSame(
             'Debug tag not found.',
             $result['error'] ?? null,
@@ -270,7 +281,7 @@ final class DefaultControllerTest extends TestCase
         );
         self::assertSame(
             array_fill(0, 5, [1]),
-            array_column(MockerState::getTraces('yii\debug\controllers', 'sleep'), 'arguments'),
+            array_column(MockerState::getTraces('yii\debug\actions', 'sleep'), 'arguments'),
             'Toolbar metadata must retry five times with a one-second wait between attempts.',
         );
     }
@@ -291,15 +302,18 @@ final class DefaultControllerTest extends TestCase
             ],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $result = $controller->actionToolbarData('tag-toolbar-ok');
+        $result = $this->runDebugAction(new ToolbarDataAction('toolbar-data'), $module, ['tag' => 'tag-toolbar-ok']);
 
+        self::assertIsArray(
+            $result,
+            'Payload must decode to an array.',
+        );
         self::assertSame(
             'tag-toolbar-ok',
-            $result['tag'],
+            $result['tag'] ?? null,
             'Payload must echo the active tag.',
         );
         self::assertNotNull(
@@ -307,8 +321,12 @@ final class DefaultControllerTest extends TestCase
             "'configUrl' must surface when the Config panel is wired.",
         );
 
-        $iconBaseUrl = $result['iconBaseUrl'];
+        $iconBaseUrl = $result['iconBaseUrl'] ?? null;
 
+        self::assertIsString(
+            $iconBaseUrl,
+            "'iconBaseUrl' must be a string.",
+        );
         self::assertStringStartsWith(
             '/assets/',
             $iconBaseUrl,
@@ -321,7 +339,7 @@ final class DefaultControllerTest extends TestCase
         );
         self::assertSame(
             "{$iconBaseUrl}yii.svg",
-            $result['logo'],
+            $result['logo'] ?? null,
             'Published Yii logo must use the SVG asset URL.',
         );
     }
@@ -342,12 +360,15 @@ final class DefaultControllerTest extends TestCase
             new AssetManager(['basePath' => '/dev/null/does-not-exist', 'baseUrl' => '/x']),
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $result = $controller->actionToolbarData('tag-asset-fail');
+        $result = $this->runDebugAction(new ToolbarDataAction('toolbar-data'), $module, ['tag' => 'tag-asset-fail']);
 
+        self::assertIsArray(
+            $result,
+            'Payload must decode to an array.',
+        );
         self::assertSame(
             '',
             $result['iconBaseUrl'] ?? null,
@@ -365,11 +386,10 @@ final class DefaultControllerTest extends TestCase
             ['log' => LogSnapshot::capture([])],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $html = $controller->actionView();
+        $html = $this->runDebugAction(new ViewAction('view'), $module);
 
         self::assertNotSame(
             '',
@@ -388,11 +408,10 @@ final class DefaultControllerTest extends TestCase
             ['request' => RequestSnapshot::capture(['statusCode' => 200])],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $html = $controller->actionView('tag-view-panel', 'request');
+        $html = $this->runDebugAction(new ViewAction('view'), $module, ['tag' => 'tag-view-panel', 'panel' => 'request']);
 
         self::assertNotSame(
             '',
@@ -414,11 +433,10 @@ final class DefaultControllerTest extends TestCase
             ['request' => $error],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
-        $html = $controller->actionView('tag-view-error', 'request');
+        $html = $this->runDebugAction(new ViewAction('view'), $module, ['tag' => 'tag-view-error', 'panel' => 'request']);
 
         self::assertSame(
             500,
@@ -432,28 +450,16 @@ final class DefaultControllerTest extends TestCase
         );
     }
 
-    public function testBeforeActionForcesHtmlResponseFormat(): void
+    public function testBeforeRunForcesHtmlResponseFormatAndBareShell(): void
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
-
-        $action = $controller->createAction('index');
-
-        self::assertNotNull(
-            $action,
-            "'index' must resolve to an action object.",
-        );
-
-        self::assertTrue(
-            $controller->beforeAction($action), // @phpstan-ignore argument.type
-            'Accepted action must preserve the parent guard result.',
-        );
+        $this->runDebugAction(new PhpInfoAction('php-info'), $module);
 
         self::assertSame(
             Response::FORMAT_HTML,
             Yii::$app->response->format,
-            "'beforeAction' must force the HTML response format.",
+            "'beforeRun' must force the HTML response format.",
         );
 
         $shell = Yii::$app->view->params['debugShell'] ?? null;
@@ -461,7 +467,7 @@ final class DefaultControllerTest extends TestCase
         self::assertInstanceOf(
             ShellContext::class,
             $shell,
-            "'beforeAction' must install a typed bare shell context.",
+            "'beforeRun' must install a typed bare shell context.",
         );
         self::assertFalse(
             $shell->useShell,
@@ -471,32 +477,6 @@ final class DefaultControllerTest extends TestCase
             'lang',
             $shell->debugThemeAttributes,
             'Bare shell document attributes must declare a language.',
-        );
-    }
-
-    public function testBeforeActionReturnsFalseWhenParentGuardRejectsAction(): void
-    {
-        $module = $this->bootDebugModule();
-
-        $controller = new DefaultController('default', $module);
-
-        $action = $controller->createAction('index');
-
-        self::assertNotNull(
-            $action,
-            "'index' must resolve to an action object.",
-        );
-
-        $controller->on(
-            DefaultController::EVENT_BEFORE_ACTION,
-            static function (ActionEvent $event): void {
-                $event->isValid = false;
-            },
-        );
-
-        self::assertFalse(
-            $controller->beforeAction($action), // @phpstan-ignore argument.type
-            'The debug controller must preserve a parent action rejection.',
         );
     }
 
@@ -522,7 +502,7 @@ final class DefaultControllerTest extends TestCase
             ),
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $summary = new RequestSummary(
             tag: 'tag-shell',
@@ -541,7 +521,7 @@ final class DefaultControllerTest extends TestCase
         );
 
         $context = $this->invoke(
-            $controller,
+            $action,
             'createShellContext',
             [
                 ShellContext::MODE_INDEX,
@@ -586,7 +566,7 @@ final class DefaultControllerTest extends TestCase
         );
 
         $activeContext = $this->invoke(
-            $controller,
+            $action,
             'createShellContext',
             [
                 ShellContext::MODE_VIEW,
@@ -619,9 +599,9 @@ final class DefaultControllerTest extends TestCase
             [],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        $first = $controller->getManifest();
+        $first = $action->getManifest();
 
         self::assertArrayHasKey(
             'tag-first',
@@ -636,7 +616,7 @@ final class DefaultControllerTest extends TestCase
         );
 
         // Without forceReload the cached manifest must persist.
-        $cached = $controller->getManifest();
+        $cached = $action->getManifest();
 
         self::assertArrayNotHasKey(
             'tag-second',
@@ -644,7 +624,7 @@ final class DefaultControllerTest extends TestCase
             'Cached manifest must not see new tags.',
         );
 
-        $reloaded = $controller->getManifest(true);
+        $reloaded = $action->getManifest(true);
 
         self::assertArrayHasKey(
             'tag-second',
@@ -660,17 +640,17 @@ final class DefaultControllerTest extends TestCase
         $this->writeSnapshot($module, 'tag-other', []);
 
         MockerState::addCondition(
-            'yii\debug\controllers',
+            'yii\debug\actions',
             'sleep',
             [],
             0,
             true,
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         try {
-            $controller->loadData('tag-missing');
+            $action->loadData('tag-missing');
             self::fail('Missing tag must throw after the initial attempt.');
         } catch (NotFoundHttpException $exception) {
             self::assertSame(
@@ -682,7 +662,7 @@ final class DefaultControllerTest extends TestCase
 
         self::assertSame(
             [],
-            MockerState::getTraces('yii\debug\controllers', 'sleep'),
+            MockerState::getTraces('yii\debug\actions', 'sleep'),
             'Default load must not wait or retry.',
         );
     }
@@ -697,13 +677,13 @@ final class DefaultControllerTest extends TestCase
             [],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        $controller->loadData('tag-load');
+        $action->loadData('tag-load');
 
         self::assertSame(
             'tag-load',
-            $controller->summary?->tag,
+            $action->summary?->tag,
             'Loaded summary must echo the active tag.',
         );
     }
@@ -711,10 +691,10 @@ final class DefaultControllerTest extends TestCase
     public function testLoadDataReloadsManifestAfterWaitingForLateTag(): void
     {
         $module = $this->bootDebugModule();
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         MockerState::addCondition(
-            'yii\debug\controllers',
+            'yii\debug\actions',
             'sleep',
             [1],
             function (int $seconds) use ($module): int {
@@ -730,11 +710,11 @@ final class DefaultControllerTest extends TestCase
             },
         );
 
-        $controller->loadData('tag-late', 1);
+        $action->loadData('tag-late', 1);
 
         self::assertSame(
             'tag-late',
-            $controller->summary?->tag,
+            $action->summary?->tag,
             'Retry must reload the manifest and load a tag that appeared during the wait.',
         );
     }
@@ -743,7 +723,7 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         unset(Yii::$app->view->params['debugShell']);
 
@@ -753,7 +733,7 @@ final class DefaultControllerTest extends TestCase
         Yii::$app->view->renderFile(
             dirname(__DIR__, 2) . '/src/views/layouts/main.php',
             ['content' => ''],
-            $controller,
+            $action,
         );
     }
 
@@ -765,8 +745,8 @@ final class DefaultControllerTest extends TestCase
         $_COOKIE['yii-debug-toolbar-theme'] = 'dark';
 
         try {
-            $controller = new DefaultController('default', $module);
-            $theme = $this->invoke($controller, 'resolveTheme');
+            $action = $this->wireAction(new ViewAction('view'), $module);
+            $theme = $this->invoke($action, 'resolveTheme');
         } finally {
             unset($_COOKIE['yii-debug-toolbar-theme']);
         }
@@ -784,9 +764,9 @@ final class DefaultControllerTest extends TestCase
 
         $_GET['yii_debug_theme'] = 'DARK';
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        $theme = $this->invoke($controller, 'resolveTheme');
+        $theme = $this->invoke($action, 'resolveTheme');
 
         self::assertSame(
             'dark',
@@ -799,9 +779,9 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        $theme = $this->invoke($controller, 'resolveTheme');
+        $theme = $this->invoke($action, 'resolveTheme');
 
         self::assertSame(
             'light',
@@ -814,9 +794,8 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
         $html = Yii::$app->view->renderFile(
             Module::VIEW_PATH_ALIAS . '/_shell.php',
@@ -857,16 +836,15 @@ final class DefaultControllerTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
         $this->expectException(Exception::class);
         $this->expectExceptionMessage(
             'No debug data have been collected yet',
         );
 
-        $controller->actionIndex();
+        $this->runDebugAction(new IndexAction('index'), $module);
     }
 
     public function testThrowInvalidConfigExceptionWhenLogTargetIsMissing(): void
@@ -876,7 +854,7 @@ final class DefaultControllerTest extends TestCase
         $module = new Module('debug');
 
         // Skip 'bootstrap()' so 'logTarget' stays as the default config array.
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
@@ -884,7 +862,7 @@ final class DefaultControllerTest extends TestCase
         );
 
         $this->invoke(
-            $controller,
+            $action,
             'getLogTarget',
         );
     }
@@ -915,79 +893,78 @@ final class DefaultControllerTest extends TestCase
 
         file_put_contents("{$dataPath}/{$tag}.json", '{"version":3,"panels":{},"failures":{}}');
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
             'does not contain summary data',
         );
 
-        $controller->loadData($tag);
+        $action->loadData($tag);
     }
 
     public function testThrowNotFoundHttpExceptionWhenMailCollectorIsMissing(): void
     {
         $module = $this->bootDebugModule(collectorless: true);
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
             'Mail collector not found.',
         );
 
-        $controller->actionDownloadMail('sample.eml');
+        $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => 'sample.eml']);
     }
 
     public function testThrowNotFoundHttpExceptionWhenMailFileDoesNotExist(): void
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
             'Mail file not found',
         );
 
-        $controller->actionDownloadMail('missing-file.eml');
+        $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => 'missing-file.eml']);
     }
 
     public function testThrowNotFoundHttpExceptionWhenMailFileNameContainsSlash(): void
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
             'Mail file not found',
         );
 
-        $controller->actionDownloadMail('subdir/sample.eml');
+        $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => 'subdir/sample.eml']);
     }
 
     public function testThrowNotFoundHttpExceptionWhenManifestIsEmptyForView(): void
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
-        Yii::$app->controller = $controller;
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
             'No debug data have been collected yet',
         );
 
-        $controller->actionView(null);
+        $this->runDebugAction(new ViewAction('view'), $module);
     }
 
     public function testThrowNotFoundHttpExceptionWhenPanelIsNotRegistered(): void
     {
         $module = $this->bootDebugModule();
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
@@ -995,7 +972,7 @@ final class DefaultControllerTest extends TestCase
         );
 
         $this->invoke(
-            $controller,
+            $action,
             'getPanel',
             ['missing'],
         );
@@ -1007,10 +984,10 @@ final class DefaultControllerTest extends TestCase
         // Persist a different tag so the retry path runs but 'tag-rotated' never appears.
         $this->writeSnapshot($module, 'tag-other', []);
 
-        $controller = new DefaultController('default', $module);
+        $action = $this->wireAction(new ViewAction('view'), $module);
 
         MockerState::addCondition(
-            'yii\debug\controllers',
+            'yii\debug\actions',
             'sleep',
             [],
             0,
@@ -1018,7 +995,7 @@ final class DefaultControllerTest extends TestCase
         );
 
         try {
-            $controller->loadData('tag-rotated', 1);
+            $action->loadData('tag-rotated', 1);
             self::fail('Missing tag must throw after the configured retry.');
         } catch (NotFoundHttpException $exception) {
             self::assertSame(
@@ -1030,7 +1007,7 @@ final class DefaultControllerTest extends TestCase
 
         self::assertSame(
             [[1]],
-            array_column(MockerState::getTraces('yii\debug\controllers', 'sleep'), 'arguments'),
+            array_column(MockerState::getTraces('yii\debug\actions', 'sleep'), 'arguments'),
             'One retry must wait exactly once for one second between the two attempts.',
         );
     }
@@ -1079,6 +1056,31 @@ final class DefaultControllerTest extends TestCase
         }
 
         return $module;
+    }
+
+    /**
+     * Dispatches a wired standalone action through its full run lifecycle.
+     *
+     * @param array<string, mixed> $params Route parameters bound to the action.
+     */
+    private function runDebugAction(DebugAction $action, Module $module, array $params = []): mixed
+    {
+        $action->setModule($module);
+
+        Yii::$app->requestedAction = $action;
+        Yii::$app->requestedRoute = $action->getUniqueId();
+
+        return $action->runWithParams($params);
+    }
+
+    /**
+     * Wires a standalone debugger action to the module without running it.
+     */
+    private function wireAction(DebugAction $action, Module $module): DebugAction
+    {
+        $action->setModule($module);
+
+        return $action;
     }
 
     /**

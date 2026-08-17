@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\Module;
 use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
@@ -33,7 +34,7 @@ $totalMs = number_format(array_sum(array_column($rows, 'duration')), 3);
 
 $tag = $panel->tag;
 
-$explainUrlBuilder = static fn(int $seq): string => Url::to(['db-explain', 'seq' => $seq, 'tag' => $tag]);
+$explainUrlBuilder = static fn(int $seq): string => Url::to(Module::route('db-explain', ['seq' => $seq, 'tag' => $tag]));
 
 $summaryItems = [
     Span::tag()

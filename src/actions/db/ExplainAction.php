@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace yii\debug\actions\db;
 
 use Yii;
-use yii\base\Action;
-use yii\debug\controllers\DefaultController;
+use yii\debug\actions\Action;
 use yii\debug\panels\DbPanel;
 use yii\web\HttpException;
 
 /**
  * Renders the EXPLAIN plan for a single captured SQL query.
  *
- * Maps to the `db-explain` route registered by {@see DbPanel::getActions()}; consumes `tag` (request snapshot) and
- * `seq` (index into the panel's captured rows) to locate the SQL statement and execute the driver-appropriate EXPLAIN
+ * Maps to the `db-explain` route registered by {@see DbPanel::init()}; consumes `tag` (request snapshot) and `seq`
+ * (index into the panel's captured rows) to locate the SQL statement and execute the driver-appropriate EXPLAIN
  * command.
  *
  * SQLite uses `EXPLAIN QUERY PLAN`; MySQL and PostgreSQL use plain `EXPLAIN`.
@@ -22,42 +21,22 @@ use yii\web\HttpException;
 class ExplainAction extends Action
 {
     /**
-     * Database panel instance used to recover the captured query and the active DB connection.
-     */
-    public DbPanel|null $panel = null;
-
-    /**
      * Runs the action.
      *
      * @param string $seq Sequence number of the timing entry to explain.
      * @param string $tag Request tag whose debug snapshot holds the query.
+     * @param DbPanel $panel Panel instance resolved from the debug module's service locator by the standalone-action
+     * binder.
      *
-     * @throws HttpException When the panel was not wired, the controller is not the debug `DefaultController`, or the
-     * timing entry cannot be found for the given `seq`.
+     * @throws HttpException When the timing entry cannot be found for the given `seq`.
      *
      * @return string Rendered view with the EXPLAIN results.
      */
-    public function run(string $seq, string $tag): string
+    public function run(string $seq, string $tag, DbPanel $panel): string
     {
-        if ($this->panel === null) {
-            throw new HttpException(
-                500,
-                'DbPanel instance is not set for ExplainAction.',
-            );
-        }
+        $this->loadData($tag);
 
-        $controller = $this->controller;
-
-        if (!$controller instanceof DefaultController) {
-            throw new HttpException(
-                500,
-                'EXPLAIN action must run inside the debug DefaultController.',
-            );
-        }
-
-        $controller->loadData($tag);
-
-        $rows = $this->panel->getRows();
+        $rows = $panel->getRows();
 
         $seqKey = (int) $seq;
 
@@ -67,15 +46,15 @@ class ExplainAction extends Action
 
         $query = $rows[$seqKey]->query;
 
-        $db = $this->panel->getDb();
+        $db = $panel->getDb();
         $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';
         $results = $db->createCommand("{$explainPrefix}{$query}")->queryAll();
-        $controller->prepareShell($this->panel, $tag);
+        $this->prepareShell($panel, $tag);
 
         $params = ['query' => $query, 'results' => $results];
 
         return Yii::$app->request->isAjax
-            ? $controller->renderPartial('db-explain', $params)
-            : $controller->render('db-explain', $params);
+            ? $this->renderPartial('db-explain', $params)
+            : $this->render('db-explain', $params);
     }
 }

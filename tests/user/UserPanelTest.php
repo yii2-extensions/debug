@@ -20,7 +20,6 @@ use yii\debug\tests\support\stub\{
     ModelIdentity,
     NoSearchFilterModel,
     SearchableFilterModel,
-    UserControllerNoAction,
 };
 use yii\debug\tests\support\TestCase;
 use yii\rbac\{Permission, Role};
@@ -78,19 +77,19 @@ final class UserPanelTest extends TestCase
         );
     }
 
-    public function testCanSwitchUserReturnsFalseWhenControllerIsNotUserController(): void
+    public function testCanSwitchUserReturnsFalseWhenMappedActionIsNotAnAction(): void
     {
         $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
-        $module->controllerMap['user'] = [
-            'class' => Controller::class,
-        ];
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        $module->actionMap['set-identity'] = stdClass::class;
 
         self::assertFalse(
             $panel->canSwitchUser(),
-            'Non-UserController override must deny switching.',
+            'Non-action class in the action map must deny switching.',
         );
     }
 
@@ -100,11 +99,13 @@ final class UserPanelTest extends TestCase
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
-        $module->controllerMap['user'] = UserControllerNoAction::class;
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        unset($module->actionMap['set-identity']);
 
         self::assertFalse(
             $panel->canSwitchUser(),
-            "Missing 'set-identity' action must deny switching.",
+            "Missing 'set-identity' entry must deny switching.",
         );
     }
 

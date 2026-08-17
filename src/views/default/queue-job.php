@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\Module;
 use UIAwesome\Html\Palpable\A;
 use PHPForge\Debug\Panel\Queue\{JobRecord, QueueCardRenderer};
 use yii\helpers\Url;
@@ -14,7 +15,7 @@ use yii\web\View;
  */
 $this->title = 'Yii Debugger — Queue job';
 
-$backUrl = Url::to(['view', 'tag' => $tag, 'panel' => 'queue']);
+$backUrl = Url::to(Module::route('view', ['tag' => $tag, 'panel' => 'queue']));
 ?>
 <div class="yii-debug-queue-job-page">
     <header class="yii-debug-queue-job-head">

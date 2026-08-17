@@ -44,7 +44,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples
             $moduleId = $module->getUniqueId();
             $timelineUrl = Url::to(
                 [
-                    "/{$moduleId}/default/view",
+                    "/{$moduleId}/view",
                     'panel' => 'timeline',
                     'tag' => $this->tag,
                 ],

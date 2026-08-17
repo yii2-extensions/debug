@@ -7,7 +7,6 @@ namespace yii\debug\tests\history;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
-use yii\debug\controllers\DefaultController;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
@@ -517,7 +516,6 @@ final class HistoryRowRendererTest extends TestCase
 
         $module->bootstrap(Yii::$app);
 
-        Yii::$app->controller = new DefaultController('default', $module);
     }
 
     protected function tearDown(): void

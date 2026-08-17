@@ -11,6 +11,7 @@ use UIAwesome\Html\Root\Header;
 use Yii;
 use yii\debug\GridViewConfig;
 use yii\debug\models\search\DebugSearch;
+use yii\debug\Module;
 use yii\debug\panels\DbPanel;
 use yii\helpers\Url;
 
@@ -149,7 +150,7 @@ final class HistoryRowRenderer
         }
 
         return A::tag()
-            ->href(Url::to(['view', 'panel' => 'db', 'tag' => $row->tag]))
+            ->href(Url::to(Module::route('view', ['panel' => 'db', 'tag' => $row->tag])))
             ->title($title)
             ->html($content)
             ->render();
@@ -193,7 +194,7 @@ final class HistoryRowRenderer
                 ->content('·');
             $children[] = A::tag()
                 ->class("yii-debug-grid-summary-stat-{$bucket->variant}")
-                ->href(Url::to(['index', 'Debug[statusCode]' => $bucket->sampleCode]))
+                ->href(Url::to(Module::route('index', ['Debug[statusCode]' => $bucket->sampleCode])))
                 ->title("Filter to {$bucket->label} responses (sample {$bucket->sampleCode})")
                 ->html(Strong::tag()->content((string) $bucket->count), " {$bucket->label}");
         }
@@ -211,7 +212,7 @@ final class HistoryRowRenderer
     {
         return A::tag()
             ->class('yii-debug-tag-link')
-            ->href(Url::to(['view', 'tag' => $row->tag]))
+            ->href(Url::to(Module::route('view', ['tag' => $row->tag])))
             ->content($row->tag)
             ->render();
     }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\Module;
 use PHPForge\Debug\Panel\Mail\{MailCardRenderer, MailMessage};
 use yii\helpers\Url;
 
@@ -12,5 +13,5 @@ use yii\helpers\Url;
 ?>
 <?= MailCardRenderer::renderItem(
     $model,
-    static fn(string $file): string => Url::to(['download-mail', 'file' => $file]),
+    static fn(string $file): string => Url::to(Module::route('download-mail', ['file' => $file])),
 );

@@ -51,7 +51,7 @@ final class MockerExtension implements Extension
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_iterable'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_string'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'count'],
-            ['namespace' => 'yii\debug\controllers', 'name' => 'sleep'],
+            ['namespace' => 'yii\debug\actions', 'name' => 'sleep'],
             ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'file_put_contents'],
             ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'fopen'],
             ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'rename'],

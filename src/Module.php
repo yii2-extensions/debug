@@ -12,6 +12,15 @@ use RuntimeException;
 use Throwable;
 use Yii;
 use yii\base\{Action, Application, BootstrapInterface, Event, InvalidConfigException, View as BaseView};
+use yii\debug\actions\{
+    DownloadMailAction,
+    IndexAction,
+    PhpInfoAction,
+    ResetIdentityAction,
+    SetIdentityAction,
+    ToolbarDataAction,
+    ViewAction,
+};
 use yii\debug\collectors\{
     AssetCollector,
     Collector,
@@ -52,6 +61,7 @@ use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Resp
 
 use function array_diff_key;
 use function base64_encode;
+use function get_parent_class;
 use function gethostbyname;
 use function is_array;
 use function is_callable;
@@ -85,6 +95,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Adapter-owned alias for the shared Debug Core templates.
      */
     public const string VIEW_PATH_ALIAS = '@yiiDebugViews';
+    /**
+     * Namespace where the standalone debugger actions are discovered by convention.
+     */
+    public string|null $actionNamespace = 'yii\debug\actions';
     /**
      * Hosts allowed to access this module. Each entry is resolved to an IP at runtime; useful for dynamic DNS.
      *
@@ -120,10 +134,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public array $collectors = [];
     /**
-     * Namespace for the debugger controllers.
-     */
-    public $controllerNamespace = 'yii\debug\controllers';
-    /**
      * Directory storing the debugger data files (path alias accepted).
      */
     public string $dataPath = '@runtime/debug';
@@ -135,6 +145,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Name of the panel that should be visible when opening the debug panel.
      */
     public string $defaultPanel = 'log';
+    /**
+     * Route dispatched when the module is requested without an action segment.
+     */
+    public $defaultRoute = 'index';
     /**
      * Permission applied to newly created debugger directories (used by {@see chmod()}); no umask is applied.
      */
@@ -278,9 +292,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $app->on(
             Application::EVENT_BEFORE_REQUEST,
-            function (): void {
-                $this->getCollectorCoordinator()->startup();
-            },
+            $this->getCollectorCoordinator()->startup(...),
         );
         $app->on(
             Application::EVENT_BEFORE_REQUEST,
@@ -313,8 +325,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 ],
                 [
                     'class' => $this->urlRuleClass,
-                    'route' => "{$route}/<controller>/<action>",
-                    'pattern' => "{$pattern}/<controller:[\w\-]+>/<action:[\w\-]+>",
+                    'route' => "{$route}/<action>",
+                    'pattern' => "{$pattern}/<action:[\w\-]+>",
                     'normalizer' => false,
                     'suffix' => false,
                 ],
@@ -353,7 +365,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $url = Url::toRoute(
             [
-                '/' . $this->getUniqueId() . '/default/toolbar-data',
+                '/' . $this->getUniqueId() . '/toolbar-data',
                 'tag' => $logTarget->tag,
             ],
         );
@@ -431,6 +443,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $this->initCollectors();
         $this->initPanels();
+        $this->initPanelServices();
+        $this->initActionMap();
     }
 
     /**
@@ -477,6 +491,34 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Builds a module-absolute route array for the given debugger action.
+     *
+     * Resolves the module ID from the standalone action currently being dispatched, so widgets and views can build
+     * links without a controller context; outside a debugger dispatch the conventional `debug` module ID is used.
+     *
+     * Usage example:
+     *
+     * ```php
+     * $url = \yii\helpers\Url::to(\yii\debug\Module::route('view', ['tag' => $tag]));
+     * ```
+     *
+     * @param string $action Debugger action ID.
+     * @param array<string, TValue> $params Query parameters merged into the route array.
+     *
+     * @return non-empty-array<int|string, string|TValue> Route array ready for {@see Url::to()}.
+     *
+     * @template TValue of int|string
+     */
+    public static function route(string $action, array $params = []): array
+    {
+        $module = Yii::$app->requestedAction?->getModule();
+
+        $moduleId = $module instanceof self ? $module->getUniqueId() : 'debug';
+
+        return ["/{$moduleId}/{$action}", ...$params];
+    }
+
+    /**
      * Sets headers carrying debug data on AJAX responses so the toolbar can resolve the captured tag and link back to
      * the full view.
      */
@@ -492,7 +534,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $url = Url::toRoute(
             [
-                "/{$route}/default/view",
+                "/{$route}/view",
                 'tag' => $logTarget->tag,
             ],
         );
@@ -555,6 +597,24 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         return true;
+    }
+
+    /**
+     * Built-in standalone actions dispatched through {@see \yii\base\Module::$actionMap}, keyed by action ID.
+     *
+     * @return array<string, class-string> Action classes indexed by action id.
+     */
+    protected function coreActionMap(): array
+    {
+        return [
+            'download-mail' => DownloadMailAction::class,
+            'index' => IndexAction::class,
+            'php-info' => PhpInfoAction::class,
+            'reset-identity' => ResetIdentityAction::class,
+            'set-identity' => SetIdentityAction::class,
+            'toolbar-data' => ToolbarDataAction::class,
+            'view' => ViewAction::class,
+        ];
     }
 
     /**
@@ -625,6 +685,25 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Merges the built-in and panel-declared standalone actions into {@see \yii\base\Module::$actionMap}.
+     *
+     * Precedence, lowest to highest: built-in actions from {@see coreActionMap()}, actions declared by registered
+     * panels through {@see Panel::$actions}, and entries configured directly on `actionMap`.
+     */
+    protected function initActionMap(): void
+    {
+        $panelActions = [];
+
+        foreach ($this->panels as $panel) {
+            foreach ($panel->actions as $id => $action) {
+                $panelActions[$id] = $action;
+            }
+        }
+
+        $this->actionMap = [...$this->coreActionMap(), ...$panelActions, ...$this->actionMap];
+    }
+
+    /**
      * Resolves configured collectors and validates their stable IDs before request capture.
      *
      * @throws InvalidConfigException When a collector configuration or ID is invalid.
@@ -676,6 +755,29 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
             if (!$panel->isEnabled()) {
                 unset($this->panels[$id]);
+            }
+        }
+    }
+
+    /**
+     * Registers every enabled panel in the module service locator under its own class and each ancestor class below
+     * {@see Panel}.
+     *
+     * Standalone actions receive the registered instance through a typed `run()` parameter resolved by the
+     * standalone-action binder, so a configured panel subclass satisfies a built-in type hint such as
+     * `DbPanel $panel`. The generic {@see Panel} base class is never registered because multiple panels would compete
+     * for it; when panels share a class chain, the later entry in {@see $panels} order wins, matching the action ID
+     * precedence in {@see initActionMap()}.
+     */
+    protected function initPanelServices(): void
+    {
+        foreach ($this->panels as $panel) {
+            $class = $panel::class;
+
+            while ($class !== false && $class !== Panel::class) {
+                $this->set($class, $panel);
+
+                $class = get_parent_class($class);
             }
         }
     }

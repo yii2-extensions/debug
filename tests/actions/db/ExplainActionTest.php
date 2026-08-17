@@ -8,19 +8,16 @@ use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
-use yii\base\Controller as BaseController;
 use yii\db\Connection;
 use yii\debug\actions\db\ExplainAction;
-use yii\debug\controllers\DefaultController;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
 use yii\debug\tests\support\TestCase;
-use yii\web\AssetManager;
-use yii\web\HttpException;
+use yii\web\{AssetManager, HttpException, ServerErrorHttpException};
 
 /**
- * Unit tests for {@see ExplainAction} covering the panel-missing / non-DefaultController / missing-seq error paths,
- * plus the happy path that renders the SQLite `EXPLAIN QUERY PLAN` view for a captured query.
+ * Unit tests for {@see ExplainAction} covering the missing-panel-service and missing-seq error paths, plus the happy
+ * paths that render the SQLite `EXPLAIN QUERY PLAN` view for a captured query.
  */
 #[Group('actions')]
 #[Group('db')]
@@ -30,11 +27,11 @@ final class ExplainActionTest extends TestCase
     {
         $module = $this->bootDebugModuleWithSqlite();
 
-        $controller = new DefaultController('default', $module);
+        $action = new ExplainAction('db-explain');
 
-        Yii::$app->controller = $controller;
+        $action->setModule($module);
 
-        $html = $controller->renderPartial(
+        $html = $action->renderPartial(
             'db-explain',
             [
                 'query' => 'SELECT 1',
@@ -53,11 +50,11 @@ final class ExplainActionTest extends TestCase
     {
         $module = $this->bootDebugModuleWithSqlite();
 
-        $controller = new DefaultController('default', $module);
+        $action = new ExplainAction('db-explain');
 
-        Yii::$app->controller = $controller;
+        $action->setModule($module);
 
-        $html = $controller->renderPartial(
+        $html = $action->renderPartial(
             'db-explain',
             [
                 'query' => 'SELECT 1',
@@ -90,17 +87,16 @@ final class ExplainActionTest extends TestCase
             ['db' => new DbSnapshot([self::queryRow('SELECT 1')])],
         );
 
-        $controller = new DefaultController('default', $module);
-        $action = new ExplainAction('db-explain', $controller, ['panel' => $dbPanel]);
+        $action = new ExplainAction('db-explain');
 
-        Yii::$app->controller = $controller;
+        $action->setModule($module);
 
         Yii::$app->getRequest()->setUrl('dummy');
 
         $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
 
         try {
-            $html = $action->run('0', 'tag-ajax');
+            $html = $action->run('0', 'tag-ajax', $dbPanel);
         } finally {
             unset($_SERVER['HTTP_X_REQUESTED_WITH']);
         }
@@ -130,20 +126,49 @@ final class ExplainActionTest extends TestCase
             ['db' => new DbSnapshot([self::queryRow('SELECT 1')])],
         );
 
-        $controller = new DefaultController('default', $module);
-        $action = new ExplainAction('db-explain', $controller, ['panel' => $dbPanel]);
+        $action = new ExplainAction('db-explain');
 
-        Yii::$app->controller = $controller;
+        $action->setModule($module);
 
         Yii::$app->getRequest()->setUrl('dummy');
         Yii::$app->getRequest()->setBodyParams([]);
 
-        $html = $action->run('0', 'tag-explain');
+        $html = $action->run('0', 'tag-explain', $dbPanel);
 
         self::assertStringContainsString(
             '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
             $html,
             'Rendered view must surface the explained query highlighted.',
+        );
+    }
+
+    public function testRunResolvesPanelFromModuleServiceLocatorOnDispatch(): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-di',
+            ['db' => new DbSnapshot([self::queryRow('SELECT 1')])],
+        );
+
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
+
+        Yii::$app->getRequest()->setUrl('dummy');
+        Yii::$app->getRequest()->setBodyParams([]);
+
+        $html = $action->runWithParams(['seq' => '0', 'tag' => 'tag-di']);
+
+        self::assertIsString(
+            $html,
+            'Dispatch must produce rendered HTML.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
+            $html,
+            'Injected panel must serve the captured query.',
         );
     }
 
@@ -165,45 +190,34 @@ final class ExplainActionTest extends TestCase
             ['db' => new DbSnapshot([])],
         );
 
-        $controller = new DefaultController('default', $module);
-        $action = new ExplainAction('db-explain', $controller, ['panel' => $dbPanel]);
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage(
             'Log message not found.',
         );
 
-        $action->run('99', 'tag-empty');
+        $action->run('99', 'tag-empty', $dbPanel);
     }
 
-    public function testThrowHttpExceptionWhenControllerIsNotDefaultController(): void
+    public function testThrowServerErrorHttpExceptionWhenDbPanelIsDisabled(): void
     {
         $this->mockWebApplication();
 
-        $controller = new BaseController('test', new Module('debug'));
-        $action = new ExplainAction('db-explain', $controller, ['panel' => new DbPanel()]);
+        $module = new Module('debug');
 
-        $this->expectException(HttpException::class);
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
+
+        $this->expectException(ServerErrorHttpException::class);
         $this->expectExceptionMessage(
-            'must run inside the debug DefaultController',
+            'Could not load required service: panel',
         );
 
-        $action->run('0', 'irrelevant');
-    }
-
-    public function testThrowHttpExceptionWhenPanelIsMissing(): void
-    {
-        $this->mockWebApplication();
-
-        $controller = new BaseController('test', new Module('debug'));
-        $action = new ExplainAction('db-explain', $controller);
-
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage(
-            'DbPanel instance is not set',
-        );
-
-        $action->run('0', 'irrelevant');
+        $action->runWithParams(['seq' => '0', 'tag' => 'irrelevant']);
     }
 
     private function bootDebugModuleWithSqlite(): Module

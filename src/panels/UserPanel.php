@@ -7,10 +7,9 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Panel\User\UserSnapshot;
 use Yii;
-use yii\base\{InvalidConfigException, Model};
+use yii\base\{Action as BaseAction, InvalidConfigException, Model};
 use yii\data\{ArrayDataProvider, DataProviderInterface};
 use yii\db\ActiveRecord;
-use yii\debug\controllers\UserController;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
 use yii\debug\Panel;
@@ -124,17 +123,24 @@ class UserPanel extends Panel
 
         $rule = new AccessRule($this->ruleUserSwitch);
 
-        $controller = $module->createController('user');
+        $actionConfig = $module->actionMap['set-identity'] ?? null;
 
-        if (!is_array($controller) || !$controller[0] instanceof UserController) {
+        if (is_array($actionConfig)) {
+            $actionConfig = $actionConfig['class'] ?? null;
+        }
+
+        if (!is_string($actionConfig) || !class_exists($actionConfig)) {
             return false;
         }
 
-        $action = $controller[0]->createAction('set-identity');
+        $action = Yii::createObject($actionConfig);
 
-        if ($action === null) {
+        if (!$action instanceof BaseAction) {
             return false;
         }
+
+        $action->id = 'set-identity';
+        $action->setModule($module);
 
         return $rule->allows($action, $userSwitch->getMainUser(), Yii::$app->request) === true;
     }
@@ -328,20 +334,13 @@ class UserPanel extends Panel
             );
         }
 
-        $moduleId = $module->getUniqueId();
-
-        $userControllerRoute = "{$moduleId}/user";
-
-        $this->ruleUserSwitch['controllers'] = [$userControllerRoute];
+        $this->ruleUserSwitch['actions'] = ['set-identity', 'reset-identity'];
 
         $module->attachBehavior(
             'access_debug',
             [
                 'class' => AccessControl::class,
-                'only' => [
-                    $userControllerRoute,
-                    "{$moduleId}/default",
-                ],
+                'only' => ['set-identity', 'reset-identity'],
                 'user' => $userSwitch->getMainUser(),
                 'rules' => [$this->ruleUserSwitch],
             ],

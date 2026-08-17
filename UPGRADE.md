@@ -5,6 +5,48 @@
 Version 0.2 is a development-tooling release with intentional internal API removals. Application configuration for
 the debug module remains unchanged.
 
+### Yii2 22 standalone actions replace the debugger controllers
+
+The package now requires `yiisoft/yii2` `^22.0` and dispatches every debugger endpoint as a standalone action through
+`Module::$actionMap` (the inline action lifecycle introduced in Yii2 22). `yii\debug\controllers\DefaultController`
+and `yii\debug\controllers\UserController` were removed; the endpoints live under `yii\debug\actions\*`:
+
+- Built-in: `index`, `view`, `php-info`, `toolbar-data`, `download-mail`, `set-identity`, `reset-identity`.
+- Panel-registered: `db-explain` (`DbPanel`), `queue-job` (`QueuePanel`).
+
+Consequences:
+
+- Routes drop the controller segment: `debug/default/view` becomes `debug/view` and `debug/user/set-identity`
+  becomes `debug/set-identity`. Update bookmarks or custom links pointing at the old URLs.
+- Custom panels contribute endpoints through `Panel::$actions`, keyed by action ID and merged into the module's
+  `actionMap` (entries configured directly on `actionMap` win); plain class-string entries suffice. Custom actions
+  extend `yii\debug\actions\Action`, which provides snapshot loading, shell preparation, and layout rendering
+  without a controller.
+- `UserPanel::$ruleUserSwitch` and the user-switch access filter now scope by action IDs
+  (`'actions' => ['set-identity', 'reset-identity']`). Custom rules that matched the removed `user` controller via a
+  `controllers` constraint must switch to the `actions` constraint.
+- Debugger views and widgets build links with `Module::route('<action>', [...])`, which returns a module-absolute
+  route that works without an active controller context.
+
+### Panel actions receive their panel through `run()` parameter injection
+
+`ExplainAction::$panel` and `JobAction::$panel` were removed. The module now registers every enabled panel in its
+service locator under the panel's class name and each ancestor class below `yii\debug\Panel`, and the
+standalone-action binder injects the instance as a typed `run()` parameter:
+
+- `ExplainAction::run(string $seq, string $tag, DbPanel $panel)`
+- `JobAction::run(string $seq, string $tag, QueuePanel $panel)`
+- `SetIdentityAction::run(User $user, Request $request)` and `ResetIdentityAction::run(User $user)` resolve the
+  application components by parameter name.
+
+Custom panels register plain class names in `Panel::$actions` — no `'panel' => $this` config array is needed.
+Type-hint the panel class on `run()`; a configured panel subclass satisfies a built-in type hint. When the required
+panel is disabled or unregistered, dispatch fails with `yii\web\ServerErrorHttpException`
+("Could not load required service") instead of the former guarded HTTP 500.
+
+The binder binds request parameters by name before falling back to injection, so `panel`, `user`, and `request` act
+as reserved query-parameter names on these routes; a crafted value for one of them surfaces as an HTTP 500.
+
 ### Clear stored debug snapshots
 
 The on-disk snapshot and manifest format is now versioned JSON. Each request is written atomically to `<tag>.json`,

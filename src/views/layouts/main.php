@@ -50,7 +50,7 @@ if (!$shellContext instanceof ShellContext) {
         'actionUrl' => $shellContext->configUrl,
         'content' => $content,
         'debugTheme' => $shellContext->resolvedTheme,
-        'historyUrl' => Url::to(['index']),
+        'historyUrl' => Url::to(Module::route('index')),
         'mode' => $shellContext->mode,
         'peakMemory' => $shellContext->peakMemory,
         'phpIcon' => Icon::render('php-alt'),

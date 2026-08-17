@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\Module;
 use UIAwesome\Html\Flow\P;
 use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
@@ -50,7 +51,7 @@ $driverOptions = ['' => 'All'] + array_combine($driverNames, $driverNames);
 
 $tag = $panel->tag;
 
-$jobUrlBuilder = static fn(int $seq): string => Url::to(['queue-job', 'seq' => $seq, 'tag' => $tag]);
+$jobUrlBuilder = static fn(int $seq): string => Url::to(Module::route('queue-job', ['seq' => $seq, 'tag' => $tag]));
 
 $summaryItems = [
     Span::tag()

@@ -84,10 +84,7 @@ class QueuePanel extends Panel
     {
         parent::init();
 
-        $this->actions['queue-job'] = [
-            'class' => JobAction::class,
-            'panel' => $this,
-        ];
+        $this->actions['queue-job'] = JobAction::class;
     }
 
     /**

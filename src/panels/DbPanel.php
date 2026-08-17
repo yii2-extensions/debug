@@ -195,10 +195,7 @@ class DbPanel extends Panel
     {
         parent::init();
 
-        $this->actions['db-explain'] = [
-            'class' => ExplainAction::class,
-            'panel' => $this,
-        ];
+        $this->actions['db-explain'] = ExplainAction::class;
     }
 
     /**

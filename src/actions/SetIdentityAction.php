@@ -2,55 +2,40 @@
 
 declare(strict_types=1);
 
-namespace yii\debug\controllers;
+namespace yii\debug\actions;
 
 use Override;
 use Yii;
-use yii\base\InvalidConfigException;
 use yii\debug\models\UserSwitch;
-use yii\web\{BadRequestHttpException, Controller, Response, User};
-use yii\web\IdentityInterface;
+use yii\web\{Action, BadRequestHttpException, IdentityInterface, Request, Response, User};
 
 use function is_int;
 use function is_string;
 use function is_subclass_of;
 
 /**
- * Drives the user-impersonation workflow exposed by the User Switch debug panel.
+ * Switches the active identity to the user resolved from the posted `user_id`.
  *
- * Provides JSON endpoints to swap the active identity to an impersonated user (`set-identity`) and to restore the
- * original identity captured before the swap (`reset-identity`). Every action requires an active session, enforced in
- * {@see beforeAction()}.
+ * JSON endpoint of the user-impersonation workflow exposed by the User Switch debug panel. Requires an active
+ * session, enforced in {@see beforeRun()}.
  */
-class UserController extends Controller
+class SetIdentityAction extends Action
 {
     /**
-     * Restores the original identity captured before the impersonation swap.
+     * Runs the action.
      *
-     * @throws InvalidConfigException When the user component is not properly configured.
-     *
-     * @return User User component reflecting the restored identity.
-     */
-    public function actionResetIdentity(): User
-    {
-        $userSwitch = new UserSwitch();
-
-        $userSwitch->reset();
-
-        return Yii::$app->user;
-    }
-
-    /**
-     * Switches the active identity to the user resolved from the posted `user_id`.
+     * @param User $user User component whose identity is switched to the resolved user; bound by parameter name from
+     * the application.
+     * @param Request $request Request carrying the posted `user_id`.
      *
      * @throws BadRequestHttpException When the `user_id` parameter is missing or not a scalar, the identity class is
      * not configured, or the identity cannot be found.
      *
      * @return User User component reflecting the new impersonated identity.
      */
-    public function actionSetIdentity(): User
+    public function run(User $user, Request $request): User
     {
-        $user_id = Yii::$app->request->post('user_id');
+        $user_id = $request->post('user_id');
 
         if (!is_string($user_id) && !is_int($user_id)) {
             throw new BadRequestHttpException(
@@ -58,7 +43,7 @@ class UserController extends Controller
             );
         }
 
-        $identityClass = Yii::$app->user->identityClass;
+        $identityClass = $user->identityClass;
 
         if (!is_subclass_of($identityClass, IdentityInterface::class)) {
             throw new BadRequestHttpException(
@@ -74,20 +59,20 @@ class UserController extends Controller
             );
         }
 
-        $userSwitch = new UserSwitch();
+        $userSwitch = new UserSwitch(['userComponent' => $user]);
 
         $userSwitch->setUserByIdentity($newIdentity);
 
-        return Yii::$app->user;
+        return $user;
     }
 
     /**
-     * Forces the response format to JSON and requires an active session before delegating to the parent guard.
+     * Forces the JSON response format and requires an active session before the action body runs.
      *
      * @throws BadRequestHttpException When the current request has no active session.
      */
     #[Override]
-    public function beforeAction($action): bool
+    protected function beforeRun()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -97,6 +82,6 @@ class UserController extends Controller
             );
         }
 
-        return parent::beforeAction($action);
+        return true;
     }
 }
