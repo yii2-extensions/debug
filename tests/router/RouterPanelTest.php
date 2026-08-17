@@ -158,5 +158,4 @@ final class RouterPanelTest extends TestCase
         self::assertTrue($row->match, 'Match flag must round-trip.');
         self::assertTrue($restored->hasMatch(), 'A matching rule must raise the snapshot flag.');
     }
-
 }

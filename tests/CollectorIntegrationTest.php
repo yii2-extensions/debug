@@ -91,6 +91,7 @@ final class CollectorIntegrationTest extends TestCase
 
         $this->cleanup($module);
     }
+
     public function testCustomCollectorPersistsAndMatchingPanelPresentsPayload(): void
     {
         $collector = new CustomCollector();

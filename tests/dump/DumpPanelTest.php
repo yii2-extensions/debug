@@ -302,5 +302,4 @@ final class DumpPanelTest extends TestCase
             'Non-array data must skip the toolbar item.',
         );
     }
-
 }

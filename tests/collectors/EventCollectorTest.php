@@ -50,6 +50,7 @@ final class EventCollectorTest extends TestCase
             'Class-level sender must round-trip as a string.',
         );
     }
+
     public function testCaptureRecordsEventsFiredByWildcardListener(): void
     {
         $collector = $this->makeCollector();

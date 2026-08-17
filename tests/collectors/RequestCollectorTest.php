@@ -204,6 +204,7 @@ final class RequestCollectorTest extends TestCase
             'Stopped collector must record nothing.',
         );
     }
+
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         $this->mockWebApplication();
@@ -620,7 +621,6 @@ final class RequestCollectorTest extends TestCase
             'Int-keyed entries must be dropped.',
         );
     }
-
 
     /**
      * Extracts the captured payload, failing when the started collector produces no snapshot.

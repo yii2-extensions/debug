@@ -66,6 +66,7 @@ final class MailCollectorTest extends TestCase
             'Fresh panel must produce an empty payload.',
         );
     }
+
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         $this->mockWebApplication();
@@ -268,7 +269,6 @@ final class MailCollectorTest extends TestCase
 
         parent::tearDown();
     }
-
 
     /**
      * Captures the mail rows, failing when the started collector produces no snapshot.

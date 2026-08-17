@@ -51,6 +51,7 @@ final class ConfigCollectorTest extends TestCase
             "Missing application must collapse extensions to '[]'.",
         );
     }
+
     public function testCaptureReturnsNullAfterShutdown(): void
     {
         $collector = $this->makeCollector();

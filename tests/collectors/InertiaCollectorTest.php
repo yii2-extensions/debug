@@ -119,6 +119,7 @@ final class InertiaCollectorTest extends TestCase
             'Top-level shared keys must be captured.',
         );
     }
+
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         $this->mockWebApplication();
@@ -231,7 +232,6 @@ final class InertiaCollectorTest extends TestCase
             'A restarted collector must not retain the page captured before shutdown.',
         );
     }
-
 
     /**
      * Extracts the captured payload, failing when the started collector produces no snapshot.

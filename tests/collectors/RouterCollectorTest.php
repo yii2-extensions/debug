@@ -118,6 +118,7 @@ final class RouterCollectorTest extends TestCase
             "Route must fall back to 'requestedRoute'.",
         );
     }
+
     public function testCaptureReturnsNullAfterShutdown(): void
     {
         $collector = $this->makeCollector();

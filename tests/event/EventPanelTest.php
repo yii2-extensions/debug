@@ -150,5 +150,4 @@ final class EventPanelTest extends TestCase
             'Empty data must skip the toolbar item.',
         );
     }
-
 }

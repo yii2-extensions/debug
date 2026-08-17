@@ -92,6 +92,7 @@ final class QueueCollectorTest extends TestCase
 
         Event::offAll();
     }
+
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         $this->mockWebApplication();

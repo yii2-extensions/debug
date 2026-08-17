@@ -185,6 +185,7 @@ final class DbCollectorTest extends TestCase
 
         DebugPdoStatement::$rowCounts = [];
     }
+
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         $this->mockWebApplication();
@@ -474,7 +475,6 @@ final class DbCollectorTest extends TestCase
             'Algorithm must be one of the two candidates.',
         );
     }
-
 
     /**
      * Captures the query rows, failing when the started collector produces no snapshot.

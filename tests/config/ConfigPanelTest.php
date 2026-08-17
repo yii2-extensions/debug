@@ -252,5 +252,4 @@ final class ConfigPanelTest extends TestCase
             "Saved 'application.yii' must round-trip.",
         );
     }
-
 }

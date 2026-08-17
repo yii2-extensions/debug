@@ -168,6 +168,7 @@ final class AssetCollectorTest extends TestCase
             'No registered bundles must yield an empty snapshot.',
         );
     }
+
     public function testCaptureReturnsNullAfterShutdown(): void
     {
         $collector = $this->makeCollector();
@@ -350,7 +351,6 @@ final class AssetCollectorTest extends TestCase
             "Stable ID must be 'asset'.",
         );
     }
-
 
     /**
      * Captures the asset snapshot, failing when the started collector produces nothing.

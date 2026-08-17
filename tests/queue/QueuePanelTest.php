@@ -322,6 +322,7 @@ final class QueuePanelTest extends TestCase
             'No queue component and no records must skip the toolbar.',
         );
     }
+
     public function testInitRegistersTheQueueJobAction(): void
     {
         $panel = $this->makePanel(QueuePanel::class);
