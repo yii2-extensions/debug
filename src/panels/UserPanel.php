@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\User\UserSnapshot;
+use PHPForge\Debug\Panel\User\{UserRbacRow, UserSnapshot};
 use Yii;
 use yii\base\{Action as BaseAction, InvalidConfigException, Model};
 use yii\data\{ArrayDataProvider, DataProviderInterface};
@@ -172,11 +172,17 @@ class UserPanel extends Panel
         return $this->displayName;
     }
 
+    /**
+     * Returns the captured RBAC permissions as {@see UserRbacRow} models, or `null` when the snapshot lacks them.
+     */
     public function getPermissionsProvider(): ArrayDataProvider|null
     {
         return $this->rbacProvider('permissions');
     }
 
+    /**
+     * Returns the captured RBAC roles as {@see UserRbacRow} models, or `null` when the snapshot lacks them.
+     */
     public function getRolesProvider(): ArrayDataProvider|null
     {
         return $this->rbacProvider('roles');
@@ -422,10 +428,25 @@ class UserPanel extends Panel
         }
     }
 
+    /**
+     * Builds an {@see ArrayDataProvider} of {@see UserRbacRow} models from the captured snapshot entry.
+     *
+     * @param string $key Snapshot key holding the normalized RBAC rows (`roles` or `permissions`).
+     */
     private function rbacProvider(string $key): ArrayDataProvider|null
     {
         $rows = $this->getSnapshotData()[$key] ?? null;
 
-        return is_array($rows) ? new ArrayDataProvider(['allModels' => $rows]) : null;
+        if (is_array($rows) === false) {
+            return null;
+        }
+
+        $models = [];
+
+        foreach ($rows as $row) {
+            $models[] = UserRbacRow::fromArray(is_array($row) ? $row : []);
+        }
+
+        return new ArrayDataProvider(['allModels' => $models]);
     }
 }

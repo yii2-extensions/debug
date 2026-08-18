@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\user;
 
-use PHPForge\Debug\Panel\User\UserSnapshot;
+use PHPForge\Debug\Panel\User\{UserRbacRow, UserSnapshot};
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
@@ -345,6 +345,89 @@ final class UserPanelTest extends TestCase
             $panel->getToolbarIcon(),
             "Icon key must be 'user'.",
         );
+    }
+
+    public function testGetPermissionsProviderHydratesUserRbacRowModels(): void
+    {
+        $panel = $this->makePanel(UserPanel::class);
+
+        $this->hydratePanel($panel, UserSnapshot::capture([
+            'id' => 1,
+            'permissions' => [
+                [
+                    'name' => 'manage',
+                    'description' => 'Manage',
+                    'ruleName' => 'isManager',
+                    'data' => 'null',
+                    'createdAt' => 1_700_000_000,
+                    'updatedAt' => 1_700_000_001,
+                ],
+            ],
+        ]));
+
+        $provider = $panel->getPermissionsProvider();
+
+        self::assertNotNull($provider, 'Snapshot with permissions must yield a provider.');
+
+        $models = $provider->getModels();
+
+        self::assertContainsOnlyInstancesOf(UserRbacRow::class, $models, 'Models must be typed rows.');
+
+        $row = $models[0] ?? null;
+
+        self::assertInstanceOf(UserRbacRow::class, $row, 'First row must exist.');
+        self::assertSame('manage', $row->name, 'Row name must survive hydration.');
+        self::assertSame('isManager', $row->ruleName, 'Rule name must survive hydration.');
+        self::assertSame(1_700_000_000, $row->createdAt, 'Created-at must survive hydration.');
+    }
+
+    public function testGetRolesProviderHydratesUserRbacRowModels(): void
+    {
+        $panel = $this->makePanel(UserPanel::class);
+
+        $this->hydratePanel($panel, UserSnapshot::capture([
+            'id' => 1,
+            'roles' => [
+                [
+                    'name' => 'admin',
+                    'description' => 'Administrator',
+                    'ruleName' => null,
+                    'data' => 'null',
+                    'createdAt' => null,
+                    'updatedAt' => null,
+                ],
+                'not-an-array',
+            ],
+        ]));
+
+        $provider = $panel->getRolesProvider();
+
+        self::assertNotNull($provider, 'Snapshot with roles must yield a provider.');
+
+        $models = $provider->getModels();
+
+        self::assertContainsOnlyInstancesOf(UserRbacRow::class, $models, 'Models must be typed rows.');
+        self::assertCount(2, $models, 'Malformed entries must hydrate as empty rows, not vanish.');
+
+        $first = $models[0] ?? null;
+        $second = $models[1] ?? null;
+
+        self::assertInstanceOf(UserRbacRow::class, $first, 'First row must exist.');
+        self::assertInstanceOf(UserRbacRow::class, $second, 'Second row must exist.');
+        self::assertSame('admin', $first->name, 'Row name must survive hydration.');
+        self::assertSame('', $first->ruleName, '`null` rule name must collapse to an empty `string`.');
+        self::assertNull($first->createdAt, '`null` created-at must stay `null`.');
+        self::assertSame('', $second->name, 'Malformed entry must yield an empty row.');
+    }
+
+    public function testGetRolesProviderReturnsNullWhenSnapshotLacksRoles(): void
+    {
+        $panel = $this->makePanel(UserPanel::class);
+
+        $this->hydratePanel($panel, UserSnapshot::capture(['id' => 1]));
+
+        self::assertNull($panel->getRolesProvider(), 'Missing roles key must yield `null`.');
+        self::assertNull($panel->getPermissionsProvider(), 'Missing permissions key must yield `null`.');
     }
 
     public function testGetToolbarItemsRendersGuestWhenNoIdInData(): void
