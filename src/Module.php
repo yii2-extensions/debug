@@ -689,14 +689,14 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $id = trim($route, '/');
 
         if ($id !== '' && strpos($id, '/') === false && isset($this->actionMap[$id])) {
-            $class = $this->actionMap[$id];
-
-            if (is_array($class)) {
-                $class = $class['class'] ?? null;
-            }
+            $config = $this->actionMap[$id];
+            $class = is_array($config) ? ($config['class'] ?? null) : $config;
 
             if (is_string($class) && class_exists($class)) {
-                $action = Yii::createObject($class);
+                // Instantiate the full mapped configuration exactly as `runMappedAction()` does, preserving configured
+                // properties. TODO: drop the ignore once `yii2-extensions/phpstan` stubs `Yii::createObject()` for the
+                // `class-string|array` action-map value.
+                $action = Yii::createObject($config); // @phpstan-ignore argument.type
 
                 if ($action instanceof Action) {
                     $action->id = $id;

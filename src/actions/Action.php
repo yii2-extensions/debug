@@ -241,7 +241,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
         Yii::$app->getView()->params['debugShell'] = $this->createBareShellContext();
 
-        return true;
+        return parent::beforeRun();
     }
 
     /**

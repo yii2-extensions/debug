@@ -50,6 +50,6 @@ class ResetIdentityAction extends WebAction
             );
         }
 
-        return true;
+        return parent::beforeRun();
     }
 }

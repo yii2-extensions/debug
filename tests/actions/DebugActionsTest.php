@@ -28,7 +28,7 @@ use yii\debug\actions\{
 use yii\debug\collectors\MailCollector;
 use yii\debug\{LogTarget, Module};
 use yii\debug\panels\ConfigPanel;
-use yii\debug\tests\support\stub\{MinimalToolbarPanel, StubSnapshot};
+use yii\debug\tests\support\stub\{ConfigurableAction, MinimalToolbarPanel, StubSnapshot};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarView;
@@ -502,6 +502,22 @@ final class DebugActionsTest extends TestCase
             '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
             $html,
             "Sub-namespaced 'db-explain' action must resolve from the action map.",
+        );
+    }
+
+    public function testAppDispatchPreservesConfiguredActionProperties(): void
+    {
+        $module = $this->bootDebugModule();
+
+        // A custom array-shaped entry must keep its configured properties, matching direct 'runMappedAction' dispatch.
+        $module->actionMap['configurable'] = ['class' => ConfigurableAction::class, 'label' => 'configured'];
+
+        $result = Yii::$app->runAction("{$module->getUniqueId()}/configurable");
+
+        self::assertSame(
+            'configured',
+            $result,
+            'Array-shaped action config must apply configured properties.',
         );
     }
 

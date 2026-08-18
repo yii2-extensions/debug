@@ -82,6 +82,6 @@ class SetIdentityAction extends Action
             );
         }
 
-        return true;
+        return parent::beforeRun();
     }
 }
