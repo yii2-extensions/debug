@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace yii\debug\tests\controllers;
+namespace yii\debug\tests\actions;
 
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
-use yii\base\Module;
-use yii\debug\controllers\UserController;
+use yii\debug\actions\{ResetIdentityAction, SetIdentityAction};
 use yii\debug\models\UserSwitch;
+use yii\debug\Module;
 use yii\debug\tests\support\stub\{Identity, NullableIdentity};
 use yii\debug\tests\support\TestCase;
 use yii\web\{BadRequestHttpException, Response, User};
 
 /**
- * Unit tests for {@see UserController} covering `actionSetIdentity` happy path, the three `BadRequestHttpException`
- * paths (missing/invalid `user_id`, missing identity class, identity not found), `actionResetIdentity`, and the
- * `beforeAction` JSON format + active-session guard.
+ * Unit tests for {@see SetIdentityAction} and {@see ResetIdentityAction} covering the identity swap happy path, the
+ * `BadRequestHttpException` paths (missing/invalid `user_id`, missing identity class, identity not found), and the
+ * `beforeRun` JSON format + active-session guard.
  */
-#[Group('controllers')]
+#[Group('actions')]
 #[Group('user')]
-final class UserControllerTest extends TestCase
+final class IdentityActionsTest extends TestCase
 {
     public function testActionResetIdentityRestoresOriginalUser(): void
     {
@@ -37,9 +37,7 @@ final class UserControllerTest extends TestCase
             'The fixture must impersonate a different identity before reset.',
         );
 
-        $controller = new UserController('debug-user', new Module('debug'));
-
-        $result = $controller->actionResetIdentity();
+        $result = (new ResetIdentityAction('reset-identity'))->run(Yii::$app->user);
 
         self::assertFalse(
             $result->isGuest,
@@ -59,9 +57,7 @@ final class UserControllerTest extends TestCase
         Yii::$app->user->login(new Identity(1));
         Yii::$app->request->setBodyParams(['user_id' => 42]);
 
-        $controller = new UserController('debug-user', new Module('debug'));
-
-        $result = $controller->actionSetIdentity();
+        $result = (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
 
         $identity = $result->identity;
 
@@ -77,27 +73,49 @@ final class UserControllerTest extends TestCase
         );
     }
 
-    public function testBeforeActionForcesJsonResponseFormat(): void
+    public function testBeforeRunForcesJsonResponseFormat(): void
     {
         $this->bootApp();
 
         Yii::$app->session->open();
 
-        $controller = new UserController('debug-user', new Module('debug'));
+        Yii::$app->user->login(new Identity(7));
 
-        $action = $controller->createAction('reset-identity');
+        (new UserSwitch())->setUserByIdentity(new Identity(42));
 
-        self::assertNotNull(
-            $action,
-            "'reset-identity' must resolve to an action object.",
-        );
-
-        $controller->beforeAction($action); // @phpstan-ignore argument.type
+        (new ResetIdentityAction('reset-identity'))->runWithParams(['user' => Yii::$app->user]);
 
         self::assertSame(
             Response::FORMAT_JSON,
             Yii::$app->response->format,
-            "'beforeAction' must force the JSON response format.",
+            "'beforeRun' must force the JSON response format.",
+        );
+    }
+
+    public function testRunWithParamsResolvesUserAndRequestByComponentName(): void
+    {
+        $this->bootApp();
+
+        Yii::$app->user->login(new Identity(1));
+        Yii::$app->request->setBodyParams(['user_id' => 42]);
+
+        $module = new Module('debug', Yii::$app);
+
+        $action = new SetIdentityAction('set-identity');
+
+        $action->setModule($module);
+
+        $result = $action->runWithParams([]);
+
+        self::assertInstanceOf(
+            User::class,
+            $result,
+            'Bound components must yield the user component.',
+        );
+        self::assertSame(
+            42,
+            $result->getId(),
+            'Identity must be swapped to the posted id.',
         );
     }
 
@@ -118,14 +136,12 @@ final class UserControllerTest extends TestCase
 
         Yii::$app->request->setBodyParams(['user_id' => -1]);
 
-        $controller = new UserController('debug-user', new Module('debug'));
-
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
             'Identity not found.',
         );
 
-        $controller->actionSetIdentity();
+        (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
     }
 
     public function testThrowBadRequestHttpExceptionWhenIdentityClassIsNotConfigured(): void
@@ -145,14 +161,12 @@ final class UserControllerTest extends TestCase
 
         Yii::$app->request->setBodyParams(['user_id' => 1]);
 
-        $controller = new UserController('debug-user', new Module('debug'));
-
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
             'User component is not configured with an identity class.',
         );
 
-        $controller->actionSetIdentity();
+        (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
     }
 
     public function testThrowBadRequestHttpExceptionWhenSessionIsInactive(): void
@@ -162,21 +176,12 @@ final class UserControllerTest extends TestCase
         // Drop the session id so `hasSessionId` reports `false`.
         unset($_COOKIE[Yii::$app->session->getName()]);
 
-        $controller = new UserController('debug-user', new Module('debug'));
-
-        $action = $controller->createAction('reset-identity');
-
-        self::assertNotNull(
-            $action,
-            "'reset-identity' must resolve to an action object.",
-        );
-
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
             'Need an active session',
         );
 
-        $controller->beforeAction($action); // @phpstan-ignore argument.type
+        (new ResetIdentityAction('reset-identity'))->runWithParams(['user' => Yii::$app->user]);
     }
 
     public function testThrowBadRequestHttpExceptionWhenUserIdIsNotScalar(): void
@@ -185,14 +190,12 @@ final class UserControllerTest extends TestCase
 
         Yii::$app->request->setBodyParams(['user_id' => ['not-scalar']]);
 
-        $controller = new UserController('debug-user', new Module('debug'));
-
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
             'Invalid user_id parameter.',
         );
 
-        $controller->actionSetIdentity();
+        (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
     }
 
     private function bootApp(): void

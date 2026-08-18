@@ -22,6 +22,8 @@ final class SidebarDataNormalizerTest extends TestCase
 {
     public function testConsoleInvocationUrlIsShownVerbatim(): void
     {
+        $this->mockWebApplication();
+
         $panel = $this->makePanel(RequestPanel::class);
         $summary = $this->requestSummary('tag-1', ['url' => 'php yii migrate/up']);
 
@@ -65,7 +67,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $panelItem = $view->navItems[1];
 
         self::assertSame(
-            ['view', 'tag' => 'tag-newest', 'panel' => 'request'],
+            ['/debug/view', 'tag' => 'tag-newest', 'panel' => 'request'],
             $panelItem->url,
             'Index-mode panel link must carry its route, newest tag, and panel ID.',
         );
@@ -104,7 +106,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $panelItem = $view->navItems[1];
 
         self::assertSame(
-            ['index'],
+            ['/debug/index'],
             $panelItem->url,
             "Empty manifest must drop panel entries back to the 'index' route.",
         );
@@ -117,6 +119,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
     public function testFromIndexDropsSnapshotWhenManifestIsEmpty(): void
     {
+        $this->mockWebApplication();
+
         $view = SidebarDataNormalizer::fromIndex(
             [],
             [],
@@ -131,6 +135,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
     public function testFromIndexHighlightsHistoryNavEntry(): void
     {
+        $this->mockWebApplication();
+
         $view = SidebarDataNormalizer::fromIndex(
             [],
             ['tag-1' => $this->requestSummary()],
@@ -154,6 +160,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
     public function testFromIndexMarksSnapshotAsCursor(): void
     {
+        $this->mockWebApplication();
+
         $view = SidebarDataNormalizer::fromIndex(
             [],
             ['tag-1' => $this->requestSummary()],
@@ -184,12 +192,12 @@ final class SidebarDataNormalizerTest extends TestCase
             'Index mode must expose the expanded snapshot aria-label.',
         );
         self::assertSame(
-            ['view', 'tag' => 'tag-1'],
+            ['/debug/view', 'tag' => 'tag-1'],
             $view->snapshot->newestUrl,
             'A navigator without panels must omit the panel parameter.',
         );
         self::assertSame(
-            ['view', 'tag' => 'tag-1'],
+            ['/debug/view', 'tag' => 'tag-1'],
             $view->snapshot->oldestUrl,
             'The single snapshot must be both the newest and oldest destination.',
         );
@@ -215,6 +223,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
     public function testFromIndexSurfacesNewestTagAsSnapshot(): void
     {
+        $this->mockWebApplication();
+
         $manifest = [
             'tag-newest' => $this->requestSummary('tag-newest', ['url' => 'http://example.test/']),
             'tag-older' => $this->requestSummary(
@@ -271,7 +281,7 @@ final class SidebarDataNormalizerTest extends TestCase
             'History must include at least one navigation item.',
         );
         self::assertSame(
-            ['index', 'cursor' => 'tag-1'],
+            ['/debug/index', 'cursor' => 'tag-1'],
             $view->navItems[0]->url,
             "History entry must carry the active tag as the exact 'cursor' route.",
         );
@@ -279,7 +289,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $panelItem = $view->navItems[1] ?? self::fail('Request panel navigation item must surface.');
 
         self::assertSame(
-            ['view', 'tag' => 'tag-1', 'panel' => 'request'],
+            ['/debug/view', 'tag' => 'tag-1', 'panel' => 'request'],
             $panelItem->url,
             'View-mode panel link must preserve the active capture and panel.',
         );
@@ -410,12 +420,12 @@ final class SidebarDataNormalizerTest extends TestCase
         $snapshot = $view->snapshot ?? self::fail('View mode must carry the supplied snapshot.');
 
         self::assertSame(
-            ['view', 'panel' => 'request'],
+            ['/debug/view', 'panel' => 'request'],
             $snapshot->newestUrl,
             'An empty manifest must omit the missing newest tag.',
         );
         self::assertSame(
-            ['view', 'panel' => 'request'],
+            ['/debug/view', 'panel' => 'request'],
             $snapshot->oldestUrl,
             'An empty manifest must omit the missing oldest tag.',
         );
@@ -456,12 +466,12 @@ final class SidebarDataNormalizerTest extends TestCase
             'Middle-tag snapshot must expose a older navigator.',
         );
         self::assertSame(
-            ['view', 'tag' => 'tag-newest', 'panel' => 'request'],
+            ['/debug/view', 'tag' => 'tag-newest', 'panel' => 'request'],
             $view->snapshot->newerUrl,
             'Middle-tag snapshot must link to the immediately newer capture.',
         );
         self::assertSame(
-            ['view', 'tag' => 'tag-oldest', 'panel' => 'request'],
+            ['/debug/view', 'tag' => 'tag-oldest', 'panel' => 'request'],
             $view->snapshot->olderUrl,
             'Middle-tag snapshot must link to the immediately older capture.',
         );

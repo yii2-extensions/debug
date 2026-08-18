@@ -6,6 +6,7 @@ namespace yii\debug\widgets\sidebar;
 
 use PHPForge\Debug\Helper\{Coerce, Icon, Vocabulary};
 use PHPForge\Debug\Storage\RequestSummary;
+use yii\debug\Module;
 use yii\debug\Panel;
 
 use function array_key_first;
@@ -116,7 +117,7 @@ final class SidebarDataNormalizer
     ): array {
         $newestTag = self::newestTag($manifest);
 
-        $historyParams = ['index'];
+        $historyParams = Module::route('index');
 
         if ($mode === 'view' && $activeTag !== null && $activeTag !== '') {
             $historyParams['cursor'] = $activeTag;
@@ -147,14 +148,14 @@ final class SidebarDataNormalizer
             $isActive = $mode === 'view' && $panel === $activePanel;
 
             if ($mode === 'view' && $activeTag !== null) {
-                $url = ['view', 'tag' => $activeTag, 'panel' => $id];
+                $url = Module::route('view', ['tag' => $activeTag, 'panel' => $id]);
 
                 $tooltip = $panel->getName();
             } elseif ($newestTag !== null) {
-                $url = ['view', 'tag' => $newestTag, 'panel' => $id];
+                $url = Module::route('view', ['tag' => $newestTag, 'panel' => $id]);
                 $tooltip = 'Open this panel on the newest request';
             } else {
-                $url = ['index'];
+                $url = Module::route('index');
                 $tooltip = 'Pick a request first';
             }
 
@@ -245,7 +246,7 @@ final class SidebarDataNormalizer
      */
     private static function buildUrl(string|null $tag, string|null $panelId): array
     {
-        $url = ['view'];
+        $url = Module::route('view');
 
         if ($tag !== null) {
             $url['tag'] = $tag;

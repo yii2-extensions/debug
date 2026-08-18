@@ -7,10 +7,9 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Panel\User\UserSnapshot;
 use Yii;
-use yii\base\{InvalidConfigException, Model};
+use yii\base\{Action as BaseAction, InvalidConfigException, Model};
 use yii\data\{ArrayDataProvider, DataProviderInterface};
 use yii\db\ActiveRecord;
-use yii\debug\controllers\UserController;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
 use yii\debug\Panel;
@@ -124,17 +123,29 @@ class UserPanel extends Panel
 
         $rule = new AccessRule($this->ruleUserSwitch);
 
-        $controller = $module->createController('user');
+        $config = $module->actionMap['set-identity'] ?? null;
 
-        if (!is_array($controller) || !$controller[0] instanceof UserController) {
+        if ($config === null) {
             return false;
         }
 
-        $action = $controller[0]->createAction('set-identity');
+        $class = is_array($config) ? ($config['class'] ?? null) : $config;
 
-        if ($action === null) {
+        if (!is_string($class) || !class_exists($class)) {
             return false;
         }
+
+        // Instantiate the full mapped configuration (preserving configured properties), extracting the class only for
+        // validation. TODO: drop the ignore once `yii2-extensions/phpstan` stubs `Yii::createObject()` for the
+        // `class-string|array` action-map value.
+        $action = Yii::createObject($config); // @phpstan-ignore argument.type
+
+        if (!$action instanceof BaseAction) {
+            return false;
+        }
+
+        $action->id = 'set-identity';
+        $action->setModule($module);
 
         return $rule->allows($action, $userSwitch->getMainUser(), Yii::$app->request) === true;
     }
@@ -233,8 +244,12 @@ class UserPanel extends Panel
     }
 
     /**
-     * Wires the user-switch model, the access rules, and the filter model when the user component resolves to a
-     * non-guest identity.
+     * Wires the user-switch model and the deny-by-default access rules for the switch actions, then adds the search
+     * filter model when the user component resolves to a non-guest identity.
+     *
+     * The access rules attach even for a guest, so an unauthenticated request cannot reach `set-identity` or
+     * `reset-identity` unless the configured {@see $ruleUserSwitch} explicitly allows it. For a panel instantiated
+     * before the module reference exists, the attach is deferred to {@see moduleBound()}.
      *
      * @throws InvalidConfigException When the user component cannot be resolved or the filter model cannot be created.
      */
@@ -244,15 +259,18 @@ class UserPanel extends Panel
             return;
         }
 
+        $this->userSwitch = new UserSwitch(['userComponent' => $this->userComponent]);
+
+        if ($this->module !== null) {
+            $this->addAccessRules();
+        }
+
         $user = $this->getUser();
 
         if ($user === null || $user->isGuest) {
             return;
         }
 
-        $this->userSwitch = new UserSwitch(['userComponent' => $this->userComponent]);
-
-        $this->addAccessRules();
         $this->initFilterModel($user);
     }
 
@@ -266,6 +284,21 @@ class UserPanel extends Panel
             return $this->getUser() !== null;
         } catch (InvalidConfigException) {
             return false;
+        }
+    }
+
+    /**
+     * Attaches the user-switch access rules once the debug module binds itself to the panel.
+     *
+     * When the panel is configured as a prebuilt instance in {@see \yii\debug\Module::$panels}, {@see init()} runs
+     * before the module reference exists and skips the attach; this hook closes that gap so `set-identity` and
+     * `reset-identity` stay gated by {@see $ruleUserSwitch}.
+     */
+    #[Override]
+    public function moduleBound(): void
+    {
+        if ($this->userSwitch !== null) {
+            $this->addAccessRules();
         }
     }
 
@@ -328,20 +361,13 @@ class UserPanel extends Panel
             );
         }
 
-        $moduleId = $module->getUniqueId();
-
-        $userControllerRoute = "{$moduleId}/user";
-
-        $this->ruleUserSwitch['controllers'] = [$userControllerRoute];
+        $this->ruleUserSwitch['actions'] = ['set-identity', 'reset-identity'];
 
         $module->attachBehavior(
             'access_debug',
             [
                 'class' => AccessControl::class,
-                'only' => [
-                    $userControllerRoute,
-                    "{$moduleId}/default",
-                ],
+                'only' => ['set-identity', 'reset-identity'],
                 'user' => $userSwitch->getMainUser(),
                 'rules' => [$this->ruleUserSwitch],
             ],

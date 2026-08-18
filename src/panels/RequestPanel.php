@@ -8,7 +8,7 @@ use Override;
 use PHPForge\Debug\Helper\{Coerce, Vocabulary};
 use PHPForge\Debug\Panel\Request\{RequestDataNormalizer, RequestSnapshot};
 use Yii;
-use yii\debug\controllers\DefaultController;
+use yii\debug\actions\Action as DebugAction;
 use yii\debug\Panel;
 use yii\web\Response;
 
@@ -31,9 +31,9 @@ class RequestPanel extends Panel
     #[Override]
     public function getDetail(): string
     {
-        $controller = Yii::$app->controller;
+        $action = Yii::$app->requestedAction;
 
-        $summary = $controller instanceof DefaultController ? $controller->summary : null;
+        $summary = $action instanceof DebugAction ? $action->summary : null;
 
         $view = RequestDataNormalizer::fromPanelData($this->payload(), $summary);
 

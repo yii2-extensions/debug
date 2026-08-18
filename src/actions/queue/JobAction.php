@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\actions\queue;
 
 use Yii;
-use yii\base\Action;
-use yii\debug\controllers\DefaultController;
+use yii\debug\actions\Action;
 use yii\debug\panels\QueuePanel;
 use yii\web\HttpException;
 
@@ -19,42 +18,22 @@ use yii\web\HttpException;
 class JobAction extends Action
 {
     /**
-     * Queue panel instance used to recover the captured records for the active tag.
-     */
-    public QueuePanel|null $panel = null;
-
-    /**
      * Runs the action.
      *
      * @param string $seq Zero-based index of the record inside the panel's saved records array.
      * @param string $tag Request tag whose debug snapshot holds the record.
+     * @param QueuePanel $panel Panel instance resolved from the debug module's service locator by the
+     * standalone-action binder.
      *
-     * @throws HttpException When the panel was not wired, the controller is not the debug `DefaultController`, or the
-     * record cannot be found for the given `seq`.
+     * @throws HttpException When the record cannot be found for the given `seq`.
      *
      * @return string Rendered view with the queue job details.
      */
-    public function run(string $seq, string $tag): string
+    public function run(string $seq, string $tag, QueuePanel $panel): string
     {
-        if ($this->panel === null) {
-            throw new HttpException(
-                500,
-                'QueuePanel instance is not set for JobAction.',
-            );
-        }
+        $this->loadData($tag);
 
-        $controller = $this->controller;
-
-        if (!$controller instanceof DefaultController) {
-            throw new HttpException(
-                500,
-                'queue-job action must run inside the debug DefaultController.',
-            );
-        }
-
-        $controller->loadData($tag);
-
-        $records = $this->panel->getRecords();
+        $records = $panel->getRecords();
 
         $seqKey = (int) $seq;
 
@@ -67,12 +46,12 @@ class JobAction extends Action
 
         $record = $records[$seqKey];
 
-        $controller->prepareShell($this->panel, $tag);
+        $this->prepareShell($panel, $tag);
 
         $params = ['record' => $record, 'tag' => $tag];
 
         return Yii::$app->request->isAjax
-            ? $controller->renderPartial('queue-job', $params)
-            : $controller->render('queue-job', $params);
+            ? $this->renderPartial('queue-job', $params)
+            : $this->render('queue-job', $params);
     }
 }

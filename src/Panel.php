@@ -15,9 +15,9 @@ use function strlen;
 /**
  * Base class for debug toolbar panels.
  *
- * Defines the contract every panel implements: how request data is captured, hydrated, and
- * surfaced on the toolbar and detail views. The container {@see Module} wires {@see $id}, {@see $module}, and
- * {@see $tag} automatically on registration.
+ * Defines the contract every panel implements: how request data is captured, hydrated, and surfaced on the toolbar and
+ * detail views. The container {@see Module} wires {@see $id}, {@see $module}, and {@see $tag} automatically on
+ * registration.
  */
 class Panel extends Component implements ViewContextInterface
 {
@@ -31,8 +31,10 @@ class Panel extends Component implements ViewContextInterface
     protected const string NAME = '';
 
     /**
-     * @var array<array-key, array{class: class-string, ...}|class-string> Extra actions merged into the debug module's
-     * default controller. See {@see \yii\base\Controller::actions()} for the accepted shape.
+     * @var array<string, array<string, mixed>|class-string> Standalone actions merged into the debug module's
+     * {@see \yii\base\Module::$actionMap}, keyed by action ID. Class-string entries are instantiated with no
+     * constructor arguments and receive typed dependencies, including the owning panel, through `run()` parameter
+     * injection.
      */
     public array $actions = [];
     /**
@@ -235,7 +237,7 @@ class Panel extends Component implements ViewContextInterface
         $moduleId = $this->module?->getUniqueId();
 
         $route = [
-            "/{$moduleId}/default/view",
+            "/{$moduleId}/view",
             'panel' => $this->id,
             'tag' => $this->tag,
         ];
@@ -294,6 +296,15 @@ class Panel extends Component implements ViewContextInterface
     {
         return true;
     }
+
+    /**
+     * Completes module-dependent wiring after the container module binds {@see $id} and {@see $module}.
+     *
+     * Invoked once by {@see Module} for every registered panel, whether configured as a class name, a configuration
+     * array, or an already-instantiated {@see Panel}. Override this hook for setup that requires the owning module;
+     * for a prebuilt instance, {@see \yii\base\BaseObject::init()} executes before the module reference is bound.
+     */
+    public function moduleBound(): void {}
 
     /**
      * Records an exception thrown during capture or hydration so {@see LogTarget} can surface it in the UI.

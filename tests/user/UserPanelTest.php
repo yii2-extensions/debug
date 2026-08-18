@@ -19,8 +19,8 @@ use yii\debug\tests\support\stub\{
     Identity,
     ModelIdentity,
     NoSearchFilterModel,
+    RequiredOptionAction,
     SearchableFilterModel,
-    UserControllerNoAction,
 };
 use yii\debug\tests\support\TestCase;
 use yii\rbac\{Permission, Role};
@@ -68,6 +68,26 @@ final class UserPanelTest extends TestCase
         );
     }
 
+    public function testCanSwitchUserPreservesConfiguredActionProperties(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
+
+        $module = $panel->module ?? self::fail('Module must be wired.');
+
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        // A stripped config would drop 'requiredOption' and make the action throw on instantiation.
+        $module->actionMap['set-identity'] = [
+            'class' => RequiredOptionAction::class,
+            'requiredOption' => 'configured',
+        ];
+
+        self::assertTrue(
+            $panel->canSwitchUser(),
+            "Array-shaped 'set-identity' config must apply configured properties.",
+        );
+    }
+
     public function testCanSwitchUserReturnsFalseWhenAccessRuleDenies(): void
     {
         $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
@@ -78,19 +98,19 @@ final class UserPanelTest extends TestCase
         );
     }
 
-    public function testCanSwitchUserReturnsFalseWhenControllerIsNotUserController(): void
+    public function testCanSwitchUserReturnsFalseWhenMappedActionIsNotAnAction(): void
     {
         $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
-        $module->controllerMap['user'] = [
-            'class' => Controller::class,
-        ];
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        $module->actionMap['set-identity'] = stdClass::class;
 
         self::assertFalse(
             $panel->canSwitchUser(),
-            'Non-UserController override must deny switching.',
+            'Non-action class in the action map must deny switching.',
         );
     }
 
@@ -100,11 +120,13 @@ final class UserPanelTest extends TestCase
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
-        $module->controllerMap['user'] = UserControllerNoAction::class;
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        unset($module->actionMap['set-identity']);
 
         self::assertFalse(
             $panel->canSwitchUser(),
-            "Missing 'set-identity' action must deny switching.",
+            "Missing 'set-identity' entry must deny switching.",
         );
     }
 
@@ -563,22 +585,7 @@ final class UserPanelTest extends TestCase
         );
     }
 
-    public function testInitDoesNothingWhenDisabled(): void
-    {
-        $this->mockWebApplication(['components' => ['user' => stdClass::class]]);
-
-        $module = new Module('debug');
-        $module->logTarget = new LogTarget($module);
-
-        $panel = new UserPanel(['id' => 'user', 'module' => $module]);
-
-        self::assertNull(
-            $panel->userSwitch,
-            "UserSwitch must remain 'null' when the panel is disabled.",
-        );
-    }
-
-    public function testInitDoesNothingWhenUserIsGuest(): void
+    public function testInitAttachesTheSwitchAccessGuardForGuest(): void
     {
         $this->mockWebApplication(
             [
@@ -597,9 +604,28 @@ final class UserPanelTest extends TestCase
 
         $panel = new UserPanel(['id' => 'user', 'module' => $module]);
 
+        self::assertNotNull(
+            $module->getBehavior('access_debug'),
+            'Switch actions must stay gated for a guest.',
+        );
+        self::assertNull(
+            $panel->filterModel,
+            'Guest must not get the user-search filter.',
+        );
+    }
+
+    public function testInitDoesNothingWhenDisabled(): void
+    {
+        $this->mockWebApplication(['components' => ['user' => stdClass::class]]);
+
+        $module = new Module('debug');
+        $module->logTarget = new LogTarget($module);
+
+        $panel = new UserPanel(['id' => 'user', 'module' => $module]);
+
         self::assertNull(
             $panel->userSwitch,
-            "UserSwitch must remain 'null' when the user is a guest.",
+            "UserSwitch must remain 'null' when the panel is disabled.",
         );
     }
 
@@ -668,6 +694,58 @@ final class UserPanelTest extends TestCase
         self::assertTrue(
             $panel->isEnabled(),
             "Resolvable user component must yield 'true'.",
+        );
+    }
+
+    public function testModuleBoundAttachesTheSwitchAccessGuardForPrebuiltPanelInstance(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                        'enableSession' => false,
+                    ],
+                ],
+            ],
+        );
+
+        $panel = new UserPanel();
+
+        self::assertNull(
+            $panel->module,
+            'Prebuilt panel must start without a module reference.',
+        );
+
+        $module = new Module('debug', null, ['panels' => ['user' => $panel]]);
+
+        self::assertSame(
+            $module,
+            $panel->module,
+            'Module must bind itself onto the prebuilt instance.',
+        );
+        self::assertNotNull(
+            $module->getBehavior('access_debug'),
+            'Switch actions must stay gated for a prebuilt instance.',
+        );
+    }
+
+    public function testModuleBoundSkipsTheAccessGuardWhenPanelIsDisabled(): void
+    {
+        $this->mockWebApplication(['components' => ['user' => stdClass::class]]);
+
+        $panel = new UserPanel();
+        $module = new Module('debug', null, ['panels' => ['user' => $panel]]);
+
+        self::assertNull(
+            $module->getBehavior('access_debug'),
+            'No guard must attach without a user-switch model.',
+        );
+        self::assertArrayNotHasKey(
+            'user',
+            $module->panels,
+            'Disabled panel must be dropped.',
         );
     }
 

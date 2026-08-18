@@ -126,8 +126,9 @@ class FilterBanner extends Widget
     }
 
     /**
-     * Builds a URL for the current route, preserving every existing query param except the listed
-     * `<FormName>[<attr>]` slots and the `page` cursor (so removing a filter always lands on page one).
+     * Builds a URL for the current standalone-action route (or the controller route as a fallback), preserving every
+     * existing query param except the listed `<FormName>[<attr>]` slots and the `page` cursor (so removing a filter
+     * always lands on page one).
      *
      * @param string $formName Search model's form name (the param prefix to manipulate).
      * @param list<string> $without Attribute names whose `<FormName>[<attr>]` slot should be dropped.
@@ -150,9 +151,14 @@ class FilterBanner extends Widget
 
         unset($params['page']);
 
-        $controller = Yii::$app->controller;
-        $controllerRoute = $controller !== null ? $controller->getRoute() : '';
-        $route = "/{$controllerRoute}";
+        $action = Yii::$app->requestedAction;
+
+        if ($action !== null) {
+            $route = '/' . $action->getUniqueId();
+        } else {
+            $controller = Yii::$app->controller;
+            $route = '/' . ($controller !== null ? $controller->getRoute() : '');
+        }
 
         array_unshift($params, $route);
 

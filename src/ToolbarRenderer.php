@@ -57,7 +57,7 @@ final readonly class ToolbarRenderer
      * Usage example:
      *
      * ```php
-     * $element = $renderer->renderElement('/debug/default/toolbar-data?tag=request-1');
+     * $element = $renderer->renderElement('/debug/toolbar-data?tag=request-1');
      * ```
      *
      * @param string $dataUrl Toolbar payload URL.
@@ -89,6 +89,9 @@ final readonly class ToolbarRenderer
     /**
      * Renders a script tag for the Yii2-published toolbar runtime.
      *
+     * Emits `type="module"` so the ES-module chunk keeps its own top-level scope and cannot collide with host-page
+     * globals or other classic scripts.
+     *
      * Usage example:
      *
      * ```php
@@ -102,6 +105,6 @@ final readonly class ToolbarRenderer
         $bundle = $this->assetManager->getBundle(ToolbarAsset::class);
         $url = $this->assetManager->getAssetUrl($bundle, 'dist/js/toolbar.min.js');
 
-        return Html::jsFile($url);
+        return Html::jsFile($url, ['type' => 'module']);
     }
 }

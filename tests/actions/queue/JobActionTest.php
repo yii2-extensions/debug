@@ -8,17 +8,15 @@ use PHPForge\Debug\Panel\Queue\QueueSnapshot;
 use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
-use yii\base\Controller as BaseController;
 use yii\debug\actions\queue\JobAction;
-use yii\debug\controllers\DefaultController;
 use yii\debug\Module;
 use yii\debug\panels\QueuePanel;
 use yii\debug\tests\support\TestCase;
-use yii\web\{AssetManager, HttpException};
+use yii\web\{AssetManager, HttpException, ServerErrorHttpException};
 
 /**
- * Unit tests for {@see JobAction} covering the panel-missing / non-DefaultController / record-not-found error paths,
- * and the happy path that renders the queue-job detail view for a captured record (both regular and AJAX requests).
+ * Unit tests for {@see JobAction} covering the missing-panel-service and record-not-found error paths, and the
+ * happy path that renders the queue-job detail view for a captured record (both regular and AJAX requests).
  */
 #[Group('actions')]
 #[Group('queue')]
@@ -42,15 +40,16 @@ final class JobActionTest extends TestCase
             ['queue' => QueueSnapshot::capture([])],
         );
 
-        $controller = new DefaultController('default', $module);
-        $action = new JobAction('queue-job', $controller, ['panel' => $queuePanel]);
+        $action = new JobAction('queue-job');
+
+        $action->setModule($module);
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage(
             'Queue job record not found.',
         );
 
-        $action->run('0', 'tag-empty-queue');
+        $action->run('0', 'tag-empty-queue', $queuePanel);
     }
 
     public function testRunRendersAjaxPartialWhenRequestIsAjax(): void
@@ -85,18 +84,16 @@ final class JobActionTest extends TestCase
             ['queue' => QueueSnapshot::capture($records)],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = new JobAction('queue-job');
 
-        Yii::$app->controller = $controller;
-
-        $action = new JobAction('queue-job', $controller, ['panel' => $queuePanel]);
+        $action->setModule($module);
 
         Yii::$app->getRequest()->setUrl('dummy');
 
         $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
 
         try {
-            $html = $action->run('0', 'tag-queue-ajax');
+            $html = $action->run('0', 'tag-queue-ajax', $queuePanel);
         } finally {
             unset($_SERVER['HTTP_X_REQUESTED_WITH']);
         }
@@ -140,15 +137,13 @@ final class JobActionTest extends TestCase
             ['queue' => QueueSnapshot::capture($records)],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = new JobAction('queue-job');
 
-        Yii::$app->controller = $controller;
-
-        $action = new JobAction('queue-job', $controller, ['panel' => $queuePanel]);
+        $action->setModule($module);
 
         Yii::$app->getRequest()->setUrl('dummy');
 
-        $html = $action->run('0', 'tag-queue');
+        $html = $action->run('0', 'tag-queue', $queuePanel);
 
         self::assertStringContainsString(
             'HelloJob',
@@ -175,45 +170,30 @@ final class JobActionTest extends TestCase
             ['queue' => QueueSnapshot::capture([])],
         );
 
-        $controller = new DefaultController('default', $module);
-        $action = new JobAction('queue-job', $controller, ['panel' => $queuePanel]);
+        $action = new JobAction('queue-job');
+
+        $action->setModule($module);
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage(
             'Queue job record not found.',
         );
 
-        $action->run('99', 'tag-empty-queue');
+        $action->run('99', 'tag-empty-queue', $queuePanel);
     }
 
-    public function testThrowHttpExceptionWhenControllerIsNotDefaultController(): void
+    public function testThrowServerErrorHttpExceptionWhenActionHasNoModule(): void
     {
         $this->mockWebApplication();
 
-        $controller = new BaseController('test', new Module('debug'));
-        $action = new JobAction('queue-job', $controller, ['panel' => new QueuePanel()]);
+        $action = new JobAction('queue-job');
 
-        $this->expectException(HttpException::class);
+        $this->expectException(ServerErrorHttpException::class);
         $this->expectExceptionMessage(
-            'must run inside the debug DefaultController',
+            'Could not load required service: panel',
         );
 
-        $action->run('0', 'irrelevant');
-    }
-
-    public function testThrowHttpExceptionWhenPanelIsMissing(): void
-    {
-        $this->mockWebApplication();
-
-        $controller = new BaseController('test', new Module('debug'));
-        $action = new JobAction('queue-job', $controller);
-
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage(
-            'QueuePanel instance is not set',
-        );
-
-        $action->run('0', 'irrelevant');
+        $action->runWithParams(['seq' => '0', 'tag' => 'irrelevant']);
     }
 
     private function bootDebugModule(): Module

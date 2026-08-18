@@ -11,11 +11,12 @@ use stdClass;
 use Yii;
 use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfigException};
 use yii\caching\FileCache;
-use yii\debug\controllers\DefaultController;
-use yii\debug\{DebugAsset, LogTarget, Module, Panel, VersionResolver};
-use yii\debug\panels\LogPanel;
+use yii\db\Connection;
+use yii\debug\actions\{PhpInfoAction, ToolbarDataAction};
+use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, VersionResolver};
+use yii\debug\panels\{DbPanel, LogPanel};
 use yii\debug\tests\provider\ModuleProvider;
-use yii\debug\tests\support\stub\NotALogTarget;
+use yii\debug\tests\support\stub\{CustomDbPanel, ModuleBoundRecordingPanel, NotALogTarget};
 use yii\debug\tests\support\TestCase;
 use yii\log\{Dispatcher, Target as LogTargetBase};
 use yii\web\{AssetManager, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
@@ -60,12 +61,16 @@ final class ModuleTest extends TestCase
             ],
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = new PhpInfoAction('php-info');
 
-        $controller->layout = false;
+        $action->setModule($module);
 
-        $output = $controller->actionPhpInfo();
+        $output = $action->runWithParams([]);
 
+        self::assertIsString(
+            $output,
+            'Rendered output must be a string.',
+        );
         self::assertStringContainsString(
             'phpinfo',
             $output,
@@ -346,6 +351,11 @@ final class ModuleTest extends TestCase
             'DebugAsset must ship one consolidated panel script.',
         );
         self::assertSame(
+            'module',
+            $asset->jsOptions['type'] ?? null,
+            'Panel script must load as an ES module.',
+        );
+        self::assertSame(
             Yii::getAlias(Module::SOURCE_PATH),
             $asset->sourcePath,
             'DebugAsset must publish the framework-neutral core frontend.',
@@ -425,7 +435,7 @@ final class ModuleTest extends TestCase
             'Toolbar must render the custom element marker.',
         );
         self::assertStringContainsString(
-            "data-url=\"/index.php?r=debug%2Fdefault%2Ftoolbar-data&amp;tag={$logTarget->tag}\"",
+            "data-url=\"/index.php?r=debug%2Ftoolbar-data&amp;tag={$logTarget->tag}\"",
             $html,
             'Toolbar must point its data-url to the toolbar-data action with the current tag.',
         );
@@ -486,6 +496,18 @@ final class ModuleTest extends TestCase
             Yii::getAlias($module->viewPath),
             Yii::getAlias(Module::VIEW_PATH_ALIAS),
             'The adapter-owned alias must target the shared Debug Core templates.',
+        );
+    }
+
+    public function testInitDoesNotRegisterTheGenericPanelBaseClass(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        self::assertFalse(
+            $module->has(Panel::class),
+            'Generic base must stay unregistered.',
         );
     }
 
@@ -557,6 +579,55 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testInitPanelsFiresModuleBoundOnceForEveryResolutionPath(): void
+    {
+        $instance = new ModuleBoundRecordingPanel();
+
+        $module = new Module(
+            'debug',
+            null,
+            [
+                'panels' => [
+                    'rec-array' => ['class' => ModuleBoundRecordingPanel::class],
+                    'rec-instance' => $instance,
+                ],
+            ],
+        );
+
+        self::assertSame(
+            1,
+            $instance->moduleBoundCalls,
+            'Exactly one invocation on the instance path.',
+        );
+        self::assertTrue(
+            $instance->moduleBoundWithModule,
+            'Module reference must be present at call time.',
+        );
+
+        self::assertArrayHasKey(
+            'rec-array',
+            $module->panels,
+            'Array-built panel must surface under its id.',
+        );
+
+        $arrayPanel = $module->panels['rec-array'];
+
+        self::assertInstanceOf(
+            ModuleBoundRecordingPanel::class,
+            $arrayPanel,
+            'Array-built panel must resolve through the container.',
+        );
+        self::assertSame(
+            1,
+            $arrayPanel->moduleBoundCalls,
+            'Exactly one invocation on the array path.',
+        );
+        self::assertTrue(
+            $arrayPanel->moduleBoundWithModule,
+            'Module reference must be present at call time.',
+        );
+    }
+
     public function testInitPanelsOverridesCorePanelByMatchingId(): void
     {
         $override = new LogPanel();
@@ -579,6 +650,57 @@ final class ModuleTest extends TestCase
             'broken',
             $module->panels,
             'Panel configs with an unloadable class must be dropped silently.',
+        );
+    }
+
+    public function testInitRegistersEnabledPanelsInServiceLocatorUnderTheirClass(): void
+    {
+        $this->mockWebApplication(
+            ['components' => ['db' => ['class' => Connection::class, 'dsn' => 'sqlite::memory:']]],
+        );
+
+        $module = new Module('debug');
+
+        self::assertTrue(
+            $module->has(DbPanel::class),
+            'DB panel must be locatable by its class.',
+        );
+        self::assertSame(
+            $module->panels['db'] ?? null,
+            $module->get(DbPanel::class),
+            'Locator must return the registered panel instance.',
+        );
+    }
+
+    public function testInitRegistersPanelAncestorClassesBelowThePanelBase(): void
+    {
+        $this->mockWebApplication(
+            ['components' => ['db' => ['class' => Connection::class, 'dsn' => 'sqlite::memory:']]],
+        );
+
+        $module = new Module('debug', null, ['panels' => ['db' => CustomDbPanel::class]]);
+
+        self::assertSame(
+            $module->panels['db'] ?? null,
+            $module->get(CustomDbPanel::class),
+            'Subclass key must resolve to the configured instance.',
+        );
+        self::assertSame(
+            $module->panels['db'],
+            $module->get(DbPanel::class),
+            'Built-in class key must resolve to the same subclass instance.',
+        );
+    }
+
+    public function testInitSkipsServiceRegistrationForDisabledPanels(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        self::assertFalse(
+            $module->has(DbPanel::class),
+            'Disabled panel must not be locatable.',
         );
     }
 
@@ -630,6 +752,11 @@ final class ModuleTest extends TestCase
             '<yii-debug-toolbar',
             $event->output,
             "'injectToolbarOnErrorPage' must inject the toolbar HTML before '</body>'.",
+        );
+        self::assertStringContainsString(
+            '<script type="module"',
+            $event->output,
+            'Runtime script must load as an ES module.',
         );
     }
 
@@ -1003,6 +1130,27 @@ final class ModuleTest extends TestCase
         }
     }
 
+    public function testToolbarAssetShipsSharedRuntimeAsEsModule(): void
+    {
+        $asset = new ToolbarAsset();
+
+        self::assertSame(
+            ['dist/js/toolbar.min.js'],
+            $asset->js,
+            'ToolbarAsset must ship one consolidated runtime script.',
+        );
+        self::assertSame(
+            'module',
+            $asset->jsOptions['type'] ?? null,
+            'Runtime script must load as an ES module.',
+        );
+        self::assertSame(
+            Yii::getAlias(Module::SOURCE_PATH),
+            $asset->sourcePath,
+            'ToolbarAsset must publish the framework-neutral core frontend.',
+        );
+    }
+
     public function testToolbarDataActionExposesNewBrandKeys(): void
     {
         $this->resetDebugDataPath();
@@ -1040,9 +1188,11 @@ final class ModuleTest extends TestCase
             'Manifest must expose at least one captured request tag.',
         );
 
-        $controller = new DefaultController('default', $module);
+        $action = new ToolbarDataAction('toolbar-data');
 
-        $data = $controller->actionToolbarData($tag);
+        $action->setModule($module);
+
+        $data = $action->run($tag);
 
         self::assertArrayNotHasKey(
             'error',

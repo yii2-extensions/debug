@@ -89,7 +89,7 @@ final class TimelineRenderer
         $moduleId = $panel->module !== null ? $panel->module->getUniqueId() : 'debug';
 
         $profilingUrl = [
-            "/{$moduleId}/default/view",
+            "/{$moduleId}/view",
             'panel' => 'profiling',
             'tag' => $panel->tag,
         ];
@@ -126,7 +126,7 @@ final class TimelineRenderer
             ->html(
                 InputHidden::tag()
                     ->name('r')
-                    ->value('debug/default/view'),
+                    ->value('debug/view'),
                 InputHidden::tag()
                     ->name('panel')
                     ->value('timeline'),

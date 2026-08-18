@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Helper\Coerce;
+use yii\debug\Module;
 use UIAwesome\Html\Flow\P;
 use UIAwesome\Html\Form\Button;
 use UIAwesome\Html\Form\Values\ButtonType;
@@ -70,11 +72,10 @@ if ($hasMessages) {
     <div id="email-form" class="yii-debug-collapsible">
         <?php $form = ActiveForm::begin(
             [
-                'action' => [
-                    'default/view',
-                    'tag' => Yii::$app->request->get('tag'),
+                'action' => Module::route('view', [
+                    'tag' => Coerce::string(Yii::$app->request->get('tag')),
                     'panel' => 'mail',
-                ],
+                ]),
                 'enableClientScript' => false,
                 'method' => 'get',
                 'options' => ['class' => 'yii-debug-stack'],

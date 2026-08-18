@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\Module;
 use UIAwesome\Html\Heading\H1;
 use PHPForge\Debug\Panel\Config\{ConfigCardRenderer, ConfigSummary};
 use yii\helpers\Url;
@@ -13,4 +14,4 @@ use yii\helpers\Url;
 <?= ConfigCardRenderer::renderPhpExtensionsSection($summary->php) ?>
 <?= ConfigCardRenderer::renderApplicationDetailsSection($summary->application) ?>
 <?= ConfigCardRenderer::renderInstalledExtensionsSection($summary) ?>
-<?= ConfigCardRenderer::renderPhpInfoCta(Url::to(['php-info']));
+<?= ConfigCardRenderer::renderPhpInfoCta(Url::to(Module::route('php-info')));

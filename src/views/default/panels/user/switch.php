@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use yii\debug\Module;
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Form\Button;
 use UIAwesome\Html\Form\Values\ButtonType;
@@ -21,65 +22,62 @@ use yii\widgets\ActiveForm;
  */
 $userSwitch = $panel->userSwitch;
 ?>
-<?= H2::tag()
-    ->content('Switch user') ?>
-<div class="yii-debug-grid-2">
-    <?php if ($userSwitch !== null): ?>
-    <div>
-        <?php $formSet = ActiveForm::begin(
+<div class="yii-debug-section-header">
+    <?= H2::tag()
+        ->content('Switch user') ?>
+    <?php if ($userSwitch !== null && !$userSwitch->isMainUser()): ?>
+        <?php ActiveForm::begin(
             [
-                'action' => Url::to(['user/set-identity']),
+                'action' => Url::to(Module::route('reset-identity')),
                 'enableClientScript' => false,
-                'options' => [
-                    'id' => 'debug-userswitch__set-identity',
-                    'style' => $panel->canSearchUsers() ? 'display:none' : '',
-                    'class' => 'yii-debug-stack',
-                ],
+                'options' => ['id' => 'debug-userswitch__reset-identity'],
             ],
-        ); ?>
-        <?= $formSet->field(
-            $userSwitch,
-            'user[id]',
-            ['options' => ['class' => 'yii-debug-field']],
-        )
-        ->textInput(
-            [
-                'class' => 'yii-debug-input',
-                'id' => 'user_id',
-                'name' => 'user_id',
-            ],
-        )
-        ->label('Switch User', ['class' => 'yii-debug-label']) ?>
+        ) ?>
         <?= Button::tag()
-            ->type(ButtonType::SUBMIT)
-            ->class('yii-debug-btn yii-debug-btn-primary')
-            ->content('Switch') ?>
+            ->class('yii-debug-btn yii-debug-btn-ghost')
+            ->html(
+                'Reset to ',
+                Span::tag()
+                    ->class('yii-debug-level-chip yii-debug-level-info')
+                    ->content((string) $userSwitch->getMainUser()->getId()),
+            )
+            ->id('debug-userswitch__reset-identity-button')
+            ->type(ButtonType::SUBMIT) ?>
         <?php ActiveForm::end() ?>
-    </div>
-    <div>
-        <?php if (!$userSwitch->isMainUser()): ?>
-            <?php ActiveForm::begin(
-                [
-                    'action' => Url::to(['user/reset-identity']),
-                    'enableClientScript' => false,
-                    'options' => ['id' => 'debug-userswitch__reset-identity'],
-                ],
-            ) ?>
-            <?= Button::tag()
-                ->class('yii-debug-btn yii-debug-btn-ghost')
-                ->html(
-                    'Reset to ',
-                    Span::tag()
-                        ->class('yii-debug-level-chip yii-debug-level-info')
-                        ->content((string) $userSwitch->getMainUser()->getId()),
-                )
-                ->id('debug-userswitch__reset-identity-button')
-                ->type(ButtonType::SUBMIT) ?>
-            <?php ActiveForm::end() ?>
-        <?php endif ?>
-    </div>
     <?php endif ?>
 </div>
+
+<?php if ($userSwitch !== null): ?>
+    <?php $formSet = ActiveForm::begin(
+        [
+            'action' => Url::to(Module::route('set-identity')),
+            'enableClientScript' => false,
+            'options' => [
+                'id' => 'debug-userswitch__set-identity',
+                'style' => $panel->canSearchUsers() ? 'display:none' : '',
+                'class' => 'yii-debug-stack',
+            ],
+        ],
+    ); ?>
+    <?= $formSet->field(
+        $userSwitch,
+        'user[id]',
+        ['options' => ['class' => 'yii-debug-field']],
+    )
+    ->textInput(
+        [
+            'class' => 'yii-debug-input',
+            'id' => 'user_id',
+            'name' => 'user_id',
+        ],
+    )
+    ->label('Switch User', ['class' => 'yii-debug-label']) ?>
+    <?= Button::tag()
+        ->type(ButtonType::SUBMIT)
+        ->class('yii-debug-btn yii-debug-btn-primary')
+        ->content('Switch') ?>
+    <?php ActiveForm::end() ?>
+<?php endif ?>
 
 <?php if ($panel->canSearchUsers()): ?>
     <?php $usersFilterModel = $panel->getUsersFilterModel(); ?>

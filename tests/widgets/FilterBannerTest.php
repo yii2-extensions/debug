@@ -7,12 +7,12 @@ namespace yii\debug\tests\widgets;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\debug\actions\IndexAction;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\search\LogSearch;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\FilterBanner;
 use yii\helpers\{Html, Url};
-use yii\web\Controller;
 
 /**
  * Unit tests for {@see FilterBanner} covering the no-filters short-circuit, the pill list rendering, the per-attribute
@@ -64,17 +64,9 @@ final class FilterBannerTest extends TestCase
             'Every active filter must render its own removal pill.',
         );
 
-        $controller = Yii::$app->controller;
-
-        self::assertInstanceOf(
-            Controller::class,
-            $controller,
-            'Filter links require the active controller route.',
-        );
-
         $expectedCategoryRemovalUrl = Url::to(
             [
-                "/{$controller->getRoute()}",
+                '/debug/index',
                 'LogSearch' => ['message' => 'login'],
             ],
         );
@@ -82,7 +74,7 @@ final class FilterBannerTest extends TestCase
         self::assertStringContainsString(
             'href="' . Html::encode($expectedCategoryRemovalUrl) . '"',
             $html,
-            'Category removal must preserve the other active filter.',
+            'Removal must target the dispatched action route and keep the other filter.',
         );
     }
 
@@ -168,6 +160,12 @@ final class FilterBannerTest extends TestCase
         $module = new Module('debug');
         $module->logTarget = new LogTarget($module);
 
-        Yii::$app->controller = new Controller('debug', $module);
+        // Debugger pages dispatch as standalone module actions (no controller), so filter links must derive their
+        // route from the requested action.
+        $action = new IndexAction('index');
+
+        $action->setModule($module);
+
+        Yii::$app->requestedAction = $action;
     }
 }

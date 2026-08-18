@@ -187,7 +187,7 @@ class MailPanel extends Panel
 
         $panelUrl = Url::toRoute(
             [
-                "/{$moduleId}/default/view",
+                "/{$moduleId}/view",
                 'panel' => $this->id,
                 'tag' => $previousTag,
             ],

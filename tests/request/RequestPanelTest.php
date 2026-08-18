@@ -43,7 +43,7 @@ final class RequestPanelTest extends TestCase
         );
     }
 
-    public function testGetDetailUsesEmptySummaryWhenControllerIsNotDefaultController(): void
+    public function testGetDetailUsesEmptySummaryWhenRequestedActionIsNotADebugAction(): void
     {
         $panel = $this->makePanel(RequestPanel::class);
 
@@ -59,7 +59,7 @@ final class RequestPanelTest extends TestCase
 
         self::assertNotEmpty(
             $panel->getDetail(),
-            'Non-default controller must fall back to an empty summary.',
+            'Non-debug dispatch must fall back to an empty summary.',
         );
     }
 

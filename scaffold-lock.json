@@ -35,7 +35,7 @@
             "mode": "replace"
         },
         ".prettierignore": {
-            "hash": "sha256:d12c54d82c23d562342765ceda6897ca26b73eba0c700c127408c0a9bc17d595",
+            "hash": "sha256:f9190dda61229a5daf8df6113600eb8183bbf98d2a89d7b4944a889ddca0ac0d",
             "provider": "php-forge/baseline",
             "source": "metadata/.prettierignore",
             "mode": "replace"
