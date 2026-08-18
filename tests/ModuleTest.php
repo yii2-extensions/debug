@@ -16,7 +16,7 @@ use yii\debug\actions\{PhpInfoAction, ToolbarDataAction};
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, VersionResolver};
 use yii\debug\panels\{DbPanel, LogPanel};
 use yii\debug\tests\provider\ModuleProvider;
-use yii\debug\tests\support\stub\{CustomDbPanel, ModuleBoundRecordingPanel, NotALogTarget};
+use yii\debug\tests\support\stub\{CustomCollector, CustomDbPanel, ModuleBoundRecordingPanel, NotALogTarget};
 use yii\debug\tests\support\TestCase;
 use yii\log\{Dispatcher, Target as LogTargetBase};
 use yii\web\{AssetManager, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
@@ -190,6 +190,33 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testBootstrapAppliesAccessChecksToStandaloneDebuggerRequests(): void
+    {
+        $module = new Module('debug');
+
+        $module->allowedIPs = ['10.0.0.1'];
+        $module->disableIpRestrictionWarning = true;
+
+        Yii::$app->setModule('debug', $module);
+
+        $module->bootstrap(Yii::$app);
+
+        $action = new ToolbarDataAction('toolbar-data');
+
+        $action->setModule($module);
+
+        $event = new ActionEvent($action);
+
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+        Yii::$app->trigger(Application::EVENT_BEFORE_ACTION, $event);
+
+        self::assertFalse(
+            $event->isValid,
+            'Standalone debugger actions must not bypass the module access check.',
+        );
+    }
+
     public function testBootstrapClosuresWireToolbarAndDebugHeaderListeners(): void
     {
         $module = new Module('debug');
@@ -216,6 +243,99 @@ final class ModuleTest extends TestCase
         self::assertTrue(
             Yii::$app->getView()->hasEventHandlers(View::EVENT_END_BODY),
             "EVENT_BEFORE_ACTION closure must attach 'renderToolbar' to the view.",
+        );
+    }
+
+    public function testBootstrapKeepsExplicitDebugLoggingWithoutRenderingNestedToolbar(): void
+    {
+        $collector = new CustomCollector();
+        $module = new Module('debug', null, ['collectors' => [$collector]]);
+
+        $module->allowedIPs = ['*'];
+        $module->enableDebugLogs = true;
+
+        Yii::$app->setModule('debug', $module);
+        $module->bootstrap(Yii::$app);
+
+        Yii::$app->trigger(Application::EVENT_BEFORE_REQUEST);
+
+        $action = new PhpInfoAction('php-info');
+
+        $action->setModule($module);
+
+        Yii::$app->trigger(Application::EVENT_BEFORE_ACTION, new ActionEvent($action));
+
+        try {
+            self::assertInstanceOf(LogTarget::class, $module->logTarget);
+            self::assertTrue($module->logTarget->enabled, 'Explicit debugger logging must keep the log target enabled.');
+            self::assertSame(0, $collector->shutdownCount, 'Explicit debugger logging must keep collectors active.');
+            self::assertFalse(
+                Yii::$app->getView()->off(View::EVENT_END_BODY, [$module, 'renderToolbar']),
+                'Debugger pages must never receive a nested toolbar.',
+            );
+        } finally {
+            $module->getCollectorCoordinator()->shutdown();
+        }
+    }
+
+    public function testBootstrapPreservesAnApplicationVetoForStandaloneDebuggerRequests(): void
+    {
+        $module = new Module('debug');
+
+        $module->allowedIPs = ['*'];
+
+        Yii::$app->setModule('debug', $module);
+        Yii::$app->on(
+            Application::EVENT_BEFORE_ACTION,
+            static function (ActionEvent $event): void {
+                $event->isValid = false;
+            },
+        );
+        $module->bootstrap(Yii::$app);
+
+        $action = new PhpInfoAction('php-info');
+
+        $action->setModule($module);
+
+        $event = new ActionEvent($action);
+
+        Yii::$app->trigger(Application::EVENT_BEFORE_ACTION, $event);
+
+        self::assertFalse($event->isValid, 'The debugger lifecycle must not re-enable an action vetoed by the host.');
+    }
+
+    public function testBootstrapSuppressesStandaloneDebuggerRequestsBeforeRendering(): void
+    {
+        $collector = new CustomCollector();
+        $module = new Module('debug', null, ['collectors' => [$collector]]);
+
+        $module->allowedIPs = ['*'];
+
+        Yii::$app->setModule('debug', $module);
+        $module->bootstrap(Yii::$app);
+
+        Yii::$app->trigger(Application::EVENT_BEFORE_REQUEST);
+
+        $action = new PhpInfoAction('php-info');
+
+        $action->setModule($module);
+
+        $event = new ActionEvent($action);
+
+        Yii::$app->trigger(Application::EVENT_BEFORE_ACTION, $event);
+
+        self::assertTrue($event->isValid, 'An allowed standalone debugger action must continue.');
+        self::assertInstanceOf(LogTarget::class, $module->logTarget);
+        self::assertFalse($module->logTarget->enabled, 'Debugger requests must not be persisted by default.');
+        self::assertSame(1, $collector->startupCount, 'Collectors must start at the request boundary.');
+        self::assertSame(1, $collector->shutdownCount, 'Debugger requests must stop collectors before rendering.');
+        self::assertFalse(
+            Yii::$app->getView()->off(View::EVENT_END_BODY, [$module, 'renderToolbar']),
+            'Debugger pages must not receive a nested toolbar.',
+        );
+        self::assertFalse(
+            Yii::$app->getResponse()->off(Response::EVENT_AFTER_PREPARE, [$module, 'setDebugHeaders']),
+            'Debugger responses must not receive debug headers.',
         );
     }
 
@@ -370,6 +490,48 @@ final class ModuleTest extends TestCase
             ['dist/css/debug.min.css'],
             $asset->css,
             'DebugAsset must ship one consolidated stylesheet.',
+        );
+    }
+
+    public function testDebuggerActionGuardsSuppressAllResponseDecoration(): void
+    {
+        $module = new Module('debug');
+
+        $module->allowedIPs = ['*'];
+
+        Yii::$app->setModule('debug', $module);
+        $module->bootstrap(Yii::$app);
+
+        $action = new PhpInfoAction('php-info');
+
+        $action->setModule($module);
+        Yii::$app->requestedAction = $action;
+
+        $errorEvent = new ErrorHandlerRenderEvent();
+
+        $errorEvent->output = '<html><body>debug failure</body></html>';
+
+        $module->injectToolbarOnErrorPage($errorEvent);
+
+        self::assertSame(
+            '<html><body>debug failure</body></html>',
+            $errorEvent->output,
+            'A debugger error page must not receive a nested toolbar.',
+        );
+
+        ob_start();
+        $module->renderToolbar(new Event(['sender' => Yii::$app->view]));
+        $toolbar = (string) ob_get_clean();
+
+        self::assertSame('', $toolbar, 'A debugger page must not render a nested toolbar.');
+
+        $response = Yii::$app->getResponse();
+
+        $module->setDebugHeaders(new Event(['sender' => $response]));
+
+        self::assertFalse(
+            $response->getHeaders()->has('X-Debug-Tag'),
+            'A debugger response must not emit debug headers.',
         );
     }
 
