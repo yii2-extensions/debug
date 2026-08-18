@@ -71,6 +71,7 @@ use function number_format;
 use function str_contains;
 use function strncmp;
 use function strpos;
+use function trim;
 
 /**
  * Bootstraps the debug toolbar and the full-page debugger over the active application.
@@ -95,14 +96,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Adapter-owned alias for the shared Debug Core templates.
      */
     public const string VIEW_PATH_ALIAS = '@yiiDebugViews';
-    /**
-     * Namespace where the standalone debugger actions are discovered by convention.
-     *
-     * Load-bearing: the application resolves module-prefixed routes (for example `debug/index`) through
-     * {@see \yii\base\Module::createStandaloneAction()}, which looks the action class up under this namespace. Without
-     * it, `debug/<action>` URLs fall through to the host application and return 404.
-     */
-    public string|null $actionNamespace = 'yii\debug\actions';
     /**
      * Hosts allowed to access this module. Each entry is resolved to an IP at runtime; useful for dynamic DNS.
      *
@@ -705,6 +698,36 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         $this->actionMap = [...$this->coreActionMap(), ...$panelActions, ...$this->actionMap];
+    }
+
+    /**
+     * Resolves a debugger endpoint from {@see \yii\base\Module::$actionMap} before falling back to convention-based
+     * discovery.
+     *
+     * Application-level dispatch of a module-prefixed route (for example `debug/db-explain`) reaches this method
+     * through {@see \yii\base\Module::createStandaloneAction()}. Convention discovery derives a root-namespace class
+     * from the action ID (`db-explain` becomes `DbExplainAction`) and cannot see the sub-namespaced panel action
+     * classes ({@see \yii\debug\actions\db\ExplainAction}, {@see \yii\debug\actions\queue\JobAction}), so the mapped
+     * entries are consulted first to keep those routes reachable.
+     */
+    #[Override]
+    protected function createStandaloneAction(string $route): Action|null
+    {
+        $id = trim($route, '/');
+
+        if ($id !== '' && strpos($id, '/') === false && isset($this->actionMap[$id])) {
+            $action = Yii::createObject($this->actionMap[$id]);
+
+            if ($action instanceof Action) {
+                $action->id = $id;
+
+                $action->setModule($this);
+
+                return $action;
+            }
+        }
+
+        return parent::createStandaloneAction($route);
     }
 
     /**

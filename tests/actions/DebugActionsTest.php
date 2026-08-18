@@ -450,12 +450,12 @@ final class DebugActionsTest extends TestCase
         );
     }
 
-    public function testAppDispatchesDebugRouteThroughModuleActionNamespace(): void
+    public function testAppDispatchesBuiltInDebugRouteThroughActionMap(): void
     {
         $module = $this->bootDebugModule();
 
-        // Application-level dispatch of a module-prefixed route resolves the action through the module's
-        // action namespace (not its actionMap), which is how the URL manager reaches `debug/<action>`.
+        // Application-level dispatch of a module-prefixed route reaches the module through 'createStandaloneAction()',
+        // which the module overrides to resolve the endpoint from its action map (the URL manager path).
         $html = Yii::$app->runAction("{$module->getUniqueId()}/php-info");
 
         self::assertIsString(
@@ -465,7 +465,43 @@ final class DebugActionsTest extends TestCase
         self::assertStringContainsString(
             'phpinfo',
             $html,
-            "Route 'debug/php-info' must resolve via the module action namespace.",
+            "Route 'debug/php-info' must resolve from the action map.",
+        );
+    }
+
+    public function testAppDispatchesPanelDebugRouteThroughActionMap(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-panel-route',
+            ['db' => new DbSnapshot([self::queryRow('SELECT 1')])],
+        );
+
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+
+        // The 'db-explain' id maps to the sub-namespaced 'actions\db\ExplainAction', which convention discovery
+        // cannot derive; the action-map lookup keeps the URL reachable.
+        try {
+            $html = Yii::$app->runAction(
+                "{$module->getUniqueId()}/db-explain",
+                ['seq' => '0', 'tag' => 'tag-panel-route'],
+            );
+        } finally {
+            unset($_SERVER['HTTP_X_REQUESTED_WITH']);
+        }
+
+        self::assertIsString(
+            $html,
+            'Module-prefixed panel dispatch must return the rendered output.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
+            $html,
+            "Sub-namespaced 'db-explain' action must resolve from the action map.",
         );
     }
 
