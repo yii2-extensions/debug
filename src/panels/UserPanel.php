@@ -239,8 +239,11 @@ class UserPanel extends Panel
     }
 
     /**
-     * Wires the user-switch model, the access rules, and the filter model when the user component resolves to a
-     * non-guest identity.
+     * Wires the user-switch model and the deny-by-default access rules for the switch actions, then adds the search
+     * filter model when the user component resolves to a non-guest identity.
+     *
+     * The access rules attach even for a guest, so an unauthenticated request cannot reach `set-identity` or
+     * `reset-identity` unless the configured {@see $ruleUserSwitch} explicitly allows it.
      *
      * @throws InvalidConfigException When the user component cannot be resolved or the filter model cannot be created.
      */
@@ -250,15 +253,18 @@ class UserPanel extends Panel
             return;
         }
 
+        $this->userSwitch = new UserSwitch(['userComponent' => $this->userComponent]);
+
+        if ($this->module !== null) {
+            $this->addAccessRules();
+        }
+
         $user = $this->getUser();
 
         if ($user === null || $user->isGuest) {
             return;
         }
 
-        $this->userSwitch = new UserSwitch(['userComponent' => $this->userComponent]);
-
-        $this->addAccessRules();
         $this->initFilterModel($user);
     }
 

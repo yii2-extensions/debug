@@ -292,16 +292,9 @@ class Action extends \yii\web\Action implements ViewContextInterface
         $phpVersion = $configPanel instanceof ConfigPanel ? $configPanel->getPhpVersion() : null;
 
         $configTag = $activeTag ?? array_key_first($manifest);
-        $moduleId = $module->getUniqueId();
         $configUrl = $configTag === null
             ? null
-            : Url::to(
-                [
-                    "/{$moduleId}/view",
-                    'panel' => 'config',
-                    'tag' => $configTag,
-                ],
-            );
+            : Url::to(Module::route('view', ['panel' => 'config', 'tag' => $configTag]));
 
         $peakMemory = $summary?->peakMemory;
 
@@ -411,8 +404,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
      * duck-typed `$exception` slot without recreating or executing the original throwable.
      *
      * @param ExceptionSnapshot $error Exception captured by the panel, typically via {@see Panel::getError()}.
-     *
-     * @throws InvalidConfigException When the application is not bound to a `yii\web\ErrorHandler`.
      *
      * @return string Rendered exception view body.
      */

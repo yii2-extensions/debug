@@ -7,7 +7,7 @@ namespace yii\debug\tests\actions;
 use Exception;
 use LogicException;
 use PHPForge\Debug\Panel\Config\ConfigSnapshot;
-use PHPForge\Debug\Panel\Db\DbSnapshot;
+use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
@@ -790,6 +790,54 @@ final class DebugActionsTest extends TestCase
         );
     }
 
+    public function testRunActionDispatchesDbExplainThroughActionMapWithInjectedPanel(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-di',
+            ['db' => new DbSnapshot([self::queryRow('SELECT 1')])],
+        );
+
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+
+        try {
+            $html = $module->runAction('db-explain', ['seq' => '0', 'tag' => 'tag-di']);
+        } finally {
+            unset($_SERVER['HTTP_X_REQUESTED_WITH']);
+        }
+
+        self::assertIsString(
+            $html,
+            'Action-map dispatch must return the rendered output.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
+            $html,
+            'Injected panel must serve the captured query through dispatch.',
+        );
+    }
+
+    public function testRunActionDispatchesPhpInfoThroughActionMap(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $html = $module->runAction('php-info');
+
+        self::assertIsString(
+            $html,
+            'Action-map dispatch must return the rendered output.',
+        );
+        self::assertStringContainsString(
+            'phpinfo',
+            $html,
+            "Route 'php-info' must resolve to the phpinfo action.",
+        );
+    }
+
     public function testSharedShellRendersPeakMemoryAndDisabledConfigChip(): void
     {
         $module = $this->bootDebugModule();
@@ -1056,6 +1104,21 @@ final class DebugActionsTest extends TestCase
         }
 
         return $module;
+    }
+
+    private static function queryRow(string $query): QueryRow
+    {
+        return new QueryRow(
+            type: 'SELECT',
+            query: $query,
+            duration: 50.0,
+            trace: [],
+            traceHash: 'hash',
+            timestamp: 1_700_000_000_000.0,
+            seq: 0,
+            duplicate: 1,
+            rows: null,
+        );
     }
 
     /**

@@ -564,22 +564,7 @@ final class UserPanelTest extends TestCase
         );
     }
 
-    public function testInitDoesNothingWhenDisabled(): void
-    {
-        $this->mockWebApplication(['components' => ['user' => stdClass::class]]);
-
-        $module = new Module('debug');
-        $module->logTarget = new LogTarget($module);
-
-        $panel = new UserPanel(['id' => 'user', 'module' => $module]);
-
-        self::assertNull(
-            $panel->userSwitch,
-            "UserSwitch must remain 'null' when the panel is disabled.",
-        );
-    }
-
-    public function testInitDoesNothingWhenUserIsGuest(): void
+    public function testInitAttachesTheSwitchAccessGuardForGuest(): void
     {
         $this->mockWebApplication(
             [
@@ -598,9 +583,28 @@ final class UserPanelTest extends TestCase
 
         $panel = new UserPanel(['id' => 'user', 'module' => $module]);
 
+        self::assertNotNull(
+            $module->getBehavior('access_debug'),
+            'Switch actions must stay gated for a guest.',
+        );
+        self::assertNull(
+            $panel->filterModel,
+            'Guest must not get the user-search filter.',
+        );
+    }
+
+    public function testInitDoesNothingWhenDisabled(): void
+    {
+        $this->mockWebApplication(['components' => ['user' => stdClass::class]]);
+
+        $module = new Module('debug');
+        $module->logTarget = new LogTarget($module);
+
+        $panel = new UserPanel(['id' => 'user', 'module' => $module]);
+
         self::assertNull(
             $panel->userSwitch,
-            "UserSwitch must remain 'null' when the user is a guest.",
+            "UserSwitch must remain 'null' when the panel is disabled.",
         );
     }
 

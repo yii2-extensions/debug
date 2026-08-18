@@ -26,17 +26,17 @@ class IndexAction extends Action
      */
     public function run(): string
     {
-        $searchModel = new DebugSearch();
-
         $manifest = $this->getManifest();
-
-        $dataProvider = $searchModel->search($_GET, array_values($manifest));
 
         if ($manifest === []) {
             throw new Exception(
                 'No debug data have been collected yet, try browsing the website first.',
             );
         }
+
+        $searchModel = new DebugSearch();
+
+        $dataProvider = $searchModel->search(Yii::$app->getRequest()->getQueryParams(), array_values($manifest));
 
         $tag = array_key_first($manifest);
 
