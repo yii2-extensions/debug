@@ -19,6 +19,7 @@ use yii\debug\tests\support\stub\{
     Identity,
     ModelIdentity,
     NoSearchFilterModel,
+    RequiredOptionAction,
     SearchableFilterModel,
 };
 use yii\debug\tests\support\TestCase;
@@ -64,6 +65,26 @@ final class UserPanelTest extends TestCase
         self::assertTrue(
             $panel->canSearchUsers(),
             'UserSearchInterface model must be searchable.',
+        );
+    }
+
+    public function testCanSwitchUserPreservesConfiguredActionProperties(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
+
+        $module = $panel->module ?? self::fail('Module must be wired.');
+
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        // A stripped config would drop 'requiredOption' and make the action throw on instantiation.
+        $module->actionMap['set-identity'] = [
+            'class' => RequiredOptionAction::class,
+            'requiredOption' => 'configured',
+        ];
+
+        self::assertTrue(
+            $panel->canSwitchUser(),
+            "Array-shaped 'set-identity' config must apply configured properties.",
         );
     }
 
