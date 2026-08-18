@@ -84,7 +84,7 @@ final class QueueSearchTest extends TestCase
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
-            ['QueueSearch' => ['driverName' => 'Re']],
+            ['Queue' => ['driverName' => 'Re']],
             $records,
         );
 
@@ -135,7 +135,7 @@ final class QueueSearchTest extends TestCase
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
-            ['QueueSearch' => ['jobClass' => 'Hello']],
+            ['Queue' => ['jobClass' => 'Hello']],
             $records,
         );
 
@@ -184,7 +184,7 @@ final class QueueSearchTest extends TestCase
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
-            ['QueueSearch' => ['jobId' => '20']],
+            ['Queue' => ['jobId' => '20']],
             $records,
         );
 
@@ -231,7 +231,7 @@ final class QueueSearchTest extends TestCase
 
         $dataProvider = $searchModel->search(
             [
-                'QueueSearch' => ['eventType' => 'push', 'componentId' => 'queue'],
+                'Queue' => ['eventType' => 'push', 'componentId' => 'queue'],
             ],
             $records,
         );
@@ -343,7 +343,7 @@ final class QueueSearchTest extends TestCase
         ];
 
         $dataProvider = (new QueueSearch())->search(
-            ['QueueSearch' => ['componentId' => 'queueRedis']],
+            ['Queue' => ['componentId' => 'queueRedis']],
             $records,
         );
 
@@ -404,7 +404,7 @@ final class QueueSearchTest extends TestCase
         $searchModel = new QueueSearch();
 
         $dataProvider = $searchModel->search(
-            ['QueueSearch' => ['eventType' => 'error']],
+            ['Queue' => ['eventType' => 'error']],
             $records
         );
 

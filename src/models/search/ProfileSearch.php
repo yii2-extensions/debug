@@ -33,6 +33,12 @@ class ProfileSearch extends Base
     }
 
     #[Override]
+    public function formName(): string
+    {
+        return 'Profile';
+    }
+
+    #[Override]
     public function rules(): array
     {
         return [

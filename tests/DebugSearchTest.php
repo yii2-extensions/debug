@@ -103,6 +103,18 @@ final class DebugSearchTest extends TestCase
         );
     }
 
+    public function testFormNameUsesTheShortDebugPrefix(): void
+    {
+        $search = new DebugSearch();
+
+        self::assertSame('Debug', $search->formName(), "Filter params must use the 'Debug' prefix.");
+        self::assertTrue(
+            $search->load(['Debug' => ['statusCode' => '404']]),
+            'The status-pill deep-link prefix must load into the model.',
+        );
+        self::assertSame('404', $search->statusCode, 'Loaded status code must land on the attribute.');
+    }
+
     public function testIsCodeCriticalFlagsConfiguredHttpStatusCodes(): void
     {
         $search = new DebugSearch();
@@ -150,7 +162,7 @@ final class DebugSearchTest extends TestCase
 
         $search = new DebugSearch();
 
-        $provider = $search->search(['DebugSearch' => ['sqlCount' => '>5']], $records);
+        $provider = $search->search(['Debug' => ['sqlCount' => '>5']], $records);
 
         self::assertSame(
             2,
@@ -171,7 +183,7 @@ final class DebugSearchTest extends TestCase
 
         $search = new DebugSearch();
 
-        $provider = $search->search(['DebugSearch' => ['mailCount' => '<5']], $records);
+        $provider = $search->search(['Debug' => ['mailCount' => '<5']], $records);
 
         self::assertSame(
             1,
@@ -192,7 +204,7 @@ final class DebugSearchTest extends TestCase
 
         $search = new DebugSearch();
 
-        $provider = $search->search(['DebugSearch' => ['ip' => '10.']], $records);
+        $provider = $search->search(['Debug' => ['ip' => '10.']], $records);
 
         self::assertSame(
             1,
@@ -210,7 +222,7 @@ final class DebugSearchTest extends TestCase
             self::summary(['url' => '/report/10', 'sqlCount' => 0, 'mailCount' => 0]),
         ];
 
-        $provider = (new DebugSearch())->search(['DebugSearch' => ['url' => 'report >5']], $records);
+        $provider = (new DebugSearch())->search(['Debug' => ['url' => 'report >5']], $records);
 
         self::assertSame(1, $provider->getTotalCount(), 'Partial text fields must treat embedded operators as text.');
     }
@@ -229,14 +241,9 @@ final class DebugSearchTest extends TestCase
             {
                 return false;
             }
-
-            public function formName(): string
-            {
-                return 'DebugSearch';
-            }
         };
 
-        $provider = $search->search(['DebugSearch' => ['method' => 'GET']], $records);
+        $provider = $search->search(['Debug' => ['method' => 'GET']], $records);
 
         self::assertSame(
             2,
@@ -274,7 +281,7 @@ final class DebugSearchTest extends TestCase
             self::summary(['sqlCount' => 1, 'mailCount' => 0]),
         ];
 
-        $provider = (new DebugSearch())->search(['DebugSearch' => ['sqlCount' => '>0']], $records);
+        $provider = (new DebugSearch())->search(['Debug' => ['sqlCount' => '>0']], $records);
 
         self::assertSame(1, $provider->getTotalCount(), "'>0' must retain only positive values.");
     }

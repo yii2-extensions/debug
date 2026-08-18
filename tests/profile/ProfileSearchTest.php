@@ -61,7 +61,7 @@ final class ProfileSearchTest extends TestCase
         $search = new ProfileSearch();
 
         $provider = $search
-            ->search(['ProfileSearch' => ['category' => 'db']], $records);
+            ->search(['Profile' => ['category' => 'db']], $records);
 
         self::assertSame(
             1,
@@ -136,17 +136,12 @@ final class ProfileSearchTest extends TestCase
             {
                 return false;
             }
-
-            public function formName(): string
-            {
-                return 'ProfileSearch';
-            }
         };
 
         self::assertSame(
             2,
             $search
-                ->search(['ProfileSearch' => ['category' => 'a']], $records)
+                ->search(['Profile' => ['category' => 'a']], $records)
                 ->getTotalCount(),
             'Failed validation must short-circuit filtering.',
         );
@@ -164,14 +159,14 @@ final class ProfileSearchTest extends TestCase
         self::assertSame(
             1,
             (new ProfileSearch())
-                ->search(['ProfileSearch' => ['category' => 'ii\\d']], $records)
+                ->search(['Profile' => ['category' => 'ii\\d']], $records)
                 ->getTotalCount(),
             'Category filtering must use substring matching.',
         );
         self::assertSame(
             1,
             (new ProfileSearch())
-                ->search(['ProfileSearch' => ['info' => 'LECT']], $records)
+                ->search(['Profile' => ['info' => 'LECT']], $records)
                 ->getTotalCount(),
             'Info filtering must use substring matching.',
         );

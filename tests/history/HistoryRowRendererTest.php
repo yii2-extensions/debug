@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace yii\debug\tests\history;
 
 use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\View\History\{HistoryRow, HistoryStatusBucket, HistorySummary};
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\models\search\DebugSearch;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
 use yii\debug\tests\support\TestCase;
-use yii\debug\widgets\history\{HistoryRow, HistoryRowRenderer, HistoryStatusBucket, HistorySummary};
+use yii\debug\widgets\history\HistoryRowRenderer;
 
 /**
  * Unit tests for {@see HistoryRowRenderer} covering the per-column rendering helpers, the row-options builder

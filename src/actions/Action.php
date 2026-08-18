@@ -7,6 +7,7 @@ namespace yii\debug\actions;
 use Override;
 use PHPForge\Debug\Helper\{Format, Icon};
 use PHPForge\Debug\Storage\{ExceptionSnapshot, RequestSummary};
+use PHPForge\Debug\Theme\ThemeResolver;
 use Yii;
 use yii\base\{InvalidConfigException, ViewContextInterface};
 use yii\debug\collectors\MailCollector;
@@ -19,8 +20,6 @@ use yii\web\{NotFoundHttpException, Response};
 
 use function array_key_first;
 use function dirname;
-use function is_string;
-use function strtolower;
 
 /**
  * Base class for the standalone debugger actions dispatched through {@see Module::$actionMap}.
@@ -426,16 +425,10 @@ class Action extends \yii\web\Action implements ViewContextInterface
     {
         $request = Yii::$app->getRequest();
 
-        $raw = $request->getCookies()->getValue('yii-debug-toolbar-theme');
+        $raw = $request->getCookies()->getValue(ThemeResolver::COOKIE)
+            ?? $_COOKIE[ThemeResolver::COOKIE]
+            ?? null;
 
-        if ($raw === null && isset($_COOKIE['yii-debug-toolbar-theme'])) {
-            $raw = $_COOKIE['yii-debug-toolbar-theme'];
-        }
-
-        $raw ??= $request->get('yii_debug_theme');
-
-        return is_string($raw) && strtolower($raw) === 'dark'
-            ? 'dark'
-            : 'light';
+        return ThemeResolver::resolve([ThemeResolver::COOKIE => $raw], $request->getQueryParams());
     }
 }

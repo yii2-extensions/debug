@@ -61,7 +61,7 @@ final class EventSearchTest extends TestCase
 
         $search = new EventSearch();
 
-        $provider = $search->search(['EventSearch' => ['class' => 'web']], $records);
+        $provider = $search->search(['Event' => ['class' => 'web']], $records);
 
         self::assertSame(
             1,
@@ -102,16 +102,11 @@ final class EventSearchTest extends TestCase
             {
                 return false;
             }
-
-            public function formName(): string
-            {
-                return 'EventSearch';
-            }
         };
 
         self::assertSame(
             2,
-            $search->search(['EventSearch' => ['class' => 'X']], $records)->getTotalCount(),
+            $search->search(['Event' => ['class' => 'X']], $records)->getTotalCount(),
             'Failed validation must short-circuit filtering.',
         );
     }

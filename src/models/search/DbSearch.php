@@ -32,6 +32,12 @@ class DbSearch extends Base
     }
 
     #[Override]
+    public function formName(): string
+    {
+        return 'Db';
+    }
+
+    #[Override]
     public function rules(): array
     {
         return [

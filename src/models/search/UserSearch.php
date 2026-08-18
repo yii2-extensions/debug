@@ -55,6 +55,12 @@ class UserSearch extends Model implements UserSearchInterface
         return $this->identityImplement->attributes();
     }
 
+    #[Override]
+    public function formName(): string
+    {
+        return 'User';
+    }
+
     public function init(): void
     {
         $user = Yii::$app->user ?? null;

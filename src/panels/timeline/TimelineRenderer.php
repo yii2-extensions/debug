@@ -142,7 +142,7 @@ final class TimelineRenderer
                         InputNumber::tag()
                             ->id('tl-duration')
                             ->min(0)
-                            ->name('TimelineSearch[duration]')
+                            ->name('Timeline[duration]')
                             ->placeholder('0')
                             ->step(0.1)
                             ->value($searchModel->duration),
@@ -155,7 +155,7 @@ final class TimelineRenderer
                             ->for('tl-category'),
                         InputText::tag()
                             ->id('tl-category')
-                            ->name('TimelineSearch[category]')
+                            ->name('Timeline[category]')
                             ->placeholder('yii\\db\\Command::query')
                             ->value($searchModel->category),
                     ),

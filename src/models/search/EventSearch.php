@@ -43,6 +43,12 @@ class EventSearch extends Base
     }
 
     #[Override]
+    public function formName(): string
+    {
+        return 'Event';
+    }
+
+    #[Override]
     public function rules(): array
     {
         return [
