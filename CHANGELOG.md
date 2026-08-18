@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor!: move framework-neutral normalization and presentation helpers to `php-forge/debug-core`.
 - refactor!: move the framework-neutral panel presentation (snapshot DTOs, rows, renderers, normalizers, `Tabs`, log-level vocabulary) to `php-forge/debug-core` under `PHPForge\Debug\Panel`.
 - refactor!: require Yii2 `^22.0`, dispatch endpoints as DI-injected standalone actions, and repair the user-switch panel; see `UPGRADE.md`.
-- refactor: consume the shared history view-models `PHPForge\Debug\View\History` and theme resolver `PHPForge\Debug\Theme\ThemeResolver` from debug-core; the local history widget DTOs were removed.
+- refactor!: consume the shared history view-models `PHPForge\Debug\View\History` and theme resolver `PHPForge\Debug\Theme\ThemeResolver` from debug-core; the local history widget DTOs were removed; see `UPGRADE.md` for migration details.
 
 ## 0.1.1 May 18, 2026
 
