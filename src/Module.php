@@ -11,7 +11,7 @@ use PHPForge\Debug\Helper\{Coerce, Icon};
 use RuntimeException;
 use Throwable;
 use Yii;
-use yii\base\{Action, Application, BootstrapInterface, Event, InvalidConfigException, View as BaseView};
+use yii\base\{Action, ActionEvent, Application, BootstrapInterface, Event, InvalidConfigException, View as BaseView};
 use yii\debug\actions\{
     DownloadMailAction,
     IndexAction,
@@ -236,6 +236,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * @throws InvalidConfigException When the log component cannot be resolved.
      * @throws ForbiddenHttpException When the caller fails the access check on a non-toolbar route.
+     * @throws Throwable When an active collector cannot shut down cleanly.
      */
     #[Override]
     public function beforeAction($action): bool
@@ -251,6 +252,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
                     }
                 }
             }
+
+            $this->getCollectorCoordinator()->shutdown();
         }
 
         if (!parent::beforeAction($action)) {
@@ -300,7 +303,14 @@ class Module extends \yii\base\Module implements BootstrapInterface
         );
         $app->on(
             Application::EVENT_BEFORE_ACTION,
-            function () use ($app): void {
+            function (ActionEvent $event) use ($app): void {
+                if ($event->action->controller === null && $this->isDebuggerAction($event->action)) {
+                    $moduleAllowsAction = $this->beforeAction($event->action);
+                    $event->isValid = $event->isValid && $moduleAllowsAction;
+
+                    return;
+                }
+
                 $app->getView()->on(View::EVENT_END_BODY, [$this, 'renderToolbar']);
             },
         );
@@ -453,7 +463,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public function injectToolbarOnErrorPage(ErrorHandlerRenderEvent $event): void
     {
-        if (!$this->checkAccess() || Yii::$app->getRequest()->getIsAjax()) {
+        if (
+            $this->isDebuggerAction(Yii::$app->requestedAction)
+            || !$this->checkAccess()
+            || Yii::$app->getRequest()->getIsAjax()
+        ) {
             return;
         }
 
@@ -473,7 +487,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public function renderToolbar(Event $event): void
     {
-        if (!$this->checkAccess() || Yii::$app->getRequest()->getIsAjax()) {
+        if (
+            $this->isDebuggerAction(Yii::$app->requestedAction)
+            || !$this->checkAccess()
+            || Yii::$app->getRequest()->getIsAjax()
+        ) {
             return;
         }
 
@@ -522,7 +540,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public function setDebugHeaders(Event $event): void
     {
-        if (!$this->checkAccess()) {
+        if ($this->isDebuggerAction(Yii::$app->requestedAction) || !$this->checkAccess()) {
             return;
         }
 
@@ -915,6 +933,24 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $object->moduleBound();
 
         return $object;
+    }
+
+    /**
+     * Returns whether the requested action belongs to this debugger module.
+     */
+    private function isDebuggerAction(Action|null $action): bool
+    {
+        $module = $action?->getModule();
+
+        while ($module !== null) {
+            if ($module === $this) {
+                return true;
+            }
+
+            $module = $module->module;
+        }
+
+        return false;
     }
 
     /**
