@@ -61,6 +61,7 @@ use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Resp
 
 use function array_diff_key;
 use function base64_encode;
+use function class_exists;
 use function get_parent_class;
 use function gethostbyname;
 use function is_array;
@@ -673,6 +674,44 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Resolves a debugger endpoint from {@see \yii\base\Module::$actionMap} before falling back to convention-based
+     * discovery.
+     *
+     * Application-level dispatch of a module-prefixed route (for example `debug/db-explain`) reaches this method
+     * through {@see \yii\base\Module::createStandaloneAction()}. Convention discovery derives a root-namespace class
+     * from the action ID (`db-explain` becomes `DbExplainAction`) and cannot see the sub-namespaced panel action
+     * classes ({@see \yii\debug\actions\db\ExplainAction}, {@see \yii\debug\actions\queue\JobAction}), so the mapped
+     * entries are consulted first to keep those routes reachable.
+     */
+    #[Override]
+    protected function createStandaloneAction(string $route): Action|null
+    {
+        $id = trim($route, '/');
+
+        if ($id !== '' && strpos($id, '/') === false && isset($this->actionMap[$id])) {
+            $class = $this->actionMap[$id];
+
+            if (is_array($class)) {
+                $class = $class['class'] ?? null;
+            }
+
+            if (is_string($class) && class_exists($class)) {
+                $action = Yii::createObject($class);
+
+                if ($action instanceof Action) {
+                    $action->id = $id;
+
+                    $action->setModule($this);
+
+                    return $action;
+                }
+            }
+        }
+
+        return parent::createStandaloneAction($route);
+    }
+
+    /**
      * Returns the default module version string.
      */
     #[Override]
@@ -698,36 +737,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         $this->actionMap = [...$this->coreActionMap(), ...$panelActions, ...$this->actionMap];
-    }
-
-    /**
-     * Resolves a debugger endpoint from {@see \yii\base\Module::$actionMap} before falling back to convention-based
-     * discovery.
-     *
-     * Application-level dispatch of a module-prefixed route (for example `debug/db-explain`) reaches this method
-     * through {@see \yii\base\Module::createStandaloneAction()}. Convention discovery derives a root-namespace class
-     * from the action ID (`db-explain` becomes `DbExplainAction`) and cannot see the sub-namespaced panel action
-     * classes ({@see \yii\debug\actions\db\ExplainAction}, {@see \yii\debug\actions\queue\JobAction}), so the mapped
-     * entries are consulted first to keep those routes reachable.
-     */
-    #[Override]
-    protected function createStandaloneAction(string $route): Action|null
-    {
-        $id = trim($route, '/');
-
-        if ($id !== '' && strpos($id, '/') === false && isset($this->actionMap[$id])) {
-            $action = Yii::createObject($this->actionMap[$id]);
-
-            if ($action instanceof Action) {
-                $action->id = $id;
-
-                $action->setModule($this);
-
-                return $action;
-            }
-        }
-
-        return parent::createStandaloneAction($route);
     }
 
     /**
