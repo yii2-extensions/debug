@@ -339,6 +339,44 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testBootstrapSuppressesStandaloneDebuggerRequestsOwnedByChildModule(): void
+    {
+        $module = new Module('debug');
+
+        $module->allowedIPs = ['*'];
+
+        Yii::$app->setModule('debug', $module);
+
+        $module->bootstrap(Yii::$app);
+
+        $childModule = new \yii\base\Module('child', $module);
+        $action = new PhpInfoAction('php-info');
+
+        $action->setModule($childModule);
+
+        $event = new ActionEvent($action);
+
+        Yii::$app->trigger(Application::EVENT_BEFORE_ACTION, $event);
+
+        self::assertTrue(
+            $event->isValid,
+            'An allowed child-module debugger action must continue.',
+        );
+        self::assertInstanceOf(
+            LogTarget::class,
+            $module->logTarget,
+            'Child-module debugger requests must still use the parent log target.',
+        );
+        self::assertFalse(
+            $module->logTarget->enabled,
+            'Child-module debugger requests must not be persisted.',
+        );
+        self::assertFalse(
+            Yii::$app->getView()->off(View::EVENT_END_BODY, [$module, 'renderToolbar']),
+            'Child-module debugger pages must not receive a nested toolbar.',
+        );
+    }
+
     public function testCheckAccessAppliesCallbackBeforeGrantingAccess(): void
     {
         $module = new Module('debug');
