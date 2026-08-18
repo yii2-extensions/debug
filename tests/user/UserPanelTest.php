@@ -697,6 +697,58 @@ final class UserPanelTest extends TestCase
         );
     }
 
+    public function testModuleBoundAttachesTheSwitchAccessGuardForPrebuiltPanelInstance(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                        'enableSession' => false,
+                    ],
+                ],
+            ],
+        );
+
+        $panel = new UserPanel();
+
+        self::assertNull(
+            $panel->module,
+            'Prebuilt panel must start without a module reference.',
+        );
+
+        $module = new Module('debug', null, ['panels' => ['user' => $panel]]);
+
+        self::assertSame(
+            $module,
+            $panel->module,
+            'Module must bind itself onto the prebuilt instance.',
+        );
+        self::assertNotNull(
+            $module->getBehavior('access_debug'),
+            'Switch actions must stay gated for a prebuilt instance.',
+        );
+    }
+
+    public function testModuleBoundSkipsTheAccessGuardWhenPanelIsDisabled(): void
+    {
+        $this->mockWebApplication(['components' => ['user' => stdClass::class]]);
+
+        $panel = new UserPanel();
+        $module = new Module('debug', null, ['panels' => ['user' => $panel]]);
+
+        self::assertNull(
+            $module->getBehavior('access_debug'),
+            'No guard must attach without a user-switch model.',
+        );
+        self::assertArrayNotHasKey(
+            'user',
+            $module->panels,
+            'Disabled panel must be dropped.',
+        );
+    }
+
     public function testThrowInvalidConfigExceptionWhenAddAccessRulesHasNoModule(): void
     {
         $panel = $this->makePanel(UserPanel::class);

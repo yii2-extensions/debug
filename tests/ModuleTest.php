@@ -16,7 +16,7 @@ use yii\debug\actions\{PhpInfoAction, ToolbarDataAction};
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, VersionResolver};
 use yii\debug\panels\{DbPanel, LogPanel};
 use yii\debug\tests\provider\ModuleProvider;
-use yii\debug\tests\support\stub\{CustomDbPanel, NotALogTarget};
+use yii\debug\tests\support\stub\{CustomDbPanel, ModuleBoundRecordingPanel, NotALogTarget};
 use yii\debug\tests\support\TestCase;
 use yii\log\{Dispatcher, Target as LogTargetBase};
 use yii\web\{AssetManager, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
@@ -576,6 +576,55 @@ final class ModuleTest extends TestCase
             'ghost',
             $module->panels,
             "Panels whose 'isEnabled()' returns false must be removed during 'initPanels()'.",
+        );
+    }
+
+    public function testInitPanelsFiresModuleBoundOnceForEveryResolutionPath(): void
+    {
+        $instance = new ModuleBoundRecordingPanel();
+
+        $module = new Module(
+            'debug',
+            null,
+            [
+                'panels' => [
+                    'rec-array' => ['class' => ModuleBoundRecordingPanel::class],
+                    'rec-instance' => $instance,
+                ],
+            ],
+        );
+
+        self::assertSame(
+            1,
+            $instance->moduleBoundCalls,
+            'Exactly one invocation on the instance path.',
+        );
+        self::assertTrue(
+            $instance->moduleBoundWithModule,
+            'Module reference must be present at call time.',
+        );
+
+        self::assertArrayHasKey(
+            'rec-array',
+            $module->panels,
+            'Array-built panel must surface under its id.',
+        );
+
+        $arrayPanel = $module->panels['rec-array'];
+
+        self::assertInstanceOf(
+            ModuleBoundRecordingPanel::class,
+            $arrayPanel,
+            'Array-built panel must resolve through the container.',
+        );
+        self::assertSame(
+            1,
+            $arrayPanel->moduleBoundCalls,
+            'Exactly one invocation on the array path.',
+        );
+        self::assertTrue(
+            $arrayPanel->moduleBoundWithModule,
+            'Module reference must be present at call time.',
         );
     }
 

@@ -868,7 +868,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Resolves a panel configuration into a {@see Panel} instance, binding `id` and `module` references.
+     * Resolves a panel configuration into a {@see Panel} instance, binding `id` and `module` references and firing
+     * {@see Panel::moduleBound()} once both references are in place.
      *
      * @param array<string, mixed>|Panel|string $config Panel instance, configuration array, or class-name string.
      *
@@ -881,6 +882,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
         if ($config instanceof Panel) {
             $config->id = $id;
             $config->module = $this;
+
+            $config->moduleBound();
 
             return $config;
         }
@@ -905,7 +908,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $object = Yii::$container->get($class, [], $properties);
 
-        return $object instanceof Panel ? $object : null;
+        if (!$object instanceof Panel) {
+            return null;
+        }
+
+        $object->moduleBound();
+
+        return $object;
     }
 
     /**

@@ -248,7 +248,8 @@ class UserPanel extends Panel
      * filter model when the user component resolves to a non-guest identity.
      *
      * The access rules attach even for a guest, so an unauthenticated request cannot reach `set-identity` or
-     * `reset-identity` unless the configured {@see $ruleUserSwitch} explicitly allows it.
+     * `reset-identity` unless the configured {@see $ruleUserSwitch} explicitly allows it. For a panel instantiated
+     * before the module reference exists, the attach is deferred to {@see moduleBound()}.
      *
      * @throws InvalidConfigException When the user component cannot be resolved or the filter model cannot be created.
      */
@@ -283,6 +284,21 @@ class UserPanel extends Panel
             return $this->getUser() !== null;
         } catch (InvalidConfigException) {
             return false;
+        }
+    }
+
+    /**
+     * Attaches the user-switch access rules once the debug module binds itself to the panel.
+     *
+     * When the panel is configured as a prebuilt instance in {@see \yii\debug\Module::$panels}, {@see init()} runs
+     * before the module reference exists and skips the attach; this hook closes that gap so `set-identity` and
+     * `reset-identity` stay gated by {@see $ruleUserSwitch}.
+     */
+    #[Override]
+    public function moduleBound(): void
+    {
+        if ($this->userSwitch !== null) {
+            $this->addAccessRules();
         }
     }
 

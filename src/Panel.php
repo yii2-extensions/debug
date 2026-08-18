@@ -298,6 +298,15 @@ class Panel extends Component implements ViewContextInterface
     }
 
     /**
+     * Completes module-dependent wiring after the container module binds {@see $id} and {@see $module}.
+     *
+     * Invoked once by {@see Module} for every registered panel, whether configured as a class name, a configuration
+     * array, or an already-instantiated {@see Panel}. Override this hook for setup that requires the owning module;
+     * for a prebuilt instance, {@see \yii\base\BaseObject::init()} executes before the module reference is bound.
+     */
+    public function moduleBound(): void {}
+
+    /**
      * Records an exception thrown during capture or hydration so {@see LogTarget} can surface it in the UI.
      */
     public function setError(ExceptionSnapshot $error): void
