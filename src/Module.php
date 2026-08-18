@@ -96,6 +96,14 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public const string VIEW_PATH_ALIAS = '@yiiDebugViews';
     /**
+     * Namespace where the standalone debugger actions are discovered by convention.
+     *
+     * Load-bearing: the application resolves module-prefixed routes (for example `debug/index`) through
+     * {@see \yii\base\Module::createStandaloneAction()}, which looks the action class up under this namespace. Without
+     * it, `debug/<action>` URLs fall through to the host application and return 404.
+     */
+    public string|null $actionNamespace = 'yii\debug\actions';
+    /**
      * Hosts allowed to access this module. Each entry is resolved to an IP at runtime; useful for dynamic DNS.
      *
      * @var list<string>

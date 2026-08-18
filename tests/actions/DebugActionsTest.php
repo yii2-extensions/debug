@@ -450,6 +450,25 @@ final class DebugActionsTest extends TestCase
         );
     }
 
+    public function testAppDispatchesDebugRouteThroughModuleActionNamespace(): void
+    {
+        $module = $this->bootDebugModule();
+
+        // Application-level dispatch of a module-prefixed route resolves the action through the module's
+        // action namespace (not its actionMap), which is how the URL manager reaches `debug/<action>`.
+        $html = Yii::$app->runAction("{$module->getUniqueId()}/php-info");
+
+        self::assertIsString(
+            $html,
+            'Module-prefixed dispatch must return the rendered output.',
+        );
+        self::assertStringContainsString(
+            'phpinfo',
+            $html,
+            "Route 'debug/php-info' must resolve via the module action namespace.",
+        );
+    }
+
     public function testBeforeRunForcesHtmlResponseFormatAndBareShell(): void
     {
         $module = $this->bootDebugModule();
