@@ -33,6 +33,12 @@ class TimelineSearch extends Base
         ];
     }
 
+    #[Override]
+    public function formName(): string
+    {
+        return 'Timeline';
+    }
+
     /**
      * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */

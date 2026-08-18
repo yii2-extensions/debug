@@ -70,6 +70,12 @@ class MailSearch extends Base
     }
 
     #[Override]
+    public function formName(): string
+    {
+        return 'Mail';
+    }
+
+    #[Override]
     public function rules(): array
     {
         return [

@@ -50,6 +50,12 @@ class QueueSearch extends Base
     }
 
     #[Override]
+    public function formName(): string
+    {
+        return 'Queue';
+    }
+
+    #[Override]
     public function rules(): array
     {
         return [

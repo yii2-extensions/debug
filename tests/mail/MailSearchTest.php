@@ -80,7 +80,7 @@ final class MailSearchTest extends TestCase
 
         $search = new MailSearch();
 
-        $provider = $search->search(['MailSearch' => ['subject' => 'Order']], $records);
+        $provider = $search->search(['Mail' => ['subject' => 'Order']], $records);
 
         self::assertSame(
             1,
@@ -130,7 +130,7 @@ final class MailSearchTest extends TestCase
 
         foreach ($filters as $attribute => $value) {
             $provider = (new MailSearch())->search(
-                ['MailSearch' => [$attribute => $value]],
+                ['Mail' => [$attribute => $value]],
                 [$matching, $other],
             );
 
@@ -203,16 +203,11 @@ final class MailSearchTest extends TestCase
             {
                 return false;
             }
-
-            public function formName(): string
-            {
-                return 'MailSearch';
-            }
         };
 
         self::assertSame(
             2,
-            $search->search(['MailSearch' => ['subject' => 'x']], $records)->getTotalCount(),
+            $search->search(['Mail' => ['subject' => 'x']], $records)->getTotalCount(),
             'Failed validation must short-circuit filtering.',
         );
     }

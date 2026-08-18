@@ -131,7 +131,7 @@ final class UserSearchTest extends TestCase
     {
         $this->bootWebAppWithIdentity(ArIdentity::class, withDb: true);
 
-        $provider = (new UserSearch())->search(['UserSearch' => ['username' => 'admin']]);
+        $provider = (new UserSearch())->search(['User' => ['username' => 'admin']]);
 
         self::assertInstanceOf(
             ActiveDataProvider::class,

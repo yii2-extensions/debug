@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\widgets\history;
 
 use PHPForge\Debug\Helper\{Format, Gauge, Vocabulary};
+use PHPForge\Debug\View\History\{HistoryRow, HistoryScale, HistorySummary};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;

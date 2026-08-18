@@ -54,7 +54,7 @@ final class TimelineSearchTest extends TestCase
         $panel = $this->makeTimelinePanel();
 
         $provider = (new TimelineSearch())
-            ->search(['TimelineSearch' => ['duration' => '40']], $panel);
+            ->search(['Timeline' => ['duration' => '40']], $panel);
 
         $models = $provider->getModels();
 
@@ -70,7 +70,7 @@ final class TimelineSearchTest extends TestCase
         $panel = $this->makeTimelinePanel();
 
         $provider = (new TimelineSearch())
-            ->search(['TimelineSearch' => ['category' => 'db']], $panel);
+            ->search(['Timeline' => ['category' => 'db']], $panel);
 
         self::assertCount(
             2,
@@ -105,15 +105,10 @@ final class TimelineSearchTest extends TestCase
             {
                 return false;
             }
-
-            public function formName(): string
-            {
-                return 'TimelineSearch';
-            }
         };
 
         $provider = $search
-            ->search(['TimelineSearch' => ['category' => 'missing']], $panel);
+            ->search(['Timeline' => ['category' => 'missing']], $panel);
 
         self::assertCount(
             3,

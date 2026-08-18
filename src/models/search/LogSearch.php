@@ -40,6 +40,12 @@ class LogSearch extends Base
     }
 
     #[Override]
+    public function formName(): string
+    {
+        return 'Log';
+    }
+
+    #[Override]
     public function rules(): array
     {
         return [

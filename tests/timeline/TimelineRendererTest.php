@@ -332,7 +332,7 @@ final class TimelineRendererTest extends TestCase
             'Hidden tag input must carry the active tag.',
         );
         self::assertStringContainsString(
-            'name="TimelineSearch[duration]"',
+            'name="Timeline[duration]"',
             $html,
             'Duration input must surface in the form.',
         );

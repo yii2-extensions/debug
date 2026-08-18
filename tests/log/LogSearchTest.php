@@ -70,7 +70,7 @@ final class LogSearchTest extends TestCase
 
         $search = new LogSearch();
 
-        $provider = $search->search(['LogSearch' => ['category' => 'app']], $records);
+        $provider = $search->search(['Log' => ['category' => 'app']], $records);
 
         self::assertSame(
             2,
@@ -109,16 +109,11 @@ final class LogSearchTest extends TestCase
             {
                 return false;
             }
-
-            public function formName(): string
-            {
-                return 'LogSearch';
-            }
         };
 
         self::assertSame(
             2,
-            $search->search(['LogSearch' => ['category' => 'a']], $records)->getTotalCount(),
+            $search->search(['Log' => ['category' => 'a']], $records)->getTotalCount(),
             'Failed validation must short-circuit filtering.',
         );
     }

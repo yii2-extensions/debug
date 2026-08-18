@@ -6,9 +6,9 @@ namespace yii\debug\models\search;
 
 use Override;
 use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\View\History\HistoryRow;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use yii\debug\widgets\history\HistoryRow;
 
 use function array_map;
 use function in_array;
@@ -70,6 +70,12 @@ class DebugSearch extends Base
             'sqlCount' => 'Query Count',
             'mailCount' => 'Mail Count',
         ];
+    }
+
+    #[Override]
+    public function formName(): string
+    {
+        return 'Debug';
     }
 
     /**

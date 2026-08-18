@@ -27,7 +27,7 @@ final class FilterBannerTest extends TestCase
     {
         $this->bootApp();
 
-        $_GET['LogSearch'] = ['category' => 'app'];
+        $_GET['Log'] = ['category' => 'app'];
         $_GET['sort'] = 'time';
         $_GET['page'] = 3;
 
@@ -49,7 +49,7 @@ final class FilterBannerTest extends TestCase
     {
         $this->bootApp();
 
-        $_GET['LogSearch'] = ['category' => 'app', 'message' => 'login'];
+        $_GET['Log'] = ['category' => 'app', 'message' => 'login'];
 
         $html = FilterBanner::widget(['searchModel' => new LogSearch()]);
 
@@ -67,7 +67,7 @@ final class FilterBannerTest extends TestCase
         $expectedCategoryRemovalUrl = Url::to(
             [
                 '/debug/index',
-                'LogSearch' => ['message' => 'login'],
+                'Log' => ['message' => 'login'],
             ],
         );
 
@@ -82,7 +82,7 @@ final class FilterBannerTest extends TestCase
     {
         $this->bootApp();
 
-        $_GET['LogSearch'] = ['category' => 'app'];
+        $_GET['Log'] = ['category' => 'app'];
 
         $html = FilterBanner::widget(['searchModel' => new LogSearch()]);
 
@@ -113,7 +113,7 @@ final class FilterBannerTest extends TestCase
     {
         $this->bootApp();
 
-        $_GET['LogSearch'] = ['message' => '', 'bag' => ['nested'], 'category' => 'app', 'level' => null];
+        $_GET['Log'] = ['message' => '', 'bag' => ['nested'], 'category' => 'app', 'level' => null];
 
         $html = FilterBanner::widget(['searchModel' => new LogSearch()]);
 
