@@ -104,14 +104,12 @@ if ($hasEvents) {
                 'contentOptions' => ['class' => 'yii-debug-cell-mono'],
             ],
             [
-                'header' => 'Sender',
                 'attribute' => 'senderClass',
                 'value' => static fn(EventRow $data): string => EventCellRenderer::renderSenderCell($data),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-cell-mono'],
             ],
             [
-                'header' => 'Static',
                 'attribute' => 'isStatic',
                 'value' => static fn(EventRow $data): string => EventCellRenderer::renderStaticCell($data),
                 'format' => 'raw',
