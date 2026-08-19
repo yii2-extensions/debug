@@ -20,8 +20,8 @@ use function is_string;
 /**
  * Captures the authenticated identity for the User panel.
  *
- * Snapshots the identity's attributes, RBAC roles, and permissions; captures nothing when there is no resolvable
- * identity, so the detail view falls back to its empty state.
+ * Snapshots the identity's attributes, RBAC roles, and permissions. A configured user component without an active
+ * identity captures the shared Guest payload, while a missing user component keeps the panel absent.
  *
  * Usage example:
  *
@@ -39,8 +39,8 @@ class UserCollector extends Collector
     /**
      * Snapshots the identity attributes, the RBAC roles, and the permissions for the active user.
      *
-     * @return UserSnapshot|null Captured identity payload; `null` when the collector never started or there is no
-     * resolvable identity.
+     * @return UserSnapshot|null Captured identity or Guest payload; `null` when the collector never started or the
+     * user component cannot be resolved.
      */
     public function capture(): UserSnapshot|null
     {
@@ -50,8 +50,20 @@ class UserCollector extends Collector
 
         $user = $this->getUser();
 
-        if ($user === null || !$user->identity instanceof IdentityInterface) {
+        if ($user === null) {
             return null;
+        }
+
+        if (!$user->identity instanceof IdentityInterface) {
+            return UserSnapshot::capture(
+                [
+                    'id' => null,
+                    'identity' => null,
+                    'attributes' => null,
+                    'roles' => null,
+                    'permissions' => null,
+                ],
+            );
         }
 
         $identity = $user->identity;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Heading\H2;
+use PHPForge\Debug\Panel\User\UserRbacRenderer;
 use yii\debug\GridViewConfig;
 use yii\debug\panels\UserPanel;
 use yii\grid\GridView;
@@ -21,23 +21,23 @@ $rolesProvider = $panel->getRolesProvider();
 $permissionsProvider = $panel->getPermissionsProvider();
 
 ?>
-<?php if ($rolesProvider !== null): ?>
-    <?= H2::tag()->content('Roles') ?>
-    <?= GridView::widget(
+<?= UserRbacRenderer::render(
+    $rolesProvider === null
+        ? null
+        : GridView::widget(
         [
             ...GridViewConfig::defaults(),
             'dataProvider' => $rolesProvider,
             'columns' => $columns,
         ],
-    ) ?>
-<?php endif; ?>
-<?php if ($permissionsProvider !== null): ?>
-    <?= H2::tag()->content('Permissions') ?>
-    <?= GridView::widget(
+    ),
+    $permissionsProvider === null
+        ? null
+        : GridView::widget(
         [
             ...GridViewConfig::defaults(),
             'dataProvider' => $permissionsProvider,
             'columns' => $columns,
         ],
-    ) ?>
-<?php endif;
+    ),
+) ?>

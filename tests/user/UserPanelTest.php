@@ -452,11 +452,7 @@ final class UserPanelTest extends TestCase
             $first,
             'Item must be an array.',
         );
-        self::assertSame(
-            'User',
-            $first['label'] ?? null,
-            "Guest chip label must be 'User'.",
-        );
+        self::assertArrayNotHasKey('label', $first, 'Panel title must identify the Guest chip without duplication.');
         self::assertSame(
             'Guest',
             $first['value'] ?? null,
@@ -495,6 +491,11 @@ final class UserPanelTest extends TestCase
             '42',
             $first['value'] ?? null,
             'Value must echo the captured id.',
+        );
+        self::assertArrayNotHasKey(
+            'label',
+            $first,
+            'Panel title must identify the main-user chip without duplication.',
         );
     }
 
@@ -535,9 +536,9 @@ final class UserPanelTest extends TestCase
             'Switched user must carry the warning status.',
         );
         self::assertSame(
-            'User switching',
+            'switching',
             $first['label'] ?? null,
-            'Label must mark the switch state.',
+            'Label must add only the non-duplicated switch state.',
         );
     }
 
