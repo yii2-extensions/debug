@@ -6,14 +6,9 @@ namespace yii\debug\models\timeline;
 
 use Override;
 use PHPForge\Debug\Panel\Profile\ProfileRow;
-use PHPForge\Debug\Panel\Timeline\TimelineSpanRow;
+use PHPForge\Debug\Panel\Timeline\{TimelineGeometry, TimelineSpanRow};
 use yii\data\ArrayDataProvider;
 use yii\debug\panels\TimelinePanel;
-
-use function floor;
-use function log10;
-use function max;
-use function range;
 
 /**
  * Wraps the timeline records as a sortable provider that derives per-row CSS layout fields for the timeline view.
@@ -53,41 +48,7 @@ class DataProvider extends ArrayDataProvider
      */
     public function getRulers(int $line = 6): array
     {
-        if ($line < 1) {
-            return [];
-        }
-
-        $duration = $this->panel->getDuration();
-
-        if ($duration <= 0.0) {
-            return [];
-        }
-
-        $rough = $duration / $line;
-
-        $magnitude = 10 ** max(0, (int) floor(log10($rough)));
-
-        $normalized = $rough / $magnitude;
-
-        $step = match (true) {
-            $normalized <= 1.0 => $magnitude,
-            $normalized <= 2.0 => 2 * $magnitude,
-            $normalized <= 5.0 => 5 * $magnitude,
-            default => 10 * $magnitude,
-        };
-
-        $data = [0 => 0.0];
-        $limit = $duration - $step / 4;
-
-        if ($step > $limit) {
-            return $data;
-        }
-
-        foreach (range($step, $limit, $step) as $ms) {
-            $data[(int) $ms] = $ms / $duration * 100;
-        }
-
-        return $data;
+        return TimelineGeometry::rulers($this->panel->getDuration(), $line);
     }
 
     /**
