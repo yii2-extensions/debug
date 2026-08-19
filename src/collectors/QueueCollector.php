@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\collectors;
 
 use Closure;
+use PHPForge\Debug\Helper\{Coerce, SensitiveDataRedactor};
 use PHPForge\Debug\Panel\Queue\{JobPayloadInspector, JobRecord, QueueDriverDetector, QueueSnapshot};
 use Throwable;
 use Yii;
@@ -37,6 +38,18 @@ class QueueCollector extends Collector
      * that every concrete driver extends.
      */
     private const string QUEUE_BASE_CLASS = 'yii\queue\Queue';
+    /**
+     * @var list<string> Public job-property names whose values are replaced before snapshot persistence.
+     */
+    public array $redactedProperties = [
+        'accessToken',
+        'apiKey',
+        'authorization',
+        'password',
+        'refreshToken',
+        'secret',
+        'token',
+    ];
 
     /**
      * Map of `spl_object_id($queueComponent) => component-id` populated lazily inside event listeners so each event's
@@ -263,7 +276,14 @@ class QueueCollector extends Collector
             'driverClass' => $driverClass,
             'isAsync' => $isAsync,
             'jobClass' => $jobClass,
-            'payloadFields' => $job === null ? [] : JobPayloadInspector::extract($job),
+            'payloadFields' => $job === null
+                ? []
+                : Coerce::stringKeyedArray(
+                    SensitiveDataRedactor::redact(
+                        JobPayloadInspector::extract($job),
+                        $this->redactedProperties,
+                    ),
+                ),
             'time' => microtime(true),
             'jobId' => $this->scalarToString($props['id'] ?? null),
             'ttr' => $this->valueToNullableInt($props['ttr'] ?? null),

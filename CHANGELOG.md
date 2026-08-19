@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(ui): paginate database queries, correct event sorting, and share EXPLAIN markup.
 - refactor(ui): consume shared Timeline geometry and rendering contracts.
 - refactor(ui): align User guest, toolbar, and RBAC rendering and capture Guest requests for parity.
+- feat(ui): align Dump, Mail, and Queue security contracts with Yii3 and redact configured queue payload keys.
 
 ## 0.1.1 May 18, 2026
 
