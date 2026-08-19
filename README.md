@@ -74,6 +74,9 @@ frontend, including the panel stylesheet, JavaScript, fonts, icons, and toolbar 
 `php-forge/debug-core`. This package publishes those shared assets and supplies the Yii2-specific panels and data.
 Shared PHP templates are resolved through the adapter-owned `@yiiDebugViews` alias.
 
+The drawer moves focus to its close control and restores the activating chip when closed. Use `Escape` to close it,
+or resize it from the keyboard with `ArrowUp`, `ArrowDown`, `Home`, and `End` on the separator.
+
 ### Custom collectors and panels
 
 Register collectors explicitly through the debug module. A collector returns a typed
