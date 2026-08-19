@@ -327,18 +327,16 @@ class UserPanel extends Panel
 
         if ($id === null) {
             $item = [
-                'label' => 'User',
                 'value' => 'Guest',
             ];
         } elseif ($user === null || $user->isGuest || $this->userSwitch === null || $this->userSwitch->isMainUser()) {
             $item = [
-                'label' => $this->getName(),
                 'status' => 'info',
                 'value' => $idLabel,
             ];
         } else {
             $item = [
-                'label' => $this->getName() . ' switching',
+                'label' => 'switching',
                 'status' => 'warning',
                 'value' => $idLabel,
             ];

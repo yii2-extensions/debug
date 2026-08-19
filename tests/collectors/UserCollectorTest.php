@@ -166,17 +166,7 @@ final class UserCollectorTest extends TestCase
         self::assertCount(1, $permissions, 'Permission rows must surface.');
     }
 
-    public function testCaptureReturnsNullBeforeStartup(): void
-    {
-        $this->mockWebApplication();
-
-        self::assertNull(
-            (new UserCollector())->capture(),
-            'Idle collector must record nothing.',
-        );
-    }
-
-    public function testCaptureReturnsNullWhenNoIdentity(): void
+    public function testCaptureReturnsGuestSnapshotWhenNoIdentity(): void
     {
         $this->mockWebApplication(
             [
@@ -193,9 +183,26 @@ final class UserCollectorTest extends TestCase
 
         $collector->startup();
 
+        self::assertSame(
+            [
+                'id' => null,
+                'identity' => null,
+                'attributes' => null,
+                'roles' => null,
+                'permissions' => null,
+            ],
+            $collector->capture()?->data(),
+            'A configured guest user must yield the shared Guest snapshot.',
+        );
+    }
+
+    public function testCaptureReturnsNullBeforeStartup(): void
+    {
+        $this->mockWebApplication();
+
         self::assertNull(
-            $collector->capture(),
-            'Guest must yield no snapshot.',
+            (new UserCollector())->capture(),
+            'Idle collector must record nothing.',
         );
     }
 

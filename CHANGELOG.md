@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: consume shared filtering, pagination, Router, and Asset Bundles UI contracts from debug-core.
 - fix(ui): paginate database queries, correct event sorting, and share EXPLAIN markup.
 - refactor(ui): consume shared Timeline geometry and rendering contracts.
+- refactor(ui): align User guest, toolbar, and RBAC rendering and capture Guest requests for parity.
 
 ## 0.1.1 May 18, 2026
 
