@@ -3,51 +3,18 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Flow\{Div, P};
-use UIAwesome\Html\Heading\{H1, H2};
-use UIAwesome\Html\List\{Li, Ol};
+use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
-use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
-use PHPForge\Debug\Helper\{Coerce, EmptyState, Icon};
-use PHPForge\Debug\Panel\Asset\{AssetCardRenderer, AssetSummary, ViteManifest};
+use PHPForge\Debug\Helper\EmptyState;
+use PHPForge\Debug\Panel\Asset\{AssetSectionRenderer, AssetSummary, ViteManifest};
 
 /**
  * @var AssetSummary $summary Typed asset bundle summary.
  * @var ViteManifest|null $vite Vite manifest snapshot, or `null` when no Vite bridge is registered.
  */
-$stats = [
-    ['bundles', 'asset', $summary->totalBundles, 'bundle' . ($summary->totalBundles === 1 ? '' : 's')],
-    ['css', 'brand-css3', $summary->totalCss, 'css'],
-    ['js', 'brand-javascript', $summary->totalJs, 'js'],
-    ['deps', 'link', $summary->totalDeps, 'link' . ($summary->totalDeps === 1 ? '' : 's')],
-];
-
-$statBlocks = [];
-
-foreach ($stats as [$kind, $icon, $value, $label]) {
-    $statBlocks[] = Div::tag()
-        ->addDataAttribute('kind', $kind)
-        ->class('yii-debug-asset-stat')
-        ->html(
-            Span::tag()
-                ->addAriaAttribute('hidden', 'true')
-                ->class('yii-debug-asset-stat-icon')
-                ->html(Icon::render($icon)),
-            Strong::tag()
-                ->class('yii-debug-asset-stat-value')
-                ->content((string) $value),
-            Span::tag()
-                ->class('yii-debug-asset-stat-label')
-                ->content($label),
-        );
-}
 ?>
-<?= H1::tag()
-    ->class('yii-debug-sr-only')
-    ->content('Asset Bundles') ?>
-<?= Header::tag()
-    ->class('yii-debug-asset-stats')
-    ->html(...$statBlocks) ?>
+<?= AssetSectionRenderer::renderHeader($summary) ?>
 
 <?php if ($vite !== null): ?>
     <?php
@@ -163,15 +130,4 @@ foreach ($stats as [$kind, $icon, $value, $label]) {
     <?php return; ?>
 <?php endif; ?>
 
-<?php
-$items = [];
-
-foreach ($summary->bundles as $bundle) {
-    $items[] = Li::tag()
-        ->class('yii-debug-asset-list-item')
-        ->html(AssetCardRenderer::renderCard($bundle, $summary));
-}
-?>
-<?= Ol::tag()
-    ->class('yii-debug-asset-list')
-    ->html(...$items);
+<?= AssetSectionRenderer::renderInventory($summary);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests;
 
+use PHPForge\Debug\Data\FilterEngine;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\models\search\DebugSearch;
@@ -77,12 +78,14 @@ final class DebugSearchTest extends TestCase
         $this->mockWebApplication();
 
         $search = new DebugSearch();
+        $engine = new FilterEngine();
 
         $this->setInaccessibleProperty(
-            $search,
+            $engine,
             'conditions',
             [['attribute' => 'value', 'operator' => '>', 'value' => '5']],
         );
+        $this->setInaccessibleProperty($search, 'filterEngine', $engine);
 
         self::assertSame(
             [],
@@ -91,7 +94,7 @@ final class DebugSearchTest extends TestCase
         );
 
         $this->setInaccessibleProperty(
-            $search,
+            $engine,
             'conditions',
             [['attribute' => 'value', 'operator' => 'same', 'value' => 5.0]],
         );

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Data\FilterPrefix;
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\panels\TimelinePanel;
 
@@ -36,7 +37,7 @@ class TimelineSearch extends Base
     #[Override]
     public function formName(): string
     {
-        return 'Timeline';
+        return FilterPrefix::TIMELINE;
     }
 
     /**

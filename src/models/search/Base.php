@@ -4,36 +4,15 @@ declare(strict_types=1);
 
 namespace yii\debug\models\search;
 
-use Yii;
+use PHPForge\Debug\Data\FilterEngine;
 use yii\base\Model;
-use yii\helpers\VarDumper;
-
-use function array_filter;
-use function array_key_exists;
-use function array_values;
-use function get_object_vars;
-use function is_float;
-use function is_int;
-use function is_numeric;
-use function is_object;
-use function is_scalar;
-use function is_string;
-use function mb_stripos;
-use function mb_strtolower;
-use function preg_match;
 
 /**
- * Shared filtering behavior for debug-panel search models.
+ * Bridges Yii2 search-model attributes to the shared framework-neutral filter engine.
  */
 class Base extends Model
 {
-    /**
-     * @var list<
-     *   array{attribute: string, operator: '>'|'<'|'>=', value: float}
-     *   |array{attribute: string, operator: 'contains'|'same', value: string}
-     * >
-     */
-    private array $conditions = [];
+    private FilterEngine|null $filterEngine = null;
 
     /**
      * Registers an exact, partial, or leading numeric comparison condition.
@@ -42,27 +21,7 @@ class Base extends Model
     {
         $rawValue = $this->getAttributes([$attribute])[$attribute] ?? null;
 
-        $value = is_scalar($rawValue) ? (string) $rawValue : '';
-
-        if ($value === '') {
-            return;
-        }
-
-        if (preg_match('/^\s*([<>])\s*(-?(?:\d+(?:\.\d+)?|\.\d+))\s*$/D', $value, $matches) === 1) {
-            $this->conditions[] = [
-                'attribute' => $attribute,
-                'operator' => $matches[1],
-                'value' => (float) $matches[2],
-            ];
-
-            return;
-        }
-
-        $this->conditions[] = [
-            'attribute' => $attribute,
-            'operator' => $partial ? 'contains' : 'same',
-            'value' => $value,
-        ];
+        $this->engine()->addCondition($attribute, $rawValue, $partial);
     }
 
     /**
@@ -70,7 +29,7 @@ class Base extends Model
      */
     protected function addMinimumCondition(string $attribute, float $value): void
     {
-        $this->conditions[] = ['attribute' => $attribute, 'operator' => '>=', 'value' => $value];
+        $this->engine()->addMinimumCondition($attribute, $value);
     }
 
     /**
@@ -84,82 +43,11 @@ class Base extends Model
      */
     protected function filter(array $rows): array
     {
-        $filtered = array_values(array_filter($rows, $this->matches(...)));
-
-        $this->conditions = [];
-
-        return $filtered;
+        return $this->engine()->filter($rows);
     }
 
-    /**
-     * @param array<string, mixed>|object $row Typed row object or string-keyed array.
-     */
-    private function matches(array|object $row): bool
+    private function engine(): FilterEngine
     {
-        foreach ($this->conditions as $condition) {
-            $attribute = $condition['attribute'];
-
-            $values = is_object($row) ? get_object_vars($row) : $row;
-
-            if (!array_key_exists($attribute, $values)) {
-                return false;
-            }
-
-            $candidate = $values[$attribute];
-            $operator = $condition['operator'];
-
-            if ($operator === '>' || $operator === '<' || $operator === '>=') {
-                $expected = $condition['value'];
-
-                if (
-                    !is_float($expected)
-                    || !is_int($candidate) && !is_float($candidate) && !is_string($candidate)
-                    || !is_numeric($candidate)
-                ) {
-                    return false;
-                }
-
-                $candidate = (float) $candidate;
-
-                $matched = match ($operator) {
-                    '>' => $candidate > $expected,
-                    '<' => $candidate < $expected,
-                    default => $candidate >= $expected,
-                };
-
-                if (!$matched) {
-                    return false;
-                }
-
-                continue;
-            }
-
-            $candidate = is_scalar($candidate)
-                ? (string) $candidate
-                : VarDumper::export($candidate);
-
-            $expected = $condition['value'];
-
-            if (!is_string($expected)) {
-                return false;
-            }
-
-            if ($operator === 'contains') {
-                if (mb_stripos($candidate, $expected, 0, Yii::$app->charset) === false) {
-                    return false;
-                }
-
-                continue;
-            }
-
-            if (
-                mb_strtolower($candidate, Yii::$app->charset)
-                !== mb_strtolower($expected, Yii::$app->charset)
-            ) {
-                return false;
-            }
-        }
-
-        return true;
+        return $this->filterEngine ??= new FilterEngine();
     }
 }
