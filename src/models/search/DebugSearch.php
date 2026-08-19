@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPForge\Debug\View\History\HistoryRow;
 use yii\data\ArrayDataProvider;
@@ -75,7 +76,7 @@ class DebugSearch extends Base
     #[Override]
     public function formName(): string
     {
-        return 'Debug';
+        return FilterPrefix::DEBUG;
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Panel\Dump\DumpRow;
 use PHPForge\Debug\Panel\Log\LogRow;
 use yii\data\ArrayDataProvider;
@@ -42,7 +43,7 @@ class LogSearch extends Base
     #[Override]
     public function formName(): string
     {
-        return 'Log';
+        return FilterPrefix::LOG;
     }
 
     #[Override]

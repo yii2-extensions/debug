@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Data\FilterPrefix;
 use Yii;
 use yii\base\{InvalidConfigException, Model};
 use yii\data\{ActiveDataProvider, ArrayDataProvider, DataProviderInterface};
@@ -58,7 +59,7 @@ class UserSearch extends Model implements UserSearchInterface
     #[Override]
     public function formName(): string
     {
-        return 'User';
+        return FilterPrefix::USER;
     }
 
     public function init(): void

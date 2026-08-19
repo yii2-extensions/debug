@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Panel\Db\QueryRow;
 use yii\data\ArrayDataProvider;
 
@@ -34,7 +35,7 @@ class DbSearch extends Base
     #[Override]
     public function formName(): string
     {
-        return 'Db';
+        return FilterPrefix::DB;
     }
 
     #[Override]

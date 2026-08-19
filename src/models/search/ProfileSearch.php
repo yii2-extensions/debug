@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Panel\Profile\ProfileRow;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
@@ -35,7 +36,7 @@ class ProfileSearch extends Base
     #[Override]
     public function formName(): string
     {
-        return 'Profile';
+        return FilterPrefix::PROFILE;
     }
 
     #[Override]

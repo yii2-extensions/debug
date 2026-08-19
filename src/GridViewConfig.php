@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
-use PHPForge\Debug\Helper\Coerce;
-use UIAwesome\Html\Form\{Option, Select};
-use UIAwesome\Html\Phrasing\{Label, Span};
+use PHPForge\Debug\Data\{PageSize, QueryInput};
 use Yii;
 use yii\debug\widgets\DebugDataColumn;
 
 use function in_array;
-use function is_float;
-use function is_int;
-use function is_string;
 
 /**
  * Shared default configuration for GridView widgets rendered inside the debug panel UI.
@@ -79,63 +74,31 @@ final class GridViewConfig
      */
     public static function pageSizeSelectorHtml(): string
     {
-        $current = self::currentPageSize();
-
-        $select = Select::tag()
-            ->addDataAttribute('yii-debug-pagesize', true)
-            ->class('yii-debug-grid-pagesize-select')
-            ->name('per-page');
-
-        $rows = ['10', '25', '50', '100', 'all'];
-
-        foreach ($rows as $row) {
-            $select = $select->option(
-                Option::tag()
-                    ->value($row)
-                    ->content($row === 'all' ? 'All' : $row)
-                    ->selected($row === $current),
-            );
-        }
-
-        return Label::tag()
-            ->class('yii-debug-grid-pagesize')
-            ->html(
-                Span::tag()
-                    ->class('yii-debug-grid-pagesize-label')
-                    ->content('Rows'),
-                $select,
-            )
-            ->render();
+        return PageSize::selectorHtml(PageSize::current(self::queryParamString('per-page')));
     }
 
     /**
      * Returns a pagination config keyed off the `per-page` query parameter.
      *
-     * Reads `Yii::$app->request->get('per-page')` and translates it into a Yii pagination array. The literal string
+     * Reads `per-page` from the parsed request query and translates it into a Yii pagination array. The literal string
      * `'all'` (case-insensitive) disables pagination entirely. Numeric values are honored within a hard cap of `1000`
      * rows per page; anything else falls back to `$default`.
      *
-     * @param int $default Page size used when no `per-page` param is supplied or the value is invalid.
+     * @param positive-int $default Page size used when no `per-page` param is supplied or the value is invalid.
      *
      * @return array<string, mixed>|false `false` when `'all'` was requested, otherwise a pagination config carrying
      * `pageSize`, `pageSizeParam`, and `pageSizeLimit`.
      */
     public static function paginationFromRequest(int $default = 50): array|false
     {
-        $raw = self::queryParamString('per-page');
+        $size = PageSize::resolve(self::queryParamString('per-page'), $default);
 
-        if ($raw !== null && strcasecmp($raw, 'all') === 0) {
+        if ($size === null) {
             return false;
         }
 
-        $size = Coerce::int($raw, $default);
-
-        if ($size <= 0) {
-            $size = $default;
-        }
-
         return [
-            'pageSize' => min($size, 1000),
+            'pageSize' => $size,
             'pageSizeParam' => 'per-page',
             'pageSizeLimit' => false,
         ];
@@ -163,32 +126,10 @@ final class GridViewConfig
     }
 
     /**
-     * Returns the currently selected page size as a string, falling back to `'50'` when no `per-page` param is set.
-     */
-    private static function currentPageSize(): string
-    {
-        $raw = self::queryParamString('per-page');
-
-        return $raw ?? '50';
-    }
-
-    /**
      * Reads a query parameter as a string, returning `null` when the parameter is absent or non-scalar.
      */
     private static function queryParamString(string $name): string|null
     {
-        $app = Yii::$app;
-
-        $value = $app->getRequest()->getQueryParam($name);
-
-        if (is_string($value)) {
-            return $value;
-        }
-
-        if (is_int($value) || is_float($value)) {
-            return (string) $value;
-        }
-
-        return null;
+        return QueryInput::scalar(Yii::$app->getRequest()->getQueryParams(), $name);
     }
 }

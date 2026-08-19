@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor!: consume the shared history view-models `PHPForge\Debug\View\History` and theme resolver `PHPForge\Debug\Theme\ThemeResolver` from debug-core; the local history widget DTOs were removed; see `UPGRADE.md` for migration details.
 - refactor(panel): hydrate the User panel RBAC providers with typed `PHPForge\Debug\Panel\User\UserRbacRow` models instead of raw snapshot arrays.
 - fix: prevent standalone debugger routes from persisting recursive snapshots, emitting debug headers, or rendering a nested toolbar while preserving explicit debugger logging.
+- refactor: consume shared filtering, pagination, Router, and Asset Bundles UI contracts from debug-core.
 
 ## 0.1.1 May 18, 2026
 

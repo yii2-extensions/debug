@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Panel\Queue\JobRecord;
 use yii\data\ArrayDataProvider;
 
@@ -52,7 +53,7 @@ class QueueSearch extends Base
     #[Override]
     public function formName(): string
     {
-        return 'Queue';
+        return FilterPrefix::QUEUE;
     }
 
     #[Override]

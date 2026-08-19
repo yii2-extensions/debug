@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\models\search;
 
 use Override;
+use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Panel\Mail\MailMessage;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
@@ -72,7 +73,7 @@ class MailSearch extends Base
     #[Override]
     public function formName(): string
     {
-        return 'Mail';
+        return FilterPrefix::MAIL;
     }
 
     #[Override]
