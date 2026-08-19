@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(panel): hydrate the User panel RBAC providers with typed `PHPForge\Debug\Panel\User\UserRbacRow` models instead of raw snapshot arrays.
 - fix: prevent standalone debugger routes from persisting recursive snapshots, emitting debug headers, or rendering a nested toolbar while preserving explicit debugger logging.
 - refactor: consume shared filtering, pagination, Router, and Asset Bundles UI contracts from debug-core.
+- fix(ui): paginate database queries, correct event sorting, and share EXPLAIN markup.
 
 ## 0.1.1 May 18, 2026
 

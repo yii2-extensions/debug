@@ -74,9 +74,10 @@ class EventSearch extends Base
                 'sort' => [
                     'attributes' => [
                         'time',
-                        'level',
-                        'category',
-                        'message',
+                        'name',
+                        'class',
+                        'senderClass',
+                        'isStatic',
                     ],
                     'defaultOrder' => ['time' => SORT_ASC],
                 ],

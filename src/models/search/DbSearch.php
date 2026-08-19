@@ -8,6 +8,7 @@ use Override;
 use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Panel\Db\QueryRow;
 use yii\data\ArrayDataProvider;
+use yii\debug\GridViewConfig;
 
 /**
  * Backs the filter form above the Database panel's query grid.
@@ -58,7 +59,7 @@ class DbSearch extends Base
         $dataProvider = new ArrayDataProvider(
             [
                 'allModels' => $models,
-                'pagination' => false,
+                'pagination' => GridViewConfig::paginationFromRequest(50),
                 'sort' => [
                     'attributes' => [
                         'duration',

@@ -6,6 +6,7 @@ namespace yii\debug\tests\event;
 
 use PHPForge\Debug\Panel\Event\EventRow;
 use PHPUnit\Framework\Attributes\Group;
+use yii\data\Sort;
 use yii\debug\models\search\EventSearch;
 use yii\debug\tests\support\TestCase;
 
@@ -67,6 +68,20 @@ final class EventSearchTest extends TestCase
             1,
             $provider->getTotalCount(),
             "Substring match on 'web' must surface only the 'yii\\\\web\\\\Application' entry.",
+        );
+    }
+
+    public function testSearchConfiguresEveryDisplayedEventFieldForSorting(): void
+    {
+        $this->mockWebApplication();
+
+        $sort = (new EventSearch())->search([], [])->getSort();
+
+        self::assertInstanceOf(Sort::class, $sort, 'Event sorting must be enabled.');
+        self::assertSame(
+            ['time', 'name', 'class', 'senderClass', 'isStatic'],
+            array_keys($sort->attributes),
+            'Every displayed event field must be sortable.',
         );
     }
 

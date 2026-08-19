@@ -6,7 +6,7 @@ namespace yii\debug\tests\db;
 
 use PHPForge\Debug\Panel\Db\QueryRow;
 use PHPUnit\Framework\Attributes\Group;
-use yii\data\Sort;
+use yii\data\{Pagination, Sort};
 use yii\debug\models\search\DbSearch;
 use yii\debug\tests\support\TestCase;
 
@@ -108,6 +108,8 @@ final class DbSearchTest extends TestCase
 
     public function testSearchConfiguresEverySortableDatabaseField(): void
     {
+        $this->mockWebApplication();
+
         $sort = (new DbSearch())->search([])->getSort();
 
         self::assertInstanceOf(
@@ -122,8 +124,20 @@ final class DbSearchTest extends TestCase
         );
     }
 
+    public function testSearchPaginatesDatabaseRowsWithTheSharedDefault(): void
+    {
+        $this->mockWebApplication();
+
+        $pagination = (new DbSearch())->search([])->getPagination();
+
+        self::assertInstanceOf(Pagination::class, $pagination, 'Database query pagination must be enabled.');
+        self::assertSame(50, $pagination->getPageSize(), 'Database queries must use the shared 50-row default.');
+    }
+
     public function testSearchReturnsAllRowsWhenValidateShortCircuits(): void
     {
+        $this->mockWebApplication();
+
         $models = [
             self::row('SELECT', 'SELECT 1'),
             self::row('INSERT', 'INSERT INTO logs VALUES (1)'),
