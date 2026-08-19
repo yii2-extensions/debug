@@ -93,6 +93,45 @@ final class QueueCollectorTest extends TestCase
         Event::offAll();
     }
 
+    public function testCaptureRedactsConfiguredJobPropertiesBeforePersistence(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->redactedProperties = [
+            'password',
+            'accessToken',
+        ];
+
+        $job = new class {
+            public string $password = 'secret';
+            /**
+             * @var array<string, string>
+             */
+            public array $profile = ['accessToken' => 'token', 'name' => 'Ada'];
+        };
+
+        Event::trigger(
+            'yii\\queue\\Queue',
+            'afterPush',
+            $this->makeQueueEvent(job: $job),
+        );
+
+        $records = $this->captureEntries($collector);
+
+        $record = $records[0] ?? self::fail('Expected the redacted push record.');
+
+        self::assertSame(
+            [
+                'password' => '[redacted]',
+                'profile' => ['accessToken' => '[redacted]', 'name' => 'Ada'],
+            ],
+            $record->payloadFields,
+            'Configured sensitive job properties must never reach the persisted queue snapshot.',
+        );
+
+        Event::offAll();
+    }
+
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         $this->mockWebApplication();
