@@ -531,6 +531,14 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testDebugAssetsShipSharedFocusRuntime(): void
+    {
+        self::assertFileExists(
+            Yii::getAlias(Module::SOURCE_PATH) . '/dist/js/focus.min.js',
+            'Published shared assets must include the toolbar keyboard-focus runtime.',
+        );
+    }
+
     public function testDebuggerActionGuardsSuppressAllResponseDecoration(): void
     {
         $module = new Module('debug');
