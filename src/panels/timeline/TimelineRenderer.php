@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\panels\timeline;
 
 use PHPForge\Debug\Helper\{Format, Fqcn};
+use PHPForge\Debug\Panel\Timeline\TimelineRenderer as CoreTimelineRenderer;
 use PHPForge\Debug\Panel\Timeline\TimelineSpanRow;
-use UIAwesome\Html\Flow\{Div, P};
-use UIAwesome\Html\Form\{Button, Form, InputHidden, InputNumber, InputText};
-use UIAwesome\Html\Palpable\A;
-use UIAwesome\Html\Phrasing\{Em, Label, Span, Strong};
+use UIAwesome\Html\Flow\Div;
+use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\{Footer, Header};
 use UIAwesome\Html\Sectioning\Section;
 use yii\debug\models\search\TimelineSearch;
@@ -18,7 +17,6 @@ use yii\debug\panels\TimelinePanel;
 use yii\helpers\Url;
 
 use function count;
-use function number_format;
 use function rtrim;
 use function sprintf;
 
@@ -82,10 +80,6 @@ final class TimelineRenderer
      */
     public static function renderEmptyHint(TimelinePanel $panel, DataProvider $dataProvider): string
     {
-        if ($dataProvider->models !== []) {
-            return '';
-        }
-
         $moduleId = $panel->module !== null ? $panel->module->getUniqueId() : 'debug';
 
         $profilingUrl = [
@@ -94,23 +88,7 @@ final class TimelineRenderer
             'tag' => $panel->tag,
         ];
 
-        return Div::tag()
-            ->class('yii-debug-tl-hint')
-            ->html(
-                P::tag()
-                    ->class('yii-debug-tl-hint-title')
-                    ->content('No spans matched your filter.'),
-                P::tag()
-                    ->class('yii-debug-tl-hint-body')
-                    ->html(
-                        'The timeline is most useful for requests that take hundreds of milliseconds, where you can ',
-                        Em::tag()->content('see'),
-                        ' which operations dominate. For quick requests the ',
-                        A::tag()->href(Url::to($profilingUrl))->content('Profiling panel'),
-                        ' presents the same data as a sortable list easier to scan.',
-                    ),
-            )
-            ->render();
+        return CoreTimelineRenderer::renderEmptyHint($dataProvider->models !== [], Url::to($profilingUrl));
     }
 
     /**
@@ -120,52 +98,16 @@ final class TimelineRenderer
      */
     public static function renderFilterForm(TimelinePanel $panel, TimelineSearch $searchModel): string
     {
-        return Form::tag()
-            ->action(Url::to($panel->getUrl()))
-            ->class('yii-debug-tl-filter')
-            ->html(
-                InputHidden::tag()
-                    ->name('r')
-                    ->value('debug/view'),
-                InputHidden::tag()
-                    ->name('panel')
-                    ->value('timeline'),
-                InputHidden::tag()
-                    ->name('tag')
-                    ->value($panel->tag),
-                Div::tag()
-                    ->class('yii-debug-tl-field')
-                    ->html(
-                        Label::tag()
-                            ->content('Min duration (ms)')
-                            ->for('tl-duration'),
-                        InputNumber::tag()
-                            ->id('tl-duration')
-                            ->min(0)
-                            ->name('Timeline[duration]')
-                            ->placeholder('0')
-                            ->step(0.1)
-                            ->value($searchModel->duration),
-                    ),
-                Div::tag()
-                    ->class('yii-debug-tl-field yii-debug-tl-field-grow')
-                    ->html(
-                        Label::tag()
-                            ->content('Category')
-                            ->for('tl-category'),
-                        InputText::tag()
-                            ->id('tl-category')
-                            ->name('Timeline[category]')
-                            ->placeholder('yii\\db\\Command::query')
-                            ->value($searchModel->category),
-                    ),
-                Button::tag()
-                    ->class('yii-debug-btn yii-debug-btn-primary yii-debug-btn-sm')
-                    ->content('Apply')
-                    ->type('submit'),
-            )
-            ->method('get')
-            ->render();
+        return CoreTimelineRenderer::renderFilterForm(
+            Url::to($panel->getUrl()),
+            [
+                'r' => 'debug/view',
+                'panel' => 'timeline',
+                'tag' => $panel->tag,
+            ],
+            $searchModel->duration,
+            $searchModel->category,
+        );
     }
 
     /**
@@ -173,20 +115,11 @@ final class TimelineRenderer
      */
     public static function renderSummary(TimelinePanel $panel, DataProvider $dataProvider): string
     {
-        $totalDuration = $panel->getDuration();
-
-        $peakMemoryMB = Format::bytesToMb($panel->getMemory());
-
-        return Header::tag()
-            ->class('yii-debug-grid-summary')
-            ->html(
-                Span::tag()->html(Strong::tag()->content(number_format($totalDuration)), ' ms total'),
-                Span::tag()->class('yii-debug-grid-summary-sep')->content('·'),
-                Span::tag()->html(Strong::tag()->content($peakMemoryMB), ' peak memory'),
-                Span::tag()->class('yii-debug-grid-summary-sep')->content('·'),
-                Span::tag()->html(Strong::tag()->content((string) count($dataProvider->models)), ' spans'),
-            )
-            ->render();
+        return CoreTimelineRenderer::renderSummary(
+            $panel->getDuration(),
+            $panel->getMemory(),
+            count($dataProvider->models),
+        );
     }
 
     /**
