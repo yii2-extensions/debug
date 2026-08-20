@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\actions;
 
-use Override;
-use Yii;
 use yii\debug\models\UserSwitch;
-use yii\web\{Action, BadRequestHttpException, IdentityInterface, Request, Response, User};
+use yii\web\{BadRequestHttpException, IdentityInterface, Request, User};
 
 use function is_int;
 use function is_string;
@@ -19,7 +17,7 @@ use function is_subclass_of;
  * JSON endpoint of the user-impersonation workflow exposed by the User Switch debug panel. Requires an active
  * session, enforced in {@see beforeRun()}.
  */
-class SetIdentityAction extends Action
+class SetIdentityAction extends IdentityAction
 {
     /**
      * Runs the action.
@@ -64,24 +62,5 @@ class SetIdentityAction extends Action
         $userSwitch->setUserByIdentity($newIdentity);
 
         return $user;
-    }
-
-    /**
-     * Forces the JSON response format and requires an active session before the action body runs.
-     *
-     * @throws BadRequestHttpException When the current request has no active session.
-     */
-    #[Override]
-    protected function beforeRun()
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        if (!Yii::$app->session->hasSessionId) {
-            throw new BadRequestHttpException(
-                'Need an active session',
-            );
-        }
-
-        return parent::beforeRun();
     }
 }

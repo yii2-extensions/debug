@@ -15,6 +15,7 @@ use yii\debug\panels\{ConfigPanel, LogPanel};
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
+use function file_get_contents;
 use function file_put_contents;
 use function glob;
 use function is_array;
@@ -31,6 +32,25 @@ use function unlink;
 #[Group('log-target')]
 final class LogTargetTest extends TestCase
 {
+    public function testBeginRequestIsolatesTagAndMessageStateAcrossWorkerCycles(): void
+    {
+        $target = new LogTarget(new Module('debug'));
+        $initialTag = $target->tag;
+        $target->messages = [['previous request']];
+
+        $target->beginRequest();
+        $firstRequestTag = $target->tag;
+
+        self::assertNotSame($initialTag, $firstRequestTag, 'A new request must receive a fresh tag.');
+        self::assertSame([], $target->messages, 'A new request must not inherit the previous message buffer.');
+
+        $target->messages = [['first request']];
+        $target->beginRequest();
+
+        self::assertNotSame($firstRequestTag, $target->tag, 'Every worker request must rotate the tag.');
+        self::assertSame([], $target->messages, 'Every worker request must reset collected messages.');
+    }
+
     public function testCollectAppendsMessagesAcrossBatches(): void
     {
         $target = new LogTarget(new Module('debug'));
@@ -160,6 +180,24 @@ final class LogTargetTest extends TestCase
         $this->cleanupDataPath($module);
     }
 
+    public function testCollectSummaryRedactsSensitiveQueryValues(): void
+    {
+        Yii::$app->getRequest()->setUrl('/debug?token=query-secret&page=1');
+
+        $module = new Module('debug');
+        $module->bootstrap(Yii::$app);
+
+        $summary = $this->invoke(new LogTarget($module), 'collectSummary');
+
+        self::assertInstanceOf(RequestSummary::class, $summary, 'The summary must be captured.');
+        self::assertStringNotContainsString('query-secret', $summary->url, 'Manifest URLs must not retain query secrets.');
+        self::assertStringContainsString(
+            'token=%5Bredacted%5D',
+            $summary->url,
+            'The redaction marker must remain visible.',
+        );
+    }
+
     public function testEvictedMailCleanupIsSkippedWithoutAMailCollector(): void
     {
         $module = new class ('debug') extends Module {
@@ -249,6 +287,69 @@ final class LogTargetTest extends TestCase
             'The broken panel must carry the correct exception message.',
         );
 
+        $this->cleanupDataPath($module);
+    }
+
+    public function testExportDoesNotPersistRequestSecretsToJson(): void
+    {
+        $request = Yii::$app->getRequest();
+        $request->setUrl('/login?token=query-secret');
+        $request->setRawBody('{"password":"body-secret"}');
+        $request->setBodyParams(['password' => 'body-secret']);
+        $request->getHeaders()->set('Authorization', 'Bearer header-secret');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+        $logTarget = new LogTarget($module);
+
+        $logTarget->export();
+
+        $json = file_get_contents("{$module->dataPath}/{$logTarget->tag}.json");
+
+        self::assertIsString($json, 'The persisted snapshot must be readable.');
+        self::assertStringNotContainsString('query-secret', $json, 'Persisted URLs must not contain query secrets.');
+        self::assertStringNotContainsString('body-secret', $json, 'Persisted bodies must not contain body secrets.');
+        self::assertStringNotContainsString('header-secret', $json, 'Persisted headers must not contain credentials.');
+        self::assertStringContainsString('[redacted]', $json, 'Persisted snapshots must retain an explicit marker.');
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testExportRemovesCapturedMailWhenSnapshotPersistenceFails(): void
+    {
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+        $mailCollector = $module->getCollectorCoordinator()->collector('mail');
+
+        self::assertInstanceOf(MailCollector::class, $mailCollector, 'Mail collector must be registered.');
+
+        $mailPath = "{$module->dataPath}/mail";
+        $mailCollector->mailPath = $mailPath;
+        mkdir($mailPath, recursive: true);
+        file_put_contents("{$mailPath}/orphan.eml", 'message');
+        mkdir("{$module->dataPath}/index.lock");
+
+        $module->getCollectorCoordinator()->startup();
+        $this->setInaccessibleProperty($mailCollector, 'messages', [['file' => 'orphan.eml']]);
+
+        try {
+            (new LogTarget($module))->export();
+
+            self::fail('An invalid lock path must make snapshot persistence fail.');
+        } catch (InvalidConfigException $exception) {
+            self::assertStringContainsString(
+                'Unable to open debug data lock file',
+                $exception->getMessage(),
+                'Mail cleanup must preserve the snapshot persistence failure.',
+            );
+        }
+
+        self::assertFileDoesNotExist(
+            "{$mailPath}/orphan.eml",
+            'A failed snapshot commit must not leave its captured mail file behind.',
+        );
+
+        rmdir("{$module->dataPath}/index.lock");
         $this->cleanupDataPath($module);
     }
 

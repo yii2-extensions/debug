@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\collectors;
 
+use PHPForge\Debug\Capture\CapturePolicy;
+use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPForge\Debug\Panel\User\UserSnapshot;
 use Throwable;
 use Yii;
@@ -35,6 +37,8 @@ class UserCollector extends Collector
      * Component id of the user component, or a {@see User} instance to operate on directly.
      */
     public string|User $userComponent = 'user';
+
+    private CapturePolicy|null $capturePolicy = null;
 
     /**
      * Snapshots the identity attributes, the RBAC roles, and the permissions for the active user.
@@ -91,7 +95,9 @@ class UserCollector extends Collector
         $identityData = [];
 
         foreach ($rawIdentityData as $key => $value) {
-            $identityData[$key] = VarDumper::dumpAsString($value);
+            $identityData[$key] = $this->capturePolicy()->isSensitiveKey($key)
+                ? SensitiveDataRedactor::PLACEHOLDER
+                : VarDumper::dumpAsString($value);
         }
 
         // If the identity is a model, let it specify the attribute labels
@@ -178,6 +184,14 @@ class UserCollector extends Collector
         }
 
         return self::normalizeStringKeyArray(get_object_vars($identity));
+    }
+
+    /**
+     * Returns the shared default policy used for persisted identity attributes.
+     */
+    private function capturePolicy(): CapturePolicy
+    {
+        return $this->capturePolicy ??= new CapturePolicy();
     }
 
     /**

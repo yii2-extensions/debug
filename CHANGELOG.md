@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(ui): align User guest, toolbar, and RBAC rendering and capture Guest requests for parity.
 - feat(ui): align Dump, Mail, and Queue security contracts with Yii3 and redact configured queue payload keys.
 - fix(ui): ship the shared keyboard-resizable drawer with Escape handling and focus restoration.
+- fix: harden packaging, identity actions, persisted data, worker cleanup, storage modes, dump output, and mail capture.
 
 ## 0.1.1 May 18, 2026
 

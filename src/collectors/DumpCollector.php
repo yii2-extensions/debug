@@ -96,8 +96,8 @@ class DumpCollector extends Collector
     /**
      * Renders a captured value as a display string.
      *
-     * The highlighter emits safe markup, so highlighted output is passed through unchanged; plain output is
-     * HTML-escaped explicitly.
+     * The built-in highlighter emits safe markup, so highlighted output is passed through unchanged. Plain output
+     * and custom callback output are HTML-escaped explicitly.
      *
      * Usage example:
      *
@@ -108,7 +108,7 @@ class DumpCollector extends Collector
     public function varDump(mixed $var): string
     {
         if ($this->varDumpCallback !== null) {
-            return ($this->varDumpCallback)($var, $this);
+            return Encode::content(($this->varDumpCallback)($var, $this));
         }
 
         $message = VarDumper::dumpAsString($var, $this->depth, $this->highlight);

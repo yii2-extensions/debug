@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
+use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\{Action, InlineAction};
@@ -190,6 +191,58 @@ final class RequestCollectorTest extends TestCase
             [],
             $saved['requestBody'] ?? null,
             "Empty raw body must collapse to '[]'.",
+        );
+    }
+
+    public function testCaptureRedactsDefaultHeaderBodyAndSuperglobalSecrets(): void
+    {
+        $collector = $this->makeCollector();
+        $collector->displayVars = ['_GET', '_COOKIE'];
+
+        $request = Yii::$app->getRequest();
+        $request->getHeaders()->set('Authorization', 'Bearer header-secret');
+        $request->setRawBody('{"password":"body-secret"}');
+        $request->setBodyParams(['password' => 'body-secret']);
+        $GLOBALS['_GET'] = ['token' => 'query-secret'];
+        $GLOBALS['_COOKIE'] = ['session_id' => 'cookie-secret'];
+
+        $saved = $this->captureData($collector);
+        $requestHeaders = $saved['requestHeaders'] ?? null;
+        $requestBody = $saved['requestBody'] ?? null;
+        $query = $saved['GET'] ?? null;
+
+        self::assertIsArray($requestHeaders, 'Request headers must remain an array.');
+        self::assertIsArray($requestBody, 'Request body must remain an array.');
+        self::assertIsArray($query, 'Query parameters must remain an array.');
+
+        $decodedBody = $requestBody['Decoded'] ?? null;
+
+        self::assertIsArray($decodedBody, 'Decoded request body must remain an array.');
+
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $requestHeaders['authorization'] ?? null,
+            'Authorization headers must be redacted without explicit configuration.',
+        );
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $decodedBody['password'] ?? null,
+            'Nested body passwords must be redacted without explicit configuration.',
+        );
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $requestBody['Raw'] ?? null,
+            'A raw body must be suppressed when its decoded representation contains a secret.',
+        );
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $query['token'] ?? null,
+            'Query tokens must be redacted without explicit configuration.',
+        );
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $saved['COOKIE'] ?? null,
+            'Cookie collections must be redacted without explicit configuration.',
         );
     }
 

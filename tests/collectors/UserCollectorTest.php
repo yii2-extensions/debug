@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
+use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\collectors\UserCollector;
@@ -164,6 +165,55 @@ final class UserCollectorTest extends TestCase
         self::assertIsArray($permissions);
         self::assertCount(1, $roles, 'Role rows must surface.');
         self::assertCount(1, $permissions, 'Permission rows must surface.');
+    }
+
+    public function testCaptureRedactsSensitivePublicIdentityAttributes(): void
+    {
+        $identity = new class implements IdentityInterface {
+            public string $access_token = 'identity-secret';
+            public string $username = 'wilmer';
+
+            public static function findIdentity($id): IdentityInterface|null
+            {
+                return null;
+            }
+
+            public static function findIdentityByAccessToken($token, $type = null): IdentityInterface|null
+            {
+                return null;
+            }
+
+            public function getAuthKey(): string
+            {
+                return 'auth-key';
+            }
+
+            public function getId(): int
+            {
+                return 1;
+            }
+
+            public function validateAuthKey($authKey): bool
+            {
+                return $authKey === 'auth-key';
+            }
+        };
+
+        $saved = $this->bootstrapCollectorWithIdentity($identity)->capture()?->data();
+        $identityData = $saved['identity'] ?? null;
+
+        self::assertIsArray($identityData, 'Identity attributes must remain an array.');
+
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $identityData['access_token'] ?? null,
+            'Sensitive identity attributes must be irreversibly redacted before capture.',
+        );
+        self::assertSame(
+            "'wilmer'",
+            $identityData['username'] ?? null,
+            'Non-sensitive identity attributes must remain available.',
+        );
     }
 
     public function testCaptureReturnsGuestSnapshotWhenNoIdentity(): void

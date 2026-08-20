@@ -25,6 +25,8 @@ Consequences:
 - `UserPanel::$ruleUserSwitch` and the user-switch access filter now scope by action IDs
   (`'actions' => ['set-identity', 'reset-identity']`). Custom rules that matched the removed `user` controller via a
   `controllers` constraint must switch to the `actions` constraint.
+- `set-identity` and `reset-identity` accept only POST requests with the application's valid CSRF token. Replace any
+  direct GET or tokenless integrations; the bundled User panel forms already satisfy both requirements.
 - Debugger views and widgets build links with `Module::route('<action>', [...])`, which returns a module-absolute
   route that works without an active controller context.
 
@@ -63,6 +65,12 @@ The storage contracts now live in `php-forge/debug-core` under `PHPForge\Debug\S
 `yii\debug\storage\SnapshotStore` remains a Yii2 facade so filesystem failures continue to surface as
 `yii\base\InvalidConfigException`.
 
+New debug storage directories and files now default to owner-only modes `0700` and `0600`. Existing directories are
+left unchanged to avoid silently altering deployment permissions; review and migrate them explicitly when appropriate.
+Applications that intentionally share debug data with a development group can retain the former behavior by setting
+`Module::$dirMode` to `0775` and `Module::$fileMode` to `0664`. Newly captured `.eml` files follow the same module
+modes and mail persistence failures remain fail-open after the application mailer has completed.
+
 The phpinfo presentation classes also moved to `php-forge/debug-core`: import `PHPForge\Debug\PhpInfo\*` instead of
 the removed `yii\debug\widgets\phpinfo\*` namespace. `PhpInfoDataNormalizer::capture()` now buffers the live
 `phpinfo()` output that the view previously captured inline.
@@ -80,7 +88,8 @@ Capture-side panel options move to the matching collector entry under the new `c
 - `panels.request.censoredVariableNames` / `censorString` / `displayVars` → `collectors.request.*`.
 - `panels.router.categories` (and `setCategories()`) → `collectors.router`.
 - `panels.dump.categories` / `depth` / `highlight` / `varDumpCallback` → `collectors.dump.*`; the callback now
-  receives the `DumpCollector` instead of the panel.
+  receives the `DumpCollector` instead of the panel. Callback output is treated as untrusted text and HTML-escaped;
+  use the built-in highlighter rather than returning custom markup.
 - `panels.mail.mailPath` → `collectors.mail.mailPath`.
 - `panels.db.dbEventNames` / `excessiveCallerThreshold` / `ignoredPathsInBacktrace` → `collectors.db.*`; the panel
   keeps `db` (EXPLAIN connection), `criticalQueryThreshold`, `defaultFilter`, and `defaultOrder`.

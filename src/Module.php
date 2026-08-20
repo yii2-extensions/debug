@@ -150,7 +150,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Permission applied to newly created debugger directories (used by {@see chmod()}); no umask is applied.
      */
-    public int $dirMode = 0o775;
+    public int $dirMode = 0o700;
     /**
      * Whether to disable the access-callback restriction warning emitted by {@see checkAccess()}.
      */
@@ -164,9 +164,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public bool $enableDebugLogs = false;
     /**
-     * Permission applied to newly created debugger data files (used by {@see chmod()}); `null` keeps the env default.
+     * Permission applied to newly created debugger data files (used by {@see chmod()}).
      */
-    public int|null $fileMode = null;
+    public int|null $fileMode = 0o600;
     /**
      * Maximum number of debug data files to keep; older snapshots beyond this count are pruned.
      */
@@ -291,6 +291,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $app->getLog()->targets['debug'] = $this->logTarget;
 
+        $app->on(
+            Application::EVENT_BEFORE_REQUEST,
+            $this->logTarget->beginRequest(...),
+        );
         $app->on(
             Application::EVENT_BEFORE_REQUEST,
             $this->getCollectorCoordinator()->startup(...),
