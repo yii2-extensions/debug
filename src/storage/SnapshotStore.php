@@ -6,6 +6,7 @@ namespace yii\debug\storage;
 
 use PHPForge\Debug\Storage\{
     DebugSnapshot,
+    ManifestReadResult,
     RequestSummary,
     SnapshotStore as CoreSnapshotStore,
     StorageException,
@@ -45,6 +46,14 @@ final class SnapshotStore
     public function loadManifest(): array
     {
         return $this->store->loadManifest();
+    }
+
+    /**
+     * Returns manifest entries together with an optional core storage diagnostic.
+     */
+    public function loadManifestResult(): ManifestReadResult
+    {
+        return $this->store->loadManifestResult();
     }
 
     /**

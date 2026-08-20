@@ -12,7 +12,7 @@ use yii\debug\models\UserSwitch;
 use yii\debug\Module;
 use yii\debug\tests\support\stub\{Identity, NullableIdentity};
 use yii\debug\tests\support\TestCase;
-use yii\web\{BadRequestHttpException, Response, User};
+use yii\web\{BadRequestHttpException, MethodNotAllowedHttpException, Response, User};
 
 /**
  * Unit tests for {@see SetIdentityAction} and {@see ResetIdentityAction} covering the identity swap happy path, the
@@ -83,6 +83,8 @@ final class IdentityActionsTest extends TestCase
 
         (new UserSwitch())->setUserByIdentity(new Identity(42));
 
+        $this->prepareValidPost();
+
         (new ResetIdentityAction('reset-identity'))->runWithParams(['user' => Yii::$app->user]);
 
         self::assertSame(
@@ -97,7 +99,7 @@ final class IdentityActionsTest extends TestCase
         $this->bootApp();
 
         Yii::$app->user->login(new Identity(1));
-        Yii::$app->request->setBodyParams(['user_id' => 42]);
+        $this->prepareValidPost(['user_id' => 42]);
 
         $module = new Module('debug', Yii::$app);
 
@@ -116,6 +118,42 @@ final class IdentityActionsTest extends TestCase
             42,
             $result->getId(),
             'Identity must be swapped to the posted id.',
+        );
+    }
+
+    public function testThrowBadRequestHttpExceptionWhenCsrfTokenIsInvalid(): void
+    {
+        $this->bootApp();
+
+        Yii::$app->user->login(new Identity(1));
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        Yii::$app->request->setBodyParams(['user_id' => 42, Yii::$app->request->csrfParam => 'invalid']);
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage(
+            'Unable to verify your data submission.',
+        );
+
+        (new SetIdentityAction('set-identity'))->runWithParams(
+            ['user' => Yii::$app->user, 'request' => Yii::$app->request],
+        );
+    }
+
+    public function testThrowBadRequestHttpExceptionWhenCsrfTokenIsMissing(): void
+    {
+        $this->bootApp();
+
+        Yii::$app->user->login(new Identity(1));
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        Yii::$app->request->setBodyParams(['user_id' => 42]);
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage(
+            'Unable to verify your data submission.',
+        );
+
+        (new SetIdentityAction('set-identity'))->runWithParams(
+            ['user' => Yii::$app->user, 'request' => Yii::$app->request],
         );
     }
 
@@ -173,6 +211,8 @@ final class IdentityActionsTest extends TestCase
     {
         $this->bootApp();
 
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+
         // Drop the session id so `hasSessionId` reports `false`.
         unset($_COOKIE[Yii::$app->session->getName()]);
 
@@ -198,6 +238,23 @@ final class IdentityActionsTest extends TestCase
         (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
     }
 
+    public function testThrowMethodNotAllowedHttpExceptionWhenRequestIsNotPost(): void
+    {
+        $this->bootApp();
+
+        Yii::$app->user->login(new Identity(1));
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $this->expectExceptionMessage(
+            'Only POST requests are allowed.',
+        );
+
+        (new SetIdentityAction('set-identity'))->runWithParams(
+            ['user' => Yii::$app->user, 'request' => Yii::$app->request],
+        );
+    }
+
     private function bootApp(): void
     {
         $this->mockWebApplication(
@@ -215,5 +272,18 @@ final class IdentityActionsTest extends TestCase
 
         // Force `hasSessionId === true` by seeding the session cookie before the test body opens it.
         $_COOKIE[Yii::$app->session->getName()] = 'test-session-id';
+    }
+
+    /**
+     * @param array<string, mixed> $body
+     */
+    private function prepareValidPost(array $body = []): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+
+        $request = Yii::$app->request;
+        $body[$request->csrfParam] = $request->getCsrfToken();
+
+        $request->setBodyParams($body);
     }
 }

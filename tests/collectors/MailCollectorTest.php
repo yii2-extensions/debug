@@ -7,13 +7,19 @@ namespace yii\debug\tests\collectors;
 use PHPForge\Debug\Panel\Mail\MailMessage;
 use PHPUnit\Framework\Attributes\Group;
 use Stringable;
+use Xepozz\InternalMocker\MockerState;
 use yii\base\Event;
 use yii\debug\collectors\MailCollector;
 use yii\debug\tests\support\TestCase;
 use yii\mail\{BaseMailer, MailEvent, MessageInterface};
 use yii\symfonymailer\Mailer;
 
+use function fileperms;
+use function glob;
 use function sys_get_temp_dir;
+use function time;
+use function touch;
+use function uniqid;
 
 /**
  * Unit tests for {@see MailCollector} covering the mailer listener capture, the recipient-list flattening, the
@@ -141,6 +147,7 @@ final class MailCollectorTest extends TestCase
             [
                 ['file' => 'first.eml'],
                 ['file' => 42],
+                ['file' => ''],
                 ['no-file-key' => 'ignored'],
                 ['file' => 'second.eml'],
             ],
@@ -165,38 +172,10 @@ final class MailCollectorTest extends TestCase
     public function testInitCapturesMessagesViaMailerAfterSendListener(): void
     {
         $collector = $this->makeCollector();
+        $path = sys_get_temp_dir() . '/yii2-debug-mail-capture-' . uniqid('', true);
+        $collector->mailPath = $path;
 
-        $mailer = new Mailer(
-            [
-                'useFileTransport' => true,
-                'fileTransportPath' => sys_get_temp_dir() . '/debug-mail',
-            ],
-        );
-
-        $message = $mailer->compose()
-            ->setFrom('from@example.com')
-            ->setTo('to@example.com')
-            ->setSubject('Hello')
-            ->setTextBody('Body text');
-
-        $event = new MailEvent(
-            [
-                'message' => $message,
-                'isSuccessful' => true,
-            ],
-        );
-
-        $event->sender = $mailer;
-
-        Event::trigger(
-            BaseMailer::class,
-            BaseMailer::EVENT_AFTER_SEND,
-            $event,
-        );
-
-        $saved = $this->captureEntries($collector);
-
-        $captured = $saved[0] ?? self::fail('Expected one captured message.');
+        $captured = $this->captureSentMessage($collector);
 
         self::assertSame(
             'from@example.com',
@@ -218,6 +197,16 @@ final class MailCollectorTest extends TestCase
             'IS_SUCCESSFUL must round-trip.',
         );
         self::assertNotSame('', $captured->file, 'FILE must be assigned.');
+
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $permissions = fileperms("{$path}/{$captured->file}");
+
+            self::assertIsInt($permissions, 'Captured mail permissions must be readable.');
+            self::assertSame(0o600, $permissions & 0o777, 'Standalone captured mail must default to owner-only mode.');
+        }
+
+        unlink("{$path}/{$captured->file}");
+        rmdir($path);
 
         Event::offAll();
     }
@@ -246,6 +235,103 @@ final class MailCollectorTest extends TestCase
         );
 
         Event::offAll();
+    }
+
+    public function testInitKeepsMailCaptureFailOpenWhenFileModeCannotBeApplied(): void
+    {
+        $collector = $this->makeCollector();
+        $path = sys_get_temp_dir() . '/yii2-debug-mail-mode-failure-' . uniqid('', true);
+        $collector->mailPath = $path;
+
+        MockerState::addCondition('yii\\debug\\collectors', 'chmod', [], false, true);
+
+        $captured = $this->captureSentMessage($collector);
+
+        self::assertSame('', $captured->file, 'A file-mode failure must omit the unavailable `.eml` reference.');
+        self::assertSame([], $collector->getMessagesFileName(), 'Failed mail persistence must not reach the manifest.');
+        $files = glob("{$path}/*.eml");
+
+        self::assertSame([], $files === false ? [] : $files, 'A mode failure must remove the partially persisted file.');
+
+        rmdir($path);
+        Event::offAll();
+    }
+
+    public function testInitKeepsMailCaptureFailOpenWhenFileWriteFails(): void
+    {
+        $collector = $this->makeCollector();
+        $path = sys_get_temp_dir() . '/yii2-debug-mail-write-failure-' . uniqid('', true);
+        $collector->mailPath = $path;
+
+        MockerState::addCondition('yii\\debug\\collectors', 'file_put_contents', [], false, true);
+
+        $captured = $this->captureSentMessage($collector);
+
+        self::assertSame('', $captured->file, 'A write failure must omit the unavailable `.eml` reference.');
+        self::assertSame([], $collector->getMessagesFileName(), 'Failed mail persistence must not reach the manifest.');
+
+        rmdir($path);
+        Event::offAll();
+    }
+
+    public function testInitRejectsUnsafeGeneratedMailFileName(): void
+    {
+        $collector = $this->makeCollector();
+        $path = sys_get_temp_dir() . '/yii2-debug-mail-unsafe-name-' . uniqid('', true);
+        $collector->mailPath = $path;
+        $mailer = new class ([ 'useFileTransport' => true, 'fileTransportPath' => sys_get_temp_dir() . '/debug-mail', ], ) extends Mailer {
+            public function generateMessageFileName(): string
+            {
+                return '../outside.eml';
+            }
+        };
+        $event = new MailEvent(
+            [
+                'message' => $mailer->compose()->setTextBody('Body text'),
+                'isSuccessful' => true,
+            ],
+        );
+        $event->sender = $mailer;
+
+        Event::trigger(BaseMailer::class, BaseMailer::EVENT_AFTER_SEND, $event);
+
+        $captured = $this->captureEntries($collector)[0] ?? self::fail('Expected one captured message.');
+
+        self::assertSame('', $captured->file, 'Unsafe mailer-generated paths must not reach persistence.');
+        self::assertDirectoryDoesNotExist($path, 'An invalid file name must be rejected before creating storage.');
+
+        Event::offAll();
+    }
+
+    public function testReconcileFilesRemovesOnlyAgedUnreferencedMail(): void
+    {
+        $this->mockWebApplication();
+        $path = sys_get_temp_dir() . '/yii2-debug-mail-reconcile-' . uniqid('', true);
+        mkdir($path, recursive: true);
+        $referenced = "{$path}/referenced.eml";
+        $orphan = "{$path}/orphan.eml";
+        $fresh = "{$path}/fresh.eml";
+
+        file_put_contents($referenced, 'referenced');
+        file_put_contents($orphan, 'orphan');
+        file_put_contents($fresh, 'fresh');
+        touch($referenced, time() - 90_000);
+        touch($orphan, time() - 90_000);
+
+        $collector = new MailCollector();
+        $collector->mailPath = $path;
+        $collector->reconcileFiles(['referenced.eml', '../unsafe.eml']);
+
+        self::assertFileExists($referenced, 'Manifest-referenced mail must survive reconciliation.');
+        self::assertFileDoesNotExist($orphan, 'Aged unreferenced mail must be removed for eventual cleanup retry.');
+        self::assertFileExists($fresh, 'Fresh mail must remain available to a concurrent snapshot commit.');
+
+        $collector->removeFiles(['../outside.eml', 'fresh.eml']);
+
+        self::assertFileDoesNotExist($fresh, 'Explicit cleanup must remove safe captured files only.');
+
+        unlink($referenced);
+        rmdir($path);
     }
 
     public function testShutdownDetachesTheMailerListenerAndClearsMessages(): void
@@ -284,6 +370,41 @@ final class MailCollectorTest extends TestCase
         self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
 
         return $snapshot->entries();
+    }
+
+    private function captureSentMessage(MailCollector $collector): MailMessage
+    {
+        $mailer = new Mailer(
+            [
+                'useFileTransport' => true,
+                'fileTransportPath' => sys_get_temp_dir() . '/debug-mail',
+            ],
+        );
+
+        $message = $mailer->compose()
+            ->setFrom('from@example.com')
+            ->setTo('to@example.com')
+            ->setSubject('Hello')
+            ->setTextBody('Body text');
+
+        $event = new MailEvent(
+            [
+                'message' => $message,
+                'isSuccessful' => true,
+            ],
+        );
+
+        $event->sender = $mailer;
+
+        Event::trigger(
+            BaseMailer::class,
+            BaseMailer::EVENT_AFTER_SEND,
+            $event,
+        );
+
+        $saved = $this->captureEntries($collector);
+
+        return $saved[0] ?? self::fail('Expected one captured message.');
     }
 
     /**

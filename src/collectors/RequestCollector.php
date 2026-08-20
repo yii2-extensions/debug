@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\collectors;
 
+use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use Yii;
 use yii\base\InlineAction;
@@ -63,6 +64,8 @@ class RequestCollector extends Collector
         '_SESSION',
     ];
 
+    private CapturePolicy|null $capturePolicy = null;
+
     /**
      * Snapshots the request/response state: action, route, headers, body, status code, flash messages, and the
      * configured superglobals.
@@ -78,7 +81,9 @@ class RequestCollector extends Collector
             return null;
         }
 
-        $headers = Yii::$app->getRequest()->getHeaders();
+        $request = Yii::$app->getRequest();
+
+        $headers = $request->getHeaders();
 
         $requestHeaders = [];
 
@@ -108,21 +113,24 @@ class RequestCollector extends Collector
             $action = $requestedAction::class . '::run()';
         }
 
+        $rawBody = $request->getRawBody();
+        $requestBody = $rawBody === '' ? [] : $this->capturePolicy()->redactBody($rawBody, $request->getBodyParams());
+
         $data = [
             'action' => $action,
             'actionParams' => Yii::$app->requestedParams,
             'flashes' => $this->getFlashes(),
             'general' => [
-                'isAjax' => Yii::$app->getRequest()->getIsAjax(),
-                'isFlash' => Yii::$app->getRequest()->getIsFlash(),
-                'isPjax' => Yii::$app->getRequest()->getIsPjax(),
-                'isSecureConnection' => Yii::$app->getRequest()->getIsSecureConnection(),
-                'method' => Yii::$app->getRequest()->getMethod(),
+                'isAjax' => $request->getIsAjax(),
+                'isFlash' => $request->getIsFlash(),
+                'isPjax' => $request->getIsPjax(),
+                'isSecureConnection' => $request->getIsSecureConnection(),
+                'method' => $request->getMethod(),
             ],
-            'requestBody' => Yii::$app->getRequest()->getRawBody() === '' ? [] : [
-                'Content Type' => Yii::$app->getRequest()->getContentType(),
-                'Decoded' => Yii::$app->getRequest()->getBodyParams(),
-                'Raw' => Yii::$app->getRequest()->getRawBody(),
+            'requestBody' => $requestBody === [] ? [] : [
+                'Content Type' => $request->getContentType(),
+                'Decoded' => $requestBody['decoded'],
+                'Raw' => $requestBody['raw'],
             ],
             'requestHeaders' => $requestHeaders,
             'responseHeaders' => $responseHeaders,
@@ -134,7 +142,7 @@ class RequestCollector extends Collector
             $data[trim($name, '_')] = self::normalizeGlobalValue($GLOBALS[$name] ?? null);
         }
 
-        return RequestSnapshot::capture($this->censorArray($data));
+        return RequestSnapshot::capture($this->applyConfiguredCensors($this->capturePolicy()->redact($data)));
     }
 
     /**
@@ -255,6 +263,40 @@ class RequestCollector extends Collector
         }
 
         return $responseHeaders;
+    }
+
+    /**
+     * Reapplies explicitly configured markers after the mandatory default policy has sanitized the payload.
+     *
+     * @param array<string, mixed> $data Default-sanitized request payload.
+     *
+     * @return array<string, mixed> Sanitized payload retaining the configured censor marker.
+     */
+    private function applyConfiguredCensors(array $data): array
+    {
+        $data = $this->censorArray($data);
+
+        foreach (['requestHeaders', 'responseHeaders'] as $section) {
+            if (!is_array($data[$section] ?? null)) {
+                continue;
+            }
+
+            foreach ($this->censoredVariableNames as $name) {
+                if (array_key_exists($name, $data[$section])) {
+                    $data[$section][$name] = $this->censorString;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Returns the shared default policy used for all persistent request data.
+     */
+    private function capturePolicy(): CapturePolicy
+    {
+        return $this->capturePolicy ??= new CapturePolicy();
     }
 
     /**

@@ -147,6 +147,20 @@ final class DumpCollectorTest extends TestCase
         );
     }
 
+    public function testVarDumpEncodesCustomCallbackOutput(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->varDumpCallback = static fn(mixed $value, DumpCollector $collector): string
+            => '<script>alert(1)</script>';
+
+        self::assertSame(
+            '&lt;script&gt;alert(1)&lt;/script&gt;',
+            $collector->varDump('ignored'),
+            'Custom callback output must be treated as untrusted text.',
+        );
+    }
+
     public function testVarDumpEncodesPlainOutputWhenHighlightIsFalse(): void
     {
         $collector = $this->makeCollector();

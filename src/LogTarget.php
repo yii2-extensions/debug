@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use Override;
+use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Storage\{DebugSnapshot, PanelFailure, RequestSummary};
 use Throwable;
@@ -22,7 +23,6 @@ use function is_float;
 use function is_int;
 use function microtime;
 use function uniqid;
-use function unlink;
 
 /**
  * Per-request JSON snapshot collector consumed by the debug toolbar.
@@ -48,11 +48,22 @@ class LogTarget extends Target
     public function __construct(public Module $module, array $config = [])
     {
         parent::__construct($config);
+
         $this->tag = uniqid();
 
         if (!$module->logTarget instanceof self) {
             $module->logTarget = $this;
         }
+    }
+
+    /**
+     * Starts a fresh persistent-worker request with an isolated tag and message buffer.
+     */
+    public function beginRequest(): void
+    {
+        $this->tag = uniqid();
+
+        $this->messages = [];
     }
 
     /**
@@ -78,26 +89,26 @@ class LogTarget extends Target
     public function export(): void
     {
         $summary = $this->collectSummary();
+
         $coordinator = $this->module->getCollectorCoordinator();
 
-        $coordinator->startup();
+        $coordinator->run(function () use ($coordinator, $summary): void {
+            $collectorSnapshot = $coordinator->capture($summary);
 
-        $collectorSnapshot = $coordinator->capture($summary);
-        $panels = $collectorSnapshot->panels;
-        $failures = $collectorSnapshot->failures;
+            $panels = $collectorSnapshot->panels;
+            $failures = $collectorSnapshot->failures;
 
-        $profilingPayload = $panels['profiling'] ?? null;
+            $profilingPayload = $panels['profiling'] ?? null;
 
-        if (is_array($profilingPayload)) {
-            $time = Coerce::floatOrNull($profilingPayload['time'] ?? null);
-            $memory = Coerce::intOrNull($profilingPayload['memory'] ?? null);
+            if (is_array($profilingPayload)) {
+                $time = Coerce::floatOrNull($profilingPayload['time'] ?? null);
+                $memory = Coerce::intOrNull($profilingPayload['memory'] ?? null);
 
-            if ($time !== null && $memory !== null) {
-                $summary = $summary->withProfiling($time, $memory);
+                if ($time !== null && $memory !== null) {
+                    $summary = $summary->withProfiling($time, $memory);
+                }
             }
-        }
 
-        try {
             foreach ($this->module->panels as $id => $panel) {
                 if ($coordinator->hasCollector($id)) {
                     continue;
@@ -116,17 +127,23 @@ class LogTarget extends Target
 
             $store = $this->store();
 
-            foreach (
-                $store->writeSnapshot(
+            try {
+                $removed = $store->writeSnapshot(
                     new DebugSnapshot($summary, $panels, $failures),
                     $this->module->historySize,
-                ) as $removed
-            ) {
-                $this->removeMailFiles($removed);
+                );
+            } catch (Throwable $failure) {
+                $this->removeMailFiles($summary);
+
+                throw $failure;
             }
-        } finally {
-            $coordinator->shutdown();
-        }
+
+            foreach ($removed as $removedSummary) {
+                $this->removeMailFiles($removedSummary);
+            }
+
+            $this->reconcileMailFiles($store);
+        });
     }
 
     /**
@@ -192,7 +209,9 @@ class LogTarget extends Target
     {
         $request = Yii::$app->getRequest();
         $response = Yii::$app->getResponse();
+
         $requestTime = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
+
         $mailFiles = [];
 
         $mailCollector = $this->module->getCollectorCoordinator()->collector('mail');
@@ -203,7 +222,7 @@ class LogTarget extends Target
 
         return new RequestSummary(
             tag: $this->tag,
-            url: $request->getAbsoluteUrl(),
+            url: (new CapturePolicy())->redactUrl($request->getAbsoluteUrl()),
             ajax: $request->getIsAjax(),
             method: $request->getMethod(),
             ip: $request->getUserIP() ?? '',
@@ -232,6 +251,29 @@ class LogTarget extends Target
         return $collector instanceof DbCollector ? (int) (count($collector->getProfileLogs()) / 2) : 0;
     }
 
+    private function reconcileMailFiles(SnapshotStore $store): void
+    {
+        $mailCollector = $this->module->getCollectorCoordinator()->collector('mail');
+
+        if (!$mailCollector instanceof MailCollector) {
+            return;
+        }
+
+        $manifest = $store->loadManifestResult();
+
+        if ($manifest->error !== null) {
+            return;
+        }
+
+        $referencedFiles = [];
+
+        foreach ($manifest->entries as $entry) {
+            $referencedFiles = [...$referencedFiles, ...$entry->mailFiles];
+        }
+
+        $mailCollector->reconcileFiles($referencedFiles);
+    }
+
     private function registerFallbackPanel(string $id): void
     {
         if (isset($this->module->panels[$id])) {
@@ -239,8 +281,10 @@ class LogTarget extends Target
         }
 
         $panel = new JsonPanel();
+
         $panel->id = $id;
         $panel->module = $this->module;
+
         $this->module->panels[$id] = $panel;
     }
 
@@ -252,11 +296,7 @@ class LogTarget extends Target
             return;
         }
 
-        $mailPath = Yii::getAlias($mailCollector->mailPath);
-
-        foreach ($summary->mailFiles as $file) {
-            @unlink("{$mailPath}/{$file}");
-        }
+        $mailCollector->removeFiles($summary->mailFiles);
     }
 
     private function store(): SnapshotStore

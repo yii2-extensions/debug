@@ -27,7 +27,6 @@
 /.github                        export-ignore
 /.gitignore                     export-ignore
 /.styleci.yml                   export-ignore
-/assets                         export-ignore
 /codeception.yml                export-ignore
 /composer-require-checker.json  export-ignore
 /docs                           export-ignore

@@ -7,17 +7,28 @@ namespace yii\debug\collectors;
 use Closure;
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\Mail\MailSnapshot;
+use RuntimeException;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Part\{AbstractPart, TextPart};
+use Throwable;
 use Yii;
 use yii\base\Event;
 use yii\helpers\FileHelper;
 use yii\mail\{BaseMailer, MailEvent, MessageInterface};
 use yii\symfonymailer\Message;
 
-use function file_put_contents;
+use function basename;
+use function filemtime;
+use function glob;
 use function is_array;
+use function is_file;
 use function is_string;
+use function str_contains;
+use function time;
+use function unlink;
+
+use const DIRECTORY_SEPARATOR;
+use const LOCK_EX;
 
 /**
  * Captures every mail message dispatched during the request for the Mail panel.
@@ -34,6 +45,8 @@ use function is_string;
  */
 class MailCollector extends Collector
 {
+    private const int ORPHAN_GRACE_PERIOD = 86_400;
+
     /**
      * Filesystem path (Yii alias) where every captured message is persisted as a `.eml` file.
      */
@@ -78,7 +91,7 @@ class MailCollector extends Collector
         $names = [];
 
         foreach ($this->messages as $message) {
-            if (is_string($message['file'] ?? null)) {
+            if (is_string($message['file'] ?? null) && $message['file'] !== '') {
                 $names[] = $message['file'];
             }
         }
@@ -100,6 +113,60 @@ class MailCollector extends Collector
     public function id(): string
     {
         return 'mail';
+    }
+
+    /**
+     * Retries cleanup of aged `.eml` files no longer referenced by a retained snapshot.
+     *
+     * The grace period prevents a concurrent request's new mail from being deleted before its snapshot commits.
+     *
+     * @param iterable<string> $referencedFiles File names referenced by the current manifest.
+     */
+    public function reconcileFiles(iterable $referencedFiles): void
+    {
+        $referenced = [];
+
+        foreach ($referencedFiles as $file) {
+            if (self::isSafeFile($file)) {
+                $referenced[$file] = true;
+            }
+        }
+
+        $mailPath = Yii::getAlias($this->mailPath);
+
+        $files = glob($mailPath . DIRECTORY_SEPARATOR . '*.eml');
+        $cutoff = time() - self::ORPHAN_GRACE_PERIOD;
+
+        foreach ($files === false ? [] : $files as $path) {
+            $file = basename($path);
+            $modifiedAt = filemtime($path);
+
+            if (!isset($referenced[$file]) && $modifiedAt !== false && $modifiedAt <= $cutoff) {
+                @unlink($path);
+            }
+        }
+    }
+
+    /**
+     * Removes safe captured files associated with snapshots that were not committed or have been evicted.
+     *
+     * @param iterable<string> $files Captured file names.
+     */
+    public function removeFiles(iterable $files): void
+    {
+        $mailPath = Yii::getAlias($this->mailPath);
+
+        foreach ($files as $file) {
+            if (!self::isSafeFile($file)) {
+                continue;
+            }
+
+            $path = $mailPath . DIRECTORY_SEPARATOR . $file;
+
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
     }
 
     /**
@@ -128,13 +195,40 @@ class MailCollector extends Collector
 
             $this->addMoreInformation($message, $messageData);
 
-            // store message as file
-            $fileName = $event->sender->generateMessageFileName();
-
             $mailPath = Yii::getAlias($this->mailPath);
-            FileHelper::createDirectory($mailPath);
 
-            file_put_contents("{$mailPath}/{$fileName}", $message->toString());
+            $fileName = '';
+            $filePath = '';
+
+            try {
+                $fileName = $event->sender->generateMessageFileName();
+
+                if (!self::isSafeFile($fileName)) {
+                    throw new RuntimeException("Invalid captured mail file name: {$fileName}");
+                }
+
+                $filePath = "{$mailPath}/{$fileName}";
+                $dirMode = $this->module === null ? 0o700 : $this->module->dirMode;
+                $fileMode = $this->module === null ? 0o600 : $this->module->fileMode;
+
+                FileHelper::createDirectory($mailPath, $dirMode);
+
+                if (@file_put_contents($filePath, $message->toString(), LOCK_EX) === false) {
+                    throw new RuntimeException("Unable to persist captured mail file: {$filePath}");
+                }
+
+                if ($fileMode !== null && !@chmod($filePath, $fileMode)) {
+                    throw new RuntimeException("Unable to apply mode to captured mail file: {$filePath}");
+                }
+            } catch (Throwable $failure) {
+                if ($filePath !== '') {
+                    @unlink($filePath);
+                }
+
+                Yii::warning($failure->getMessage(), __METHOD__);
+
+                $fileName = '';
+            }
 
             $messageData['file'] = $fileName;
 
@@ -209,5 +303,13 @@ class MailCollector extends Collector
         }
 
         return Coerce::stringOrNull($attr) ?? '';
+    }
+
+    private static function isSafeFile(string $file): bool
+    {
+        return $file !== ''
+            && basename($file) === $file
+            && !str_contains($file, '/')
+            && !str_contains($file, '\\');
     }
 }
