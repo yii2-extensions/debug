@@ -16,7 +16,6 @@ use yii\symfonymailer\Mailer;
 
 use function fileperms;
 use function glob;
-use function is_int;
 use function sys_get_temp_dir;
 use function time;
 use function touch;
@@ -202,7 +201,7 @@ final class MailCollectorTest extends TestCase
         if (PHP_OS_FAMILY !== 'Windows') {
             $permissions = fileperms("{$path}/{$captured->file}");
 
-            self::assertTrue(is_int($permissions), 'Captured mail permissions must be readable.');
+            self::assertIsInt($permissions, 'Captured mail permissions must be readable.');
             self::assertSame(0o600, $permissions & 0o777, 'Standalone captured mail must default to owner-only mode.');
         }
 
@@ -375,7 +374,6 @@ final class MailCollectorTest extends TestCase
 
     private function captureSentMessage(MailCollector $collector): MailMessage
     {
-
         $mailer = new Mailer(
             [
                 'useFileTransport' => true,
