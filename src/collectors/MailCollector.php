@@ -135,9 +135,14 @@ class MailCollector extends Collector
         $mailPath = Yii::getAlias($this->mailPath);
 
         $files = glob($mailPath . DIRECTORY_SEPARATOR . '*.eml');
+
+        if ($files === false) {
+            return;
+        }
+
         $cutoff = time() - self::ORPHAN_GRACE_PERIOD;
 
-        foreach ($files === false ? [] : $files as $path) {
+        foreach ($files as $path) {
             $file = basename($path);
             $modifiedAt = filemtime($path);
 
@@ -175,65 +180,7 @@ class MailCollector extends Collector
     protected function start(): void
     {
         $this->messages = [];
-        $this->listener = function (MailEvent $event): void {
-            $message = $event->message;
-
-            if (!$event->sender instanceof BaseMailer) {
-                return;
-            }
-
-            $messageData = [
-                'bcc' => $this->convertParams($message->getBcc()),
-                'cc' => $this->convertParams($message->getCc()),
-                'charset' => $message->getCharset(),
-                'from' => $this->convertParams($message->getFrom()),
-                'isSuccessful' => $event->isSuccessful,
-                'reply' => $this->convertParams($message->getReplyTo()),
-                'subject' => $message->getSubject(),
-                'to' => $this->convertParams($message->getTo()),
-            ];
-
-            $this->addMoreInformation($message, $messageData);
-
-            $mailPath = Yii::getAlias($this->mailPath);
-
-            $fileName = '';
-            $filePath = '';
-
-            try {
-                $fileName = $event->sender->generateMessageFileName();
-
-                if (!self::isSafeFile($fileName)) {
-                    throw new RuntimeException("Invalid captured mail file name: {$fileName}");
-                }
-
-                $filePath = "{$mailPath}/{$fileName}";
-                $dirMode = $this->module === null ? 0o700 : $this->module->dirMode;
-                $fileMode = $this->module === null ? 0o600 : $this->module->fileMode;
-
-                FileHelper::createDirectory($mailPath, $dirMode);
-
-                if (@file_put_contents($filePath, $message->toString(), LOCK_EX) === false) {
-                    throw new RuntimeException("Unable to persist captured mail file: {$filePath}");
-                }
-
-                if ($fileMode !== null && !@chmod($filePath, $fileMode)) {
-                    throw new RuntimeException("Unable to apply mode to captured mail file: {$filePath}");
-                }
-            } catch (Throwable $failure) {
-                if ($filePath !== '') {
-                    @unlink($filePath);
-                }
-
-                Yii::warning($failure->getMessage(), __METHOD__);
-
-                $fileName = '';
-            }
-
-            $messageData['file'] = $fileName;
-
-            $this->messages[] = $messageData;
-        };
+        $this->listener = $this->collectMessage(...);
 
         Event::on(BaseMailer::class, BaseMailer::EVENT_AFTER_SEND, $this->listener);
     }
@@ -285,6 +232,35 @@ class MailCollector extends Collector
     }
 
     /**
+     * Captures metadata from a completed mailer event and records its optional persisted file.
+     */
+    private function collectMessage(MailEvent $event): void
+    {
+        $message = $event->message;
+
+        if (!$event->sender instanceof BaseMailer) {
+            return;
+        }
+
+        $messageData = [
+            'bcc' => $this->convertParams($message->getBcc()),
+            'cc' => $this->convertParams($message->getCc()),
+            'charset' => $message->getCharset(),
+            'from' => $this->convertParams($message->getFrom()),
+            'isSuccessful' => $event->isSuccessful,
+            'reply' => $this->convertParams($message->getReplyTo()),
+            'subject' => $message->getSubject(),
+            'to' => $this->convertParams($message->getTo()),
+        ];
+
+        $this->addMoreInformation($message, $messageData);
+
+        $messageData['file'] = $this->persistMessage($event->sender, $message);
+
+        $this->messages[] = $messageData;
+    }
+
+    /**
      * Flattens an address attribute into a comma-separated string.
      *
      * Address arrays are joined by their keys (the address strings); scalar and {@see \Stringable} values pass
@@ -311,5 +287,46 @@ class MailCollector extends Collector
             && basename($file) === $file
             && !str_contains($file, '/')
             && !str_contains($file, '\\');
+    }
+
+    /**
+     * Persists one captured message and returns its safe file name, or an empty string when persistence fails.
+     */
+    private function persistMessage(BaseMailer $mailer, MessageInterface $message): string
+    {
+        $mailPath = Yii::getAlias($this->mailPath);
+        $filePath = '';
+
+        try {
+            $fileName = $mailer->generateMessageFileName();
+
+            if (!self::isSafeFile($fileName)) {
+                throw new RuntimeException("Invalid captured mail file name: {$fileName}");
+            }
+
+            $filePath = $mailPath . DIRECTORY_SEPARATOR . $fileName;
+            $dirMode = $this->module === null ? 0o700 : $this->module->dirMode;
+            $fileMode = $this->module === null ? 0o600 : $this->module->fileMode;
+
+            FileHelper::createDirectory($mailPath, $dirMode);
+
+            if (@file_put_contents($filePath, $message->toString(), LOCK_EX) === false) {
+                throw new RuntimeException("Unable to persist captured mail file: {$filePath}");
+            }
+
+            if ($fileMode !== null && !@chmod($filePath, $fileMode)) {
+                throw new RuntimeException("Unable to apply mode to captured mail file: {$filePath}");
+            }
+
+            return $fileName;
+        } catch (Throwable $failure) {
+            if ($filePath !== '') {
+                @unlink($filePath);
+            }
+
+            Yii::warning($failure->getMessage(), self::class . '::start');
+
+            return '';
+        }
     }
 }

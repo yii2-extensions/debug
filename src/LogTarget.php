@@ -17,12 +17,13 @@ use yii\debug\storage\SnapshotStore;
 use yii\log\Target;
 
 use function array_values;
+use function bin2hex;
 use function count;
 use function is_array;
 use function is_float;
 use function is_int;
 use function microtime;
-use function uniqid;
+use function random_bytes;
 
 /**
  * Per-request JSON snapshot collector consumed by the debug toolbar.
@@ -49,7 +50,7 @@ class LogTarget extends Target
     {
         parent::__construct($config);
 
-        $this->tag = uniqid();
+        $this->tag = bin2hex(random_bytes(16));
 
         if (!$module->logTarget instanceof self) {
             $module->logTarget = $this;
@@ -61,7 +62,7 @@ class LogTarget extends Target
      */
     public function beginRequest(): void
     {
-        $this->tag = uniqid();
+        $this->tag = bin2hex(random_bytes(16));
 
         $this->messages = [];
     }
@@ -268,7 +269,9 @@ class LogTarget extends Target
         $referencedFiles = [];
 
         foreach ($manifest->entries as $entry) {
-            $referencedFiles = [...$referencedFiles, ...$entry->mailFiles];
+            foreach ($entry->mailFiles as $file) {
+                $referencedFiles[] = $file;
+            }
         }
 
         $mailCollector->reconcileFiles($referencedFiles);
