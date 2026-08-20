@@ -46,9 +46,18 @@ final class LogTargetTest extends TestCase
 
         $target->messages = [['first request']];
         $target->beginRequest();
+        $secondRequestTag = $target->tag;
 
-        self::assertNotSame($firstRequestTag, $target->tag, 'Every worker request must rotate the tag.');
+        self::assertNotSame($firstRequestTag, $secondRequestTag, 'Every worker request must rotate the tag.');
         self::assertSame([], $target->messages, 'Every worker request must reset collected messages.');
+
+        foreach ([$initialTag, $firstRequestTag, $secondRequestTag] as $tag) {
+            self::assertMatchesRegularExpression(
+                '/\A[0-9a-f]{32}\z/',
+                $tag,
+                'Every request tag must be a 128-bit lowercase hexadecimal identifier.',
+            );
+        }
     }
 
     public function testCollectAppendsMessagesAcrossBatches(): void

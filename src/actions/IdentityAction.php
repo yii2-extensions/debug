@@ -22,6 +22,10 @@ abstract class IdentityAction extends Action
     #[Override]
     protected function beforeRun()
     {
+        if (!parent::beforeRun()) {
+            return false;
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         if (!Yii::$app->session->hasSessionId) {
@@ -44,6 +48,6 @@ abstract class IdentityAction extends Action
             );
         }
 
-        return parent::beforeRun();
+        return true;
     }
 }

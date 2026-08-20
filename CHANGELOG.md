@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(ui): align Dump, Mail, and Queue security contracts with Yii3 and redact configured queue payload keys.
 - fix(ui): ship the shared keyboard-resizable drawer with Escape handling and focus restoration.
 - fix: harden packaging, identity actions, persisted data, worker cleanup, storage modes, dump output, and mail capture.
+- refactor: simplify log message flattening and separate mail event capture from persistence while preserving fail-open behavior.
 
 ## 0.1.1 May 18, 2026
 
