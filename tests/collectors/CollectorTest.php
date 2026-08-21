@@ -43,7 +43,7 @@ final class CollectorTest extends TestCase
 
         self::assertIsArray(
             $messages,
-            "Must return an array.",
+            'Must return an array.',
         );
 
         $first = $messages[0] ?? self::fail('Expected the exported tuple.');
@@ -67,6 +67,7 @@ final class CollectorTest extends TestCase
             'Array payload must be exported once at the adapter boundary.',
         );
     }
+
     public function testGetLogMessagesStringifiesThrowableFirstElement(): void
     {
         $this->mockWebApplication();
@@ -140,6 +141,7 @@ final class CollectorTest extends TestCase
             'Repeated shutdown must run the stop hook once.',
         );
     }
+
     public function testSubclassExtensionPointsRemainProtected(): void
     {
         $collector = new class extends Collector {

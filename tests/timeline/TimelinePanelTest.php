@@ -17,6 +17,7 @@ use yii\debug\panels\{ProfilingPanel, TimelinePanel};
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
+
 use function array_key_exists;
 
 /**

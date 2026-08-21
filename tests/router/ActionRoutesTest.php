@@ -15,7 +15,7 @@ use yii\debug\tests\support\stub\router\controllers\nested\NestedWebController;
 use yii\debug\tests\support\stub\router\edge\controllers\EdgeCaseController;
 use yii\debug\tests\support\stub\router\module\{MixedModulesStub, NullGetModuleStub};
 use yii\debug\tests\support\TestCase;
-use yii\web\{GroupUrlRule, UrlRule};
+use yii\web\{GroupUrlRule};
 
 /**
  * Unit tests for {@see ActionRoutes} covering the controller scan that produces the action-to-route map shown in the

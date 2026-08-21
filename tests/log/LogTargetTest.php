@@ -780,6 +780,7 @@ final class LogTargetTest extends TestCase
 
         $this->cleanupDataPath($module);
     }
+
     public function testLogTargetExtensionPointsRemainProtected(): void
     {
         foreach (['collectSummary', 'getExcessiveDbCallersCount', 'getSqlTotalCount'] as $method) {
@@ -874,6 +875,7 @@ final class LogTargetTest extends TestCase
 
         $this->cleanupDataPath($module);
     }
+
     public function testReconcileMailFilesDeletesOnlyUnreferencedOldFiles(): void
     {
         $module = $this->newModuleWithIsolatedDataPath();

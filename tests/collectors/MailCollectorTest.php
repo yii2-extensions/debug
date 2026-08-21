@@ -18,7 +18,6 @@ use yii\symfonymailer\Mailer;
 use function fileperms;
 use function glob;
 use function sys_get_temp_dir;
-use function time;
 use function touch;
 use function uniqid;
 

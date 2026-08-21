@@ -73,7 +73,6 @@ class UserSearch extends Model implements UserSearchInterface
                 $this->identityImplement = $identityImplementation;
             }
         }
-
     }
 
     #[Override]

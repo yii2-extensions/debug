@@ -198,6 +198,7 @@ final class DbCollectorTest extends TestCase
             'Total caller calls must match the message count.',
         );
     }
+
     public function testCountCallerCalsKeepsDistinctTraceHashes(): void
     {
         $collector = $this->makeCollector();
@@ -236,6 +237,7 @@ final class DbCollectorTest extends TestCase
             'Duplicate counts must group identical SQL statements.',
         );
     }
+
     public function testGetExcessiveCallersReturnsEmptyWhenDisabledWithCapturedRows(): void
     {
         $collector = $this->makeCollector();
@@ -313,6 +315,7 @@ final class DbCollectorTest extends TestCase
             "Stable ID must be 'db'.",
         );
     }
+
     public function testShutdownDetachesAfterOpenListener(): void
     {
         $db = $this->makeSqliteConnection();

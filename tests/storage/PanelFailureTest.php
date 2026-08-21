@@ -37,7 +37,8 @@ final class PanelFailureTest extends TestCase
     {
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.failures.log.stage'");
+            "Invalid debug snapshot value at '\$.failures.log.stage'"
+        );
 
         PanelFailure::fromArray(
             [
