@@ -6,10 +6,11 @@ namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use Yii;
 use yii\debug\collectors\UserCollector;
 use yii\debug\{LogTarget, Module};
-use yii\debug\tests\support\stub\{Identity, ModelIdentity};
+use yii\debug\tests\support\stub\{Identity, ModelIdentity, SelectiveModelIdentity};
 use yii\debug\tests\support\TestCase;
 use yii\rbac\{BaseManager, Permission, Role};
 use yii\web\{IdentityInterface, User};
@@ -41,11 +42,17 @@ final class UserCollectorTest extends TestCase
         );
         $attributes = $saved['attributes'] ?? null;
 
-        self::assertIsArray($attributes);
+        self::assertIsArray(
+            $attributes,
+            'Identity attributes must be an array.',
+        );
 
         self::assertSame(
-            ['id', 'username'],
-            array_column($attributes, 'attribute'),
+            [
+                ['attribute' => 'id', 'label' => 'Id'],
+                ['attribute' => 'username', 'label' => 'Username'],
+            ],
+            $attributes,
             'Model identity must surface attribute labels.',
         );
     }
@@ -117,6 +124,13 @@ final class UserCollectorTest extends TestCase
         $role->createdAt = 1;
         $role->updatedAt = 2;
 
+        $viewer = new Role();
+
+        $viewer->name = 'viewer';
+        $viewer->description = 'Viewer';
+        $viewer->createdAt = 5;
+        $viewer->updatedAt = 6;
+
         $permission = new Permission();
 
         $permission->name = 'manage';
@@ -128,7 +142,7 @@ final class UserCollectorTest extends TestCase
 
         $authManager
             ->method('getRolesByUser')
-            ->willReturn([$role->name => $role]);
+            ->willReturn([$role->name => $role, $viewer->name => $viewer]);
         $authManager
             ->method('getPermissionsByUser')
             ->willReturn([$permission->name => $permission]);
@@ -158,13 +172,28 @@ final class UserCollectorTest extends TestCase
             $saved,
             'Capture must complete.',
         );
+
         $roles = $saved['roles'] ?? null;
         $permissions = $saved['permissions'] ?? null;
 
-        self::assertIsArray($roles);
-        self::assertIsArray($permissions);
-        self::assertCount(1, $roles, 'Role rows must surface.');
-        self::assertCount(1, $permissions, 'Permission rows must surface.');
+        self::assertIsArray(
+            $roles,
+            'Roles must be an array.',
+        );
+        self::assertIsArray(
+            $permissions,
+            'Permissions must be an array.',
+        );
+        self::assertSame(
+            ['admin', 'viewer'],
+            array_column($roles, 'name'),
+            'Every role row must surface.',
+        );
+        self::assertCount(
+            1,
+            $permissions,
+            'Permission rows must surface.',
+        );
     }
 
     public function testCaptureRedactsSensitivePublicIdentityAttributes(): void
@@ -200,10 +229,13 @@ final class UserCollectorTest extends TestCase
         };
 
         $saved = $this->bootstrapCollectorWithIdentity($identity)->capture()?->data();
+
         $identityData = $saved['identity'] ?? null;
 
-        self::assertIsArray($identityData, 'Identity attributes must remain an array.');
-
+        self::assertIsArray(
+            $identityData,
+            'Identity attributes must remain an array.',
+        );
         self::assertSame(
             SensitiveDataRedactor::PLACEHOLDER,
             $identityData['access_token'] ?? null,
@@ -272,6 +304,16 @@ final class UserCollectorTest extends TestCase
         );
     }
 
+    public function testCollectorExtensionPointsRemainProtected(): void
+    {
+        foreach (['dataToString', 'getUser', 'identityData'] as $method) {
+            self::assertTrue(
+                (new ReflectionMethod(UserCollector::class, $method))->isProtected(),
+                'Must remain protected to avoid accidental misuse.',
+            );
+        }
+    }
+
     public function testDataToStringExportsNonStringValues(): void
     {
         $collector = new UserCollector();
@@ -303,12 +345,30 @@ final class UserCollectorTest extends TestCase
         );
     }
 
+    public function testIdentityDataUsesTheModelAttributeContract(): void
+    {
+        $collector = new UserCollector();
+
+        self::assertSame(
+            ['id' => 1],
+            $this->invoke($collector, 'identityData', [new SelectiveModelIdentity()]),
+        );
+    }
+
     public function testIdPairsWithTheUserPanel(): void
     {
         self::assertSame(
             'user',
             (new UserCollector())->id(),
             "Stable ID must be 'user'.",
+        );
+    }
+
+    public function testNormalizeStringKeyArrayKeepsEveryEntry(): void
+    {
+        self::assertSame(
+            ['0' => 'first', 'name' => 'second'],
+            $this->invokeStatic(UserCollector::class, 'normalizeStringKeyArray', [[0 => 'first', 'name' => 'second']]),
         );
     }
 

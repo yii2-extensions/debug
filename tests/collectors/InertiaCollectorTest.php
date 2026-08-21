@@ -15,8 +15,8 @@ use yii\debug\tests\support\TestCase;
 use yii\inertia\{Manager, Page};
 
 /**
- * Unit tests for {@see InertiaCollector} covering the manager-gated capture, the page capture from the response and
- * the root-view render params, the `X-Inertia-*` header snapshot, the shared-prop keys, and the lifecycle.
+ * Unit tests for {@see InertiaCollector} covering the manager-gated capture, the page capture from the response and the
+ * root-view render params, the `X-Inertia-*` header snapshot, the shared-prop keys, and the lifecycle.
  */
 #[Group('collector')]
 #[Group('inertia')]
@@ -24,15 +24,20 @@ final class InertiaCollectorTest extends TestCase
 {
     public function testCaptureCapturesPageFromResponseData(): void
     {
-        $collector = $this->makeCollector(['inertia' => ['class' => Manager::class]]);
+        $collector = $this->makeCollector(
+            ['inertia' => ['class' => Manager::class]],
+        );
 
         Yii::$app->response->data = new Page('site/index', ['user' => ['id' => 1]], '/site/index', 'v1');
 
         $saved = $this->captureData($collector);
+
         $page = $saved['page'] ?? null;
 
-        self::assertIsArray($page);
-
+        self::assertIsArray(
+            $page,
+            'Captured page must be an array.',
+        );
         self::assertSame(
             'site/index',
             $page['component'] ?? null,
@@ -62,10 +67,13 @@ final class InertiaCollectorTest extends TestCase
         );
 
         $saved = $this->captureData($collector);
+
         $capturedPage = $saved['page'] ?? null;
 
-        self::assertIsArray($capturedPage);
-
+        self::assertIsArray(
+            $capturedPage,
+            'Captured page must be an array.',
+        );
         self::assertSame(
             'site/about',
             $capturedPage['component'] ?? null,
@@ -75,7 +83,9 @@ final class InertiaCollectorTest extends TestCase
 
     public function testCaptureCapturesPartialReloadHeaders(): void
     {
-        $collector = $this->makeCollector(['inertia' => ['class' => Manager::class]]);
+        $collector = $this->makeCollector(
+            ['inertia' => ['class' => Manager::class]],
+        );
 
         Yii::$app->request->headers->set('X-Inertia', 'true');
         Yii::$app->request->headers->set('X-Inertia-Partial-Data', 'user,notifications');
@@ -96,7 +106,9 @@ final class InertiaCollectorTest extends TestCase
 
     public function testCaptureCapturesResponseLocationHeader(): void
     {
-        $collector = $this->makeCollector(['inertia' => ['class' => Manager::class]]);
+        $collector = $this->makeCollector(
+            ['inertia' => ['class' => Manager::class]],
+        );
 
         Yii::$app->response->headers->set('X-Inertia-Location', 'https://example.test/users');
 
@@ -109,7 +121,17 @@ final class InertiaCollectorTest extends TestCase
 
     public function testCaptureCapturesSharedPropKeys(): void
     {
-        $collector = $this->makeCollector(['inertia' => ['class' => Manager::class, 'shared' => ['auth' => 1, 'appName' => 'demo']]]);
+        $collector = $this->makeCollector(
+            [
+                'inertia' => [
+                    'class' => Manager::class,
+                    'shared' => [
+                        'auth' => 1,
+                        'appName' => 'demo',
+                    ],
+                ],
+            ],
+        );
 
         $saved = $this->captureData($collector);
 
@@ -132,7 +154,9 @@ final class InertiaCollectorTest extends TestCase
 
     public function testCaptureReturnsNullPageForNonInertiaResponse(): void
     {
-        $collector = $this->makeCollector(['inertia' => ['class' => Manager::class]]);
+        $collector = $this->makeCollector(
+            ['inertia' => ['class' => Manager::class]],
+        );
 
         Yii::$app->response->data = ['plain' => true];
 
@@ -214,22 +238,39 @@ final class InertiaCollectorTest extends TestCase
 
     public function testShutdownDetachesTheRenderListenerAndClearsThePage(): void
     {
-        $collector = $this->makeCollector(['inertia' => ['class' => Manager::class]]);
+        $collector = $this->makeCollector(
+            ['inertia' => ['class' => Manager::class]],
+        );
 
         Yii::$app->view->trigger(
             View::EVENT_BEFORE_RENDER,
-            new ViewEvent(['params' => ['page' => new Page('site/index', [], '/site/index', 'v1')], 'viewFile' => __FILE__]),
+            new ViewEvent(
+                [
+                    'params' => [
+                        'page' => new Page('site/index', [], '/site/index', 'v1'),
+                    ],
+                    'viewFile' => __FILE__,
+                ],
+            ),
         );
 
         $collector->shutdown();
 
-        $collector->startup();
-
-        $saved = $this->captureData($collector);
+        Yii::$app->view->trigger(
+            View::EVENT_BEFORE_RENDER,
+            new ViewEvent(
+                [
+                    'params' => [
+                        'page' => new Page('site/after', [], '/site/after', 'v2'),
+                    ],
+                    'viewFile' => __FILE__,
+                ],
+            ),
+        );
 
         self::assertNull(
-            $saved['page'] ?? null,
-            'A restarted collector must not retain the page captured before shutdown.',
+            $this->getInaccessibleProperty($collector, 'page'),
+            'A stopped collector must detach its listener.',
         );
     }
 
@@ -256,7 +297,10 @@ final class InertiaCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot;
     }

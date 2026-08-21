@@ -7,6 +7,7 @@ namespace yii\debug\tests;
 use PHPForge\Debug\Data\FilterEngine;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPUnit\Framework\Attributes\Group;
+use yii\data\{Pagination, Sort};
 use yii\debug\models\search\DebugSearch;
 use yii\debug\tests\support\TestCase;
 
@@ -85,7 +86,11 @@ final class DebugSearchTest extends TestCase
             'conditions',
             [['attribute' => 'value', 'operator' => '>', 'value' => '5']],
         );
-        $this->setInaccessibleProperty($search, 'filterEngine', $engine);
+        $this->setInaccessibleProperty(
+            $search,
+            'filterEngine',
+            $engine,
+        );
 
         self::assertSame(
             [],
@@ -110,12 +115,20 @@ final class DebugSearchTest extends TestCase
     {
         $search = new DebugSearch();
 
-        self::assertSame('Debug', $search->formName(), "Filter params must use the 'Debug' prefix.");
+        self::assertSame(
+            'Debug',
+            $search->formName(),
+            "Filter params must use the 'Debug' prefix.",
+        );
         self::assertTrue(
             $search->load(['Debug' => ['statusCode' => '404']]),
             'The status-pill deep-link prefix must load into the model.',
         );
-        self::assertSame('404', $search->statusCode, 'Loaded status code must land on the attribute.');
+        self::assertSame(
+            '404',
+            $search->statusCode,
+            'Loaded status code must land on the attribute.',
+        );
     }
 
     public function testIsCodeCriticalFlagsConfiguredHttpStatusCodes(): void
@@ -138,18 +151,61 @@ final class DebugSearchTest extends TestCase
 
     public function testRulesDeclareAllFilterAttributesAsSafe(): void
     {
-        $rules = (new DebugSearch())->rules();
-
-        $firstRule = $rules[0] ?? null;
-
-        self::assertIsArray(
-            $firstRule,
-            'First rule must be a configuration tuple.',
-        );
         self::assertSame(
-            'safe',
-            $firstRule[1] ?? null,
-            "First rule must mark filter fields as 'safe'.",
+            [
+                [['tag', 'ip', 'method', 'ajax', 'url', 'statusCode', 'sqlCount', 'mailCount'], 'safe'],
+            ],
+            (new DebugSearch())->rules(),
+            'Every history filter must remain safe for mass assignment.',
+        );
+    }
+
+    public function testSearchAppliesExactMatchOnAjaxFlag(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::summary(['ajax' => true]),
+            self::summary(['ajax' => false]),
+        ];
+
+        self::assertSame(
+            1,
+            (new DebugSearch())->search(['Debug' => ['ajax' => '1']], $records)->getTotalCount(),
+            "Exact match on '1' must surface only the 'true' entry.",
+        );
+    }
+
+    public function testSearchAppliesExactMatchOnMethod(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::summary(['method' => 'GET']),
+            self::summary(['method' => 'GETTING']),
+            self::summary(['method' => 'POST']),
+        ];
+
+        self::assertSame(
+            1,
+            (new DebugSearch())->search(['Debug' => ['method' => 'GET']], $records)->getTotalCount(),
+            "Exact match on 'GET' must surface only the 'GET' entry.",
+        );
+    }
+
+    public function testSearchAppliesExactMatchOnStatusCode(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::summary(['statusCode' => 404]),
+            self::summary(['statusCode' => 200]),
+        ];
+
+        self::assertSame(
+            1,
+            (new DebugSearch())->search(['Debug' => ['statusCode' => '404']], $records)->getTotalCount(),
+            "Exact match on '404' must surface only the '404' entry.",
         );
     }
 
@@ -216,6 +272,63 @@ final class DebugSearchTest extends TestCase
         );
     }
 
+    public function testSearchAppliesPartialMatchOnTag(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::summary(['tag' => 'request-alpha-1']),
+            self::summary(['tag' => 'request-alpha-2']),
+            self::summary(['tag' => 'request-beta']),
+        ];
+
+        self::assertSame(
+            2,
+            (new DebugSearch())->search(['Debug' => ['tag' => 'alpha']], $records)->getTotalCount(),
+            "Partial match on 'alpha' must surface only the two 'request-alpha' entries.",
+        );
+    }
+
+    public function testSearchConfiguresPaginationAndEverySortableField(): void
+    {
+        $this->mockWebApplication();
+
+        $provider = (new DebugSearch())->search([], []);
+        $pagination = $provider->getPagination();
+        $sort = $provider->getSort();
+
+        self::assertInstanceOf(
+            Pagination::class,
+            $pagination,
+            'The search provider must configure a pagination object.',
+        );
+        self::assertSame(
+            50,
+            $pagination->getPageSize(),
+            'The search provider must configure the correct page size.',
+        );
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'The search provider must configure a sort object.',
+        );
+        self::assertSame(
+            [
+                'method',
+                'ip',
+                'tag',
+                'time',
+                'statusCode',
+                'sqlCount',
+                'mailCount',
+                'processingTime',
+                'peakMemory',
+            ],
+            array_keys($sort->attributes),
+            'The search provider must configure every sortable field.',
+        );
+    }
+
     public function testSearchDoesNotParseEmbeddedOperatorsAsComparisons(): void
     {
         $this->mockWebApplication();
@@ -227,7 +340,11 @@ final class DebugSearchTest extends TestCase
 
         $provider = (new DebugSearch())->search(['Debug' => ['url' => 'report >5']], $records);
 
-        self::assertSame(1, $provider->getTotalCount(), 'Partial text fields must treat embedded operators as text.');
+        self::assertSame(
+            1,
+            $provider->getTotalCount(),
+            'Partial text fields must treat embedded operators as text.',
+        );
     }
 
     public function testSearchReturnsAllRowsWhenValidateShortCircuits(): void
@@ -286,7 +403,11 @@ final class DebugSearchTest extends TestCase
 
         $provider = (new DebugSearch())->search(['Debug' => ['sqlCount' => '>0']], $records);
 
-        self::assertSame(1, $provider->getTotalCount(), "'>0' must retain only positive values.");
+        self::assertSame(
+            1,
+            $provider->getTotalCount(),
+            "'>0' must retain only positive values.",
+        );
     }
 
     /**

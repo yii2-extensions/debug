@@ -10,8 +10,6 @@ use yii\debug\tests\support\TestCase;
 
 /**
  * Unit tests for {@see Base} covering the shared filter contract every panel search model inherits.
- *
- * @since 0.2
  */
 #[Group('search')]
 final class BaseTest extends TestCase
@@ -80,6 +78,10 @@ final class BaseTest extends TestCase
             public string $present = 'anything';
         };
 
-        self::assertSame([], $search->apply([$row]), 'A row without the filtered attribute cannot match.');
+        self::assertSame(
+            [],
+            $search->apply([$row]),
+            'A row without the filtered attribute cannot match.',
+        );
     }
 }

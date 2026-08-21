@@ -67,7 +67,6 @@ use function gethostbyname;
 use function is_array;
 use function is_callable;
 use function is_string;
-use function microtime;
 use function number_format;
 use function str_contains;
 use function strncmp;

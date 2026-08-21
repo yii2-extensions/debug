@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\router;
 
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use ReflectionMethod;
 use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\debug\models\router\RouterRules;
@@ -143,6 +144,17 @@ final class RouterRulesTest extends TestCase
         );
     }
 
+    public function testExtensionMethodsRemainProtected(): void
+    {
+        self::assertSame(
+            [true, true, true],
+            array_map(
+                static fn(string $method): bool => (new ReflectionMethod(RouterRules::class, $method))->isProtected(),
+                ['scanGroupRule', 'scanRestRule', 'scanRule'],
+            ),
+        );
+    }
+
     /**
      * @param array<int|string, mixed> $rules
      * @param array<int, array<string, mixed>> $expected
@@ -194,7 +206,13 @@ final class RouterRulesTest extends TestCase
 
     public function testScanRestRuleShortCircuitsWhenRulesGroupsArentIterable(): void
     {
-        MockerState::addCondition('yii\debug\models\router', 'is_iterable', [], false, true);
+        MockerState::addCondition(
+            'yii\debug\models\router',
+            'is_iterable',
+            [],
+            false,
+            true,
+        );
 
         $this->mockWebApplication(
             [
@@ -244,8 +262,19 @@ final class RouterRulesTest extends TestCase
 
         $rulesGroups = $this->getInaccessibleProperty($restRule, 'rules');
 
-        MockerState::addCondition('yii\debug\models\router', 'is_iterable', [], false, true);
-        MockerState::addCondition('yii\debug\models\router', 'is_iterable', [$rulesGroups], true);
+        MockerState::addCondition(
+            'yii\debug\models\router',
+            'is_iterable',
+            [],
+            false,
+            true,
+        );
+        MockerState::addCondition(
+            'yii\debug\models\router',
+            'is_iterable',
+            [$rulesGroups],
+            true,
+        );
 
         self::assertSame(
             [],

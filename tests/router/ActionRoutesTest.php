@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace yii\debug\tests\router;
 
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionClass;
+use ReflectionMethod;
 use stdClass;
 use Xepozz\InternalMocker\MockerState;
 use yii\debug\models\router\ActionRoutes;
+use yii\debug\tests\support\stub\router\controllers\{AbstractController, WebController};
 use yii\debug\tests\support\stub\router\controllers\nested\NestedWebController;
-use yii\debug\tests\support\stub\router\controllers\WebController;
-use yii\debug\tests\support\stub\router\module\NullGetModuleStub;
+use yii\debug\tests\support\stub\router\edge\controllers\EdgeCaseController;
+use yii\debug\tests\support\stub\router\module\{MixedModulesStub, NullGetModuleStub};
 use yii\debug\tests\support\TestCase;
 use yii\web\GroupUrlRule;
 
@@ -21,6 +24,82 @@ use yii\web\GroupUrlRule;
 #[Group('router')]
 final class ActionRoutesTest extends TestCase
 {
+    public function testExtensionMethodsRemainProtected(): void
+    {
+        self::assertSame(
+            [true, true, true, true, true],
+            array_map(
+                static fn(string $method): bool => (new ReflectionMethod(ActionRoutes::class, $method))->isProtected(),
+                [
+                    'getActions',
+                    'getAppRoutes',
+                    'getMatchedCreationRule',
+                    'getModuleControllers',
+                    'validateControllerClass',
+                ],
+            ),
+        );
+    }
+
+    public function testGetActionsReturnsOnlyPublicInstanceActionsAndExternalSentinel(): void
+    {
+        $this->mockWebApplication();
+
+        self::assertSame(
+            ['actionVisible', 'actionÁrbol', '__ACTIONS__'],
+            $this->invoke(
+                new ActionRoutes(),
+                'getActions',
+                [new ReflectionClass(EdgeCaseController::class)],
+            ),
+        );
+    }
+
+    public function testMatchedGroupRuleUsesFirstSuccessfulNestedRule(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'urlManager' => [
+                        'enablePrettyUrl' => true,
+                        'rules' => [
+                            [
+                                'class' => GroupUrlRule::class,
+                                'rules' => [
+                                    ['pattern' => 'first', 'route' => 'other/first', 'name' => 'first'],
+                                    ['pattern' => 'target', 'route' => 'site/view', 'name' => 'target'],
+                                    ['pattern' => 'last', 'route' => 'other/last', 'name' => 'last'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        );
+
+        self::assertSame(
+            ['target', 1],
+            $this->invoke(new ActionRoutes(), 'getMatchedCreationRule', ['site/view']),
+            'The first matching rule must be returned, even if it is not the first rule in the group.',
+        );
+    }
+
+    public function testScanContinuesPastInvalidAndMissingModuleEntries(): void
+    {
+        $this->mockWebApplication(['modules' => ['mixed' => MixedModulesStub::class]]);
+
+        $routes = (new ActionRoutes())->routes;
+
+        self::assertArrayHasKey(
+            'yii\\debug\\tests\\support\\stub\\router\\controllers\\WebController::actionFirst()',
+            $routes,
+        );
+        self::assertSame(
+            'mixed/valid/mapped/first',
+            $routes['yii\\debug\\tests\\support\\stub\\router\\controllers\\WebController::actionFirst()']['route'],
+        );
+    }
+
     public function testScanLeavesTheMatchedRuleNullWhenItsNameIsNotAString(): void
     {
         MockerState::addCondition(
@@ -43,11 +122,60 @@ final class ActionRoutesTest extends TestCase
         );
 
         $routes = (new ActionRoutes())->routes;
+
         $first = $routes['yii\\debug\\tests\\support\\stub\\router\\controllers\\WebController::actionFirst()']
             ?? self::fail('Expected the mapped action to be scanned.');
 
-        self::assertSame(1, $first['count'], 'The rule still matches, so the counter advances.');
-        self::assertNull($first['rule'], 'A non-string rule name must surface as `null`.');
+        self::assertSame(
+            1,
+            $first['count'],
+            'The rule still matches, so the counter advances.',
+        );
+        self::assertNull(
+            $first['rule'],
+            "A non-string rule name must surface as 'null'.",
+        );
+    }
+
+    public function testScanNormalizesAcronymAndUnicodeRouteIds(): void
+    {
+        $this->mockWebApplication(
+            [
+                'controllerNamespace' => 'yii\\debug\\tests\\support\\stub\\router\\edge\\controllers',
+            ],
+        );
+
+        self::assertSame(
+            [
+                'yii\\debug\\tests\\support\\stub\\router\\edge\\controllers\\APIController::actionIndex()' => [
+                    'count' => 0,
+                    'route' => 'a-p-i/index',
+                    'rule' => null,
+                ],
+                'yii\\debug\\tests\\support\\stub\\router\\edge\\controllers\\APIController::actions()' => [
+                    'count' => 0,
+                    'route' => 'a-p-i/[external-action]',
+                    'rule' => null,
+                ],
+                'yii\\debug\\tests\\support\\stub\\router\\edge\\controllers\\EdgeCaseController::actionVisible()' => [
+                    'count' => 0,
+                    'route' => 'edge-case/visible',
+                    'rule' => null,
+                ],
+                'yii\\debug\\tests\\support\\stub\\router\\edge\\controllers\\EdgeCaseController::actions()' => [
+                    'count' => 0,
+                    'route' => 'edge-case/[external-action]',
+                    'rule' => null,
+                ],
+                'yii\\debug\\tests\\support\\stub\\router\\edge\\controllers\\EdgeCaseController::actionÁrbol()' => [
+                    'count' => 0,
+                    'route' => 'edge-case/árbol',
+                    'rule' => null,
+                ],
+            ],
+            (new ActionRoutes())->routes,
+            'Acronym and Unicode route IDs must be normalized to kebab-case.',
+        );
     }
 
     public function testScanResolvesControllerMapArrayConfigWithClassKey(): void
@@ -250,10 +378,17 @@ final class ActionRoutesTest extends TestCase
             ],
         );
 
+        $routes = (new ActionRoutes())->routes;
+
         self::assertArrayNotHasKey(
             'yii\debug\tests\support\stub\router\controllers\WebController::actionFirst()',
-            (new ActionRoutes())->routes,
+            $routes,
             "Failing 'preg_replace()' must skip the action via the defensive 'continue'.",
+        );
+        self::assertArrayHasKey(
+            'yii\debug\tests\support\stub\router\controllers\WebController::actionSecond()',
+            $routes,
+            'A failed action normalization must not stop later actions from being discovered.',
         );
     }
 
@@ -271,6 +406,7 @@ final class ActionRoutesTest extends TestCase
                 'controllerMap' => [
                     0 => WebController::class,
                     'bad-class' => stdClass::class,
+                    'valid' => NestedWebController::class,
                 ],
             ],
         );
@@ -278,26 +414,56 @@ final class ActionRoutesTest extends TestCase
         $routes = (new ActionRoutes())->routes;
 
         self::assertSame(
-            [],
+            [
+                'yii\\debug\\tests\\support\\stub\\router\\controllers\\nested\\NestedWebController::actionShow()' => [
+                    'count' => 1,
+                    'route' => 'valid/show',
+                    'rule' => '<controller>/<action>',
+                ],
+                'yii\\debug\\tests\\support\\stub\\router\\controllers\\nested\\NestedWebController::actions()' => [
+                    'count' => 0,
+                    'route' => 'valid/[external-action]',
+                    'rule' => null,
+                ],
+            ],
             $routes,
-            'Non-string controllerMap keys and non-Yii controller classes must be dropped, leaving no routes.',
+            'Invalid controllerMap entries must be skipped without hiding later valid entries.',
         );
     }
 
     public function testScanSkipsControllerWhenActionsCountIsZero(): void
     {
-        MockerState::addCondition('yii\debug\models\router', 'count', [], 0, true);
+        MockerState::addCondition(
+            'yii\debug\models\router',
+            'count',
+            [['actionFirst', '__ACTIONS__', 'actionSecond']],
+            0,
+        );
 
         $this->mockWebApplication(
             [
-                'controllerMap' => ['mapped' => WebController::class],
+                'controllerMap' => [
+                    'empty' => WebController::class,
+                    'mapped' => NestedWebController::class,
+                ],
             ],
         );
 
         self::assertSame(
-            [],
+            [
+                'yii\\debug\\tests\\support\\stub\\router\\controllers\\nested\\NestedWebController::actionShow()' => [
+                    'count' => 0,
+                    'route' => 'mapped/show',
+                    'rule' => null,
+                ],
+                'yii\\debug\\tests\\support\\stub\\router\\controllers\\nested\\NestedWebController::actions()' => [
+                    'count' => 0,
+                    'route' => 'mapped/[external-action]',
+                    'rule' => null,
+                ],
+            ],
             (new ActionRoutes())->routes,
-            "Controllers reporting zero actions must be dropped via the defensive 'continue'.",
+            'A controller without actions must not stop later controllers from being scanned.',
         );
     }
 
@@ -382,6 +548,30 @@ final class ActionRoutesTest extends TestCase
             'nested/nested-web/show',
             $nested['route'],
             "Nested controllers must surface with the 'subdir/controller-id/action' route shape.",
+        );
+    }
+
+    public function testValidateControllerClassAcceptsOnlyConcreteYiiControllers(): void
+    {
+        $this->mockWebApplication();
+
+        $routes = new ActionRoutes();
+
+        self::assertFalse(
+            $this->invoke($routes, 'validateControllerClass', ['missing\\Controller']),
+            'Missing controller classes must be rejected.',
+        );
+        self::assertFalse(
+            $this->invoke($routes, 'validateControllerClass', [stdClass::class]),
+            'Non-controller classes must be rejected.',
+        );
+        self::assertFalse(
+            $this->invoke($routes, 'validateControllerClass', [AbstractController::class]),
+            'Abstract controllers must be rejected.',
+        );
+        self::assertTrue(
+            $this->invoke($routes, 'validateControllerClass', [WebController::class]),
+            'Concrete Yii controllers must be accepted.',
         );
     }
 }

@@ -10,6 +10,8 @@ use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
 use yii\debug\panels\router\RouterRenderer;
 use yii\debug\tests\support\TestCase;
 
+use function substr_count;
+
 /**
  * Unit tests for {@see RouterRenderer} covering the tab strip (three navigable tabs + the read-only badge chips for
  * Pretty URL / Strict Parsing / Global Suffix), the route summary and callout block in the Current Route panel, and
@@ -21,7 +23,11 @@ final class RouterRendererTest extends TestCase
 {
     public function testRenderTabsActionRoutesPanelShowsEmptyStateWhenNoRoutesScanned(): void
     {
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'No actions configured.',
@@ -32,7 +38,11 @@ final class RouterRendererTest extends TestCase
 
     public function testRenderTabsMarksCurrentRouteAsTheActivePanel(): void
     {
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'id="router-panel-0"',
@@ -66,7 +76,11 @@ final class RouterRendererTest extends TestCase
 
         $rules->suffix = '';
 
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), $rules, new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            $rules,
+            new ActionRoutes(),
+        );
 
         self::assertStringNotContainsString(
             'Global Suffix:',
@@ -82,7 +96,11 @@ final class RouterRendererTest extends TestCase
         $current->hasMatch = true;
         $current->message = 'Matched site/index.';
 
-        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $current,
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'yii-debug-router-callout',
@@ -113,7 +131,11 @@ final class RouterRendererTest extends TestCase
             ],
         ];
 
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), $actionRoutes);
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            new RouterRules(),
+            $actionRoutes,
+        );
 
         self::assertMatchesRegularExpression(
             '/<th scope="col">\s*Action\s*<\/th>/',
@@ -134,7 +156,11 @@ final class RouterRendererTest extends TestCase
 
     public function testRenderTabsRendersCurrentRouteEmptyStateWhenNothingCaptured(): void
     {
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'No route resolution captured.',
@@ -150,11 +176,9 @@ final class RouterRendererTest extends TestCase
         $current->count = 3;
         $current->hasMatch = true;
 
-        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
-
         self::assertMatchesRegularExpression(
             '/<h2>\s*Tested 3 rules before match\.\s*<\/h2>/',
-            $html,
+            RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes()),
             'Tested rules must surface the count and the match suffix.',
         );
     }
@@ -165,7 +189,11 @@ final class RouterRendererTest extends TestCase
 
         $rules->suffix = '.html';
 
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), $rules, new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            $rules,
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'yii-debug-badge-warning',
@@ -188,7 +216,11 @@ final class RouterRendererTest extends TestCase
             new CurrentRouteLogRow('about', 'admin', false),
         ];
 
-        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $current,
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertMatchesRegularExpression(
             '/<th scope="col">\s*Rule\s*<\/th>/',
@@ -213,7 +245,11 @@ final class RouterRendererTest extends TestCase
 
         $rules->prettyUrl = true;
 
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), $rules, new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            $rules,
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'yii-debug-badge-success',
@@ -229,11 +265,9 @@ final class RouterRendererTest extends TestCase
 
     public function testRenderTabsRendersRouterRulesEmptyStateWhenNoRulesConfigured(): void
     {
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
-
         self::assertStringContainsString(
             'No routing rules configured.',
-            $html,
+            RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes()),
             'Empty rules list must show the dedicated heading.',
         );
     }
@@ -261,7 +295,11 @@ final class RouterRendererTest extends TestCase
             ],
         ];
 
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), $rules, new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            $rules,
+            new ActionRoutes(),
+        );
 
         self::assertMatchesRegularExpression(
             '/<th scope="col">\s*Rule\s*<\/th>/',
@@ -289,7 +327,11 @@ final class RouterRendererTest extends TestCase
         $current->route = 'site/index';
         $current->action = 'app\\controllers\\SiteController::actionIndex()';
 
-        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $current,
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'yii-debug-router-callout',
@@ -320,7 +362,11 @@ final class RouterRendererTest extends TestCase
         $current->action = 'app\\controllers\\SiteController::actionIndex()';
         $current->route = 'site/index';
 
-        $html = RouterRenderer::renderTabs($current, new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $current,
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'yii-debug-router-summary',
@@ -341,7 +387,11 @@ final class RouterRendererTest extends TestCase
 
     public function testRenderTabsRendersStrictParsingMutedBadgeWhenDisabled(): void
     {
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'yii-debug-badge-muted',
@@ -353,11 +403,20 @@ final class RouterRendererTest extends TestCase
             $html,
             "Strict Parsing badge must show the 'Disabled' label.",
         );
+        self::assertSame(
+            2,
+            substr_count($html, 'yii-debug-badge-muted'),
+            'Only Strict Parsing and Global Suffix badges must carry the muted variant.',
+        );
     }
 
     public function testRenderTabsRendersThreeNavigableTabs(): void
     {
-        $html = RouterRenderer::renderTabs($this->bareCurrentRoute(), new RouterRules(), new ActionRoutes());
+        $html = RouterRenderer::renderTabs(
+            $this->bareCurrentRoute(),
+            new RouterRules(),
+            new ActionRoutes(),
+        );
 
         self::assertStringContainsString(
             'href="#router-panel-0"',

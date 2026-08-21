@@ -14,8 +14,6 @@ use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
 
-use function count;
-
 /**
  * Unit tests for {@see RouterCollector} covering the routing trace capture, the action / route narrowing, the
  * category-list extension, and the startup/shutdown lifecycle.
@@ -87,6 +85,7 @@ final class RouterCollectorTest extends TestCase
             ['dropped', Logger::LEVEL_TRACE, 'application', 0.0, [], 0],
             ['matched-rule', Logger::LEVEL_TRACE, 'yii\\web\\UrlRule::parseRequest', 0.0, [], 0],
         ];
+
         Yii::$app->requestedRoute = 'site/index';
 
         $snapshot = $this->captureSnapshot($collector);
@@ -96,7 +95,11 @@ final class RouterCollectorTest extends TestCase
             $snapshot->message,
             'Only categories declared in $categories must survive; the last one wins.',
         );
-        self::assertSame([], $snapshot->entries(), 'Plain string traces carry no rule rows.');
+        self::assertSame(
+            [],
+            $snapshot->entries(),
+            'Plain string traces carry no rule rows.',
+        );
     }
 
     public function testCaptureLeavesActionAsNullWhenNoRequestedAction(): void
@@ -204,34 +207,6 @@ final class RouterCollectorTest extends TestCase
         );
     }
 
-    public function testSetCategoriesFiltersNonStringEntries(): void
-    {
-        $collector = $this->makeCollector();
-
-        $beforeCount = count($collector->getCategories());
-
-        /** @phpstan-ignore-next-line argument.type */
-        $collector->setCategories(['custom\\Probe::parseRequest', 42, null, 'another\\Probe::parseRequest']);
-
-        $categories = $collector->getCategories();
-
-        self::assertCount(
-            $beforeCount + 2,
-            $categories,
-            'Non-string entries must be dropped during append.',
-        );
-        self::assertContains(
-            'custom\\Probe::parseRequest',
-            $categories,
-            'First string entry must survive.',
-        );
-        self::assertContains(
-            'another\\Probe::parseRequest',
-            $categories,
-            'Second string entry must survive.',
-        );
-    }
-
     /**
      * Captures the routing snapshot, failing when the started collector produces nothing.
      *
@@ -243,7 +218,10 @@ final class RouterCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot;
     }

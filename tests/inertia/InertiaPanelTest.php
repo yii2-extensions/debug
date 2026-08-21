@@ -12,8 +12,8 @@ use yii\debug\tests\support\TestCase;
 use yii\inertia\Manager;
 
 /**
- * Unit tests for {@see InertiaPanel} covering the component-gated enablement, the per-capture sidebar activation,
- * and the detail/toolbar rendering.
+ * Unit tests for {@see InertiaPanel} covering the component-gated enablement, the per-capture sidebar activation, and
+ * the detail/toolbar rendering.
  */
 #[Group('panel')]
 #[Group('inertia')]
@@ -64,15 +64,27 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailKeepsLongPropValuesInspectableBehindTheClamp(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
+
         $needle = str_repeat('z', 700);
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
-            'component' => 'site/index',
-            'props' => ['blob' => $needle, 'short' => 'ok'],
-            'url' => '/site/index',
-            'version' => 'v1',
-        ], ['X-Inertia' => 'true'], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                [
+                    'component' => 'site/index',
+                    'props' => ['blob' => $needle, 'short' => 'ok'],
+                    'url' => '/site/index',
+                    'version' => 'v1',
+                ],
+                ['X-Inertia' => 'true'],
+                [],
+                200,
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -95,14 +107,28 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailMarksSharedAndPageProps(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
-            'component' => 'site/index',
-            'props' => ['auth' => ['isGuest' => true], 'post' => ['id' => 7]],
-            'url' => '/site/index',
-            'version' => 'v1',
-        ], [], ['auth'], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                [
+                    'component' => 'site/index',
+                    'props' => [
+                        'auth' => ['isGuest' => true],
+                        'post' => ['id' => 7],
+                    ],
+                    'url' => '/site/index',
+                    'version' => 'v1',
+                ],
+                [],
+                ['auth'],
+                200,
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -120,14 +146,25 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersComponentAndProps(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
-            'component' => 'site/index',
-            'props' => ['user' => ['id' => 1]],
-            'url' => '/site/index',
-            'version' => 'v1',
-        ], ['X-Inertia' => 'true'], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                [
+                    'component' => 'site/index',
+                    'props' => ['user' => ['id' => 1]],
+                    'url' => '/site/index',
+                    'version' => 'v1',
+                ],
+                ['X-Inertia' => 'true'],
+                [],
+                200,
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -155,9 +192,20 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersEmptyStateWhenPageMissing(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, null, [], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                null,
+                [],
+                [],
+                200,
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -175,9 +223,25 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersMessageWhenPageHasNoProps(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'], [], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                [
+                    'component' => 'site/index',
+                    'props' => [],
+                    'url' => '/',
+                    'version' => 'v1',
+                ],
+                [],
+                [],
+                200,
+            ),
+        );
 
         self::assertStringContainsString(
             'The page rendered without props.',
@@ -188,41 +252,98 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersScalarPropTypesHeadersAndLongPayload(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
-            'component' => 'site/index',
-            'props' => [
-                'string' => str_repeat('a', 700),
-                'integer' => 7,
-                'float' => 1.5,
-                'boolean' => true,
-                'null' => null,
-            ],
-            'url' => '/site/index',
-            'version' => 'v1',
-        ], [
-            'X-Inertia' => 'true',
-            'X-Inertia-Partial-Data' => 'string,integer',
-        ], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                [
+                    'component' => 'site/index',
+                    'props' => [
+                        'string' => str_repeat('a', 700),
+                        'integer' => 7,
+                        'float' => 1.5,
+                        'boolean' => true,
+                        'null' => null,
+                    ],
+                    'url' => '/site/index',
+                    'version' => 'v1',
+                ],
+                [
+                    'X-Inertia' => 'true',
+                    'X-Inertia-Partial-Data' => 'string,integer',
+                ],
+                [],
+                200,
+            ),
+        );
 
         $html = $panel->getDetail();
 
-        self::assertStringContainsString('Partial reload', $html, 'Partial request headers must classify the visit.');
-        self::assertStringContainsString('X-Inertia-Partial-Data', $html, 'Negotiation headers must be listed.');
-        self::assertStringContainsString('string(700)', $html, 'String props must include their length.');
-        self::assertMatchesRegularExpression('/>\s*int\s*</', $html, 'Integer props must expose their type.');
-        self::assertMatchesRegularExpression('/>\s*float\s*</', $html, 'Float props must expose their type.');
-        self::assertMatchesRegularExpression('/>\s*bool\s*</', $html, 'Boolean props must expose their type.');
-        self::assertMatchesRegularExpression('/>\s*null\s*</', $html, 'Null props must expose their type.');
-        self::assertStringContainsString('yii-debug-cell-more', $html, 'Long raw payloads must use the expandable wrapper.');
+        self::assertStringContainsString(
+            'Partial reload',
+            $html,
+            'Partial request headers must classify the visit.',
+        );
+        self::assertStringContainsString(
+            'X-Inertia-Partial-Data',
+            $html,
+            'Negotiation headers must be listed.',
+        );
+        self::assertStringContainsString(
+            'string(700)',
+            $html,
+            'String props must include their length.',
+        );
+        self::assertMatchesRegularExpression(
+            '/>\s*int\s*</',
+            $html,
+            'Integer props must expose their type.',
+        );
+        self::assertMatchesRegularExpression(
+            '/>\s*float\s*</',
+            $html,
+            'Float props must expose their type.',
+        );
+        self::assertMatchesRegularExpression(
+            '/>\s*bool\s*</',
+            $html,
+            'Boolean props must expose their type.',
+        );
+        self::assertMatchesRegularExpression(
+            '/>\s*null\s*</',
+            $html,
+            'Null props must expose their type.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-cell-more',
+            $html,
+            'Long raw payloads must use the expandable wrapper.',
+        );
     }
 
     public function testGetDetailRendersVersionConflictWhenStatusIs409(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture('http://example.test/site/index', null, ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'], [], 409));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                'http://example.test/site/index',
+                null,
+                [
+                    'X-Inertia' => 'true',
+                    'X-Inertia-Version' => 'stale',
+                ],
+                [],
+                409,
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -240,7 +361,9 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
         self::assertSame(
             'Inertia',
@@ -256,7 +379,9 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetStatusCodeReturnsZeroBeforeHydration(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
         self::assertSame(
             0,
@@ -267,16 +392,30 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetToolbarItemsCarryComponentName(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
-            'component' => 'site/index',
-            'props' => [],
-            'url' => '/site/index',
-            'version' => 'v1',
-        ], [], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                [
+                    'component' => 'site/index',
+                    'props' => [],
+                    'url' => '/site/index',
+                    'version' => 'v1',
+                ],
+                [],
+                [],
+                200,
+            ),
+        );
 
-        $items = $this->invoke($panel, 'getToolbarItems');
+        $items = $this->invoke(
+            $panel,
+            'getToolbarItems',
+        );
 
         self::assertSame(
             [
@@ -292,9 +431,14 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetToolbarItemsReturnEmptyListWithoutCapturedPage(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, null, [], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(null, null, [], [], 200),
+        );
 
         self::assertSame(
             [],
@@ -305,9 +449,20 @@ final class InertiaPanelTest extends TestCase
 
     public function testHasContentReturnsFalseForPlainCapture(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, null, [], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                null,
+                [],
+                [],
+                200,
+            ),
+        );
 
         self::assertFalse(
             $panel->hasContent(),
@@ -317,9 +472,20 @@ final class InertiaPanelTest extends TestCase
 
     public function testHasContentReturnsTrueForCapturedPage(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'], [], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'],
+                [],
+                [],
+                200,
+            ),
+        );
 
         self::assertTrue(
             $panel->hasContent(),
@@ -329,9 +495,20 @@ final class InertiaPanelTest extends TestCase
 
     public function testHasContentReturnsTrueForInertiaXhrWithoutPage(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture('http://example.test/', null, ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'], [], 409));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                'http://example.test/',
+                null,
+                ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'],
+                [],
+                409,
+            ),
+        );
 
         self::assertTrue(
             $panel->hasContent(),
@@ -341,7 +518,10 @@ final class InertiaPanelTest extends TestCase
 
     public function testIsEnabledReturnsFalseWhenInertiaComponentCannotBeCreated(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => 'missing\\InertiaManager']]);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+            ['inertia' => ['class' => 'missing\\InertiaManager']],
+        );
 
         self::assertFalse(
             $panel->isEnabled(),
@@ -351,7 +531,9 @@ final class InertiaPanelTest extends TestCase
 
     public function testIsEnabledReturnsFalseWithoutInertiaComponent(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
         self::assertFalse(
             $panel->isEnabled(),
@@ -361,7 +543,10 @@ final class InertiaPanelTest extends TestCase
 
     public function testIsEnabledReturnsTrueWhenManagerIsRegistered(): void
     {
-        $panel = $this->makePanel(InertiaPanel::class, ['inertia' => ['class' => Manager::class]]);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+            ['inertia' => ['class' => Manager::class]],
+        );
 
         self::assertTrue(
             $panel->isEnabled(),
@@ -405,14 +590,25 @@ final class InertiaPanelTest extends TestCase
             $props["prop{$i}"] = $i;
         }
 
-        $panel = $this->makePanel(InertiaPanel::class);
+        $panel = $this->makePanel(
+            InertiaPanel::class,
+        );
 
-        $this->hydratePanel($panel, InertiaSnapshot::capture(null, [
-            'component' => 'site/index',
-            'props' => $props,
-            'url' => '/site/index',
-            'version' => 'v1',
-        ], ['X-Inertia' => 'true'], [], 200));
+        $this->hydratePanel(
+            $panel,
+            InertiaSnapshot::capture(
+                null,
+                [
+                    'component' => 'site/index',
+                    'props' => $props,
+                    'url' => '/site/index',
+                    'version' => 'v1',
+                ],
+                ['X-Inertia' => 'true'],
+                [],
+                200,
+            ),
+        );
 
         return $panel->getDetail();
     }

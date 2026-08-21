@@ -7,81 +7,19 @@ namespace yii\debug\tests\log;
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Storage\HydrationException;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use yii\debug\panels\LogPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see LogPanel} covering payload narrowing, toolbar items per level, the rendered detail
- * and summary views, and the typed row decoration with previous/next ids.
+ * Unit tests for {@see LogPanel} covering payload narrowing, toolbar items per level, the rendered detail and summary
+ * views, and the typed row decoration with previous/next ids.
  */
 #[Group('panel')]
 #[Group('log')]
 final class LogPanelTest extends TestCase
 {
-    public function testCaptureDropsNonArrayLoggerEntries(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $this->hydratePanel(
-            $panel,
-            LogSnapshot::capture(
-                [
-                    ['valid', Logger::LEVEL_INFO, 'application', 0.0, []],
-                    'invalid-string',
-                ],
-            ),
-        );
-
-        self::assertCount(
-            1,
-            $panel->getMessages(),
-            'Non-array entries must be dropped at capture.',
-        );
-    }
-
-    public function testCaptureFallsBackToZeroForAnInvalidTimestamp(): void
-    {
-        $row = LogSnapshot::capture(
-            [
-                ['message', Logger::LEVEL_INFO, 'application', null, []],
-            ]
-        )->entries()[0] ?? self::fail('Expected one captured row.');
-
-        self::assertSame(
-            0.0,
-            $row->time,
-            'An invalid timestamp must use the zero fallback.',
-        );
-        self::assertSame(
-            0.0,
-            $row->timeOfPrevious,
-            'The first previous timestamp must use the same fallback.',
-        );
-    }
-
-    public function testCaptureNarrowsNumericStringLevelToInt(): void
-    {
-        $panel = $this->makePanel(LogPanel::class);
-
-        $this->hydratePanel(
-            $panel,
-            LogSnapshot::capture(
-                [
-                    ['oops', (string) Logger::LEVEL_ERROR, 'application', 0.0, []],
-                ],
-            ),
-        );
-
-        $row = $panel->getMessages()[0] ?? self::fail('Expected one captured row.');
-
-        self::assertSame(
-            Logger::LEVEL_ERROR,
-            $row->level,
-            "Numeric-string level must narrow to 'int'.",
-        );
-    }
-
     public function testCapturePreservesTimestampsAndPreviousRowDelta(): void
     {
         $rows = LogSnapshot::capture(
@@ -123,7 +61,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetDetailRendersErrorAndWarningCountersWhenLevelsArePresent(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -152,7 +92,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetDetailRendersWithCapturedMessages(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -171,7 +113,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetMessagesReflectsTheLatestHydration(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -207,7 +151,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetMessagesReturnsEmptyListBeforeHydration(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         self::assertSame(
             [],
@@ -218,7 +164,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetModelsCachesAndDecoratesPrevNextIds(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -260,7 +208,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetModelsLastRowExposesNullAsNextId(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -273,6 +223,7 @@ final class LogPanelTest extends TestCase
         );
 
         $rows = $panel->getMessages();
+
         $last = $rows[1] ?? self::fail("Expected row id '2'.");
 
         self::assertNull(
@@ -286,9 +237,19 @@ final class LogPanelTest extends TestCase
         );
     }
 
+    public function testGetModelsRemainsProtected(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(LogPanel::class, 'getModels'))->isProtected(),
+            'Must remain protected to avoid accidental misuse.',
+        );
+    }
+
     public function testGetModelsScalesTimeToMilliseconds(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -311,7 +272,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         self::assertSame(
             'Logs',
@@ -327,7 +290,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsCountChipOnly(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -368,7 +333,9 @@ final class LogPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsDangerChipWhenErrorsPresent(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -380,39 +347,25 @@ final class LogPanelTest extends TestCase
             ),
         );
 
-        $items = $this->invoke(
-            $panel,
-            'getToolbarItems',
-        );
-
-        self::assertIsArray(
-            $items,
-            'Items must be a list.',
-        );
-
-        $errorsItem = $items[1] ?? self::fail(
-            'Expected an errors chip.',
-        );
-
-        self::assertIsArray(
-            $errorsItem,
-            'Errors chip must be an array.',
-        );
         self::assertSame(
-            'danger',
-            $errorsItem['status'] ?? null,
-            "Errors chip must use the 'danger' status.",
-        );
-        self::assertSame(
-            1,
-            $errorsItem['value'] ?? null,
-            'Errors chip must count the error rows.',
+            [
+                ['value' => 2],
+                [
+                    'label' => 'Errors',
+                    'status' => 'danger',
+                    'url' => $panel->getUrl(['Log[level]' => Logger::LEVEL_ERROR]),
+                    'value' => 1,
+                ],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
         );
     }
 
     public function testGetToolbarItemsEmitsWarningChipWhenWarningsPresent(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -423,32 +376,25 @@ final class LogPanelTest extends TestCase
             ),
         );
 
-        $items = $this->invoke(
-            $panel,
-            'getToolbarItems',
-        );
-
-        self::assertIsArray(
-            $items,
-            'Items must be a list.',
-        );
-
-        $warnItem = $items[1] ?? self::fail('Expected a warnings chip.');
-
-        self::assertIsArray(
-            $warnItem,
-            'Warnings chip must be an array.',
-        );
         self::assertSame(
-            'warning',
-            $warnItem['status'] ?? null,
-            "Warnings chip must use the 'warning' status.",
+            [
+                ['value' => 1],
+                [
+                    'label' => 'Warnings',
+                    'status' => 'warning',
+                    'url' => $panel->getUrl(['Log[level]' => Logger::LEVEL_WARNING]),
+                    'value' => 1,
+                ],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
         );
     }
 
     public function testHydrationRejectsNonArrayMessages(): void
     {
-        $panel = $this->makePanel(LogPanel::class);
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
 
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage(

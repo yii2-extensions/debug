@@ -12,6 +12,7 @@ use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use RuntimeException;
 use Xepozz\InternalMocker\MockerState;
 use Yii;
@@ -32,6 +33,7 @@ use yii\debug\tests\support\stub\{ConfigurableAction, MinimalToolbarPanel, StubS
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarView;
+use yii\helpers\Url;
 use yii\web\{AssetManager, NotFoundHttpException, Response};
 
 use function file_put_contents;
@@ -47,8 +49,6 @@ final class DebugActionsTest extends TestCase
     public function testActionDownloadMailStreamsExistingMailFile(): void
     {
         $module = $this->bootDebugModule();
-
-        $action = $this->wireAction(new ViewAction('view'), $module);
 
         $mailCollector = $module->getCollectorCoordinator()->collector('mail');
 
@@ -66,13 +66,41 @@ final class DebugActionsTest extends TestCase
 
         file_put_contents("{$mailDir}/{$file}", 'From: a@b');
 
-        $response = $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => $file]);
+        $response = $this->runDebugAction(
+            new DownloadMailAction('download-mail'),
+            $module,
+            ['file' => $file],
+        );
 
         self::assertInstanceOf(
             Response::class,
             $response,
             "Download must return a 'Response'.",
         );
+    }
+
+    public function testActionExtensionPointsRetainTheirVisibility(): void
+    {
+        foreach (['getDebugModule', 'prepareShell', 'render'] as $method) {
+            self::assertTrue(
+                (new ReflectionMethod(DebugAction::class, $method))->isPublic(),
+                'DebugAction extension points must remain public for subclassing.',
+            );
+        }
+
+        foreach ([DownloadMailAction::class, IndexAction::class, PhpInfoAction::class, ViewAction::class] as $class) {
+            self::assertTrue(
+                (new ReflectionMethod($class, 'run'))->isPublic(),
+                'Action run method must remain public for subclassing.',
+            );
+        }
+
+        foreach (['createBareShellContext', 'createShellContext', 'getLogTarget', 'resolveTheme'] as $method) {
+            self::assertTrue(
+                (new ReflectionMethod(DebugAction::class, $method))->isProtected(),
+                'DebugAction extension points must remain protected for subclassing.',
+            );
+        }
     }
 
     public function testActionIndexPropagatesCursorFromQueryParam(): void
@@ -87,10 +115,10 @@ final class DebugActionsTest extends TestCase
 
         $_GET['cursor'] = 'tag-index-cursor';
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $html = $this->runDebugAction(new IndexAction('index'), $module);
+        $html = $this->runDebugAction(
+            new IndexAction('index'),
+            $module,
+        );
 
         self::assertNotSame(
             '',
@@ -116,10 +144,10 @@ final class DebugActionsTest extends TestCase
             ],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $html = $this->runDebugAction(new IndexAction('index'), $module);
+        $html = $this->runDebugAction(
+            new IndexAction('index'),
+            $module,
+        );
 
         self::assertNotSame(
             '',
@@ -166,10 +194,10 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $html = $this->runDebugAction(new PhpInfoAction('php-info'), $module);
+        $html = $this->runDebugAction(
+            new PhpInfoAction('php-info'),
+            $module,
+        );
 
         self::assertNotSame(
             '',
@@ -195,10 +223,11 @@ final class DebugActionsTest extends TestCase
             ['stub' => StubSnapshot::capture([])],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $result = $this->runDebugAction(new ToolbarDataAction('toolbar-data'), $module, ['tag' => 'tag-toolbar-stub']);
+        $result = $this->runDebugAction(
+            new ToolbarDataAction('toolbar-data'),
+            $module,
+            ['tag' => 'tag-toolbar-stub'],
+        );
 
         self::assertIsArray(
             $result,
@@ -260,10 +289,11 @@ final class DebugActionsTest extends TestCase
             [],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $result = $this->runDebugAction(new ToolbarDataAction('toolbar-data'), $module, ['tag' => 'does-not-exist']);
+        $result = $this->runDebugAction(
+            new ToolbarDataAction('toolbar-data'),
+            $module,
+            ['tag' => 'does-not-exist'],
+        );
 
         self::assertIsArray(
             $result,
@@ -302,10 +332,11 @@ final class DebugActionsTest extends TestCase
             ],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $result = $this->runDebugAction(new ToolbarDataAction('toolbar-data'), $module, ['tag' => 'tag-toolbar-ok']);
+        $result = $this->runDebugAction(
+            new ToolbarDataAction('toolbar-data'),
+            $module,
+            ['tag' => 'tag-toolbar-ok'],
+        );
 
         self::assertIsArray(
             $result,
@@ -360,10 +391,11 @@ final class DebugActionsTest extends TestCase
             new AssetManager(['basePath' => '/dev/null/does-not-exist', 'baseUrl' => '/x']),
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $result = $this->runDebugAction(new ToolbarDataAction('toolbar-data'), $module, ['tag' => 'tag-asset-fail']);
+        $result = $this->runDebugAction(
+            new ToolbarDataAction('toolbar-data'),
+            $module,
+            ['tag' => 'tag-asset-fail'],
+        );
 
         self::assertIsArray(
             $result,
@@ -386,10 +418,10 @@ final class DebugActionsTest extends TestCase
             ['log' => LogSnapshot::capture([])],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $html = $this->runDebugAction(new ViewAction('view'), $module);
+        $html = $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+        );
 
         self::assertNotSame(
             '',
@@ -408,15 +440,36 @@ final class DebugActionsTest extends TestCase
             ['request' => RequestSnapshot::capture(['statusCode' => 200])],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $html = $this->runDebugAction(new ViewAction('view'), $module, ['tag' => 'tag-view-panel', 'panel' => 'request']);
+        $html = $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+            [
+                'tag' => 'tag-view-panel',
+                'panel' => 'request',
+            ],
+        );
 
         self::assertNotSame(
             '',
             $html,
             "Explicit panel id must render the panel's view.",
+        );
+
+        $shell = Yii::$app->view->params['debugShell'] ?? null;
+
+        self::assertInstanceOf(
+            ShellContext::class,
+            $shell,
+            'Explicit panel view must install a typed shell context.',
+        );
+        self::assertSame(
+            ShellContext::MODE_VIEW,
+            $shell->mode,
+            'Explicit panel view must set the shell context to view mode.',
+        );
+        self::assertTrue(
+            $shell->useShell,
+            'Explicit panel view must render the full debug shell.',
         );
     }
 
@@ -433,10 +486,14 @@ final class DebugActionsTest extends TestCase
             ['request' => $error],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
-
-
-        $html = $this->runDebugAction(new ViewAction('view'), $module, ['tag' => 'tag-view-error', 'panel' => 'request']);
+        $html = $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+            [
+                'tag' => 'tag-view-error',
+                'panel' => 'request',
+            ],
+        );
 
         self::assertSame(
             500,
@@ -488,7 +545,10 @@ final class DebugActionsTest extends TestCase
         try {
             $html = Yii::$app->runAction(
                 "{$module->getUniqueId()}/db-explain",
-                ['seq' => '0', 'tag' => 'tag-panel-route'],
+                [
+                    'seq' => '0',
+                    'tag' => 'tag-panel-route',
+                ],
             );
         } finally {
             unset($_SERVER['HTTP_X_REQUESTED_WITH']);
@@ -525,7 +585,10 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->runDebugAction(new PhpInfoAction('php-info'), $module);
+        $this->runDebugAction(
+            new PhpInfoAction('php-info'),
+            $module,
+        );
 
         self::assertSame(
             Response::FORMAT_HTML,
@@ -573,7 +636,7 @@ final class DebugActionsTest extends TestCase
             ),
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
 
         $summary = new RequestSummary(
             tag: 'tag-shell',
@@ -590,6 +653,8 @@ final class DebugActionsTest extends TestCase
             processingTime: null,
             peakMemory: 1_048_576,
         );
+
+        $action->setModule($module);
 
         $context = $this->invoke(
             $action,
@@ -653,9 +718,9 @@ final class DebugActionsTest extends TestCase
             $activeContext,
             'The factory must return a typed active shell context.',
         );
-        self::assertStringContainsString(
-            'tag=active-tag',
-            $activeContext->configUrl ?? '',
+        self::assertSame(
+            Url::to(Module::route('view', ['panel' => 'config', 'tag' => 'active-tag'])),
+            $activeContext->configUrl,
             'Configuration link must target the explicitly active entry.',
         );
     }
@@ -670,7 +735,9 @@ final class DebugActionsTest extends TestCase
             [],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         $first = $action->getManifest();
 
@@ -708,7 +775,11 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeSnapshot($module, 'tag-other', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-other',
+            [],
+        );
 
         MockerState::addCondition(
             'yii\debug\actions',
@@ -718,11 +789,16 @@ final class DebugActionsTest extends TestCase
             true,
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         try {
             $action->loadData('tag-missing');
-            self::fail('Missing tag must throw after the initial attempt.');
+
+            self::fail(
+                'Missing tag must throw after the initial attempt.',
+            );
         } catch (NotFoundHttpException $exception) {
             self::assertSame(
                 "Unable to find debug data tagged with 'tag-missing'.",
@@ -748,8 +824,9 @@ final class DebugActionsTest extends TestCase
             [],
         );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
 
+        $action->setModule($module);
         $action->loadData('tag-load');
 
         self::assertSame(
@@ -762,7 +839,10 @@ final class DebugActionsTest extends TestCase
     public function testLoadDataReloadsManifestAfterWaitingForLateTag(): void
     {
         $module = $this->bootDebugModule();
-        $action = $this->wireAction(new ViewAction('view'), $module);
+
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         MockerState::addCondition(
             'yii\debug\actions',
@@ -775,7 +855,11 @@ final class DebugActionsTest extends TestCase
                     'Retry wait must receive the documented interval.',
                 );
 
-                $this->writeSnapshot($module, 'tag-late', []);
+                $this->writeSnapshot(
+                    $module,
+                    'tag-late',
+                    [],
+                );
 
                 return 0;
             },
@@ -794,12 +878,16 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         unset(Yii::$app->view->params['debugShell']);
 
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('The debug layout requires a ShellContext.');
+        $this->expectExceptionMessage(
+            'The debug layout requires a ShellContext.',
+        );
 
         Yii::$app->view->renderFile(
             dirname(__DIR__, 2) . '/src/views/layouts/main.php',
@@ -816,8 +904,14 @@ final class DebugActionsTest extends TestCase
         $_COOKIE['yii-debug-toolbar-theme'] = 'dark';
 
         try {
-            $action = $this->wireAction(new ViewAction('view'), $module);
-            $theme = $this->invoke($action, 'resolveTheme');
+            $action = new ViewAction('view');
+
+            $action->setModule($module);
+
+            $theme = $this->invoke(
+                $action,
+                'resolveTheme',
+            );
         } finally {
             unset($_COOKIE['yii-debug-toolbar-theme']);
         }
@@ -835,9 +929,14 @@ final class DebugActionsTest extends TestCase
 
         $_GET['yii_debug_theme'] = 'DARK';
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
 
-        $theme = $this->invoke($action, 'resolveTheme');
+        $action->setModule($module);
+
+        $theme = $this->invoke(
+            $action,
+            'resolveTheme',
+        );
 
         self::assertSame(
             'dark',
@@ -850,9 +949,14 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
 
-        $theme = $this->invoke($action, 'resolveTheme');
+        $action->setModule($module);
+
+        $theme = $this->invoke(
+            $action,
+            'resolveTheme',
+        );
 
         self::assertSame(
             'light',
@@ -913,8 +1017,9 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
 
+        $action->setModule($module);
 
         $html = Yii::$app->view->renderFile(
             Module::VIEW_PATH_ALIAS . '/_shell.php',
@@ -955,7 +1060,9 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
 
         $this->expectException(Exception::class);
@@ -973,7 +1080,9 @@ final class DebugActionsTest extends TestCase
         $module = new Module('debug');
 
         // Skip 'bootstrap()' so 'logTarget' stays as the default config array.
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
@@ -1012,7 +1121,9 @@ final class DebugActionsTest extends TestCase
 
         file_put_contents("{$dataPath}/{$tag}.json", '{"version":3,"panels":{},"failures":{}}');
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
@@ -1026,7 +1137,9 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule(collectorless: true);
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
@@ -1040,7 +1153,9 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
@@ -1054,7 +1169,9 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
@@ -1068,7 +1185,9 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
 
         $this->expectException(NotFoundHttpException::class);
@@ -1083,7 +1202,9 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
@@ -1101,9 +1222,15 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
         // Persist a different tag so the retry path runs but 'tag-rotated' never appears.
-        $this->writeSnapshot($module, 'tag-other', []);
+        $this->writeSnapshot(
+            $module,
+            'tag-other',
+            [],
+        );
 
-        $action = $this->wireAction(new ViewAction('view'), $module);
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
 
         MockerState::addCondition(
             'yii\debug\actions',
@@ -1115,7 +1242,10 @@ final class DebugActionsTest extends TestCase
 
         try {
             $action->loadData('tag-rotated', 1);
-            self::fail('Missing tag must throw after the configured retry.');
+
+            self::fail(
+                'Missing tag must throw after the configured retry.',
+            );
         } catch (NotFoundHttpException $exception) {
             self::assertSame(
                 "Unable to find debug data tagged with 'tag-rotated'.",
@@ -1205,16 +1335,6 @@ final class DebugActionsTest extends TestCase
         Yii::$app->requestedRoute = $action->getUniqueId();
 
         return $action->runWithParams($params);
-    }
-
-    /**
-     * Wires a standalone debugger action to the module without running it.
-     */
-    private function wireAction(DebugAction $action, Module $module): DebugAction
-    {
-        $action->setModule($module);
-
-        return $action;
     }
 
     /**

@@ -8,18 +8,25 @@ use PHPForge\Debug\Helper\Icon;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
 use stdClass;
+use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfigException};
 use yii\caching\FileCache;
 use yii\db\Connection;
 use yii\debug\actions\{PhpInfoAction, ToolbarDataAction};
-use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, VersionResolver};
+use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, ToolbarRenderer, VersionResolver};
 use yii\debug\panels\{DbPanel, LogPanel};
 use yii\debug\tests\provider\ModuleProvider;
-use yii\debug\tests\support\stub\{CustomCollector, CustomDbPanel, ModuleBoundRecordingPanel, NotALogTarget};
+use yii\debug\tests\support\stub\{
+    CustomCollector,
+    CustomDbPanel,
+    CustomUrlRule,
+    ModuleBoundRecordingPanel,
+    NotALogTarget,
+};
 use yii\debug\tests\support\TestCase;
 use yii\log\{Dispatcher, Target as LogTargetBase};
-use yii\web\{AssetManager, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
+use yii\web\{AssetManager, ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, UrlRule, View};
 
 use function array_keys;
 use function base64_encode;
@@ -49,7 +56,9 @@ final class ModuleTest extends TestCase
         $assetBasePath = Yii::getAlias('@runtime/assets');
 
         if (!is_dir($assetBasePath) && !mkdir($assetBasePath, 0o755, true) && !is_dir($assetBasePath)) {
-            self::fail("Could not create asset base path: {$assetBasePath}");
+            self::fail(
+                "Could not create asset base path: {$assetBasePath}",
+            );
         }
 
         $app->set(
@@ -97,6 +106,10 @@ final class ModuleTest extends TestCase
 
         $module->set('log', $dispatcher);
 
+        Yii::$app->assetManager->bundles = ['app' => ['sourcePath' => '@app/assets']];
+        Yii::$app->view->on(View::EVENT_END_BODY, [$module, 'renderToolbar']);
+        Yii::$app->response->on(Response::EVENT_AFTER_PREPARE, [$module, 'setDebugHeaders']);
+
         $action = new Action('index', new Controller('default', $module));
 
         self::assertTrue(
@@ -106,6 +119,15 @@ final class ModuleTest extends TestCase
         self::assertFalse(
             $fakeTarget->enabled,
             "'beforeAction' must disable log targets when 'enableDebugLogs' is false.",
+        );
+        self::assertSame([], Yii::$app->assetManager->bundles, 'Allowed debugger actions must reset asset bundles.');
+        self::assertFalse(
+            Yii::$app->view->off(View::EVENT_END_BODY, [$module, 'renderToolbar']),
+            'Debugger actions must detach the toolbar listener before rendering.',
+        );
+        self::assertFalse(
+            Yii::$app->response->off(Response::EVENT_AFTER_PREPARE, [$module, 'setDebugHeaders']),
+            'Debugger actions must detach the debug-header listener before rendering.',
         );
     }
 
@@ -227,11 +249,32 @@ final class ModuleTest extends TestCase
 
         $this->silenceLogger();
 
+        $logTarget = $module->logTarget;
+
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Bootstrap must resolve the log target.',
+        );
+
+        $previousTag = $logTarget->tag;
+        $logTarget->messages = [['old', 4, 'application', 0.0, []]];
+
         // Trigger the EVENT_BEFORE_REQUEST closure → registers `setDebugHeaders` on the response.
         Yii::$app->trigger(Application::EVENT_BEFORE_REQUEST);
 
+        self::assertNotSame(
+            $previousTag,
+            $logTarget->tag,
+            'Before-request handling must rotate the request tag.',
+        );
+        self::assertSame(
+            [],
+            $logTarget->messages,
+            'Before-request handling must clear the previous message buffer.',
+        );
         self::assertTrue(
-            Yii::$app->getResponse()->hasEventHandlers(Response::EVENT_AFTER_PREPARE),
+            Yii::$app->getResponse()->off(Response::EVENT_AFTER_PREPARE, [$module, 'setDebugHeaders']),
             "EVENT_BEFORE_REQUEST closure must attach 'setDebugHeaders' to the response.",
         );
 
@@ -244,6 +287,10 @@ final class ModuleTest extends TestCase
             Yii::$app->getView()->hasEventHandlers(View::EVENT_END_BODY),
             "EVENT_BEFORE_ACTION closure must attach 'renderToolbar' to the view.",
         );
+        self::assertTrue(
+            Yii::$app->errorHandler->off(ErrorHandler::EVENT_AFTER_RENDER, [$module, 'injectToolbarOnErrorPage']),
+            'Bootstrap must attach the error-page toolbar injector.',
+        );
     }
 
     public function testBootstrapKeepsExplicitDebugLoggingWithoutRenderingNestedToolbar(): void
@@ -255,6 +302,7 @@ final class ModuleTest extends TestCase
         $module->enableDebugLogs = true;
 
         Yii::$app->setModule('debug', $module);
+
         $module->bootstrap(Yii::$app);
 
         Yii::$app->trigger(Application::EVENT_BEFORE_REQUEST);
@@ -266,9 +314,20 @@ final class ModuleTest extends TestCase
         Yii::$app->trigger(Application::EVENT_BEFORE_ACTION, new ActionEvent($action));
 
         try {
-            self::assertInstanceOf(LogTarget::class, $module->logTarget);
-            self::assertTrue($module->logTarget->enabled, 'Explicit debugger logging must keep the log target enabled.');
-            self::assertSame(0, $collector->shutdownCount, 'Explicit debugger logging must keep collectors active.');
+            self::assertInstanceOf(
+                LogTarget::class,
+                $module->logTarget,
+                'Bootstrap must resolve the log target.',
+            );
+            self::assertTrue(
+                $module->logTarget->enabled,
+                'Explicit debugger logging must keep the log target enabled.',
+            );
+            self::assertSame(
+                0,
+                $collector->shutdownCount,
+                'Explicit debugger logging must keep collectors active.',
+            );
             self::assertFalse(
                 Yii::$app->getView()->off(View::EVENT_END_BODY, [$module, 'renderToolbar']),
                 'Debugger pages must never receive a nested toolbar.',
@@ -276,6 +335,47 @@ final class ModuleTest extends TestCase
         } finally {
             $module->getCollectorCoordinator()->shutdown();
         }
+    }
+
+    public function testBootstrapPrependsExactDebuggerUrlRules(): void
+    {
+        $manager = Yii::$app->urlManager;
+
+        $manager->enablePrettyUrl = true;
+
+        $manager->addRules([['route' => 'sentinel', 'pattern' => 'sentinel']], true);
+
+        $module = new Module('debug');
+
+        $module->urlRuleClass = CustomUrlRule::class;
+
+        $module->bootstrap(Yii::$app);
+
+        $rules = $manager->rules;
+
+        self::assertContainsOnlyInstancesOf(
+            UrlRule::class,
+            $rules,
+            'All URL rules must be instances of UrlRule or its subclasses.',
+        );
+        self::assertSame(
+            [
+                [CustomUrlRule::class, 'debug', '#^debug$#u', false, false],
+                [CustomUrlRule::class, 'debug/<action>', '#^debug/(?P<a47cc8c92>[\\w\\-]+)$#u', false, false],
+                [UrlRule::class, 'sentinel', '#^sentinel$#u', null, null],
+            ],
+            array_map(
+                static fn(UrlRule $rule): array => [
+                    $rule::class,
+                    $rule->route,
+                    $rule->pattern,
+                    $rule->normalizer,
+                    $rule->suffix,
+                ],
+                $rules,
+            ),
+            'Bootstrap must prepend both debugger rules with exact routing options.',
+        );
     }
 
     public function testBootstrapPreservesAnApplicationVetoForStandaloneDebuggerRequests(): void
@@ -291,6 +391,7 @@ final class ModuleTest extends TestCase
                 $event->isValid = false;
             },
         );
+
         $module->bootstrap(Yii::$app);
 
         $action = new PhpInfoAction('php-info');
@@ -301,17 +402,22 @@ final class ModuleTest extends TestCase
 
         Yii::$app->trigger(Application::EVENT_BEFORE_ACTION, $event);
 
-        self::assertFalse($event->isValid, 'The debugger lifecycle must not re-enable an action vetoed by the host.');
+        self::assertFalse(
+            $event->isValid,
+            'The debugger lifecycle must not re-enable an action vetoed by the host.',
+        );
     }
 
     public function testBootstrapSuppressesStandaloneDebuggerRequestsBeforeRendering(): void
     {
         $collector = new CustomCollector();
+
         $module = new Module('debug', null, ['collectors' => [$collector]]);
 
         $module->allowedIPs = ['*'];
 
         Yii::$app->setModule('debug', $module);
+
         $module->bootstrap(Yii::$app);
 
         Yii::$app->trigger(Application::EVENT_BEFORE_REQUEST);
@@ -324,11 +430,29 @@ final class ModuleTest extends TestCase
 
         Yii::$app->trigger(Application::EVENT_BEFORE_ACTION, $event);
 
-        self::assertTrue($event->isValid, 'An allowed standalone debugger action must continue.');
-        self::assertInstanceOf(LogTarget::class, $module->logTarget);
-        self::assertFalse($module->logTarget->enabled, 'Debugger requests must not be persisted by default.');
-        self::assertSame(1, $collector->startupCount, 'Collectors must start at the request boundary.');
-        self::assertSame(1, $collector->shutdownCount, 'Debugger requests must stop collectors before rendering.');
+        self::assertTrue(
+            $event->isValid,
+            'An allowed standalone debugger action must continue.',
+        );
+        self::assertInstanceOf(
+            LogTarget::class,
+            $module->logTarget,
+            'Standalone debugger requests must still use the log target.',
+        );
+        self::assertFalse(
+            $module->logTarget->enabled,
+            'Debugger requests must not be persisted by default.',
+        );
+        self::assertSame(
+            1,
+            $collector->startupCount,
+            'Collectors must start at the request boundary.',
+        );
+        self::assertSame(
+            1,
+            $collector->shutdownCount,
+            'Debugger requests must stop collectors before rendering.',
+        );
         self::assertFalse(
             Yii::$app->getView()->off(View::EVENT_END_BODY, [$module, 'renderToolbar']),
             'Debugger pages must not receive a nested toolbar.',
@@ -452,6 +576,27 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testCheckAccessLogsExactIpRestrictionWarning(): void
+    {
+        $module = new Module('debug');
+        $module->allowedIPs = ['10.0.0.1'];
+
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+        Yii::getLogger()->dispatcher = self::createStub(Dispatcher::class);
+        Yii::getLogger()->messages = [];
+
+        self::assertFalse(
+            $this->invoke($module, 'checkAccess'),
+            'Unlisted IP must be rejected.',
+        );
+        self::assertSame(
+            'Access to debugger is denied due to IP address restriction. The requesting IP address is 127.0.0.1',
+            $this->collectLoggedMessages(),
+            'Denied IP access must emit the exact warning.',
+        );
+    }
+
     public function testCheckAccessMatchesAllowedHostsViaDnsResolution(): void
     {
         $module = new Module('debug');
@@ -467,11 +612,63 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testCoreActionsAndCollectorsExposeEveryBuiltInId(): void
+    {
+        $module = new Module('debug');
+
+        $coreActions = $this->invoke(
+            $module,
+            'coreActionMap',
+        );
+        $coreCollectors = $this->invoke(
+            $module,
+            'coreCollectors',
+        );
+
+        self::assertIsArray(
+            $coreActions,
+            'Core action map must be an array.',
+        );
+        self::assertIsArray(
+            $coreCollectors,
+            'Core collector map must be an array.',
+        );
+
+        self::assertSame(
+            ['download-mail', 'index', 'php-info', 'reset-identity', 'set-identity', 'toolbar-data', 'view'],
+            array_keys($coreActions),
+            'Core action map must retain every debugger endpoint.',
+        );
+        self::assertSame(
+            [
+                'asset',
+                'config',
+                'db',
+                'dump',
+                'event',
+                'inertia',
+                'log',
+                'mail',
+                'profiling',
+                'queue',
+                'request',
+                'router',
+                'timeline',
+                'user',
+            ],
+            array_keys($coreCollectors),
+            'Core collector map must retain every adapter.',
+        );
+    }
+
     public function testCorePanelsFollowTheRequestFlowOrder(): void
     {
         $module = new Module('debug');
 
-        $corePanels = $this->invoke($module, 'corePanels');
+        $corePanels = $this->invoke(
+            $module,
+            'corePanels',
+        );
 
         self::assertIsArray(
             $corePanels,
@@ -496,6 +693,17 @@ final class ModuleTest extends TestCase
             ],
             array_keys($corePanels),
             'Order: dispatch, then diagnostics, then side effects.',
+        );
+    }
+
+    public function testCreateStandaloneActionDoesNotTreatNestedMapKeysAsDirectActions(): void
+    {
+        $module = new Module('debug');
+        $module->actionMap['nested/action'] = PhpInfoAction::class;
+
+        self::assertNull(
+            $this->invoke($module, 'createStandaloneAction', ['nested/action']),
+            'Nested routes must fall through instead of being resolved as direct action IDs.',
         );
     }
 
@@ -539,6 +747,20 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testDebuggerActionDetectionRejectsUnrelatedModules(): void
+    {
+        $module = new Module('debug');
+
+        $unrelated = new \yii\base\Module('unrelated');
+
+        $action = new Action('index', new Controller('default', $unrelated));
+
+        self::assertFalse(
+            $this->invoke($module, 'isDebuggerAction', [$action]),
+            'Actions owned by unrelated modules must not be classified as debugger actions.',
+        );
+    }
+
     public function testDebuggerActionGuardsSuppressAllResponseDecoration(): void
     {
         $module = new Module('debug');
@@ -546,11 +768,13 @@ final class ModuleTest extends TestCase
         $module->allowedIPs = ['*'];
 
         Yii::$app->setModule('debug', $module);
+
         $module->bootstrap(Yii::$app);
 
         $action = new PhpInfoAction('php-info');
 
         $action->setModule($module);
+
         Yii::$app->requestedAction = $action;
 
         $errorEvent = new ErrorHandlerRenderEvent();
@@ -672,12 +896,15 @@ final class ModuleTest extends TestCase
     {
         $module = new Module('debug');
 
+        Yii::$app->request->setHostInfo('https://debug.example');
+        Yii::$app->request->setBaseUrl('/app');
+
         $module->pageTitle = static fn(string $base): string => "Title for {$base}";
 
-        self::assertStringStartsWith(
-            'Title for ',
+        self::assertSame(
+            'Title for https://debug.example/app',
             $module->htmlTitle(),
-            "Callable 'pageTitle' must be invoked with the base URL.",
+            "Callable 'pageTitle' must receive the absolute base URL.",
         );
     }
 
@@ -769,6 +996,22 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testInitPanelsContinuesAfterAnInvalidCustomPanel(): void
+    {
+        $valid = new LogPanel();
+        $module = new Module(
+            'debug',
+            null,
+            ['panels' => ['broken' => ['class' => 'No\\Such\\Class'], 'after-broken' => $valid]],
+        );
+
+        self::assertSame(
+            $valid,
+            $module->panels['after-broken'] ?? null,
+            'An invalid panel must not prevent later configured panels from loading.',
+        );
+    }
+
     public function testInitPanelsDropsDisabledPanels(): void
     {
         $disabled = new class extends Panel {
@@ -841,7 +1084,11 @@ final class ModuleTest extends TestCase
         $override = new LogPanel();
         $module = new Module('debug', null, ['panels' => ['log' => $override]]);
 
-        self::assertArrayHasKey('log', $module->panels, 'Override entry must surface under the same id.');
+        self::assertArrayHasKey(
+            'log',
+            $module->panels,
+            'Override entry must surface under the same id.',
+        );
         self::assertSame(
             $override,
             $module->panels['log'],
@@ -864,7 +1111,14 @@ final class ModuleTest extends TestCase
     public function testInitRegistersEnabledPanelsInServiceLocatorUnderTheirClass(): void
     {
         $this->mockWebApplication(
-            ['components' => ['db' => ['class' => Connection::class, 'dsn' => 'sqlite::memory:']]],
+            [
+                'components' => [
+                    'db' => [
+                        'class' => Connection::class,
+                        'dsn' => 'sqlite::memory:',
+                    ],
+                ],
+            ],
         );
 
         $module = new Module('debug');
@@ -883,7 +1137,14 @@ final class ModuleTest extends TestCase
     public function testInitRegistersPanelAncestorClassesBelowThePanelBase(): void
     {
         $this->mockWebApplication(
-            ['components' => ['db' => ['class' => Connection::class, 'dsn' => 'sqlite::memory:']]],
+            [
+                'components' => [
+                    'db' => [
+                        'class' => Connection::class,
+                        'dsn' => 'sqlite::memory:',
+                    ],
+                ],
+            ],
         );
 
         $module = new Module('debug', null, ['panels' => ['db' => CustomDbPanel::class]]);
@@ -966,6 +1227,10 @@ final class ModuleTest extends TestCase
             $event->output,
             'Runtime script must load as an ES module.',
         );
+        self::assertTrue(
+            strpos($event->output, '<yii-debug-toolbar') < strpos($event->output, '<script type="module"'),
+            'Toolbar markup must precede its module script.',
+        );
     }
 
     public function testInjectToolbarOnErrorPageShortCircuitsOnAjaxRequests(): void
@@ -1008,6 +1273,43 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testModuleExtensionPointsRemainProtected(): void
+    {
+        foreach (
+            [
+                'checkAccess',
+                'coreActionMap',
+                'coreCollectors',
+                'corePanels',
+                'initCollectors',
+                'initPanels',
+                'initPanelServices',
+                'resetGlobalSettings',
+            ] as $method
+        ) {
+            self::assertTrue(
+                (new \ReflectionMethod(Module::class, $method))->isProtected(),
+                "Module::{$method}() must remain available to subclasses.",
+            );
+        }
+    }
+
+    public function testModuleInitRetainsYiiNamespaceDefaults(): void
+    {
+        $module = new Module('debug');
+
+        self::assertSame(
+            'yii\\debug\\controllers',
+            $module->controllerNamespace,
+            'Module::controllerNamespace must default to the Yii debug controllers namespace.'
+        );
+        self::assertSame(
+            'yii\\debug\\controllers',
+            $module->actionNamespace,
+            'Module::actionNamespace must default to the Yii debug controllers namespace.'
+        );
+    }
+
     public function testRenderToolbarHonorsCustomModuleId(): void
     {
         $moduleId = 'my_debug';
@@ -1023,6 +1325,7 @@ final class ModuleTest extends TestCase
         $this->silenceLogger();
 
         ob_start();
+
         $module->renderToolbar(new Event(['sender' => Yii::$app->view]));
         $output = (string) ob_get_clean();
 
@@ -1183,23 +1486,39 @@ final class ModuleTest extends TestCase
 
         $this->silenceLogger();
 
+        $_SERVER['REQUEST_TIME_FLOAT'] = 1000.0;
+
+        MockerState::addCondition(
+            'yii\\debug',
+            'microtime',
+            [true],
+            1001.0,
+            true,
+        );
+
         $response = Yii::$app->getResponse();
 
         $module->setDebugHeaders(new Event(['sender' => $response]));
 
         $headers = $response->getHeaders();
 
-        self::assertTrue(
-            $headers->has('X-Debug-Tag'),
-            "'X-Debug-Tag' header must be set.",
+        self::assertInstanceOf(
+            LogTarget::class,
+            $module->logTarget,
+            'Bootstrap must resolve the log target.',
         );
-        self::assertTrue(
-            $headers->has('X-Debug-Duration'),
-            "'X-Debug-Duration' header must be set.",
-        );
-        self::assertTrue(
-            $headers->has('X-Debug-Link'),
-            "'X-Debug-Link' header must be set.",
+        self::assertSame(
+            [
+                'tag' => $module->logTarget->tag,
+                'duration' => '1,001',
+                'link' => \yii\helpers\Url::toRoute(['/debug/view', 'tag' => $module->logTarget->tag]),
+            ],
+            [
+                'tag' => $headers->get('X-Debug-Tag'),
+                'duration' => $headers->get('X-Debug-Duration'),
+                'link' => $headers->get('X-Debug-Link'),
+            ],
+            'Debug headers must contain exact tag, duration, and link values.',
         );
     }
 
@@ -1254,6 +1573,9 @@ final class ModuleTest extends TestCase
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
         $this->expectException(ForbiddenHttpException::class);
+        $this->expectExceptionMessage(
+            'not allowed to access',
+        );
 
         $module->beforeAction($action);
     }
@@ -1325,7 +1647,9 @@ final class ModuleTest extends TestCase
         try {
             Module::getYiiLogo();
 
-            self::fail('A missing packaged Yii logo must raise an explicit runtime error.');
+            self::fail(
+                'A missing packaged Yii logo must raise an explicit runtime error.',
+            );
         } catch (RuntimeException $exception) {
             self::assertSame(
                 'Unable to read the packaged Yii logo.',
@@ -1448,6 +1772,29 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testToolbarRendererKeepsExplicitView(): void
+    {
+        $module = new Module('debug');
+        $view = new View();
+
+        $renderer = $this->invoke(
+            $module,
+            'toolbarRenderer',
+            [$view],
+        );
+
+        self::assertInstanceOf(
+            ToolbarRenderer::class,
+            $renderer,
+            'ToolbarRenderer must be returned from the module.',
+        );
+        self::assertSame(
+            $view,
+            $this->getInaccessibleProperty($renderer, 'view'),
+            'Explicit render views must not be replaced by the application view.',
+        );
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -1455,7 +1802,9 @@ final class ModuleTest extends TestCase
         $assetBasePath = dirname(__DIR__) . '/runtime/assets';
 
         if (!is_dir($assetBasePath) && !mkdir($assetBasePath, 0o755, true) && !is_dir($assetBasePath)) {
-            self::fail("Could not create asset base path: {$assetBasePath}");
+            self::fail(
+                "Could not create asset base path: {$assetBasePath}",
+            );
         }
 
         $this->mockWebApplication(

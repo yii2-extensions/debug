@@ -6,6 +6,7 @@ namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use Yii;
 use yii\base\{Action, InlineAction};
 use yii\debug\collectors\RequestCollector;
@@ -76,14 +77,25 @@ final class RequestCollectorTest extends TestCase
 
         $saved = $this->captureData($collector);
 
-        self::assertIsArray(
+        self::assertSame(
+            [
+                'Content Type' => 'application/json',
+                'Decoded' => ['k' => 'v'],
+                'Raw' => '{"k":"v"}',
+            ],
             $saved['requestBody'] ?? null,
-            'Request body must surface as an array when non-empty.',
+            'Request body must retain the exact decoded and raw payload.',
         );
         self::assertSame(
-            '{"k":"v"}',
-            $saved['requestBody']['Raw'] ?? null,
-            'Raw slot must echo the raw body.',
+            [
+                'isAjax' => false,
+                'isFlash' => false,
+                'isPjax' => false,
+                'isSecureConnection' => false,
+                'method' => 'GET',
+            ],
+            $saved['general'] ?? null,
+            'General request metadata must retain its complete shape.',
         );
     }
 
@@ -94,6 +106,7 @@ final class RequestCollectorTest extends TestCase
         $collector->censoredVariableNames = ['authorization'];
 
         Yii::$app->getRequest()->getHeaders()->set('Authorization', 'Bearer secret');
+        Yii::$app->getRequest()->getHeaders()->set('X-Public', 'visible');
 
         $saved = $this->captureData($collector);
 
@@ -107,6 +120,11 @@ final class RequestCollectorTest extends TestCase
             '****',
             $requestHeaders['authorization'] ?? null,
             'Censored request header must be masked.',
+        );
+        self::assertSame(
+            'visible',
+            $requestHeaders['x-public'] ?? null,
+            'Unlisted request headers must remain visible.',
         );
     }
 
@@ -197,28 +215,43 @@ final class RequestCollectorTest extends TestCase
     public function testCaptureRedactsDefaultHeaderBodyAndSuperglobalSecrets(): void
     {
         $collector = $this->makeCollector();
+
         $collector->displayVars = ['_GET', '_COOKIE'];
 
         $request = Yii::$app->getRequest();
+
         $request->getHeaders()->set('Authorization', 'Bearer header-secret');
         $request->setRawBody('{"password":"body-secret"}');
         $request->setBodyParams(['password' => 'body-secret']);
+
         $GLOBALS['_GET'] = ['token' => 'query-secret'];
         $GLOBALS['_COOKIE'] = ['session_id' => 'cookie-secret'];
 
         $saved = $this->captureData($collector);
+
         $requestHeaders = $saved['requestHeaders'] ?? null;
         $requestBody = $saved['requestBody'] ?? null;
         $query = $saved['GET'] ?? null;
 
-        self::assertIsArray($requestHeaders, 'Request headers must remain an array.');
-        self::assertIsArray($requestBody, 'Request body must remain an array.');
-        self::assertIsArray($query, 'Query parameters must remain an array.');
+        self::assertIsArray(
+            $requestHeaders,
+            'Request headers must remain an array.',
+        );
+        self::assertIsArray(
+            $requestBody,
+            'Request body must remain an array.',
+        );
+        self::assertIsArray(
+            $query,
+            'Query parameters must remain an array.',
+        );
 
         $decodedBody = $requestBody['Decoded'] ?? null;
 
-        self::assertIsArray($decodedBody, 'Decoded request body must remain an array.');
-
+        self::assertIsArray(
+            $decodedBody,
+            'Decoded request body must remain an array.',
+        );
         self::assertSame(
             SensitiveDataRedactor::PLACEHOLDER,
             $requestHeaders['authorization'] ?? null,
@@ -312,7 +345,7 @@ final class RequestCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $collector->censoredVariableNames = ['POST'];
+        $collector->censoredVariableNames = ['_POST'];
 
         $masked = $this->invoke(
             $collector,
@@ -420,6 +453,13 @@ final class RequestCollectorTest extends TestCase
         );
     }
 
+    public function testCollectorExtensionPointsRemainProtected(): void
+    {
+        foreach (['censorArray', 'getFlashes', 'normalizeResponseHeaders'] as $method) {
+            self::assertTrue((new ReflectionMethod(RequestCollector::class, $method))->isProtected());
+        }
+    }
+
     public function testGetFlashesReturnsActiveFlashes(): void
     {
         $collector = $this->makeCollector(['session' => ['class' => Session::class]]);
@@ -453,7 +493,9 @@ final class RequestCollectorTest extends TestCase
 
     public function testGetFlashesReturnsEmptyWhenCountersAreNotArray(): void
     {
-        $collector = $this->makeCollector(['session' => ['class' => Session::class]]);
+        $collector = $this->makeCollector(
+            ['session' => ['class' => Session::class]],
+        );
 
         $session = Yii::$app->session;
 
@@ -474,7 +516,9 @@ final class RequestCollectorTest extends TestCase
 
     public function testGetFlashesReturnsEmptyWhenSessionIsInactive(): void
     {
-        $collector = $this->makeCollector(['session' => ['class' => Session::class]]);
+        $collector = $this->makeCollector(
+            ['session' => ['class' => Session::class]],
+        );
 
         Yii::$app->session->close();
 
@@ -558,6 +602,16 @@ final class RequestCollectorTest extends TestCase
                 [42],
             ),
             'Non-zero numbers must round-trip unchanged.',
+        );
+    }
+
+    public function testNormalizeResponseHeadersAcceptsValuesWithoutSeparatorWhitespace(): void
+    {
+        $collector = $this->makeCollector();
+
+        self::assertSame(
+            ['X-Foo' => 'a'],
+            $this->invoke($collector, 'normalizeResponseHeaders', [['X-Foo:a']]),
         );
     }
 
@@ -686,7 +740,10 @@ final class RequestCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot->data();
     }

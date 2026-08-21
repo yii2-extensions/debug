@@ -6,16 +6,25 @@ namespace yii\debug\tests\db;
 
 use PDO;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see DebugPdoStatement} covering the row-count capture hook invoked after every prepared
- * statement execution.
+ * Unit tests for {@see DebugPdoStatement} covering the row-count capture hook invoked after every prepared statement
+ * execution.
  */
 #[Group('db')]
 final class DebugPdoStatementTest extends TestCase
 {
+    public function testConstructorRemainsProtectedForPdoStatementFactory(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(DebugPdoStatement::class, '__construct'))->isProtected(),
+            'The constructor must remain protected to allow PDO to instantiate the statement class.',
+        );
+    }
+
     public function testExecuteAppendsRowCountAfterPreparedStatementRuns(): void
     {
         $pdo = new PDO('sqlite::memory:');

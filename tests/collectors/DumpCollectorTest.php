@@ -26,7 +26,7 @@ final class DumpCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $collector->highlight = false;
+        $collector->varDumpCallback = static fn(mixed $value, DumpCollector $collector): string => 'formatted';
 
         $this->logTargetOf($collector)->messages = [
             [['stringValue'], Logger::LEVEL_TRACE, 'application', 0.0, [], 0],
@@ -34,10 +34,10 @@ final class DumpCollectorTest extends TestCase
 
         $first = $this->captureEntries($collector)[0] ?? self::fail('Expected one captured row.');
 
-        self::assertStringContainsString(
-            'stringValue',
+        self::assertSame(
+            'formatted',
             $first->message,
-            'Dumped output must contain the value.',
+            'Capture must use the Dump-specific formatter.',
         );
     }
 
@@ -77,34 +77,6 @@ final class DumpCollectorTest extends TestCase
             1,
             $this->captureEntries($collector),
             'Router categories must be filtered.',
-        );
-    }
-
-    public function testCaptureSkipsMessagesWithoutFirstSlot(): void
-    {
-        $collector = $this->makeCollector();
-
-        $collector->highlight = false;
-
-        $this->logTargetOf($collector)->messages = [
-            [1 => Logger::LEVEL_TRACE, 2 => 'application', 3 => 0.0, 4 => [], 5 => 0],
-            [['later-value'], Logger::LEVEL_TRACE, 'application', 1.0, [], 0],
-        ];
-
-        $entries = $this->captureEntries($collector);
-
-        $first = $entries[0] ?? self::fail('Expected the malformed captured row.');
-        $second = $entries[1] ?? self::fail('Expected the later valid captured row.');
-
-        self::assertSame(
-            '',
-            $first->message,
-            'Missing first slot must collapse to an empty message.',
-        );
-        self::assertStringContainsString(
-            'later-value',
-            $second->message,
-            'A malformed message must not stop later payloads from being rendered.',
         );
     }
 
@@ -207,7 +179,10 @@ final class DumpCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot->entries();
     }

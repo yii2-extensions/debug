@@ -31,7 +31,9 @@ final class AssetCollectorTest extends TestCase
 {
     public function testCaptureCapturesViteComponentDeclaredWithClassAliasKey(): void
     {
-        $collector = $this->makeCollector(['inertiaVue' => ['__class' => Vite::class]]);
+        $collector = $this->makeCollector(
+            ['inertiaVue' => ['__class' => Vite::class]],
+        );
 
         self::assertNotNull(
             $this->captureSnapshot($collector)->vite(),
@@ -55,6 +57,7 @@ final class AssetCollectorTest extends TestCase
                         'imports' => ['_shared-xyz.js'],
                         'isEntry' => true,
                     ],
+                    'resources/js/secondary.js' => ['file' => 'assets/secondary.js'],
                 ],
             ),
         );
@@ -63,6 +66,9 @@ final class AssetCollectorTest extends TestCase
             [
                 'inertiaVue' => [
                     'class' => Vite::class,
+                    'baseUrl' => '/build',
+                    'devMode' => true,
+                    'devServerUrl' => 'http://localhost:5173',
                     'entrypoints' => ['resources/js/app.js'],
                     'manifestPath' => $manifestPath,
                 ],
@@ -75,8 +81,32 @@ final class AssetCollectorTest extends TestCase
             $vite,
             'Vite snapshot must be captured.',
         );
+        self::assertSame(
+            '/build',
+            $vite->baseUrl,
+            'Base URL must be captured.',
+        );
+        self::assertTrue(
+            $vite->devMode,
+            'Dev mode flag must be captured.',
+        );
+        self::assertSame(
+            'http://localhost:5173',
+            $vite->devServerUrl,
+            'Dev server URL must be captured.',
+        );
+        self::assertSame(
+            $manifestPath,
+            $vite->manifestPath,
+            'Manifest path must be captured.',
+        );
+        self::assertCount(
+            2,
+            $vite->chunks,
+            'Vite must capture all chunks.',
+        );
 
-        $entry = $vite->chunks[0] ?? self::fail('Manifest chunk must be captured.');
+        $entry = $vite->chunks[0];
 
         self::assertSame(
             'resources/js/app.js',
@@ -90,11 +120,43 @@ final class AssetCollectorTest extends TestCase
         );
         self::assertSame(
             1,
+            $entry->cssCount,
+            'CSS count must be captured.',
+        );
+        self::assertSame(
+            1,
             $entry->imports,
             'Import count must be captured.',
         );
         self::assertTrue(
             $entry->isEntry,
+            'Entry flag must be captured.',
+        );
+
+        $secondary = $vite->chunks[1];
+
+        self::assertSame(
+            'resources/js/secondary.js',
+            $secondary->name,
+            'Manifest chunk must keep its source name.',
+        );
+        self::assertSame(
+            'assets/secondary.js',
+            $secondary->file,
+            'Manifest chunk output file must be captured.',
+        );
+        self::assertSame(
+            0,
+            $secondary->cssCount,
+            'CSS count must be captured.',
+        );
+        self::assertSame(
+            0,
+            $secondary->imports,
+            'Import count must be captured.',
+        );
+        self::assertFalse(
+            $secondary->isEntry,
             'Entry flag must be captured.',
         );
 
@@ -116,7 +178,12 @@ final class AssetCollectorTest extends TestCase
 
     public function testCaptureIgnoresInvalidViteComponentDefinition(): void
     {
-        $collector = $this->makeCollector(['inertiaVue' => Vite::class]);
+        $collector = $this->makeCollector(
+            [
+                'invalidVite' => Vite::class,
+                'validVite' => new Vite(['baseUrl' => '/valid']),
+            ],
+        );
 
         Yii::$container->set(
             Vite::class,
@@ -124,10 +191,16 @@ final class AssetCollectorTest extends TestCase
         );
 
         try {
-            self::assertArrayNotHasKey(
-                '@vite',
-                $this->captureSnapshot($collector)->bundles(),
-                'An invalid Vite component definition must be ignored.',
+            $vite = $this->captureSnapshot($collector)->vite();
+
+            self::assertNotNull(
+                $vite,
+                'Vite instance must be captured.',
+            );
+            self::assertSame(
+                '/valid',
+                $vite->baseUrl,
+                'Discovery must continue after an invalid Vite definition.',
             );
         } finally {
             Yii::$container->clear(Vite::class);
@@ -136,13 +209,26 @@ final class AssetCollectorTest extends TestCase
 
     public function testCaptureLeavesTheManifestPathEmptyWhenTheBridgeDeclaresNone(): void
     {
-        $collector = $this->makeCollector(['inertiaVue' => ['class' => Vite::class]]);
+        $collector = $this->makeCollector(
+            ['inertiaVue' => ['class' => Vite::class]],
+        );
 
         $vite = $this->captureSnapshot($collector)->vite();
 
-        self::assertNotNull($vite, 'The Vite bridge must still be captured.');
-        self::assertSame('', $vite->manifestPath, 'A bridge without a manifest path reports an empty path.');
-        self::assertSame([], $vite->chunks, 'No manifest means no chunks.');
+        self::assertNotNull(
+            $vite,
+            'The Vite bridge must still be captured.',
+        );
+        self::assertSame(
+            '',
+            $vite->manifestPath,
+            'A bridge without a manifest path reports an empty path.',
+        );
+        self::assertSame(
+            [],
+            $vite->chunks,
+            'No manifest means no chunks.',
+        );
     }
 
     public function testCaptureOmitsViteKeyWithoutBridgeComponent(): void
@@ -153,6 +239,37 @@ final class AssetCollectorTest extends TestCase
             '@vite',
             $this->captureSnapshot($collector)->bundles(),
             'No bridge component must mean no reserved key.',
+        );
+    }
+
+    public function testCaptureResolvesPrebuiltViteComponent(): void
+    {
+        $collector = $this->makeCollector(
+            ['inertiaVue' => new Vite(['baseUrl' => '/prebuilt'])],
+        );
+
+        $vite = $this->captureSnapshot($collector)->vite();
+
+        self::assertNotNull(
+            $vite,
+            'A prebuilt Vite component must be discovered.',
+        );
+        self::assertSame(
+            '/prebuilt',
+            $vite->baseUrl,
+            'The base URL of the prebuilt Vite component must be correct.',
+        );
+    }
+
+    public function testCaptureResolvesViteComponentDeclaredAsClassString(): void
+    {
+        $collector = $this->makeCollector(
+            ['inertiaVue' => Vite::class],
+        );
+
+        self::assertNotNull(
+            $this->captureSnapshot($collector)->vite(),
+            'A Vite component declared as a class string must be discovered.',
         );
     }
 
@@ -269,14 +386,26 @@ final class AssetCollectorTest extends TestCase
         );
 
         $collector = $this->makeCollector(
-            ['inertiaVue' => ['class' => Vite::class, 'manifestPath' => $manifestPath]],
+            [
+                'inertiaVue' => [
+                    'class' => Vite::class,
+                    'manifestPath' => $manifestPath,
+                ],
+            ],
         );
 
         try {
             $vite = $this->captureSnapshot($collector)->vite();
 
-            self::assertNotNull($vite, 'The Vite bridge must still be captured.');
-            self::assertCount(1, $vite->chunks, 'Only the well-formed named descriptor survives.');
+            self::assertNotNull(
+                $vite,
+                'The Vite bridge must still be captured.',
+            );
+            self::assertCount(
+                1,
+                $vite->chunks,
+                'Only the well-formed named descriptor survives.',
+            );
             self::assertSame(
                 'resources/js/app.js',
                 $vite->chunks[0]->name,
@@ -297,9 +426,9 @@ final class AssetCollectorTest extends TestCase
         $bundle->css = ['style.css'];
 
         Yii::$app->getAssetManager()->bundles = [
-            'debug' => $bundle,
             0 => $bundle,                 // non-string key, must be skipped
             'invalid' => new stdClass(), // non-AssetBundle value, must be skipped
+            'debug' => $bundle,
         ];
 
         $snapshot = $this->captureSnapshot($collector)->bundles();
@@ -323,7 +452,12 @@ final class AssetCollectorTest extends TestCase
         file_put_contents($manifestPath, '{not-json');
 
         $collector = $this->makeCollector(
-            ['inertiaVue' => ['class' => Vite::class, 'manifestPath' => $manifestPath]],
+            [
+                'inertiaVue' => [
+                    'class' => Vite::class,
+                    'manifestPath' => $manifestPath,
+                ],
+            ],
         );
 
         try {
@@ -363,7 +497,10 @@ final class AssetCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot;
     }

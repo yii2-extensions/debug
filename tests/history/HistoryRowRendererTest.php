@@ -24,16 +24,21 @@ final class HistoryRowRendererTest extends TestCase
 {
     public function testBuildRowOptionsAddsDataAttributesForCursorJs(): void
     {
-        $row = self::row([
-            'tag' => 'abc',
-            'method' => 'GET',
-            'url' => '/path',
-            'statusCode' => 200,
-            'time' => 1_700_000_000,
-            'ajax' => true,
-        ]);
+        $row = self::row(
+            [
+                'tag' => 'abc',
+                'method' => 'GET',
+                'url' => '/path',
+                'statusCode' => 200,
+                'time' => 1_700_000_000,
+                'ajax' => true,
+            ],
+        );
 
-        $options = HistoryRowRenderer::buildRowOptions($row, new DebugSearch());
+        $options = HistoryRowRenderer::buildRowOptions(
+            $row,
+            new DebugSearch(),
+        );
 
         self::assertSame(
             [
@@ -56,13 +61,19 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testBuildRowOptionsFlagsCriticalStatusCodesWithDangerHighlight(): void
     {
-        $row = self::row([
-            'tag' => 'critical',
-            'statusCode' => 500,
-        ]);
+        $row = self::row(
+            [
+                'tag' => 'critical',
+                'statusCode' => 500,
+            ],
+        );
 
         $searchModel = new DebugSearch();
-        $options = HistoryRowRenderer::buildRowOptions($row, $searchModel);
+
+        $options = HistoryRowRenderer::buildRowOptions(
+            $row,
+            $searchModel,
+        );
 
         self::assertIsString(
             $options['class'] ?? null,
@@ -105,13 +116,15 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderDurationCellScalesGaugeAgainstPageMaximum(): void
     {
-        $html = HistoryRowRenderer::renderDurationCell(self::row(['processingTime' => 0.125]), 0.25);
+        $html = HistoryRowRenderer::renderDurationCell(
+            self::row(['processingTime' => 0.125]),
+            0.25,
+        );
 
         self::assertSame(
-            '<span class="yii-debug-gauge" style=\'--yii-debug-gauge: 50%;\'>'
-            . '<span class="yii-debug-gauge-value">125 ms</span>'
-            . '<span class="yii-debug-gauge-bar" aria-hidden="true"></span>'
-            . '</span>',
+            <<<HTML
+            <span class="yii-debug-gauge" style='--yii-debug-gauge: 50%;'><span class="yii-debug-gauge-value">125 ms</span><span class="yii-debug-gauge-bar" aria-hidden="true"></span></span>
+            HTML,
             $html,
             'Rail must sit at half the page maximum.',
         );
@@ -129,7 +142,10 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderDurationCellShowsNotSetWhenMissing(): void
     {
-        $html = HistoryRowRenderer::renderDurationCell(self::row([]), 0.25);
+        $html = HistoryRowRenderer::renderDurationCell(
+            self::row([]),
+            0.25,
+        );
 
         self::assertStringContainsString(
             '(not set)',
@@ -154,7 +170,10 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderMemoryCellScalesGaugeAgainstPageMaximum(): void
     {
-        $html = HistoryRowRenderer::renderMemoryCell(self::row(['peakMemory' => 2097152]), 4194304);
+        $html = HistoryRowRenderer::renderMemoryCell(
+            self::row(['peakMemory' => 2097152]),
+            4194304,
+        );
 
         self::assertStringContainsString(
             '--yii-debug-gauge: 50%;',
@@ -217,17 +236,22 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderSqlCountCellEmitsWarningGlyphWhenAboveThreshold(): void
     {
-        $row = self::row([
-            'tag' => 'flood',
-            'sqlCount' => 500,
-            'excessiveCallersCount' => 0,
-        ]);
+        $row = self::row(
+            [
+                'tag' => 'flood',
+                'sqlCount' => 500,
+                'excessiveCallersCount' => 0,
+            ],
+        );
 
         $dbPanel = new DbPanel();
 
         $dbPanel->criticalQueryThreshold = 100;
 
-        $html = HistoryRowRenderer::renderSqlCountCell($row, $dbPanel);
+        $html = HistoryRowRenderer::renderSqlCountCell(
+            $row,
+            $dbPanel,
+        );
 
         self::assertStringContainsString(
             '⚠',
@@ -248,17 +272,22 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderSqlCountCellPluralizesExcessiveCallersCount(): void
     {
-        $row = self::row([
-            'tag' => 'flood',
-            'sqlCount' => 10,
-            'excessiveCallersCount' => 4,
-        ]);
+        $row = self::row(
+            [
+                'tag' => 'flood',
+                'sqlCount' => 10,
+                'excessiveCallersCount' => 4,
+            ],
+        );
 
         $dbPanel = new DbPanel();
 
         $dbPanel->criticalQueryThreshold = 100;
 
-        $html = HistoryRowRenderer::renderSqlCountCell($row, $dbPanel);
+        $html = HistoryRowRenderer::renderSqlCountCell(
+            $row,
+            $dbPanel,
+        );
 
         self::assertStringContainsString(
             '4 callers are making too many calls.',
@@ -269,17 +298,22 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderSqlCountCellRendersPlainCountWhenBelowThreshold(): void
     {
-        $row = self::row([
-            'tag' => 'low',
-            'sqlCount' => 3,
-            'excessiveCallersCount' => 0,
-        ]);
+        $row = self::row(
+            [
+                'tag' => 'low',
+                'sqlCount' => 3,
+                'excessiveCallersCount' => 0,
+            ],
+        );
 
         $dbPanel = new DbPanel();
 
         $dbPanel->criticalQueryThreshold = 100;
 
-        $html = HistoryRowRenderer::renderSqlCountCell($row, $dbPanel);
+        $html = HistoryRowRenderer::renderSqlCountCell(
+            $row,
+            $dbPanel,
+        );
 
         self::assertStringContainsString(
             '>3<',
@@ -295,17 +329,22 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderSqlCountCellSingularizesSingleExcessiveCaller(): void
     {
-        $row = self::row([
-            'tag' => 'flood',
-            'sqlCount' => 10,
-            'excessiveCallersCount' => 1,
-        ]);
+        $row = self::row(
+            [
+                'tag' => 'flood',
+                'sqlCount' => 10,
+                'excessiveCallersCount' => 1,
+            ],
+        );
 
         $dbPanel = new DbPanel();
 
         $dbPanel->criticalQueryThreshold = 100;
 
-        $html = HistoryRowRenderer::renderSqlCountCell($row, $dbPanel);
+        $html = HistoryRowRenderer::renderSqlCountCell(
+            $row,
+            $dbPanel,
+        );
 
         self::assertStringContainsString(
             '1 caller is making too many calls.',
@@ -357,7 +396,10 @@ final class HistoryRowRendererTest extends TestCase
             ],
             statusCodeFilter: null,
         );
-        $html = HistoryRowRenderer::renderSummary($summary);
+
+        $html = HistoryRowRenderer::renderSummary(
+            $summary,
+        );
 
         self::assertStringContainsString(
             'captured requests',
@@ -419,7 +461,9 @@ final class HistoryRowRendererTest extends TestCase
             statusCodeFilter: null,
         );
 
-        $html = HistoryRowRenderer::renderSummary($summary);
+        $html = HistoryRowRenderer::renderSummary(
+            $summary,
+        );
 
         self::assertStringContainsString(
             'captured request',
@@ -444,7 +488,11 @@ final class HistoryRowRendererTest extends TestCase
             $html,
             'Tag link must carry the tag-link CSS class.',
         );
-        self::assertStringContainsString('abc', $html, 'Tag value must surface inside the link.');
+        self::assertStringContainsString(
+            'abc',
+            $html,
+            'Tag value must surface inside the link.',
+        );
         self::assertStringContainsString(
             'tag=abc',
             $html,
@@ -454,11 +502,15 @@ final class HistoryRowRendererTest extends TestCase
 
     public function testRenderTimeCellRendersCompactClockWithFullTooltip(): void
     {
-        $row = self::row([
-            'time' => 1_700_000_000,
-        ]);
+        $row = self::row(
+            [
+                'time' => 1_700_000_000,
+            ],
+        );
 
-        $html = HistoryRowRenderer::renderTimeCell($row);
+        $html = HistoryRowRenderer::renderTimeCell(
+            $row,
+        );
 
         self::assertStringContainsString(
             'yii-debug-nowrap',

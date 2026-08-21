@@ -21,21 +21,28 @@ final class RequestPanelTest extends TestCase
 {
     public function testGetDetailRendersWithCapturedData(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
-        $this->hydratePanel($panel, RequestSnapshot::capture([
-            'route' => 'site/index',
-            'statusCode' => 200,
-            'general' => ['method' => 'GET'],
-            'requestHeaders' => [],
-            'responseHeaders' => [],
-            'GET' => [],
-            'POST' => [],
-            'COOKIE' => [],
-            'FILES' => [],
-            'SERVER' => [],
-            'SESSION' => [],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            RequestSnapshot::capture(
+                [
+                    'route' => 'site/index',
+                    'statusCode' => 200,
+                    'general' => ['method' => 'GET'],
+                    'requestHeaders' => [],
+                    'responseHeaders' => [],
+                    'GET' => [],
+                    'POST' => [],
+                    'COOKIE' => [],
+                    'FILES' => [],
+                    'SERVER' => [],
+                    'SESSION' => [],
+                ],
+            ),
+        );
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -45,17 +52,24 @@ final class RequestPanelTest extends TestCase
 
     public function testGetDetailUsesEmptySummaryWhenRequestedActionIsNotADebugAction(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
         Yii::$app->controller = new Controller('plain', Yii::$app);
 
-        $this->hydratePanel($panel, RequestSnapshot::capture([
-            'route' => 'site/index',
-            'statusCode' => 200,
-            'general' => ['method' => 'GET'],
-            'requestHeaders' => [],
-            'responseHeaders' => [],
-        ]));
+        $this->hydratePanel(
+            $panel,
+            RequestSnapshot::capture(
+                [
+                    'route' => 'site/index',
+                    'statusCode' => 200,
+                    'general' => ['method' => 'GET'],
+                    'requestHeaders' => [],
+                    'responseHeaders' => [],
+                ],
+            ),
+        );
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -65,7 +79,9 @@ final class RequestPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
         self::assertSame(
             'Request',
@@ -81,7 +97,9 @@ final class RequestPanelTest extends TestCase
 
     public function testGetStatusCodeFallsBackTo200ForNonArrayData(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
         self::assertSame(
             200,
@@ -95,9 +113,14 @@ final class RequestPanelTest extends TestCase
 
     public function testGetStatusCodeReturnsIntStatusCode(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
-        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 500]));
+        $this->hydratePanel(
+            $panel,
+            RequestSnapshot::capture(['statusCode' => 500]),
+        );
 
         self::assertSame(
             500,
@@ -111,9 +134,14 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsRendersStatus2xxForSuccess(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
-        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 201]));
+        $this->hydratePanel(
+            $panel,
+            RequestSnapshot::capture(['statusCode' => 201]),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -152,9 +180,14 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsRendersStatus3xxForRedirects(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
-        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 302]));
+        $this->hydratePanel(
+            $panel,
+            RequestSnapshot::capture(['statusCode' => 302]),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -181,9 +214,14 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsRendersStatus5xxForServerErrors(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
-        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 500]));
+        $this->hydratePanel(
+            $panel,
+            RequestSnapshot::capture(['statusCode' => 500]),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -215,9 +253,14 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsTreatsUnknownStatusTextAsEmpty(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
 
-        $this->hydratePanel($panel, RequestSnapshot::capture(['statusCode' => 299]));
+        $this->hydratePanel(
+            $panel,
+            RequestSnapshot::capture(['statusCode' => 299]),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -244,29 +287,46 @@ final class RequestPanelTest extends TestCase
 
     public function testHydrationRejectsNonNumericStatusCode(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
+
         $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
+
         $payload['statusCode'] = 'not-a-number';
 
         $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '$.panels..statusCode': expected an integer.",
+        );
 
         $panel->hydrate($payload);
     }
 
     public function testHydrationRejectsNumericStringStatusCode(): void
     {
-        $panel = $this->makePanel(RequestPanel::class);
+        $panel = $this->makePanel(
+            RequestPanel::class,
+        );
+
         $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
+
         $payload['statusCode'] = '404';
 
         $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '$.panels..statusCode': expected an integer.",
+        );
 
         $panel->hydrate($payload);
     }
 
     public function testThrowHydrationExceptionWhenCapturedDataCarriesNoIntegerStatusCode(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.panels.request.statusCode'");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.panels.request.statusCode'",
+        );
 
         RequestSnapshot::capture(['statusCode' => '200']);
     }
@@ -275,7 +335,10 @@ final class RequestPanelTest extends TestCase
     {
         $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
 
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.panels.request.statusCode'");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.panels.request.statusCode'",
+        );
 
         RequestSnapshot::fromArray([...$payload, 'statusCode' => 404], '$.panels.request');
     }

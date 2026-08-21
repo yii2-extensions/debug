@@ -130,8 +130,16 @@ final class DbSearchTest extends TestCase
 
         $pagination = (new DbSearch())->search([])->getPagination();
 
-        self::assertInstanceOf(Pagination::class, $pagination, 'Database query pagination must be enabled.');
-        self::assertSame(50, $pagination->getPageSize(), 'Database queries must use the shared 50-row default.');
+        self::assertInstanceOf(
+            Pagination::class,
+            $pagination,
+            'Database query pagination must be enabled.',
+        );
+        self::assertSame(
+            50,
+            $pagination->getPageSize(),
+            'Database queries must use the shared 50-row default.',
+        );
     }
 
     public function testSearchReturnsAllRowsWhenValidateShortCircuits(): void

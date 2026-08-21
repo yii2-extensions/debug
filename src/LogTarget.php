@@ -27,6 +27,8 @@ use function random_bytes;
 
 /**
  * Per-request JSON snapshot collector consumed by the debug toolbar.
+ *
+ * @phpstan-import-type LogMessage from \yii\log\Logger
  */
 class LogTarget extends Target
 {
@@ -68,12 +70,12 @@ class LogTarget extends Target
     }
 
     /**
-     * @param array<array-key, mixed> $messages
+     * @param array<int|string, LogMessage> $messages
      */
     #[Override]
     public function collect($messages, $final): void
     {
-        $this->messages = [...$this->messages, ...$messages];
+        $this->messages = [...$this->messages, ...array_values($messages)];
 
         if ($final) {
             $this->export();

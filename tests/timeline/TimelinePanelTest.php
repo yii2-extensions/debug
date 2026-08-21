@@ -18,9 +18,13 @@ use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
 
+use function array_key_exists;
+
 /**
- * Unit tests for {@see TimelinePanel} covering the strict `hydrate()` validation, the SVG renderer
- * lazy factory, the cached span rows, and the toolbar metadata.
+ * Unit tests for {@see TimelinePanel} covering the strict `hydrate()` validation, the SVG renderer lazy factory, the
+ * cached span rows, and the toolbar metadata.
+ *
+ * @phpstan-import-type LogMessage from \PHPForge\Debug\Panel\Log\LogSnapshot
  */
 #[Group('panel')]
 #[Group('timeline')]
@@ -37,7 +41,10 @@ final class TimelinePanelTest extends TestCase
             ['time' => 0.1, 'messages' => []],
         );
 
-        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.1, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot($start, $start + 0.1, 1024),
+        );
 
 
         self::assertNotEmpty(
@@ -52,7 +59,10 @@ final class TimelinePanelTest extends TestCase
 
         $start = 1_700_000_000.0;
 
-        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.5, 2048));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot($start, $start + 0.5, 2048),
+        );
 
         self::assertEqualsWithDelta(
             500.0,
@@ -88,7 +98,10 @@ final class TimelinePanelTest extends TestCase
             ],
         );
 
-        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024),
+        );
 
         $models = $panel->getModels();
 
@@ -100,7 +113,11 @@ final class TimelinePanelTest extends TestCase
 
         $row = $models[0];
 
-        self::assertSame('app\\db', $row->category, 'Category must round-trip.');
+        self::assertSame(
+            'app\\db',
+            $row->category,
+            'Category must round-trip.',
+        );
         self::assertEqualsWithDelta(
             50.0,
             $row->duration,
@@ -118,7 +135,10 @@ final class TimelinePanelTest extends TestCase
             [],
         );
 
-        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024),
+        );
 
         $first = $panel->getModels();
         $second = $panel->getModels();
@@ -128,37 +148,10 @@ final class TimelinePanelTest extends TestCase
             $second,
             'Second call must return the cached row list.',
         );
-
         self::assertSame(
             [],
             $panel->getModels(),
             "Refresh with no profiling messages must yield '[]'.",
-        );
-    }
-
-    public function testGetModelsFiltersNonArrayProfilingMessages(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $this->primeProfilingPanel(
-            $panel,
-            [
-                'time' => 0.1,
-                'messages' => [
-                    'drop-string-entry',
-                    42,
-                    ['token', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.0, [], 1024],
-                    ['token', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.05, [], 2048],
-                ],
-            ],
-        );
-
-        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
-
-        self::assertCount(
-            1,
-            $panel->getModels(),
-            'Non-array message entries must be dropped before the timing pass.',
         );
     }
 
@@ -171,7 +164,10 @@ final class TimelinePanelTest extends TestCase
             [],
         );
 
-        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024),
+        );
 
         self::assertSame(
             [],
@@ -184,7 +180,10 @@ final class TimelinePanelTest extends TestCase
     {
         $panel = $this->makeTimelinePanel();
 
-        $this->hydratePanel($panel, new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024),
+        );
 
         self::assertSame(
             [],
@@ -245,7 +244,10 @@ final class TimelinePanelTest extends TestCase
 
         $start = 1_700_000_000.0;
 
-        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.25, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot($start, $start + 0.25, 1024),
+        );
 
         self::assertEqualsWithDelta(
             250.0,
@@ -266,7 +268,10 @@ final class TimelinePanelTest extends TestCase
 
         $start = 1_700_000_000.0;
 
-        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.1, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot($start, $start + 0.1, 1024),
+        );
 
         self::assertEqualsWithDelta(
             500.0,
@@ -308,6 +313,7 @@ final class TimelinePanelTest extends TestCase
         $this->mockWebApplication();
 
         $module = new Module('debug');
+
         $module->logTarget = new LogTarget($module);
 
         unset($module->panels['profiling']);
@@ -371,7 +377,10 @@ final class TimelinePanelTest extends TestCase
             'Duration cannot be zero',
         );
 
-        $this->hydratePanel($panel, new TimelineSnapshot($start, $start, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot($start, $start, 1024),
+        );
     }
 
     public function testThrowRuntimeExceptionWhenLoadEndIsMissing(): void
@@ -411,7 +420,10 @@ final class TimelinePanelTest extends TestCase
             'Unable to determine used memory in request',
         );
 
-        $this->hydratePanel($panel, new TimelineSnapshot($start, $start + 0.1, 0));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot($start, $start + 0.1, 0),
+        );
     }
 
     public function testThrowRuntimeExceptionWhenLoadStartIsMissing(): void
@@ -435,14 +447,20 @@ final class TimelinePanelTest extends TestCase
             'Unable to determine request start time',
         );
 
-        $this->hydratePanel($panel, new TimelineSnapshot(0, 1.0, 1024));
+        $this->hydratePanel(
+            $panel,
+            new TimelineSnapshot(0, 1.0, 1024),
+        );
     }
 
     public function testThrowRuntimeExceptionWhenTheCapturedEndTimeIsNotPositive(): void
     {
         $panel = $this->makeTimelinePanel();
 
-        $this->expectExceptionMessage('Unable to determine request end time');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Unable to determine request end time',
+        );
 
         $panel->hydrate((new TimelineSnapshot(1_700_000_000.0, 0.0, 1024))->jsonSerialize());
     }
@@ -469,6 +487,7 @@ final class TimelinePanelTest extends TestCase
         );
 
         $module = new Module('debug');
+
         $module->logTarget = new LogTarget($module);
 
         Yii::$app->controller = new Controller('debug', $module);
@@ -483,7 +502,7 @@ final class TimelinePanelTest extends TestCase
     /**
      * Hydrates the profiling panel used for the duration override and span rows.
      *
-     * @param array{memory?: mixed, time?: mixed, messages?: mixed} $data Profiling payload to inject.
+     * @param array{time?: float, messages?: list<LogMessage>} $data Profiling payload to inject.
      */
     private function primeProfilingPanel(TimelinePanel $panel, array $data): void
     {
@@ -504,9 +523,9 @@ final class TimelinePanelTest extends TestCase
         $time = $data['time'];
         $messages = $data['messages'] ?? [];
 
-        self::assertIsFloat($time);
-        self::assertIsArray($messages);
-
-        $this->hydratePanel($profiling, ProfilingSnapshot::capture(0, $time, $messages));
+        $this->hydratePanel(
+            $profiling,
+            ProfilingSnapshot::capture(0, $time, $messages),
+        );
     }
 }

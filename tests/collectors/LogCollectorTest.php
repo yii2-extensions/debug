@@ -11,8 +11,8 @@ use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see LogCollector} covering the log capture, the router-category exclusion, and the
- * startup/shutdown lifecycle.
+ * Unit tests for {@see LogCollector} covering the log capture, the router-category exclusion, and the startup/shutdown
+ * lifecycle.
  */
 #[Group('collector')]
 #[Group('log')]
@@ -37,7 +37,10 @@ final class LogCollectorTest extends TestCase
 
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
         self::assertCount(
             1,
             $snapshot->entries(),
@@ -71,7 +74,10 @@ final class LogCollectorTest extends TestCase
 
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
         self::assertSame(
             [],
             $snapshot->entries(),

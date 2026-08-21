@@ -10,8 +10,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for {@see Manifest} covering the versioned index and the tag/key consistency guard.
- *
- * @since 0.2
  */
 #[Group('storage')]
 final class ManifestTest extends TestCase

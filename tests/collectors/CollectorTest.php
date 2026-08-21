@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use Exception;
+use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use yii\base\InvalidConfigException;
+use yii\debug\collectors\Collector;
 use yii\debug\{LogTarget, Module};
 use yii\debug\tests\support\stub\LifecycleCollector;
 use yii\debug\tests\support\TestCase;
@@ -19,15 +22,14 @@ use yii\log\Logger;
 #[Group('collector')]
 final class CollectorTest extends TestCase
 {
-    public function testGetLogMessagesStringifiesThrowableFirstElement(): void
+    public function testGetLogMessagesExportsArrayPayload(): void
     {
         $this->mockWebApplication();
 
         $module = new Module('debug');
-
         $logTarget = new LogTarget($module);
 
-        $logTarget->messages = [[new Exception('boom'), Logger::LEVEL_ERROR, 'app', 0.0]];
+        $logTarget->messages = [[['a' => 1], Logger::LEVEL_INFO, 'app', 0.0, []]];
 
         $collector = new LifecycleCollector();
 
@@ -36,7 +38,53 @@ final class CollectorTest extends TestCase
         $messages = $this->invoke(
             $collector,
             'getLogMessages',
-            [0, [], [], true],
+            [0],
+        );
+
+        self::assertIsArray(
+            $messages,
+            'Must return an array.',
+        );
+
+        $first = $messages[0] ?? self::fail('Expected the exported tuple.');
+
+        self::assertIsArray(
+            $first,
+            'Filtered entry must be a log tuple.',
+        );
+        self::assertArrayHasKey(
+            0,
+            $first,
+            'Filtered tuple must contain a payload.',
+        );
+        self::assertSame(
+            <<<'TEXT'
+            [
+                'a' => 1,
+            ]
+            TEXT,
+            $first[0],
+            'Array payload must be exported once at the adapter boundary.',
+        );
+    }
+
+    public function testGetLogMessagesStringifiesThrowableFirstElement(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+        $logTarget = new LogTarget($module);
+
+        $logTarget->messages = [[new Exception('boom'), Logger::LEVEL_ERROR, 'app', 0.0, []]];
+
+        $collector = new LifecycleCollector();
+
+        $collector->module = $module;
+
+        $messages = $this->invoke(
+            $collector,
+            'getLogMessages',
+            [0, [], []],
         );
 
         self::assertIsArray(
@@ -64,6 +112,11 @@ final class CollectorTest extends TestCase
             $first[0],
             'Stringified throwable must retain its message text.',
         );
+        self::assertSame(
+            0,
+            $first[5] ?? null,
+            'Omitted logger memory must normalize to zero.',
+        );
     }
 
     public function testStartupAndShutdownRunTheirHooksOnce(): void
@@ -86,6 +139,40 @@ final class CollectorTest extends TestCase
             1,
             $collector->stopCalls,
             'Repeated shutdown must run the stop hook once.',
+        );
+    }
+
+    public function testSubclassExtensionPointsRemainProtected(): void
+    {
+        $collector = new class extends Collector {
+            public function capture(): PanelSnapshot|null
+            {
+                return null;
+            }
+
+            public function id(): string
+            {
+                return 'noop';
+            }
+        };
+
+        $collector->startup();
+        $collector->shutdown();
+
+        foreach (['getLogMessages', 'getLogTarget', 'start', 'stop'] as $method) {
+            self::assertTrue(
+                (new ReflectionMethod(Collector::class, $method))->isProtected(),
+                "Collector::{$method}() must remain available to subclasses.",
+            );
+        }
+
+        $levels = (new ReflectionMethod(Collector::class, 'getLogMessages'))->getParameters()[0]
+            ?? self::fail('Expected the logger level parameter.');
+
+        self::assertSame(
+            0,
+            $levels->getDefaultValue(),
+            'The default logger level filter must keep every level.',
         );
     }
 

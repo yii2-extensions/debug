@@ -6,6 +6,7 @@ namespace yii\debug\tests\asset;
 
 use PHPForge\Debug\Panel\Asset\{AssetBundleRow, AssetSnapshot, ViteChunk, ViteManifest};
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use Yii;
 use yii\debug\{DebugAsset, LogTarget, Module};
 use yii\debug\panels\AssetPanel;
@@ -17,13 +18,21 @@ use function is_int;
 use function is_string;
 
 /**
- * Unit tests for {@see AssetPanel} covering `getName`/`getToolbarIcon`, the toolbar-items chip with bundle count
- * (and the `null` short-circuit when no bundles), `getDetail` rendering, and `isEnabled` resolution.
+ * Unit tests for {@see AssetPanel} covering `getName`/`getToolbarIcon`, the toolbar-items chip with bundle count (and
+ * the `null` short-circuit when no bundles), `getDetail` rendering, and `isEnabled` resolution.
  */
 #[Group('asset')]
 #[Group('panel')]
 final class AssetPanelTest extends TestCase
 {
+    public function testGetBundlesRemainsPublic(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(AssetPanel::class, 'getBundles'))->isPublic(),
+            'Must remain public for the sake of the debug toolbar.',
+        );
+    }
+
     public function testGetDetailRendersBundleSummary(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
@@ -232,28 +241,15 @@ final class AssetPanelTest extends TestCase
             ),
         );
 
-        $items = $this->invoke(
-            $panel,
-            'getToolbarItems',
-        );
-
-        self::assertIsArray(
-            $items,
-            'Toolbar items must surface as a list.',
-        );
-        self::assertIsArray(
-            $items[0] ?? null,
-            'First chip must be an array.',
-        );
         self::assertSame(
-            2,
-            $items[0]['value'] ?? null,
-            "Chip 'value' must match the bundle count.",
-        );
-        self::assertSame(
-            'info',
-            $items[0]['status'] ?? null,
-            "Chip 'status' must be 'info'.",
+            [
+                [
+                    'status' => 'info',
+                    'title' => 'Number of asset bundles loaded',
+                    'value' => 2,
+                ],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
         );
     }
 

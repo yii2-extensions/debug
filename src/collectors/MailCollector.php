@@ -24,7 +24,6 @@ use function is_array;
 use function is_file;
 use function is_string;
 use function str_contains;
-use function time;
 use function unlink;
 
 use const DIRECTORY_SEPARATOR;
@@ -128,7 +127,7 @@ class MailCollector extends Collector
 
         foreach ($referencedFiles as $file) {
             if (self::isSafeFile($file)) {
-                $referenced[$file] = true;
+                $referenced[$file] = $file;
             }
         }
 
@@ -269,13 +268,7 @@ class MailCollector extends Collector
     private function convertParams(mixed $attr): string
     {
         if (is_array($attr)) {
-            return implode(
-                ', ',
-                array_map(
-                    static fn(int|string $key): string => (string) $key,
-                    array_keys($attr),
-                ),
-            );
+            return implode(', ', array_keys($attr));
         }
 
         return Coerce::stringOrNull($attr) ?? '';

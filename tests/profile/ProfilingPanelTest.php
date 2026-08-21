@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\profile;
 
+use PHPForge\Debug\Helper\Format;
 use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use RuntimeException;
+use Yii;
 use yii\debug\panels\ProfilingPanel;
+use yii\debug\tests\support\stub\CapturingView;
 use yii\debug\tests\support\TestCase;
+use yii\helpers\Url;
 use yii\log\Logger;
 
 /**
- * Unit tests for {@see ProfilingPanel} covering the typed row decoration, the toolbar items
- * (time + memory), the title-blanking on the toolbar payload, and snapshot hydration.
+ * Unit tests for {@see ProfilingPanel} covering the typed row decoration, the toolbar items (time + memory), the
+ * title-blanking on the toolbar payload, and snapshot hydration.
  */
 #[Group('panel')]
 #[Group('profile')]
@@ -49,7 +54,9 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetDetailFallsBackToHashTimelineUrlWhenModuleIsMissing(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         $panel->module = null;
 
@@ -64,9 +71,58 @@ final class ProfilingPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailPassesExactMetricsAndTimelineUrlToView(): void
+    {
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+            ['view' => CapturingView::class],
+        );
+
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(1_234_567, 1.25, []),
+        );
+
+        self::assertSame(
+            'rendered',
+            $panel->getDetail(),
+            'Detail view must be rendered.',
+        );
+
+        $view = Yii::$app->getView();
+
+        self::assertInstanceOf(
+            CapturingView::class,
+            $view,
+            'Detail view must be rendered through the capturing view.',
+        );
+        self::assertSame(
+            'panels/profile/detail',
+            $view->renderView,
+            'Detail view must be rendered through the correct view file.',
+        );
+        self::assertSame(
+            '1,250 ms',
+            $view->renderParams['time'] ?? null,
+            'Detail view must receive the exact time in milliseconds.',
+        );
+        self::assertSame(
+            Format::bytesToMb(1_234_567, 3),
+            $view->renderParams['memory'] ?? null,
+            'Detail view must receive the exact memory in megabytes.',
+        );
+        self::assertSame(
+            Url::to(['/debug/view', 'panel' => 'timeline', 'tag' => '']),
+            $view->renderParams['timelineUrl'] ?? null,
+            'Detail view must receive the correct timeline URL.',
+        );
+    }
+
     public function testGetDetailRendersWithCapturedMessages(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -86,9 +142,29 @@ final class ProfilingPanelTest extends TestCase
         );
     }
 
+    public function testGetMemoryUsageRemainsPublicAndDefaultsToZero(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(ProfilingPanel::class, 'getMemoryUsage'))->isPublic(),
+            'Memory usage must remain a public API for the toolbar.',
+        );
+
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
+
+        self::assertSame(
+            0,
+            $panel->getMemoryUsage(),
+            'Unhydrated memory usage must default to zero.',
+        );
+    }
+
     public function testGetModelsBuildsTypedRowsFromTimings(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -126,7 +202,9 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetModelsCachesTheResult(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -151,7 +229,9 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         self::assertSame(
             'Profiling',
@@ -167,25 +247,35 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetToolbarDataBlanksTitleOnSuccess(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
             ProfilingSnapshot::capture(0, 0.0, []),
         );
 
-        $payload = $panel->getToolbarData();
-
         self::assertSame(
-            '',
-            $payload['title'] ?? null,
-            'Success path must blank the title.',
+            [
+                'title' => '',
+                'url' => $panel->getUrl(),
+                'icon' => 'profiling',
+                'items' => [
+                    ['title' => 'Total processing time', 'value' => '0 ms'],
+                    ['title' => 'Peak memory', 'value' => '0.000 MB'],
+                ],
+            ],
+            $panel->getToolbarData(),
+            'Toolbar payload must blank the title on success.',
         );
     }
 
     public function testGetToolbarDataKeepsTitleOnError(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         $panel->setError(ExceptionSnapshot::fromThrowable(new RuntimeException('boom')));
 
@@ -200,7 +290,9 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetToolbarItemsCarryNoStatusVerdict(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
@@ -232,48 +324,64 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsTimeAndMemoryChips(): void
     {
-        $panel = $this->makePanel(ProfilingPanel::class);
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
 
         $this->hydratePanel(
             $panel,
-            ProfilingSnapshot::capture(2_097_152, 0.25, []),
+            ProfilingSnapshot::capture(1_234_567, 1.25, []),
         );
 
-        $items = $this->invoke(
-            $panel,
-            'getToolbarItems',
+        self::assertSame(
+            [
+                ['title' => 'Total processing time', 'value' => '1,250 ms'],
+                ['title' => 'Peak memory', 'value' => Format::bytesToMb(1_234_567, 3)],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
+            'Toolbar must emit time and memory chips.',
+        );
+    }
+
+    public function testUnhydratedDetailAndToolbarUseZeroFallbacks(): void
+    {
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+            ['view' => CapturingView::class],
         );
 
-        self::assertIsArray(
-            $items,
-            'Items must be a list.',
-        );
-        self::assertCount(
-            2,
-            $items,
-            'Toolbar must surface two chips (time + memory).',
+        $panel->module = null;
+
+        self::assertSame(
+            'rendered',
+            $panel->getDetail(),
+            'Detail view must be rendered even when unhydrated.',
         );
 
-        $time = $items[0] ?? self::fail('Expected the time chip.');
-        $memory = $items[1] ?? self::fail('Expected the memory chip.');
+        $view = Yii::$app->getView();
 
-        self::assertIsArray(
-            $time,
-            'Time chip must be an array.',
-        );
-        self::assertIsArray(
-            $memory,
-            'Memory chip must be an array.',
+        self::assertInstanceOf(
+            CapturingView::class,
+            $view,
+            'Detail view must be rendered through the capturing view.',
         );
         self::assertSame(
-            'Total processing time',
-            $time['title'] ?? null,
-            "Time chip must carry the 'Total' title.",
+            '0 ms',
+            $view->renderParams['time'] ?? null,
+            'Detail view must receive the exact time in milliseconds.',
         );
         self::assertSame(
-            'Peak memory',
-            $memory['title'] ?? null,
-            "Memory chip must carry the 'Peak' title.",
+            '#',
+            $view->renderParams['timelineUrl'] ?? null,
+            'Detail view must receive the correct timeline URL.',
+        );
+        self::assertSame(
+            [
+                ['title' => 'Total processing time', 'value' => '0 ms'],
+                ['title' => 'Peak memory', 'value' => '0.000 MB'],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
+            'Toolbar must receive zeroed metrics when unhydrated.',
         );
     }
 }

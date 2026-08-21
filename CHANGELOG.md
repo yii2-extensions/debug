@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(ui): ship the shared keyboard-resizable drawer with Escape handling and focus restoration.
 - fix: harden packaging, identity actions, persisted data, worker cleanup, storage modes, dump output, and mail capture.
 - refactor: simplify log message flattening and separate mail event capture from persistence while preserving fail-open behavior.
+- refactor: normalize Yii logger payloads once at the adapter boundary and remove redundant shared tuple coercion.
 
 ## 0.1.1 May 18, 2026
 

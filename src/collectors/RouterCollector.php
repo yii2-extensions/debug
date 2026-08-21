@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace yii\debug\collectors;
 
-use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\Router\RouterSnapshot;
 use Yii;
 use yii\base\InlineAction;
@@ -27,7 +26,7 @@ use function is_array;
 class RouterCollector extends Collector
 {
     /**
-     * @var array<int, string> Log categories scanned for routing trace messages; consumed by the Logs and Dump
+     * @var list<string> Log categories scanned for routing trace messages; consumed by the Logs and Dump
      * collectors to exclude the routing chatter from their captures.
      */
     private array $categories = [
@@ -74,7 +73,7 @@ class RouterCollector extends Collector
      * $categories = $collector->getCategories();
      * ```
      *
-     * @return array<int, string> Category names in declaration order.
+     * @return list<string> Category names in declaration order.
      */
     public function getCategories(): array
     {
@@ -106,7 +105,7 @@ class RouterCollector extends Collector
      * $collector->setCategories('app\components\UrlRule::parseRequest');
      * ```
      *
-     * @param array<int, string>|string $values Single category, or list of categories.
+     * @param list<string>|string $values Single category, or list of categories.
      */
     public function setCategories(array|string $values): void
     {
@@ -114,6 +113,6 @@ class RouterCollector extends Collector
             $values = [$values];
         }
 
-        $this->categories = [...$this->categories, ...Coerce::stringList($values)];
+        $this->categories = [...$this->categories, ...$values];
     }
 }

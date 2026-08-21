@@ -27,18 +27,29 @@ final class IdentityActionsTest extends TestCase
     {
         $this->bootApp();
 
-        Yii::$app->user->login(new Identity(7));
+        $primary = Yii::$app->user;
 
-        (new UserSwitch())->setUserByIdentity(new Identity(42));
+        $primary->setIdentity(new Identity(99));
+
+        $secondary = $this->newUser();
+
+        $secondary->setIdentity(new Identity(42));
+
+        Yii::$app->session->set('main_user', 7);
 
         self::assertSame(
             42,
-            Yii::$app->user->getId(),
+            $secondary->getId(),
             'The fixture must impersonate a different identity before reset.',
         );
 
-        $result = (new ResetIdentityAction('reset-identity'))->run(Yii::$app->user);
+        $result = (new ResetIdentityAction('reset-identity'))->run($secondary);
 
+        self::assertSame(
+            $secondary,
+            $result,
+            'Reset must return the user component it operated on.',
+        );
         self::assertFalse(
             $result->isGuest,
             'Reset must leave an authenticated identity in place.',
@@ -48,16 +59,28 @@ final class IdentityActionsTest extends TestCase
             $result->getId(),
             'Reset must restore the original identity captured before impersonation.',
         );
+        self::assertSame(
+            99,
+            $primary->getId(),
+            'Reset must not operate on the default application user.',
+        );
     }
 
     public function testActionSetIdentitySwitchesActiveUserToPostedUserId(): void
     {
         $this->bootApp();
 
-        Yii::$app->user->login(new Identity(1));
+        $primary = Yii::$app->user;
+
+        $primary->setIdentity(new Identity(1));
+
+        $secondary = $this->newUser();
+
+        $secondary->setIdentity(new Identity(7));
+
         Yii::$app->request->setBodyParams(['user_id' => 42]);
 
-        $result = (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
+        $result = (new SetIdentityAction('set-identity'))->run($secondary, Yii::$app->request);
 
         $identity = $result->identity;
 
@@ -71,6 +94,16 @@ final class IdentityActionsTest extends TestCase
             $identity->getId(),
             "Resolved identity id must match the posted 'user_id'.",
         );
+        self::assertSame(
+            $secondary,
+            $result,
+            'Set identity must return the user component it operated on.',
+        );
+        self::assertSame(
+            1,
+            $primary->getId(),
+            'Set identity must not operate on the default application user.',
+        );
     }
 
     public function testBeforeRunForcesJsonResponseFormat(): void
@@ -78,7 +111,6 @@ final class IdentityActionsTest extends TestCase
         $this->bootApp();
 
         Yii::$app->session->open();
-
         Yii::$app->user->login(new Identity(7));
 
         (new UserSwitch())->setUserByIdentity(new Identity(42));
@@ -99,10 +131,10 @@ final class IdentityActionsTest extends TestCase
         $this->bootApp();
 
         Yii::$app->user->login(new Identity(1));
+
         $this->prepareValidPost(['user_id' => 42]);
 
         $module = new Module('debug', Yii::$app);
-
         $action = new SetIdentityAction('set-identity');
 
         $action->setModule($module);
@@ -126,7 +158,9 @@ final class IdentityActionsTest extends TestCase
         $this->bootApp();
 
         Yii::$app->user->login(new Identity(1));
+
         $_SERVER['REQUEST_METHOD'] = 'POST';
+
         Yii::$app->request->setBodyParams(['user_id' => 42, Yii::$app->request->csrfParam => 'invalid']);
 
         $this->expectException(BadRequestHttpException::class);
@@ -144,7 +178,9 @@ final class IdentityActionsTest extends TestCase
         $this->bootApp();
 
         Yii::$app->user->login(new Identity(1));
+
         $_SERVER['REQUEST_METHOD'] = 'POST';
+
         Yii::$app->request->setBodyParams(['user_id' => 42]);
 
         $this->expectException(BadRequestHttpException::class);
@@ -243,6 +279,7 @@ final class IdentityActionsTest extends TestCase
         $this->bootApp();
 
         Yii::$app->user->login(new Identity(1));
+
         $_SERVER['REQUEST_METHOD'] = 'GET';
 
         $this->expectException(MethodNotAllowedHttpException::class);
@@ -272,6 +309,17 @@ final class IdentityActionsTest extends TestCase
 
         // Force `hasSessionId === true` by seeding the session cookie before the test body opens it.
         $_COOKIE[Yii::$app->session->getName()] = 'test-session-id';
+    }
+
+    private function newUser(): User
+    {
+        return new User(
+            [
+                'identityClass' => Identity::class,
+                'enableSession' => true,
+                'enableAutoLogin' => false,
+            ],
+        );
     }
 
     /**
