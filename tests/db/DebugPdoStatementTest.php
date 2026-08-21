@@ -5,26 +5,20 @@ declare(strict_types=1);
 namespace yii\debug\tests\db;
 
 use PDO;
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use yii\debug\db\DebugPdoStatement;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 
 /**
  * Unit tests for {@see DebugPdoStatement} covering the row-count capture hook invoked after every prepared statement
  * execution.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('db')]
 final class DebugPdoStatementTest extends TestCase
 {
-    public function testConstructorRemainsProtectedForPdoStatementFactory(): void
-    {
-        self::assertTrue(
-            (new ReflectionMethod(DebugPdoStatement::class, '__construct'))->isProtected(),
-            'The constructor must remain protected to allow PDO to instantiate the statement class.',
-        );
-    }
-
     public function testExecuteAppendsRowCountAfterPreparedStatementRuns(): void
     {
         $pdo = new PDO('sqlite::memory:');
@@ -38,7 +32,7 @@ final class DebugPdoStatementTest extends TestCase
         self::assertInstanceOf(
             DebugPdoStatement::class,
             $insert,
-            "'PDO::prepare()' must return a 'DebugPdoStatement' via 'ATTR_STATEMENT_CLASS'.",
+            'Prepared statements must use the debug wrapper.',
         );
         self::assertTrue(
             $insert->execute([':label' => 'first']),
@@ -55,13 +49,23 @@ final class DebugPdoStatementTest extends TestCase
         self::assertCount(
             2,
             $rowCounts,
-            'Every execute() call must append exactly one rowCount entry.',
+            'One row-count entry must be appended.',
         );
         self::assertSame(
             [1, 1],
             $rowCounts,
             'Each INSERT must record `1` rows affected.',
         );
+    }
+
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'debugPdoStatementContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     protected function setUp(): void

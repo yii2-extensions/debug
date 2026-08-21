@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\debug\actions\{ResetIdentityAction, SetIdentityAction};
+use yii\debug\exception\Message;
 use yii\debug\models\UserSwitch;
 use yii\debug\Module;
 use yii\debug\tests\support\stub\{Identity, NullableIdentity};
@@ -122,7 +123,7 @@ final class IdentityActionsTest extends TestCase
         self::assertSame(
             Response::FORMAT_JSON,
             Yii::$app->response->format,
-            "'beforeRun' must force the JSON response format.",
+            'JSON response format must be enforced.',
         );
     }
 
@@ -165,7 +166,7 @@ final class IdentityActionsTest extends TestCase
 
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
-            'Unable to verify your data submission.',
+            Message::CSRF_VALIDATION_FAILED->getMessage(),
         );
 
         (new SetIdentityAction('set-identity'))->runWithParams(
@@ -185,7 +186,7 @@ final class IdentityActionsTest extends TestCase
 
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
-            'Unable to verify your data submission.',
+            Message::CSRF_VALIDATION_FAILED->getMessage(),
         );
 
         (new SetIdentityAction('set-identity'))->runWithParams(
@@ -212,7 +213,7 @@ final class IdentityActionsTest extends TestCase
 
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
-            'Identity not found.',
+            Message::IDENTITY_NOT_FOUND->getMessage(),
         );
 
         (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
@@ -237,7 +238,7 @@ final class IdentityActionsTest extends TestCase
 
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
-            'User component is not configured with an identity class.',
+            Message::IDENTITY_CLASS_NOT_CONFIGURED->getMessage(),
         );
 
         (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
@@ -254,7 +255,7 @@ final class IdentityActionsTest extends TestCase
 
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
-            'Need an active session',
+            Message::ACTIVE_SESSION_REQUIRED->getMessage(),
         );
 
         (new ResetIdentityAction('reset-identity'))->runWithParams(['user' => Yii::$app->user]);
@@ -268,7 +269,7 @@ final class IdentityActionsTest extends TestCase
 
         $this->expectException(BadRequestHttpException::class);
         $this->expectExceptionMessage(
-            'Invalid user_id parameter.',
+            Message::USER_ID_INVALID->getMessage(),
         );
 
         (new SetIdentityAction('set-identity'))->run(Yii::$app->user, Yii::$app->request);
@@ -284,7 +285,7 @@ final class IdentityActionsTest extends TestCase
 
         $this->expectException(MethodNotAllowedHttpException::class);
         $this->expectExceptionMessage(
-            'Only POST requests are allowed.',
+            Message::POST_ONLY->getMessage(),
         );
 
         (new SetIdentityAction('set-identity'))->runWithParams(

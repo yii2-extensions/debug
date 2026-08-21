@@ -8,6 +8,7 @@ use Closure;
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException, PanelSnapshot};
 use yii\base\{Component, ViewContextInterface};
+use yii\debug\exception\Message;
 use yii\helpers\{ArrayHelper, StringHelper, Url, VarDumper};
 
 use function strlen;
@@ -286,7 +287,10 @@ class Panel extends Component implements ViewContextInterface
      */
     public function hydrate(array $payload): void
     {
-        throw HydrationException::at("$.panels.{$this->id}", 'a payload supported by this panel');
+        throw HydrationException::at(
+            "$.panels.{$this->id}",
+            Message::PANEL_PAYLOAD_EXPECTED->getMessage(),
+        );
     }
 
     /**

@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace yii\debug\tests\db;
 
 use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\db\Connection;
 use yii\debug\collectors\DbCollector;
 use yii\debug\db\DebugPdoStatement;
+use yii\debug\exception\Message;
 use yii\debug\LogTarget;
 use yii\debug\panels\DbPanel;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\CapturingView;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -24,6 +25,8 @@ use function is_string;
 /**
  * Unit tests for {@see DbPanel} covering EXPLAIN gating, threshold checks, the badge variant mapping, toolbar/summary
  * rendering, and snapshot hydration.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  *
  * @phpstan-import-type LogTrace from Logger
  * @phpstan-type StringLogMessage array{0: string, 1: int, 2: string, 3: float, 4: list<LogTrace>, 5: int}
@@ -67,20 +70,14 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testExtensionMethodsKeepTheirPublicAndProtectedContracts(): void
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'dbPanelContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
     {
-        self::assertTrue(
-            (new ReflectionMethod(DbPanel::class, 'countCallerCals'))->isPublic(),
-            'countCallerCals() must remain public.',
-        );
-        self::assertSame(
-            [true, true, true],
-            array_map(
-                static fn(string $method): bool => (new ReflectionMethod(DbPanel::class, $method))->isProtected(),
-                ['getModels', 'getTotalQueryTime', 'hasExplain'],
-            ),
-            'Must remain protected to avoid accidental misuse.',
-        );
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetDbReturnsConfiguredConnection(): void
@@ -542,7 +539,7 @@ final class DbPanelTest extends TestCase
 
             self::assertTrue(
                 $this->invoke($panel, 'hasExplain'),
-                $dsn,
+                'Supported DSN must allow query explanation.',
             );
         }
 
@@ -709,7 +706,7 @@ final class DbPanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            "Application component 'db' must be a DB connection.",
+            Message::DB_COMPONENT_INVALID->getMessage('db'),
         );
 
         $panel->getDb();

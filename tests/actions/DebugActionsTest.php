@@ -11,8 +11,7 @@ use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
 use Xepozz\InternalMocker\MockerState;
 use Yii;
@@ -27,8 +26,10 @@ use yii\debug\actions\{
     ViewAction,
 };
 use yii\debug\collectors\MailCollector;
+use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
 use yii\debug\panels\ConfigPanel;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\{ConfigurableAction, MinimalToolbarPanel, StubSnapshot};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\shell\ShellContext;
@@ -42,6 +43,8 @@ use function mkdir;
 
 /**
  * Unit tests for the standalone debugger actions covering every dispatched endpoint and the shared plumbing.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('actions')]
 final class DebugActionsTest extends TestCase
@@ -77,30 +80,6 @@ final class DebugActionsTest extends TestCase
             $response,
             "Download must return a 'Response'.",
         );
-    }
-
-    public function testActionExtensionPointsRetainTheirVisibility(): void
-    {
-        foreach (['getDebugModule', 'prepareShell', 'render'] as $method) {
-            self::assertTrue(
-                (new ReflectionMethod(DebugAction::class, $method))->isPublic(),
-                'DebugAction extension points must remain public for subclassing.',
-            );
-        }
-
-        foreach ([DownloadMailAction::class, IndexAction::class, PhpInfoAction::class, ViewAction::class] as $class) {
-            self::assertTrue(
-                (new ReflectionMethod($class, 'run'))->isPublic(),
-                'Action run method must remain public for subclassing.',
-            );
-        }
-
-        foreach (['createBareShellContext', 'createShellContext', 'getLogTarget', 'resolveTheme'] as $method) {
-            self::assertTrue(
-                (new ReflectionMethod(DebugAction::class, $method))->isProtected(),
-                'DebugAction extension points must remain protected for subclassing.',
-            );
-        }
     }
 
     public function testActionIndexPropagatesCursorFromQueryParam(): void
@@ -593,7 +572,7 @@ final class DebugActionsTest extends TestCase
         self::assertSame(
             Response::FORMAT_HTML,
             Yii::$app->response->format,
-            "'beforeRun' must force the HTML response format.",
+            'HTML response format must be enforced.',
         );
 
         $shell = Yii::$app->view->params['debugShell'] ?? null;
@@ -601,7 +580,7 @@ final class DebugActionsTest extends TestCase
         self::assertInstanceOf(
             ShellContext::class,
             $shell,
-            "'beforeRun' must install a typed bare shell context.",
+            'A typed bare shell context must be installed.',
         );
         self::assertFalse(
             $shell->useShell,
@@ -725,6 +704,16 @@ final class DebugActionsTest extends TestCase
         );
     }
 
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'actionContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        self::assertMethodVisibility($class, $method, $expected);
+    }
+
     public function testGetManifestCachesResultAndReloadsOnForce(): void
     {
         $module = $this->bootDebugModule();
@@ -801,7 +790,7 @@ final class DebugActionsTest extends TestCase
             );
         } catch (NotFoundHttpException $exception) {
             self::assertSame(
-                "Unable to find debug data tagged with 'tag-missing'.",
+                Message::DEBUG_DATA_NOT_FOUND->getMessage('tag-missing'),
                 $exception->getMessage(),
                 'Missing tag must report the requested identifier.',
             );
@@ -871,28 +860,6 @@ final class DebugActionsTest extends TestCase
             'tag-late',
             $action->summary?->tag,
             'Retry must reload the manifest and load a tag that appeared during the wait.',
-        );
-    }
-
-    public function testMainLayoutRequiresShellContext(): void
-    {
-        $module = $this->bootDebugModule();
-
-        $action = new ViewAction('view');
-
-        $action->setModule($module);
-
-        unset(Yii::$app->view->params['debugShell']);
-
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage(
-            'The debug layout requires a ShellContext.',
-        );
-
-        Yii::$app->view->renderFile(
-            dirname(__DIR__, 2) . '/src/views/layouts/main.php',
-            ['content' => ''],
-            $action,
         );
     }
 
@@ -1067,7 +1034,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(Exception::class);
         $this->expectExceptionMessage(
-            'No debug data have been collected yet',
+            Message::DEBUG_DATA_EMPTY->getMessage(),
         );
 
         $this->runDebugAction(new IndexAction('index'), $module);
@@ -1086,12 +1053,34 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'debug module logTarget must be initialized',
+            Message::LOG_TARGET_NOT_INITIALIZED_FOR_LOADING->getMessage(),
         );
 
         $this->invoke(
             $action,
             'getLogTarget',
+        );
+    }
+
+    public function testThrowLogicExceptionWhenMainLayoutHasNoShellContext(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $action = new ViewAction('view');
+
+        $action->setModule($module);
+
+        unset(Yii::$app->view->params['debugShell']);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage(
+            Message::SHELL_CONTEXT_REQUIRED->getMessage(),
+        );
+
+        Yii::$app->view->renderFile(
+            dirname(__DIR__, 2) . '/src/views/layouts/main.php',
+            ['content' => ''],
+            $action,
         );
     }
 
@@ -1127,7 +1116,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'does not contain summary data',
+            Message::DEBUG_DATA_SUMMARY_MISSING->getMessage($tag),
         );
 
         $action->loadData($tag);
@@ -1143,7 +1132,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'Mail collector not found.',
+            Message::MAIL_COLLECTOR_NOT_FOUND->getMessage(),
         );
 
         $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => 'sample.eml']);
@@ -1159,7 +1148,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'Mail file not found',
+            Message::MAIL_FILE_NOT_FOUND->getMessage(),
         );
 
         $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => 'missing-file.eml']);
@@ -1175,7 +1164,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'Mail file not found',
+            Message::MAIL_FILE_NOT_FOUND->getMessage(),
         );
 
         $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => 'subdir/sample.eml']);
@@ -1192,7 +1181,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'No debug data have been collected yet',
+            Message::DEBUG_DATA_EMPTY->getMessage(),
         );
 
         $this->runDebugAction(new ViewAction('view'), $module);
@@ -1208,7 +1197,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            "Debug panel 'missing' not found.",
+            Message::DEBUG_PANEL_NOT_FOUND->getMessage('missing'),
         );
 
         $this->invoke(
@@ -1240,6 +1229,11 @@ final class DebugActionsTest extends TestCase
             true,
         );
 
+        $this->expectException(NotFoundHttpException::class);
+        $this->expectExceptionMessage(
+            Message::DEBUG_DATA_NOT_FOUND->getMessage('tag-rotated'),
+        );
+
         try {
             $action->loadData('tag-rotated', 1);
 
@@ -1248,17 +1242,18 @@ final class DebugActionsTest extends TestCase
             );
         } catch (NotFoundHttpException $exception) {
             self::assertSame(
-                "Unable to find debug data tagged with 'tag-rotated'.",
+                Message::DEBUG_DATA_NOT_FOUND->getMessage('tag-rotated'),
                 $exception->getMessage(),
                 'Missing tag must report the requested identifier.',
             );
-        }
+            self::assertSame(
+                [[1]],
+                array_column(MockerState::getTraces('yii\debug\actions', 'sleep'), 'arguments'),
+                'One retry must wait exactly once for one second between the two attempts.',
+            );
 
-        self::assertSame(
-            [[1]],
-            array_column(MockerState::getTraces('yii\debug\actions', 'sleep'), 'arguments'),
-            'One retry must wait exactly once for one second between the two attempts.',
-        );
+            throw $exception;
+        }
     }
 
     private function bootDebugModule(bool $collectorless = false): Module

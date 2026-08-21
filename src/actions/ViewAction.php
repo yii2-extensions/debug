@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\actions;
 
+use yii\debug\exception\Message;
 use yii\web\NotFoundHttpException;
 
 use function array_key_first;
@@ -34,7 +35,7 @@ class ViewAction extends Action
 
             if ($tag === null) {
                 throw new NotFoundHttpException(
-                    'No debug data have been collected yet, try browsing the website first.',
+                    Message::DEBUG_DATA_EMPTY->getMessage(),
                 );
             }
         }

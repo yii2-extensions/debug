@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use Exception;
-use PHPForge\Debug\Storage\PanelSnapshot;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use ReflectionMethod;
 use yii\base\InvalidConfigException;
 use yii\debug\collectors\Collector;
+use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\LifecycleCollector;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -18,10 +19,38 @@ use yii\log\Logger;
 /**
  * Unit tests for the {@see \yii\debug\collectors\Collector} base class covering the idempotent lifecycle, the
  * log-message stringification, and the missing-log-target contract.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('collector')]
 final class CollectorTest extends TestCase
 {
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'collectorContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        if ($method === 'start' || $method === 'stop') {
+            (new ReflectionMethod($class, $method))->invoke(new LifecycleCollector());
+        }
+
+        self::assertMethodVisibility($class, $method, $expected);
+    }
+
+    public function testGetLogMessagesDefaultLevelIsZero(): void
+    {
+        $levels = (new ReflectionMethod(Collector::class, 'getLogMessages'))->getParameters()[0]
+            ?? self::fail('Expected the logger level parameter.');
+
+        self::assertSame(
+            0,
+            $levels->getDefaultValue(),
+            'The default logger level filter must keep every level.',
+        );
+    }
+
     public function testGetLogMessagesExportsArrayPayload(): void
     {
         $this->mockWebApplication();
@@ -89,7 +118,7 @@ final class CollectorTest extends TestCase
 
         self::assertIsArray(
             $messages,
-            "'getLogMessages' must return a list of log entries.",
+            'Filtered messages must form a list of log entries.',
         );
         self::assertCount(
             1,
@@ -142,47 +171,13 @@ final class CollectorTest extends TestCase
         );
     }
 
-    public function testSubclassExtensionPointsRemainProtected(): void
-    {
-        $collector = new class extends Collector {
-            public function capture(): PanelSnapshot|null
-            {
-                return null;
-            }
-
-            public function id(): string
-            {
-                return 'noop';
-            }
-        };
-
-        $collector->startup();
-        $collector->shutdown();
-
-        foreach (['getLogMessages', 'getLogTarget', 'start', 'stop'] as $method) {
-            self::assertTrue(
-                (new ReflectionMethod(Collector::class, $method))->isProtected(),
-                "Collector::{$method}() must remain available to subclasses.",
-            );
-        }
-
-        $levels = (new ReflectionMethod(Collector::class, 'getLogMessages'))->getParameters()[0]
-            ?? self::fail('Expected the logger level parameter.');
-
-        self::assertSame(
-            0,
-            $levels->getDefaultValue(),
-            'The default logger level filter must keep every level.',
-        );
-    }
-
     public function testThrowInvalidConfigExceptionWhenLogTargetIsMissing(): void
     {
         $collector = new LifecycleCollector();
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'The debug module logTarget must be initialized',
+            Message::LOG_TARGET_NOT_INITIALIZED_FOR_READING->getMessage(),
         );
 
         $this->invoke($collector, 'getLogTarget');

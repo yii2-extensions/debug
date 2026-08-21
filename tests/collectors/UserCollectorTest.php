@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\debug\collectors\UserCollector;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\{Identity, ModelIdentity, SelectiveModelIdentity};
 use yii\debug\tests\support\TestCase;
 use yii\rbac\{BaseManager, Permission, Role};
@@ -20,6 +20,8 @@ use function array_column;
 /**
  * Unit tests for {@see UserCollector} covering the identity capture, the RBAC roles/permissions narrowing, and the
  * startup/shutdown lifecycle.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('collector')]
 #[Group('user')]
@@ -304,16 +306,6 @@ final class UserCollectorTest extends TestCase
         );
     }
 
-    public function testCollectorExtensionPointsRemainProtected(): void
-    {
-        foreach (['dataToString', 'getUser', 'identityData'] as $method) {
-            self::assertTrue(
-                (new ReflectionMethod(UserCollector::class, $method))->isProtected(),
-                'Must remain protected to avoid accidental misuse.',
-            );
-        }
-    }
-
     public function testDataToStringExportsNonStringValues(): void
     {
         $collector = new UserCollector();
@@ -341,8 +333,18 @@ final class UserCollectorTest extends TestCase
         self::assertStringContainsString(
             "'a'",
             $exported,
-            "Non-string input must be exported via 'VarDumper::export()'.",
+            'Non-string input must use the exported representation.',
         );
+    }
+
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'userCollectorContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testIdentityDataUsesTheModelAttributeContract(): void
@@ -352,6 +354,7 @@ final class UserCollectorTest extends TestCase
         self::assertSame(
             ['id' => 1],
             $this->invoke($collector, 'identityData', [new SelectiveModelIdentity()]),
+            'Only declared attributes must be captured.',
         );
     }
 
@@ -369,6 +372,7 @@ final class UserCollectorTest extends TestCase
         self::assertSame(
             ['0' => 'first', 'name' => 'second'],
             $this->invokeStatic(UserCollector::class, 'normalizeStringKeyArray', [[0 => 'first', 'name' => 'second']]),
+            'String keys must preserve every entry.',
         );
     }
 

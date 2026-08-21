@@ -7,6 +7,7 @@ namespace yii\debug\actions;
 use PHPForge\Debug\Helper\Coerce;
 use Yii;
 use yii\base\Exception;
+use yii\debug\exception\Message;
 use yii\debug\models\search\DebugSearch;
 
 use function array_key_first;
@@ -30,7 +31,7 @@ class IndexAction extends Action
 
         if ($manifest === []) {
             throw new Exception(
-                'No debug data have been collected yet, try browsing the website first.',
+                Message::DEBUG_DATA_EMPTY->getMessage(),
             );
         }
 

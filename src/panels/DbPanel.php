@@ -12,6 +12,7 @@ use yii\data\Sort;
 use yii\db\Connection;
 use yii\debug\actions\db\ExplainAction;
 use yii\debug\collectors\DbCollector;
+use yii\debug\exception\Message;
 use yii\debug\models\search\DbSearch;
 use yii\debug\Panel;
 
@@ -80,7 +81,7 @@ class DbPanel extends Panel
 
         if (!$db instanceof Connection) {
             throw new InvalidConfigException(
-                "Application component '{$this->db}' must be a DB connection.",
+                Message::DB_COMPONENT_INVALID->getMessage($this->db),
             );
         }
 

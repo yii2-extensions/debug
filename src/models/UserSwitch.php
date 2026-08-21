@@ -8,6 +8,7 @@ use Override;
 use RuntimeException;
 use Yii;
 use yii\base\{InvalidConfigException, Model};
+use yii\debug\exception\Message;
 use yii\web\{IdentityInterface, User};
 
 use function is_int;
@@ -107,7 +108,7 @@ class UserSwitch extends Model
 
         if (!$resolved instanceof User) {
             throw new InvalidConfigException(
-                "Application component '{$this->userComponent}' must be a 'yii\\web\\User' instance.",
+                Message::USER_COMPONENT_INVALID->getMessage($this->userComponent),
             );
         }
 
@@ -162,7 +163,9 @@ class UserSwitch extends Model
         $identity = $user->identity;
 
         if ($identity === null) {
-            throw new RuntimeException('Cannot switch to a user without an attached identity.');
+            throw new RuntimeException(
+                Message::IDENTITY_REQUIRED_FOR_SWITCH->getMessage(),
+            );
         }
 
         $isCurrent = ($user->getId() === $this->getMainUser()->getId());

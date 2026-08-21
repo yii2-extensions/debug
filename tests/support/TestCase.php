@@ -11,6 +11,7 @@ use PHPForge\Debug\Storage\{
     RequestSummary,
 };
 use ReflectionClass;
+use ReflectionMethod;
 use ReflectionProperty;
 use Yii;
 use yii\base\Application;
@@ -33,6 +34,29 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      * restore the bootstrap-time state (`REQUEST_TIME_FLOAT`, `argv`, `argc`, `SCRIPT_FILENAME`, etc.).
      */
     private static array|null $serverSnapshot = null;
+
+    /**
+     * Asserts the declared visibility of an extension method.
+     *
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    protected static function assertMethodVisibility(string $class, string $method, string $expected): void
+    {
+        $reflection = new ReflectionMethod($class, $method);
+
+        $actual = match (true) {
+            $reflection->isPublic() => 'public',
+            $reflection->isProtected() => 'protected',
+            default => 'private',
+        };
+
+        self::assertSame(
+            $expected,
+            $actual,
+            'Visibility must match the extension contract.',
+        );
+    }
 
     /**
      * Destroys the active application by closing its session, clearing `Yii::$app`, and resetting the DI container.

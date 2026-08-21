@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\debug\collectors\ConfigCollector;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 
 use function is_string;
@@ -15,19 +15,13 @@ use function is_string;
 /**
  * Unit tests for {@see ConfigCollector} covering the configuration snapshot, the application resolution fallback, the
  * extension-roster narrowing, and the startup/shutdown lifecycle.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('collector')]
 #[Group('config')]
 final class ConfigCollectorTest extends TestCase
 {
-    public function testApplicationResolverRemainsProtected(): void
-    {
-        self::assertTrue(
-            (new ReflectionMethod(ConfigCollector::class, 'getApplication'))->isProtected(),
-            'The application resolver must remain protected.',
-        );
-    }
-
     public function testCaptureCollapsesApplicationFieldsWhenYiiAppIsNotApplication(): void
     {
         $collector = $this->makeCollector();
@@ -135,6 +129,29 @@ final class ConfigCollectorTest extends TestCase
             ],
             $payload['php'] ?? null,
             'The PHP capability slice must retain every captured field.',
+        );
+    }
+
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'configCollectorContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        self::assertMethodVisibility($class, $method, $expected);
+    }
+
+    public function testGetApplicationReturnsNullWhenYiiAppIsScalar(): void
+    {
+        $this->setInaccessibleStaticProperty(Yii::class, 'app', 0);
+
+        self::assertNull(
+            $this->invoke(
+                $this->makeCollector(),
+                'getApplication',
+            ),
+            'Scalar global state must collapse to `null`.',
         );
     }
 
@@ -369,7 +386,7 @@ final class ConfigCollectorTest extends TestCase
 
         self::assertIsArray(
             $result,
-            'normalizeExtensions must produce an array.',
+            'Normalized extensions must form an array.',
         );
 
         $out = [];

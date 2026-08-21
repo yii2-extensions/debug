@@ -11,6 +11,7 @@ use PHPForge\Debug\Theme\ThemeResolver;
 use Yii;
 use yii\base\{InvalidConfigException, ViewContextInterface};
 use yii\debug\collectors\MailCollector;
+use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module, Panel};
 use yii\debug\panels\ConfigPanel;
 use yii\debug\widgets\shell\ShellContext;
@@ -59,7 +60,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
         if (!$module instanceof Module) {
             throw new InvalidConfigException(
-                'Debug actions must be dispatched through the debug module.',
+                Message::DEBUG_ACTION_MODULE_INVALID->getMessage(),
             );
         }
 
@@ -129,7 +130,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
                 if ($summary === null) {
                     throw new NotFoundHttpException(
-                        "Debug data tagged with '$tag' does not contain summary data.",
+                        Message::DEBUG_DATA_SUMMARY_MISSING->getMessage($tag),
                     );
                 }
 
@@ -145,7 +146,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
         }
 
         throw new NotFoundHttpException(
-            "Unable to find debug data tagged with '$tag'.",
+            Message::DEBUG_DATA_NOT_FOUND->getMessage($tag),
         );
     }
 
@@ -173,7 +174,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
             $activePanel,
             $tag,
             $this->summary ?? throw new NotFoundHttpException(
-                "Debug data tagged with '$tag' has no summary.",
+                Message::DEBUG_DATA_SUMMARY_UNAVAILABLE->getMessage($tag),
             ),
         );
 
@@ -328,7 +329,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
         if (!$logTarget instanceof LogTarget) {
             throw new InvalidConfigException(
-                'The debug module logTarget must be initialized before loading debug data.',
+                Message::LOG_TARGET_NOT_INITIALIZED_FOR_LOADING->getMessage(),
             );
         }
 
@@ -348,7 +349,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
         if (!$collector instanceof MailCollector) {
             throw new NotFoundHttpException(
-                'Mail collector not found.',
+                Message::MAIL_COLLECTOR_NOT_FOUND->getMessage(),
             );
         }
 
@@ -370,7 +371,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
         if (!$panel instanceof Panel) {
             throw new NotFoundHttpException(
-                "Debug panel '{$id}' not found.",
+                Message::DEBUG_PANEL_NOT_FOUND->getMessage($id),
             );
         }
 

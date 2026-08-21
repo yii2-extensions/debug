@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace yii\debug\tests\storage;
 
 use PHPForge\Debug\Storage\{HydrationException, Payload};
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use PHPUnit\Framework\TestCase;
+use yii\debug\tests\provider\PayloadProvider;
 
 /**
  * Unit tests for {@see Payload} covering the strict type guards applied at the decoded-JSON boundary.
+ *
+ * {@see PayloadProvider} for test case data providers.
  */
 #[Group('storage')]
 final class PayloadTest extends TestCase
@@ -50,133 +53,36 @@ final class PayloadTest extends TestCase
         );
     }
 
-    public function testThrowHydrationExceptionForAnObjectWithIntegerKeys(): void
-    {
+    /**
+     * @param non-empty-string $operation
+     * @param list<string> $arguments
+     */
+    #[DataProviderExternal(PayloadProvider::class, 'hydrationExceptionCases')]
+    public function testThrowHydrationExceptionForInvalidPayload(
+        mixed $value,
+        string $operation,
+        array $arguments,
+        string $exceptionMessage,
+    ): void {
         $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$': expected an object with string keys.",
-        );
+        $this->expectExceptionMessage($exceptionMessage);
 
-        Payload::object([1 => 'a']);
-    }
+        $payload = Payload::object($value);
+        $key = $arguments[0] ?? '';
 
-    public function testThrowHydrationExceptionForANonBooleanValue(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.flag': expected a boolean.",
-        );
-
-        Payload::object(['flag' => 1])->bool('flag');
-    }
-
-    public function testThrowHydrationExceptionForANonIntegerValue(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.count': expected an integer.",
-        );
-
-        Payload::object(['count' => '7'])->int('count');
-    }
-
-    public function testThrowHydrationExceptionForANonListValue(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.entries': expected a list.",
-        );
-
-        Payload::object(['entries' => ['a' => 1]])->list('entries');
-    }
-
-    public function testThrowHydrationExceptionForANonNumberValue(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '$.time': expected a number.",
-        );
-
-        Payload::object(['time' => '1.5'])->number('time');
-    }
-
-    public function testThrowHydrationExceptionForANonStringValue(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.name': expected a string.",
-        );
-
-        Payload::object(['name' => 42])->string('name');
-    }
-
-    public function testThrowHydrationExceptionForANullableIntegerCarryingAString(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '$.line': expected an integer or null.",
-        );
-
-        Payload::object(['line' => '7'])->nullableInt('line');
-    }
-
-    public function testThrowHydrationExceptionForANullableNumberCarryingAString(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '$.duration': expected a number or null.",
-        );
-
-        Payload::object(['duration' => '1.5'])->nullableNumber('duration');
-    }
-
-    public function testThrowHydrationExceptionForANullableStringCarryingAnInteger(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '$.action': expected a string or null.",
-        );
-
-        Payload::object(['action' => 42])->nullableString('action');
-    }
-
-    public function testThrowHydrationExceptionForAnUndeclaredField(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.extra': expected a declared field.",
-        );
-
-        Payload::object(['name' => 'a', 'extra' => 1])->shape(['name']);
-    }
-
-    public function testThrowHydrationExceptionForAValueThatIsNotAnObject(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$': expected an object.",
-        );
-
-        Payload::object(['a', 'b']);
-    }
-
-    public function testThrowHydrationExceptionWhenAMissingKeyIsRead(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.absent': expected a required field.",
-        );
-
-        Payload::object([])->raw('absent');
-    }
-
-    public function testThrowHydrationExceptionWhenARequiredFieldIsMissing(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.name': expected a required field.",
-        );
-
-        Payload::object([])->shape(['name']);
+        match ($operation) {
+            'bool' => $payload->bool($key),
+            'int' => $payload->int($key),
+            'list' => $payload->list($key),
+            'nullableInt' => $payload->nullableInt($key),
+            'nullableNumber' => $payload->nullableNumber($key),
+            'nullableString' => $payload->nullableString($key),
+            'number' => $payload->number($key),
+            'object' => $payload,
+            'raw' => $payload->raw($key),
+            'shape' => $payload->shape($arguments),
+            'string' => $payload->string($key),
+            default => throw new \InvalidArgumentException('Unknown payload operation.'),
+        };
     }
 }

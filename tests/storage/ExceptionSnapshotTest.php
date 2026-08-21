@@ -16,21 +16,6 @@ use yii\debug\tests\support\TestCase;
 #[Group('storage')]
 final class ExceptionSnapshotTest extends TestCase
 {
-    public function testHydrationRejectsInvalidCodeType(): void
-    {
-        $payload = ExceptionSnapshot::fromThrowable(new RuntimeException('failure'))
-            ->jsonSerialize();
-
-        $payload['code'] = false;
-
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            '$.exception.code',
-        );
-
-        ExceptionSnapshot::fromArray($payload);
-    }
-
     public function testThrowableRoundTripsThroughJson(): void
     {
         $throwable = new RuntimeException('outer failure', 42, new LogicException('inner failure', 7));
@@ -102,5 +87,20 @@ final class ExceptionSnapshotTest extends TestCase
             $previous->getCode(),
             'The hydrated previous exception must retain its original code.',
         );
+    }
+
+    public function testThrowHydrationExceptionForInvalidCodeType(): void
+    {
+        $payload = ExceptionSnapshot::fromThrowable(new RuntimeException('failure'))
+            ->jsonSerialize();
+
+        $payload['code'] = false;
+
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            '$.exception.code',
+        );
+
+        ExceptionSnapshot::fromArray($payload);
     }
 }

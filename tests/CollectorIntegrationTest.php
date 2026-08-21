@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use PHPForge\Debug\Storage\SnapshotStore;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\base\{Application, InvalidConfigException};
 use yii\debug\{LogTarget, Module};
 use yii\debug\panels\JsonPanel;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\{CollectorPanel, CustomCollector, StubSnapshot};
 use yii\debug\tests\support\TestCase;
 
@@ -23,6 +24,8 @@ use function unlink;
 
 /**
  * Unit tests for {@see Module} and {@see LogTarget} custom collector integration.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('collector')]
 final class CollectorIntegrationTest extends TestCase
@@ -173,34 +176,14 @@ final class CollectorIntegrationTest extends TestCase
         $this->cleanup($module);
     }
 
-    public function testExportShutsDownCollectorsWhenStorageFails(): void
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'logTargetContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
     {
-        $collector = new CustomCollector();
-
-        $module = $this->module([$collector]);
-
-        $module->historySize = -1;
-
-        $target = new LogTarget($module);
-
-        $module->getCollectorCoordinator()->startup();
-
-        $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage(
-            'Invalid debug history size: -1',
-        );
-
-        try {
-            $target->export();
-        } finally {
-            self::assertSame(
-                1,
-                $collector->shutdownCount,
-                'Collector must shut down when snapshot persistence fails.',
-            );
-
-            $this->cleanup($module);
-        }
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testFailingCollectorDoesNotEraseLegacyPanelSnapshot(): void
@@ -277,6 +260,11 @@ final class CollectorIntegrationTest extends TestCase
 
     public function testThrowInvalidConfigExceptionForDuplicateCollectorId(): void
     {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'Duplicate debug collector ID: app.example.',
+        );
+
         try {
             $this->module([new CustomCollector(), new CustomCollector()]);
 
@@ -287,6 +275,7 @@ final class CollectorIntegrationTest extends TestCase
             self::assertSame(
                 'Duplicate debug collector ID: app.example.',
                 $exception->getMessage(),
+                'Message must identify the duplicate ID.',
             );
             self::assertSame(
                 0,
@@ -298,6 +287,8 @@ final class CollectorIntegrationTest extends TestCase
                 $exception->getPrevious(),
                 'Duplicate collector ID must throw an argument exception.',
             );
+
+            throw $exception;
         }
     }
 
@@ -313,6 +304,36 @@ final class CollectorIntegrationTest extends TestCase
         );
 
         $this->module([$collector]);
+    }
+
+    public function testThrowInvalidConfigExceptionWhenStorageFailsDuringExport(): void
+    {
+        $collector = new CustomCollector();
+
+        $module = $this->module([$collector]);
+
+        $module->historySize = -1;
+
+        $target = new LogTarget($module);
+
+        $module->getCollectorCoordinator()->startup();
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'Invalid debug history size: -1',
+        );
+
+        try {
+            $target->export();
+        } finally {
+            self::assertSame(
+                1,
+                $collector->shutdownCount,
+                'Collector must shut down when snapshot persistence fails.',
+            );
+
+            $this->cleanup($module);
+        }
     }
 
     public function testUnknownStoredPanelUsesEscapedJsonFallback(): void

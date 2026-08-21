@@ -38,6 +38,7 @@ use yii\debug\collectors\{
     TimelineCollector,
     UserCollector,
 };
+use yii\debug\exception\Message;
 use yii\debug\panels\{
     AssetPanel,
     ConfigPanel,
@@ -274,7 +275,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         throw new ForbiddenHttpException(
-            'You are not allowed to access this page.',
+            Message::ACCESS_DENIED->getMessage(),
         );
     }
 
@@ -362,7 +363,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     public function getCollectorCoordinator(): CollectorCoordinator
     {
         return $this->collectorCoordinator ?? throw new InvalidConfigException(
-            'Debug collectors have not been initialized.',
+            Message::COLLECTORS_NOT_INITIALIZED->getMessage(),
         );
     }
 
@@ -409,7 +410,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
             if ($svg === '') {
                 throw new RuntimeException(
-                    'Unable to read the packaged Yii logo.',
+                    Message::YII_LOGO_UNREADABLE->getMessage(),
                 );
             }
 
@@ -569,7 +570,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $sender->getHeaders()
             ->set('X-Debug-Tag', $logTarget->tag)
-            ->set('X-Debug-Duration', number_format((microtime(true) - $requestStart) * 1000 + 1))
+            ->set('X-Debug-Duration', number_format((microtime(true) - $requestStart) * 1000, 3, '.', ''))
             ->set('X-Debug-Link', $url);
     }
 
@@ -785,7 +786,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
         try {
             $this->collectorCoordinator = new CollectorCoordinator($collectors);
         } catch (InvalidArgumentException $exception) {
-            throw new InvalidConfigException($exception->getMessage(), 0, $exception);
+            throw new InvalidConfigException(
+                $exception->getMessage(),
+                0,
+                $exception,
+            );
         }
     }
 
@@ -874,14 +879,16 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         if (!is_string($class) || !class_exists($class)) {
-            throw new InvalidConfigException('Debug collector configuration must declare a valid class name.');
+            throw new InvalidConfigException(
+                Message::COLLECTOR_CLASS_INVALID->getMessage(),
+            );
         }
 
         $collector = Yii::$container->get($class, [], $properties);
 
         if (!$collector instanceof CollectorInterface) {
             throw new InvalidConfigException(
-                'Debug collector class must implement ' . CollectorInterface::class . ": {$class}.",
+                Message::COLLECTOR_INTERFACE_INVALID->getMessage(CollectorInterface::class, $class),
             );
         }
 
@@ -966,7 +973,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         if (!$this->logTarget instanceof LogTarget) {
             throw new InvalidConfigException(
-                'Debug module logTarget has not been bootstrapped; call Module::bootstrap() first.',
+                Message::LOG_TARGET_NOT_BOOTSTRAPPED->getMessage(),
             );
         }
 
@@ -1032,7 +1039,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
             if (!is_string($class) || !class_exists($class)) {
                 throw new InvalidConfigException(
-                    'Debug module logTarget configuration must declare a valid class name.',
+                    Message::LOG_TARGET_CLASS_INVALID->getMessage(),
                 );
             }
 
@@ -1045,7 +1052,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         if (!$target instanceof LogTarget) {
             throw new InvalidConfigException(
-                'Debug module logTarget must resolve to a yii\\debug\\LogTarget instance.',
+                Message::LOG_TARGET_INSTANCE_INVALID->getMessage(),
             );
         }
 

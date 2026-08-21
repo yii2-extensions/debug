@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace yii\debug\tests\storage;
 
 use PHPForge\Debug\Storage\{DebugValue, HydrationException};
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
 use stdClass;
 use Stringable;
+use yii\debug\tests\provider\DebugValueProvider;
 use yii\debug\tests\support\TestCase;
 
 /**
  * Unit tests for {@see DebugValue} covering the tagged capture of arbitrary PHP values, the guard rails that keep the
  * payload JSON-safe, and the strict hydration of every tagged type.
+ *
+ * {@see DebugValueProvider} for test case data providers.
  *
  * @since 0.2
  */
@@ -119,30 +122,6 @@ final class DebugValueTest extends TestCase
         );
     }
 
-    public function testHydrationRejectsFieldsThatDoNotBelongToTheTaggedType(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('$.value');
-
-        DebugValue::fromArray(['type' => 'null', 'value' => null]);
-    }
-
-    public function testHydrationRejectsInvalidBinaryData(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('$.data');
-
-        DebugValue::fromArray(['type' => 'binary', 'encoding' => 'base64', 'data' => '*invalid*']);
-    }
-
-    public function testHydrationRejectsUnknownFields(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('$.unexpected');
-
-        DebugValue::fromArray(['type' => 'null', 'unexpected' => true]);
-    }
-
     public function testRoundTripPreservesJsonSafeValuesAndLabelsUnsafeValues(): void
     {
         $object = new stdClass();
@@ -162,49 +141,40 @@ final class DebugValueTest extends TestCase
         $decoded = json_decode($encoded, true, 512, JSON_THROW_ON_ERROR);
         $display = DebugValue::fromArray($decoded)->toDisplayValue();
 
-        self::assertIsArray($display);
-        self::assertIsString($display['binary'] ?? null);
-        self::assertStringStartsWith('(binary: base64 ', $display['binary']);
-        self::assertSame('NAN', $display['nan'] ?? null);
-        self::assertSame('INF', $display['positiveInfinity'] ?? null);
-        self::assertSame('-INF', $display['negativeInfinity'] ?? null);
-        self::assertSame(['__class' => \Closure::class], $display['closure'] ?? null);
+        self::assertIsArray($display, 'Display value must be an array.');
+        self::assertIsString($display['binary'] ?? null, 'Binary value must be a string.');
+        self::assertStringStartsWith('(binary: base64 ', $display['binary'], 'Binary label must include its encoding.');
+        self::assertSame('NAN', $display['nan'] ?? null, 'NAN must retain its label.');
+        self::assertSame('INF', $display['positiveInfinity'] ?? null, 'Positive infinity must retain its label.');
+        self::assertSame('-INF', $display['negativeInfinity'] ?? null, 'Negative infinity must retain its label.');
+        self::assertSame(
+            ['__class' => \Closure::class],
+            $display['closure'] ?? null,
+            'Closure must retain its class label.',
+        );
 
         $capturedObject = $display['object'] ?? null;
 
-        self::assertIsArray($capturedObject);
-        self::assertSame(stdClass::class, $capturedObject['__class'] ?? null);
-        self::assertSame('debug', $capturedObject['name'] ?? null);
-        self::assertSame(stdClass::class, $capturedObject['self'] ?? null);
-    }
-
-    public function testThrowHydrationExceptionForAnEntryKeyThatDoesNotMatchItsKeyType(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('.key');
-
-        DebugValue::fromArray(
-            [
-                'type' => 'array',
-                'entries' => [['keyType' => 'int', 'key' => 'not-an-int', 'value' => ['type' => 'null']]],
-            ],
+        self::assertIsArray($capturedObject, 'Captured object must be an array.');
+        self::assertSame(stdClass::class, $capturedObject['__class'] ?? null, 'Class name must be preserved.');
+        self::assertSame('debug', $capturedObject['name'] ?? null, 'Property value must be preserved.');
+        self::assertSame(
+            stdClass::class,
+            $capturedObject['self'] ?? null,
+            'Recursive reference must retain its class.',
         );
     }
 
-    public function testThrowHydrationExceptionForAnUnknownSpecialFloat(): void
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[DataProviderExternal(DebugValueProvider::class, 'hydrationExceptionCases')]
+    public function testThrowHydrationExceptionForInvalidTaggedPayload(array $payload, string $exceptionMessage): void
     {
         $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('$.value');
+        $this->expectExceptionMessage($exceptionMessage);
 
-        DebugValue::fromArray(['type' => 'special-float', 'value' => 'NOPE']);
-    }
-
-    public function testThrowHydrationExceptionForAnUnsupportedBinaryEncoding(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('$.encoding');
-
-        DebugValue::fromArray(['type' => 'binary', 'encoding' => 'hex', 'data' => 'ff']);
+        DebugValue::fromArray($payload);
     }
 
     /**

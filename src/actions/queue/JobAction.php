@@ -6,6 +6,7 @@ namespace yii\debug\actions\queue;
 
 use Yii;
 use yii\debug\actions\Action;
+use yii\debug\exception\Message;
 use yii\debug\panels\QueuePanel;
 use yii\web\HttpException;
 
@@ -40,7 +41,7 @@ class JobAction extends Action
         if (!isset($records[$seqKey])) {
             throw new HttpException(
                 404,
-                'Queue job record not found.',
+                Message::QUEUE_JOB_RECORD_NOT_FOUND->getMessage(),
             );
         }
 

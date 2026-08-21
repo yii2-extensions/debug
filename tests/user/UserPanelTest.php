@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\base\{Action, InvalidConfigException, Model};
+use yii\debug\exception\Message;
 use yii\debug\LogTarget;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
@@ -53,7 +54,7 @@ final class UserPanelTest extends TestCase
 
         self::assertFalse(
             $panel->canSearchUsers(),
-            "Filter model without 'search' method must be rejected.",
+            'An incompatible filter model must be rejected.',
         );
     }
 
@@ -1075,7 +1076,7 @@ final class UserPanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'Unable to configure user switching without a debug module.',
+            Message::USER_SWITCH_MODULE_REQUIRED->getMessage(),
         );
 
         $this->invoke($panel, 'addAccessRules');
@@ -1089,7 +1090,7 @@ final class UserPanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'User filter model must implement ' . UserSearchInterface::class . '.',
+            Message::USER_FILTER_MODEL_INVALID->getMessage(UserSearchInterface::class),
         );
 
         $panel->getUserDataProvider();
@@ -1116,7 +1117,7 @@ final class UserPanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'User filter model must implement ' . UserSearchInterface::class . '.',
+            Message::USER_FILTER_MODEL_INVALID->getMessage(UserSearchInterface::class),
         );
 
         new UserPanel(['id' => 'user', 'module' => $module, 'filterModel' => stdClass::class]);

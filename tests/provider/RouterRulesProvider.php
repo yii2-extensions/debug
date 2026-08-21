@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\provider;
 
+use yii\debug\tests\router\RouterRulesTest;
 use yii\debug\tests\support\stub\CustomRuleStub;
 use yii\web\UrlRule;
 
 /**
- * Data provider for {@see \yii\debug\tests\support\router\RouterRulesTest} test cases.
+ * Data provider for {@see RouterRulesTest} test cases.
+ *
+ * Provides configured URL rules and their normalized representations.
  */
 final class RouterRulesProvider
 {

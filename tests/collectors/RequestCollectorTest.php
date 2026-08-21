@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\base\{Action, InlineAction};
 use yii\debug\collectors\RequestCollector;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\web\{Controller, Session};
 
 /**
  * Unit tests for {@see RequestCollector} covering header capture, action narrowing, censor masking, response-header
  * aggregation, flash retrieval, superglobal normalization, and the startup/shutdown lifecycle.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('collector')]
 #[Group('request')]
@@ -35,7 +37,7 @@ final class RequestCollectorTest extends TestCase
         self::assertSame(
             $controller::class . '::actionIndex()',
             $saved['action'] ?? null,
-            "Inline action must format as 'ControllerFQCN::actionMethod()'.",
+            'Inline actions must use controller-method notation.',
         );
         self::assertSame(
             'site/index',
@@ -61,7 +63,7 @@ final class RequestCollectorTest extends TestCase
         self::assertSame(
             $action::class . '::run()',
             $saved['action'] ?? null,
-            "Regular action must format as 'ActionFQCN::run()'.",
+            'Standalone actions must use class-run notation.',
         );
     }
 
@@ -453,11 +455,14 @@ final class RequestCollectorTest extends TestCase
         );
     }
 
-    public function testCollectorExtensionPointsRemainProtected(): void
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'requestCollectorContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
     {
-        foreach (['censorArray', 'getFlashes', 'normalizeResponseHeaders'] as $method) {
-            self::assertTrue((new ReflectionMethod(RequestCollector::class, $method))->isProtected());
-        }
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetFlashesReturnsActiveFlashes(): void
@@ -612,6 +617,7 @@ final class RequestCollectorTest extends TestCase
         self::assertSame(
             ['X-Foo' => 'a'],
             $this->invoke($collector, 'normalizeResponseHeaders', [['X-Foo:a']]),
+            'Header value must be parsed without separator whitespace.',
         );
     }
 

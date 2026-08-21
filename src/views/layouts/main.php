@@ -5,6 +5,7 @@ declare(strict_types=1);
 use UIAwesome\Html\Helper\{Attributes, Encode};
 use yii\debug\Module;
 use PHPForge\Debug\Helper\Icon;
+use yii\debug\exception\Message;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarRenderer;
 use yii\helpers\{Html, Url};
@@ -19,7 +20,7 @@ yii\debug\DebugAsset::register($this);
 $shellContext = $this->params['debugShell'] ?? null;
 
 if (!$shellContext instanceof ShellContext) {
-    throw new LogicException('The debug layout requires a ShellContext.');
+    throw new LogicException(Message::SHELL_CONTEXT_REQUIRED->getMessage());
 }
 ?>
 <?php $this->beginPage() ?>

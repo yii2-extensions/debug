@@ -6,7 +6,6 @@ namespace yii\debug\collectors;
 
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\Config\ConfigSnapshot;
-use ReflectionClass;
 use Yii;
 use yii\base\Application;
 use yii\debug\VersionResolver;
@@ -99,13 +98,21 @@ class ConfigCollector extends Collector
     }
 
     /**
-     * Returns the active application instance via reflection, or `null` when {@see Yii::$app} is unset.
+     * Returns the active application instance, or `null` when the framework slot does not contain an object.
      */
     protected function getApplication(): object|null
     {
-        $app = (new ReflectionClass(Yii::class))->getStaticPropertyValue('app');
+        $app = self::applicationValue();
 
         return is_object($app) ? $app : null;
+    }
+
+    /**
+     * Returns the untyped framework application slot without assuming its PHPDoc type.
+     */
+    private static function applicationValue(): mixed
+    {
+        return Yii::$app;
     }
 
     /**

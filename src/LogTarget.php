@@ -16,6 +16,7 @@ use yii\debug\panels\JsonPanel;
 use yii\debug\storage\SnapshotStore;
 use yii\log\Target;
 
+use function array_push;
 use function array_values;
 use function bin2hex;
 use function count;
@@ -75,7 +76,7 @@ class LogTarget extends Target
     #[Override]
     public function collect($messages, $final): void
     {
-        $this->messages = [...$this->messages, ...array_values($messages)];
+        array_push($this->messages, ...array_values($messages));
 
         if ($final) {
             $this->export();
@@ -131,7 +132,7 @@ class LogTarget extends Target
             $store = $this->store();
 
             try {
-                $removed = $store->writeSnapshot(
+                $result = $store->writeSnapshotResult(
                     new DebugSnapshot($summary, $panels, $failures),
                     $this->module->historySize,
                 );
@@ -141,11 +142,11 @@ class LogTarget extends Target
                 throw $failure;
             }
 
-            foreach ($removed as $removedSummary) {
+            foreach ($result->removed as $removedSummary) {
                 $this->removeMailFiles($removedSummary);
             }
 
-            $this->reconcileMailFiles($store);
+            $this->reconcileMailFiles($result->entries);
         });
     }
 
@@ -254,23 +255,24 @@ class LogTarget extends Target
         return $collector instanceof DbCollector ? (int) (count($collector->getProfileLogs()) / 2) : 0;
     }
 
-    private function reconcileMailFiles(SnapshotStore $store): void
+    /**
+     * @param array<string, RequestSummary>|null $entries Committed manifest entries, or `null` after a failed read.
+     */
+    private function reconcileMailFiles(array|null $entries): void
     {
+        if ($entries === null) {
+            return;
+        }
+
         $mailCollector = $this->module->getCollectorCoordinator()->collector('mail');
 
         if (!$mailCollector instanceof MailCollector) {
             return;
         }
 
-        $manifest = $store->loadManifestResult();
-
-        if ($manifest->error !== null) {
-            return;
-        }
-
         $referencedFiles = [];
 
-        foreach ($manifest->entries as $entry) {
+        foreach ($entries as $entry) {
             foreach ($entry->mailFiles as $file) {
                 $referencedFiles[] = $file;
             }

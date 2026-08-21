@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\actions;
 
 use Yii;
+use yii\debug\exception\Message;
 use yii\web\{NotFoundHttpException, Response};
 
 use function basename;
@@ -35,7 +36,7 @@ class DownloadMailAction extends Action
             || !is_file($filePath)
         ) {
             throw new NotFoundHttpException(
-                'Mail file not found',
+                Message::MAIL_FILE_NOT_FOUND->getMessage(),
             );
         }
 

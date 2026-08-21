@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use Exception;
-use PHPForge\Debug\Storage\ExceptionSnapshot;
+use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException};
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\{Module, Panel};
 use yii\debug\tests\support\stub\CustomPanel;
@@ -290,12 +290,12 @@ final class PanelTest extends TestCase
 
         self::assertTrue(
             $panel->hasError(),
-            "Recording an exception must flip 'hasError' to `true`.",
+            'Recording an exception must mark the panel as failed.',
         );
         self::assertInstanceOf(
             ExceptionSnapshot::class,
             $panel->getError(),
-            "'getError' must surface the recorded exception snapshot.",
+            'Recorded exception snapshot must be returned.',
         );
     }
 
@@ -304,6 +304,7 @@ final class PanelTest extends TestCase
         $panel = $this->createPanel();
         $panel->id = 'custom';
 
+        $this->expectException(HydrationException::class);
         $this->expectExceptionMessage("Invalid debug snapshot value at '\$.panels.custom'");
 
         $panel->hydrate(['anything' => 1]);

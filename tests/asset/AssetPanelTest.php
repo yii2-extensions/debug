@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\tests\asset;
 
 use PHPForge\Debug\Panel\Asset\{AssetBundleRow, AssetSnapshot, ViteChunk, ViteManifest};
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\debug\{DebugAsset, LogTarget, Module};
 use yii\debug\panels\AssetPanel;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 
 use function count;
@@ -20,17 +20,21 @@ use function is_string;
 /**
  * Unit tests for {@see AssetPanel} covering `getName`/`getToolbarIcon`, the toolbar-items chip with bundle count (and
  * the `null` short-circuit when no bundles), `getDetail` rendering, and `isEnabled` resolution.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('asset')]
 #[Group('panel')]
 final class AssetPanelTest extends TestCase
 {
-    public function testGetBundlesRemainsPublic(): void
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'assetPanelContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
     {
-        self::assertTrue(
-            (new ReflectionMethod(AssetPanel::class, 'getBundles'))->isPublic(),
-            'Must remain public for the sake of the debug toolbar.',
-        );
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetDetailRendersBundleSummary(): void
@@ -250,6 +254,7 @@ final class AssetPanelTest extends TestCase
                 ],
             ],
             $this->invoke($panel, 'getToolbarItems'),
+            'Toolbar item must report the captured bundle count.',
         );
     }
 
@@ -285,7 +290,7 @@ final class AssetPanelTest extends TestCase
 
         self::assertFalse(
             $panel->isEnabled(),
-            "Missing 'assetManager' component must collapse 'isEnabled()' to 'false'.",
+            'Missing component must disable the panel.',
         );
     }
 

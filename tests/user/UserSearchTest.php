@@ -80,7 +80,7 @@ final class UserSearchTest extends TestCase
         self::assertSame(
             'forwarded',
             $search->__get('username'),
-            "'__get' must forward to the identity proxy and return its attribute value.",
+            'Virtual reads must return the proxied attribute value.',
         );
     }
 
@@ -90,7 +90,7 @@ final class UserSearchTest extends TestCase
 
         self::assertNull(
             (new UserSearch())->__get('username'),
-            "Without an identity proxy '__get' must surface 'null'.",
+            'Missing identity proxy must return `null` for virtual reads.',
         );
     }
 
@@ -115,7 +115,7 @@ final class UserSearchTest extends TestCase
         self::assertInstanceOf(
             ActiveDataProvider::class,
             $provider,
-            "AR-backed 'search()' must build an 'ActiveDataProvider'.",
+            'AR-backed search must create an active provider.',
         );
         self::assertSame(
             2,
@@ -241,7 +241,7 @@ final class UserSearchTest extends TestCase
         self::assertSame(
             'written',
             $identity->getAttribute('username'),
-            "'__set' must forward through the identity proxy onto the AR attribute store.",
+            'Virtual writes must update the proxied attribute.',
         );
     }
 
@@ -255,7 +255,7 @@ final class UserSearchTest extends TestCase
 
         self::assertNull(
             $search->identityImplement,
-            "Without an identity proxy '__set' must short-circuit without errors.",
+            'Missing identity proxy must ignore virtual writes.',
         );
     }
 

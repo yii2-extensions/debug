@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\router;
 
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use ReflectionClass;
-use ReflectionMethod;
 use stdClass;
 use Xepozz\InternalMocker\MockerState;
 use yii\debug\models\router\ActionRoutes;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\router\controllers\{AbstractController, WebController};
 use yii\debug\tests\support\stub\router\controllers\nested\NestedWebController;
 use yii\debug\tests\support\stub\router\edge\controllers\EdgeCaseController;
@@ -20,25 +20,20 @@ use yii\web\GroupUrlRule;
 /**
  * Unit tests for {@see ActionRoutes} covering the controller scan that produces the action-to-route map shown in the
  * sRouter panel detail view.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('router')]
 final class ActionRoutesTest extends TestCase
 {
-    public function testExtensionMethodsRemainProtected(): void
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'actionRoutesContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
     {
-        self::assertSame(
-            [true, true, true, true, true],
-            array_map(
-                static fn(string $method): bool => (new ReflectionMethod(ActionRoutes::class, $method))->isProtected(),
-                [
-                    'getActions',
-                    'getAppRoutes',
-                    'getMatchedCreationRule',
-                    'getModuleControllers',
-                    'validateControllerClass',
-                ],
-            ),
-        );
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetActionsReturnsOnlyPublicInstanceActionsAndExternalSentinel(): void
@@ -52,6 +47,7 @@ final class ActionRoutesTest extends TestCase
                 'getActions',
                 [new ReflectionClass(EdgeCaseController::class)],
             ),
+            'Only public actions and the sentinel must remain.',
         );
     }
 
@@ -93,10 +89,12 @@ final class ActionRoutesTest extends TestCase
         self::assertArrayHasKey(
             'yii\\debug\\tests\\support\\stub\\router\\controllers\\WebController::actionFirst()',
             $routes,
+            'Valid route must survive invalid module entries.',
         );
         self::assertSame(
             'mixed/valid/mapped/first',
             $routes['yii\\debug\\tests\\support\\stub\\router\\controllers\\WebController::actionFirst()']['route'],
+            'Route prefix must include the valid module path.',
         );
     }
 
@@ -383,7 +381,7 @@ final class ActionRoutesTest extends TestCase
         self::assertArrayNotHasKey(
             'yii\debug\tests\support\stub\router\controllers\WebController::actionFirst()',
             $routes,
-            "Failing 'preg_replace()' must skip the action via the defensive 'continue'.",
+            'A failed replacement must skip the action.',
         );
         self::assertArrayHasKey(
             'yii\debug\tests\support\stub\router\controllers\WebController::actionSecond()',
@@ -500,7 +498,7 @@ final class ActionRoutesTest extends TestCase
         self::assertSame(
             [],
             (new ActionRoutes())->routes,
-            "Child modules whose 'getModule()' returns 'null' must be skipped via the defensive 'continue'.",
+            'Modules without a parent must be skipped.',
         );
     }
 
@@ -518,7 +516,7 @@ final class ActionRoutesTest extends TestCase
         self::assertSame(
             [],
             (new ActionRoutes())->routes,
-            "Module ids that fail 'is_string()' must be skipped via the defensive 'continue'.",
+            'Modules with invalid IDs must be skipped.',
         );
     }
 

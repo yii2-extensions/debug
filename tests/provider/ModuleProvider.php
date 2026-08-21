@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\provider;
 
+use yii\debug\tests\ModuleTest;
+
 /**
- * Data provider for {@see \yii\debug\tests\support\ModuleTest} test cases.
+ * Data provider for {@see ModuleTest} test cases.
+ *
+ * Provides IP allow-list and CIDR combinations for access checks.
  */
 final class ModuleProvider
 {

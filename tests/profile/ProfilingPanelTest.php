@@ -7,11 +7,11 @@ namespace yii\debug\tests\profile;
 use PHPForge\Debug\Helper\Format;
 use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
 use Yii;
 use yii\debug\panels\ProfilingPanel;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\CapturingView;
 use yii\debug\tests\support\TestCase;
 use yii\helpers\Url;
@@ -20,6 +20,8 @@ use yii\log\Logger;
 /**
  * Unit tests for {@see ProfilingPanel} covering the typed row decoration, the toolbar items (time + memory), the
  * title-blanking on the toolbar payload, and snapshot hydration.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('panel')]
 #[Group('profile')]
@@ -50,6 +52,16 @@ final class ProfilingPanelTest extends TestCase
             $samples[0]->memory,
             'Sample memory must retain the logger value.',
         );
+    }
+
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'profilingPanelContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetDetailFallsBackToHashTimelineUrlWhenModuleIsMissing(): void
@@ -142,13 +154,8 @@ final class ProfilingPanelTest extends TestCase
         );
     }
 
-    public function testGetMemoryUsageRemainsPublicAndDefaultsToZero(): void
+    public function testGetMemoryUsageDefaultsToZero(): void
     {
-        self::assertTrue(
-            (new ReflectionMethod(ProfilingPanel::class, 'getMemoryUsage'))->isPublic(),
-            'Memory usage must remain a public API for the toolbar.',
-        );
-
         $panel = $this->makePanel(
             ProfilingPanel::class,
         );
