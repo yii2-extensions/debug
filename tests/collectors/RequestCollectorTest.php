@@ -452,6 +452,7 @@ final class RequestCollectorTest extends TestCase
             'Empty censor list must short-circuit to the original payload.',
         );
     }
+
     public function testCollectorExtensionPointsRemainProtected(): void
     {
         foreach (['censorArray', 'getFlashes', 'normalizeResponseHeaders'] as $method) {

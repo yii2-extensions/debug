@@ -236,6 +236,7 @@ final class LogPanelTest extends TestCase
             "Last row must point back to id '1'.",
         );
     }
+
     public function testGetModelsRemainsProtected(): void
     {
         self::assertTrue(

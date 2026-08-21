@@ -141,6 +141,7 @@ final class ProfilingPanelTest extends TestCase
             'Detail view must produce markup.',
         );
     }
+
     public function testGetMemoryUsageRemainsPublicAndDefaultsToZero(): void
     {
         self::assertTrue(

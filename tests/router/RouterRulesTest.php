@@ -143,6 +143,7 @@ final class RouterRulesTest extends TestCase
             "'suffix' must remain null when only 'strictParsing' is configured.",
         );
     }
+
     public function testExtensionMethodsRemainProtected(): void
     {
         self::assertSame(

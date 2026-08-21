@@ -83,6 +83,7 @@ final class SvgTest extends TestCase
             'Existing points must be preserved when no new points are added.',
         );
     }
+
     public function testAddPointsRemainsProtected(): void
     {
         self::assertTrue(

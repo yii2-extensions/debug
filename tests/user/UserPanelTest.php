@@ -68,6 +68,7 @@ final class UserPanelTest extends TestCase
             'UserSearchInterface model must be searchable.',
         );
     }
+
     public function testCanSwitchUserPassesOwningModuleToAccessRule(): void
     {
         $panel = $this->bootstrapPanelWithIdentity(new Identity(1));

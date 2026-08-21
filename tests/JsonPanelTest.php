@@ -26,6 +26,7 @@ final class JsonPanelTest extends TestCase
             'Method should return "Panel" when the ID contains only separators that are trimmed away.',
         );
     }
+
     public function testGetNameNormalizesEverySupportedSeparator(): void
     {
         $panel = new JsonPanel();

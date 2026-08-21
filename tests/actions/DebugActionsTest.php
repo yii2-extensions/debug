@@ -78,6 +78,7 @@ final class DebugActionsTest extends TestCase
             "Download must return a 'Response'.",
         );
     }
+
     public function testActionExtensionPointsRetainTheirVisibility(): void
     {
         foreach (['getDebugModule', 'prepareShell', 'render'] as $method) {

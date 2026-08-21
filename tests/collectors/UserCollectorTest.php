@@ -303,6 +303,7 @@ final class UserCollectorTest extends TestCase
             'Missing user component must yield no snapshot.',
         );
     }
+
     public function testCollectorExtensionPointsRemainProtected(): void
     {
         foreach (['dataToString', 'getUser', 'identityData'] as $method) {

@@ -151,6 +151,7 @@ final class DumpPanelTest extends TestCase
             'Refresh must rebuild from the latest data.',
         );
     }
+
     public function testGetModelsRemainsProtected(): void
     {
         self::assertTrue(

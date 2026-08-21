@@ -66,6 +66,7 @@ final class DbPanelTest extends TestCase
             'Excessive callers must be keyed by the exact trace hash.',
         );
     }
+
     public function testExtensionMethodsKeepTheirPublicAndProtectedContracts(): void
     {
         self::assertTrue(
