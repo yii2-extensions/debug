@@ -353,15 +353,6 @@ final class HistoryRowRendererTest extends TestCase
         );
     }
 
-    public function testRenderStatusCellMapsCommandWithZeroToSuccess(): void
-    {
-        self::assertSame(
-            '<span class="yii-debug-badge yii-debug-status-2xx">200</span>',
-            HistoryRowRenderer::renderStatusCell(self::row(['method' => 'COMMAND', 'statusCode' => 0])),
-            "COMMAND with status '0' must display as status '200'.",
-        );
-    }
-
     public function testRenderStatusCellMapsRangeToStatusClass(): void
     {
         self::assertStringContainsString(
@@ -383,6 +374,15 @@ final class HistoryRowRendererTest extends TestCase
             'yii-debug-status-5xx',
             HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 500])),
             "Status code '500' must map to '5xx'.",
+        );
+    }
+
+    public function testRenderStatusCellMapsUncapturedStatusToNeutralUnknown(): void
+    {
+        self::assertSame(
+            '<span class="yii-debug-badge yii-debug-status-none">–</span>',
+            HistoryRowRenderer::renderStatusCell(self::row(['method' => 'COMMAND', 'statusCode' => 0])),
+            "An uncaptured status must not be misrepresented as a successful '200' response.",
         );
     }
 

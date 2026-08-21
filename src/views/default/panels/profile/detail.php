@@ -24,10 +24,27 @@ use yii\grid\GridView;
  * @var string $time Total request processing time.
  * @var string $timelineUrl URL to the Timeline panel.
  */
-$hasProfileBlocks = $dataProvider->getTotalCount() > 0;
-$maxDuration = ProfileRow::maxDuration($panel->getModels());
+$capturedModels = $panel->getModels();
+
+$capturedCount = count($capturedModels);
+$visibleCount = $dataProvider->getTotalCount();
+
+$hasCapturedProfileBlocks = $capturedCount > 0;
+$hasVisibleProfileBlocks = $visibleCount > 0;
+
+$maxDuration = ProfileRow::maxDuration($capturedModels);
 
 $summaryItems = [
+    Span::tag()
+        ->html(
+            Strong::tag()->content((string) $visibleCount),
+            ' of ',
+            Strong::tag()->content((string) $capturedCount),
+            $capturedCount === 1 ? ' profile block' : ' profile blocks',
+        ),
+    Span::tag()
+        ->class('yii-debug-grid-summary-sep')
+        ->content('·'),
     Span::tag()
         ->html(
             Strong::tag()->content($time),
@@ -43,13 +60,16 @@ $summaryItems = [
         ),
 ];
 
-if ($hasProfileBlocks) {
+if ($hasCapturedProfileBlocks) {
     $summaryItems[] = Span::tag()
         ->class('yii-debug-grid-summary-sep')
         ->content('·');
     $summaryItems[] = A::tag()
         ->content('Open timeline')
         ->href($timelineUrl);
+}
+
+if ($hasVisibleProfileBlocks) {
     $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
 }
 ?>
@@ -59,7 +79,7 @@ if ($hasProfileBlocks) {
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>
-<?php if (!$hasProfileBlocks): ?>
+<?php if (!$hasCapturedProfileBlocks): ?>
     <?= EmptyState::card(
         'No profile blocks captured',
         P::tag()
@@ -89,6 +109,15 @@ if ($hasProfileBlocks) {
     [
         ...GridViewConfig::defaults(),
         'dataProvider' => $dataProvider,
+        'emptyText' => EmptyState::card(
+            'No profile blocks match the active filters',
+            P::tag()
+                ->content(
+                    'This request captured profile blocks, but none match the filters currently applied to the table.',
+                ),
+            P::tag()
+                ->content('Remove individual filters or use Clear all above to restore every captured block.'),
+        ),
         'id' => 'profile-panel-detailed-grid',
         'filterModel' => $searchModel,
         'filterUrl' => $panel->getUrl(),

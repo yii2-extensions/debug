@@ -83,6 +83,61 @@ final class ProfilingPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailKeepsFiltersAndRendersFilteredEmptyStateWhenBlocksWereCaptured(): void
+    {
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'tag' => 'profile-tag',
+                'panel' => 'profiling',
+                'Profile' => ['category' => 'missing category'],
+            ],
+        );
+
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(
+                1_048_576,
+                0.123,
+                [
+                    ['app\\token', Logger::LEVEL_PROFILE_BEGIN, 'application', 0.0, []],
+                    ['app\\token', Logger::LEVEL_PROFILE_END, 'application', 0.5, []],
+                ],
+            ),
+        );
+
+        $detail = $panel->getDetail();
+
+        self::assertStringContainsString(
+            '<strong>0</strong> of <strong>1</strong> profile block',
+            $detail,
+            'Summary must distinguish the filtered result count from the captured profile-block count.',
+        );
+        self::assertStringContainsString(
+            'No profile blocks match the active filters',
+            $detail,
+            'A zero-result filter must not be presented as an empty capture.',
+        );
+        self::assertStringNotContainsString(
+            'No profile blocks captured',
+            $detail,
+            'Captured blocks must keep the capture-empty explanation hidden.',
+        );
+        self::assertStringContainsString(
+            'value="missing category"',
+            $detail,
+            'The grid filter must retain the submitted value when no profile block matches.',
+        );
+        self::assertStringContainsString(
+            '>Clear all<',
+            $detail,
+            'The filtered empty state must expose a clear-all action.',
+        );
+    }
+
     public function testGetDetailPassesExactMetricsAndTimelineUrlToView(): void
     {
         $panel = $this->makePanel(

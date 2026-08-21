@@ -101,6 +101,7 @@ class FilterBanner extends Widget
 
             $pills .= A::tag()
                 ->class('yii-debug-active-filter-pill')
+                ->addAriaAttribute('label', "Remove {$attr}: {$val} filter")
                 ->addAttribute('title', 'Remove this filter')
                 ->href($this->buildUrl($formName, [$attr]))
                 ->html($pillContent)
@@ -116,6 +117,7 @@ class FilterBanner extends Widget
 
         $clearAll = A::tag()
             ->class('yii-debug-active-filters-clear')
+            ->addAriaAttribute('label', 'Clear all active filters')
             ->addAttribute('title', 'Clear all filters and show every row')
             ->href($this->buildUrl($formName, array_keys($activeFilters)))
             ->content('Clear all')

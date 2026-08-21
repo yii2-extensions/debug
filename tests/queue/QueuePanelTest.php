@@ -254,9 +254,21 @@ final class QueuePanelTest extends TestCase
             ),
         );
 
+        $detail = $panel->getDetail();
+
         self::assertNotEmpty(
-            $panel->getDetail(),
+            $detail,
             'Detail view must produce markup.',
+        );
+        self::assertStringContainsString(
+            'class="yii-debug-queue-grid-job-link" href="/index.php?r=debug%2Fqueue-job',
+            $detail,
+            'The job name must remain a native link to its detail page.',
+        );
+        self::assertStringNotContainsString(
+            'data-href=',
+            $detail,
+            'Rows must not advertise an unimplemented click target.',
         );
     }
 

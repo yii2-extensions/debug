@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\base\{Action, InvalidConfigException, Model};
+use yii\data\{ArrayDataProvider, DataProviderInterface};
 use yii\debug\exception\Message;
 use yii\debug\LogTarget;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
@@ -170,6 +171,68 @@ final class UserPanelTest extends TestCase
         self::assertTrue(
             $panel->canSwitchUser(),
             "Allow='true' rule must grant switching.",
+        );
+    }
+
+    public function testGetDetailMakesUserSwitchRowsFocusableAndExplicitlyNamed(): void
+    {
+        $filterModel = new class extends Model implements UserSearchInterface {
+            public int|string|null $id = null;
+
+            public function formName(): string
+            {
+                return 'User';
+            }
+
+            public function search(array $params): DataProviderInterface
+            {
+                return new ArrayDataProvider(
+                    [
+                        'allModels' => [['id' => 42]],
+                        'key' => 'id',
+                        'pagination' => false,
+                        'sort' => false,
+                    ],
+                );
+            }
+        };
+
+        $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity(), filterModel: $filterModel);
+
+        self::assertNotNull($panel->module, 'Module must be wired.');
+
+        Yii::$app->controller = new Controller('debug', $panel->module);
+
+        $panel->filterColumns = [['attribute' => 'id']];
+        $panel->ruleUserSwitch = ['allow' => true];
+
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(
+                [
+                    'id' => 1,
+                    'identity' => ['id' => "'1'"],
+                    'attributes' => [
+                        [
+                            'attribute' => 'id',
+                            'label' => 'Id',
+                        ],
+                    ],
+                ],
+            ),
+        );
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'aria-label="Switch to user 42"',
+            $html,
+            'Each switch result row must expose the action and target user to assistive technology.',
+        );
+        self::assertStringContainsString(
+            'tabindex="0"',
+            $html,
+            'Each switch result row must participate in sequential keyboard navigation.',
         );
     }
 
