@@ -23,17 +23,6 @@ use yii\web\UrlRule as WebUrlRule;
 #[Group('router')]
 final class RouterRulesTest extends TestCase
 {
-    public function testExtensionMethodsRemainProtected(): void
-    {
-        self::assertSame(
-            [true, true, true],
-            array_map(
-                static fn (string $method): bool => (new ReflectionMethod(RouterRules::class, $method))->isProtected(),
-                ['scanGroupRule', 'scanRestRule', 'scanRule'],
-            ),
-        );
-    }
-
     public function testDetectsGlobalSuffix(): void
     {
         $this->mockWebApplication(
@@ -152,6 +141,16 @@ final class RouterRulesTest extends TestCase
         self::assertNull(
             $router->suffix,
             "'suffix' must remain null when only 'strictParsing' is configured.",
+        );
+    }
+    public function testExtensionMethodsRemainProtected(): void
+    {
+        self::assertSame(
+            [true, true, true],
+            array_map(
+                static fn(string $method): bool => (new ReflectionMethod(RouterRules::class, $method))->isProtected(),
+                ['scanGroupRule', 'scanRestRule', 'scanRule'],
+            ),
         );
     }
 

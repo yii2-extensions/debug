@@ -32,22 +32,6 @@ use function is_string;
 #[Group('db')]
 final class DbPanelTest extends TestCase
 {
-    public function testExtensionMethodsKeepTheirPublicAndProtectedContracts(): void
-    {
-        self::assertTrue(
-            (new ReflectionMethod(DbPanel::class, 'countCallerCals'))->isPublic(),
-            'countCallerCals() must remain public.',
-        );
-        self::assertSame(
-            [true, true, true],
-            array_map(
-                static fn (string $method): bool => (new ReflectionMethod(DbPanel::class, $method))->isProtected(),
-                ['getModels', 'getTotalQueryTime', 'hasExplain'],
-            ),
-            'Must remain protected to avoid accidental misuse.',
-        );
-    }
-
     public function testCountCallerCallsAndExcessiveThresholdReturnExactHashes(): void
     {
         $panel = $this->makePanel(DbPanel::class);
@@ -80,6 +64,36 @@ final class DbPanelTest extends TestCase
             [$firstHash => 3],
             $panel->getExcessiveCallers(),
             'Excessive callers must be keyed by the exact trace hash.',
+        );
+    }
+    public function testExtensionMethodsKeepTheirPublicAndProtectedContracts(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(DbPanel::class, 'countCallerCals'))->isPublic(),
+            'countCallerCals() must remain public.',
+        );
+        self::assertSame(
+            [true, true, true],
+            array_map(
+                static fn(string $method): bool => (new ReflectionMethod(DbPanel::class, $method))->isProtected(),
+                ['getModels', 'getTotalQueryTime', 'hasExplain'],
+            ),
+            'Must remain protected to avoid accidental misuse.',
+        );
+    }
+
+    public function testGetDbReturnsConfiguredConnection(): void
+    {
+        $this->mockWebApplication(
+            ['components' => ['db' => $this->makeSqliteConnection()]],
+        );
+
+        $panel = new DbPanel();
+
+        self::assertSame(
+            Yii::$app->get('db'),
+            $panel->getDb(),
+            'Resolved connection must match the configured component.',
         );
     }
 
@@ -129,21 +143,6 @@ final class DbPanelTest extends TestCase
             2,
             $provider->getTotalCount(),
             'Default filter must reduce the data provider to only SELECT statements.',
-        );
-    }
-
-    public function testGetDbReturnsConfiguredConnection(): void
-    {
-        $this->mockWebApplication(
-            ['components' => ['db' => $this->makeSqliteConnection()]],
-        );
-
-        $panel = new DbPanel();
-
-        self::assertSame(
-            Yii::$app->get('db'),
-            $panel->getDb(),
-            'Resolved connection must match the configured component.',
         );
     }
 
@@ -328,6 +327,33 @@ final class DbPanelTest extends TestCase
         );
     }
 
+    public function testGetToolbarItemsDoesNotWarnWhenNoCallerIsExcessive(): void
+    {
+        $panel = $this->makePanel(DbPanel::class);
+
+        $this->hydrateFromLive(
+            $panel,
+            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [],
+        );
+
+        self::assertSame(
+            [
+                [
+                    'status' => 'info',
+                    'title' => 'Executed 1 database queries.',
+                    'value' => 1,
+                ],
+                [
+                    'title' => 'Total query time',
+                    'value' => '1 ms',
+                ],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
+            'Toolbar items must not warn when no caller exceeds the threshold.'
+        );
+    }
+
     public function testGetToolbarItemsEmitsWarningForExcessiveCallers(): void
     {
         $panel = $this->makePanel(DbPanel::class);
@@ -357,67 +383,6 @@ final class DbPanelTest extends TestCase
             'callers are',
             $first['title'],
             'Multiple excessive callers must use the plural label.',
-        );
-    }
-
-    public function testGetToolbarItemsReturnsEveryFieldAndCombinesWarnings(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->hydrateFromLive(
-            $panel,
-            [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
-                ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 2]]),
-            ],
-            [],
-        );
-
-        $panel->criticalQueryThreshold = 0;
-
-        $this->setDbCollectorThreshold($panel, 0);
-
-        self::assertSame(
-            [
-                [
-                    'status' => 'warning',
-                    'title' => "Too many queries, allowed count is 0.\n2 callers are making too many calls.",
-                    'value' => 2,
-                ],
-                [
-                    'title' => 'Total query time',
-                    'value' => '2 ms',
-                ],
-            ],
-            $this->invoke($panel, 'getToolbarItems'),
-            'Toolbar items must combine the query count and excessive-caller warnings into a single chip.'
-        );
-    }
-
-    public function testGetToolbarItemsDoesNotWarnWhenNoCallerIsExcessive(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->hydrateFromLive(
-            $panel,
-            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
-            [],
-        );
-
-        self::assertSame(
-            [
-                [
-                    'status' => 'info',
-                    'title' => 'Executed 1 database queries.',
-                    'value' => 1,
-                ],
-                [
-                    'title' => 'Total query time',
-                    'value' => '1 ms',
-                ],
-            ],
-            $this->invoke($panel, 'getToolbarItems'),
-            'Toolbar items must not warn when no caller exceeds the threshold.'
         );
     }
 
@@ -453,6 +418,40 @@ final class DbPanelTest extends TestCase
                 'getToolbarItems',
             ),
             'Empty timings must yield no toolbar items.',
+        );
+    }
+
+    public function testGetToolbarItemsReturnsEveryFieldAndCombinesWarnings(): void
+    {
+        $panel = $this->makePanel(DbPanel::class);
+
+        $this->hydrateFromLive(
+            $panel,
+            [
+                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
+                ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 2]]),
+            ],
+            [],
+        );
+
+        $panel->criticalQueryThreshold = 0;
+
+        $this->setDbCollectorThreshold($panel, 0);
+
+        self::assertSame(
+            [
+                [
+                    'status' => 'warning',
+                    'title' => "Too many queries, allowed count is 0.\n2 callers are making too many calls.",
+                    'value' => 2,
+                ],
+                [
+                    'title' => 'Total query time',
+                    'value' => '2 ms',
+                ],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
+            'Toolbar items must combine the query count and excessive-caller warnings into a single chip.'
         );
     }
 
@@ -531,6 +530,29 @@ final class DbPanelTest extends TestCase
         );
     }
 
+    public function testHasExplainAcceptsEverySupportedDriverAndRejectsUnknownDriver(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new DbPanel();
+
+        foreach (['mysql:', 'sqlite::memory:', 'pgsql:'] as $dsn) {
+            Yii::$app->set('db', new Connection(['dsn' => $dsn]));
+
+            self::assertTrue(
+                $this->invoke($panel, 'hasExplain'),
+                $dsn,
+            );
+        }
+
+        Yii::$app->set('db', new Connection(['dsn' => 'oci:dbname=test']));
+
+        self::assertFalse(
+            $this->invoke($panel, 'hasExplain'),
+            'Unknown driver must not support EXPLAIN.',
+        );
+    }
+
     public function testHasExplainReturnsFalseWhenDbCannotBeResolved(): void
     {
         $this->mockWebApplication();
@@ -562,29 +584,6 @@ final class DbPanelTest extends TestCase
                 'hasExplain',
             ),
             'SQLite driver must support EXPLAIN.',
-        );
-    }
-
-    public function testHasExplainAcceptsEverySupportedDriverAndRejectsUnknownDriver(): void
-    {
-        $this->mockWebApplication();
-
-        $panel = new DbPanel();
-
-        foreach (['mysql:', 'sqlite::memory:', 'pgsql:'] as $dsn) {
-            Yii::$app->set('db', new Connection(['dsn' => $dsn]));
-
-            self::assertTrue(
-                $this->invoke($panel, 'hasExplain'),
-                $dsn,
-            );
-        }
-
-        Yii::$app->set('db', new Connection(['dsn' => 'oci:dbname=test']));
-
-        self::assertFalse(
-            $this->invoke($panel, 'hasExplain'),
-            'Unknown driver must not support EXPLAIN.',
         );
     }
 

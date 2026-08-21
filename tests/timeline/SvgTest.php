@@ -29,14 +29,6 @@ use function count;
 #[Group('timeline')]
 final class SvgTest extends TestCase
 {
-    public function testAddPointsRemainsProtected(): void
-    {
-        self::assertTrue(
-            (new ReflectionMethod(Svg::class, 'addPoints'))->isProtected(),
-            'Must remain protected to avoid accidental misuse.',
-        );
-    }
-
     public function testAddPointsCalculatesExactCoordinates(): void
     {
         $panel = $this->makeTimelinePanel();
@@ -89,6 +81,13 @@ final class SvgTest extends TestCase
             $points,
             $this->getInaccessibleProperty($svg, 'points'),
             'Existing points must be preserved when no new points are added.',
+        );
+    }
+    public function testAddPointsRemainsProtected(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(Svg::class, 'addPoints'))->isProtected(),
+            'Must remain protected to avoid accidental misuse.',
         );
     }
 

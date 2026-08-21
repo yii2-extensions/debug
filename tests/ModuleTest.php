@@ -212,47 +212,6 @@ final class ModuleTest extends TestCase
         );
     }
 
-    public function testBootstrapPrependsExactDebuggerUrlRules(): void
-    {
-        $manager = Yii::$app->urlManager;
-
-        $manager->enablePrettyUrl = true;
-
-        $manager->addRules([['route' => 'sentinel', 'pattern' => 'sentinel']], true);
-
-        $module = new Module('debug');
-
-        $module->urlRuleClass = CustomUrlRule::class;
-
-        $module->bootstrap(Yii::$app);
-
-        $rules = $manager->rules;
-
-        self::assertContainsOnlyInstancesOf(
-            UrlRule::class,
-            $rules,
-            'All URL rules must be instances of UrlRule or its subclasses.',
-        );
-        self::assertSame(
-            [
-                [CustomUrlRule::class, 'debug', '#^debug$#u', false, false],
-                [CustomUrlRule::class, 'debug/<action>', '#^debug/(?P<a47cc8c92>[\\w\\-]+)$#u', false, false],
-                [UrlRule::class, 'sentinel', '#^sentinel$#u', null, null],
-            ],
-            array_map(
-                static fn(UrlRule $rule): array => [
-                    $rule::class,
-                    $rule->route,
-                    $rule->pattern,
-                    $rule->normalizer,
-                    $rule->suffix,
-                ],
-                $rules,
-            ),
-            'Bootstrap must prepend both debugger rules with exact routing options.',
-        );
-    }
-
     public function testBootstrapAppliesAccessChecksToStandaloneDebuggerRequests(): void
     {
         $module = new Module('debug');
@@ -376,6 +335,47 @@ final class ModuleTest extends TestCase
         } finally {
             $module->getCollectorCoordinator()->shutdown();
         }
+    }
+
+    public function testBootstrapPrependsExactDebuggerUrlRules(): void
+    {
+        $manager = Yii::$app->urlManager;
+
+        $manager->enablePrettyUrl = true;
+
+        $manager->addRules([['route' => 'sentinel', 'pattern' => 'sentinel']], true);
+
+        $module = new Module('debug');
+
+        $module->urlRuleClass = CustomUrlRule::class;
+
+        $module->bootstrap(Yii::$app);
+
+        $rules = $manager->rules;
+
+        self::assertContainsOnlyInstancesOf(
+            UrlRule::class,
+            $rules,
+            'All URL rules must be instances of UrlRule or its subclasses.',
+        );
+        self::assertSame(
+            [
+                [CustomUrlRule::class, 'debug', '#^debug$#u', false, false],
+                [CustomUrlRule::class, 'debug/<action>', '#^debug/(?P<a47cc8c92>[\\w\\-]+)$#u', false, false],
+                [UrlRule::class, 'sentinel', '#^sentinel$#u', null, null],
+            ],
+            array_map(
+                static fn(UrlRule $rule): array => [
+                    $rule::class,
+                    $rule->route,
+                    $rule->pattern,
+                    $rule->normalizer,
+                    $rule->suffix,
+                ],
+                $rules,
+            ),
+            'Bootstrap must prepend both debugger rules with exact routing options.',
+        );
     }
 
     public function testBootstrapPreservesAnApplicationVetoForStandaloneDebuggerRequests(): void

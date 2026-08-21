@@ -77,8 +77,8 @@ final class MailSearchTest extends TestCase
                 [
                     'from' => 'a@x.test',
                     'to' => 'b@x.test',
-                    'subject' =>
-                    'Welcome',
+                    'subject'
+                    => 'Welcome',
                     'charset' => 'utf-8',
                 ],
             ),

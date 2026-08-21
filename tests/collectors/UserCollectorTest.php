@@ -25,16 +25,6 @@ use function array_column;
 #[Group('user')]
 final class UserCollectorTest extends TestCase
 {
-    public function testCollectorExtensionPointsRemainProtected(): void
-    {
-        foreach (['dataToString', 'getUser', 'identityData'] as $method) {
-            self::assertTrue(
-                (new ReflectionMethod(UserCollector::class, $method))->isProtected(),
-                'Must remain protected to avoid accidental misuse.',
-            );
-        }
-    }
-
     public function testCaptureCapturesIdentityAttributesAndLabelsForModelIdentity(): void
     {
         $collector = $this->bootstrapCollectorWithIdentity(new ModelIdentity());
@@ -85,16 +75,6 @@ final class UserCollectorTest extends TestCase
         self::assertNull(
             $saved['attributes'] ?? null,
             'Non-Model identity must skip attribute labels.',
-        );
-    }
-
-    public function testIdentityDataUsesTheModelAttributeContract(): void
-    {
-        $collector = new UserCollector();
-
-        self::assertSame(
-            ['id' => 1],
-            $this->invoke($collector, 'identityData', [new SelectiveModelIdentity()]),
         );
     }
 
@@ -323,6 +303,15 @@ final class UserCollectorTest extends TestCase
             'Missing user component must yield no snapshot.',
         );
     }
+    public function testCollectorExtensionPointsRemainProtected(): void
+    {
+        foreach (['dataToString', 'getUser', 'identityData'] as $method) {
+            self::assertTrue(
+                (new ReflectionMethod(UserCollector::class, $method))->isProtected(),
+                'Must remain protected to avoid accidental misuse.',
+            );
+        }
+    }
 
     public function testDataToStringExportsNonStringValues(): void
     {
@@ -352,6 +341,16 @@ final class UserCollectorTest extends TestCase
             "'a'",
             $exported,
             "Non-string input must be exported via 'VarDumper::export()'.",
+        );
+    }
+
+    public function testIdentityDataUsesTheModelAttributeContract(): void
+    {
+        $collector = new UserCollector();
+
+        self::assertSame(
+            ['id' => 1],
+            $this->invoke($collector, 'identityData', [new SelectiveModelIdentity()]),
         );
     }
 

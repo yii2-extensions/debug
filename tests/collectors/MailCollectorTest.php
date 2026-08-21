@@ -169,26 +169,6 @@ final class MailCollectorTest extends TestCase
         );
     }
 
-    public function testSafeMailFileValidationRejectsEmptyAndNestedPaths(): void
-    {
-        self::assertTrue(
-            $this->invokeStatic(MailCollector::class, 'isSafeFile', ['message.eml']),
-            'A simple file name must be considered safe.',
-        );
-        self::assertFalse(
-            $this->invokeStatic(MailCollector::class, 'isSafeFile', ['']),
-            'An empty file name must be considered unsafe.',
-        );
-        self::assertFalse(
-            $this->invokeStatic(MailCollector::class, 'isSafeFile', ['nested/message.eml']),
-            'A nested file path must be considered unsafe.',
-        );
-        self::assertFalse(
-            $this->invokeStatic(MailCollector::class, 'isSafeFile', ['nested\\message.eml']),
-            'A nested file path with backslashes must be considered unsafe.',
-        );
-    }
-
     public function testInitCapturesMessagesViaMailerAfterSendListener(): void
     {
         $collector = $this->makeCollector();
@@ -497,6 +477,26 @@ final class MailCollectorTest extends TestCase
         rmdir($path);
     }
 
+    public function testSafeMailFileValidationRejectsEmptyAndNestedPaths(): void
+    {
+        self::assertTrue(
+            $this->invokeStatic(MailCollector::class, 'isSafeFile', ['message.eml']),
+            'A simple file name must be considered safe.',
+        );
+        self::assertFalse(
+            $this->invokeStatic(MailCollector::class, 'isSafeFile', ['']),
+            'An empty file name must be considered unsafe.',
+        );
+        self::assertFalse(
+            $this->invokeStatic(MailCollector::class, 'isSafeFile', ['nested/message.eml']),
+            'A nested file path must be considered unsafe.',
+        );
+        self::assertFalse(
+            $this->invokeStatic(MailCollector::class, 'isSafeFile', ['nested\\message.eml']),
+            'A nested file path with backslashes must be considered unsafe.',
+        );
+    }
+
     public function testShutdownDetachesTheMailerListenerAndClearsMessages(): void
     {
         $collector = $this->makeCollector();
@@ -547,6 +547,22 @@ final class MailCollectorTest extends TestCase
         return $saved[0] ?? self::fail('Expected one captured message.');
     }
 
+    /**
+     * Creates a started collector on top of a mocked web application.
+     *
+     * @return MailCollector Started collector.
+     */
+    private function makeCollector(): MailCollector
+    {
+        $this->mockWebApplication();
+
+        $collector = new MailCollector();
+
+        $collector->startup();
+
+        return $collector;
+    }
+
     private function triggerSentMessage(): void
     {
         $mailer = new Mailer(
@@ -579,21 +595,5 @@ final class MailCollectorTest extends TestCase
             BaseMailer::EVENT_AFTER_SEND,
             $event,
         );
-    }
-
-    /**
-     * Creates a started collector on top of a mocked web application.
-     *
-     * @return MailCollector Started collector.
-     */
-    private function makeCollector(): MailCollector
-    {
-        $this->mockWebApplication();
-
-        $collector = new MailCollector();
-
-        $collector->startup();
-
-        return $collector;
     }
 }

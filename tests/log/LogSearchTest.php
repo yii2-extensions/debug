@@ -53,6 +53,61 @@ final class LogSearchTest extends TestCase
         );
     }
 
+    public function testSearchAppliesExactMatchOnLevel(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::row(level: 1),
+            self::row(level: 10),
+            self::row(level: 2),
+        ];
+
+        self::assertSame(
+            1,
+            (new LogSearch())->search(['Log' => ['level' => '1']], $records)->getTotalCount(),
+            'Level filter must apply exact match.',
+        );
+    }
+
+    public function testSearchAppliesPartialMatchOnCategory(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::row(category: 'application', message: 'boot'),
+            self::row(level: 2, category: 'database', message: 'query'),
+            self::row(category: 'app.user', message: 'login'),
+        ];
+
+        $search = new LogSearch();
+
+        $provider = $search->search(['Log' => ['category' => 'app']], $records);
+
+        self::assertSame(
+            2,
+            $provider->getTotalCount(),
+            "Substring match on 'app' must surface 'application' and 'app.user'.",
+        );
+    }
+
+    public function testSearchAppliesPartialMatchOnMessage(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::row(message: 'User logged in'),
+            self::row(message: 'User logged out'),
+            self::row(message: 'Database query'),
+        ];
+
+        self::assertSame(
+            2,
+            (new LogSearch())->search(['Log' => ['message' => 'logged']], $records)->getTotalCount(),
+            'Message filter must apply substring match.',
+        );
+    }
+
     public function testSearchConfiguresPaginationAndSortOrder(): void
     {
         $this->mockWebApplication();
@@ -95,61 +150,6 @@ final class LogSearchTest extends TestCase
             ['time' => SORT_ASC],
             $sort->defaultOrder,
             'Default sort order must be by time ascending.',
-        );
-    }
-
-    public function testSearchAppliesExactMatchOnLevel(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            self::row(level: 1),
-            self::row(level: 10),
-            self::row(level: 2),
-        ];
-
-        self::assertSame(
-            1,
-            (new LogSearch())->search(['Log' => ['level' => '1']], $records)->getTotalCount(),
-            'Level filter must apply exact match.',
-        );
-    }
-
-    public function testSearchAppliesPartialMatchOnMessage(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            self::row(message: 'User logged in'),
-            self::row(message: 'User logged out'),
-            self::row(message: 'Database query'),
-        ];
-
-        self::assertSame(
-            2,
-            (new LogSearch())->search(['Log' => ['message' => 'logged']], $records)->getTotalCount(),
-            'Message filter must apply substring match.',
-        );
-    }
-
-    public function testSearchAppliesPartialMatchOnCategory(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            self::row(category: 'application', message: 'boot'),
-            self::row(level: 2, category: 'database', message: 'query'),
-            self::row(category: 'app.user', message: 'login'),
-        ];
-
-        $search = new LogSearch();
-
-        $provider = $search->search(['Log' => ['category' => 'app']], $records);
-
-        self::assertSame(
-            2,
-            $provider->getTotalCount(),
-            "Substring match on 'app' must surface 'application' and 'app.user'.",
         );
     }
 

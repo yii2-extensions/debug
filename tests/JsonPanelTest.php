@@ -14,18 +14,6 @@ use yii\debug\tests\support\TestCase;
 #[Group('panel')]
 final class JsonPanelTest extends TestCase
 {
-    public function testGetNameNormalizesEverySupportedSeparator(): void
-    {
-        $panel = new JsonPanel();
-        $panel->id = '__custom_panel-id.test__';
-
-        self::assertSame(
-            'Custom Panel Id Test',
-            $panel->getName(),
-            'Method should normalize panel ID by replacing underscores, hyphens, and dots with spaces and capitalizing words.',
-        );
-    }
-
     public function testGetNameFallsBackWhenIdContainsOnlyTrimmedSeparators(): void
     {
         $panel = new JsonPanel();
@@ -36,6 +24,17 @@ final class JsonPanelTest extends TestCase
             'Panel',
             $panel->getName(),
             'Method should return "Panel" when the ID contains only separators that are trimmed away.',
+        );
+    }
+    public function testGetNameNormalizesEverySupportedSeparator(): void
+    {
+        $panel = new JsonPanel();
+        $panel->id = '__custom_panel-id.test__';
+
+        self::assertSame(
+            'Custom Panel Id Test',
+            $panel->getName(),
+            'Method should normalize panel ID by replacing underscores, hyphens, and dots with spaces and capitalizing words.',
         );
     }
 }

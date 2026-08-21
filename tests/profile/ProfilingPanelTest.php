@@ -25,21 +25,49 @@ use yii\log\Logger;
 #[Group('profile')]
 final class ProfilingPanelTest extends TestCase
 {
-    public function testGetMemoryUsageRemainsPublicAndDefaultsToZero(): void
+    public function testCaptureScalesMemorySampleTimeToMilliseconds(): void
     {
-        self::assertTrue(
-            (new ReflectionMethod(ProfilingPanel::class, 'getMemoryUsage'))->isPublic(),
-            'Memory usage must remain a public API for the toolbar.',
+        $snapshot = ProfilingSnapshot::capture(
+            0,
+            0.0,
+            [['sample', Logger::LEVEL_INFO, 'application', 1.25, [], 2_048]],
         );
 
+        $samples = $snapshot->samples();
+
+        self::assertCount(
+            1,
+            $samples,
+            'A logger tuple with time and memory must produce one sample.',
+        );
+        self::assertSame(
+            1_250.0,
+            $samples[0]->time,
+            'Sample timestamps must be converted to milliseconds.',
+        );
+        self::assertSame(
+            2_048,
+            $samples[0]->memory,
+            'Sample memory must retain the logger value.',
+        );
+    }
+
+    public function testGetDetailFallsBackToHashTimelineUrlWhenModuleIsMissing(): void
+    {
         $panel = $this->makePanel(
             ProfilingPanel::class,
         );
 
-        self::assertSame(
-            0,
-            $panel->getMemoryUsage(),
-            'Unhydrated memory usage must default to zero.',
+        $panel->module = null;
+
+        $this->hydratePanel(
+            $panel,
+            ProfilingSnapshot::capture(0, 0.0, []),
+        );
+
+        self::assertNotEmpty(
+            $panel->getDetail(),
+            'Missing module must still produce markup with a placeholder timeline link.',
         );
     }
 
@@ -90,94 +118,6 @@ final class ProfilingPanelTest extends TestCase
         );
     }
 
-    public function testUnhydratedDetailAndToolbarUseZeroFallbacks(): void
-    {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-            ['view' => CapturingView::class],
-        );
-
-        $panel->module = null;
-
-        self::assertSame(
-            'rendered',
-            $panel->getDetail(),
-            'Detail view must be rendered even when unhydrated.',
-        );
-
-        $view = Yii::$app->getView();
-
-        self::assertInstanceOf(
-            CapturingView::class,
-            $view,
-            'Detail view must be rendered through the capturing view.',
-        );
-        self::assertSame(
-            '0 ms',
-            $view->renderParams['time'] ?? null,
-            'Detail view must receive the exact time in milliseconds.',
-        );
-        self::assertSame(
-            '#',
-            $view->renderParams['timelineUrl'] ?? null,
-            'Detail view must receive the correct timeline URL.',
-        );
-        self::assertSame(
-            [
-                ['title' => 'Total processing time', 'value' => '0 ms'],
-                ['title' => 'Peak memory', 'value' => '0.000 MB'],
-            ],
-            $this->invoke($panel, 'getToolbarItems'),
-            'Toolbar must receive zeroed metrics when unhydrated.',
-        );
-    }
-
-    public function testCaptureScalesMemorySampleTimeToMilliseconds(): void
-    {
-        $snapshot = ProfilingSnapshot::capture(
-            0,
-            0.0,
-            [['sample', Logger::LEVEL_INFO, 'application', 1.25, [], 2_048]],
-        );
-
-        $samples = $snapshot->samples();
-
-        self::assertCount(
-            1,
-            $samples,
-            'A logger tuple with time and memory must produce one sample.',
-        );
-        self::assertSame(
-            1_250.0,
-            $samples[0]->time,
-            'Sample timestamps must be converted to milliseconds.',
-        );
-        self::assertSame(
-            2_048,
-            $samples[0]->memory,
-            'Sample memory must retain the logger value.',
-        );
-    }
-
-    public function testGetDetailFallsBackToHashTimelineUrlWhenModuleIsMissing(): void
-    {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
-
-        $panel->module = null;
-
-        $this->hydratePanel(
-            $panel,
-            ProfilingSnapshot::capture(0, 0.0, []),
-        );
-
-        self::assertNotEmpty(
-            $panel->getDetail(),
-            'Missing module must still produce markup with a placeholder timeline link.',
-        );
-    }
-
     public function testGetDetailRendersWithCapturedMessages(): void
     {
         $panel = $this->makePanel(
@@ -199,6 +139,23 @@ final class ProfilingPanelTest extends TestCase
         self::assertNotEmpty(
             $panel->getDetail(),
             'Detail view must produce markup.',
+        );
+    }
+    public function testGetMemoryUsageRemainsPublicAndDefaultsToZero(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(ProfilingPanel::class, 'getMemoryUsage'))->isPublic(),
+            'Memory usage must remain a public API for the toolbar.',
+        );
+
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+        );
+
+        self::assertSame(
+            0,
+            $panel->getMemoryUsage(),
+            'Unhydrated memory usage must default to zero.',
         );
     }
 
@@ -382,6 +339,48 @@ final class ProfilingPanelTest extends TestCase
             ],
             $this->invoke($panel, 'getToolbarItems'),
             'Toolbar must emit time and memory chips.',
+        );
+    }
+
+    public function testUnhydratedDetailAndToolbarUseZeroFallbacks(): void
+    {
+        $panel = $this->makePanel(
+            ProfilingPanel::class,
+            ['view' => CapturingView::class],
+        );
+
+        $panel->module = null;
+
+        self::assertSame(
+            'rendered',
+            $panel->getDetail(),
+            'Detail view must be rendered even when unhydrated.',
+        );
+
+        $view = Yii::$app->getView();
+
+        self::assertInstanceOf(
+            CapturingView::class,
+            $view,
+            'Detail view must be rendered through the capturing view.',
+        );
+        self::assertSame(
+            '0 ms',
+            $view->renderParams['time'] ?? null,
+            'Detail view must receive the exact time in milliseconds.',
+        );
+        self::assertSame(
+            '#',
+            $view->renderParams['timelineUrl'] ?? null,
+            'Detail view must receive the correct timeline URL.',
+        );
+        self::assertSame(
+            [
+                ['title' => 'Total processing time', 'value' => '0 ms'],
+                ['title' => 'Peak memory', 'value' => '0.000 MB'],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
+            'Toolbar must receive zeroed metrics when unhydrated.',
         );
     }
 }

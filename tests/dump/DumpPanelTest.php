@@ -19,14 +19,6 @@ use yii\log\Logger;
 #[Group('dump')]
 final class DumpPanelTest extends TestCase
 {
-    public function testGetModelsRemainsProtected(): void
-    {
-        self::assertTrue(
-            (new ReflectionMethod(DumpPanel::class, 'getModels'))->isProtected(),
-            'The getModels method must remain protected.',
-        );
-    }
-
     public function testGetDetailRendersEmptyStateWhenNoDumpsCaptured(): void
     {
         $panel = $this->makePanel(DumpPanel::class);
@@ -157,6 +149,13 @@ final class DumpPanelTest extends TestCase
             2,
             $refreshed,
             'Refresh must rebuild from the latest data.',
+        );
+    }
+    public function testGetModelsRemainsProtected(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(DumpPanel::class, 'getModels'))->isProtected(),
+            'The getModels method must remain protected.',
         );
     }
 

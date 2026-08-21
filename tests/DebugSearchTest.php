@@ -160,60 +160,19 @@ final class DebugSearchTest extends TestCase
         );
     }
 
-    public function testSearchConfiguresPaginationAndEverySortableField(): void
-    {
-        $this->mockWebApplication();
-
-        $provider = (new DebugSearch())->search([], []);
-        $pagination = $provider->getPagination();
-        $sort = $provider->getSort();
-
-        self::assertInstanceOf(
-            Pagination::class,
-            $pagination,
-            'The search provider must configure a pagination object.',
-        );
-        self::assertSame(
-            50,
-            $pagination->getPageSize(),
-            'The search provider must configure the correct page size.',
-        );
-        self::assertInstanceOf(
-            Sort::class,
-            $sort,
-            'The search provider must configure a sort object.',
-        );
-        self::assertSame(
-            [
-                'method',
-                'ip',
-                'tag',
-                'time',
-                'statusCode',
-                'sqlCount',
-                'mailCount',
-                'processingTime',
-                'peakMemory',
-            ],
-            array_keys($sort->attributes),
-            'The search provider must configure every sortable field.',
-        );
-    }
-
-    public function testSearchAppliesPartialMatchOnTag(): void
+    public function testSearchAppliesExactMatchOnAjaxFlag(): void
     {
         $this->mockWebApplication();
 
         $records = [
-            self::summary(['tag' => 'request-alpha-1']),
-            self::summary(['tag' => 'request-alpha-2']),
-            self::summary(['tag' => 'request-beta']),
+            self::summary(['ajax' => true]),
+            self::summary(['ajax' => false]),
         ];
 
         self::assertSame(
-            2,
-            (new DebugSearch())->search(['Debug' => ['tag' => 'alpha']], $records)->getTotalCount(),
-            "Partial match on 'alpha' must surface only the two 'request-alpha' entries.",
+            1,
+            (new DebugSearch())->search(['Debug' => ['ajax' => '1']], $records)->getTotalCount(),
+            "Exact match on '1' must surface only the 'true' entry.",
         );
     }
 
@@ -231,22 +190,6 @@ final class DebugSearchTest extends TestCase
             1,
             (new DebugSearch())->search(['Debug' => ['method' => 'GET']], $records)->getTotalCount(),
             "Exact match on 'GET' must surface only the 'GET' entry.",
-        );
-    }
-
-    public function testSearchAppliesExactMatchOnAjaxFlag(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            self::summary(['ajax' => true]),
-            self::summary(['ajax' => false]),
-        ];
-
-        self::assertSame(
-            1,
-            (new DebugSearch())->search(['Debug' => ['ajax' => '1']], $records)->getTotalCount(),
-            "Exact match on '1' must surface only the 'true' entry.",
         );
     }
 
@@ -326,6 +269,63 @@ final class DebugSearchTest extends TestCase
             1,
             $provider->getTotalCount(),
             "Substring match on '10.' must surface only the '10.0.0.1' entry.",
+        );
+    }
+
+    public function testSearchAppliesPartialMatchOnTag(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::summary(['tag' => 'request-alpha-1']),
+            self::summary(['tag' => 'request-alpha-2']),
+            self::summary(['tag' => 'request-beta']),
+        ];
+
+        self::assertSame(
+            2,
+            (new DebugSearch())->search(['Debug' => ['tag' => 'alpha']], $records)->getTotalCount(),
+            "Partial match on 'alpha' must surface only the two 'request-alpha' entries.",
+        );
+    }
+
+    public function testSearchConfiguresPaginationAndEverySortableField(): void
+    {
+        $this->mockWebApplication();
+
+        $provider = (new DebugSearch())->search([], []);
+        $pagination = $provider->getPagination();
+        $sort = $provider->getSort();
+
+        self::assertInstanceOf(
+            Pagination::class,
+            $pagination,
+            'The search provider must configure a pagination object.',
+        );
+        self::assertSame(
+            50,
+            $pagination->getPageSize(),
+            'The search provider must configure the correct page size.',
+        );
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'The search provider must configure a sort object.',
+        );
+        self::assertSame(
+            [
+                'method',
+                'ip',
+                'tag',
+                'time',
+                'statusCode',
+                'sqlCount',
+                'mailCount',
+                'processingTime',
+                'peakMemory',
+            ],
+            array_keys($sort->attributes),
+            'The search provider must configure every sortable field.',
         );
     }
 

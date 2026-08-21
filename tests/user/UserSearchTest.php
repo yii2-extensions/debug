@@ -173,24 +173,6 @@ final class UserSearchTest extends TestCase
         );
     }
 
-    public function testSearchReturnsUnfilteredProviderWhenValidationFails(): void
-    {
-        $this->bootWebAppWithIdentity(ArIdentity::class, withDb: true);
-
-        $search = new class extends UserSearch {
-            public function beforeValidate(): bool
-            {
-                return false;
-            }
-        };
-
-        self::assertSame(
-            3,
-            $search->search(['User' => ['username' => 'admin']])->getTotalCount(),
-            'AR-backed search must return an unfiltered provider when validation fails.',
-        );
-    }
-
     public function testSearchReturnsActiveDataProviderForActiveRecordIdentity(): void
     {
         $this->bootWebAppWithIdentity(ArIdentity::class, withDb: true);
@@ -219,6 +201,24 @@ final class UserSearchTest extends TestCase
             0,
             $provider->getTotalCount(),
             'Empty fallback provider must report zero rows.',
+        );
+    }
+
+    public function testSearchReturnsUnfilteredProviderWhenValidationFails(): void
+    {
+        $this->bootWebAppWithIdentity(ArIdentity::class, withDb: true);
+
+        $search = new class extends UserSearch {
+            public function beforeValidate(): bool
+            {
+                return false;
+            }
+        };
+
+        self::assertSame(
+            3,
+            $search->search(['User' => ['username' => 'admin']])->getTotalCount(),
+            'AR-backed search must return an unfiltered provider when validation fails.',
         );
     }
 

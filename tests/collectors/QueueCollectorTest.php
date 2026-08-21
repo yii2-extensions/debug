@@ -191,6 +191,23 @@ final class QueueCollectorTest extends TestCase
         Event::offAll();
     }
 
+    public function testComponentIdOfIgnoresUninstantiatedDefinitions(): void
+    {
+        $collector = $this->makeCollector();
+
+        $queueComponent = new Component();
+
+        Yii::$app->set('lazyQueue', $queueComponent);
+
+        $event = new Event(['sender' => $queueComponent]);
+
+        self::assertSame(
+            '',
+            $this->invoke($collector, 'componentIdOf', [$event]),
+            'Component id must return empty for uninstantiated definitions.',
+        );
+    }
+
     public function testComponentIdOfReturnsCachedRegisteredId(): void
     {
         $collector = $this->makeCollector();
@@ -224,23 +241,6 @@ final class QueueCollectorTest extends TestCase
                 [$event]
             ),
             'Cached lookup must return the same id on repeat.',
-        );
-    }
-
-    public function testComponentIdOfIgnoresUninstantiatedDefinitions(): void
-    {
-        $collector = $this->makeCollector();
-
-        $queueComponent = new Component();
-
-        Yii::$app->set('lazyQueue', $queueComponent);
-
-        $event = new Event(['sender' => $queueComponent]);
-
-        self::assertSame(
-            '',
-            $this->invoke($collector, 'componentIdOf', [$event]),
-            'Component id must return empty for uninstantiated definitions.',
         );
     }
 
@@ -329,6 +329,35 @@ final class QueueCollectorTest extends TestCase
         );
     }
 
+    public function testPushDoesNotConsumeAnExecutionStartAsDuration(): void
+    {
+        $collector = $this->makeCollector();
+        $job = new stdClass();
+
+        Event::trigger(
+            'yii\\queue\\Queue',
+            'beforeExec',
+            $this->makeQueueEvent(job: $job),
+        );
+        Event::trigger(
+            'yii\\queue\\Queue',
+            'afterPush',
+            $this->makeQueueEvent(job: $job),
+        );
+
+        $record = $this->captureEntries($collector)[0] ?? self::fail('Expected the push record.');
+
+        self::assertSame(
+            JobRecord::TYPE_PUSH,
+            $record->eventType,
+            'Captured event must be "push".'
+        );
+        self::assertNull(
+            $record->duration,
+            'Push record must not consume an execution start as duration.',
+        );
+    }
+
     public function testScalarToStringCoercesScalarsToStringAndDropsOthers(): void
     {
         $collector = $this->makeCollector();
@@ -375,35 +404,6 @@ final class QueueCollectorTest extends TestCase
         );
 
         Event::offAll();
-    }
-
-    public function testPushDoesNotConsumeAnExecutionStartAsDuration(): void
-    {
-        $collector = $this->makeCollector();
-        $job = new stdClass();
-
-        Event::trigger(
-            'yii\\queue\\Queue',
-            'beforeExec',
-            $this->makeQueueEvent(job: $job),
-        );
-        Event::trigger(
-            'yii\\queue\\Queue',
-            'afterPush',
-            $this->makeQueueEvent(job: $job),
-        );
-
-        $record = $this->captureEntries($collector)[0] ?? self::fail('Expected the push record.');
-
-        self::assertSame(
-            JobRecord::TYPE_PUSH,
-            $record->eventType,
-            'Captured event must be "push".'
-        );
-        self::assertNull(
-            $record->duration,
-            'Push record must not consume an execution start as duration.',
-        );
     }
 
     public function testValueToNullableIntKeepsIntsAndDropsOthers(): void

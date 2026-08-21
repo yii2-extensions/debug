@@ -16,21 +16,6 @@ final class MixedModulesStub extends Module
     private Module|null $validModule = null;
 
     #[Override]
-    public function init(): void
-    {
-        $this->controllerNamespace = 'yii\\not_a_real_namespace\\controllers';
-
-        $this->validModule = new Module(
-            'valid',
-            $this,
-            [
-                'controllerNamespace' => 'yii\\not_a_real_namespace\\controllers',
-                'controllerMap' => ['mapped' => WebController::class],
-            ],
-        );
-    }
-
-    #[Override]
     public function getModule($id, $load = true): Module|null
     {
         return $id === 'valid' ? $this->validModule : null;
@@ -43,5 +28,20 @@ final class MixedModulesStub extends Module
     public function getModules($loadedOnly = false): array
     {
         return [0 => 'invalid', 'missing' => 'invalid', 'valid' => Module::class];
+    }
+
+    #[Override]
+    public function init(): void
+    {
+        $this->controllerNamespace = 'yii\\not_a_real_namespace\\controllers';
+
+        $this->validModule = new Module(
+            'valid',
+            $this,
+            [
+                'controllerNamespace' => 'yii\\not_a_real_namespace\\controllers',
+                'controllerMap' => ['mapped' => WebController::class],
+            ],
+        );
     }
 }

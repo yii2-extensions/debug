@@ -11,14 +11,13 @@ use RuntimeException;
 use yii\debug\LogTarget;
 use yii\debug\panels\MailPanel;
 use yii\debug\tests\support\TestCase;
+use yii\helpers\Url;
 
 use function mkdir;
 use function rmdir;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
-
-use yii\helpers\Url;
 
 /**
  * Unit tests for {@see MailPanel} covering payload narrowing, toolbar items (current vs cross-request), the

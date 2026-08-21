@@ -207,37 +207,6 @@ final class AssetCollectorTest extends TestCase
         }
     }
 
-    public function testCaptureResolvesViteComponentDeclaredAsClassString(): void
-    {
-        $collector = $this->makeCollector(
-            ['inertiaVue' => Vite::class],
-        );
-
-        self::assertNotNull(
-            $this->captureSnapshot($collector)->vite(),
-            'A Vite component declared as a class string must be discovered.',
-        );
-    }
-
-    public function testCaptureResolvesPrebuiltViteComponent(): void
-    {
-        $collector = $this->makeCollector(
-            ['inertiaVue' => new Vite(['baseUrl' => '/prebuilt'])],
-        );
-
-        $vite = $this->captureSnapshot($collector)->vite();
-
-        self::assertNotNull(
-            $vite,
-            'A prebuilt Vite component must be discovered.',
-        );
-        self::assertSame(
-            '/prebuilt',
-            $vite->baseUrl,
-            'The base URL of the prebuilt Vite component must be correct.',
-        );
-    }
-
     public function testCaptureLeavesTheManifestPathEmptyWhenTheBridgeDeclaresNone(): void
     {
         $collector = $this->makeCollector(
@@ -270,6 +239,37 @@ final class AssetCollectorTest extends TestCase
             '@vite',
             $this->captureSnapshot($collector)->bundles(),
             'No bridge component must mean no reserved key.',
+        );
+    }
+
+    public function testCaptureResolvesPrebuiltViteComponent(): void
+    {
+        $collector = $this->makeCollector(
+            ['inertiaVue' => new Vite(['baseUrl' => '/prebuilt'])],
+        );
+
+        $vite = $this->captureSnapshot($collector)->vite();
+
+        self::assertNotNull(
+            $vite,
+            'A prebuilt Vite component must be discovered.',
+        );
+        self::assertSame(
+            '/prebuilt',
+            $vite->baseUrl,
+            'The base URL of the prebuilt Vite component must be correct.',
+        );
+    }
+
+    public function testCaptureResolvesViteComponentDeclaredAsClassString(): void
+    {
+        $collector = $this->makeCollector(
+            ['inertiaVue' => Vite::class],
+        );
+
+        self::assertNotNull(
+            $this->captureSnapshot($collector)->vite(),
+            'A Vite component declared as a class string must be discovered.',
         );
     }
 

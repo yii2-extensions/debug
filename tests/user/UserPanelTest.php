@@ -35,61 +35,6 @@ use yii\web\{Controller, IdentityInterface, User};
 #[Group('user')]
 final class UserPanelTest extends TestCase
 {
-    public function testCanSwitchUserPassesOwningModuleToAccessRule(): void
-    {
-        $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
-
-        $module = $panel->module ?? self::fail('Module must be wired.');
-
-        $panel->ruleUserSwitch = [
-            'allow' => true,
-            'matchCallback' => static fn (AccessRule $rule, Action $action): bool => $action->getModule() === $module,
-        ];
-
-        self::assertTrue(
-            $panel->canSwitchUser(),
-            'Access rule must receive the owning module in the action.',
-        );
-    }
-
-    public function testInitPassesConfiguredUserComponentToUserSwitch(): void
-    {
-        $this->mockWebApplication(
-            [
-                'components' => [
-                    'user' => [
-                        'class' => User::class,
-                        'identityClass' => Identity::class,
-                        'enableSession' => false,
-                    ],
-                ],
-            ],
-        );
-
-        $customUser = new User(
-            [
-                'identityClass' => Identity::class,
-                'enableSession' => false,
-            ],
-        );
-
-        $module = new Module('debug');
-        $module->logTarget = new LogTarget($module);
-        $panel = new UserPanel(['id' => 'user', 'module' => $module, 'userComponent' => $customUser]);
-
-        $userSwitch = $panel->userSwitch;
-
-        self::assertNotNull(
-            $userSwitch,
-            'User switch component must be instantiated.',
-        );
-        self::assertSame(
-            $customUser,
-            $userSwitch->getUser(),
-            'User switch component must receive the configured user component.',
-        );
-    }
-
     public function testCanSearchUsersReturnsFalseWhenFilterModelIsNotConfigured(): void
     {
         $panel = $this->makePanel(UserPanel::class);
@@ -121,6 +66,22 @@ final class UserPanelTest extends TestCase
         self::assertTrue(
             $panel->canSearchUsers(),
             'UserSearchInterface model must be searchable.',
+        );
+    }
+    public function testCanSwitchUserPassesOwningModuleToAccessRule(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
+
+        $module = $panel->module ?? self::fail('Module must be wired.');
+
+        $panel->ruleUserSwitch = [
+            'allow' => true,
+            'matchCallback' => static fn(AccessRule $rule, Action $action): bool => $action->getModule() === $module,
+        ];
+
+        self::assertTrue(
+            $panel->canSwitchUser(),
+            'Access rule must receive the owning module in the action.',
         );
     }
 
@@ -980,6 +941,44 @@ final class UserPanelTest extends TestCase
             $filterModel,
             $panel->filterModel,
             'Pre-built Model instance must round-trip unchanged for ActiveRecord identity.',
+        );
+    }
+
+    public function testInitPassesConfiguredUserComponentToUserSwitch(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                        'enableSession' => false,
+                    ],
+                ],
+            ],
+        );
+
+        $customUser = new User(
+            [
+                'identityClass' => Identity::class,
+                'enableSession' => false,
+            ],
+        );
+
+        $module = new Module('debug');
+        $module->logTarget = new LogTarget($module);
+        $panel = new UserPanel(['id' => 'user', 'module' => $module, 'userComponent' => $customUser]);
+
+        $userSwitch = $panel->userSwitch;
+
+        self::assertNotNull(
+            $userSwitch,
+            'User switch component must be instantiated.',
+        );
+        self::assertSame(
+            $customUser,
+            $userSwitch->getUser(),
+            'User switch component must receive the configured user component.',
         );
     }
 

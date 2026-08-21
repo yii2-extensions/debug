@@ -58,6 +58,22 @@ final class EventSearchTest extends TestCase
         );
     }
 
+    public function testSearchAppliesExactMatchOnStaticFlag(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::row(isStatic: '1'),
+            self::row(name: 'other', isStatic: '0'),
+        ];
+
+        self::assertSame(
+            1,
+            (new EventSearch())->search(['Event' => ['isStatic' => '1']], $records)->getTotalCount(),
+            'Exact match on static flag must surface only the static event.',
+        );
+    }
+
     public function testSearchAppliesPartialMatchOnClass(): void
     {
         $this->mockWebApplication();
@@ -75,6 +91,40 @@ final class EventSearchTest extends TestCase
             1,
             $provider->getTotalCount(),
             "Substring match on 'web' must surface only the 'yii\\\\web\\\\Application' entry.",
+        );
+    }
+
+    public function testSearchAppliesPartialMatchOnName(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::row(name: 'beforeAction'),
+            self::row(name: 'afterAction'),
+            self::row(name: 'init'),
+        ];
+
+        self::assertSame(
+            2,
+            (new EventSearch())->search(['Event' => ['name' => 'Action']], $records)->getTotalCount(),
+            'Substring match on name must surface only the before/afterAction events.',
+        );
+    }
+
+    public function testSearchAppliesPartialMatchOnSenderClass(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::row(senderClass: 'app\\controllers\\SiteController'),
+            self::row(name: 'other', senderClass: 'app\\services\\Mailer'),
+            self::row(name: 'last', senderClass: 'console\\Worker'),
+        ];
+
+        self::assertSame(
+            2,
+            (new EventSearch())->search(['Event' => ['senderClass' => 'app\\']], $records)->getTotalCount(),
+            'Substring match on senderClass must surface only the SiteController and Mailer events.',
         );
     }
 
@@ -111,56 +161,6 @@ final class EventSearchTest extends TestCase
             ['time' => SORT_ASC],
             $sort->defaultOrder,
             'Default sort order must be ascending by time.',
-        );
-    }
-
-    public function testSearchAppliesExactMatchOnStaticFlag(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            self::row(isStatic: '1'),
-            self::row(name: 'other', isStatic: '0'),
-        ];
-
-        self::assertSame(
-            1,
-            (new EventSearch())->search(['Event' => ['isStatic' => '1']], $records)->getTotalCount(),
-            'Exact match on static flag must surface only the static event.',
-        );
-    }
-
-    public function testSearchAppliesPartialMatchOnName(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            self::row(name: 'beforeAction'),
-            self::row(name: 'afterAction'),
-            self::row(name: 'init'),
-        ];
-
-        self::assertSame(
-            2,
-            (new EventSearch())->search(['Event' => ['name' => 'Action']], $records)->getTotalCount(),
-            'Substring match on name must surface only the before/afterAction events.',
-        );
-    }
-
-    public function testSearchAppliesPartialMatchOnSenderClass(): void
-    {
-        $this->mockWebApplication();
-
-        $records = [
-            self::row(senderClass: 'app\\controllers\\SiteController'),
-            self::row(name: 'other', senderClass: 'app\\services\\Mailer'),
-            self::row(name: 'last', senderClass: 'console\\Worker'),
-        ];
-
-        self::assertSame(
-            2,
-            (new EventSearch())->search(['Event' => ['senderClass' => 'app\\']], $records)->getTotalCount(),
-            'Substring match on senderClass must surface only the SiteController and Mailer events.',
         );
     }
 

@@ -20,14 +20,6 @@ use yii\log\Logger;
 #[Group('log')]
 final class LogPanelTest extends TestCase
 {
-    public function testGetModelsRemainsProtected(): void
-    {
-        self::assertTrue(
-            (new ReflectionMethod(LogPanel::class, 'getModels'))->isProtected(),
-            'Must remain protected to avoid accidental misuse.',
-        );
-    }
-
     public function testCapturePreservesTimestampsAndPreviousRowDelta(): void
     {
         $rows = LogSnapshot::capture(
@@ -242,6 +234,13 @@ final class LogPanelTest extends TestCase
             1,
             $last->idOfPrevious,
             "Last row must point back to id '1'.",
+        );
+    }
+    public function testGetModelsRemainsProtected(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(LogPanel::class, 'getModels'))->isProtected(),
+            'Must remain protected to avoid accidental misuse.',
         );
     }
 

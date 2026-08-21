@@ -13,7 +13,9 @@ use yii\base\View;
 final class CapturingView extends View
 {
     public object|null $renderContext = null;
-    /** @var array<mixed, mixed> */
+    /**
+     * @var array<mixed, mixed>
+     */
     public array $renderParams = [];
     public string $renderView = '';
 

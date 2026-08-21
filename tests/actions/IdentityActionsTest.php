@@ -311,6 +311,17 @@ final class IdentityActionsTest extends TestCase
         $_COOKIE[Yii::$app->session->getName()] = 'test-session-id';
     }
 
+    private function newUser(): User
+    {
+        return new User(
+            [
+                'identityClass' => Identity::class,
+                'enableSession' => true,
+                'enableAutoLogin' => false,
+            ],
+        );
+    }
+
     /**
      * @param array<string, mixed> $body
      */
@@ -322,16 +333,5 @@ final class IdentityActionsTest extends TestCase
         $body[$request->csrfParam] = $request->getCsrfToken();
 
         $request->setBodyParams($body);
-    }
-
-    private function newUser(): User
-    {
-        return new User(
-            [
-                'identityClass' => Identity::class,
-                'enableSession' => true,
-                'enableAutoLogin' => false,
-            ],
-        );
     }
 }

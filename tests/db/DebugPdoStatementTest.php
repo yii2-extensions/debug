@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\tests\db;
 
 use PDO;
-use ReflectionMethod;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\tests\support\TestCase;
 

@@ -46,30 +46,6 @@ use function mkdir;
 #[Group('actions')]
 final class DebugActionsTest extends TestCase
 {
-    public function testActionExtensionPointsRetainTheirVisibility(): void
-    {
-        foreach (['getDebugModule', 'prepareShell', 'render'] as $method) {
-            self::assertTrue(
-                (new ReflectionMethod(DebugAction::class, $method))->isPublic(),
-                'DebugAction extension points must remain public for subclassing.',
-            );
-        }
-
-        foreach ([DownloadMailAction::class, IndexAction::class, PhpInfoAction::class, ViewAction::class] as $class) {
-            self::assertTrue(
-                (new ReflectionMethod($class, 'run'))->isPublic(),
-                'Action run method must remain public for subclassing.',
-            );
-        }
-
-        foreach (['createBareShellContext', 'createShellContext', 'getLogTarget', 'resolveTheme'] as $method) {
-            self::assertTrue(
-                (new ReflectionMethod(DebugAction::class, $method))->isProtected(),
-                'DebugAction extension points must remain protected for subclassing.',
-            );
-        }
-    }
-
     public function testActionDownloadMailStreamsExistingMailFile(): void
     {
         $module = $this->bootDebugModule();
@@ -101,6 +77,29 @@ final class DebugActionsTest extends TestCase
             $response,
             "Download must return a 'Response'.",
         );
+    }
+    public function testActionExtensionPointsRetainTheirVisibility(): void
+    {
+        foreach (['getDebugModule', 'prepareShell', 'render'] as $method) {
+            self::assertTrue(
+                (new ReflectionMethod(DebugAction::class, $method))->isPublic(),
+                'DebugAction extension points must remain public for subclassing.',
+            );
+        }
+
+        foreach ([DownloadMailAction::class, IndexAction::class, PhpInfoAction::class, ViewAction::class] as $class) {
+            self::assertTrue(
+                (new ReflectionMethod($class, 'run'))->isPublic(),
+                'Action run method must remain public for subclassing.',
+            );
+        }
+
+        foreach (['createBareShellContext', 'createShellContext', 'getLogTarget', 'resolveTheme'] as $method) {
+            self::assertTrue(
+                (new ReflectionMethod(DebugAction::class, $method))->isProtected(),
+                'DebugAction extension points must remain protected for subclassing.',
+            );
+        }
     }
 
     public function testActionIndexPropagatesCursorFromQueryParam(): void

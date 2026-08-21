@@ -21,13 +21,6 @@ use yii\web\{Controller, Session};
 #[Group('request')]
 final class RequestCollectorTest extends TestCase
 {
-    public function testCollectorExtensionPointsRemainProtected(): void
-    {
-        foreach (['censorArray', 'getFlashes', 'normalizeResponseHeaders'] as $method) {
-            self::assertTrue((new ReflectionMethod(RequestCollector::class, $method))->isProtected());
-        }
-    }
-
     public function testCaptureBuildsActionFromInlineAction(): void
     {
         $collector = $this->makeCollector();
@@ -459,6 +452,12 @@ final class RequestCollectorTest extends TestCase
             'Empty censor list must short-circuit to the original payload.',
         );
     }
+    public function testCollectorExtensionPointsRemainProtected(): void
+    {
+        foreach (['censorArray', 'getFlashes', 'normalizeResponseHeaders'] as $method) {
+            self::assertTrue((new ReflectionMethod(RequestCollector::class, $method))->isProtected());
+        }
+    }
 
     public function testGetFlashesReturnsActiveFlashes(): void
     {
@@ -605,6 +604,16 @@ final class RequestCollectorTest extends TestCase
         );
     }
 
+    public function testNormalizeResponseHeadersAcceptsValuesWithoutSeparatorWhitespace(): void
+    {
+        $collector = $this->makeCollector();
+
+        self::assertSame(
+            ['X-Foo' => 'a'],
+            $this->invoke($collector, 'normalizeResponseHeaders', [['X-Foo:a']]),
+        );
+    }
+
     public function testNormalizeResponseHeadersAggregatesDuplicates(): void
     {
         $collector = $this->makeCollector();
@@ -619,16 +628,6 @@ final class RequestCollectorTest extends TestCase
             ['X-Foo' => ['a', 'b', 'c']],
             $headers,
             'Duplicate names must aggregate into a list.',
-        );
-    }
-
-    public function testNormalizeResponseHeadersAcceptsValuesWithoutSeparatorWhitespace(): void
-    {
-        $collector = $this->makeCollector();
-
-        self::assertSame(
-            ['X-Foo' => 'a'],
-            $this->invoke($collector, 'normalizeResponseHeaders', [['X-Foo:a']]),
         );
     }
 
