@@ -8,6 +8,7 @@ use Closure;
 use PHPForge\Debug\Collector\CollectorInterface;
 use Stringable;
 use yii\base\InvalidConfigException;
+use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
 use yii\helpers\VarDumper;
 
@@ -121,7 +122,7 @@ abstract class Collector implements CollectorInterface
 
         if (!$logTarget instanceof LogTarget) {
             throw new InvalidConfigException(
-                'The debug module logTarget must be initialized before reading log messages.',
+                Message::LOG_TARGET_NOT_INITIALIZED_FOR_READING->getMessage(),
             );
         }
 

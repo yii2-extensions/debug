@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\actions;
 
+use yii\debug\exception\Message;
 use yii\debug\models\UserSwitch;
 use yii\web\{BadRequestHttpException, IdentityInterface, Request, User};
 
@@ -37,7 +38,7 @@ class SetIdentityAction extends IdentityAction
 
         if (!is_string($user_id) && !is_int($user_id)) {
             throw new BadRequestHttpException(
-                'Invalid user_id parameter.',
+                Message::USER_ID_INVALID->getMessage(),
             );
         }
 
@@ -45,7 +46,7 @@ class SetIdentityAction extends IdentityAction
 
         if (!is_subclass_of($identityClass, IdentityInterface::class)) {
             throw new BadRequestHttpException(
-                'User component is not configured with an identity class.',
+                Message::IDENTITY_CLASS_NOT_CONFIGURED->getMessage(),
             );
         }
 
@@ -53,7 +54,7 @@ class SetIdentityAction extends IdentityAction
 
         if ($newIdentity === null) {
             throw new BadRequestHttpException(
-                'Identity not found.',
+                Message::IDENTITY_NOT_FOUND->getMessage(),
             );
         }
 

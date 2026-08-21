@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: harden packaging, identity actions, persisted data, worker cleanup, storage modes, dump output, and mail capture.
 - refactor: simplify log message flattening and separate mail event capture from persistence while preserving fail-open behavior.
 - refactor: normalize Yii logger payloads once at the adapter boundary and remove redundant shared tuple coercion.
+- perf: reuse committed snapshot manifests during mail reconciliation, append log buffers in place, and report unbiased millisecond debug durations.
 
 ## 0.1.1 May 18, 2026
 

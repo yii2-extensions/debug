@@ -36,7 +36,7 @@ final class RouterCollectorTest extends TestCase
         self::assertSame(
             $controller::class . '::actionIndex()',
             $snapshot->action,
-            "Inline action must format as 'ControllerFQCN::actionMethod()'.",
+            'Inline actions must use controller-method notation.',
         );
         self::assertSame(
             'site/index',
@@ -62,7 +62,7 @@ final class RouterCollectorTest extends TestCase
         self::assertSame(
             $action::class . '::run()',
             $snapshot->action,
-            "Regular action must format as 'ActionFQCN::run()'.",
+            'Standalone actions must use class-run notation.',
         );
     }
 

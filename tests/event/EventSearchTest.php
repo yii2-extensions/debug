@@ -55,6 +55,7 @@ final class EventSearchTest extends TestCase
                 [['class', 'isStatic', 'name', 'senderClass'], 'safe'],
             ],
             $search->rules(),
+            'Validators must preserve their order and types.',
         );
     }
 

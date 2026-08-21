@@ -6,15 +6,17 @@ namespace yii\debug\tests\log;
 
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Storage\HydrationException;
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use yii\debug\panels\LogPanel;
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
  * Unit tests for {@see LogPanel} covering payload narrowing, toolbar items per level, the rendered detail and summary
  * views, and the typed row decoration with previous/next ids.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('panel')]
 #[Group('log')]
@@ -57,6 +59,16 @@ final class LogPanelTest extends TestCase
             $second->timeSincePrevious,
             'The elapsed time must compare adjacent rows.',
         );
+    }
+
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'logPanelContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetDetailRendersErrorAndWarningCountersWhenLevelsArePresent(): void
@@ -237,14 +249,6 @@ final class LogPanelTest extends TestCase
         );
     }
 
-    public function testGetModelsRemainsProtected(): void
-    {
-        self::assertTrue(
-            (new ReflectionMethod(LogPanel::class, 'getModels'))->isProtected(),
-            'Must remain protected to avoid accidental misuse.',
-        );
-    }
-
     public function testGetModelsScalesTimeToMilliseconds(): void
     {
         $panel = $this->makePanel(
@@ -358,6 +362,7 @@ final class LogPanelTest extends TestCase
                 ],
             ],
             $this->invoke($panel, 'getToolbarItems'),
+            'Error chip must report the captured count.',
         );
     }
 
@@ -387,10 +392,11 @@ final class LogPanelTest extends TestCase
                 ],
             ],
             $this->invoke($panel, 'getToolbarItems'),
+            'Warning chip must report the captured count.',
         );
     }
 
-    public function testHydrationRejectsNonArrayMessages(): void
+    public function testThrowHydrationExceptionWhenMessagesAreNotAnArray(): void
     {
         $panel = $this->makePanel(
             LogPanel::class,

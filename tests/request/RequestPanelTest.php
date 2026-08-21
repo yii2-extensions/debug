@@ -6,14 +6,17 @@ namespace yii\debug\tests\request;
 
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\HydrationException;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\debug\panels\RequestPanel;
+use yii\debug\tests\provider\RequestPanelProvider;
 use yii\debug\tests\support\TestCase;
 use yii\web\Controller;
 
 /**
  * Unit tests for {@see RequestPanel} covering detail rendering, the toolbar status chip, and snapshot hydration.
+ *
+ * {@see RequestPanelProvider} for test case data providers.
  */
 #[Group('panel')]
 #[Group('request')]
@@ -285,7 +288,8 @@ final class RequestPanelTest extends TestCase
         );
     }
 
-    public function testHydrationRejectsNonNumericStatusCode(): void
+    #[DataProviderExternal(RequestPanelProvider::class, 'invalidStoredStatusCodes')]
+    public function testThrowHydrationExceptionForInvalidStoredStatusCode(string $statusCode): void
     {
         $panel = $this->makePanel(
             RequestPanel::class,
@@ -293,25 +297,7 @@ final class RequestPanelTest extends TestCase
 
         $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
 
-        $payload['statusCode'] = 'not-a-number';
-
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '$.panels..statusCode': expected an integer.",
-        );
-
-        $panel->hydrate($payload);
-    }
-
-    public function testHydrationRejectsNumericStringStatusCode(): void
-    {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
-
-        $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
-
-        $payload['statusCode'] = '404';
+        $payload['statusCode'] = $statusCode;
 
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage(

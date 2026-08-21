@@ -322,7 +322,7 @@ final class GridViewConfigTest extends TestCase
         self::assertSame(
             $expected,
             GridViewConfig::rowClassFor($level),
-            "'rowClassFor' must map known status levels to 'yii-debug-row-*' classes and ignore unknown ones.",
+            'Known levels must map to scoped row classes while unknown levels remain unstyled.',
         );
     }
 }

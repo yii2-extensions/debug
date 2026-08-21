@@ -8,6 +8,7 @@ use PHPForge\Debug\Panel\Dump\DumpRow;
 use PHPUnit\Framework\Attributes\Group;
 use yii\base\InvalidConfigException;
 use yii\debug\collectors\DumpCollector;
+use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -97,7 +98,7 @@ final class DumpCollectorTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'The debug module logTarget must be initialized before reading log messages.',
+            Message::LOG_TARGET_NOT_INITIALIZED_FOR_READING->getMessage(),
         );
 
         $collector->capture();

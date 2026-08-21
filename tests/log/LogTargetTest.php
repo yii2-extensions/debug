@@ -483,28 +483,6 @@ final class LogTargetTest extends TestCase
         $this->cleanupDataPath($module);
     }
 
-    public function testExportThrowsWhenLockFileCannotBeOpened(): void
-    {
-        Yii::$app->getRequest()->setUrl('dummy');
-
-        $module = $this->newModuleWithIsolatedDataPath();
-
-        mkdir("{$module->dataPath}/index.lock");
-
-        $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage(
-            'Unable to open debug data lock file',
-        );
-
-        try {
-            (new LogTarget($module))->export();
-        } finally {
-            @rmdir("{$module->dataPath}/index.lock");
-
-            $this->cleanupDataPath($module);
-        }
-    }
-
     public function testExportWritesTheVersionedJsonEnvelope(): void
     {
         Yii::$app->getRequest()->setUrl('dummy');
@@ -781,16 +759,6 @@ final class LogTargetTest extends TestCase
         $this->cleanupDataPath($module);
     }
 
-    public function testLogTargetExtensionPointsRemainProtected(): void
-    {
-        foreach (['collectSummary', 'getExcessiveDbCallersCount', 'getSqlTotalCount'] as $method) {
-            self::assertTrue(
-                (new \ReflectionMethod(LogTarget::class, $method))->isProtected(),
-                "LogTarget::{$method}() must remain available to subclasses.",
-            );
-        }
-    }
-
     public function testManifestGarbageCollectionDeletesExpiredJsonSnapshots(): void
     {
         $module = $this->newModuleWithIsolatedDataPath();
@@ -911,7 +879,7 @@ final class LogTargetTest extends TestCase
         $target = new LogTarget($module);
         $store = new SnapshotStore($module->dataPath, $module->dirMode, $module->fileMode);
 
-        $this->invoke($target, 'reconcileMailFiles', [$store]);
+        $this->invoke($target, 'reconcileMailFiles', [$store->loadManifest()]);
 
         self::assertFileExists(
             $keep,
@@ -950,11 +918,12 @@ final class LogTargetTest extends TestCase
 
         $target = new LogTarget($module);
         $store = new SnapshotStore($module->dataPath, $module->dirMode, $module->fileMode);
+        $manifest = $store->loadManifestResult();
 
         $this->invoke(
             $target,
             'reconcileMailFiles',
-            [$store],
+            [$manifest->error === null ? $manifest->entries : null],
         );
 
         self::assertFileExists(
@@ -963,6 +932,28 @@ final class LogTargetTest extends TestCase
         );
 
         $this->cleanupDataPath($module);
+    }
+
+    public function testThrowInvalidConfigExceptionWhenLockFileCannotBeOpened(): void
+    {
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        mkdir("{$module->dataPath}/index.lock");
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'Unable to open debug data lock file',
+        );
+
+        try {
+            (new LogTarget($module))->export();
+        } finally {
+            @rmdir("{$module->dataPath}/index.lock");
+
+            $this->cleanupDataPath($module);
+        }
     }
 
     protected function setUp(): void

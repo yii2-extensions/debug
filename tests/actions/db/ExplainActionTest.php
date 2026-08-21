@@ -10,6 +10,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\db\Connection;
 use yii\debug\actions\db\ExplainAction;
+use yii\debug\exception\Message;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
 use yii\debug\tests\support\TestCase;
@@ -210,6 +211,11 @@ final class ExplainActionTest extends TestCase
 
         $action->setModule($module);
 
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage(
+            Message::LOG_MESSAGE_NOT_FOUND->getMessage(),
+        );
+
         try {
             $action->run('99', 'tag-empty', $dbPanel);
 
@@ -223,10 +229,12 @@ final class ExplainActionTest extends TestCase
                 "A missing timing sequence must throw a '404'.",
             );
             self::assertSame(
-                'Log message not found.',
+                Message::LOG_MESSAGE_NOT_FOUND->getMessage(),
                 $exception->getMessage(),
-                'A missing timing sequence must throw a "Log message not found." message.',
+                'A missing timing sequence must report the adapter error.',
             );
+
+            throw $exception;
         }
     }
 

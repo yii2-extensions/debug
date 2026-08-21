@@ -9,6 +9,7 @@ use RuntimeException;
 use stdClass;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\debug\exception\Message;
 use yii\debug\models\UserSwitch;
 use yii\debug\tests\support\stub\Identity;
 use yii\debug\tests\support\TestCase;
@@ -80,7 +81,7 @@ final class UserSwitchTest extends TestCase
         self::assertSame(
             99,
             $switch->getMainUser()->getId(),
-            "'main_user' session snapshot must be resolved through 'findIdentity()' as the main user.",
+            'Session snapshot must resolve to the main user.',
         );
     }
 
@@ -156,7 +157,7 @@ final class UserSwitchTest extends TestCase
 
         self::assertFalse(
             $switch->isMainUser(),
-            "After switching to a different identity 'isMainUser' must report 'false'.",
+            'A switched identity must not be recognized as the main user.',
         );
     }
 
@@ -174,7 +175,7 @@ final class UserSwitchTest extends TestCase
 
         self::assertTrue(
             $switch->isMainUser(),
-            "Guest sessions must report 'isMainUser()' as 'true'.",
+            'Guest sessions must identify the main user.',
         );
     }
 
@@ -188,7 +189,7 @@ final class UserSwitchTest extends TestCase
 
         self::assertTrue(
             $switch->isMainUser(),
-            "Active identity matching the main user must report 'isMainUser' as 'true'.",
+            'A matching identity must be recognized as the main user.',
         );
     }
 
@@ -211,7 +212,7 @@ final class UserSwitchTest extends TestCase
 
         self::assertTrue(
             $switch->isMainUser(),
-            "After 'reset()' the session must hold the captured main identity again.",
+            'Session must contain the restored main identity.',
         );
     }
 
@@ -277,7 +278,7 @@ final class UserSwitchTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            "Application component 'missing-user' must be a 'yii\\web\\User' instance.",
+            Message::USER_COMPONENT_INVALID->getMessage('missing-user'),
         );
 
         $switch->getUser();
@@ -293,7 +294,7 @@ final class UserSwitchTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            "must be a 'yii\\web\\User' instance",
+            Message::USER_COMPONENT_INVALID->getMessage('weirdcomponent'),
         );
 
         $switch->getUser();
@@ -308,7 +309,7 @@ final class UserSwitchTest extends TestCase
         $this->expectException(RuntimeException::class);
 
         $this->expectExceptionMessage(
-            'without an attached identity',
+            Message::IDENTITY_REQUIRED_FOR_SWITCH->getMessage(),
         );
 
         $switch->setUser(Yii::$app->user);

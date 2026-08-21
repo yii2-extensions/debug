@@ -9,12 +9,14 @@ use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\Span;
 use Yii;
 use yii\base\{InvalidConfigException, Model, Widget};
+use yii\debug\exception\Message;
 use yii\helpers\Url;
 
+use function array_fill_keys;
 use function array_keys;
+use function array_replace_recursive;
 use function array_unshift;
 use function count;
-use function is_array;
 use function is_scalar;
 use function is_string;
 
@@ -43,11 +45,15 @@ class FilterBanner extends Widget
         if ($this->searchModel === null) {
             $class = self::class;
 
-            throw new InvalidConfigException("{$class}::\$searchModel must be set.");
+            throw new InvalidConfigException(
+                Message::SEARCH_MODEL_REQUIRED->getMessage($class),
+            );
         }
 
         $formName = $this->searchModel->formName();
+
         $request = Yii::$app->getRequest();
+
         $rawFilters = (array) $request->get($formName, []);
 
         $activeFilters = [];
@@ -135,32 +141,18 @@ class FilterBanner extends Widget
      */
     private function buildUrl(string $formName, array $without): string
     {
-        $params = Yii::$app->getRequest()->getQueryParams();
+        $params = [
+            $formName => array_fill_keys($without, null),
+            'page' => null,
+        ];
 
-        $bag = is_array($params[$formName] ?? null) ? $params[$formName] : [];
-
-        foreach ($without as $attr) {
-            unset($bag[$attr]);
+        if (Yii::$app->controller !== null || Yii::$app->requestedRoute !== null && Yii::$app->requestedRoute !== '') {
+            return Url::current($params);
         }
 
-        if ($bag === []) {
-            unset($params[$formName]);
-        } else {
-            $params[$formName] = $bag;
-        }
+        $params = array_replace_recursive(Yii::$app->getRequest()->getQueryParams(), $params);
 
-        unset($params['page']);
-
-        $action = Yii::$app->requestedAction;
-
-        if ($action !== null) {
-            $route = '/' . $action->getUniqueId();
-        } else {
-            $controller = Yii::$app->controller;
-            $route = '/' . ($controller !== null ? $controller->getRoute() : '');
-        }
-
-        array_unshift($params, $route);
+        array_unshift($params, '/' . (Yii::$app->requestedAction?->getUniqueId() ?? ''));
 
         return Url::to($params);
     }

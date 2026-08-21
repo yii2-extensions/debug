@@ -7,13 +7,13 @@ namespace yii\debug\tests\collectors;
 use Closure;
 use PDO;
 use PHPForge\Debug\Panel\Db\QueryRow;
-use PHPUnit\Framework\Attributes\Group;
-use ReflectionMethod;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\db\Connection;
 use yii\debug\collectors\DbCollector;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -23,6 +23,8 @@ use function in_array;
 /**
  * Unit tests for {@see DbCollector} covering query timing aggregation, the SQL command verb extractor, the PDO
  * statement hook lifecycle, and the trace-hash fingerprinting.
+ *
+ * {@see VisibilityProvider} for method contract data providers.
  *
  * @phpstan-import-type LogTrace from Logger
  * @phpstan-type StringLogMessage array{0: string, 1: int, 2: string, 3: float, 4: list<LogTrace>, 5: int}
@@ -238,6 +240,16 @@ final class DbCollectorTest extends TestCase
         );
     }
 
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'dbCollectorContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        self::assertMethodVisibility($class, $method, $expected);
+    }
+
     public function testGetExcessiveCallersReturnsEmptyWhenDisabledWithCapturedRows(): void
     {
         $collector = $this->makeCollector();
@@ -272,11 +284,6 @@ final class DbCollectorTest extends TestCase
     public function testGetQueryTypeExtractsLeadingVerb(): void
     {
         $collector = $this->makeCollector();
-
-        self::assertTrue(
-            (new ReflectionMethod(DbCollector::class, 'getQueryType'))->isProtected(),
-            'The query-type hook must remain available to subclasses.',
-        );
 
         self::assertSame(
             'SELECT',
@@ -459,7 +466,7 @@ final class DbCollectorTest extends TestCase
         self::assertSame(
             $first,
             $second,
-            'traceHashAlgo must return the same algorithm across calls.',
+            'Trace hashing must use the same algorithm across calls.',
         );
         self::assertSame(
             in_array('xxh3', hash_algos(), true) ? 'xxh3' : 'crc32',

@@ -9,6 +9,7 @@ use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\actions\queue\JobAction;
+use yii\debug\exception\Message;
 use yii\debug\Module;
 use yii\debug\panels\QueuePanel;
 use yii\debug\tests\support\TestCase;
@@ -57,9 +58,9 @@ final class JobActionTest extends TestCase
                 'A missing queue record must throw a 404.',
             );
             self::assertSame(
-                'Queue job record not found.',
+                Message::QUEUE_JOB_RECORD_NOT_FOUND->getMessage(),
                 $exception->getMessage(),
-                'A missing queue record must throw a "Queue job record not found." message.',
+                'A missing queue record must report the adapter error.',
             );
         }
     }
@@ -198,7 +199,7 @@ final class JobActionTest extends TestCase
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage(
-            'Queue job record not found.',
+            Message::QUEUE_JOB_RECORD_NOT_FOUND->getMessage(),
         );
 
         $action->run('99', 'tag-empty-queue', $queuePanel);

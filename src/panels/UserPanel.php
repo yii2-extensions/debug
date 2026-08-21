@@ -10,6 +10,7 @@ use Yii;
 use yii\base\{Action as BaseAction, InvalidConfigException, Model};
 use yii\data\{ArrayDataProvider, DataProviderInterface};
 use yii\db\ActiveRecord;
+use yii\debug\exception\Message;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
 use yii\debug\Panel;
@@ -224,7 +225,7 @@ class UserPanel extends Panel
 
         if ($filterModel === null) {
             throw new InvalidConfigException(
-                'User filter model must implement ' . UserSearchInterface::class . '.',
+                Message::USER_FILTER_MODEL_INVALID->getMessage(UserSearchInterface::class),
             );
         }
 
@@ -361,7 +362,7 @@ class UserPanel extends Panel
 
         if ($module === null || $userSwitch === null) {
             throw new InvalidConfigException(
-                'Unable to configure user switching without a debug module.',
+                Message::USER_SWITCH_MODULE_REQUIRED->getMessage(),
             );
         }
 
@@ -406,7 +407,7 @@ class UserPanel extends Panel
 
             if (!$model instanceof Model || !$model instanceof UserSearchInterface) {
                 throw new InvalidConfigException(
-                    'User filter model must implement ' . UserSearchInterface::class . '.',
+                    Message::USER_FILTER_MODEL_INVALID->getMessage(UserSearchInterface::class),
                 );
             }
 

@@ -13,6 +13,7 @@ use Yii;
 use yii\base\Event;
 use yii\db\Connection;
 use yii\debug\db\DebugPdoStatement;
+use yii\debug\exception\Message;
 use yii\log\Logger;
 
 use function array_filter;
@@ -392,7 +393,7 @@ class DbCollector extends Collector
             $info = $timing['info'];
 
             if (!isset($duplicates[$info])) {
-                throw new LogicException("Missing duplicate count for query: {$info}");
+                throw new LogicException(Message::DUPLICATE_QUERY_COUNT_MISSING->getMessage($info));
             }
 
             $rows[] = QueryRow::fromTiming(

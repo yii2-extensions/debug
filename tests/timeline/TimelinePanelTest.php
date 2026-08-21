@@ -6,11 +6,13 @@ namespace yii\debug\tests\timeline;
 
 use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
+use PHPForge\Debug\Storage\HydrationException;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use stdClass;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\Svg;
 use yii\debug\panels\{ProfilingPanel, TimelinePanel};
@@ -308,6 +310,56 @@ final class TimelinePanelTest extends TestCase
         );
     }
 
+    public function testThrowHydrationExceptionWhenLoadDataIsNotArray(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            'expected an object',
+        );
+
+        TimelineSnapshot::fromArray('not-an-array', '$.panels.timeline');
+    }
+
+    public function testThrowHydrationExceptionWhenLoadEndIsMissing(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            '$.panels.timeline.end',
+        );
+
+        $panel->hydrate(['start' => 1_700_000_000.0, 'memory' => 1024]);
+    }
+
+    public function testThrowHydrationExceptionWhenLoadMemoryIsMissing(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $start = 1_700_000_000.0;
+
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            '$.panels.timeline.memory',
+        );
+
+        $panel->hydrate(['start' => $start, 'end' => $start + 0.1]);
+    }
+
+    public function testThrowHydrationExceptionWhenLoadStartIsMissing(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            '$.panels.timeline.start',
+        );
+
+        $panel->hydrate(['end' => 1_700_000_000.1, 'memory' => 1024]);
+    }
+
     public function testThrowInvalidConfigExceptionWhenProfilingPanelIsMissing(): void
     {
         $this->mockWebApplication();
@@ -320,7 +372,7 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'Unable to determine the profiling panel',
+            Message::PROFILING_PANEL_UNAVAILABLE->getMessage(),
         );
 
         new TimelinePanel(['id' => 'timeline', 'module' => $module]);
@@ -334,7 +386,7 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'Timeline SVG class must extend ',
+            Message::TIMELINE_SVG_CLASS_INVALID->getMessage(Svg::class),
         );
 
         $panel->getSvg();
@@ -348,22 +400,10 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'Timeline SVG factory must create ',
+            Message::TIMELINE_SVG_FACTORY_INVALID->getMessage(Svg::class),
         );
 
         $panel->getSvg();
-    }
-
-    public function testThrowRuntimeExceptionWhenLoadDataIsNotArray(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(
-            'expected an object',
-        );
-
-        TimelineSnapshot::fromArray('not-an-array', '$.panels.timeline');
     }
 
     public function testThrowRuntimeExceptionWhenLoadDurationIsZero(): void
@@ -374,39 +414,13 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'Duration cannot be zero',
+            Message::TIMELINE_DURATION_ZERO->getMessage(),
         );
 
         $this->hydratePanel(
             $panel,
             new TimelineSnapshot($start, $start, 1024),
         );
-    }
-
-    public function testThrowRuntimeExceptionWhenLoadEndIsMissing(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(
-            '$.panels.timeline.end',
-        );
-
-        $panel->hydrate(['start' => 1_700_000_000.0, 'memory' => 1024]);
-    }
-
-    public function testThrowRuntimeExceptionWhenLoadMemoryIsMissing(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $start = 1_700_000_000.0;
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(
-            '$.panels.timeline.memory',
-        );
-
-        $panel->hydrate(['start' => $start, 'end' => $start + 0.1]);
     }
 
     public function testThrowRuntimeExceptionWhenLoadMemoryIsNonPositive(): void
@@ -417,7 +431,7 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'Unable to determine used memory in request',
+            Message::REQUEST_MEMORY_UNAVAILABLE->getMessage(),
         );
 
         $this->hydratePanel(
@@ -426,25 +440,13 @@ final class TimelinePanelTest extends TestCase
         );
     }
 
-    public function testThrowRuntimeExceptionWhenLoadStartIsMissing(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(
-            '$.panels.timeline.start',
-        );
-
-        $panel->hydrate(['end' => 1_700_000_000.1, 'memory' => 1024]);
-    }
-
     public function testThrowRuntimeExceptionWhenLoadStartIsNonPositive(): void
     {
         $panel = $this->makeTimelinePanel();
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'Unable to determine request start time',
+            Message::REQUEST_START_TIME_UNAVAILABLE->getMessage(),
         );
 
         $this->hydratePanel(
@@ -459,7 +461,7 @@ final class TimelinePanelTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'Unable to determine request end time',
+            Message::REQUEST_END_TIME_UNAVAILABLE->getMessage(),
         );
 
         $panel->hydrate((new TimelineSnapshot(1_700_000_000.0, 0.0, 1024))->jsonSerialize());

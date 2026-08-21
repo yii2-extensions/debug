@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\actions\IndexAction;
+use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\search\LogSearch;
 use yii\debug\tests\support\TestCase;
@@ -145,7 +146,7 @@ final class FilterBannerTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'searchModel must be set',
+            Message::SEARCH_MODEL_REQUIRED->getMessage(FilterBanner::class),
         );
 
         FilterBanner::widget();

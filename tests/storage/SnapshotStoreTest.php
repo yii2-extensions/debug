@@ -143,6 +143,35 @@ final class SnapshotStoreTest extends TestCase
         );
     }
 
+    public function testSnapshotWriteResultReturnsCommittedManifestAndEvictions(): void
+    {
+        $store = $this->store();
+
+        $older = $this->summary('older', 1_700_000_000.0);
+        $newer = $this->summary('newer', 1_700_000_001.0);
+
+        $store->writeSnapshot(
+            new DebugSnapshot($older, [], []),
+            10,
+        );
+
+        $result = $store->writeSnapshotResult(
+            new DebugSnapshot($newer, [], []),
+            1,
+        );
+
+        self::assertSame(
+            ['newer'],
+            array_keys($result->entries ?? []),
+            'Committed entries must be returned newest first.',
+        );
+        self::assertSame(
+            ['older'],
+            array_map(static fn(RequestSummary $summary): string => $summary->tag, $result->removed),
+            'Every eviction must be returned.',
+        );
+    }
+
     public function testThrowInvalidConfigExceptionForTagThatEscapesTheStorageDirectory(): void
     {
         $summary = $this->summary('../outside', 1_700_000_000.0);

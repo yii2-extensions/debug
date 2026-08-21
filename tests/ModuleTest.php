@@ -15,8 +15,9 @@ use yii\caching\FileCache;
 use yii\db\Connection;
 use yii\debug\actions\{PhpInfoAction, ToolbarDataAction};
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, ToolbarRenderer, VersionResolver};
+use yii\debug\exception\Message;
 use yii\debug\panels\{DbPanel, LogPanel};
-use yii\debug\tests\provider\ModuleProvider;
+use yii\debug\tests\provider\{ModuleProvider, VisibilityProvider};
 use yii\debug\tests\support\stub\{
     CustomCollector,
     CustomDbPanel,
@@ -37,7 +38,7 @@ use function is_string;
  * Unit tests for {@see Module} covering IP-based access control, toolbar HTML/JSON rendering, the `php-info` standalone
  * action wiring, debug-asset registration, and request-cache behavior.
  *
- * {@see ModuleProvider} for test case data providers.
+ * {@see ModuleProvider} and {@see VisibilityProvider} for test case data providers.
  */
 #[Group('module')]
 final class ModuleTest extends TestCase
@@ -114,11 +115,11 @@ final class ModuleTest extends TestCase
 
         self::assertTrue(
             $module->beforeAction($action),
-            "'beforeAction' must succeed when access is allowed.",
+            'Allowed access must continue action execution.',
         );
         self::assertFalse(
             $fakeTarget->enabled,
-            "'beforeAction' must disable log targets when 'enableDebugLogs' is false.",
+            'Disabled debug logging must deactivate existing log targets.',
         );
         self::assertSame([], Yii::$app->assetManager->bundles, 'Allowed debugger actions must reset asset bundles.');
         self::assertFalse(
@@ -170,7 +171,7 @@ final class ModuleTest extends TestCase
 
         self::assertFalse(
             $module->beforeAction($action),
-            "When 'parent::beforeAction' yields false the module must abort with 'false'.",
+            'A parent veto must stop action execution.',
         );
     }
 
@@ -275,7 +276,7 @@ final class ModuleTest extends TestCase
         );
         self::assertTrue(
             Yii::$app->getResponse()->off(Response::EVENT_AFTER_PREPARE, [$module, 'setDebugHeaders']),
-            "EVENT_BEFORE_REQUEST closure must attach 'setDebugHeaders' to the response.",
+            'Before-request setup must attach the response header listener.',
         );
 
         // Trigger the EVENT_BEFORE_ACTION closure → registers `renderToolbar` on the view.
@@ -285,7 +286,7 @@ final class ModuleTest extends TestCase
 
         self::assertTrue(
             Yii::$app->getView()->hasEventHandlers(View::EVENT_END_BODY),
-            "EVENT_BEFORE_ACTION closure must attach 'renderToolbar' to the view.",
+            'Before-action setup must attach the toolbar listener.',
         );
         self::assertTrue(
             Yii::$app->errorHandler->off(ErrorHandler::EVENT_AFTER_RENDER, [$module, 'injectToolbarOnErrorPage']),
@@ -534,7 +535,7 @@ final class ModuleTest extends TestCase
         self::assertStringContainsString(
             'Access to debugger is denied due to checkAccessCallback.',
             $this->collectLoggedMessages(),
-            "A 'Yii::warning' must surface the callback-denial reason when the warning flag is enabled.",
+            'Callback denial must be logged when warnings are enabled.',
         );
     }
 
@@ -821,6 +822,16 @@ final class ModuleTest extends TestCase
         );
     }
 
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'moduleContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
+    {
+        self::assertMethodVisibility($class, $method, $expected);
+    }
+
     public function testGetToolbarHtmlBuildsSkipAjaxRequestUrlEntries(): void
     {
         $module = new Module('debug');
@@ -888,7 +899,7 @@ final class ModuleTest extends TestCase
         self::assertSame(
             'data:image/svg+xml;base64,' . base64_encode(Icon::render('yii')),
             Module::getYiiLogo(),
-            "'getYiiLogo()' must use the shared Yii logo file by default.",
+            'Shared Yii logo URI must be returned.',
         );
     }
 
@@ -917,7 +928,7 @@ final class ModuleTest extends TestCase
         self::assertSame(
             'My Debug',
             $module->htmlTitle(),
-            "String 'pageTitle' must surface verbatim from 'htmlTitle()'.",
+            'Literal page title must be preserved.',
         );
     }
 
@@ -976,7 +987,7 @@ final class ModuleTest extends TestCase
         self::assertSame(
             'log-instance',
             $existing->id,
-            "'buildPanel()' must bind the panel id onto an already-instantiated panel.",
+            'Existing panel must receive the configured ID.',
         );
     }
 
@@ -987,7 +998,7 @@ final class ModuleTest extends TestCase
         self::assertArrayHasKey(
             'log-string',
             $module->panels,
-            "Panel config given as a class-name string must be instantiated through 'buildPanel()'.",
+            'Class-name configuration must create a panel.',
         );
         self::assertInstanceOf(
             LogPanel::class,
@@ -1026,7 +1037,7 @@ final class ModuleTest extends TestCase
         self::assertArrayNotHasKey(
             'ghost',
             $module->panels,
-            "Panels whose 'isEnabled()' returns false must be removed during 'initPanels()'.",
+            'Disabled panels must be removed.',
         );
     }
 
@@ -1092,8 +1103,7 @@ final class ModuleTest extends TestCase
         self::assertSame(
             $override,
             $module->panels['log'],
-            'Custom panel with the same id as a core panel must replace the core entry, exercising the '
-            . "'unset(\$corePanels[\$id])' branch.",
+            'Matching custom panel must replace the core entry.',
         );
     }
 
@@ -1197,7 +1207,7 @@ final class ModuleTest extends TestCase
         self::assertStringContainsString(
             '<yii-debug-toolbar',
             $event->output,
-            "'injectToolbarOnErrorPage' must append the toolbar when no closing body marker is present.",
+            'Toolbar markup must be appended when no closing body marker exists.',
         );
     }
 
@@ -1220,7 +1230,7 @@ final class ModuleTest extends TestCase
         self::assertStringContainsString(
             '<yii-debug-toolbar',
             $event->output,
-            "'injectToolbarOnErrorPage' must inject the toolbar HTML before '</body>'.",
+            'Toolbar markup must precede the closing body marker.',
         );
         self::assertStringContainsString(
             '<script type="module"',
@@ -1271,27 +1281,6 @@ final class ModuleTest extends TestCase
             $module->logTarget,
             'Object-typed logTarget must be retained verbatim.',
         );
-    }
-
-    public function testModuleExtensionPointsRemainProtected(): void
-    {
-        foreach (
-            [
-                'checkAccess',
-                'coreActionMap',
-                'coreCollectors',
-                'corePanels',
-                'initCollectors',
-                'initPanels',
-                'initPanelServices',
-                'resetGlobalSettings',
-            ] as $method
-        ) {
-            self::assertTrue(
-                (new \ReflectionMethod(Module::class, $method))->isProtected(),
-                "Module::{$method}() must remain available to subclasses.",
-            );
-        }
     }
 
     public function testModuleInitRetainsYiiNamespaceDefaults(): void
@@ -1469,7 +1458,7 @@ final class ModuleTest extends TestCase
         self::assertSame(
             'data:image/svg+xml;base64,FAKE',
             Module::getYiiLogo(),
-            "'setYiiLogo()' must persist the URI returned by 'getYiiLogo()'.",
+            'Configured URI must round-trip.',
         );
 
         // Reset cache so other tests see the bundled logo path again.
@@ -1510,7 +1499,7 @@ final class ModuleTest extends TestCase
         self::assertSame(
             [
                 'tag' => $module->logTarget->tag,
-                'duration' => '1,001',
+                'duration' => '1000.000',
                 'link' => \yii\helpers\Url::toRoute(['/debug/view', 'tag' => $module->logTarget->tag]),
             ],
             [
@@ -1574,7 +1563,7 @@ final class ModuleTest extends TestCase
 
         $this->expectException(ForbiddenHttpException::class);
         $this->expectExceptionMessage(
-            'not allowed to access',
+            Message::ACCESS_DENIED->getMessage(),
         );
 
         $module->beforeAction($action);
@@ -1595,7 +1584,7 @@ final class ModuleTest extends TestCase
 
         $this->expectException(ForbiddenHttpException::class);
         $this->expectExceptionMessage(
-            'not allowed to access',
+            Message::ACCESS_DENIED->getMessage(),
         );
 
         $module->beforeAction($action);
@@ -1608,7 +1597,7 @@ final class ModuleTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'must resolve to a yii\\debug\\LogTarget instance',
+            Message::LOG_TARGET_INSTANCE_INVALID->getMessage(),
         );
 
         $module->bootstrap(Yii::$app);
@@ -1621,7 +1610,7 @@ final class ModuleTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'must declare a valid class name',
+            Message::LOG_TARGET_CLASS_INVALID->getMessage(),
         );
 
         $module->bootstrap(Yii::$app);
@@ -1633,7 +1622,7 @@ final class ModuleTest extends TestCase
 
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage(
-            'logTarget has not been bootstrapped',
+            Message::LOG_TARGET_NOT_BOOTSTRAPPED->getMessage(),
         );
 
         $module->getToolbarHtml();
@@ -1644,6 +1633,11 @@ final class ModuleTest extends TestCase
         $this->setInaccessibleStaticProperty(Icon::class, 'cache', ['yii' => '']);
         $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
 
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(
+            Message::YII_LOGO_UNREADABLE->getMessage(),
+        );
+
         try {
             Module::getYiiLogo();
 
@@ -1652,10 +1646,12 @@ final class ModuleTest extends TestCase
             );
         } catch (RuntimeException $exception) {
             self::assertSame(
-                'Unable to read the packaged Yii logo.',
+                Message::YII_LOGO_UNREADABLE->getMessage(),
                 $exception->getMessage(),
                 'A missing packaged Yii logo must report the failing asset boundary.',
             );
+
+            throw $exception;
         } finally {
             $this->setInaccessibleStaticProperty(Icon::class, 'cache', []);
             $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);

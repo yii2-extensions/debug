@@ -224,6 +224,7 @@ final class MailCollectorTest extends TestCase
             'BODY must round-trip.',
         );
         self::assertNotSame(
+            '',
             $captured->headers,
             'HEADERS must be assigned.',
         );

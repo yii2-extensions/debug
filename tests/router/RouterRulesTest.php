@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\tests\router;
 
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
-use ReflectionMethod;
 use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\debug\models\router\RouterRules;
-use yii\debug\tests\provider\RouterRulesProvider;
+use yii\debug\tests\provider\{RouterRulesProvider, VisibilityProvider};
 use yii\debug\tests\support\TestCase;
 use yii\rest\UrlRule as RestUrlRule;
 use yii\web\UrlRule as WebUrlRule;
@@ -18,7 +17,7 @@ use yii\web\UrlRule as WebUrlRule;
  * Unit tests for {@see RouterRules} covering URL-manager flag detection (pretty URLs, strict parsing, suffix) and the
  * rule-table flattening for plain, REST, and group URL rules.
  *
- * {@see RouterRulesProvider} for test case data providers.
+ * {@see RouterRulesProvider} and {@see VisibilityProvider} for test case data providers.
  */
 #[Group('router')]
 final class RouterRulesTest extends TestCase
@@ -144,15 +143,14 @@ final class RouterRulesTest extends TestCase
         );
     }
 
-    public function testExtensionMethodsRemainProtected(): void
+    /**
+     * @param class-string $class
+     * @param 'protected'|'public' $expected
+     */
+    #[DataProviderExternal(VisibilityProvider::class, 'routerRulesContracts')]
+    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
     {
-        self::assertSame(
-            [true, true, true],
-            array_map(
-                static fn(string $method): bool => (new ReflectionMethod(RouterRules::class, $method))->isProtected(),
-                ['scanGroupRule', 'scanRestRule', 'scanRule'],
-            ),
-        );
+        self::assertMethodVisibility($class, $method, $expected);
     }
 
     /**
@@ -228,7 +226,7 @@ final class RouterRulesTest extends TestCase
         self::assertSame(
             [],
             (new RouterRules())->rules,
-            "Non-iterable REST 'rules' groups must short-circuit 'scanRestRule()' and leave the rule list empty.",
+            'Non-iterable REST groups must leave the rule list empty.',
         );
     }
 

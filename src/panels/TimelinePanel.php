@@ -11,6 +11,7 @@ use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\debug\exception\Message;
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\Svg;
 use yii\debug\Panel;
@@ -128,7 +129,7 @@ class TimelinePanel extends Panel
 
             if (!is_a($class, Svg::class, true)) {
                 throw new InvalidConfigException(
-                    "Timeline SVG class must extend {$svgClass}.",
+                    Message::TIMELINE_SVG_CLASS_INVALID->getMessage($svgClass),
                 );
             }
 
@@ -140,7 +141,7 @@ class TimelinePanel extends Panel
 
             if (!$object instanceof Svg) {
                 throw new InvalidConfigException(
-                    "Timeline SVG factory must create {$svgClass}.",
+                    Message::TIMELINE_SVG_FACTORY_INVALID->getMessage($svgClass),
                 );
             }
 
@@ -177,7 +178,7 @@ class TimelinePanel extends Panel
 
         if ($start <= 0) {
             throw new RuntimeException(
-                'Unable to determine request start time',
+                Message::REQUEST_START_TIME_UNAVAILABLE->getMessage(),
             );
         }
 
@@ -187,7 +188,7 @@ class TimelinePanel extends Panel
 
         if ($end <= 0) {
             throw new RuntimeException(
-                'Unable to determine request end time',
+                Message::REQUEST_END_TIME_UNAVAILABLE->getMessage(),
             );
         }
 
@@ -203,7 +204,7 @@ class TimelinePanel extends Panel
 
         if ($this->duration <= 0) {
             throw new RuntimeException(
-                'Duration cannot be zero',
+                Message::TIMELINE_DURATION_ZERO->getMessage(),
             );
         }
 
@@ -211,7 +212,7 @@ class TimelinePanel extends Panel
 
         if ($memory <= 0) {
             throw new RuntimeException(
-                'Unable to determine used memory in request',
+                Message::REQUEST_MEMORY_UNAVAILABLE->getMessage(),
             );
         }
 
@@ -231,7 +232,7 @@ class TimelinePanel extends Panel
 
         if (!$profilingPanel instanceof ProfilingPanel) {
             throw new InvalidConfigException(
-                'Unable to determine the profiling panel',
+                Message::PROFILING_PANEL_UNAVAILABLE->getMessage(),
             );
         }
 

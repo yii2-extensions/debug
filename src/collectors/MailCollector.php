@@ -294,7 +294,9 @@ class MailCollector extends Collector
             $fileName = $mailer->generateMessageFileName();
 
             if (!self::isSafeFile($fileName)) {
-                throw new RuntimeException("Invalid captured mail file name: {$fileName}");
+                throw new RuntimeException(
+                    \yii\debug\exception\Message::CAPTURED_MAIL_FILE_NAME_INVALID->getMessage($fileName),
+                );
             }
 
             $filePath = $mailPath . DIRECTORY_SEPARATOR . $fileName;
@@ -304,11 +306,15 @@ class MailCollector extends Collector
             FileHelper::createDirectory($mailPath, $dirMode);
 
             if (@file_put_contents($filePath, $message->toString(), LOCK_EX) === false) {
-                throw new RuntimeException("Unable to persist captured mail file: {$filePath}");
+                throw new RuntimeException(
+                    \yii\debug\exception\Message::CAPTURED_MAIL_FILE_PERSIST_FAILED->getMessage($filePath),
+                );
             }
 
             if ($fileMode !== null && !@chmod($filePath, $fileMode)) {
-                throw new RuntimeException("Unable to apply mode to captured mail file: {$filePath}");
+                throw new RuntimeException(
+                    \yii\debug\exception\Message::CAPTURED_MAIL_FILE_MODE_FAILED->getMessage($filePath),
+                );
             }
 
             return $fileName;

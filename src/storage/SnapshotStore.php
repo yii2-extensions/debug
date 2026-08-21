@@ -11,6 +11,8 @@ use PHPForge\Debug\Storage\{
     SnapshotStore as CoreSnapshotStore,
     StorageException,
 };
+use ReflectionException;
+use ReflectionMethod;
 use yii\base\InvalidConfigException;
 
 /**
@@ -93,7 +95,65 @@ final class SnapshotStore
         try {
             return $this->store->writeSnapshot($snapshot, $historySize);
         } catch (StorageException $exception) {
-            throw new InvalidConfigException($exception->getMessage(), previous: $exception);
+            throw new InvalidConfigException(
+                $exception->getMessage(),
+                previous: $exception,
+            );
+        }
+    }
+
+    /**
+     * Writes a snapshot and returns the committed manifest without a second read when supported by debug-core.
+     *
+     * The compatibility fallback keeps this adapter usable with the previous additive core API. It performs the
+     * former follow-up read until the dependency is updated.
+     *
+     * @param DebugSnapshot $snapshot Snapshot to persist.
+     * @param int $historySize Maximum number of retained entries.
+     *
+     * @return SnapshotWriteResult Committed entries and evictions.
+     */
+    public function writeSnapshotResult(DebugSnapshot $snapshot, int $historySize): SnapshotWriteResult
+    {
+        try {
+            $writer = $this->coreResultWriter();
+
+            if ($writer !== null) {
+                /**
+                 * @var object{
+                 *     entries: array<string, RequestSummary>,
+                 *     removed: list<RequestSummary>
+                 * } $result
+                 */
+                $result = $writer->invoke($this->store, $snapshot, $historySize);
+
+                return new SnapshotWriteResult($result->entries, $result->removed);
+            }
+
+            $removed = $this->store->writeSnapshot($snapshot, $historySize);
+            $manifest = $this->store->loadManifestResult();
+
+            return new SnapshotWriteResult(
+                $manifest->error === null ? $manifest->entries : null,
+                $removed,
+            );
+        } catch (StorageException $exception) {
+            throw new InvalidConfigException(
+                $exception->getMessage(),
+                previous: $exception,
+            );
+        }
+    }
+
+    /**
+     * Resolves the additive result API when the installed debug-core version provides it.
+     */
+    private function coreResultWriter(): ReflectionMethod|null
+    {
+        try {
+            return new ReflectionMethod($this->store, 'writeSnapshotResult');
+        } catch (ReflectionException) {
+            return null;
         }
     }
 }

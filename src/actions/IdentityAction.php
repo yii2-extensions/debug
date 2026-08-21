@@ -6,6 +6,7 @@ namespace yii\debug\actions;
 
 use Override;
 use Yii;
+use yii\debug\exception\Message;
 use yii\web\{Action, BadRequestHttpException, MethodNotAllowedHttpException, Response};
 
 /**
@@ -30,7 +31,7 @@ abstract class IdentityAction extends Action
 
         if (!Yii::$app->session->hasSessionId) {
             throw new BadRequestHttpException(
-                'Need an active session',
+                Message::ACTIVE_SESSION_REQUIRED->getMessage(),
             );
         }
 
@@ -38,13 +39,13 @@ abstract class IdentityAction extends Action
 
         if (!$request->getIsPost()) {
             throw new MethodNotAllowedHttpException(
-                'Only POST requests are allowed.',
+                Message::POST_ONLY->getMessage(),
             );
         }
 
         if (!$request->validateCsrfToken()) {
             throw new BadRequestHttpException(
-                Yii::t('yii', 'Unable to verify your data submission.'),
+                Yii::t('yii', Message::CSRF_VALIDATION_FAILED->getMessage()),
             );
         }
 

@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\provider;
 
+use yii\debug\tests\GridViewConfigTest;
+
 /**
- * Data provider for {@see \yii\debug\tests\support\GridViewConfigTest} test cases.
+ * Data provider for {@see GridViewConfigTest} test cases.
+ *
+ * Provides row-class mappings for supported and unknown severity levels.
  */
 final class GridViewConfigProvider
 {

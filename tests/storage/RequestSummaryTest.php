@@ -5,18 +5,25 @@ declare(strict_types=1);
 namespace yii\debug\tests\storage;
 
 use PHPForge\Debug\Storage\{HydrationException, RequestSummary};
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use yii\debug\tests\provider\RequestSummaryProvider;
 use yii\debug\tests\support\TestCase;
 
 /**
  * Unit tests for {@see RequestSummary} covering the strict type guards applied at the decoded-JSON boundary.
+ *
+ * {@see RequestSummaryProvider} for test case data providers.
  */
 #[Group('storage')]
 final class RequestSummaryTest extends TestCase
 {
-    public function testJsonPayloadHydratesWithoutScalarCoercion(): void
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[DataProviderExternal(RequestSummaryProvider::class, 'hydrationCases')]
+    public function testJsonPayloadHydratesWithoutScalarCoercion(array $payload): void
     {
-        $summary = RequestSummary::fromArray($this->payload());
+        $summary = RequestSummary::fromArray($payload);
 
         self::assertSame(
             200,
@@ -34,76 +41,17 @@ final class RequestSummaryTest extends TestCase
         );
     }
 
-    public function testNumericStringIsRejected(): void
-    {
-        $payload = $this->payload();
-
-        $payload['statusCode'] = '200';
-
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            '$.summary.statusCode',
-        );
-
-        RequestSummary::fromArray($payload);
-    }
-
-    public function testThrowHydrationExceptionWhenAMailFileEntryIsNotAString(): void
-    {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(
-            "Invalid debug snapshot value at '\$.summary.mailFiles[1]'",
-        );
-
-        RequestSummary::fromArray(
-            [
-                'tag' => 'tag-1',
-                'url' => 'https://example.test/',
-                'ajax' => false,
-                'method' => 'GET',
-                'ip' => '127.0.0.1',
-                'time' => 1_700_000_000.0,
-                'statusCode' => 200,
-                'sqlCount' => 0,
-                'excessiveCallersCount' => 0,
-                'mailCount' => 2,
-                'mailFiles' => ['a.eml', 42],
-                'processingTime' => null,
-                'peakMemory' => null,
-            ],
-        );
-    }
-
-    public function testUnknownFieldIsRejected(): void
-    {
-        $payload = $this->payload();
-        $payload['unexpected'] = true;
-
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('$.summary.unexpected');
-
-        RequestSummary::fromArray($payload);
-    }
-
     /**
-     * @return array<string, mixed>
+     * @param array<string, mixed> $payload
      */
-    private function payload(): array
-    {
-        return [
-            'tag' => 'tag-1',
-            'url' => 'https://example.test/',
-            'ajax' => false,
-            'method' => 'GET',
-            'ip' => '127.0.0.1',
-            'time' => 1_700_000_000.0,
-            'statusCode' => 200,
-            'sqlCount' => 0,
-            'excessiveCallersCount' => 0,
-            'mailCount' => 0,
-            'mailFiles' => [],
-            'processingTime' => null,
-            'peakMemory' => null,
-        ];
+    #[DataProviderExternal(RequestSummaryProvider::class, 'hydrationExceptionCases')]
+    public function testThrowHydrationExceptionForInvalidSummaryPayload(
+        array $payload,
+        string $exceptionMessage,
+    ): void {
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage($exceptionMessage);
+
+        RequestSummary::fromArray($payload);
     }
 }

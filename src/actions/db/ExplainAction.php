@@ -6,6 +6,7 @@ namespace yii\debug\actions\db;
 
 use Yii;
 use yii\debug\actions\Action;
+use yii\debug\exception\Message;
 use yii\debug\panels\DbPanel;
 use yii\web\HttpException;
 
@@ -41,7 +42,7 @@ class ExplainAction extends Action
         $seqKey = (int) $seq;
 
         if (!isset($rows[$seqKey])) {
-            throw new HttpException(404, 'Log message not found.');
+            throw new HttpException(404, Message::LOG_MESSAGE_NOT_FOUND->getMessage());
         }
 
         $query = $rows[$seqKey]->query;
