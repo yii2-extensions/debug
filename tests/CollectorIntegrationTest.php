@@ -175,6 +175,7 @@ final class CollectorIntegrationTest extends TestCase
 
         $this->cleanup($module);
     }
+
     /**
      * @param class-string $class
      * @param 'protected'|'public' $expected
