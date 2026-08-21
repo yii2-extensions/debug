@@ -8,7 +8,7 @@ use PHPForge\Debug\Panel\User\{UserRbacRow, UserSnapshot};
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
-use yii\base\{InvalidConfigException, Model};
+use yii\base\{Action, InvalidConfigException, Model};
 use yii\debug\LogTarget;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
@@ -23,6 +23,7 @@ use yii\debug\tests\support\stub\{
     SearchableFilterModel,
 };
 use yii\debug\tests\support\TestCase;
+use yii\filters\{AccessControl, AccessRule};
 use yii\rbac\{Permission, Role};
 use yii\web\{Controller, IdentityInterface, User};
 
@@ -34,6 +35,61 @@ use yii\web\{Controller, IdentityInterface, User};
 #[Group('user')]
 final class UserPanelTest extends TestCase
 {
+    public function testCanSwitchUserPassesOwningModuleToAccessRule(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
+
+        $module = $panel->module ?? self::fail('Module must be wired.');
+
+        $panel->ruleUserSwitch = [
+            'allow' => true,
+            'matchCallback' => static fn (AccessRule $rule, Action $action): bool => $action->getModule() === $module,
+        ];
+
+        self::assertTrue(
+            $panel->canSwitchUser(),
+            'Access rule must receive the owning module in the action.',
+        );
+    }
+
+    public function testInitPassesConfiguredUserComponentToUserSwitch(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                        'enableSession' => false,
+                    ],
+                ],
+            ],
+        );
+
+        $customUser = new User(
+            [
+                'identityClass' => Identity::class,
+                'enableSession' => false,
+            ],
+        );
+
+        $module = new Module('debug');
+        $module->logTarget = new LogTarget($module);
+        $panel = new UserPanel(['id' => 'user', 'module' => $module, 'userComponent' => $customUser]);
+
+        $userSwitch = $panel->userSwitch;
+
+        self::assertNotNull(
+            $userSwitch,
+            'User switch component must be instantiated.',
+        );
+        self::assertSame(
+            $customUser,
+            $userSwitch->getUser(),
+            'User switch component must receive the configured user component.',
+        );
+    }
+
     public function testCanSearchUsersReturnsFalseWhenFilterModelIsNotConfigured(): void
     {
         $panel = $this->makePanel(UserPanel::class);
@@ -158,7 +214,10 @@ final class UserPanelTest extends TestCase
     {
         $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity());
 
-        $this->hydratePanel($panel, UserSnapshot::capture(['id' => null, 'identity' => null]));
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(['id' => null, 'identity' => null]),
+        );
 
         $detail = $panel->getDetail();
 
@@ -178,16 +237,27 @@ final class UserPanelTest extends TestCase
     {
         $panel = $this->bootstrapPanelWithIdentity(new ModelIdentity());
 
-        $this->hydratePanel($panel, UserSnapshot::capture([
-            'id' => 1,
-            'identity' => ['id' => "'1'", 'username' => "'wilmer'"],
-            'attributes' => [
-                ['attribute' => 'id', 'label' => 'Id'],
-                ['attribute' => 'username', 'label' => 'Username'],
-            ],
-            'rolesProvider' => null,
-            'permissionsProvider' => null,
-        ]));
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(
+                [
+                    'id' => 1,
+                    'identity' => ['id' => "'1'", 'username' => "'wilmer'"],
+                    'attributes' => [
+                        [
+                            'attribute' => 'id',
+                            'label' => 'Id',
+                        ],
+                        [
+                            'attribute' => 'username',
+                            'label' => 'Username',
+                        ],
+                    ],
+                    'rolesProvider' => null,
+                    'permissionsProvider' => null,
+                ],
+            ),
+        );
 
         self::assertNotEmpty(
             $panel->getDetail(),
@@ -228,21 +298,26 @@ final class UserPanelTest extends TestCase
             $mainUser,
         );
 
-        $this->hydratePanel($panel, UserSnapshot::capture([
-            'id' => 1,
-            'identity' => [
-                'id' => "'1'",
-                'username' => "'wilmer'",
-            ],
-            'attributes' => [
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(
                 [
-                    'attribute' => 'id',
-                    'label' => 'Id',
+                    'id' => 1,
+                    'identity' => [
+                        'id' => "'1'",
+                        'username' => "'wilmer'",
+                    ],
+                    'attributes' => [
+                        [
+                            'attribute' => 'id',
+                            'label' => 'Id',
+                        ],
+                    ],
+                    'rolesProvider' => null,
+                    'permissionsProvider' => null,
                 ],
-            ],
-            'rolesProvider' => null,
-            'permissionsProvider' => null,
-        ]));
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -274,43 +349,48 @@ final class UserPanelTest extends TestCase
         // Allow user switching so detail.php pulls in 'switch.php'.
         $panel->ruleUserSwitch = ['allow' => true];
 
-        $this->hydratePanel($panel, UserSnapshot::capture([
-            'id' => 1,
-            'identity' => [
-                'id' => "'1'",
-                'username' => "'wilmer'",
-            ],
-            'attributes' => [
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(
                 [
-                    'attribute' => 'id',
-                    'label' => 'Id',
+                    'id' => 1,
+                    'identity' => [
+                        'id' => "'1'",
+                        'username' => "'wilmer'",
+                    ],
+                    'attributes' => [
+                        [
+                            'attribute' => 'id',
+                            'label' => 'Id',
+                        ],
+                        [
+                            'attribute' => 'username',
+                            'label' => 'Username',
+                        ],
+                    ],
+                    'roles' => [
+                        [
+                            'name' => $role->name,
+                            'description' => $role->description,
+                            'ruleName' => null,
+                            'data' => 'null',
+                            'createdAt' => null,
+                            'updatedAt' => null,
+                        ],
+                    ],
+                    'permissions' => [
+                        [
+                            'name' => $permission->name,
+                            'description' => $permission->description,
+                            'ruleName' => null,
+                            'data' => 'null',
+                            'createdAt' => null,
+                            'updatedAt' => null,
+                        ],
+                    ],
                 ],
-                [
-                    'attribute' => 'username',
-                    'label' => 'Username',
-                ],
-            ],
-            'roles' => [
-                [
-                    'name' => $role->name,
-                    'description' => $role->description,
-                    'ruleName' => null,
-                    'data' => 'null',
-                    'createdAt' => null,
-                    'updatedAt' => null,
-                ],
-            ],
-            'permissions' => [
-                [
-                    'name' => $permission->name,
-                    'description' => $permission->description,
-                    'ruleName' => null,
-                    'data' => 'null',
-                    'createdAt' => null,
-                    'updatedAt' => null,
-                ],
-            ],
-        ]));
+            ),
+        );
 
         $html = $panel->getDetail();
 
@@ -351,88 +431,166 @@ final class UserPanelTest extends TestCase
     {
         $panel = $this->makePanel(UserPanel::class);
 
-        $this->hydratePanel($panel, UserSnapshot::capture([
-            'id' => 1,
-            'permissions' => [
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(
                 [
-                    'name' => 'manage',
-                    'description' => 'Manage',
-                    'ruleName' => 'isManager',
-                    'data' => 'null',
-                    'createdAt' => 1_700_000_000,
-                    'updatedAt' => 1_700_000_001,
+                    'id' => 1,
+                    'permissions' => [
+                        [
+                            'name' => 'manage',
+                            'description' => 'Manage',
+                            'ruleName' => 'isManager',
+                            'data' => 'null',
+                            'createdAt' => 1_700_000_000,
+                            'updatedAt' => 1_700_000_001,
+                        ],
+                    ],
                 ],
-            ],
-        ]));
+            ),
+        );
 
         $provider = $panel->getPermissionsProvider();
 
-        self::assertNotNull($provider, 'Snapshot with permissions must yield a provider.');
+        self::assertNotNull(
+            $provider,
+            'Snapshot with permissions must yield a provider.',
+        );
 
         $models = $provider->getModels();
 
-        self::assertContainsOnlyInstancesOf(UserRbacRow::class, $models, 'Models must be typed rows.');
+        self::assertContainsOnlyInstancesOf(
+            UserRbacRow::class,
+            $models,
+            'Models must be typed rows.',
+        );
 
         $row = $models[0] ?? null;
 
-        self::assertInstanceOf(UserRbacRow::class, $row, 'First row must exist.');
-        self::assertSame('manage', $row->name, 'Row name must survive hydration.');
-        self::assertSame('isManager', $row->ruleName, 'Rule name must survive hydration.');
-        self::assertSame(1_700_000_000, $row->createdAt, 'Created-at must survive hydration.');
+        self::assertInstanceOf(
+            UserRbacRow::class,
+            $row,
+            'First row must exist.',
+        );
+        self::assertSame(
+            'manage',
+            $row->name,
+            'Row name must survive hydration.',
+        );
+        self::assertSame(
+            'isManager',
+            $row->ruleName,
+            'Rule name must survive hydration.',
+        );
+        self::assertSame(
+            1_700_000_000,
+            $row->createdAt,
+            'Created-at must survive hydration.',
+        );
     }
 
     public function testGetRolesProviderHydratesUserRbacRowModels(): void
     {
         $panel = $this->makePanel(UserPanel::class);
 
-        $this->hydratePanel($panel, UserSnapshot::capture([
-            'id' => 1,
-            'roles' => [
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(
                 [
-                    'name' => 'admin',
-                    'description' => 'Administrator',
-                    'ruleName' => null,
-                    'data' => 'null',
-                    'createdAt' => null,
-                    'updatedAt' => null,
+                    'id' => 1,
+                    'roles' => [
+                        [
+                            'name' => 'admin',
+                            'description' => 'Administrator',
+                            'ruleName' => null,
+                            'data' => 'null',
+                            'createdAt' => null,
+                            'updatedAt' => null,
+                        ],
+                        'not-an-array',
+                    ],
                 ],
-                'not-an-array',
-            ],
-        ]));
+            ),
+        );
 
         $provider = $panel->getRolesProvider();
 
-        self::assertNotNull($provider, 'Snapshot with roles must yield a provider.');
+        self::assertNotNull(
+            $provider,
+            'Snapshot with roles must yield a provider.',
+        );
 
         $models = $provider->getModels();
 
-        self::assertContainsOnlyInstancesOf(UserRbacRow::class, $models, 'Models must be typed rows.');
-        self::assertCount(2, $models, 'Malformed entries must hydrate as empty rows, not vanish.');
+        self::assertContainsOnlyInstancesOf(
+            UserRbacRow::class,
+            $models,
+            'Models must be typed rows.',
+        );
+        self::assertCount(
+            2,
+            $models,
+            'Malformed entries must hydrate as empty rows, not vanish.',
+        );
 
         $first = $models[0] ?? null;
         $second = $models[1] ?? null;
 
-        self::assertInstanceOf(UserRbacRow::class, $first, 'First row must exist.');
-        self::assertInstanceOf(UserRbacRow::class, $second, 'Second row must exist.');
-        self::assertSame('admin', $first->name, 'Row name must survive hydration.');
-        self::assertSame('', $first->ruleName, '`null` rule name must collapse to an empty `string`.');
-        self::assertNull($first->createdAt, '`null` created-at must stay `null`.');
-        self::assertSame('', $second->name, 'Malformed entry must yield an empty row.');
+        self::assertInstanceOf(
+            UserRbacRow::class,
+            $first,
+            'First row must exist.',
+        );
+        self::assertInstanceOf(
+            UserRbacRow::class,
+            $second,
+            'Second row must exist.',
+        );
+        self::assertSame(
+            'admin',
+            $first->name,
+            'Row name must survive hydration.',
+        );
+        self::assertSame(
+            '',
+            $first->ruleName,
+            '`null` rule name must collapse to an empty `string`.',
+        );
+        self::assertNull(
+            $first->createdAt,
+            '`null` created-at must stay `null`.',
+        );
+        self::assertSame(
+            '',
+            $second->name,
+            'Malformed entry must yield an empty row.',
+        );
     }
 
     public function testGetRolesProviderReturnsNullWhenSnapshotLacksRoles(): void
     {
         $panel = $this->makePanel(UserPanel::class);
 
-        $this->hydratePanel($panel, UserSnapshot::capture(['id' => 1]));
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(['id' => 1]),
+        );
 
-        self::assertNull($panel->getRolesProvider(), 'Missing roles key must yield `null`.');
-        self::assertNull($panel->getPermissionsProvider(), 'Missing permissions key must yield `null`.');
+        self::assertNull(
+            $panel->getRolesProvider(),
+            'Missing roles key must yield `null`.',
+        );
+        self::assertNull(
+            $panel->getPermissionsProvider(),
+            'Missing permissions key must yield `null`.',
+        );
     }
 
     public function testGetToolbarItemsRendersGuestWhenNoIdInData(): void
     {
-        $panel = $this->makePanel(UserPanel::class);
+        $panel = $this->makePanel(
+            UserPanel::class,
+        );
 
         $panel->userComponent = 'nonexistent';
 
@@ -452,7 +610,11 @@ final class UserPanelTest extends TestCase
             $first,
             'Item must be an array.',
         );
-        self::assertArrayNotHasKey('label', $first, 'Panel title must identify the Guest chip without duplication.');
+        self::assertArrayNotHasKey(
+            'label',
+            $first,
+            'Panel title must identify the Guest chip without duplication.',
+        );
         self::assertSame(
             'Guest',
             $first['value'] ?? null,
@@ -464,7 +626,10 @@ final class UserPanelTest extends TestCase
     {
         $panel = $this->bootstrapPanelWithIdentity(new Identity(1));
 
-        $this->hydratePanel($panel, UserSnapshot::capture(['id' => 42]));
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(['id' => 42]),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -512,7 +677,10 @@ final class UserPanelTest extends TestCase
             'mainUser',
             null,
         );
-        $this->hydratePanel($panel, UserSnapshot::capture(['id' => 1]));
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(['id' => 1]),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -548,7 +716,10 @@ final class UserPanelTest extends TestCase
 
         $panel->userComponent = 'nonexistent';
 
-        $this->hydratePanel($panel, UserSnapshot::capture(['id' => ['nested' => 'value']]));
+        $this->hydratePanel(
+            $panel,
+            UserSnapshot::capture(['id' => ['nested' => 'value']]),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -586,7 +757,6 @@ final class UserPanelTest extends TestCase
 
         $panel->filterModel = new SearchableFilterModel();
 
-
         self::assertSame(
             0,
             $panel->getUserDataProvider()->getCount(),
@@ -596,7 +766,9 @@ final class UserPanelTest extends TestCase
 
     public function testGetUserReturnsConfiguredUserInstance(): void
     {
-        $panel = $this->makePanel(UserPanel::class);
+        $panel = $this->makePanel(
+            UserPanel::class,
+        );
 
         $user = new User(['identityClass' => Identity::class]);
 
@@ -648,6 +820,7 @@ final class UserPanelTest extends TestCase
         $panel = $this->makePanel(UserPanel::class);
 
         $filterModel = new SearchableFilterModel();
+
         $panel->filterModel = $filterModel;
 
         self::assertSame(
@@ -659,7 +832,9 @@ final class UserPanelTest extends TestCase
 
     public function testGetUsersFilterModelReturnsNullForStringFilterModel(): void
     {
-        $panel = $this->makePanel(UserPanel::class);
+        $panel = $this->makePanel(
+            UserPanel::class,
+        );
 
         $panel->filterModel = SearchableFilterModel::class;
 
@@ -684,13 +859,42 @@ final class UserPanelTest extends TestCase
         );
 
         $module = new Module('debug');
+
         $module->logTarget = new LogTarget($module);
+
+        $module->detachBehavior('access_debug');
 
         $panel = new UserPanel(['id' => 'user', 'module' => $module]);
 
-        self::assertNotNull(
-            $module->getBehavior('access_debug'),
-            'Switch actions must stay gated for a guest.',
+        $behavior = $module->getBehavior('access_debug');
+
+        self::assertInstanceOf(
+            AccessControl::class,
+            $behavior,
+            'AccessControl behavior must attach to the module.',
+        );
+        self::assertSame(
+            ['set-identity', 'reset-identity'],
+            $behavior->only,
+            'Switch actions must be gated by the behavior.',
+        );
+        self::assertCount(
+            1,
+            $behavior->rules,
+            'AccessControl behavior must have one rule for the switch actions.',
+        );
+
+        $rule = $behavior->rules[0] ?? null;
+
+        self::assertInstanceOf(
+            AccessRule::class,
+            $rule,
+            'AccessControl rule must be an AccessRule instance.',
+        );
+        self::assertSame(
+            ['set-identity', 'reset-identity'],
+            $rule->actions,
+            'AccessControl rule must have the correct actions.',
         );
         self::assertNull(
             $panel->filterModel,
@@ -703,6 +907,7 @@ final class UserPanelTest extends TestCase
         $this->mockWebApplication(['components' => ['user' => stdClass::class]]);
 
         $module = new Module('debug');
+
         $module->logTarget = new LogTarget($module);
 
         $panel = new UserPanel(['id' => 'user', 'module' => $module]);
@@ -738,6 +943,20 @@ final class UserPanelTest extends TestCase
         );
     }
 
+    public function testInitFilterModelKeepsInstantiatedStringClassForActiveRecordIdentity(): void
+    {
+        $panel = $this->bootstrapPanelWithIdentity(
+            new ArIdentity(),
+            filterModel: SearchableFilterModel::class,
+        );
+
+        self::assertInstanceOf(
+            SearchableFilterModel::class,
+            $panel->filterModel,
+            'ActiveRecord identity must keep the instantiated string class.',
+        );
+    }
+
     public function testInitFilterModelLeavesModelInstanceUntouched(): void
     {
         $filterModel = new SearchableFilterModel();
@@ -748,6 +967,19 @@ final class UserPanelTest extends TestCase
             $filterModel,
             $panel->filterModel,
             'Pre-built Model instance must round-trip unchanged.',
+        );
+    }
+
+    public function testInitFilterModelLeavesModelInstanceUntouchedForActiveRecordIdentity(): void
+    {
+        $filterModel = new SearchableFilterModel();
+
+        $panel = $this->bootstrapPanelWithIdentity(new ArIdentity(), filterModel: $filterModel);
+
+        self::assertSame(
+            $filterModel,
+            $panel->filterModel,
+            'Pre-built Model instance must round-trip unchanged for ActiveRecord identity.',
         );
     }
 
@@ -879,6 +1111,7 @@ final class UserPanelTest extends TestCase
         Yii::$app->user->login(new Identity(1));
 
         $module = new Module('debug');
+
         $module->logTarget = new LogTarget($module);
 
         $this->expectException(InvalidConfigException::class);
@@ -914,7 +1147,9 @@ final class UserPanelTest extends TestCase
         );
 
         $module = new Module('debug');
+
         $module->logTarget = new LogTarget($module);
+
         $panel = new UserPanel(['id' => 'user', 'module' => $module]);
 
         $panel->userSwitch = new UserSwitch();

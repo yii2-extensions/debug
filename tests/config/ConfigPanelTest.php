@@ -10,7 +10,8 @@ use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see ConfigPanel} covering the extension roster narrowing, the version pluck helpers, and the toolbar-items short-circuit.
+ * Unit tests for {@see ConfigPanel} covering the extension roster narrowing, the version pluck helpers, and the
+ * toolbar-items short-circuit.
  */
 #[Group('panel')]
 #[Group('config')]

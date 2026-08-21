@@ -19,9 +19,14 @@ final class RouterPanelTest extends TestCase
 {
     public function testGetDetailRendersWithCapturedData(): void
     {
-        $panel = $this->makePanel(RouterPanel::class);
+        $panel = $this->makePanel(
+            RouterPanel::class,
+        );
 
-        $this->hydratePanel($panel, RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'));
+        $this->hydratePanel(
+            $panel,
+            RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'),
+        );
 
         $detail = $panel->getDetail();
 
@@ -44,7 +49,9 @@ final class RouterPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(RouterPanel::class);
+        $panel = $this->makePanel(
+            RouterPanel::class,
+        );
 
         self::assertSame(
             'Router',
@@ -60,9 +67,14 @@ final class RouterPanelTest extends TestCase
 
     public function testGetToolbarItemsFormatsTitleAndValue(): void
     {
-        $panel = $this->makePanel(RouterPanel::class);
+        $panel = $this->makePanel(
+            RouterPanel::class,
+        );
 
-        $this->hydratePanel($panel, RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'));
+        $this->hydratePanel(
+            $panel,
+            RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -94,9 +106,14 @@ final class RouterPanelTest extends TestCase
 
     public function testGetToolbarItemsLeavesActionEmptyWhenMissing(): void
     {
-        $panel = $this->makePanel(RouterPanel::class);
+        $panel = $this->makePanel(
+            RouterPanel::class,
+        );
 
-        $this->hydratePanel($panel, RouterSnapshot::capture(null, [], 'site/index'));
+        $this->hydratePanel(
+            $panel,
+            RouterSnapshot::capture(null, [], 'site/index'),
+        );
 
         $items = $this->invoke(
             $panel,
@@ -123,7 +140,9 @@ final class RouterPanelTest extends TestCase
 
     public function testHydrateRestoresTheRuleTraceFromTheSnapshot(): void
     {
-        $panel = $this->makePanel(RouterPanel::class);
+        $panel = $this->makePanel(
+            RouterPanel::class,
+        );
 
         $captured = RouterSnapshot::capture(
             'app\\controllers\\SiteController::actionIndex()',
@@ -134,11 +153,18 @@ final class RouterPanelTest extends TestCase
             'site/index',
         );
 
-        $this->hydratePanel($panel, $captured);
+        $this->hydratePanel(
+            $panel,
+            $captured,
+        );
 
         $detail = $panel->getDetail();
 
-        self::assertStringContainsString('site/&lt;action&gt;', $detail, 'The matched rule must render.');
+        self::assertStringContainsString(
+            'site/&lt;action&gt;',
+            $detail,
+            'The matched rule must render.',
+        );
     }
 
     public function testRouterSnapshotRoundTripsItsRuleRows(): void
@@ -153,9 +179,23 @@ final class RouterPanelTest extends TestCase
 
         $row = $restored->entries()[0] ?? self::fail('Expected one rule row.');
 
-        self::assertSame('site/<action>', $row->rule, 'Rule name must round-trip.');
-        self::assertSame('parent-rule', $row->parent, 'Parent rule must round-trip.');
-        self::assertTrue($row->match, 'Match flag must round-trip.');
-        self::assertTrue($restored->hasMatch(), 'A matching rule must raise the snapshot flag.');
+        self::assertSame(
+            'site/<action>',
+            $row->rule,
+            'Rule name must round-trip.',
+        );
+        self::assertSame(
+            'parent-rule',
+            $row->parent,
+            'Parent rule must round-trip.',
+        );
+        self::assertTrue(
+            $row->match,
+            'Match flag must round-trip.',
+        );
+        self::assertTrue(
+            $restored->hasMatch(),
+            'A matching rule must raise the snapshot flag.',
+        );
     }
 }

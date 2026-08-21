@@ -75,10 +75,6 @@ class Svg extends BaseObject implements Stringable
 
         $module = $panel->module;
 
-        if ($module === null) {
-            return;
-        }
-
         foreach ($this->listenMessages as $panelId) {
             $sourcePanel = $module->panels[$panelId] ?? null;
 
@@ -200,7 +196,7 @@ class Svg extends BaseObject implements Stringable
      */
     private function polygonPoints(): string
     {
-        $y = (float) $this->y;
+        $y = $this->y;
         $str = "0 {$this->y} ";
 
         foreach ($this->points as $point) {
@@ -219,7 +215,7 @@ class Svg extends BaseObject implements Stringable
      */
     private function polylinePoints(): string
     {
-        $y = (float) $this->y;
+        $y = $this->y;
 
         $str = "0 {$this->y} ";
 

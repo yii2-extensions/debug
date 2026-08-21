@@ -15,8 +15,6 @@ use yii\helpers\FileHelper;
 /**
  * Unit tests for {@see SnapshotStore} covering the JSON filesystem boundary: atomic writes, manifest locking, history
  * garbage collection, and the failure paths that keep a broken filesystem from corrupting a capture.
- *
- * @since 0.2
  */
 #[Group('storage')]
 final class SnapshotStoreTest extends TestCase
@@ -26,6 +24,7 @@ final class SnapshotStoreTest extends TestCase
     public function testInvalidJsonIsRejectedWithoutExecutingPayloads(): void
     {
         FileHelper::createDirectory($this->path);
+
         file_put_contents("{$this->path}/invalid.json", '{invalid');
 
         self::assertNull(
@@ -40,9 +39,18 @@ final class SnapshotStoreTest extends TestCase
 
         $summary = $this->summary('tag-1', 1_700_000_000.0);
 
-        $store->writeSnapshot(new DebugSnapshot($summary, [], []), 10);
+        $store->writeSnapshot(
+            new DebugSnapshot($summary, [], []),
+            10,
+        );
 
-        MockerState::addCondition('PHPForge\\Debug\\Storage', 'fopen', [], false, true);
+        MockerState::addCondition(
+            'PHPForge\\Debug\\Storage',
+            'fopen',
+            [],
+            false,
+            true,
+        );
 
         self::assertSame(
             [],
@@ -75,14 +83,20 @@ final class SnapshotStoreTest extends TestCase
 
         $kept = $this->summary('kept', 1_700_000_000.0);
 
-        $store->writeSnapshot(new DebugSnapshot($kept, [], []), 2);
+        $store->writeSnapshot(
+            new DebugSnapshot($kept, [], []),
+            2,
+        );
 
         file_put_contents("{$this->path}/orphan.json", '{}');
 
         for ($index = 0; $index < 13; $index++) {
             $summary = $this->summary("tag-{$index}", 1_700_000_000.0 + $index);
 
-            $store->writeSnapshot(new DebugSnapshot($summary, [], []), 2);
+            $store->writeSnapshot(
+                new DebugSnapshot($summary, [], []),
+                2,
+            );
         }
 
         self::assertFileDoesNotExist(
@@ -97,8 +111,14 @@ final class SnapshotStoreTest extends TestCase
         $older = $this->summary('older', 1_700_000_000.0);
         $newer = $this->summary('newer', 1_700_000_001.0);
 
-        $store->writeSnapshot(new DebugSnapshot($older, [], []), 10);
-        $store->writeSnapshot(new DebugSnapshot($newer, ['panel' => ['value' => 1]], []), 10);
+        $store->writeSnapshot(
+            new DebugSnapshot($older, [], []),
+            10,
+        );
+        $store->writeSnapshot(
+            new DebugSnapshot($newer, ['panel' => ['value' => 1]], []),
+            10,
+        );
 
         $snapshot = $store->readSnapshot('newer');
 
@@ -128,17 +148,27 @@ final class SnapshotStoreTest extends TestCase
         $summary = $this->summary('../outside', 1_700_000_000.0);
 
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage('Invalid debug snapshot tag: ../outside');
+        $this->expectExceptionMessage(
+            'Invalid debug snapshot tag: ../outside',
+        );
 
         $this->store()->writeSnapshot(new DebugSnapshot($summary, [], []), 10);
     }
 
     public function testThrowInvalidConfigExceptionWhenTheSnapshotCannotBeMovedIntoPlace(): void
     {
-        MockerState::addCondition('PHPForge\\Debug\\Storage', 'rename', [], false, true);
+        MockerState::addCondition(
+            'PHPForge\\Debug\\Storage',
+            'rename',
+            [],
+            false,
+            true,
+        );
 
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage('Unable to replace debug data file');
+        $this->expectExceptionMessage(
+            'Unable to replace debug data file',
+        );
 
         $summary = $this->summary('blocked', 1_700_000_000.0);
 
@@ -147,10 +177,18 @@ final class SnapshotStoreTest extends TestCase
 
     public function testThrowInvalidConfigExceptionWhenTheTemporaryFileCannotBeCreated(): void
     {
-        MockerState::addCondition('PHPForge\\Debug\\Storage', 'tempnam', [], false, true);
+        MockerState::addCondition(
+            'PHPForge\\Debug\\Storage',
+            'tempnam',
+            [],
+            false,
+            true,
+        );
 
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage('Unable to write temporary debug data file');
+        $this->expectExceptionMessage(
+            'Unable to write temporary debug data file',
+        );
 
         $summary = $this->summary('blocked', 1_700_000_000.0);
 
@@ -159,10 +197,18 @@ final class SnapshotStoreTest extends TestCase
 
     public function testThrowInvalidConfigExceptionWhenTheTemporaryFileCannotBeWritten(): void
     {
-        MockerState::addCondition('PHPForge\\Debug\\Storage', 'file_put_contents', [], false, true);
+        MockerState::addCondition(
+            'PHPForge\\Debug\\Storage',
+            'file_put_contents',
+            [],
+            false,
+            true,
+        );
 
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage('Unable to write temporary debug data file');
+        $this->expectExceptionMessage(
+            'Unable to write temporary debug data file',
+        );
 
         $summary = $this->summary('blocked', 1_700_000_000.0);
 

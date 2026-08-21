@@ -13,8 +13,6 @@ use yii\log\Logger;
 /**
  * Unit tests for {@see CurrentRoute} and the {@see RouterSnapshot::capture()} trace replay it exposes, covering
  * log-message classification (informational vs. rule-match), parent-rule deduplication, and the derived counters.
- *
- * @since 0.2
  */
 #[Group('router')]
 final class CurrentRouteTest extends TestCase

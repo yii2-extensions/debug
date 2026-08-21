@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace yii\debug\collectors;
 
-use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use yii\log\Logger;
 
@@ -37,14 +36,13 @@ class LogCollector extends Collector
         $routerCollector = $this->module?->getCollectorCoordinator()->collector('router');
 
         if ($routerCollector instanceof RouterCollector) {
-            $except = Coerce::stringList($routerCollector->getCategories());
+            $except = $routerCollector->getCategories();
         }
 
         $messages = $this->getLogMessages(
             Logger::LEVEL_ERROR | Logger::LEVEL_INFO | Logger::LEVEL_WARNING | Logger::LEVEL_TRACE,
             [],
             $except,
-            true,
         );
 
         return LogSnapshot::capture($messages);

@@ -10,8 +10,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for {@see Payload} covering the strict type guards applied at the decoded-JSON boundary.
- *
- * @since 0.2
  */
 #[Group('storage')]
 final class PayloadTest extends TestCase
@@ -36,7 +34,11 @@ final class PayloadTest extends TestCase
 
     public function testObjectAcceptsAnEmptyArrayAsAnEmptyObject(): void
     {
-        self::assertSame([], Payload::object([])->all(), 'An empty JSON object decodes to an empty array.');
+        self::assertSame(
+            [],
+            Payload::object([])->all(),
+            'An empty JSON object decodes to an empty array.',
+        );
     }
 
     public function testRowsValidatesEveryElementAsAnObject(): void

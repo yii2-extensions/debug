@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use Yii;
 use yii\debug\collectors\ConfigCollector;
 use yii\debug\tests\support\TestCase;
@@ -19,10 +20,17 @@ use function is_string;
 #[Group('config')]
 final class ConfigCollectorTest extends TestCase
 {
+    public function testApplicationResolverRemainsProtected(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(ConfigCollector::class, 'getApplication'))->isProtected(),
+            'The application resolver must remain protected.',
+        );
+    }
+
     public function testCaptureCollapsesApplicationFieldsWhenYiiAppIsNotApplication(): void
     {
         $collector = $this->makeCollector();
-
         $payload = $this->captureData($collector);
 
         $application = $payload['application'] ?? null;
@@ -84,7 +92,6 @@ final class ConfigCollectorTest extends TestCase
         );
 
         $collector = $this->makeCollector();
-
         $payload = $this->captureData($collector);
 
         $application = $payload['application'] ?? null;
@@ -173,8 +180,17 @@ final class ConfigCollectorTest extends TestCase
     {
         $normalized = $this->normalize(
             [
-                'acme/foo' => ['name' => 'acme/foo', 'bootstrap' => 'app\\FooBootstrap'],
-                'acme/bar' => ['name' => 'acme/bar', 'bootstrap' => ['class' => 'app\\BarBootstrap', 0 => 'dropped']],
+                'acme/foo' => [
+                    'name' => 'acme/foo',
+                    'bootstrap' => 'app\\FooBootstrap',
+                ],
+                'acme/bar' => [
+                    'name' => 'acme/bar',
+                    'bootstrap' => [
+                        'class' => 'app\\BarBootstrap',
+                        0 => 'dropped',
+                    ],
+                ],
             ],
         );
 
@@ -196,7 +212,12 @@ final class ConfigCollectorTest extends TestCase
     public function testNormalizeExtensionsDropsBootstrapWithUnsupportedType(): void
     {
         $normalized = $this->normalize(
-            ['acme/foo' => ['name' => 'acme/foo', 'bootstrap' => 42]],
+            [
+                'acme/foo' => [
+                    'name' => 'acme/foo',
+                    'bootstrap' => 42,
+                ],
+            ],
         );
 
         self::assertArrayNotHasKey(
@@ -232,9 +253,15 @@ final class ConfigCollectorTest extends TestCase
     {
         $normalized = $this->normalize(
             [
-                'acme/foo' => ['name' => 'acme/foo', 'version' => '1.0'],
+                'acme/foo' => [
+                    'name' => 'acme/foo',
+                    'version' => '1.0',
+                ],
                 'acme/bar' => 'invalid',
-                'acme/baz' => ['name' => 'acme/baz', 'version' => '2.0'],
+                'acme/baz' => [
+                    'name' => 'acme/baz',
+                    'version' => '2.0',
+                ],
             ],
         );
 
@@ -258,7 +285,12 @@ final class ConfigCollectorTest extends TestCase
     public function testNormalizeExtensionsSkipsNonStringNameAndVersion(): void
     {
         $normalized = $this->normalize(
-            ['acme/foo' => ['name' => 42, 'version' => null]],
+            [
+                'acme/foo' => [
+                    'name' => 42,
+                    'version' => null,
+                ],
+            ],
         );
 
         $entry = $this->entry($normalized, 'acme/foo');
@@ -286,7 +318,10 @@ final class ConfigCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot->data();
     }

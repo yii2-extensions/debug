@@ -6,12 +6,13 @@ namespace yii\debug\tests\log;
 
 use PHPForge\Debug\Panel\Log\LogRow;
 use PHPUnit\Framework\Attributes\Group;
+use yii\data\{Pagination, Sort};
 use yii\debug\models\search\LogSearch;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see LogSearch} covering attribute labels, validation rules, and the substring/exact-match
- * dispatch backing the Log panel grid.
+ * Unit tests for {@see LogSearch} covering attribute labels, validation rules, and the substring/exact-match dispatch
+ * backing the Log panel grid.
  */
 #[Group('log')]
 #[Group('search')]
@@ -45,16 +46,89 @@ final class LogSearchTest extends TestCase
 
     public function testRulesMarkEveryFilterAsSafe(): void
     {
-        $firstRule = (new LogSearch())->rules()[0] ?? null;
+        self::assertSame(
+            [[['level', 'message', 'category'], 'safe']],
+            (new LogSearch())->rules(),
+            'Every log filter must remain safe for mass assignment.',
+        );
+    }
 
-        self::assertIsArray(
-            $firstRule,
-            'First rule must be a configuration tuple.',
+    public function testSearchConfiguresPaginationAndSortOrder(): void
+    {
+        $this->mockWebApplication();
+
+        $provider = (new LogSearch())->search([], []);
+
+        $pagination = $provider->getPagination();
+        $sort = $provider->getSort();
+
+        self::assertInstanceOf(
+            Pagination::class,
+            $pagination,
+            'Pagination must be configured for the log search provider.',
         );
         self::assertSame(
-            'safe',
-            $firstRule[1] ?? null,
-            "First rule must mark filter fields as 'safe'.",
+            50,
+            $pagination->getPageSize(),
+            "Page size must be '50'.",
+        );
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'Sort must be configured for the log search provider.',
+        );
+        self::assertSame(
+            ['time', 'timeSincePrevious', 'level', 'category', 'message'],
+            array_keys($sort->attributes),
+            'Sort must be configured for every filterable attribute.'
+        );
+        self::assertSame(
+            [
+                'asc' => ['timeSincePrevious' => SORT_ASC],
+                'desc' => ['timeSincePrevious' => SORT_DESC],
+                'default' => SORT_DESC,
+            ],
+            $sort->attributes['timeSincePrevious'] ?? null,
+            'Sort must be configured for the timeSincePrevious attribute.',
+        );
+        self::assertSame(
+            ['time' => SORT_ASC],
+            $sort->defaultOrder,
+            'Default sort order must be by time ascending.',
+        );
+    }
+
+    public function testSearchAppliesExactMatchOnLevel(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::row(level: 1),
+            self::row(level: 10),
+            self::row(level: 2),
+        ];
+
+        self::assertSame(
+            1,
+            (new LogSearch())->search(['Log' => ['level' => '1']], $records)->getTotalCount(),
+            'Level filter must apply exact match.',
+        );
+    }
+
+    public function testSearchAppliesPartialMatchOnMessage(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::row(message: 'User logged in'),
+            self::row(message: 'User logged out'),
+            self::row(message: 'Database query'),
+        ];
+
+        self::assertSame(
+            2,
+            (new LogSearch())->search(['Log' => ['message' => 'logged']], $records)->getTotalCount(),
+            'Message filter must apply substring match.',
         );
     }
 

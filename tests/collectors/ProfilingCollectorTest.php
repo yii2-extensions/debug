@@ -32,7 +32,10 @@ final class ProfilingCollectorTest extends TestCase
 
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
         self::assertGreaterThan(
             0,
             $snapshot->memory,
@@ -42,6 +45,11 @@ final class ProfilingCollectorTest extends TestCase
             0.0,
             $snapshot->time,
             "'time' must be non-negative.",
+        );
+        self::assertLessThan(
+            10.0,
+            $snapshot->time,
+            "'time' must subtract the request start timestamp.",
         );
         self::assertSame(
             [],

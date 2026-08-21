@@ -74,7 +74,6 @@ class UserSearch extends Model implements UserSearchInterface
             }
         }
 
-        parent::init();
     }
 
     #[Override]
@@ -103,7 +102,7 @@ class UserSearch extends Model implements UserSearchInterface
             return $this->searchActiveDataProvider($params, $this->identityImplement);
         }
 
-        return new ArrayDataProvider(['allModels' => []]);
+        return new ArrayDataProvider();
     }
 
     /**

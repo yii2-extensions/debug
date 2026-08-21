@@ -10,6 +10,9 @@ use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use yii\debug\tests\support\TestCase;
 
+/**
+ * Unit tests for {@see ExceptionSnapshot} covering its round-trip through JSON and hydration of invalid payloads.
+ */
 #[Group('storage')]
 final class ExceptionSnapshotTest extends TestCase
 {

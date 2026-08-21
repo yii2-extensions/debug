@@ -15,8 +15,8 @@ use yii\debug\tests\support\TestCase;
 use yii\web\{AssetManager, HttpException, ServerErrorHttpException};
 
 /**
- * Unit tests for {@see JobAction} covering the missing-panel-service and record-not-found error paths, and the
- * happy path that renders the queue-job detail view for a captured record (both regular and AJAX requests).
+ * Unit tests for {@see JobAction} covering the missing-panel-service and record-not-found error paths, and the happy
+ * path that renders the queue-job detail view for a captured record (both regular and AJAX requests).
  */
 #[Group('actions')]
 #[Group('queue')]
@@ -44,12 +44,24 @@ final class JobActionTest extends TestCase
 
         $action->setModule($module);
 
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage(
-            'Queue job record not found.',
-        );
+        try {
+            $action->run('0', 'tag-empty-queue', $queuePanel);
 
-        $action->run('0', 'tag-empty-queue', $queuePanel);
+            self::fail(
+                'A missing queue record must throw.',
+            );
+        } catch (HttpException $exception) {
+            self::assertSame(
+                404,
+                $exception->statusCode,
+                'A missing queue record must throw a 404.',
+            );
+            self::assertSame(
+                'Queue job record not found.',
+                $exception->getMessage(),
+                'A missing queue record must throw a "Queue job record not found." message.',
+            );
+        }
     }
 
     public function testRunRendersAjaxPartialWhenRequestIsAjax(): void
@@ -103,6 +115,11 @@ final class JobActionTest extends TestCase
             $html,
             'AJAX hits must render the partial view; job class must still surface.',
         );
+        self::assertStringNotContainsString(
+            '<!DOCTYPE html>',
+            $html,
+            'AJAX rendering must omit the debugger layout.',
+        );
     }
 
     public function testRunRendersQueueJobDetailViewForCapturedRecord(): void
@@ -149,6 +166,11 @@ final class JobActionTest extends TestCase
             'HelloJob',
             $html,
             'Rendered view must surface the job class short name.',
+        );
+        self::assertStringStartsWith(
+            '<!DOCTYPE html>',
+            $html,
+            'Regular rendering must include the debugger layout.',
         );
     }
 

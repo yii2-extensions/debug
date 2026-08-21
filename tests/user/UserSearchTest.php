@@ -14,8 +14,8 @@ use yii\debug\tests\support\TestCase;
 use yii\web\User;
 
 /**
- * Unit tests for {@see UserSearch} covering identity proxying (`__get`, `__set`, `attributes`, `rules`), the
- * `init()` resolution flow, and the data-provider dispatch (AR vs non-AR identity).
+ * Unit tests for {@see UserSearch} covering identity proxying (`__get`, `__set`, `attributes`, `rules`), the `init()`
+ * resolution flow, and the data-provider dispatch (AR vs non-AR identity).
  */
 #[Group('user')]
 #[Group('search')]
@@ -49,36 +49,15 @@ final class UserSearchTest extends TestCase
 
         $search = new UserSearch();
 
-        $attributes = $search->attributes();
-
-        self::assertContains(
-            'id',
-            $attributes,
-            "Identity 'id' attribute must surface.",
-        );
-        self::assertContains(
-            'username',
-            $attributes,
-            "Identity 'username' attribute must surface.",
-        );
-
-        $rules = $search->rules();
-
-        self::assertNotEmpty(
-            $rules,
-            'Rules must be derived from the identity attribute list.',
-        );
-
-        $firstRule = $rules[0] ?? null;
-
-        self::assertIsArray(
-            $firstRule,
-            'First derived rule must be a tuple.',
+        self::assertSame(
+            ['id', 'username'],
+            $search->attributes(),
+            'Model identity must expose its attributes through the search proxy.',
         );
         self::assertSame(
-            'safe',
-            $firstRule[1] ?? null,
-            "Derived rule must mark identity fields as 'safe'.",
+            [[['id', 'username'], 'safe']],
+            $search->rules(),
+            'Model identity must expose its validation rules through the search proxy.',
         );
     }
 
@@ -138,10 +117,77 @@ final class UserSearchTest extends TestCase
             $provider,
             "AR-backed 'search()' must build an 'ActiveDataProvider'.",
         );
-        self::assertGreaterThan(
-            0,
+        self::assertSame(
+            2,
             $provider->getTotalCount(),
-            "'admin' fixture row must survive the LIKE filter.",
+            'AR-backed search must apply attribute filters to the query and return the correct row count.',
+        );
+
+        $models = $provider->getModels();
+
+        self::assertInstanceOf(
+            ArIdentity::class,
+            $models[0] ?? null,
+            'AR-backed search must return models of the identity class.',
+        );
+        self::assertInstanceOf(
+            ArIdentity::class,
+            $models[1] ?? null,
+            'AR-backed search must return models of the identity class.',
+        );
+        self::assertSame(
+            1,
+            $models[0]->getAttribute('id'),
+            'AR-backed search must return models of the identity class with the correct attribute values.',
+        );
+        self::assertSame(
+            2,
+            $models[1]->getAttribute('id'),
+            'AR-backed search must return models of the identity class with the correct attribute values.',
+        );
+    }
+
+    public function testSearchAppliesExactFilterOnNonStringActiveRecordAttribute(): void
+    {
+        $this->bootWebAppWithIdentity(ArIdentity::class, withDb: true);
+
+        $provider = (new UserSearch())->search(['User' => ['id' => 2]]);
+
+        self::assertSame(
+            1,
+            $provider->getTotalCount(),
+            'AR-backed search must apply exact filters on non-string attributes.',
+        );
+
+        $models = $provider->getModels();
+
+        self::assertInstanceOf(
+            ArIdentity::class,
+            $models[0] ?? null,
+            'AR-backed search must return models of the identity class.',
+        );
+        self::assertSame(
+            2,
+            $models[0]->getAttribute('id'),
+            'AR-backed search must return models of the identity class with the correct attribute values.',
+        );
+    }
+
+    public function testSearchReturnsUnfilteredProviderWhenValidationFails(): void
+    {
+        $this->bootWebAppWithIdentity(ArIdentity::class, withDb: true);
+
+        $search = new class extends UserSearch {
+            public function beforeValidate(): bool
+            {
+                return false;
+            }
+        };
+
+        self::assertSame(
+            3,
+            $search->search(['User' => ['username' => 'admin']])->getTotalCount(),
+            'AR-backed search must return an unfiltered provider when validation fails.',
         );
     }
 
@@ -246,6 +292,12 @@ final class UserSearchTest extends TestCase
                 ->execute();
             Yii::$app->db->createCommand()
                 ->insert('stub_users', ['id' => 1, 'username' => 'admin'])
+                ->execute();
+            Yii::$app->db->createCommand()
+                ->insert('stub_users', ['id' => 2, 'username' => 'administrator'])
+                ->execute();
+            Yii::$app->db->createCommand()
+                ->insert('stub_users', ['id' => 3, 'username' => 'guest'])
                 ->execute();
         }
     }

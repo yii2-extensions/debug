@@ -11,8 +11,8 @@ use yii\debug\panels\EventPanel;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see EventPanel} covering snapshot hydration, the toolbar count
- * chip, and the rendered detail/summary views.
+ * Unit tests for {@see EventPanel} covering snapshot hydration, the toolbar count chip, and the rendered detail/summary
+ * views.
  */
 #[Group('panel')]
 #[Group('event')]
@@ -22,7 +22,10 @@ final class EventPanelTest extends TestCase
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        $this->hydratePanel($panel, new EventSnapshot([]));
+        $this->hydratePanel(
+            $panel,
+            new EventSnapshot([]),
+        );
 
         $detail = $panel->getDetail();
 
@@ -42,10 +45,15 @@ final class EventPanelTest extends TestCase
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        $this->hydratePanel($panel, new EventSnapshot([
-            new EventRow(1.0, 'init', Event::class, '1', 'App'),
-            new EventRow(2.0, 'afterSave', Event::class, '0', 'App'),
-        ]));
+        $this->hydratePanel(
+            $panel,
+            new EventSnapshot(
+                [
+                    new EventRow(1.0, 'init', Event::class, '1', 'App'),
+                    new EventRow(2.0, 'afterSave', Event::class, '0', 'App'),
+                ],
+            ),
+        );
 
         self::assertStringContainsString(
             '<strong>1</strong> static',
@@ -58,9 +66,14 @@ final class EventPanelTest extends TestCase
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        $this->hydratePanel($panel, new EventSnapshot([
-            new EventRow(1.0, 'afterSave', Event::class, '0', 'App'),
-        ]));
+        $this->hydratePanel(
+            $panel,
+            new EventSnapshot(
+                [
+                    new EventRow(1.0, 'afterSave', Event::class, '0', 'App'),
+                ],
+            ),
+        );
 
         $detail = $panel->getDetail();
 
@@ -95,10 +108,15 @@ final class EventPanelTest extends TestCase
     {
         $panel = $this->makePanel(EventPanel::class);
 
-        $this->hydratePanel($panel, new EventSnapshot([
-            new EventRow(1.0, 'a', Event::class, '0', ''),
-            new EventRow(2.0, 'b', Event::class, '0', ''),
-        ]));
+        $this->hydratePanel(
+            $panel,
+            new EventSnapshot(
+                [
+                    new EventRow(1.0, 'a', Event::class, '0', ''),
+                    new EventRow(2.0, 'b', Event::class, '0', ''),
+                ],
+            ),
+        );
 
         $items = $this->invoke(
             $panel,

@@ -17,8 +17,8 @@ use yii\debug\tests\support\TestCase;
 use function class_exists;
 
 /**
- * Unit tests for {@see QueueCollector} covering the queue lifecycle capture, the component-id resolution, the
- * listener detachment on shutdown, and the payload-narrowing helpers.
+ * Unit tests for {@see QueueCollector} covering the queue lifecycle capture, the component-id resolution, the listener
+ * detachment on shutdown, and the payload-narrowing helpers.
  */
 #[Group('collector')]
 #[Group('queue')]
@@ -54,6 +54,11 @@ final class QueueCollectorTest extends TestCase
             'job failed',
             $errorRecord->error,
             'Error message must round-trip.'
+        );
+        self::assertSame(
+            [],
+            $this->getInaccessibleProperty($collector, 'execStarts'),
+            'Error event must clear the exec start time.',
         );
 
         Event::offAll();
@@ -172,6 +177,16 @@ final class QueueCollectorTest extends TestCase
             $execRecord->duration,
             'Exec duration must be computed from begin/end pair.'
         );
+        self::assertLessThan(
+            1.0,
+            $execRecord->duration,
+            'Exec duration must subtract the captured start time.',
+        );
+        self::assertSame(
+            [],
+            $this->getInaccessibleProperty($collector, 'execStarts'),
+            'Exec record must clear the exec start time.',
+        );
 
         Event::offAll();
     }
@@ -198,6 +213,9 @@ final class QueueCollectorTest extends TestCase
             ),
             'Component id must round-trip from the registered name.',
         );
+
+        Yii::$app->clear('myQueue');
+
         self::assertSame(
             'myQueue',
             $this->invoke(
@@ -206,6 +224,23 @@ final class QueueCollectorTest extends TestCase
                 [$event]
             ),
             'Cached lookup must return the same id on repeat.',
+        );
+    }
+
+    public function testComponentIdOfIgnoresUninstantiatedDefinitions(): void
+    {
+        $collector = $this->makeCollector();
+
+        $queueComponent = new Component();
+
+        Yii::$app->set('lazyQueue', $queueComponent);
+
+        $event = new Event(['sender' => $queueComponent]);
+
+        self::assertSame(
+            '',
+            $this->invoke($collector, 'componentIdOf', [$event]),
+            'Component id must return empty for uninstantiated definitions.',
         );
     }
 
@@ -333,15 +368,42 @@ final class QueueCollectorTest extends TestCase
             $this->makeQueueEvent(jobId: 'job-after'),
         );
 
-        $collector->startup();
-
         self::assertSame(
             [],
-            $this->captureEntries($collector),
-            'A restarted collector must not retain records captured while stopped.',
+            $this->getInaccessibleProperty($collector, 'records'),
+            'A stopped collector must not capture queue records after listener detachment.',
         );
 
         Event::offAll();
+    }
+
+    public function testPushDoesNotConsumeAnExecutionStartAsDuration(): void
+    {
+        $collector = $this->makeCollector();
+        $job = new stdClass();
+
+        Event::trigger(
+            'yii\\queue\\Queue',
+            'beforeExec',
+            $this->makeQueueEvent(job: $job),
+        );
+        Event::trigger(
+            'yii\\queue\\Queue',
+            'afterPush',
+            $this->makeQueueEvent(job: $job),
+        );
+
+        $record = $this->captureEntries($collector)[0] ?? self::fail('Expected the push record.');
+
+        self::assertSame(
+            JobRecord::TYPE_PUSH,
+            $record->eventType,
+            'Captured event must be "push".'
+        );
+        self::assertNull(
+            $record->duration,
+            'Push record must not consume an execution start as duration.',
+        );
     }
 
     public function testValueToNullableIntKeepsIntsAndDropsOthers(): void
@@ -395,7 +457,10 @@ final class QueueCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot->entries();
     }

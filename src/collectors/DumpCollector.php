@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\collectors;
 
 use Closure;
-use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\Dump\DumpSnapshot;
 use UIAwesome\Html\Helper\Encode;
 use yii\helpers\VarDumper;
 use yii\log\Logger;
-
-use function array_key_exists;
 
 /**
  * Captures trace-level log messages emitted by `Yii::debug()` for the Dump panel.
@@ -28,7 +25,7 @@ use function array_key_exists;
 class DumpCollector extends Collector
 {
     /**
-     * @var array<int, string> Message categories to capture; an empty list captures every category.
+     * @var list<string> Message categories to capture; an empty list captures every category.
      */
     public array $categories = ['application'];
     /**
@@ -61,18 +58,15 @@ class DumpCollector extends Collector
         $routerCollector = $this->module?->getCollectorCoordinator()->collector('router');
 
         if ($routerCollector instanceof RouterCollector) {
-            $except = Coerce::stringList($routerCollector->getCategories());
+            $except = $routerCollector->getCategories();
         }
 
-        $messages = $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories, $except);
-
-        foreach ($messages as &$message) {
-            if (array_key_exists(0, $message) === false) {
-                continue;
-            }
-
-            $message[0] = $this->varDump($message[0]);
-        }
+        $messages = $this->getLogMessages(
+            Logger::LEVEL_TRACE,
+            $this->categories,
+            $except,
+            $this->varDump(...),
+        );
 
         return DumpSnapshot::capture($messages);
     }

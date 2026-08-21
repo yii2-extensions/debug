@@ -20,7 +20,7 @@ use PDOStatement;
 class DebugPdoStatement extends PDOStatement
 {
     /**
-     * @var array<int, int> Row count per executed statement, appended in execution order.
+     * @var list<int> Row count per executed statement, appended in execution order.
      */
     public static array $rowCounts = [];
 

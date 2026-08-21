@@ -6,6 +6,7 @@ namespace yii\debug\tests\dump;
 
 use PHPForge\Debug\Panel\Dump\DumpSnapshot;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use yii\debug\panels\DumpPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -18,11 +19,22 @@ use yii\log\Logger;
 #[Group('dump')]
 final class DumpPanelTest extends TestCase
 {
+    public function testGetModelsRemainsProtected(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(DumpPanel::class, 'getModels'))->isProtected(),
+            'The getModels method must remain protected.',
+        );
+    }
+
     public function testGetDetailRendersEmptyStateWhenNoDumpsCaptured(): void
     {
         $panel = $this->makePanel(DumpPanel::class);
 
-        $this->hydratePanel($panel, DumpSnapshot::capture([]));
+        $this->hydratePanel(
+            $panel,
+            DumpSnapshot::capture([]),
+        );
 
         $detail = $panel->getDetail();
 
@@ -168,36 +180,6 @@ final class DumpPanelTest extends TestCase
             $row->time,
             1e-9,
             'Time must be scaled to milliseconds.',
-        );
-    }
-
-    public function testGetModelsSkipsEntriesThatAreNotArrays(): void
-    {
-        $panel = $this->makePanel(DumpPanel::class);
-
-        $this->hydratePanel(
-            $panel,
-            DumpSnapshot::capture(
-                [
-                    ['valid', Logger::LEVEL_TRACE, 'application', 0.0, []],
-                    'invalid-string-entry',
-                ],
-            ),
-        );
-
-        $models = $this->invoke(
-            $panel,
-            'getModels',
-        );
-
-        self::assertIsArray(
-            $models,
-            'Models must be an array.',
-        );
-        self::assertCount(
-            1,
-            $models,
-            'Non-array entries must be dropped.',
         );
     }
 

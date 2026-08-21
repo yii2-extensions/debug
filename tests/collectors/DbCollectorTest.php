@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
+use Closure;
 use PDO;
 use PHPForge\Debug\Panel\Db\QueryRow;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use Yii;
 use yii\db\Connection;
 use yii\debug\collectors\DbCollector;
@@ -15,9 +17,15 @@ use yii\debug\{LogTarget, Module};
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
+use function hash_algos;
+use function in_array;
+
 /**
  * Unit tests for {@see DbCollector} covering query timing aggregation, the SQL command verb extractor, the PDO
  * statement hook lifecycle, and the trace-hash fingerprinting.
+ *
+ * @phpstan-import-type LogTrace from Logger
+ * @phpstan-type StringLogMessage array{0: string, 1: int, 2: string, 3: float, 4: list<LogTrace>, 5: int}
  */
 #[Group('collector')]
 #[Group('db')]
@@ -27,7 +35,11 @@ final class DbCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $this->primeCollector($collector, $this->fakeMessages(2), []);
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(2),
+            [],
+        );
 
         $first = $collector->calculateTimings();
 
@@ -43,74 +55,29 @@ final class DbCollectorTest extends TestCase
         );
     }
 
-    public function testCalculateTimingsSkipsRawTimingsThatNormalizeToNull(): void
-    {
-        $collector = $this->makeCollector();
-
-        // The category must be one of `dbEventNames`, otherwise the pair never survives the profile-log filter and the
-        // assertion below would hold vacuously, without the timing loop ever running.
-        $this->primeCollector($collector, [
-            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', 0.0, [], 0],
-            [['non', 'string', 'token'], Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', 0.001, [], 0],
-        ], []);
-
-        self::assertCount(
-            2,
-            $collector->getProfileLogs(),
-            'Both profile messages must reach the timing loop.',
-        );
-
-        self::assertSame(
-            [],
-            $collector->calculateTimings(),
-            "Raw timings whose 'info' cannot be coerced to a string must be dropped.",
-        );
-    }
-
-    public function testCalculateTimingsSkipsTraceFramesWithNonStringFile(): void
-    {
-        $collector = $this->makeCollector();
-
-        $this->primeCollector($collector, [
-            ...$this->makeMessage(
-                'SELECT 1',
-                0.001,
-                0.0,
-                trace: [
-                    ['file' => 123, 'line' => 1],
-                    ['file' => '/keep/bar.php', 'line' => 2],
-                ],
-            ),
-        ], []);
-        $collector->ignoredPathsInBacktrace = ['/x'];
-
-        $timings = $collector->calculateTimings();
-
-        $first = $timings[0] ?? self::fail('Expected one timing.');
-
-        self::assertCount(
-            2,
-            $first['trace'],
-            'Frames with a non-string file must be left untouched.',
-        );
-    }
-
     public function testCalculateTimingsSkipsTracesUnderIgnoredPaths(): void
     {
         $collector = $this->makeCollector();
 
-        $this->primeCollector($collector, [
-            ...$this->makeMessage(
-                'SELECT 1',
-                0.001,
-                0.0,
-                trace: [
-                    ['file' => '/tmp/ignored/foo.php', 'line' => 1],
-                    ['file' => '/tmp/kept/bar.php', 'line' => 2],
-                ],
-            ),
-        ], []);
-        $collector->ignoredPathsInBacktrace = ['/tmp/ignored'];
+        $this->primeCollector(
+            $collector,
+            [
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                    trace: [
+                        ['file' => '/tmp/ignored/foo.php', 'line' => 1],
+                        ['file' => '/tmp/kept/bar.php', 'line' => 2],
+                    ],
+                ),
+            ],
+            [],
+        );
+
+        Yii::setAlias('@ignored', '/tmp/ignored');
+
+        $collector->ignoredPathsInBacktrace = ['@ignored'];
 
         $timings = $collector->calculateTimings();
 
@@ -122,10 +89,10 @@ final class DbCollectorTest extends TestCase
 
         $first = $timings[0] ?? self::fail('Expected one timing.');
 
-        self::assertCount(
-            1,
+        self::assertSame(
+            [['file' => '/tmp/kept/bar.php', 'line' => 2]],
             $first['trace'],
-            'Ignored-path frame must be dropped from the trace.',
+            'Ignored-path frames must be dropped and the remaining trace reindexed.',
         );
     }
 
@@ -133,11 +100,16 @@ final class DbCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $this->primeCollector($collector, [...$this->makeMessage('SELECT * FROM t', 0.005, 0.010)], [42]);
+        $this->primeCollector(
+            $collector,
+            [...$this->makeMessage('SELECT * FROM t', 0.005, 0.010)],
+            [0],
+        );
 
         $models = $this->captureEntries($collector);
 
         $row = $models[0] ?? self::fail('Expected one row.');
+
         self::assertSame(
             'SELECT',
             $row->type,
@@ -156,9 +128,9 @@ final class DbCollectorTest extends TestCase
             'Timestamp must be scaled to milliseconds.',
         );
         self::assertSame(
-            42,
+            0,
             $row->rows,
-            'Saved row count must round-trip.',
+            'A zero row count must remain a valid driver result.',
         );
     }
 
@@ -166,7 +138,11 @@ final class DbCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $this->primeCollector($collector, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
+        $this->primeCollector(
+            $collector,
+            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [],
+        );
 
         self::assertEquals(
             $this->captureEntries($collector),
@@ -181,7 +157,11 @@ final class DbCollectorTest extends TestCase
 
         $collector = $this->makeCollector();
 
-        self::assertSame([], $this->captureEntries($collector), 'An empty profile log yields no query rows.');
+        self::assertSame(
+            [],
+            $this->captureEntries($collector),
+            'An empty profile log yields no query rows.',
+        );
 
         DebugPdoStatement::$rowCounts = [];
     }
@@ -200,7 +180,11 @@ final class DbCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $this->primeCollector($collector, $this->fakeMessages(3), []);
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(3),
+            [],
+        );
 
         $counts = $collector->countCallerCals();
 
@@ -212,6 +196,25 @@ final class DbCollectorTest extends TestCase
             3,
             array_sum($counts),
             'Total caller calls must match the message count.',
+        );
+    }
+    public function testCountCallerCalsKeepsDistinctTraceHashes(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->primeCollector(
+            $collector,
+            [
+                ...$this->makeMessage('SELECT 1', 0.001, 0.0, [['file' => '/one.php', 'line' => 1]]),
+                ...$this->makeMessage('SELECT 2', 0.001, 0.1, [['file' => '/two.php', 'line' => 2]]),
+            ],
+            [],
+        );
+
+        self::assertSame(
+            [1, 1],
+            array_values($collector->countCallerCals()),
+            'Distinct traces must retain both caller-count buckets.',
         );
     }
 
@@ -233,6 +236,22 @@ final class DbCollectorTest extends TestCase
             'Duplicate counts must group identical SQL statements.',
         );
     }
+    public function testGetExcessiveCallersReturnsEmptyWhenDisabledWithCapturedRows(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(1),
+            [],
+        );
+
+        self::assertSame(
+            [],
+            $collector->getExcessiveCallers(),
+            'A null threshold must disable caller detection.',
+        );
+    }
 
     public function testGetProfileLogsCachesResult(): void
     {
@@ -251,6 +270,11 @@ final class DbCollectorTest extends TestCase
     public function testGetQueryTypeExtractsLeadingVerb(): void
     {
         $collector = $this->makeCollector();
+
+        self::assertTrue(
+            (new ReflectionMethod(DbCollector::class, 'getQueryType'))->isProtected(),
+            'The query-type hook must remain available to subclasses.',
+        );
 
         self::assertSame(
             'SELECT',
@@ -289,97 +313,60 @@ final class DbCollectorTest extends TestCase
             "Stable ID must be 'db'.",
         );
     }
-
-    public function testNormalizeTimingFillsDefaultsForOptionalFields(): void
+    public function testShutdownDetachesAfterOpenListener(): void
     {
-        $collector = $this->makeCollector();
+        $db = $this->makeSqliteConnection();
 
-        $normalized = $this->invoke(
-            $collector,
-            'normalizeTiming',
-            [
-                [
-                    'info' => 'SELECT 1',
-                    'timestamp' => 0.5,
-                    'duration' => 0.001,
-                ],
-            ],
+        $this->mockWebApplication(['components' => ['db' => $db]]);
+
+        $collector = new DbCollector();
+
+        $collector->startup();
+
+        $listener = $this->getInaccessibleProperty($collector, 'afterOpenListener');
+        $events = $this->getInaccessibleProperty($db, '_events');
+
+        self::assertInstanceOf(
+            Closure::class,
+            $listener,
+            'Startup must retain the DB listener.',
         );
+        self::assertIsArray(
+            $events,
+            'Connection events must be stored as an array.',
+        );
+
+        $afterOpenEvents = $events[Connection::EVENT_AFTER_OPEN] ?? null;
 
         self::assertIsArray(
-            $normalized,
-            'Valid raw timing must produce an array.',
+            $afterOpenEvents,
+            'The after-open handler list must be stored.',
         );
-        self::assertSame(
-            'SELECT 1',
-            $normalized['info'] ?? null,
-            "'info' must round-trip.",
-        );
-        self::assertSame(
-            '',
-            $normalized['category'] ?? null,
-            "Missing 'category' must collapse to ''.",
-        );
-        self::assertSame(
-            0,
-            $normalized['level'] ?? null,
-            "Missing 'level' must collapse to '0'.",
-        );
-    }
 
-    public function testNormalizeTimingReturnsNullForIncompletePayloads(): void
-    {
-        $collector = $this->makeCollector();
+        $firstEvent = $afterOpenEvents[0] ?? null;
 
-        self::assertNull(
-            $this->invoke(
-                $collector,
-                'normalizeTiming',
-                ['not an array'],
-            ),
-            "Non-array raw timing must yield 'null'.",
+        self::assertIsArray(
+            $firstEvent,
+            'The first after-open handler must be stored.',
         );
-        self::assertNull(
-            $this->invoke(
-                $collector,
-                'normalizeTiming',
-                [
-                    [
-                        'info' => null,
-                        'timestamp' => 0.0,
-                        'duration' => 0.0,
-                    ],
-                ],
-            ),
-            "Missing 'info' must yield 'null'.",
+        self::assertSame(
+            $listener,
+            $firstEvent[0] ?? null,
+            'Startup must attach the DB listener.',
         );
-        self::assertNull(
-            $this->invoke(
-                $collector,
-                'normalizeTiming',
-                [
-                    [
-                        'info' => 'x',
-                        'timestamp' => null,
-                        'duration' => 0.0,
-                    ],
-                ],
-            ),
-            "Missing 'timestamp' must yield 'null'.",
+
+        $collector->shutdown();
+
+        $events = $this->getInaccessibleProperty($db, '_events');
+
+        self::assertIsArray(
+            $events,
+            'Connection events must remain an array after shutdown.',
         );
-        self::assertNull(
-            $this->invoke(
-                $collector,
-                'normalizeTiming',
-                [
-                    [
-                        'info' => 'x',
-                        'timestamp' => 0.0,
-                        'duration' => null,
-                    ],
-                ],
-            ),
-            "Missing 'duration' must yield 'null'.",
+        self::assertSame(
+            [],
+            $events[Connection::EVENT_AFTER_OPEN] ?? [],
+            'Shutdown must detach the DB listener.',
         );
     }
 
@@ -455,6 +442,8 @@ final class DbCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
+        $this->setInaccessibleStaticProperty(DbCollector::class, 'traceHashAlgo', null);
+
         $first = $this->invoke(
             $collector,
             'traceHashAlgo',
@@ -469,10 +458,10 @@ final class DbCollectorTest extends TestCase
             $second,
             'traceHashAlgo must return the same algorithm across calls.',
         );
-        self::assertContains(
+        self::assertSame(
+            in_array('xxh3', hash_algos(), true) ? 'xxh3' : 'crc32',
             $first,
-            ['xxh3', 'crc32'],
-            'Algorithm must be one of the two candidates.',
+            'The preferred available algorithm must be selected.',
         );
     }
 
@@ -487,13 +476,16 @@ final class DbCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot->entries();
     }
 
     /**
-     * @return list<list<mixed>>
+     * @return list<StringLogMessage>
      */
     private function fakeMessages(int $count): array
     {
@@ -509,9 +501,9 @@ final class DbCollectorTest extends TestCase
     /**
      * Spreads a list of begin/end pairs (each from {@see makeMessage()}) into a flat profile-log list.
      *
-     * @param list<list<list<mixed>>> $pairs
+     * @param list<list<StringLogMessage>> $pairs
      *
-     * @return list<list<mixed>>
+     * @return list<StringLogMessage>
      */
     private function flatten(array $pairs): array
     {
@@ -554,9 +546,9 @@ final class DbCollectorTest extends TestCase
      * Returns the begin+end profile-log pair Yii's logger emits for prepared statements, ready to be spread into a
      * messages list with `...`.
      *
-     * @param list<array<string, mixed>> $trace
+     * @param list<LogTrace> $trace
      *
-     * @return list<list<mixed>>
+     * @return list<StringLogMessage>
      */
     private function makeMessage(
         string $sql,
@@ -599,17 +591,23 @@ final class DbCollectorTest extends TestCase
     /**
      * Primes the collector's live sources so the capture path resolves the given queries.
      *
-     * @param array<int, array<int|string, mixed>> $messages Raw profile tuples.
-     * @param array<int, int> $rowCounts Row counts reported by the driver, in execution order.
+     * @param list<StringLogMessage> $messages Raw profile tuples.
+     * @param list<int> $rowCounts Row counts reported by the driver, in execution order.
      */
     private function primeCollector(DbCollector $collector, array $messages, array $rowCounts): void
     {
         $module = $collector->module ?? self::fail('Module must be wired.');
+
         $logTarget = $module->logTarget;
 
-        self::assertInstanceOf(LogTarget::class, $logTarget, 'Log target must be wired.');
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Log target must be wired.',
+        );
 
         $logTarget->messages = $messages;
+
         DebugPdoStatement::$rowCounts = $rowCounts;
     }
 }

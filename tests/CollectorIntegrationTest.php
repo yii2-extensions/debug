@@ -23,8 +23,6 @@ use function unlink;
 
 /**
  * Unit tests for {@see Module} and {@see LogTarget} custom collector integration.
- *
- * @since 0.2
  */
 #[Group('collector')]
 final class CollectorIntegrationTest extends TestCase
@@ -35,17 +33,24 @@ final class CollectorIntegrationTest extends TestCase
         $module = $this->module([$collector]);
 
         $module->bootstrap(Yii::$app);
+
         Yii::$app->trigger(Application::EVENT_BEFORE_REQUEST);
 
-        self::assertSame(1, $collector->startupCount, 'Before-request event must start configured collectors.');
+        self::assertSame(
+            1,
+            $collector->startupCount,
+            'Before-request event must start configured collectors.',
+        );
 
         $module->getCollectorCoordinator()->shutdown();
+
         $this->cleanup($module);
     }
 
     public function testCollectorConfigurationSupportsClassNameAndConfigurationArray(): void
     {
         $classModule = $this->module([CustomCollector::class]);
+
         $configuredModule = $this->module(
             [
                 [
@@ -73,21 +78,44 @@ final class CollectorIntegrationTest extends TestCase
     {
         $collectorPanel = new CollectorPanel();
         $legacyPanel = new CollectorPanel();
+
         $legacyPanel->collectorOnly = false;
+
         $module = $this->module(
             [new CustomCollector()],
             ['app.example' => $collectorPanel, 'legacy' => $legacyPanel],
         );
+
         $target = new LogTarget($module);
 
         $target->export();
+
         $snapshot = $this->store($module)->readSnapshot($target->tag);
 
-        self::assertNotNull($snapshot, 'Combined collector snapshot must be loadable.');
-        self::assertArrayHasKey('app.example', $snapshot->panels, 'Matching collector payload must be persisted.');
-        self::assertArrayHasKey('legacy', $snapshot->panels, 'Later legacy panel payload must still be captured.');
-        self::assertSame(0, $collectorPanel->captureCount, 'Matching panel capture must remain bypassed.');
-        self::assertSame(1, $legacyPanel->captureCount, 'Later legacy panel must capture once.');
+        self::assertNotNull(
+            $snapshot,
+            'Combined collector snapshot must be loadable.',
+        );
+        self::assertArrayHasKey(
+            'app.example',
+            $snapshot->panels,
+            'Matching collector payload must be persisted.',
+        );
+        self::assertArrayHasKey(
+            'legacy',
+            $snapshot->panels,
+            'Later legacy panel payload must still be captured.',
+        );
+        self::assertSame(
+            0,
+            $collectorPanel->captureCount,
+            'Matching panel capture must remain bypassed.',
+        );
+        self::assertSame(
+            1,
+            $legacyPanel->captureCount,
+            'Later legacy panel must capture once.',
+        );
 
         $this->cleanup($module);
     }
@@ -96,21 +124,51 @@ final class CollectorIntegrationTest extends TestCase
     {
         $collector = new CustomCollector();
         $panel = new CollectorPanel();
+
         $module = $this->module([$collector], ['app.example' => $panel]);
+
         $target = new LogTarget($module);
 
         $module->getCollectorCoordinator()->startup();
         $target->export();
+
         $snapshot = $this->store($module)->readSnapshot($target->tag);
+
         $summary = $target->loadTagToPanels($target->tag);
 
-        self::assertNotNull($snapshot, 'Persisted snapshot must be loadable.');
-        self::assertArrayHasKey('app.example', $snapshot->panels, 'Custom payload must use the collector ID.');
-        self::assertNotNull($summary, 'Persisted summary must be loadable.');
-        self::assertSame('42', $panel->getDetail(), 'Matching panel must present the collector payload.');
-        self::assertSame(0, $panel->captureCount, 'Matching panel capture must be bypassed.');
-        self::assertSame(1, $collector->startupCount, 'Collector must start once.');
-        self::assertSame(1, $collector->shutdownCount, 'Collector must shut down once.');
+        self::assertNotNull(
+            $snapshot,
+            'Persisted snapshot must be loadable.',
+        );
+        self::assertArrayHasKey(
+            'app.example',
+            $snapshot->panels,
+            'Custom payload must use the collector ID.',
+        );
+        self::assertNotNull(
+            $summary,
+            'Persisted summary must be loadable.',
+        );
+        self::assertSame(
+            '42',
+            $panel->getDetail(),
+            'Matching panel must present the collector payload.',
+        );
+        self::assertSame(
+            0,
+            $panel->captureCount,
+            'Matching panel capture must be bypassed.',
+        );
+        self::assertSame(
+            1,
+            $collector->startupCount,
+            'Collector must start once.',
+        );
+        self::assertSame(
+            1,
+            $collector->shutdownCount,
+            'Collector must shut down once.',
+        );
 
         $this->cleanup($module);
     }
@@ -118,18 +176,29 @@ final class CollectorIntegrationTest extends TestCase
     public function testExportShutsDownCollectorsWhenStorageFails(): void
     {
         $collector = new CustomCollector();
+
         $module = $this->module([$collector]);
+
         $module->historySize = -1;
+
         $target = new LogTarget($module);
+
         $module->getCollectorCoordinator()->startup();
 
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage('Invalid debug history size: -1');
+        $this->expectExceptionMessage(
+            'Invalid debug history size: -1',
+        );
 
         try {
             $target->export();
         } finally {
-            self::assertSame(1, $collector->shutdownCount, 'Collector must shut down when snapshot persistence fails.');
+            self::assertSame(
+                1,
+                $collector->shutdownCount,
+                'Collector must shut down when snapshot persistence fails.',
+            );
+
             $this->cleanup($module);
         }
     }
@@ -137,19 +206,36 @@ final class CollectorIntegrationTest extends TestCase
     public function testFailingCollectorDoesNotEraseLegacyPanelSnapshot(): void
     {
         $collector = new CustomCollector();
+
         $collector->collectorId = 'broken';
         $collector->failCapture = true;
+
         $legacy = new CollectorPanel();
+
         $legacy->collectorOnly = false;
+
         $module = $this->module([$collector], ['legacy' => $legacy]);
+
         $target = new LogTarget($module);
 
         $target->export();
+
         $snapshot = $this->store($module)->readSnapshot($target->tag);
 
-        self::assertNotNull($snapshot, 'Persisted snapshot must be loadable.');
-        self::assertArrayHasKey('legacy', $snapshot->panels, 'Legacy payload must survive collector failure.');
-        self::assertArrayHasKey('broken', $snapshot->failures, 'Collector failure must be persisted.');
+        self::assertNotNull(
+            $snapshot,
+            'Persisted snapshot must be loadable.',
+        );
+        self::assertArrayHasKey(
+            'legacy',
+            $snapshot->panels,
+            'Legacy payload must survive collector failure.',
+        );
+        self::assertArrayHasKey(
+            'broken',
+            $snapshot->failures,
+            'Collector failure must be persisted.',
+        );
 
         $target->loadTagToPanels($target->tag);
 
@@ -165,34 +251,66 @@ final class CollectorIntegrationTest extends TestCase
     public function testLegacyCustomPanelCapturesWithoutCollector(): void
     {
         $panel = new CollectorPanel();
+
         $panel->collectorOnly = false;
+
         $module = $this->module([], ['app.example' => $panel]);
+
         $target = new LogTarget($module);
 
         $target->export();
         $target->loadTagToPanels($target->tag);
 
-        self::assertSame(1, $panel->captureCount, 'Legacy panel capture must remain active.');
-        self::assertSame('legacy', $panel->getDetail(), 'Legacy payload must still hydrate and render.');
+        self::assertSame(
+            1,
+            $panel->captureCount,
+            'Legacy panel capture must remain active.',
+        );
+        self::assertSame(
+            'legacy',
+            $panel->getDetail(),
+            'Legacy payload must still hydrate and render.',
+        );
 
         $this->cleanup($module);
     }
 
     public function testThrowInvalidConfigExceptionForDuplicateCollectorId(): void
     {
-        $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage('Duplicate debug collector ID: app.example.');
+        try {
+            $this->module([new CustomCollector(), new CustomCollector()]);
 
-        $this->module([new CustomCollector(), new CustomCollector()]);
+            self::fail(
+                'Duplicate collector IDs must be rejected.',
+            );
+        } catch (InvalidConfigException $exception) {
+            self::assertSame(
+                'Duplicate debug collector ID: app.example.',
+                $exception->getMessage(),
+            );
+            self::assertSame(
+                0,
+                $exception->getCode(),
+                'Adapter exception code must remain zero.',
+            );
+            self::assertInstanceOf(
+                \InvalidArgumentException::class,
+                $exception->getPrevious(),
+                'Duplicate collector ID must throw an argument exception.',
+            );
+        }
     }
 
     public function testThrowInvalidConfigExceptionForEmptyCollectorId(): void
     {
         $collector = new CustomCollector();
+
         $collector->collectorId = ' ';
 
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage('Debug collector ID must not be empty.');
+        $this->expectExceptionMessage(
+            'Debug collector ID must not be empty.',
+        );
 
         $this->module([$collector]);
     }
@@ -200,7 +318,9 @@ final class CollectorIntegrationTest extends TestCase
     public function testUnknownStoredPanelUsesEscapedJsonFallback(): void
     {
         $module = $this->module();
+
         $target = new LogTarget($module);
+
         $this->writeDebugSnapshot(
             $module,
             'unknown-panel',
@@ -208,9 +328,14 @@ final class CollectorIntegrationTest extends TestCase
         );
 
         $target->loadTagToPanels('unknown-panel');
+
         $panel = $module->panels['app.unknown'] ?? null;
 
-        self::assertInstanceOf(JsonPanel::class, $panel, 'Unknown payload must receive the JSON fallback panel.');
+        self::assertInstanceOf(
+            JsonPanel::class,
+            $panel,
+            'Unknown payload must receive the JSON fallback panel.',
+        );
         self::assertStringContainsString(
             '&lt;/code&gt;&lt;script&gt;alert(1)&lt;/script&gt;',
             $panel->getDetail(),
@@ -228,7 +353,9 @@ final class CollectorIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->mockWebApplication();
+
         Yii::$app->getRequest()->setUrl('dummy');
     }
 

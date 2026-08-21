@@ -136,7 +136,7 @@ class AssetCollector extends Collector
      */
     private static function manifestEntries(string $manifestPath): array
     {
-        if ($manifestPath === '' || is_file($manifestPath) === false) {
+        if (is_file($manifestPath) === false) {
             return [];
         }
 

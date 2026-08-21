@@ -61,7 +61,11 @@ final class EventCollectorTest extends TestCase
 
         $captured = $this->captureEntries($collector)[0] ?? self::fail('Expected one captured event.');
 
-        self::assertSame('test.event', $captured->name, 'Captured `name` must match the trigger.');
+        self::assertSame(
+            'test.event',
+            $captured->name,
+            'Captured `name` must match the trigger.',
+        );
         self::assertSame(
             Component::class,
             $captured->senderClass,
@@ -114,12 +118,10 @@ final class EventCollectorTest extends TestCase
 
         (new Component())->trigger('after.shutdown');
 
-        $collector->startup();
-
         self::assertSame(
             [],
-            $this->captureEntries($collector),
-            'A restarted collector must not retain events fired while stopped.',
+            $this->getInaccessibleProperty($collector, 'events'),
+            'A stopped collector must not retain events fired after listener detachment.',
         );
     }
 
@@ -141,7 +143,10 @@ final class EventCollectorTest extends TestCase
     {
         $snapshot = $collector->capture();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         return $snapshot->entries();
     }

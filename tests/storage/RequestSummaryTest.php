@@ -8,6 +8,9 @@ use PHPForge\Debug\Storage\{HydrationException, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\tests\support\TestCase;
 
+/**
+ * Unit tests for {@see RequestSummary} covering the strict type guards applied at the decoded-JSON boundary.
+ */
 #[Group('storage')]
 final class RequestSummaryTest extends TestCase
 {
@@ -15,25 +18,42 @@ final class RequestSummaryTest extends TestCase
     {
         $summary = RequestSummary::fromArray($this->payload());
 
-        self::assertSame(200, $summary->statusCode);
-        self::assertSame(1_700_000_000.0, $summary->time);
-        self::assertFalse($summary->ajax);
+        self::assertSame(
+            200,
+            $summary->statusCode,
+            'The status code must round-trip.',
+        );
+        self::assertSame(
+            1_700_000_000.0,
+            $summary->time,
+            'The time must round-trip.',
+        );
+        self::assertFalse(
+            $summary->ajax,
+            'The ajax flag must round-trip.',
+        );
     }
 
     public function testNumericStringIsRejected(): void
     {
         $payload = $this->payload();
+
         $payload['statusCode'] = '200';
 
         $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('$.summary.statusCode');
+        $this->expectExceptionMessage(
+            '$.summary.statusCode',
+        );
 
         RequestSummary::fromArray($payload);
     }
 
     public function testThrowHydrationExceptionWhenAMailFileEntryIsNotAString(): void
     {
-        $this->expectExceptionMessage("Invalid debug snapshot value at '\$.summary.mailFiles[1]'");
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage(
+            "Invalid debug snapshot value at '\$.summary.mailFiles[1]'",
+        );
 
         RequestSummary::fromArray(
             [

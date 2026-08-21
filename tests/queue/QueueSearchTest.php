@@ -231,7 +231,10 @@ final class QueueSearchTest extends TestCase
 
         $dataProvider = $searchModel->search(
             [
-                'Queue' => ['eventType' => 'push', 'componentId' => 'queue'],
+                'Queue' => [
+                    'eventType' => 'push',
+                    'componentId' => 'queue',
+                ],
             ],
             $records,
         );

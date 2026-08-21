@@ -102,9 +102,16 @@ final class ExplainActionTest extends TestCase
         }
 
         self::assertStringContainsString(
-            '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
+            <<<HTML
+            <span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>
+            HTML,
             $html,
             'AJAX hits must render the partial view (no layout); query must still surface highlighted.',
+        );
+        self::assertStringNotContainsString(
+            '<!DOCTYPE html>',
+            $html,
+            'AJAX rendering must omit the debugger layout.',
         );
     }
 
@@ -136,9 +143,16 @@ final class ExplainActionTest extends TestCase
         $html = $action->run('0', 'tag-explain', $dbPanel);
 
         self::assertStringContainsString(
-            '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
+            <<<HTML
+            <span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>
+            HTML,
             $html,
             'Rendered view must surface the explained query highlighted.',
+        );
+        self::assertStringStartsWith(
+            '<!DOCTYPE html>',
+            $html,
+            'Regular rendering must include the debugger layout.',
         );
     }
 
@@ -166,7 +180,9 @@ final class ExplainActionTest extends TestCase
             'Dispatch must produce rendered HTML.',
         );
         self::assertStringContainsString(
-            '<span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>',
+            <<<HTML
+            <span class="yii-debug-sql-kw">SELECT</span> <span class="yii-debug-sql-num">1</span>
+            HTML,
             $html,
             'Injected panel must serve the captured query.',
         );
@@ -194,12 +210,24 @@ final class ExplainActionTest extends TestCase
 
         $action->setModule($module);
 
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage(
-            'Log message not found.',
-        );
+        try {
+            $action->run('99', 'tag-empty', $dbPanel);
 
-        $action->run('99', 'tag-empty', $dbPanel);
+            self::fail(
+                'A missing timing sequence must throw.',
+            );
+        } catch (HttpException $exception) {
+            self::assertSame(
+                404,
+                $exception->statusCode,
+                "A missing timing sequence must throw a '404'.",
+            );
+            self::assertSame(
+                'Log message not found.',
+                $exception->getMessage(),
+                'A missing timing sequence must throw a "Log message not found." message.',
+            );
+        }
     }
 
     public function testThrowServerErrorHttpExceptionWhenDbPanelIsDisabled(): void

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\collectors;
 
 use Closure;
+use LogicException;
 use PDO;
-use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPForge\Debug\Panel\Profile\ProfileTimings;
 use Yii;
@@ -21,18 +21,21 @@ use function count;
 use function hash;
 use function hash_algos;
 use function in_array;
-use function is_array;
 use function is_int;
 use function is_string;
 use function json_encode;
-use function mb_strtoupper;
 use function preg_match;
+use function strtoupper;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Captures every database query emitted during the request for the Database panel.
  *
  * Hooks the bound DB connection so each prepared statement records its row count, calculates per-query timings from
  * the profile log, and exposes the totals the exported summary adopts (query count, excessive callers).
+ *
+ * @phpstan-import-type LogMessage from \PHPForge\Debug\Panel\Log\LogSnapshot
  *
  * Usage example:
  *
@@ -47,7 +50,7 @@ class DbCollector extends Collector
      */
     public string $db = 'db';
     /**
-     * @var array<int, string> Profile log categories scanned for query timings.
+     * @var list<string> Profile log categories scanned for query timings.
      */
     public array $dbEventNames = [
         'yii\db\Command::query',
@@ -59,7 +62,7 @@ class DbCollector extends Collector
      */
     public int|null $excessiveCallerThreshold = null;
     /**
-     * @var array<int, string> Paths whose backtrace frames are skipped when determining the "Caller".
+     * @var list<string> Paths whose backtrace frames are skipped when determining the "Caller".
      *
      * Yii framework files are ignored by default. Path aliases are resolved through {@see Yii::getAlias()}.
      */
@@ -70,9 +73,10 @@ class DbCollector extends Collector
      */
     private Closure|null $afterOpenListener = null;
     /**
-     * @var array<int, array<int|string, mixed>>|null Current database profile logs
+     * @var list<LogMessage>|null Current database profile logs
      */
     private array|null $profileLogs = null;
+    private Connection|null $subscribedConnection = null;
     /**
      * @var array<int, array{
      *   info: string,
@@ -126,13 +130,7 @@ class DbCollector extends Collector
 
             $hashAlgo = self::traceHashAlgo();
 
-            foreach ($rawTimings as $rawTiming) {
-                $timing = self::normalizeTiming($rawTiming);
-
-                if ($timing === null) {
-                    continue;
-                }
-
+            foreach ($rawTimings as $timing) {
                 if ($ignoredPathsInBacktrace !== []) {
                     foreach ($timing['trace'] as $index => $trace) {
                         $file = $trace['file'] ?? null;
@@ -144,15 +142,14 @@ class DbCollector extends Collector
                         foreach ($ignoredPathsInBacktrace as $ignoredPathInBacktrace) {
                             if (str_starts_with($file, $ignoredPathInBacktrace)) {
                                 unset($timing['trace'][$index]);
-
-                                continue 2;
                             }
                         }
                     }
+
+                    $timing['trace'] = array_values($timing['trace']);
                 }
 
-                $encodedTrace = json_encode($timing['trace']);
-                $timing['traceHash'] = hash($hashAlgo, Coerce::string($encodedTrace));
+                $timing['traceHash'] = hash($hashAlgo, json_encode($timing['trace'], JSON_THROW_ON_ERROR));
 
                 $this->timings[] = $timing;
             }
@@ -279,7 +276,7 @@ class DbCollector extends Collector
      * $logs = $collector->getProfileLogs();
      * ```
      *
-     * @return array<int, array<int|string, mixed>> Profile log entries in capture order.
+     * @return list<LogMessage> Profile log entries in capture order.
      */
     public function getProfileLogs(): array
     {
@@ -317,9 +314,9 @@ class DbCollector extends Collector
     {
         $timing = ltrim($timing);
 
-        preg_match('/^([a-zA-z]*)/', $timing, $matches);
+        preg_match('/^[a-zA-Z]+/', $timing, $matches);
 
-        return isset($matches[0]) ? mb_strtoupper($matches[0], 'utf8') : '';
+        return strtoupper($matches[0] ?? '');
     }
 
     /**
@@ -357,6 +354,7 @@ class DbCollector extends Collector
         };
 
         $db->on(Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
+        $this->subscribedConnection = $db;
     }
 
     /**
@@ -365,64 +363,16 @@ class DbCollector extends Collector
     protected function stop(): void
     {
         if ($this->afterOpenListener !== null) {
-            $db = Yii::$app->get($this->db, false);
-
-            if ($db instanceof Connection) {
-                $db->off(Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
-            }
+            $this->subscribedConnection?->off(Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
 
             $this->afterOpenListener = null;
+            $this->subscribedConnection = null;
         }
 
         $this->profileLogs = null;
         $this->timings = null;
 
         DebugPdoStatement::$rowCounts = [];
-    }
-
-    /**
-     * Narrows a raw timing returned by the Yii logger into the typed shape consumed by {@see calculateTimings()},
-     * or `null` when any required field is missing.
-     *
-     * @param mixed $rawTiming Raw timing returned by Yii logger.
-     *
-     * @return array{
-     *   info: string,
-     *   category: string,
-     *   timestamp: float,
-     *   trace: array<int, array<string, mixed>>,
-     *   level: int,
-     *   duration: float,
-     *   memory: int,
-     *   memoryDiff: int,
-     *   traceHash: string
-     * }|null Normalized timing, or `null` when the raw payload was incomplete.
-     */
-    private static function normalizeTiming(mixed $rawTiming): array|null
-    {
-        if (!is_array($rawTiming)) {
-            return null;
-        }
-
-        $info = Coerce::stringOrNull($rawTiming['info'] ?? null);
-        $timestamp = Coerce::floatOrNull($rawTiming['timestamp'] ?? null);
-        $duration = Coerce::floatOrNull($rawTiming['duration'] ?? null);
-
-        if ($info === null || $timestamp === null || $duration === null) {
-            return null;
-        }
-
-        return [
-            'info' => $info,
-            'category' => Coerce::stringOrNull($rawTiming['category'] ?? null) ?? '',
-            'timestamp' => $timestamp,
-            'trace' => Coerce::traceFrames($rawTiming['trace'] ?? []),
-            'level' => Coerce::intOrNull($rawTiming['level'] ?? null) ?? 0,
-            'duration' => $duration,
-            'memory' => Coerce::intOrNull($rawTiming['memory'] ?? null) ?? 0,
-            'memoryDiff' => Coerce::intOrNull($rawTiming['memoryDiff'] ?? null) ?? 0,
-            'traceHash' => Coerce::stringOrNull($rawTiming['traceHash'] ?? null) ?? '',
-        ];
     }
 
     /**
@@ -434,17 +384,22 @@ class DbCollector extends Collector
     {
         $timings = $this->calculateTimings();
         $duplicates = $this->countDuplicateQuery($timings);
-        $rowCounts = array_values(DebugPdoStatement::$rowCounts);
+        $rowCounts = DebugPdoStatement::$rowCounts;
         $rows = [];
 
         foreach ($timings as $seq => $timing) {
             $count = $rowCounts[$seq] ?? null;
+            $info = $timing['info'];
+
+            if (!isset($duplicates[$info])) {
+                throw new LogicException("Missing duplicate count for query: {$info}");
+            }
 
             $rows[] = QueryRow::fromTiming(
                 $timing,
-                $this->getQueryType($timing['info']),
+                $this->getQueryType($info),
                 $seq,
-                $duplicates[$timing['info']] ?? 1,
+                $duplicates[$info],
                 is_int($count) && $count >= 0 ? $count : null,
             );
         }

@@ -6,6 +6,7 @@ namespace yii\debug\tests\db;
 
 use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionMethod;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
@@ -14,19 +15,123 @@ use yii\debug\collectors\DbCollector;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\LogTarget;
 use yii\debug\panels\DbPanel;
+use yii\debug\tests\support\stub\CapturingView;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 use function is_string;
 
 /**
- * Unit tests for {@see DbPanel} covering EXPLAIN gating, threshold checks,
- * the badge variant mapping, toolbar/summary rendering, and snapshot hydration.
+ * Unit tests for {@see DbPanel} covering EXPLAIN gating, threshold checks, the badge variant mapping, toolbar/summary
+ * rendering, and snapshot hydration.
+ *
+ * @phpstan-import-type LogTrace from Logger
+ * @phpstan-type StringLogMessage array{0: string, 1: int, 2: string, 3: float, 4: list<LogTrace>, 5: int}
  */
 #[Group('panel')]
 #[Group('db')]
 final class DbPanelTest extends TestCase
 {
+    public function testExtensionMethodsKeepTheirPublicAndProtectedContracts(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(DbPanel::class, 'countCallerCals'))->isPublic(),
+            'countCallerCals() must remain public.',
+        );
+        self::assertSame(
+            [true, true, true],
+            array_map(
+                static fn (string $method): bool => (new ReflectionMethod(DbPanel::class, $method))->isProtected(),
+                ['getModels', 'getTotalQueryTime', 'hasExplain'],
+            ),
+            'Must remain protected to avoid accidental misuse.',
+        );
+    }
+
+    public function testCountCallerCallsAndExcessiveThresholdReturnExactHashes(): void
+    {
+        $panel = $this->makePanel(DbPanel::class);
+        $messages = [
+            ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
+            ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/a.php', 'line' => 1]]),
+            ...$this->makeMessage('SELECT 3', 0.001, 0.002, trace: [['file' => '/a.php', 'line' => 1]]),
+            ...$this->makeMessage('SELECT 4', 0.001, 0.003, trace: [['file' => '/b.php', 'line' => 2]]),
+        ];
+
+        $this->hydrateFromLive($panel, $messages, []);
+
+        $rows = $panel->getRows();
+
+        $first = $rows[0] ?? self::fail('Expected the first query row.');
+        $last = $rows[3] ?? self::fail('Expected the fourth query row.');
+
+        $firstHash = $first->traceHash;
+        $lastHash = $last->traceHash;
+
+        self::assertSame(
+            [$firstHash => 3, $lastHash => 1],
+            $panel->countCallerCals(),
+            'Caller counts must be keyed by the exact trace hash.',
+        );
+
+        $this->setDbCollectorThreshold($panel, 3);
+
+        self::assertSame(
+            [$firstHash => 3],
+            $panel->getExcessiveCallers(),
+            'Excessive callers must be keyed by the exact trace hash.',
+        );
+    }
+
+    public function testGetDetailAppliesDefaultFilterOnlyWithoutRequestFilter(): void
+    {
+        $panel = $this->makePanel(
+            DbPanel::class,
+            [
+                'db' => $this->makeSqliteConnection(),
+                'view' => CapturingView::class,
+            ],
+        );
+
+        $this->hydrateFromLive(
+            $panel,
+            [
+                ...$this->makeMessage('SELECT 1', 0.001, 0.0),
+                ...$this->makeMessage('SELECT 2', 0.001, 0.001),
+                ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.001, 0.002),
+            ],
+            [],
+        );
+        $panel->defaultFilter = ['type' => 'SELECT'];
+
+        self::assertSame(
+            'rendered',
+            $panel->getDetail(),
+            'Default filter must be applied when no request filter is present.',
+        );
+
+        $view = Yii::$app->getView();
+
+        self::assertInstanceOf(
+            CapturingView::class,
+            $view,
+            'View must be the capturing stub.',
+        );
+
+        $provider = $view->renderParams['queryDataProvider'] ?? null;
+
+        self::assertInstanceOf(
+            \yii\data\ArrayDataProvider::class,
+            $provider,
+            'Detail view must receive a data provider.',
+        );
+        self::assertSame(
+            2,
+            $provider->getTotalCount(),
+            'Default filter must reduce the data provider to only SELECT statements.',
+        );
+    }
+
     public function testGetDbReturnsConfiguredConnection(): void
     {
         $this->mockWebApplication(
@@ -59,10 +164,14 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->hydrateFromLive($panel, [
-            ...$this->makeMessage('SELECT 1', 0.001, 0.0),
-            ...$this->makeMessage('SELECT 1', 0.001, 0.001),
-        ], []);
+        $this->hydrateFromLive(
+            $panel,
+            [
+                ...$this->makeMessage('SELECT 1', 0.001, 0.0),
+                ...$this->makeMessage('SELECT 1', 0.001, 0.001),
+            ],
+            [],
+        );
 
         $html = $panel->getDetail();
 
@@ -77,7 +186,11 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->hydrateFromLive($panel, [], []);
+        $this->hydrateFromLive(
+            $panel,
+            [],
+            [],
+        );
 
         $html = $panel->getDetail();
 
@@ -102,7 +215,11 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->hydrateFromLive($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
+        $this->hydrateFromLive(
+            $panel,
+            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [],
+        );
 
         $html = $panel->getDetail();
 
@@ -116,8 +233,15 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
 
-        $this->hydrateFromLive($panel, [], []);
-        $this->hydratePanel($panel, new DbSnapshot([$this->makeRowWithDuration(1.5)]));
+        $this->hydrateFromLive(
+            $panel,
+            [],
+            [],
+        );
+        $this->hydratePanel(
+            $panel,
+            new DbSnapshot([$this->makeRowWithDuration(1.5)]),
+        );
 
         $html = $panel->getDetail();
 
@@ -147,8 +271,11 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->hydrateFromLive($panel, $this->fakeMessages(3), []);
-
+        $this->hydrateFromLive(
+            $panel,
+            $this->fakeMessages(3),
+            [],
+        );
         $this->setDbCollectorThreshold($panel, 2);
 
         self::assertCount(
@@ -167,7 +294,11 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->hydrateFromLive($panel, $this->fakeMessages(5), []);
+        $this->hydrateFromLive(
+            $panel,
+            $this->fakeMessages(5),
+            [],
+        );
 
         self::assertSame(
             [],
@@ -201,10 +332,14 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->hydrateFromLive($panel, [
-            ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
-            ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 1]]),
-        ], []);
+        $this->hydrateFromLive(
+            $panel,
+            [
+                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
+                ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 1]]),
+            ],
+            [],
+        );
         $this->setDbCollectorThreshold($panel, 0);
 
         $first = $this->firstToolbarItem($panel);
@@ -225,11 +360,77 @@ final class DbPanelTest extends TestCase
         );
     }
 
+    public function testGetToolbarItemsReturnsEveryFieldAndCombinesWarnings(): void
+    {
+        $panel = $this->makePanel(DbPanel::class);
+
+        $this->hydrateFromLive(
+            $panel,
+            [
+                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
+                ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 2]]),
+            ],
+            [],
+        );
+
+        $panel->criticalQueryThreshold = 0;
+
+        $this->setDbCollectorThreshold($panel, 0);
+
+        self::assertSame(
+            [
+                [
+                    'status' => 'warning',
+                    'title' => "Too many queries, allowed count is 0.\n2 callers are making too many calls.",
+                    'value' => 2,
+                ],
+                [
+                    'title' => 'Total query time',
+                    'value' => '2 ms',
+                ],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
+            'Toolbar items must combine the query count and excessive-caller warnings into a single chip.'
+        );
+    }
+
+    public function testGetToolbarItemsDoesNotWarnWhenNoCallerIsExcessive(): void
+    {
+        $panel = $this->makePanel(DbPanel::class);
+
+        $this->hydrateFromLive(
+            $panel,
+            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [],
+        );
+
+        self::assertSame(
+            [
+                [
+                    'status' => 'info',
+                    'title' => 'Executed 1 database queries.',
+                    'value' => 1,
+                ],
+                [
+                    'title' => 'Total query time',
+                    'value' => '1 ms',
+                ],
+            ],
+            $this->invoke($panel, 'getToolbarItems'),
+            'Toolbar items must not warn when no caller exceeds the threshold.'
+        );
+    }
+
     public function testGetToolbarItemsEmitsWarningWhenCriticalThresholdExceeded(): void
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->hydrateFromLive($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
+        $this->hydrateFromLive(
+            $panel,
+            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [],
+        );
+
         $panel->criticalQueryThreshold = 0;
 
         $first = $this->firstToolbarItem($panel);
@@ -259,7 +460,11 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->hydrateFromLive($panel, [...$this->makeMessage('SELECT 1', 0.001, 0.0)], []);
+        $this->hydrateFromLive(
+            $panel,
+            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [],
+        );
         $this->setDbCollectorThreshold($panel, 0);
 
         $first = $this->firstToolbarItem($panel);
@@ -297,11 +502,15 @@ final class DbPanelTest extends TestCase
     {
         $panel = $this->makePanel(DbPanel::class);
 
-        $this->hydrateFromLive($panel, [
-            ...$this->makeMessage('SELECT * FROM t', 0.001, 0.0),
-            ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.002, 0.001),
-            ...$this->makeMessage('SELECT id FROM t', 0.003, 0.003),
-        ], []);
+        $this->hydrateFromLive(
+            $panel,
+            [
+                ...$this->makeMessage('SELECT * FROM t', 0.001, 0.0),
+                ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.002, 0.001),
+                ...$this->makeMessage('SELECT id FROM t', 0.003, 0.003),
+            ],
+            [],
+        );
 
         $types = $panel->getTypes();
 
@@ -327,6 +536,7 @@ final class DbPanelTest extends TestCase
         $this->mockWebApplication();
 
         $panel = new DbPanel();
+
         $panel->db = 'absent';
 
         self::assertFalse(
@@ -355,6 +565,29 @@ final class DbPanelTest extends TestCase
         );
     }
 
+    public function testHasExplainAcceptsEverySupportedDriverAndRejectsUnknownDriver(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new DbPanel();
+
+        foreach (['mysql:', 'sqlite::memory:', 'pgsql:'] as $dsn) {
+            Yii::$app->set('db', new Connection(['dsn' => $dsn]));
+
+            self::assertTrue(
+                $this->invoke($panel, 'hasExplain'),
+                $dsn,
+            );
+        }
+
+        Yii::$app->set('db', new Connection(['dsn' => 'oci:dbname=test']));
+
+        self::assertFalse(
+            $this->invoke($panel, 'hasExplain'),
+            'Unknown driver must not support EXPLAIN.',
+        );
+    }
+
     public function testInitRegistersExplainAction(): void
     {
         $this->mockWebApplication(
@@ -366,7 +599,7 @@ final class DbPanelTest extends TestCase
         self::assertArrayHasKey(
             'db-explain',
             $panel->actions,
-            "init() must register the 'db-explain' action.",
+            "Must register the 'db-explain' action.",
         );
     }
 
@@ -483,7 +716,7 @@ final class DbPanelTest extends TestCase
     }
 
     /**
-     * @return list<list<mixed>>
+     * @return list<StringLogMessage>
      */
     private function fakeMessages(int $count): array
     {
@@ -535,9 +768,9 @@ final class DbPanelTest extends TestCase
     /**
      * Spreads a list of begin/end pairs (each from {@see makeMessage()}) into a flat profile-log list.
      *
-     * @param list<list<list<mixed>>> $pairs
+     * @param list<list<StringLogMessage>> $pairs
      *
-     * @return list<list<mixed>>
+     * @return list<StringLogMessage>
      */
     private function flatten(array $pairs): array
     {
@@ -555,22 +788,31 @@ final class DbPanelTest extends TestCase
     /**
      * Captures the given live sources through the module's Database collector and hydrates the panel from the result.
      *
-     * @param array<int, array<int|string, mixed>> $messages Raw profile tuples.
-     * @param array<int, int> $rowCounts Row counts reported by the driver, in execution order.
+     * @param list<StringLogMessage> $messages Raw profile tuples.
+     * @param list<int> $rowCounts Row counts reported by the driver, in execution order.
      */
     private function hydrateFromLive(DbPanel $panel, array $messages, array $rowCounts): void
     {
         $module = $panel->module ?? self::fail('Module must be wired.');
+
         $coordinator = $module->getCollectorCoordinator();
         $collector = $coordinator->collector('db');
 
-        self::assertInstanceOf(DbCollector::class, $collector, 'Db collector must be registered.');
+        self::assertInstanceOf(
+            DbCollector::class,
+            $collector,
+            'Db collector must be registered.',
+        );
 
         $coordinator->startup();
 
         $logTarget = $module->logTarget;
 
-        self::assertInstanceOf(LogTarget::class, $logTarget, 'Log target must be wired.');
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Log target must be wired.',
+        );
 
         $logTarget->messages = $messages;
         DebugPdoStatement::$rowCounts = $rowCounts;
@@ -579,7 +821,10 @@ final class DbPanelTest extends TestCase
 
         $coordinator->shutdown();
 
-        self::assertNotNull($snapshot, 'Started collector must capture a snapshot.');
+        self::assertNotNull(
+            $snapshot,
+            'Started collector must capture a snapshot.',
+        );
 
         $this->hydratePanel($panel, $snapshot);
     }
@@ -588,9 +833,9 @@ final class DbPanelTest extends TestCase
      * Returns the begin+end profile-log pair Yii's logger emits for prepared statements, ready to be spread into a
      * messages list with `...`.
      *
-     * @param list<array<string, mixed>> $trace
+     * @param list<LogTrace> $trace
      *
-     * @return list<list<mixed>>
+     * @return list<StringLogMessage>
      */
     private function makeMessage(
         string $sql,
@@ -646,7 +891,11 @@ final class DbPanelTest extends TestCase
     {
         $collector = $panel->module?->getCollectorCoordinator()->collector('db');
 
-        self::assertInstanceOf(DbCollector::class, $collector, 'Db collector must be registered.');
+        self::assertInstanceOf(
+            DbCollector::class,
+            $collector,
+            'Db collector must be registered.',
+        );
 
         $collector->excessiveCallerThreshold = $threshold;
     }

@@ -10,6 +10,7 @@ use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use ReflectionClass;
+use ReflectionMethod;
 use Yii;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\Svg;
@@ -28,6 +29,69 @@ use function count;
 #[Group('timeline')]
 final class SvgTest extends TestCase
 {
+    public function testAddPointsRemainsProtected(): void
+    {
+        self::assertTrue(
+            (new ReflectionMethod(Svg::class, 'addPoints'))->isProtected(),
+            'Must remain protected to avoid accidental misuse.',
+        );
+    }
+
+    public function testAddPointsCalculatesExactCoordinates(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $svg = new Svg($panel, ['x' => 200, 'y' => 50]);
+
+        $this->setInaccessibleProperty($panel, 'memory', 1_000);
+        $this->setInaccessibleProperty($panel, 'duration', 100.0);
+        $this->setInaccessibleProperty($panel, 'start', 1_700_000_000_000.0);
+
+        $count = $this->invoke(
+            $svg,
+            'addPoints',
+            [
+                [
+                    new MemorySample(1_700_000_000_010.0, 100),
+                    new MemorySample(1_700_000_000_020.0, 200),
+                ],
+            ],
+        );
+
+        self::assertSame(
+            2,
+            $count,
+            'Two points must be appended to the trace.',
+        );
+        self::assertSame(
+            [[20.0, 45.0], [40.0, 40.0]],
+            $this->getInaccessibleProperty($svg, 'points'),
+            'Points must be correctly calculated and stored.',
+        );
+    }
+
+    public function testAddPointsKeepsExistingOrderWhenNoSamplesAreAdded(): void
+    {
+        $panel = $this->makeTimelinePanel();
+
+        $svg = new Svg($panel);
+
+        $points = [[500.0, 20.0], [100.0, 30.0]];
+
+        $this->setInaccessibleProperty($svg, 'points', $points);
+
+        self::assertSame(
+            0,
+            $this->invoke($svg, 'addPoints', [[]]),
+            'No points must be appended when the input is empty.',
+        );
+        self::assertSame(
+            $points,
+            $this->getInaccessibleProperty($svg, 'points'),
+            'Existing points must be preserved when no new points are added.',
+        );
+    }
+
     public function testAddPointsReturnsZeroWhenComputedXOneIsNonPositive(): void
     {
         $panel = $this->makeTimelinePanel();
@@ -75,6 +139,18 @@ final class SvgTest extends TestCase
             0,
             $appended,
             'Non-positive memory must short-circuit.',
+        );
+    }
+
+    public function testAddPointsReturnsZeroWhenWidthIsZero(): void
+    {
+        $panel = $this->makeTimelinePanel();
+        $svg = new Svg($panel, ['x' => 0]);
+
+        self::assertSame(
+            0,
+            $this->invoke($svg, 'addPoints', [[new MemorySample(1_700_000_000_010.0, 1_024)]]),
+            'Zero width must short-circuit.',
         );
     }
 
@@ -147,10 +223,17 @@ final class SvgTest extends TestCase
             'Profiling panel must be wired.',
         );
 
-        $this->hydratePanel($profilingPanel, ProfilingSnapshot::capture(0, 0.0, [
-            ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.010, [], 1_048_576],
-            ['t1', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.020, [], 2_097_152],
-        ]));
+        $this->hydratePanel(
+            $profilingPanel,
+            ProfilingSnapshot::capture(
+                0,
+                0.0,
+                [
+                    ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.010, [], 1_048_576],
+                    ['t1', Logger::LEVEL_PROFILE_END, 'app\\db', 1_700_000_000.020, [], 2_097_152],
+                ],
+            ),
+        );
 
         $svg = new Svg($panel);
 
@@ -182,7 +265,10 @@ final class SvgTest extends TestCase
 
         self::assertInstanceOf(LogPanel::class, $logPanel, 'Log panel must be wired.');
 
-        $this->hydratePanel($logPanel, LogSnapshot::capture([]));
+        $this->hydratePanel(
+            $logPanel,
+            LogSnapshot::capture([]),
+        );
 
         $svg = new Svg($panel);
 
@@ -212,57 +298,6 @@ final class SvgTest extends TestCase
         );
     }
 
-    public function testConstructorStopsAtMalformedMessageEntry(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $profilingPanel = $panel->module->panels['profiling'] ?? null;
-
-        self::assertInstanceOf(
-            ProfilingPanel::class,
-            $profilingPanel,
-            'Profiling panel must be wired.',
-        );
-
-        $this->hydratePanel($profilingPanel, ProfilingSnapshot::capture(0, 0.0, [
-            ['t1', Logger::LEVEL_PROFILE_BEGIN, 'app\\db', 1_700_000_000.010, [], 1_048_576],
-            'not-an-array',
-        ]));
-
-        $svg = new Svg($panel);
-
-        self::assertTrue(
-            $svg->hasPoints(),
-            'First valid message must surface before the loop breaks on the malformed entry.',
-        );
-    }
-
-    public function testToStringEmitsCurrentColorOpacityStopsByDefault(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $svg = new Svg($panel);
-
-        $this->setInaccessibleProperty(
-            $svg,
-            'points',
-            [[0.0, 30.0], [100.0, 20.0]],
-        );
-
-        $markup = (string) $svg;
-
-        self::assertStringContainsString(
-            'stop-color="currentColor"',
-            $markup,
-            'Stops must paint with the inherited color.',
-        );
-        self::assertStringContainsString(
-            'stop-opacity=',
-            $markup,
-            'Stops must fade via `stop-opacity`.',
-        );
-    }
-
     public function testToStringEmitsPolygonAndPolylineWhenPointsExist(): void
     {
         $panel = $this->makeTimelinePanel();
@@ -277,25 +312,19 @@ final class SvgTest extends TestCase
 
         $markup = (string) $svg;
 
-        self::assertStringContainsString(
-            '<svg',
+        self::assertSame(
+            <<<'HTML'
+            <svg width="1920" height="40" preserveAspectRatio="none" viewBox="0 0 1920 40" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+            <linearGradient id="yii-debug-tl-memory-gradient" x1="0" x2="0" y1="1" y2="0">
+            <stop offset="10%" stop-color="currentColor" stop-opacity="0.18"><stop offset="60%" stop-color="currentColor" stop-opacity="0.45"><stop offset="90%" stop-color="currentColor" stop-opacity="0.65"><stop offset="100%" stop-color="currentColor" stop-opacity="0.85">
+            </linearGradient>
+            </defs><g>
+            <polygon points="0 40 0 30 100 20 1919.999 20 1920 40" fill="url(#yii-debug-tl-memory-gradient)"><polyline points="0 40 0 30 100 20 1920 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            </g>
+            </svg>
+            HTML,
             $markup,
-            'SVG must wrap the chart.',
-        );
-        self::assertStringContainsString(
-            '<polygon',
-            $markup,
-            'Polygon (gradient area) must be emitted.',
-        );
-        self::assertStringContainsString(
-            '<polyline',
-            $markup,
-            'Polyline (stroke trace) must be emitted.',
-        );
-        self::assertStringContainsString(
-            'linearGradient',
-            $markup,
-            'Linear gradient must be defined.',
         );
     }
 
@@ -313,17 +342,19 @@ final class SvgTest extends TestCase
             [[0.0, 30.0], [100.0, 20.0]],
         );
 
-        $markup = (string) $svg;
-
-        self::assertStringContainsString(
-            'stop-color="#ff0000"',
-            $markup,
-            'Configured hex stop must be emitted verbatim.',
-        );
-        self::assertStringNotContainsString(
-            'stop-opacity',
-            $markup,
-            'Hex stops must not emit an opacity.',
+        self::assertSame(
+            <<<'HTML'
+            <svg width="1920" height="40" preserveAspectRatio="none" viewBox="0 0 1920 40" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+            <linearGradient id="yii-debug-tl-memory-gradient" x1="0" x2="0" y1="1" y2="0">
+            <stop offset="50%" stop-color="#ff0000">
+            </linearGradient>
+            </defs><g>
+            <polygon points="0 40 0 30 100 20 1919.999 20 1920 40" fill="url(#yii-debug-tl-memory-gradient)"><polyline points="0 40 0 30 100 20 1920 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            </g>
+            </svg>
+            HTML,
+            (string) $svg,
         );
     }
 
@@ -337,51 +368,6 @@ final class SvgTest extends TestCase
             '',
             (string) $svg,
             'Empty point list must collapse the SVG to an empty string.',
-        );
-    }
-
-    public function testToStringScopesGradientIdToMemoryChart(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $svg = new Svg($panel);
-
-        $this->setInaccessibleProperty(
-            $svg,
-            'points',
-            [[0.0, 30.0], [100.0, 20.0]],
-        );
-
-        $markup = (string) $svg;
-
-        self::assertStringContainsString(
-            'id="yii-debug-tl-memory-gradient"',
-            $markup,
-            'Gradient id must be namespaced.',
-        );
-        self::assertStringContainsString(
-            'url(#yii-debug-tl-memory-gradient)',
-            $markup,
-            'Polygon fill must reference the namespaced gradient.',
-        );
-    }
-
-    public function testToStringStrokesPolylineWithCurrentColorByDefault(): void
-    {
-        $panel = $this->makeTimelinePanel();
-
-        $svg = new Svg($panel);
-
-        $this->setInaccessibleProperty(
-            $svg,
-            'points',
-            [[0.0, 30.0], [100.0, 20.0]],
-        );
-
-        self::assertStringContainsString(
-            'stroke="currentColor"',
-            (string) $svg,
-            'Trace must inherit the CSS color.',
         );
     }
 

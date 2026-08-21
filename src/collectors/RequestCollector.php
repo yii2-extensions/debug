@@ -174,10 +174,6 @@ class RequestCollector extends Collector
      */
     protected function censorArray(array $data): array
     {
-        if ($this->censoredVariableNames === [] || $data === []) {
-            return $data;
-        }
-
         foreach ($this->censoredVariableNames as $var) {
             $key = ltrim($var, '_');
 
@@ -200,7 +196,7 @@ class RequestCollector extends Collector
      */
     protected function getFlashes(): array
     {
-        $session = Yii::$app->has('session', true) ? Yii::$app->get('session', false) : null;
+        $session = Yii::$app->get('session', false);
 
         if (!$session instanceof Session || !$session->getIsActive()) {
             return [];

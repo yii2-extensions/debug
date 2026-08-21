@@ -8,10 +8,11 @@ use PHPForge\Debug\Panel\Config\ConfigSnapshot;
 use PHPForge\Debug\Storage\{DebugSnapshot, ExceptionSnapshot, PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
-use yii\base\{Exception as YiiException, InvalidConfigException};
+use yii\base\{Exception, InvalidConfigException};
 use yii\debug\collectors\MailCollector;
 use yii\debug\{LogTarget, Module, Panel};
 use yii\debug\panels\{ConfigPanel, LogPanel};
+use yii\debug\storage\SnapshotStore;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -23,11 +24,15 @@ use function is_dir;
 use function reset;
 use function rmdir;
 use function sys_get_temp_dir;
+use function time;
+use function touch;
 use function uniqid;
 use function unlink;
 
 /**
  * Tests the typed JSON capture, manifest, failure-isolation, and panel-hydration boundaries.
+ *
+ * @phpstan-import-type LogMessage from Logger
  */
 #[Group('log-target')]
 final class LogTargetTest extends TestCase
@@ -35,21 +40,46 @@ final class LogTargetTest extends TestCase
     public function testBeginRequestIsolatesTagAndMessageStateAcrossWorkerCycles(): void
     {
         $target = new LogTarget(new Module('debug'));
+
         $initialTag = $target->tag;
-        $target->messages = [['previous request']];
+
+        $target->messages = [
+            self::message('previous request'),
+        ];
 
         $target->beginRequest();
+
         $firstRequestTag = $target->tag;
 
-        self::assertNotSame($initialTag, $firstRequestTag, 'A new request must receive a fresh tag.');
-        self::assertSame([], $target->messages, 'A new request must not inherit the previous message buffer.');
+        self::assertNotSame(
+            $initialTag,
+            $firstRequestTag,
+            'A new request must receive a fresh tag.',
+        );
+        self::assertSame(
+            [],
+            $target->messages,
+            'A new request must not inherit the previous message buffer.',
+        );
 
-        $target->messages = [['first request']];
+        $target->messages = [
+            self::message('first request'),
+        ];
+
         $target->beginRequest();
+
         $secondRequestTag = $target->tag;
 
-        self::assertNotSame($firstRequestTag, $secondRequestTag, 'Every worker request must rotate the tag.');
-        self::assertSame([], $target->messages, 'Every worker request must reset collected messages.');
+        self::assertNotSame(
+            $firstRequestTag,
+            $secondRequestTag,
+            'Every worker request must rotate the tag.',
+        );
+        self::assertSame(
+            [],
+            $target->messages,
+            'Every worker request must reset collected messages.',
+        );
 
         foreach ([$initialTag, $firstRequestTag, $secondRequestTag] as $tag) {
             self::assertMatchesRegularExpression(
@@ -64,11 +94,14 @@ final class LogTargetTest extends TestCase
     {
         $target = new LogTarget(new Module('debug'));
 
-        $target->collect([['first']], false);
-        $target->collect([['second']], false);
+        $first = self::message('first');
+        $second = self::message('second');
+
+        $target->collect([$first], false);
+        $target->collect([$second], false);
 
         self::assertSame(
-            [['first'], ['second']],
+            [$first, $second],
             $target->messages,
             'Collecting another batch must retain messages captured previously.',
         );
@@ -82,7 +115,10 @@ final class LogTargetTest extends TestCase
 
         $module->bootstrap(Yii::$app);
 
-        $summary = $this->invoke(new LogTarget($module), 'collectSummary');
+        $summary = $this->invoke(
+            new LogTarget($module),
+            'collectSummary',
+        );
 
         self::assertInstanceOf(
             RequestSummary::class,
@@ -105,11 +141,19 @@ final class LogTargetTest extends TestCase
     {
         Yii::$app->getRequest()->setUrl('dummy');
 
-        $module = $this->newModuleWithIsolatedDataPath();
+        $module = new class ('debug') extends Module {
+            protected function coreCollectors(): array
+            {
+                return [];
+            }
+        };
 
-        $module->panels = [];
+        $module->dataPath = sys_get_temp_dir() . '/debug-logtarget-' . uniqid();
 
-        $summary = $this->invoke(new LogTarget($module), 'collectSummary');
+        $summary = $this->invoke(
+            new LogTarget($module),
+            'collectSummary',
+        );
 
         self::assertInstanceOf(
             RequestSummary::class,
@@ -140,7 +184,10 @@ final class LogTargetTest extends TestCase
 
         $module->bootstrap(Yii::$app);
 
-        $summary = $this->invoke(new LogTarget($module), 'collectSummary');
+        $summary = $this->invoke(
+            new LogTarget($module),
+            'collectSummary',
+        );
 
         self::assertInstanceOf(
             RequestSummary::class,
@@ -171,7 +218,10 @@ final class LogTargetTest extends TestCase
 
         $module->getCollectorCoordinator()->startup();
 
-        $summary = $this->invoke($logTarget, 'collectSummary');
+        $summary = $this->invoke(
+            $logTarget,
+            'collectSummary',
+        );
 
         $module->getCollectorCoordinator()->shutdown();
 
@@ -194,12 +244,24 @@ final class LogTargetTest extends TestCase
         Yii::$app->getRequest()->setUrl('/debug?token=query-secret&page=1');
 
         $module = new Module('debug');
+
         $module->bootstrap(Yii::$app);
 
-        $summary = $this->invoke(new LogTarget($module), 'collectSummary');
+        $summary = $this->invoke(
+            new LogTarget($module),
+            'collectSummary',
+        );
 
-        self::assertInstanceOf(RequestSummary::class, $summary, 'The summary must be captured.');
-        self::assertStringNotContainsString('query-secret', $summary->url, 'Manifest URLs must not retain query secrets.');
+        self::assertInstanceOf(
+            RequestSummary::class,
+            $summary,
+            'The summary must be captured.',
+        );
+        self::assertStringNotContainsString(
+            'query-secret',
+            $summary->url,
+            'Manifest URLs must not retain query secrets.',
+        );
         self::assertStringContainsString(
             'token=%5Bredacted%5D',
             $summary->url,
@@ -220,7 +282,11 @@ final class LogTargetTest extends TestCase
 
         $evicted = $this->requestSummary('tag-evicted', ['mailCount' => 1, 'mailFiles' => ['gone.eml']]);
 
-        $this->invoke($logTarget, 'removeMailFiles', [$evicted]);
+        $this->invoke(
+            $logTarget,
+            'removeMailFiles',
+            [$evicted],
+        );
 
         self::assertNull(
             $module->getCollectorCoordinator()->collector('mail'),
@@ -269,7 +335,7 @@ final class LogTargetTest extends TestCase
             'broken' => new class extends Panel {
                 public function capture(): PanelSnapshot|null
                 {
-                    throw new YiiException('panel capture failure');
+                    throw new Exception('panel capture failure');
                 }
             },
         ];
@@ -302,23 +368,44 @@ final class LogTargetTest extends TestCase
     public function testExportDoesNotPersistRequestSecretsToJson(): void
     {
         $request = Yii::$app->getRequest();
+
         $request->setUrl('/login?token=query-secret');
         $request->setRawBody('{"password":"body-secret"}');
         $request->setBodyParams(['password' => 'body-secret']);
         $request->getHeaders()->set('Authorization', 'Bearer header-secret');
 
         $module = $this->newModuleWithIsolatedDataPath();
+
         $logTarget = new LogTarget($module);
 
         $logTarget->export();
 
         $json = file_get_contents("{$module->dataPath}/{$logTarget->tag}.json");
 
-        self::assertIsString($json, 'The persisted snapshot must be readable.');
-        self::assertStringNotContainsString('query-secret', $json, 'Persisted URLs must not contain query secrets.');
-        self::assertStringNotContainsString('body-secret', $json, 'Persisted bodies must not contain body secrets.');
-        self::assertStringNotContainsString('header-secret', $json, 'Persisted headers must not contain credentials.');
-        self::assertStringContainsString('[redacted]', $json, 'Persisted snapshots must retain an explicit marker.');
+        self::assertIsString(
+            $json,
+            'The persisted snapshot must be readable.',
+        );
+        self::assertStringNotContainsString(
+            'query-secret',
+            $json,
+            'Persisted URLs must not contain query secrets.',
+        );
+        self::assertStringNotContainsString(
+            'body-secret',
+            $json,
+            'Persisted bodies must not contain body secrets.',
+        );
+        self::assertStringNotContainsString(
+            'header-secret',
+            $json,
+            'Persisted headers must not contain credentials.',
+        );
+        self::assertStringContainsString(
+            '[redacted]',
+            $json,
+            'Persisted snapshots must retain an explicit marker.',
+        );
 
         $this->cleanupDataPath($module);
     }
@@ -328,23 +415,32 @@ final class LogTargetTest extends TestCase
         Yii::$app->getRequest()->setUrl('dummy');
 
         $module = $this->newModuleWithIsolatedDataPath();
+
         $mailCollector = $module->getCollectorCoordinator()->collector('mail');
 
-        self::assertInstanceOf(MailCollector::class, $mailCollector, 'Mail collector must be registered.');
+        self::assertInstanceOf(
+            MailCollector::class,
+            $mailCollector,
+            'Mail collector must be registered.',
+        );
 
         $mailPath = "{$module->dataPath}/mail";
         $mailCollector->mailPath = $mailPath;
+
         mkdir($mailPath, recursive: true);
         file_put_contents("{$mailPath}/orphan.eml", 'message');
         mkdir("{$module->dataPath}/index.lock");
 
         $module->getCollectorCoordinator()->startup();
+
         $this->setInaccessibleProperty($mailCollector, 'messages', [['file' => 'orphan.eml']]);
 
         try {
             (new LogTarget($module))->export();
 
-            self::fail('An invalid lock path must make snapshot persistence fail.');
+            self::fail(
+                'An invalid lock path must make snapshot persistence fail.',
+            );
         } catch (InvalidConfigException $exception) {
             self::assertStringContainsString(
                 'Unable to open debug data lock file',
@@ -359,6 +455,7 @@ final class LogTargetTest extends TestCase
         );
 
         rmdir("{$module->dataPath}/index.lock");
+
         $this->cleanupDataPath($module);
     }
 
@@ -374,6 +471,7 @@ final class LogTargetTest extends TestCase
         );
 
         $logTarget = new LogTarget($module);
+
         $logTarget->export();
 
         self::assertArrayHasKey(
@@ -497,7 +595,9 @@ final class LogTargetTest extends TestCase
     public function testLoadTagIsolatesInvalidPanelPayload(): void
     {
         $module = $this->newModuleWithIsolatedDataPath();
+
         $configPanel = new ConfigPanel();
+
         $configPanel->id = 'config';
         $module->panels = ['config' => $configPanel];
 
@@ -573,7 +673,10 @@ final class LogTargetTest extends TestCase
             '{"version":2,"summary":{},"panels":{},"failures":{}}',
         );
 
-        self::assertNull((new LogTarget($module))->loadTagToPanels('old'));
+        self::assertNull(
+            (new LogTarget($module))->loadTagToPanels('old'),
+            "Incompatible snapshot storage version must be rejected and return 'null'.",
+        );
 
         $this->cleanupDataPath($module);
     }
@@ -582,7 +685,7 @@ final class LogTargetTest extends TestCase
     {
         Yii::$app->getRequest()->setUrl('dummy');
 
-        $module = new Module('debug');
+        $module = $this->newModuleWithIsolatedDataPath();
 
         $module->bootstrap(Yii::$app);
 
@@ -674,11 +777,23 @@ final class LogTargetTest extends TestCase
             $rows[2]->level,
             'Third message keeps its info level.',
         );
+
+        $this->cleanupDataPath($module);
+    }
+    public function testLogTargetExtensionPointsRemainProtected(): void
+    {
+        foreach (['collectSummary', 'getExcessiveDbCallersCount', 'getSqlTotalCount'] as $method) {
+            self::assertTrue(
+                (new \ReflectionMethod(LogTarget::class, $method))->isProtected(),
+                "LogTarget::{$method}() must remain available to subclasses.",
+            );
+        }
     }
 
     public function testManifestGarbageCollectionDeletesExpiredJsonSnapshots(): void
     {
         $module = $this->newModuleWithIsolatedDataPath();
+
         $module->historySize = 2;
 
         for ($index = 0; $index < 13; ++$index) {
@@ -759,6 +874,94 @@ final class LogTargetTest extends TestCase
 
         $this->cleanupDataPath($module);
     }
+    public function testReconcileMailFilesDeletesOnlyUnreferencedOldFiles(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $mailCollector = $module->getCollectorCoordinator()->collector('mail');
+
+        self::assertInstanceOf(
+            MailCollector::class,
+            $mailCollector,
+            'Mail collector must be registered.',
+        );
+
+        $mailPath = "{$module->dataPath}/mail";
+        $mailCollector->mailPath = $mailPath;
+
+        @mkdir($mailPath, 0o777, true);
+
+        $keep = "{$mailPath}/keep.eml";
+        $remove = "{$mailPath}/remove.eml";
+
+        file_put_contents($keep, 'keep');
+        file_put_contents($remove, 'remove');
+        touch($keep, time() - 90_000);
+        touch($remove, time() - 90_000);
+
+        $this->writeDebugSnapshot(
+            $module,
+            'mail-reference',
+            [],
+            ['mailFiles' => ['keep.eml']],
+        );
+
+        $target = new LogTarget($module);
+        $store = new SnapshotStore($module->dataPath, $module->dirMode, $module->fileMode);
+
+        $this->invoke($target, 'reconcileMailFiles', [$store]);
+
+        self::assertFileExists(
+            $keep,
+            'Manifest-referenced mail must be retained.',
+        );
+        self::assertFileDoesNotExist(
+            $remove,
+            'Unreferenced old mail must be deleted.',
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testReconcileMailFilesPreservesFilesWhenManifestIsCorrupt(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $mailCollector = $module->getCollectorCoordinator()->collector('mail');
+
+        self::assertInstanceOf(
+            MailCollector::class,
+            $mailCollector,
+            'Mail collector must be registered.',
+        );
+
+        $mailPath = "{$module->dataPath}/mail";
+        $mailCollector->mailPath = $mailPath;
+
+        @mkdir($mailPath, 0o777, true);
+
+        $orphan = "{$mailPath}/orphan.eml";
+
+        file_put_contents($orphan, 'orphan');
+        touch($orphan, time() - 90_000);
+        file_put_contents("{$module->dataPath}/index.json", '{');
+
+        $target = new LogTarget($module);
+        $store = new SnapshotStore($module->dataPath, $module->dirMode, $module->fileMode);
+
+        $this->invoke(
+            $target,
+            'reconcileMailFiles',
+            [$store],
+        );
+
+        self::assertFileExists(
+            $orphan,
+            'A corrupt manifest must not trigger destructive mail reconciliation.',
+        );
+
+        $this->cleanupDataPath($module);
+    }
 
     protected function setUp(): void
     {
@@ -794,6 +997,14 @@ final class LogTargetTest extends TestCase
         }
 
         @rmdir($dataPath);
+    }
+
+    /**
+     * @return LogMessage
+     */
+    private static function message(string $message): array
+    {
+        return [$message, Logger::LEVEL_INFO, 'application', 0.0, [], 0];
     }
 
     private function newModuleWithIsolatedDataPath(): Module
