@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 use yii\debug\Module;
 use UIAwesome\Html\Flow\{Div, P};
-use UIAwesome\Html\Palpable\A;
+use UIAwesome\Html\Form\Button;
+use UIAwesome\Html\Form\Values\ButtonType;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
@@ -149,6 +150,10 @@ if ($hasQueries) {
     <?= Div::tag()
         ->class('yii-debug-db-explain-all')
         ->html(
-            A::tag()->href('javascript:;')->content('[+] Explain all'),
+            Button::tag()
+                ->addAriaAttribute('expanded', 'false')
+                ->class('yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm yii-debug-db-explain-all-toggle')
+                ->content('Explain all')
+                ->type(ButtonType::BUTTON),
         ) ?>
 <?php endif;

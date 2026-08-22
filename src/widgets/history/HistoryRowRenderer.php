@@ -158,15 +158,16 @@ final class HistoryRowRenderer
     }
 
     /**
-     * Renders the status-code badge cell; an uncaptured (`0`) code displays as a successful `200`.
+     * Renders the status-code badge cell; an uncaptured (`0`) code displays as an unknown neutral status.
      */
     public static function renderStatusCell(HistoryRow $row): string
     {
-        $statusCode = $row->statusCode === 0 ? 200 : $row->statusCode;
+        $statusCode = $row->statusCode;
+        $content = $statusCode === 0 ? '–' : (string) $statusCode;
 
         return Span::tag()
             ->class('yii-debug-badge yii-debug-status-' . Vocabulary::statusClass($statusCode))
-            ->content((string) $statusCode)
+            ->content($content)
             ->render();
     }
 

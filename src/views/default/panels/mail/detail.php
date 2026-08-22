@@ -16,6 +16,7 @@ use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\MailSearch;
 use PHPForge\Debug\Panel\Mail\MailMessage;
 use yii\debug\panels\MailPanel;
+use yii\debug\widgets\FilterBanner;
 use yii\widgets\{ActiveForm, ListView};
 
 /**
@@ -23,17 +24,24 @@ use yii\widgets\{ActiveForm, ListView};
  * @var MailPanel $panel Panel providing the detail content.
  * @var MailSearch $searchModel Search model for filtering the mail grid.
  */
-$totalCount = $dataProvider->getTotalCount();
+$capturedCount = count($panel->getMessages());
+$visibleCount = $dataProvider->getTotalCount();
 
-$hasMessages = $totalCount > 0;
+$hasCapturedMessages = $capturedCount > 0;
+$hasVisibleMessages = $visibleCount > 0;
 
-$failedCount = MailMessage::failedCount($panel->getMessages());
+/** @var list<MailMessage> $visibleMessages */
+$visibleMessages = $dataProvider->allModels;
+
+$failedCount = MailMessage::failedCount($visibleMessages);
 
 $summaryItems = [
     Span::tag()
         ->html(
-            Strong::tag()->content((string) $totalCount),
-            $totalCount === 1 ? ' message' : ' messages',
+            Strong::tag()->content((string) $visibleCount),
+            ' of ',
+            Strong::tag()->content((string) $capturedCount),
+            $capturedCount === 1 ? ' message' : ' messages',
         ),
 ];
 
@@ -49,7 +57,7 @@ if ($failedCount > 0) {
         );
 }
 
-if ($hasMessages) {
+if ($hasCapturedMessages) {
     $summaryItems[] = Button::tag()
         ->addAriaAttribute('controls', 'email-form')
         ->addAriaAttribute('expanded', 'false')
@@ -58,6 +66,9 @@ if ($hasMessages) {
         ->class('yii-debug-btn yii-debug-btn-ghost yii-debug-mail-filter-toggle')
         ->content('Filter')
         ->type(ButtonType::BUTTON);
+}
+
+if ($hasVisibleMessages) {
     $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
 }
 ?>
@@ -68,7 +79,7 @@ if ($hasMessages) {
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>
 
-<?php if ($hasMessages): ?>
+<?php if ($hasCapturedMessages): ?>
     <div id="email-form" class="yii-debug-collapsible">
         <?php $form = ActiveForm::begin(
             [
@@ -136,7 +147,7 @@ if ($hasMessages) {
     </div>
 <?php endif; ?>
 
-<?php if (!$hasMessages): ?>
+<?php if (!$hasCapturedMessages): ?>
     <?= EmptyState::card(
         'No emails sent in this request',
         P::tag()
@@ -151,11 +162,24 @@ if ($hasMessages) {
                 . 'request — open it from the history sidebar.',
             ),
     ) ?>
+<?php elseif (!$hasVisibleMessages): ?>
+    <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
+    <?= EmptyState::card(
+        'No emails match the active filters',
+        P::tag()
+            ->content(
+                'This request captured email messages, but none match the filters currently applied to the inbox.',
+            ),
+        P::tag()
+            ->content('Remove individual filters or use Clear all above to restore every captured message.'),
+    ) ?>
 <?php else: ?>
+    <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
     <?= ListView::widget(
         [
             'dataProvider' => $dataProvider,
             'layout' => "{items}\n<div class=\"yii-debug-mail-pager\">{pager}</div>",
+            'pager' => GridViewConfig::defaults()['pager'],
             'itemOptions' => [
                 'class' => 'yii-debug-mail-list-item',
                 'tag' => 'li',

@@ -46,6 +46,31 @@ final class FilterBannerTest extends TestCase
         );
     }
 
+    public function testRunProvidesAccessibleNamesForRemovalLinks(): void
+    {
+        $this->bootApp();
+
+        $_GET['Log'] = ['category' => 'app', 'message' => 'login'];
+
+        $html = FilterBanner::widget(['searchModel' => new LogSearch()]);
+
+        self::assertStringContainsString(
+            'aria-label="Remove category: app filter"',
+            $html,
+            'Each filter pill must name the filter its link removes.',
+        );
+        self::assertStringContainsString(
+            'aria-label="Remove message: login filter"',
+            $html,
+            'Every active filter must expose a distinct removal-link name.',
+        );
+        self::assertStringContainsString(
+            'aria-label="Clear all active filters"',
+            $html,
+            "The 'Clear all' link must expose its complete action to assistive technology.",
+        );
+    }
+
     public function testRunRendersPluralLabelForMultipleActiveFilters(): void
     {
         $this->bootApp();

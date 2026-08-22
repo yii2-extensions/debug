@@ -224,6 +224,26 @@ final class DbPanelTest extends TestCase
             $html,
             'Detail view must produce non-empty markup.',
         );
+        self::assertStringContainsString(
+            'class="yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm yii-debug-db-explain-all-toggle"',
+            $html,
+            'Explain-all must render as the shared native button control.',
+        );
+        self::assertStringContainsString(
+            'type="button"',
+            $html,
+            'Explain-all must not submit a form.',
+        );
+        self::assertStringContainsString(
+            'aria-expanded="false"',
+            $html,
+            'Explain-all must expose its initial collapsed state.',
+        );
+        self::assertStringNotContainsString(
+            'javascript:;',
+            $html,
+            'Explain-all must not use a JavaScript pseudo-URL.',
+        );
     }
 
     public function testGetDetailUsesHydratedRowsInsteadOfCurrentRequestTimings(): void

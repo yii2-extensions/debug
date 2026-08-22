@@ -154,6 +154,15 @@ support. Internet Explorer and other legacy browsers are not supported.
 </details>
 
 <details>
+<summary>Inertia</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/inertia-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/inertia-light.png">
+    <img src="docs/images/inertia-light.png" alt="Inertia panel">
+</picture>
+</details>
+
+<details>
 <summary>Logs</summary>
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/log-dark.png">

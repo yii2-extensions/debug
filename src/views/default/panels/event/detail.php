@@ -22,13 +22,14 @@ use yii\grid\GridView;
  */
 $hasEvents = $panel->hasEvents();
 
-$models = $panel->getEvents();
+/** @var list<EventRow> $models */
+$models = $dataProvider->allModels;
 
 $staticCount = EventRow::staticCount($models);
 
 $summaryItems = [
     Span::tag()->html(
-        Strong::tag()->content((string) $dataProvider->getTotalCount()),
+        Strong::tag()->content((string) count($models)),
         ' events',
     ),
     Span::tag()

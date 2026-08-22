@@ -6,6 +6,8 @@ namespace yii\debug\tests\event;
 
 use PHPForge\Debug\Panel\Event\{EventRow, EventSnapshot};
 use PHPUnit\Framework\Attributes\Group;
+use stdClass;
+use Yii;
 use yii\base\Event;
 use yii\debug\panels\EventPanel;
 use yii\debug\tests\support\TestCase;
@@ -85,6 +87,45 @@ final class EventPanelTest extends TestCase
             'yii-debug-grid-event',
             $detail,
             'Grid must carry the event variant class.',
+        );
+    }
+
+    public function testGetDetailScopesEverySummaryMetricToFilteredEvents(): void
+    {
+        $panel = $this->makePanel(EventPanel::class);
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'Event' => ['name' => 'afterSave'],
+            ],
+        );
+
+        $this->hydratePanel(
+            $panel,
+            new EventSnapshot(
+                [
+                    new EventRow(1.0, 'init', stdClass::class, '1', ''),
+                    new EventRow(2.0, 'afterSave', Event::class, '0', 'App'),
+                ],
+            ),
+        );
+
+        $detail = $panel->getDetail();
+
+        self::assertStringContainsString(
+            '<strong>1</strong> events',
+            $detail,
+            'Event count must report the filtered set.',
+        );
+        self::assertStringContainsString(
+            '<strong>1</strong> classes',
+            $detail,
+            'Distinct-class count must use the same filtered set as the event count.',
+        );
+        self::assertStringNotContainsString(
+            '<strong>1</strong> static',
+            $detail,
+            'Static-event count must exclude captured rows removed by the active filter.',
         );
     }
 

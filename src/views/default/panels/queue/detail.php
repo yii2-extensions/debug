@@ -147,10 +147,6 @@ if ($totalRecords > 0) {
         'options' => ['class' => 'yii-debug-grid yii-debug-grid-queue'],
         'filterModel' => $searchModel,
         'filterUrl' => $panel->getUrl(),
-        'rowOptions' => static fn(JobRecord $model, int $key): array => [
-            'class' => 'yii-debug-row-link',
-            'data-href' => $jobUrlBuilder($key),
-        ],
         'columns' => [
             [
                 'attribute' => 'jobId',

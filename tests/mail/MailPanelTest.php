@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use PHPForge\Debug\Panel\Mail\MailSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
+use Yii;
 use yii\debug\LogTarget;
 use yii\debug\panels\MailPanel;
 use yii\debug\tests\support\TestCase;
@@ -247,6 +248,68 @@ final class MailPanelTest extends TestCase
         $this->cleanupDataPath($dataPath);
     }
 
+    public function testGetDetailKeepsFiltersAndRendersFilteredEmptyStateWhenMessagesWereCaptured(): void
+    {
+        $panel = $this->makePanel(
+            MailPanel::class,
+        );
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'tag' => 'mail-tag',
+                'panel' => 'mail',
+                'Mail' => ['subject' => 'missing subject'],
+            ],
+        );
+
+        $this->hydratePanel(
+            $panel,
+            MailSnapshot::capture(
+                [
+                    [
+                        'from' => 'a@x.com',
+                        'to' => 'b@x.com',
+                        'subject' => 'Welcome',
+                        'time' => new DateTimeImmutable('2026-01-01'),
+                    ],
+                ],
+            ),
+        );
+
+        $detail = $panel->getDetail();
+
+        self::assertStringContainsString(
+            '<strong>0</strong> of <strong>1</strong> message',
+            $detail,
+            'Summary must distinguish the filtered result count from the captured message count.',
+        );
+        self::assertStringContainsString(
+            'No emails match the active filters',
+            $detail,
+            'A zero-result filter must not be presented as an empty capture.',
+        );
+        self::assertStringNotContainsString(
+            'No emails sent in this request',
+            $detail,
+            'Captured messages must keep the capture-empty explanation hidden.',
+        );
+        self::assertStringNotContainsString(
+            '<strong>1</strong> failed',
+            $detail,
+            'Failure metrics must use the same filtered message set as the visible count.',
+        );
+        self::assertStringContainsString(
+            'value="missing subject"',
+            $detail,
+            'The filter form must retain the submitted value when no message matches.',
+        );
+        self::assertStringContainsString(
+            '>Clear all<',
+            $detail,
+            'The filtered empty state must expose a clear-all action.',
+        );
+    }
+
     public function testGetDetailRendersEmptyStateWhenNoMessagesCaptured(): void
     {
         $panel = $this->makePanel(
@@ -297,6 +360,42 @@ final class MailPanelTest extends TestCase
             'yii-debug-grid-summary',
             $detail,
             'Detail must open with the shared summary strip.',
+        );
+    }
+
+    public function testGetDetailUsesTheSharedPagerMarkup(): void
+    {
+        $panel = $this->makePanel(
+            MailPanel::class,
+        );
+
+        $messages = [];
+
+        for ($index = 1; $index <= 21; $index++) {
+            $messages[] = [
+                'from' => 'a@x.com',
+                'to' => 'b@x.com',
+                'subject' => "Message {$index}",
+                'time' => new DateTimeImmutable('2026-01-01'),
+            ];
+        }
+
+        $this->hydratePanel(
+            $panel,
+            MailSnapshot::capture($messages),
+        );
+
+        $detail = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'class="yii-debug-pager"',
+            $detail,
+            'Mail pagination must use the shared pager wrapper.',
+        );
+        self::assertStringContainsString(
+            'class="yii-debug-pager-link"',
+            $detail,
+            'Mail pagination links must use the shared debugger class.',
         );
     }
 
