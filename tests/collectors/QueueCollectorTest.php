@@ -61,6 +61,7 @@ final class QueueCollectorTest extends TestCase
 
         Event::offAll();
     }
+
     public function testCaptureRecordsErrorEventAndExtractsMessage(): void
     {
         $collector = $this->makeCollector();

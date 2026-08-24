@@ -130,6 +130,7 @@ final class DebugActionsTest extends TestCase
             'Duration delta must be computed relative to the baseline.',
         );
     }
+
     public function testActionDownloadMailStreamsExistingMailFile(): void
     {
         $module = $this->bootDebugModule();

@@ -784,6 +784,7 @@ final class ModuleTest extends TestCase
             'Order: dispatch, then diagnostics, then side effects.',
         );
     }
+
     public function testCreateCapturePolicyCombinesGlobalRulesWithCollectorKeysAndBodyLimit(): void
     {
         $module = new Module('debug');
