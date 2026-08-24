@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use Exception;
+use PHPForge\Debug\Panel\PanelRenderContext;
+use PHPForge\Debug\Routing\DebugUrlGeneratorInterface;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException};
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\{Module, Panel};
@@ -279,6 +281,46 @@ final class PanelTest extends TestCase
             '<a href="ide://open?url=file:///app/localdata/file.php&line=10">/app/data/file.php:10</a>',
             $panel->getTraceLine(['file' => '/app/data/file.php', 'line' => 10]),
             "Only the first matching key in 'tracePathMappings' should be applied.",
+        );
+    }
+
+    public function testRenderContextIsAnAdditivePortablePanelContract(): void
+    {
+        $panel = $this->createPanel();
+        $context = new PanelRenderContext(
+            tag: 'test-tag',
+            panel: 'request',
+            queryParams: [],
+            theme: 'dark',
+            urls: new class implements DebugUrlGeneratorInterface {
+                public function action(string $action, string $tag, array $queryParams = []): string
+                {
+                    return "/debug/{$action}?tag={$tag}";
+                }
+
+                public function history(array $queryParams = []): string
+                {
+                    return '/debug/index';
+                }
+
+                public function panel(string $tag, string $panel, array $queryParams = []): string
+                {
+                    return "/debug/view?tag={$tag}&panel={$panel}";
+                }
+            },
+        );
+
+        self::assertNull(
+            $panel->getRenderContext(),
+            'Panels created outside a debugger detail request must remain usable without a render context.',
+        );
+
+        $panel->setRenderContext($context);
+
+        self::assertSame(
+            $context,
+            $panel->getRenderContext(),
+            'Debugger actions must be able to expose the portable render context without changing getDetail().',
         );
     }
 

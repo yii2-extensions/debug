@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
+use PHPForge\Debug\View\Sidebar\SidebarSnapshot as CoreSidebarSnapshot;
+use yii\helpers\Url;
+
 /**
  * Typed view-model for the snapshot card surfaced at the top of the debugger sidebar ('CURRENT REQUEST' /
  * 'NEWEST REQUEST').
@@ -101,4 +104,42 @@ final readonly class SidebarSnapshot
          */
         public bool $hasOlder,
     ) {}
+
+    /**
+     * Converts Yii route-array links to the framework-neutral snapshot contract.
+     */
+    public function toCore(): CoreSidebarSnapshot
+    {
+        return new CoreSidebarSnapshot(
+            title: $this->title,
+            ariaLabel: $this->ariaLabel,
+            method: $this->method,
+            path: $this->path,
+            fullUrl: $this->fullUrl,
+            statusCode: $this->statusCode,
+            statusVariant: $this->statusVariant,
+            time: $this->time,
+            isAjax: $this->isAjax,
+            isCursor: $this->isCursor,
+            cursorInitTag: $this->cursorInitTag,
+            newestUrl: self::url($this->newestUrl),
+            oldestUrl: self::url($this->oldestUrl),
+            newerUrl: self::url($this->newerUrl),
+            olderUrl: self::url($this->olderUrl),
+            isNewest: $this->isNewest,
+            isOldest: $this->isOldest,
+            hasNewer: $this->hasNewer,
+            hasOlder: $this->hasOlder,
+        );
+    }
+
+    /**
+     * Resolves a route-array wrapper, retaining the historical empty-link sentinel.
+     *
+     * @param array<int|string, string> $route
+     */
+    private static function url(array $route): string
+    {
+        return $route !== [] ? Url::to($route) : '';
+    }
 }

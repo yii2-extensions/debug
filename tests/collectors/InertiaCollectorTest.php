@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use JsonSerializable;
+use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
+use PHPForge\Inertia\Page;
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\base\{View, ViewEvent};
 use yii\debug\collectors\InertiaCollector;
+use yii\debug\Module;
 use yii\debug\tests\support\TestCase;
-use yii\inertia\{Manager, Page};
+use yii\inertia\Manager;
 
 /**
  * Unit tests for {@see InertiaCollector} covering the manager-gated capture, the page capture from the response and the
@@ -142,6 +145,151 @@ final class InertiaCollectorTest extends TestCase
         );
     }
 
+    public function testCaptureRedactsConfiguredSensitiveDataFromLegacyPageAndLocation(): void
+    {
+        $collector = $this->makeCollector(
+            ['inertia' => ['class' => Manager::class]],
+        );
+        $module = new Module('debug');
+
+        $module->sensitiveKeys = [...SensitiveDataRedactor::DEFAULT_KEYS, 'tenant_signing_key'];
+        $module->sensitiveKeyPrefixes = ['internal_'];
+        $module->sensitiveKeyPatterns = [
+            ...SensitiveDataRedactor::DEFAULT_PATTERNS,
+            '~(?:^|_)vault(?:$|_)~i',
+        ];
+        $collector->module = $module;
+
+        Yii::$app->response->data = new \yii\inertia\Page(
+            'legacy/secrets',
+            [
+                'nested' => [
+                    'tenant_signing_key' => 'exact-secret',
+                    'internal_note' => 'prefix-secret',
+                    'team_vault_key' => 'pattern-secret',
+                    'passwordless_mode' => 'safe-passwordless',
+                ],
+            ],
+            '/legacy?tenant_signing_key=page-exact&internal_note=page-prefix&team_vault_key=page-pattern&safe=visible',
+            'legacy-v2',
+        );
+        Yii::$app->response->headers->set(
+            'X-Inertia-Location',
+            '/next?tenant_signing_key=location-exact&internal_note=location-prefix&team_vault_key=location-pattern&safe=visible',
+        );
+
+        $snapshot = $this->captureSnapshot($collector);
+        $page = $snapshot->data()['page'] ?? null;
+
+        self::assertIsArray($page, 'A legacy Inertia page must remain available after redaction.');
+        $props = $page['props'] ?? null;
+
+        self::assertIsArray($props, 'A legacy Inertia page must retain its props object after redaction.');
+        self::assertSame(
+            [
+                'tenant_signing_key' => SensitiveDataRedactor::PLACEHOLDER,
+                'internal_note' => SensitiveDataRedactor::PLACEHOLDER,
+                'team_vault_key' => SensitiveDataRedactor::PLACEHOLDER,
+                'passwordless_mode' => 'safe-passwordless',
+            ],
+            $props['nested'] ?? null,
+            'Exact, prefix, and PCRE rules must redact nested legacy page props without false positives.',
+        );
+        self::assertSame(
+            '/legacy?tenant_signing_key=%5Bredacted%5D&internal_note=%5Bredacted%5D&team_vault_key=%5Bredacted%5D&safe=visible',
+            $page['url'] ?? null,
+            'Configured rules must redact sensitive query values in the legacy page URL.',
+        );
+        self::assertSame(
+            '/next?tenant_signing_key=%5Bredacted%5D&internal_note=%5Bredacted%5D&team_vault_key=%5Bredacted%5D&safe=visible',
+            $snapshot->location,
+            'Configured rules must redact sensitive query values in the Inertia location header.',
+        );
+    }
+
+    public function testCaptureRedactsDefaultSensitiveDataFromCurrentPageRecursively(): void
+    {
+        $collector = $this->makeCollector(
+            ['inertia' => ['class' => Manager::class]],
+        );
+
+        Yii::$app->response->data = new Page(
+            'site/secrets',
+            [
+                'DB_PASSWORD' => 'database-secret',
+                'nested' => [
+                    'AWS_SECRET_ACCESS_KEY' => 'aws-secret',
+                    'DATABASE_URL' => 'postgres://secret',
+                    'DATABASE_HOST' => 'database.internal',
+                    'tokenizer' => 'safe-tokenizer',
+                ],
+            ],
+            '/site?token=page-secret&DATABASE_HOST=database.internal',
+            'v3',
+        );
+        Yii::$app->response->headers->set(
+            'X-Inertia-Location',
+            '/next?DB_PASSWORD=location-secret&DATABASE_HOST=database.internal',
+        );
+
+        $snapshot = $this->captureSnapshot($collector);
+        $page = $snapshot->data()['page'] ?? null;
+
+        self::assertIsArray($page, 'A current Inertia page must remain available after redaction.');
+        self::assertSame(
+            [
+                'DB_PASSWORD' => SensitiveDataRedactor::PLACEHOLDER,
+                'nested' => [
+                    'AWS_SECRET_ACCESS_KEY' => SensitiveDataRedactor::PLACEHOLDER,
+                    'DATABASE_URL' => SensitiveDataRedactor::PLACEHOLDER,
+                    'DATABASE_HOST' => 'database.internal',
+                    'tokenizer' => 'safe-tokenizer',
+                ],
+            ],
+            $page['props'] ?? null,
+            'Default credential rules must redact current page props recursively while preserving safe lookalikes.',
+        );
+        self::assertSame(
+            '/site?token=%5Bredacted%5D&DATABASE_HOST=database.internal',
+            $page['url'] ?? null,
+            'Default rules must redact the current page URL query.',
+        );
+        self::assertSame(
+            '/next?DB_PASSWORD=%5Bredacted%5D&DATABASE_HOST=database.internal',
+            $snapshot->location,
+            'Default rules must redact the current Inertia location query.',
+        );
+    }
+
+    public function testCaptureRetainsLegacyAdapterPageCompatibility(): void
+    {
+        $collector = $this->makeCollector(
+            ['inertia' => ['class' => Manager::class]],
+        );
+
+        Yii::$app->response->data = new \yii\inertia\Page(
+            'legacy/dashboard',
+            ['legacy' => true],
+            '/legacy',
+            'legacy-v1',
+        );
+
+        $saved = $this->captureData($collector);
+
+        $page = $saved['page'] ?? null;
+
+        self::assertIsArray(
+            $page,
+            'Legacy adapter page must be normalized to a serializable array.',
+        );
+
+        self::assertSame(
+            'legacy/dashboard',
+            $page['component'] ?? null,
+            'Existing applications returning the former adapter page DTO must continue to capture it.',
+        );
+    }
+
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         $this->mockWebApplication();
@@ -194,6 +342,7 @@ final class InertiaCollectorTest extends TestCase
 
     public function testNormalizePageReturnsNullForInvalidJsonAndScalarPayloads(): void
     {
+        $collector = $this->makeCollector();
         $invalidJson = new class implements JsonSerializable {
             public function jsonSerialize(): string
             {
@@ -208,11 +357,11 @@ final class InertiaCollectorTest extends TestCase
         };
 
         self::assertNull(
-            $this->invokeStatic(InertiaCollector::class, 'normalizePage', [$invalidJson]),
+            $this->invoke($collector, 'normalizePage', [$invalidJson]),
             'A page that cannot be JSON encoded must normalize to null.',
         );
         self::assertNull(
-            $this->invokeStatic(InertiaCollector::class, 'normalizePage', [$scalar]),
+            $this->invoke($collector, 'normalizePage', [$scalar]),
             'A scalar JSON payload must normalize to null.',
         );
     }

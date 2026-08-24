@@ -6,10 +6,12 @@ namespace yii\debug;
 
 use Closure;
 use PHPForge\Debug\Helper\Coerce;
+use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException, PanelSnapshot};
 use yii\base\{Component, ViewContextInterface};
 use yii\debug\exception\Message;
-use yii\helpers\{ArrayHelper, StringHelper, Url, VarDumper};
+use yii\debug\routing\DebugUrlGenerator;
+use yii\helpers\{StringHelper, VarDumper};
 
 use function strlen;
 
@@ -57,6 +59,11 @@ class Panel extends Component implements ViewContextInterface
     protected ExceptionSnapshot|null $error = null;
 
     /**
+     * Portable render state prepared by the active debugger action.
+     */
+    private PanelRenderContext|null $renderContext = null;
+
+    /**
      * Captures the panel payload for the current request.
      *
      * Invoked by {@see LogTarget::export()} at request end; the DTO is encoded into the request's versioned JSON
@@ -95,6 +102,14 @@ class Panel extends Component implements ViewContextInterface
     public function getName(): string
     {
         return static::NAME;
+    }
+
+    /**
+     * Returns the framework-neutral render context for the active debugger request, when one has been prepared.
+     */
+    public function getRenderContext(): PanelRenderContext|null
+    {
+        return $this->renderContext;
     }
 
     /**
@@ -235,19 +250,19 @@ class Panel extends Component implements ViewContextInterface
      */
     public function getUrl(array|null $additionalParams = null): string
     {
-        $moduleId = $this->module?->getUniqueId();
+        $params = $additionalParams ?? [];
+        $tag = Coerce::stringOrNull($params['tag'] ?? null) ?? $this->tag;
+        $panel = Coerce::stringOrNull($params['panel'] ?? null) ?? $this->id;
 
-        $route = [
-            "/{$moduleId}/view",
-            'panel' => $this->id,
-            'tag' => $this->tag,
-        ];
-
-        if ($additionalParams !== null) {
-            $route = ArrayHelper::merge($route, $additionalParams);
+        if ($this->renderContext !== null && $tag === $this->tag && $panel === $this->id) {
+            return $this->renderContext->panelUrl(queryParams: $params);
         }
 
-        return Url::toRoute($route);
+        return (new DebugUrlGenerator($this->module?->getUniqueId() ?? 'debug'))->panel(
+            $tag,
+            $panel,
+            $params,
+        );
     }
 
     /**
@@ -316,6 +331,14 @@ class Panel extends Component implements ViewContextInterface
     public function setError(ExceptionSnapshot $error): void
     {
         $this->error = $error;
+    }
+
+    /**
+     * Installs the framework-neutral render context prepared for this panel by the debugger action.
+     */
+    public function setRenderContext(PanelRenderContext|null $renderContext): void
+    {
+        $this->renderContext = $renderContext;
     }
 
     /**

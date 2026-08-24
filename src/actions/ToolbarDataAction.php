@@ -6,7 +6,7 @@ namespace yii\debug\actions;
 
 use Throwable;
 use Yii;
-use yii\debug\Module;
+use yii\debug\{Module, ToolbarDataMapper};
 use yii\debug\panels\ConfigPanel;
 use yii\helpers\Url;
 use yii\web\{NotFoundHttpException, Response};
@@ -26,14 +26,14 @@ class ToolbarDataAction extends Action
      * @param string $tag Tag of the debug entry to expose metadata for.
      *
      * @return array{error: string, tag: string}|array{
-     *   configUrl: string|null,
+     *   configUrl: string,
      *   defaultHeight: int,
      *   iconBaseUrl: string,
      *   indexUrl: string,
      *   items: list<array<string, mixed>>,
-     *   logo: string,
-     *   logoFallback: string,
-     *   phpInfoUrl: string,
+     *   logo: string|null,
+     *   logoFallback: string|null,
+     *   phpInfoUrl: string|null,
      *   phpVersion: string|null,
      *   position: string,
      *   tag: string,
@@ -60,30 +60,6 @@ class ToolbarDataAction extends Action
 
         $module = $this->getDebugModule();
 
-        $items = [];
-
-        foreach ($module->panels as $id => $panel) {
-            $data = $panel->getToolbarData();
-
-            if ($data === []) {
-                continue;
-            }
-
-            if (!isset($data['id'])) {
-                $data['id'] = $id;
-            }
-
-            if (!isset($data['title'])) {
-                $data['title'] = $panel->getName();
-            }
-
-            if (!isset($data['url'])) {
-                $data['url'] = $panel->getUrl();
-            }
-
-            $items[] = $data;
-        }
-
         $configPanel = $module->panels['config'] ?? null;
 
         $yiiVersion = $configPanel instanceof ConfigPanel ? $configPanel->getYiiVersion() : null;
@@ -106,8 +82,9 @@ class ToolbarDataAction extends Action
 
         $moduleId = $module->getUniqueId();
 
-        return [
-            'configUrl' => $configPanel !== null
+        $indexUrl = Url::toRoute(["/{$moduleId}/index"]);
+
+        $configUrl = $configPanel !== null
                 ? Url::toRoute(
                     [
                         "/{$moduleId}/view",
@@ -115,29 +92,28 @@ class ToolbarDataAction extends Action
                         'panel' => 'config',
                     ],
                 )
-                : null,
-            'defaultHeight' => $module->defaultHeight,
-            'iconBaseUrl' => $iconBaseUrl,
-            'indexUrl' => Url::toRoute(
-                [
-                    "/{$moduleId}/index",
-                ]
-            ),
-            'items' => $items,
-            'logo' => $iconBaseUrl !== ''
+                : null;
+
+        return (new ToolbarDataMapper())->map(
+            tag: $tag,
+            title: 'Yii Debugger',
+            indexUrl: $indexUrl,
+            configUrl: $configUrl,
+            panels: $module->panels,
+            position: $module->toolbarPosition,
+            defaultHeight: $module->defaultHeight,
+            iconBaseUrl: $iconBaseUrl,
+            logo: $iconBaseUrl !== ''
                 ? "{$iconBaseUrl}yii.svg"
                 : $module::getYiiLogo(),
-            'logoFallback' => $module::getYiiLogo(),
-            'phpInfoUrl' => Url::toRoute(
+            logoFallback: $module::getYiiLogo(),
+            phpInfoUrl: Url::toRoute(
                 [
                     "/{$moduleId}/php-info",
                 ],
             ),
-            'phpVersion' => $phpVersion,
-            'position' => $module->toolbarPosition,
-            'tag' => $tag,
-            'title' => 'Yii Debugger',
-            'yiiVersion' => $yiiVersion,
-        ];
+            phpVersion: $phpVersion,
+            yiiVersion: $yiiVersion,
+        );
     }
 }

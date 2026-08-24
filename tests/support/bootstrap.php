@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use yii\inertia\Manager;
+use PHPForge\Inertia\Page as CorePage;
+use yii\inertia\{Manager, Page as LegacyPage, Vite};
 
 // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
 // ensure we get report on all possible php errors
@@ -34,6 +35,16 @@ Yii::setAlias('@yii/debug', "{$rootPath}/src");
 // AssetPanel tests exercise the real class names without pulling the package in.
 if (class_exists(Manager::class) === false) {
     require_once __DIR__ . '/stub/inertia/Manager.php';
+}
+
+if (class_exists(CorePage::class) === false) {
+    require_once __DIR__ . '/stub/inertia/CorePage.php';
+}
+
+if (class_exists(LegacyPage::class) === false) {
     require_once __DIR__ . '/stub/inertia/Page.php';
+}
+
+if (class_exists(Vite::class) === false) {
     require_once __DIR__ . '/stub/inertia/Vite.php';
 }

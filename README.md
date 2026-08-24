@@ -52,7 +52,7 @@ composer require yii2-extensions/debug:^0.2 --dev
 ```
 
 The package installs `php-forge/debug-core` transitively. The core owns the portable snapshot and persistence model,
-shared views, and frontend files; this package owns the Yii2 lifecycle, collectors, controllers, view rendering,
+shared views, and frontend files; this package owns the Yii2 lifecycle, collectors, standalone actions, view rendering,
 toolbar injection, and asset bundle definitions.
 
 ### Basic Usage
@@ -77,6 +77,10 @@ Shared PHP templates are resolved through the adapter-owned `@yiiDebugViews` ali
 The drawer moves focus to its close control and restores the activating chip when closed. Use `Escape` to close it,
 or resize it from the keyboard with `ArrowUp`, `ArrowDown`, `Home`, and `End` on the separator.
 
+The History page can compare any two retained captures. The comparison shows request metric deltas and per-panel
+counts of added, removed, changed, and unchanged JSON paths. It never renders panel values in the overview; use the
+baseline and target deep links to inspect each panel through its normal redaction and presentation rules.
+
 ### Custom collectors and panels
 
 Register collectors explicitly through the debug module. A collector returns a typed
@@ -98,6 +102,42 @@ $config['modules']['debug'] = [
 `OrderCollector::id()` must return `app.orders`. Collector instances and Yii configuration arrays with a `class` key
 are accepted as alternatives to class names. Stored collector data without a matching panel remains available through
 an escaped JSON fallback.
+
+### Capture redaction
+
+Every persistent capture uses the shared Debug Core policy. Its defaults redact common credentials plus
+environment-style keys such as `DB_PASSWORD`, `AWS_SECRET_ACCESS_KEY`, and `DATABASE_URL`, while segment-aware
+matching keeps unrelated keys such as `DATABASE_HOST`, `tokenizer`, and `passwordless_mode` visible.
+
+Configure additional rules once on the module; they apply to request bodies and superglobals, identity attributes,
+queue job payloads, Inertia page props and page/location URLs, and manifest URLs:
+
+```php
+use PHPForge\Debug\Helper\SensitiveDataRedactor;
+
+$config['modules']['debug'] = [
+    'class' => \yii\debug\Module::class,
+    'maxBodyBytes' => 65_536,
+    'sensitiveKeys' => [
+        ...SensitiveDataRedactor::DEFAULT_KEYS,
+        'tenant_signing_key',
+    ],
+    'sensitiveKeyPrefixes' => ['internal_secret_'],
+    'sensitiveKeyPatterns' => [
+        '~(?:^|_)private_credential(?:$|_)~i',
+    ],
+];
+```
+
+`sensitiveKeys` replaces the exact-key list, so include `SensitiveDataRedactor::DEFAULT_KEYS` when extending it.
+Patterns are PCRE expressions applied to the complete original key. Leave `sensitiveKeyPatterns` as `null` to use
+the segment-aware defaults with the default exact-key list, or set it to `[]` to disable pattern matching explicitly.
+An invalid pattern or an empty prefix rejects module initialization rather than silently weakening redaction.
+
+Debugger endpoints emit `no-store`, `no-referrer`, `nosniff`, `noindex`, and same-origin framing policies. The adapter
+preserves existing host CSP directives and replaces or adds only `frame-ancestors 'self'` on debugger responses. Keep
+the module restricted to trusted development IPs or an explicit access callback; these headers are defense in depth,
+not an authentication boundary.
 
 When upgrading from 0.1, review the [0.2 upgrade guide](UPGRADE.md) before deploying the package.
 

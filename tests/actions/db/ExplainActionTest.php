@@ -35,6 +35,7 @@ final class ExplainActionTest extends TestCase
         $html = $action->renderPartial(
             'db-explain',
             [
+                'error' => null,
                 'query' => 'SELECT 1',
                 'results' => [],
             ],
@@ -58,6 +59,7 @@ final class ExplainActionTest extends TestCase
         $html = $action->renderPartial(
             'db-explain',
             [
+                'error' => null,
                 'query' => 'SELECT 1',
                 'results' => [['detail' => null, 'extra' => '']],
             ],
@@ -113,6 +115,120 @@ final class ExplainActionTest extends TestCase
             '<!DOCTYPE html>',
             $html,
             'AJAX rendering must omit the debugger layout.',
+        );
+    }
+
+    public function testRunRendersDatabaseExceptionInFullDebuggerShell(): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        $dbPanel = $module->panels['db'] ?? null;
+
+        self::assertInstanceOf(
+            DbPanel::class,
+            $dbPanel,
+            'DB panel must be wired in the bootstrap.',
+        );
+
+        $this->writeSnapshot(
+            $module,
+            'tag-full-error',
+            ['db' => new DbSnapshot([self::queryRow('SELECT * FROM "<stale&table>"')])],
+        );
+
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
+
+        Yii::$app->getRequest()->setUrl('dummy');
+        Yii::$app->getRequest()->setBodyParams([]);
+
+        $html = $action->run('0', 'tag-full-error', $dbPanel);
+
+        self::assertSame(
+            200,
+            Yii::$app->getResponse()->getStatusCode(),
+            'A handled EXPLAIN rejection must render as a diagnostic page rather than an HTTP error response.',
+        );
+        self::assertStringStartsWith(
+            '<!DOCTYPE html>',
+            $html,
+            'Regular EXPLAIN diagnostics must preserve the full debugger layout.',
+        );
+        self::assertStringContainsString(
+            <<<HTML
+            <p class="yii-debug-explain-empty">
+            EXPLAIN failed: SQLSTATE[HY000]: General error: 1 no such table: &lt;stale&amp;table&gt;
+            HTML,
+            $html,
+            'The full-page diagnostic must surface the escaped database rejection.',
+        );
+        self::assertStringNotContainsString(
+            'Stack trace:',
+            $html,
+            'The handled full-page diagnostic must not leak the framework exception stack.',
+        );
+    }
+
+    public function testRunRendersEscapedDatabaseExceptionAsAjaxDiagnostic(): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        $dbPanel = $module->panels['db'] ?? null;
+
+        self::assertInstanceOf(
+            DbPanel::class,
+            $dbPanel,
+            'DB panel must be wired in the bootstrap.',
+        );
+
+        $this->writeSnapshot(
+            $module,
+            'tag-ajax-error',
+            ['db' => new DbSnapshot([self::queryRow('SELECT * FROM "<script>alert(1)</script>"')])],
+        );
+
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
+
+        Yii::$app->getRequest()->setUrl('dummy');
+
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+
+        try {
+            $html = $action->run('0', 'tag-ajax-error', $dbPanel);
+        } finally {
+            unset($_SERVER['HTTP_X_REQUESTED_WITH']);
+        }
+
+        self::assertSame(
+            200,
+            Yii::$app->getResponse()->getStatusCode(),
+            'A handled EXPLAIN rejection must remain a successful diagnostic response for the inline AJAX workflow.',
+        );
+        self::assertStringContainsString(
+            <<<HTML
+            <p class="yii-debug-explain-empty">
+            EXPLAIN failed: SQLSTATE[HY000]: General error: 1 no such table: &lt;script&gt;alert(1)&lt;/script&gt;
+            HTML,
+            $html,
+            'The AJAX diagnostic must explain the database rejection and escape identifier-derived markup.',
+        );
+        self::assertStringNotContainsString(
+            '<script>',
+            $html,
+            'Database exception text must not inject executable markup.',
+        );
+        self::assertStringNotContainsString(
+            'Stack trace:',
+            $html,
+            'The handled diagnostic must not leak the framework exception stack.',
+        );
+        self::assertStringNotContainsString(
+            '<!DOCTYPE html>',
+            $html,
+            'AJAX diagnostics must omit the debugger layout.',
         );
     }
 

@@ -397,6 +397,11 @@ final class MailPanelTest extends TestCase
             $detail,
             'Mail pagination links must use the shared debugger class.',
         );
+        self::assertMatchesRegularExpression(
+            '/<\/ol>\s*<div class="yii-debug-mail-pager">/',
+            $detail,
+            'Mail pagination must remain outside the ordered message list so every direct list child is a message.',
+        );
     }
 
     public function testGetNameAndIcon(): void

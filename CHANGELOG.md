@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: normalize Yii logger payloads once at the adapter boundary and remove redundant shared tuple coercion.
 - perf: reuse committed snapshot manifests during mail reconciliation, append log buffers in place, and report unbiased millisecond debug durations.
 - fix/docs(ui): refine filters, metrics, accessibility, history, Queue, EXPLAIN, and refresh debugger screenshots and Inertia examples.
+- feat(ui): improve debugger routing, snapshots, history, diagnostics, N+1 detection, redaction, and accessibility.
 
 ## 0.1.1 May 18, 2026
 

@@ -12,7 +12,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\DbSearch;
-use PHPForge\Debug\Panel\Db\{DbQueryRenderer, QueryRow};
+use PHPForge\Debug\Panel\Db\{DbQueryRenderer, NPlusOneDetector, NPlusOneFinding, QueryRow};
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -30,6 +30,22 @@ use yii\web\View;
 $rows = $panel->getRows();
 
 $hasQueries = $rows !== [];
+
+/** @var list<QueryRow> $pageRows */
+$pageRows = array_values($queryDataProvider->getModels());
+
+$nPlusOneFindings = NPlusOneDetector::detect($pageRows, 3);
+
+/** @var array<int, NPlusOneFinding> $nPlusOneBySequence */
+$nPlusOneBySequence = [];
+
+foreach ($nPlusOneFindings as $finding) {
+    foreach ($finding->sequences as $sequence) {
+        $nPlusOneBySequence[$sequence] = $finding;
+    }
+}
+
+$nPlusOneSummary = DbQueryRenderer::renderNPlusOneSummary($nPlusOneFindings, 'on this page');
 
 $totalMs = number_format(array_sum(array_column($rows, 'duration')), 3);
 
@@ -88,6 +104,7 @@ if ($hasQueries) {
     ) ?>
     <?php return; ?>
 <?php endif; ?>
+<?= $nPlusOneSummary ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
     [
@@ -139,6 +156,7 @@ if ($hasQueries) {
                     $panel->getTraceLine(...),
                     $hasExplain,
                     $explainUrlBuilder,
+                    $nPlusOneBySequence[$data->seq] ?? null,
                 ),
                 'format' => 'raw',
                 'options' => ['width' => '60%'],

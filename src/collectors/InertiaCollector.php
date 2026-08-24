@@ -6,6 +6,7 @@ namespace yii\debug\collectors;
 
 use Closure;
 use JsonSerializable;
+use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
 use ReflectionMethod;
 use Yii;
@@ -39,13 +40,17 @@ class InertiaCollector extends Collector
      */
     private const string COMPONENT_ID = 'inertia';
     /**
+     * Page FQCN returned by earlier adapter releases, retained while applications migrate to the portable core DTO.
+     */
+    private const string LEGACY_PAGE_CLASS = 'yii\inertia\Page';
+    /**
      * Manager FQCN from `yii2-extensions/inertia`, referenced as a string to avoid a hard package dependency.
      */
     private const string MANAGER_CLASS = 'yii\inertia\Manager';
     /**
-     * Page FQCN from `yii2-extensions/inertia`, referenced as a string to avoid a hard package dependency.
+     * Framework-neutral page FQCN returned by current `yii2-extensions/inertia` releases.
      */
-    private const string PAGE_CLASS = 'yii\inertia\Page';
+    private const string PAGE_CLASS = 'PHPForge\Inertia\Page';
     /**
      * `X-Inertia-*` request headers captured for the panel, in display order.
      */
@@ -57,6 +62,7 @@ class InertiaCollector extends Collector
         'X-Inertia-Reset',
         'X-Inertia-Version',
     ];
+    private CapturePolicy|null $capturePolicy = null;
 
     /**
      * @var (Closure(ViewEvent): void)|null Active render listener, kept so {@see stop()} can detach it.
@@ -86,16 +92,18 @@ class InertiaCollector extends Collector
         if ($page === null) {
             $data = $response->data;
 
-            if ($data instanceof JsonSerializable && is_a($data, self::PAGE_CLASS)) {
+            if (self::isPage($data)) {
                 $page = $data;
             }
         }
 
         $location = $response->getHeaders()->get('X-Inertia-Location');
 
+        $policy = $this->capturePolicy();
+
         return InertiaSnapshot::capture(
-            location: is_string($location) ? $location : null,
-            page: self::normalizePage($page),
+            location: is_string($location) ? $policy->redactUrl($location) : null,
+            page: $this->normalizePage($page),
             requestHeaders: self::requestHeaders(),
             sharedKeys: self::sharedKeys(),
             statusCode: $response->getStatusCode(),
@@ -132,7 +140,7 @@ class InertiaCollector extends Collector
         $this->listener = function (ViewEvent $event): void {
             $page = $event->params['page'] ?? null;
 
-            if ($page instanceof JsonSerializable && is_a($page, self::PAGE_CLASS)) {
+            if (self::isPage($page)) {
                 $this->page = $page;
             }
         };
@@ -155,6 +163,25 @@ class InertiaCollector extends Collector
     }
 
     /**
+     * Returns the shared module capture policy, falling back to Debug Core defaults for standalone collector use.
+     */
+    private function capturePolicy(): CapturePolicy
+    {
+        return $this->capturePolicy ??= $this->module?->createCapturePolicy() ?? new CapturePolicy();
+    }
+
+    /**
+     * Returns whether the value is a serializable Inertia page from either the current core or the legacy adapter DTO.
+     *
+     * @phpstan-assert-if-true JsonSerializable $value
+     */
+    private static function isPage(mixed $value): bool
+    {
+        return $value instanceof JsonSerializable
+            && (is_a($value, self::PAGE_CLASS) || is_a($value, self::LEGACY_PAGE_CLASS));
+    }
+
+    /**
      * Returns whether the application wires the Inertia manager under the `inertia` component id.
      */
     private static function managerPresent(): bool
@@ -173,7 +200,7 @@ class InertiaCollector extends Collector
      *
      * @return array<string, mixed>|null Normalized page payload, or `null` when the page is absent or not encodable.
      */
-    private static function normalizePage(JsonSerializable|null $page): array|null
+    private function normalizePage(JsonSerializable|null $page): array|null
     {
         $encoded = json_encode($page);
 
@@ -191,6 +218,14 @@ class InertiaCollector extends Collector
 
         foreach ($decoded as $key => $value) {
             $normalized[(string) $key] = $value;
+        }
+
+        $policy = $this->capturePolicy();
+        $normalized = $policy->redact($normalized);
+        $url = $normalized['url'] ?? null;
+
+        if (is_string($url)) {
+            $normalized['url'] = $policy->redactUrl($url);
         }
 
         return $normalized;

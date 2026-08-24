@@ -178,7 +178,8 @@ if ($hasVisibleMessages) {
     <?= ListView::widget(
         [
             'dataProvider' => $dataProvider,
-            'layout' => "{items}\n<div class=\"yii-debug-mail-pager\">{pager}</div>",
+            'layout' => '<ol class="yii-debug-mail-list">{items}</ol>'
+                . "\n<div class=\"yii-debug-mail-pager\">{pager}</div>",
             'pager' => GridViewConfig::defaults()['pager'],
             'itemOptions' => [
                 'class' => 'yii-debug-mail-list-item',
@@ -186,8 +187,8 @@ if ($hasVisibleMessages) {
             ],
             'itemView' => '_item',
             'options' => [
-                'class' => 'yii-debug-mail-list',
-                'tag' => 'ol',
+                'class' => 'yii-debug-mail-results',
+                'tag' => 'div',
             ],
         ],
     ) ?>

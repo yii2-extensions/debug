@@ -177,6 +177,11 @@ final class DbPanelTest extends TestCase
             $html,
             "Repeated queries must surface the 'duplicated' chip.",
         );
+        self::assertStringNotContainsString(
+            'Potential N+1 queries',
+            $html,
+            'A query group below the detector threshold must not render an N+1 warning.',
+        );
     }
 
     public function testGetDetailRendersEmptyStateWhenNoQueriesCaptured(): void
@@ -205,6 +210,51 @@ final class DbPanelTest extends TestCase
             'yii-debug-grid-summary',
             $html,
             'Summary strip must render alongside the card.',
+        );
+    }
+
+    public function testGetDetailRendersPotentialNPlusOneSummaryAndAnchoredRows(): void
+    {
+        $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
+
+        $trace = [['file' => '/app/Repository.php', 'line' => 42]];
+
+        $this->hydrateFromLive(
+            $panel,
+            [
+                ...$this->makeMessage('SELECT * FROM post WHERE id = 1', 0.001, 0.0, $trace),
+                ...$this->makeMessage('SELECT * FROM post WHERE id = 2', 0.002, 0.001, $trace),
+                ...$this->makeMessage('SELECT * FROM post WHERE id = 3', 0.003, 0.003, $trace),
+            ],
+            [],
+        );
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'Potential N+1 queries on this page',
+            $html,
+            'The N+1 summary must state that it covers only queries visible on the current page.',
+        );
+        self::assertStringContainsString(
+            'aria-label="Potential N+1 query groups on this page"',
+            $html,
+            'The N+1 summary accessibility label must describe its page-scoped result set.',
+        );
+        self::assertStringContainsString(
+            'href="#yii-debug-db-n1-0"',
+            $html,
+            'The finding summary must deep-link to the first query in the group.',
+        );
+        self::assertStringContainsString(
+            'id="yii-debug-db-n1-0"',
+            $html,
+            'The first matching query must expose the finding anchor.',
+        );
+        self::assertSame(
+            3,
+            substr_count($html, 'data-yii-debug-n1-group="yii-debug-db-n1-0"'),
+            'Every query sequence in the finding must be mapped to the shared client-side group filter.',
         );
     }
 
@@ -243,6 +293,99 @@ final class DbPanelTest extends TestCase
             'javascript:;',
             $html,
             'Explain-all must not use a JavaScript pseudo-URL.',
+        );
+    }
+
+    public function testGetDetailScopesPotentialNPlusOneDetectionToCurrentPage(): void
+    {
+        $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
+
+        $this->hydratePanel(
+            $panel,
+            new DbSnapshot($this->makeNPlusOneRows(80)),
+        );
+
+        $firstPage = $panel->getDetail();
+
+        self::assertStringContainsString(
+            '<strong>50×</strong>',
+            $firstPage,
+            'The N+1 summary must count only the 50 queries rendered on the current page.',
+        );
+        self::assertStringNotContainsString(
+            '<strong>80×</strong>',
+            $firstPage,
+            'The N+1 summary must not count queries hidden on another page.',
+        );
+        self::assertSame(
+            50,
+            substr_count($firstPage, 'data-yii-debug-n1-group="yii-debug-db-n1-0"'),
+            'The first-page finding must mark exactly the rows rendered by GridView.',
+        );
+
+        Yii::$app->getRequest()->setQueryParams(['page' => 2]);
+
+        $secondPage = $panel->getDetail();
+
+        self::assertStringContainsString(
+            '<strong>30×</strong>',
+            $secondPage,
+            'The second-page N+1 summary must count only its remaining 30 queries.',
+        );
+        self::assertStringContainsString(
+            'href="#yii-debug-db-n1-50"',
+            $secondPage,
+            'The second-page finding must link to its first visible query.',
+        );
+        self::assertSame(
+            30,
+            substr_count($secondPage, 'data-yii-debug-n1-group="yii-debug-db-n1-50"'),
+            'The second-page finding must mark exactly the remaining visible rows.',
+        );
+    }
+
+    public function testGetDetailScopesPotentialNPlusOneDetectionToFilteredPages(): void
+    {
+        $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
+
+        $this->hydratePanel(
+            $panel,
+            new DbSnapshot(
+                [
+                    ...$this->makeNPlusOneRows(25, 0, 'SELECT ignored'),
+                    ...$this->makeNPlusOneRows(55, 25, 'SELECT needle'),
+                ],
+            ),
+        );
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'Db' => ['query' => 'needle'],
+                'page' => 2,
+            ],
+        );
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            '<strong>5×</strong>',
+            $html,
+            'The finding must count the five filtered rows visible on the second page.',
+        );
+        self::assertStringContainsString(
+            'href="#yii-debug-db-n1-75"',
+            $html,
+            'The filtered finding must deep-link to the first row on the active page.',
+        );
+        self::assertSame(
+            5,
+            substr_count($html, 'data-yii-debug-n1-group="yii-debug-db-n1-75"'),
+            'The filtered finding must mark only rows that the grid renders on the active page.',
+        );
+        self::assertStringNotContainsString(
+            'SELECT ignored',
+            $html,
+            'Queries excluded by the active filter must not leak into the N+1 summary.',
         );
     }
 
@@ -864,6 +1007,34 @@ final class DbPanelTest extends TestCase
             [$sql, Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', $startTime, $trace, 0],
             [$sql, Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', $startTime + $duration, $trace, 0],
         ];
+    }
+
+    /**
+     * @return list<QueryRow>
+     */
+    private function makeNPlusOneRows(
+        int $count,
+        int $sequenceOffset = 0,
+        string $queryPrefix = 'SELECT visible',
+    ): array {
+        $rows = [];
+
+        for ($index = 0; $index < $count; $index++) {
+            $sequence = $sequenceOffset + $index;
+            $rows[] = new QueryRow(
+                type: 'SELECT',
+                query: "{$queryPrefix} {$sequence}",
+                duration: 1.0,
+                trace: [],
+                traceHash: 'shared-call-site',
+                timestamp: (float) $sequence,
+                seq: $sequence,
+                duplicate: 1,
+                rows: null,
+            );
+        }
+
+        return $rows;
     }
 
     private function makeRow(int $duplicate = 1): QueryRow

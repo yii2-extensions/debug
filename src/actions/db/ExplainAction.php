@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\actions\db;
 
 use Yii;
+use yii\db\Exception as DbException;
 use yii\debug\actions\Action;
 use yii\debug\exception\Message;
 use yii\debug\panels\DbPanel;
@@ -17,7 +18,9 @@ use yii\web\HttpException;
  * (index into the panel's captured rows) to locate the SQL statement and execute the driver-appropriate EXPLAIN
  * command.
  *
- * SQLite uses `EXPLAIN QUERY PLAN`; MySQL and PostgreSQL use plain `EXPLAIN`.
+ * SQLite uses `EXPLAIN QUERY PLAN`; MySQL and PostgreSQL use plain `EXPLAIN`. Database rejections are handled as
+ * successful diagnostic responses so the inline AJAX workflow can show the captured query and escaped database error
+ * instead of replacing the result with a generic transport failure.
  */
 class ExplainAction extends Action
 {
@@ -49,10 +52,18 @@ class ExplainAction extends Action
 
         $db = $panel->getDb();
         $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';
-        $results = $db->createCommand("{$explainPrefix}{$query}")->queryAll();
+        $error = null;
+
+        try {
+            $results = $db->createCommand("{$explainPrefix}{$query}")->queryAll();
+        } catch (DbException $exception) {
+            $results = [];
+            $error = $exception->getMessage();
+        }
+
         $this->prepareShell($panel, $tag);
 
-        $params = ['query' => $query, 'results' => $results];
+        $params = ['error' => $error, 'query' => $query, 'results' => $results];
 
         return Yii::$app->request->isAjax
             ? $this->renderPartial('db-explain', $params)

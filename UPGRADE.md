@@ -11,7 +11,7 @@ The package now requires `yiisoft/yii2` `^22.0` and dispatches every debugger en
 `Module::$actionMap` (the inline action lifecycle introduced in Yii2 22). `yii\debug\controllers\DefaultController`
 and `yii\debug\controllers\UserController` were removed; the endpoints live under `yii\debug\actions\*`:
 
-- Built-in: `index`, `view`, `php-info`, `toolbar-data`, `download-mail`, `set-identity`, `reset-identity`.
+- Built-in: `index`, `compare`, `view`, `php-info`, `toolbar-data`, `download-mail`, `set-identity`, `reset-identity`.
 - Panel-registered: `db-explain` (`DbPanel`), `queue-job` (`QueuePanel`).
 
 Consequences:
@@ -29,6 +29,50 @@ Consequences:
   direct GET or tokenless integrations; the bundled User panel forms already satisfy both requirements.
 - Debugger views and widgets build links with `Module::route('<action>', [...])`, which returns a module-absolute
   route that works without an active controller context.
+
+Requesting the module without an action segment (`/debug`) now resolves through the same `index` action map entry as
+`/debug/index`; existing explicit routes and generated `/debug/index` history links remain unchanged.
+
+### Portable toolbar, sidebar, and panel render contracts
+
+The adapter now normalizes structured toolbar envelopes through `PHPForge\Debug\Toolbar\ToolbarData`,
+`ToolbarPanel`, and `ToolbarItem`. Custom panels returning the documented `items` list gain the shared string/status
+normalization. Unknown panel and item fields are merged back after normalization, and legacy free-form envelopes
+remain available unchanged apart from the historical `id`, `title`, and `url` defaults. When the Config panel is
+disabled, toolbar `configUrl` falls back to the history URL instead of emitting `null`.
+
+The existing `yii\debug\widgets\sidebar\SidebarNavItem`, `SidebarSnapshot`, and `SidebarView` route-array contracts
+remain public. Their new `toCore()` methods convert to `PHPForge\Debug\View\Sidebar\*`, and the Yii renderer delegates
+to the shared core renderer. No custom sidebar constructor changes are required.
+
+`Panel::getRenderContext()` exposes a nullable `PHPForge\Debug\Panel\PanelRenderContext` during detail requests, and
+`yii\debug\routing\DebugUrlGenerator` implements the portable URL generator contract. `Panel::getUrl()` keeps its
+existing signature and generated routes, so custom panels can migrate to the context incrementally.
+
+Debug Core now treats toolbar and drawer navigation as trusted debugger navigation only when each URL resolves to the
+current origin over HTTP(S) and contains no URL credentials. Cross-origin, protocol-relative, backslash-prefixed,
+`javascript:`, `data:`, and credential-bearing targets are dropped instead of becoming links or drawer sources. Review
+custom panel/item URLs, toolbar endpoint URLs, and AJAX `X-Debug-Link` values; generate root-relative URLs or same-origin
+absolute HTTP(S) URLs.
+
+### Review persistent-data redaction configuration
+
+The default capture policy now recognizes environment-style credentials such as `DB_PASSWORD`,
+`AWS_SECRET_ACCESS_KEY`, and `DATABASE_URL`. It uses segment-aware matches so `DATABASE_HOST`, `tokenizer`, and
+`passwordless_mode` remain visible. The policy is applied consistently to request data and bodies, identity
+attributes, queue payloads, Inertia page props and page/location URLs, and request-summary URLs.
+
+The module exposes `sensitiveKeys`, `sensitiveKeyPrefixes`, `sensitiveKeyPatterns`, and `maxBodyBytes`. Exact keys and
+prefixes are matched case-insensitively; patterns are PCRE expressions matched against the complete original key.
+`sensitiveKeys` is a replacement list, not an additive list. Include
+`PHPForge\Debug\Helper\SensitiveDataRedactor::DEFAULT_KEYS` when extending the defaults. `null` patterns select the
+core defaults only while the default exact-key list is active, whereas `[]` explicitly disables pattern matching.
+Invalid patterns and empty prefixes now fail module configuration explicitly.
+
+Debugger action responses also emit no-store, no-referrer, no-sniff, no-index, same-origin frame, and
+`frame-ancestors 'self'` policies. Existing host CSP directives are preserved; the adapter replaces or appends only
+`frame-ancestors` in every enforcing CSP header value. Applications that previously supplied a stricter
+`frame-ancestors 'none'` policy on every response should allow the same-origin debugger iframe on debug routes.
 
 ### Panel actions receive their panel through `run()` parameter injection
 

@@ -6,13 +6,15 @@ namespace yii\debug;
 
 use InvalidArgumentException;
 use Override;
+use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Collector\{CollectorCoordinator, CollectorInterface};
-use PHPForge\Debug\Helper\{Coerce, Icon};
+use PHPForge\Debug\Helper\{Coerce, Icon, SensitiveDataRedactor};
 use RuntimeException;
 use Throwable;
 use Yii;
 use yii\base\{Action, ActionEvent, Application, BootstrapInterface, Event, InvalidConfigException, View as BaseView};
 use yii\debug\actions\{
+    CompareAction,
     DownloadMailAction,
     IndexAction,
     PhpInfoAction,
@@ -61,14 +63,19 @@ use yii\rbac\BaseManager;
 use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
 
 use function array_diff_key;
+use function array_unique;
+use function array_values;
 use function base64_encode;
 use function class_exists;
+use function explode;
 use function get_parent_class;
 use function gethostbyname;
+use function implode;
 use function is_array;
 use function is_callable;
 use function is_string;
 use function number_format;
+use function preg_match;
 use function str_contains;
 use function strncmp;
 use function strpos;
@@ -178,6 +185,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public LogTarget|array|string $logTarget = 'yii\debug\LogTarget';
     /**
+     * Maximum raw request or response body bytes retained by the shared capture policy.
+     */
+    public int $maxBodyBytes = 65536;
+    /**
      * Page title literal string or a callable receiving the base URL and returning a string.
      *
      * @var (callable(string): string)|string|null
@@ -190,6 +201,19 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * @var array<string, Panel>
      */
     public array $panels = [];
+    /**
+     * @var list<string>|null PCRE patterns applied to complete data keys. `null` enables Debug Core defaults when the
+     * default exact-key list is active; `[]` explicitly disables pattern matching.
+     */
+    public array|null $sensitiveKeyPatterns = null;
+    /**
+     * @var list<string> Literal, case-insensitive data-key prefixes redacted from every persistent debugger capture.
+     */
+    public array $sensitiveKeyPrefixes = [];
+    /**
+     * @var list<string> Exact, case-insensitive data keys redacted from every persistent debugger capture.
+     */
+    public array $sensitiveKeys = SensitiveDataRedactor::DEFAULT_KEYS;
     /**
      * Routes whose AJAX hits should NOT appear in the toolbar history (e.g. polling endpoints).
      *
@@ -262,6 +286,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         Yii::$app->getView()->off(View::EVENT_END_BODY, [$this, 'renderToolbar']);
         Yii::$app->getResponse()->off(Response::EVENT_AFTER_PREPARE, [$this, 'setDebugHeaders']);
+
+        $this->setDebuggerResponseHeaders(Yii::$app->getResponse());
 
         if ($this->checkAccess($action)) {
             $this->resetGlobalSettings();
@@ -344,6 +370,31 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 ],
             ],
             false,
+        );
+    }
+
+    /**
+     * Creates the shared persistent-data policy, optionally extending its exact-key list for one collector.
+     *
+     * @param list<string> $additionalSensitiveKeys Collector-specific exact keys added without weakening global rules.
+     */
+    public function createCapturePolicy(array $additionalSensitiveKeys = []): CapturePolicy
+    {
+        $patterns = $this->sensitiveKeyPatterns;
+
+        if (
+            $patterns === null
+            && $additionalSensitiveKeys !== []
+            && $this->sensitiveKeys === SensitiveDataRedactor::DEFAULT_KEYS
+        ) {
+            $patterns = SensitiveDataRedactor::DEFAULT_PATTERNS;
+        }
+
+        return new CapturePolicy(
+            sensitiveKeys: array_values(array_unique([...$this->sensitiveKeys, ...$additionalSensitiveKeys])),
+            maxBodyBytes: $this->maxBodyBytes,
+            sensitiveKeyPrefixes: $this->sensitiveKeyPrefixes,
+            sensitiveKeyPatterns: $patterns,
         );
     }
 
@@ -446,6 +497,16 @@ class Module extends \yii\base\Module implements BootstrapInterface
     public function init(): void
     {
         parent::init();
+
+        try {
+            $this->createCapturePolicy();
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidConfigException(
+                $exception->getMessage(),
+                0,
+                $exception,
+            );
+        }
 
         Yii::setAlias(self::VIEW_PATH_ALIAS, $this->viewPath);
 
@@ -627,6 +688,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     protected function coreActionMap(): array
     {
         return [
+            'compare' => CompareAction::class,
             'download-mail' => DownloadMailAction::class,
             'index' => IndexAction::class,
             'php-info' => PhpInfoAction::class,
@@ -708,6 +770,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
     #[Override]
     protected function createStandaloneAction(string $route): Action|null
     {
+        if ($route === '') {
+            $route = $this->defaultRoute;
+        }
+
         $id = trim($route, '/');
 
         if ($id !== '' && strpos($id, '/') === false && isset($this->actionMap[$id])) {
@@ -854,6 +920,33 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Applies defense-in-depth headers to debugger endpoints without preventing the same-origin toolbar iframe.
+     *
+     * Debug responses contain request bodies, environment values, logs, and application metadata. They must never be
+     * cached, indexed, or leaked through referrers. The frame policy deliberately allows only the current origin because
+     * the toolbar drawer embeds panel pages in a same-origin iframe.
+     */
+    protected function setDebuggerResponseHeaders(Response $response): void
+    {
+        $headers = $response->getHeaders();
+        $policies = array_values($headers->get('Content-Security-Policy', [], false));
+
+        $headers
+            ->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->set('Pragma', 'no-cache')
+            ->set('Referrer-Policy', 'no-referrer')
+            ->set('X-Content-Type-Options', 'nosniff')
+            ->set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+            ->set('X-Frame-Options', 'SAMEORIGIN');
+
+        $headers->remove('Content-Security-Policy');
+
+        foreach (self::composeDebuggerContentSecurityPolicies($policies) as $policy) {
+            $headers->add('Content-Security-Policy', $policy);
+        }
+    }
+
+    /**
      * Resolves a collector instance, class name, or Yii configuration array.
      *
      * @param array<string, mixed>|CollectorInterface|string $config Collector configuration.
@@ -943,6 +1036,57 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $object->moduleBound();
 
         return $object;
+    }
+
+    /**
+     * Preserves every host CSP directive while replacing or adding only the debugger frame policy in each header value.
+     *
+     * Multiple Content-Security-Policy header fields are enforced cumulatively by browsers, so each policy must allow
+     * the same-origin toolbar frame instead of collapsing the host policies into a single, potentially weaker value.
+     *
+     * @param list<string> $policies Existing enforcing CSP header values.
+     *
+     * @return non-empty-list<string> Composed CSP header values.
+     */
+    private static function composeDebuggerContentSecurityPolicies(array $policies): array
+    {
+        if ($policies === []) {
+            return ["frame-ancestors 'self'"];
+        }
+
+        $composedPolicies = [];
+
+        foreach ($policies as $policy) {
+            $composedDirectives = [];
+            $frameAncestorsReplaced = false;
+
+            foreach (explode(';', $policy) as $directive) {
+                $directive = trim($directive);
+
+                if ($directive === '') {
+                    continue;
+                }
+
+                if (preg_match('/^frame-ancestors(?:\s|$)/i', $directive) === 1) {
+                    if (!$frameAncestorsReplaced) {
+                        $composedDirectives[] = "frame-ancestors 'self'";
+                        $frameAncestorsReplaced = true;
+                    }
+
+                    continue;
+                }
+
+                $composedDirectives[] = $directive;
+            }
+
+            if (!$frameAncestorsReplaced) {
+                $composedDirectives[] = "frame-ancestors 'self'";
+            }
+
+            $composedPolicies[] = implode('; ', $composedDirectives);
+        }
+
+        return $composedPolicies;
     }
 
     /**

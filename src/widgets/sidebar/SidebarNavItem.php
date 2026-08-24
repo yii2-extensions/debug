@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
+use PHPForge\Debug\View\Sidebar\SidebarNavItem as CoreSidebarNavItem;
+use yii\helpers\Url;
+
 /**
  * Typed view-model for one entry in the debugger sidebar panel navigation.
  *
@@ -37,4 +40,18 @@ final readonly class SidebarNavItem
          */
         public bool $isActive,
     ) {}
+
+    /**
+     * Converts the Yii route-array wrapper to the framework-neutral sidebar contract.
+     */
+    public function toCore(): CoreSidebarNavItem
+    {
+        return new CoreSidebarNavItem(
+            label: $this->label,
+            iconSvg: $this->iconSvg,
+            url: Url::to($this->url),
+            tooltip: $this->tooltip,
+            isActive: $this->isActive,
+        );
+    }
 }
