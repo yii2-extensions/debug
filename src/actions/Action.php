@@ -6,6 +6,7 @@ namespace yii\debug\actions;
 
 use Override;
 use PHPForge\Debug\Helper\{Format, Icon};
+use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, RequestSummary};
 use PHPForge\Debug\Theme\ThemeResolver;
 use Yii;
@@ -14,6 +15,7 @@ use yii\debug\collectors\MailCollector;
 use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module, Panel};
 use yii\debug\panels\ConfigPanel;
+use yii\debug\routing\DebugUrlGenerator;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarView};
 use yii\helpers\Url;
@@ -264,6 +266,20 @@ class Action extends \yii\web\Action implements ViewContextInterface
             peakMemory: null,
             configUrl: null,
             sidebar: null,
+        );
+    }
+
+    /**
+     * Builds the portable state available to shared panel renderers for the active snapshot.
+     */
+    protected function createPanelRenderContext(Panel $panel, string $tag): PanelRenderContext
+    {
+        return new PanelRenderContext(
+            tag: $tag,
+            panel: $panel->id,
+            queryParams: Yii::$app->getRequest()->getQueryParams(),
+            theme: $this->resolveTheme(),
+            urls: new DebugUrlGenerator($this->getDebugModule()->getUniqueId()),
         );
     }
 

@@ -31,9 +31,28 @@ $scale = HistoryScale::fromModels(
 
 $dbPanel = $panels['db'] ?? null;
 $mailPanel = $panels['mail'] ?? null;
+$comparisonTags = array_keys($manifest);
+$comparisonTarget = $comparisonTags[0] ?? null;
+$comparisonBaseline = $comparisonTags[1] ?? null;
 ?>
 <?= H1::tag()->class('yii-debug-sr-only')->content('Request history') ?>
 <?= HistoryRowRenderer::renderSummary($summary) ?>
+<?php if ($comparisonBaseline !== null && $comparisonTarget !== null): ?>
+    <section class="yii-debug-section" aria-labelledby="yii-debug-history-compare-title">
+        <h2 class="yii-debug-section-title" id="yii-debug-history-compare-title">
+            <span class="yii-debug-section-mark">Compare</span>
+            Capture changes
+        </h2>
+        <?= $this->render(
+            '_compare-form',
+            [
+                'baseline' => $comparisonBaseline,
+                'manifest' => $manifest,
+                'target' => $comparisonTarget,
+            ],
+        ) ?>
+    </section>
+<?php endif ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
     [

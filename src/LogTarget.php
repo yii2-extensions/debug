@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use Override;
-use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Storage\{DebugSnapshot, PanelFailure, RequestSummary};
 use Throwable;
@@ -159,6 +158,21 @@ class LogTarget extends Target
     }
 
     /**
+     * Returns the immutable snapshot envelope for a captured request.
+     *
+     * Unlike {@see loadTagToPanels()}, this method does not mutate the registered panel instances. It is intended for
+     * cross-request workflows such as history comparison where two captures must be inspected at the same time.
+     *
+     * @param string $tag Captured request tag.
+     *
+     * @return DebugSnapshot|null Snapshot envelope, or `null` when the tag is unavailable.
+     */
+    public function loadSnapshot(string $tag): DebugSnapshot|null
+    {
+        return $this->store()->readSnapshot($tag);
+    }
+
+    /**
      * Hydrates all registered panels for a tag and returns its typed request summary.
      *
      * Invalid root JSON or summary data rejects the snapshot. Invalid panel payloads are isolated as visible panel
@@ -226,7 +240,7 @@ class LogTarget extends Target
 
         return new RequestSummary(
             tag: $this->tag,
-            url: (new CapturePolicy())->redactUrl($request->getAbsoluteUrl()),
+            url: $this->module->createCapturePolicy()->redactUrl($request->getAbsoluteUrl()),
             ajax: $request->getIsAjax(),
             method: $request->getMethod(),
             ip: $request->getUserIP() ?? '',

@@ -241,7 +241,9 @@ final class LogTargetTest extends TestCase
 
     public function testCollectSummaryRedactsSensitiveQueryValues(): void
     {
-        Yii::$app->getRequest()->setUrl('/debug?token=query-secret&page=1');
+        Yii::$app->getRequest()->setUrl(
+            '/debug?DATABASE_URL=postgres%3A%2F%2Fuser%3Asecret%40example.test%2Fapp&DATABASE_HOST=db.internal',
+        );
 
         $module = new Module('debug');
 
@@ -258,14 +260,19 @@ final class LogTargetTest extends TestCase
             'The summary must be captured.',
         );
         self::assertStringNotContainsString(
-            'query-secret',
+            'user%3Asecret',
             $summary->url,
             'Manifest URLs must not retain query secrets.',
         );
         self::assertStringContainsString(
-            'token=%5Bredacted%5D',
+            'DATABASE_URL=%5Bredacted%5D',
             $summary->url,
             'The redaction marker must remain visible.',
+        );
+        self::assertStringContainsString(
+            'DATABASE_HOST=db.internal',
+            $summary->url,
+            'Non-credential query values must remain available in manifest URLs.',
         );
     }
 
@@ -525,6 +532,23 @@ final class LogTargetTest extends TestCase
             'failures',
             $snapshot,
             'The envelope must carry the isolated panel failures.',
+        );
+
+        $loadedSnapshot = $logTarget->loadSnapshot($logTarget->tag);
+
+        self::assertInstanceOf(
+            DebugSnapshot::class,
+            $loadedSnapshot,
+            'Snapshot envelopes must be readable without hydrating mutable panel instances.',
+        );
+        self::assertSame(
+            $logTarget->tag,
+            $loadedSnapshot->summary->tag,
+            'The immutable snapshot reader must preserve the requested tag.',
+        );
+        self::assertNull(
+            $logTarget->loadSnapshot('missing-tag'),
+            'Unknown tags must return null from the immutable snapshot reader.',
         );
 
         $this->cleanupDataPath($module);

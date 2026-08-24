@@ -12,6 +12,7 @@ use Throwable;
 use Yii;
 use yii\base\{Component, Event};
 use yii\debug\collectors\QueueCollector;
+use yii\debug\Module;
 use yii\debug\tests\support\TestCase;
 
 use function class_exists;
@@ -24,6 +25,42 @@ use function class_exists;
 #[Group('queue')]
 final class QueueCollectorTest extends TestCase
 {
+    public function testCaptureCombinesGlobalPrefixesWithEnvironmentCredentialDefaults(): void
+    {
+        $collector = $this->makeCollector();
+        $module = new Module('debug');
+
+        $module->sensitiveKeyPrefixes = ['internal_'];
+        $collector->module = $module;
+
+        $job = new class {
+            public string $DATABASE_HOST = 'database.internal';
+            public string $DB_PASSWORD = 'database-secret';
+            public string $internal_note = 'private-note';
+            public string $tokenizer = 'safe-tokenizer';
+        };
+
+        Event::trigger(
+            'yii\\queue\\Queue',
+            'afterPush',
+            $this->makeQueueEvent(job: $job),
+        );
+
+        $record = $this->captureEntries($collector)[0] ?? self::fail('Expected the redacted push record.');
+
+        self::assertSame(
+            [
+                'DATABASE_HOST' => 'database.internal',
+                'DB_PASSWORD' => '[redacted]',
+                'internal_note' => '[redacted]',
+                'tokenizer' => 'safe-tokenizer',
+            ],
+            $record->payloadFields,
+            'Queue payloads must combine module rules with legacy redactedProperties without false positives.',
+        );
+
+        Event::offAll();
+    }
     public function testCaptureRecordsErrorEventAndExtractsMessage(): void
     {
         $collector = $this->makeCollector();

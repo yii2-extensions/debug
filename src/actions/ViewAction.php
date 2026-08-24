@@ -50,6 +50,8 @@ class ViewAction extends Action
             $activePanel = $this->getPanel($module->defaultPanel);
         }
 
+        $activePanel->setRenderContext($this->createPanelRenderContext($activePanel, $tag));
+
         $error = $activePanel->getError();
 
         if ($error !== null) {

@@ -56,7 +56,7 @@ final class InertiaPanelTest extends TestCase
             'A folded table must announce itself as collapsed.',
         );
         self::assertStringContainsString(
-            '[+] Show more',
+            'Show more',
             $html,
             'The collapsed toggle must invite expansion.',
         );

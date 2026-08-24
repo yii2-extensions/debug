@@ -191,7 +191,7 @@ class UserCollector extends Collector
      */
     private function capturePolicy(): CapturePolicy
     {
-        return $this->capturePolicy ??= new CapturePolicy();
+        return $this->capturePolicy ??= $this->module?->createCapturePolicy() ?? new CapturePolicy();
     }
 
     /**

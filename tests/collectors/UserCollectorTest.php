@@ -201,7 +201,9 @@ final class UserCollectorTest extends TestCase
     public function testCaptureRedactsSensitivePublicIdentityAttributes(): void
     {
         $identity = new class implements IdentityInterface {
+            public string $AWS_SECRET_ACCESS_KEY = 'aws-secret';
             public string $access_token = 'identity-secret';
+            public bool $passwordless_mode = true;
             public string $username = 'wilmer';
 
             public static function findIdentity($id): IdentityInterface|null
@@ -242,6 +244,16 @@ final class UserCollectorTest extends TestCase
             SensitiveDataRedactor::PLACEHOLDER,
             $identityData['access_token'] ?? null,
             'Sensitive identity attributes must be irreversibly redacted before capture.',
+        );
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $identityData['AWS_SECRET_ACCESS_KEY'] ?? null,
+            'Environment-style cloud credentials must use the shared redaction policy in identity captures.',
+        );
+        self::assertSame(
+            'true',
+            $identityData['passwordless_mode'] ?? null,
+            'Segment-aware defaults must retain non-credential identity attributes.',
         );
         self::assertSame(
             "'wilmer'",

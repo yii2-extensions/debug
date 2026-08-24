@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace yii\debug\collectors;
 
 use Closure;
+use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Helper\{Coerce, SensitiveDataRedactor};
 use PHPForge\Debug\Panel\Queue\{JobPayloadInspector, JobRecord, QueueDriverDetector, QueueSnapshot};
 use Throwable;
 use Yii;
 use yii\base\Event;
 
+use function array_unique;
+use function array_values;
 use function is_int;
 use function is_object;
 use function is_scalar;
@@ -158,6 +161,23 @@ class QueueCollector extends Collector
     }
 
     /**
+     * Returns the global capture policy plus the backward-compatible queue-specific exact-key list.
+     */
+    private function capturePolicy(): CapturePolicy
+    {
+        if ($this->module !== null) {
+            return $this->module->createCapturePolicy($this->redactedProperties);
+        }
+
+        return new CapturePolicy(
+            sensitiveKeys: array_values(
+                array_unique([...SensitiveDataRedactor::DEFAULT_KEYS, ...$this->redactedProperties]),
+            ),
+            sensitiveKeyPatterns: SensitiveDataRedactor::DEFAULT_PATTERNS,
+        );
+    }
+
+    /**
      * Releases the per-job `$execStarts` slot on long-running workers so the map cannot grow indefinitely.
      */
     private function clearExecStart(Event $event): void
@@ -279,10 +299,7 @@ class QueueCollector extends Collector
             'payloadFields' => $job === null
                 ? []
                 : Coerce::stringKeyedArray(
-                    SensitiveDataRedactor::redact(
-                        JobPayloadInspector::extract($job),
-                        $this->redactedProperties,
-                    ),
+                    $this->capturePolicy()->redact(JobPayloadInspector::extract($job)),
                 ),
             'time' => microtime(true),
             'jobId' => $this->scalarToString($props['id'] ?? null),

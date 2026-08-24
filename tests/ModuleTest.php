@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests;
 
-use PHPForge\Debug\Helper\Icon;
+use PHPForge\Debug\Helper\{Icon, SensitiveDataRedactor};
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
 use stdClass;
@@ -88,6 +88,39 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testBeforeActionComposesDebuggerFramePolicyAcrossHostCspValues(): void
+    {
+        $module = new Module('debug');
+
+        $module->allowedIPs = ['*'];
+
+        Yii::$app->setModule('debug', $module);
+
+        $response = Yii::$app->getResponse();
+        $headers = $response->getHeaders();
+
+        $headers->set('Content-Security-Policy', "default-src 'none'; img-src data:");
+        $headers->add(
+            'Content-Security-Policy',
+            "script-src 'self'; FRAME-ANCESTORS https://example.test; style-src 'unsafe-inline'",
+        );
+
+        $action = new Action('index', new Controller('default', $module));
+
+        self::assertTrue(
+            $module->beforeAction($action),
+            'An allowed debugger action must continue after composing host policies.',
+        );
+        self::assertSame(
+            [
+                "default-src 'none'; img-src data:; frame-ancestors 'self'",
+                "script-src 'self'; frame-ancestors 'self'; style-src 'unsafe-inline'",
+            ],
+            $headers->get('Content-Security-Policy', null, false),
+            'Every host CSP value must retain its directives while enforcing only same-origin debugger framing.',
+        );
+    }
+
     public function testBeforeActionDisablesLogTargetsWhenEnableDebugLogsFalse(): void
     {
         $module = new Module('debug');
@@ -129,6 +162,61 @@ final class ModuleTest extends TestCase
         self::assertFalse(
             Yii::$app->response->off(Response::EVENT_AFTER_PREPARE, [$module, 'setDebugHeaders']),
             'Debugger actions must detach the debug-header listener before rendering.',
+        );
+    }
+
+    public function testBeforeActionHardensDebuggerResponsesWithoutBlockingSameOriginFrames(): void
+    {
+        $module = new Module('debug');
+
+        $module->allowedIPs = ['*'];
+
+        Yii::$app->setModule('debug', $module);
+
+        $response = Yii::$app->getResponse();
+
+        $response->getHeaders()->set('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+
+        $action = new Action('index', new Controller('default', $module));
+
+        self::assertTrue(
+            $module->beforeAction($action),
+            'An allowed debugger action must continue after response hardening.',
+        );
+        self::assertSame(
+            'no-store, no-cache, must-revalidate, max-age=0',
+            $response->getHeaders()->get('Cache-Control'),
+            'Debugger responses must never be stored by browsers or intermediaries.',
+        );
+        self::assertSame(
+            'no-cache',
+            $response->getHeaders()->get('Pragma'),
+            'Legacy HTTP caches must receive the matching no-cache directive.',
+        );
+        self::assertSame(
+            'no-referrer',
+            $response->getHeaders()->get('Referrer-Policy'),
+            'Captured tags and filter values must not leak through outbound referrers.',
+        );
+        self::assertSame(
+            'nosniff',
+            $response->getHeaders()->get('X-Content-Type-Options'),
+            'Debugger assets and downloads must opt out of content sniffing.',
+        );
+        self::assertSame(
+            'noindex, nofollow, noarchive',
+            $response->getHeaders()->get('X-Robots-Tag'),
+            'Debugger endpoints must not be indexed or archived.',
+        );
+        self::assertSame(
+            'SAMEORIGIN',
+            $response->getHeaders()->get('X-Frame-Options'),
+            'Only the same-origin toolbar drawer may frame debugger pages.',
+        );
+        self::assertSame(
+            "default-src 'none'; frame-ancestors 'self'",
+            $response->getHeaders()->get('Content-Security-Policy'),
+            'The debugger CSP must preserve host directives while replacing only an incompatible frame policy.',
         );
     }
 
@@ -636,7 +724,7 @@ final class ModuleTest extends TestCase
         );
 
         self::assertSame(
-            ['download-mail', 'index', 'php-info', 'reset-identity', 'set-identity', 'toolbar-data', 'view'],
+            ['compare', 'download-mail', 'index', 'php-info', 'reset-identity', 'set-identity', 'toolbar-data', 'view'],
             array_keys($coreActions),
             'Core action map must retain every debugger endpoint.',
         );
@@ -696,6 +784,42 @@ final class ModuleTest extends TestCase
             'Order: dispatch, then diagnostics, then side effects.',
         );
     }
+    public function testCreateCapturePolicyCombinesGlobalRulesWithCollectorKeysAndBodyLimit(): void
+    {
+        $module = new Module('debug');
+
+        $module->maxBodyBytes = 4;
+        $module->sensitiveKeyPrefixes = ['internal_'];
+        $module->sensitiveKeyPatterns = ['~(?:^|_)private(?:$|_)~i'];
+
+        $policy = $module->createCapturePolicy(['queueSecret']);
+        $redacted = $policy->redact(
+            [
+                'DB_PASSWORD' => 'database-secret',
+                'internal_note' => 'private-note',
+                'project_private_value' => 'pattern-secret',
+                'queueSecret' => 'queue-secret',
+                'tokenizer' => 'safe-tokenizer',
+            ],
+        );
+
+        self::assertSame(
+            [
+                'DB_PASSWORD' => SensitiveDataRedactor::PLACEHOLDER,
+                'internal_note' => SensitiveDataRedactor::PLACEHOLDER,
+                'project_private_value' => SensitiveDataRedactor::PLACEHOLDER,
+                'queueSecret' => SensitiveDataRedactor::PLACEHOLDER,
+                'tokenizer' => 'safe-tokenizer',
+            ],
+            $redacted,
+            'Module policy must combine global exact, prefix, pattern, and collector-specific rules.',
+        );
+        self::assertSame(
+            'abcd' . SensitiveDataRedactor::TRUNCATED,
+            $policy->redactBody('abcdef', null)['raw'],
+            'Module maxBodyBytes must configure the shared capture policy.',
+        );
+    }
 
     public function testCreateStandaloneActionDoesNotTreatNestedMapKeysAsDirectActions(): void
     {
@@ -705,6 +829,24 @@ final class ModuleTest extends TestCase
         self::assertNull(
             $this->invoke($module, 'createStandaloneAction', ['nested/action']),
             'Nested routes must fall through instead of being resolved as direct action IDs.',
+        );
+    }
+
+    public function testCreateStandaloneActionResolvesEmptyRouteThroughDefaultActionMap(): void
+    {
+        $module = new Module('debug');
+
+        $action = $this->invoke($module, 'createStandaloneAction', ['']);
+
+        self::assertInstanceOf(
+            \yii\debug\actions\IndexAction::class,
+            $action,
+            'The module root must resolve the configured default route through the standalone action map.',
+        );
+        self::assertSame(
+            'index',
+            $action->id,
+            'The action resolved for the module root must retain the canonical index ID.',
         );
     }
 
@@ -1169,6 +1311,14 @@ final class ModuleTest extends TestCase
             $module->get(DbPanel::class),
             'Built-in class key must resolve to the same subclass instance.',
         );
+    }
+
+    public function testInitRejectsInvalidCapturePolicyConfiguration(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage('Sensitive key prefixes must not be empty.');
+
+        new Module('debug', null, ['sensitiveKeyPrefixes' => ['']]);
     }
 
     public function testInitSkipsServiceRegistrationForDisabledPanels(): void

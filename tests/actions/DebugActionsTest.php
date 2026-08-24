@@ -9,6 +9,7 @@ use LogicException;
 use PHPForge\Debug\Panel\Config\ConfigSnapshot;
 use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPForge\Debug\Panel\Log\LogSnapshot;
+use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
@@ -19,6 +20,7 @@ use yii\base\InvalidConfigException;
 use yii\db\Connection;
 use yii\debug\actions\{
     Action as DebugAction,
+    CompareAction,
     DownloadMailAction,
     IndexAction,
     PhpInfoAction,
@@ -27,7 +29,7 @@ use yii\debug\actions\{
 };
 use yii\debug\collectors\MailCollector;
 use yii\debug\exception\Message;
-use yii\debug\{LogTarget, Module};
+use yii\debug\{LogTarget, Module, Panel};
 use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\{ConfigurableAction, MinimalToolbarPanel, StubSnapshot};
@@ -49,6 +51,85 @@ use function mkdir;
 #[Group('actions')]
 final class DebugActionsTest extends TestCase
 {
+    public function testActionCompareRejectsUnknownTag(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot($module, 'tag-compare-known', []);
+
+        $this->expectException(NotFoundHttpException::class);
+        $this->expectExceptionMessage('Unable to find debug data tagged with');
+
+        $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            [
+                'baseline' => 'tag-compare-known',
+                'target' => 'tag-compare-missing',
+            ],
+        );
+    }
+
+    public function testActionCompareRendersSummaryAndStructuralPanelDifferences(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeDebugSnapshot(
+            $module,
+            'tag-compare-baseline',
+            ['request' => RequestSnapshot::capture(['statusCode' => 200, 'method' => 'GET'])],
+            [
+                'processingTime' => 0.010,
+                'peakMemory' => 1_048_576,
+                'sqlCount' => 1,
+            ],
+        );
+        $this->writeDebugSnapshot(
+            $module,
+            'tag-compare-target',
+            ['request' => RequestSnapshot::capture(['statusCode' => 500, 'method' => 'POST'])],
+            [
+                'processingTime' => 0.015,
+                'peakMemory' => 2_097_152,
+                'sqlCount' => 3,
+                'statusCode' => 500,
+            ],
+        );
+
+        $html = $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            [
+                'baseline' => 'tag-compare-baseline',
+                'target' => 'tag-compare-target',
+            ],
+        );
+
+        self::assertIsString(
+            $html,
+            'Comparison action must return rendered HTML.',
+        );
+        self::assertStringContainsString(
+            'Compare captures',
+            $html,
+            'Comparison page must expose its primary heading and form.',
+        );
+        self::assertStringContainsString(
+            'Request metrics',
+            $html,
+            'Comparison page must expose canonical summary differences.',
+        );
+        self::assertStringContainsString(
+            'Panel structure',
+            $html,
+            'Comparison page must expose privacy-preserving panel structural differences.',
+        );
+        self::assertStringContainsString(
+            '+5.00 ms (+50.0%)',
+            $html,
+            'Duration delta must be computed relative to the baseline.',
+        );
+    }
     public function testActionDownloadMailStreamsExistingMailFile(): void
     {
         $module = $this->bootDebugModule();
@@ -152,6 +233,11 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootDebugModule();
 
+        self::assertArrayHasKey(
+            'compare',
+            $module->actionMap,
+            "'compare' must be registered as a built-in standalone action.",
+        );
         self::assertArrayHasKey(
             'index',
             $module->actionMap,
@@ -450,6 +536,32 @@ final class DebugActionsTest extends TestCase
             $shell->useShell,
             'Explicit panel view must render the full debug shell.',
         );
+
+        $requestPanel = $module->panels['request'] ?? null;
+
+        self::assertInstanceOf(
+            Panel::class,
+            $requestPanel,
+            'Request panel must remain registered after the snapshot is rendered.',
+        );
+
+        $context = $requestPanel->getRenderContext();
+
+        self::assertInstanceOf(
+            PanelRenderContext::class,
+            $context,
+            'Explicit panel views must install the portable panel render context.',
+        );
+        self::assertSame(
+            'tag-view-panel',
+            $context->tag,
+            'Portable render context must target the loaded capture.',
+        );
+        self::assertStringContainsString(
+            'panel=request',
+            $context->panelUrl(queryParams: []),
+            'Portable render context must delegate panel links to the Yii URL generator.',
+        );
     }
 
     public function testActionViewRendersPanelExceptionWhenPanelReportsError(): void
@@ -483,6 +595,43 @@ final class DebugActionsTest extends TestCase
             '',
             $html,
             'Exception view must render markup.',
+        );
+    }
+
+    public function testAppDispatchesBareDebugModuleRouteThroughIndexActionMap(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-bare-module-route',
+            [
+                'config' => ConfigSnapshot::capture(
+                    [
+                        'application' => ['yii' => 'bare-route-yii'],
+                        'php' => ['version' => 'bare-route-php'],
+                    ],
+                ),
+            ],
+        );
+
+        Yii::$app->requestedRoute = $module->getUniqueId();
+
+        $html = Yii::$app->runAction($module->getUniqueId());
+
+        self::assertIsString(
+            $html,
+            'The bare module route must return the rendered request history.',
+        );
+        self::assertStringContainsString(
+            'Request history',
+            $html,
+            "Route 'debug' must resolve to the same standalone index action as 'debug/index'.",
+        );
+        self::assertInstanceOf(
+            IndexAction::class,
+            Yii::$app->requestedAction,
+            'Bare module dispatch must expose the canonical index action to the Yii lifecycle.',
         );
     }
 

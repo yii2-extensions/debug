@@ -30,7 +30,10 @@ $userSwitch = $panel->userSwitch;
             [
                 'action' => Url::to(Module::route('reset-identity')),
                 'enableClientScript' => false,
-                'options' => ['id' => 'debug-userswitch__reset-identity'],
+                'options' => [
+                    'aria-label' => 'Reset switched identity',
+                    'id' => 'debug-userswitch__reset-identity',
+                ],
             ],
         ) ?>
         <?= Button::tag()
@@ -56,6 +59,7 @@ $userSwitch = $panel->userSwitch;
                 'id' => 'debug-userswitch__set-identity',
                 'style' => $panel->canSearchUsers() ? 'display:none' : '',
                 'class' => 'yii-debug-stack',
+                'aria-label' => 'Switch active identity',
             ],
         ],
     ); ?>
@@ -67,8 +71,10 @@ $userSwitch = $panel->userSwitch;
     ->textInput(
         [
             'class' => 'yii-debug-input',
+            'autocomplete' => 'off',
             'id' => 'user_id',
             'name' => 'user_id',
+            'required' => true,
         ],
     )
     ->label('Switch User', ['class' => 'yii-debug-label']) ?>
@@ -84,6 +90,10 @@ $userSwitch = $panel->userSwitch;
     <?= Div::tag()
         ->html(
             FilterBanner::widget(['searchModel' => $usersFilterModel]),
+            Span::tag()
+                ->class('yii-debug-sr-only')
+                ->content('Press Enter or Space on a user row to switch identity.')
+                ->id('debug-userswitch__row-instructions'),
             GridView::widget(
                 [
                     ...GridViewConfig::defaults(),
@@ -91,9 +101,11 @@ $userSwitch = $panel->userSwitch;
                     'filterModel' => $usersFilterModel,
                     'tableOptions' => ['class' => 'yii-debug-table yii-debug-table-pointer yii-debug-table-userswitch'],
                     'rowOptions' => static fn(mixed $model, mixed $key): array => [
+                        'aria-describedby' => 'debug-userswitch__row-instructions',
                         'aria-label' => is_int($key) || is_string($key)
                             ? "Switch to user {$key}"
                             : 'Switch to selected user',
+                        'role' => 'button',
                         'tabindex' => 0,
                     ],
                     'columns' => $panel->filterColumns,

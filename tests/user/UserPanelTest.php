@@ -234,6 +234,26 @@ final class UserPanelTest extends TestCase
             $html,
             'Each switch result row must participate in sequential keyboard navigation.',
         );
+        self::assertStringContainsString(
+            'role="button"',
+            $html,
+            'Each interactive user row must expose button semantics to assistive technology.',
+        );
+        self::assertStringContainsString(
+            'aria-describedby="debug-userswitch__row-instructions"',
+            $html,
+            'Each switch result row must reference its keyboard activation instructions.',
+        );
+        self::assertStringContainsString(
+            'Press Enter or Space on a user row to switch identity.',
+            $html,
+            'Keyboard activation instructions must be available to screen-reader users.',
+        );
+        self::assertStringContainsString(
+            'aria-label="Switch active identity"',
+            $html,
+            'The hidden user-switch form must retain an accessible name when activated by a row.',
+        );
     }
 
     public function testGetDetailRendersGuestPlaceholderWhenIdentityMissing(): void

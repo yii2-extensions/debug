@@ -218,7 +218,7 @@ final class RequestCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $collector->displayVars = ['_GET', '_COOKIE'];
+        $collector->displayVars = ['_GET', '_COOKIE', '_SERVER'];
 
         $request = Yii::$app->getRequest();
 
@@ -228,12 +228,21 @@ final class RequestCollectorTest extends TestCase
 
         $GLOBALS['_GET'] = ['token' => 'query-secret'];
         $GLOBALS['_COOKIE'] = ['session_id' => 'cookie-secret'];
+        $GLOBALS['_SERVER'] = [
+            'AWS_SECRET_ACCESS_KEY' => 'aws-secret',
+            'DATABASE_HOST' => 'database.internal',
+            'DATABASE_URL' => 'postgres://user:secret@example.test/app',
+            'DB_PASSWORD' => 'database-secret',
+            'passwordless_mode' => true,
+            'tokenizer' => 'safe-tokenizer',
+        ];
 
         $saved = $this->captureData($collector);
 
         $requestHeaders = $saved['requestHeaders'] ?? null;
         $requestBody = $saved['requestBody'] ?? null;
         $query = $saved['GET'] ?? null;
+        $server = $saved['SERVER'] ?? null;
 
         self::assertIsArray(
             $requestHeaders,
@@ -246,6 +255,10 @@ final class RequestCollectorTest extends TestCase
         self::assertIsArray(
             $query,
             'Query parameters must remain an array.',
+        );
+        self::assertIsArray(
+            $server,
+            'Server variables must remain an array.',
         );
 
         $decodedBody = $requestBody['Decoded'] ?? null;
@@ -278,6 +291,35 @@ final class RequestCollectorTest extends TestCase
             SensitiveDataRedactor::PLACEHOLDER,
             $saved['COOKIE'] ?? null,
             'Cookie collections must be redacted without explicit configuration.',
+        );
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $server['DB_PASSWORD'] ?? null,
+            'Environment-style database passwords must be redacted by the shared default policy.',
+        );
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $server['AWS_SECRET_ACCESS_KEY'] ?? null,
+            'Cloud credential keys must be redacted by the shared default policy.',
+        );
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
+            $server['DATABASE_URL'] ?? null,
+            'Credential-bearing database URLs must be redacted by the shared default policy.',
+        );
+        self::assertSame(
+            'database.internal',
+            $server['DATABASE_HOST'] ?? null,
+            'Non-credential database settings must remain visible.',
+        );
+        self::assertSame(
+            'safe-tokenizer',
+            $server['tokenizer'] ?? null,
+            'Credential patterns must not redact words that merely contain token.',
+        );
+        self::assertTrue(
+            $server['passwordless_mode'] ?? false,
+            'Credential patterns must not redact passwordless feature flags.',
         );
     }
 
