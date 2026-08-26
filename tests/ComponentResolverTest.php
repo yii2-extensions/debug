@@ -157,6 +157,14 @@ final class ComponentResolverTest extends TestCase
         );
     }
 
+    public function testCreateMappedReturnsNullForUnresolvableClassNameString(): void
+    {
+        self::assertNull(
+            ComponentResolver::createMapped('yii\\debug\\DoesNotExist'),
+            'An unresolvable class-name string must be rejected before object creation.',
+        );
+    }
+
     public function testCreateMappedReturnsNullForUnresolvableDoubleUnderscoreClass(): void
     {
         self::assertNull(

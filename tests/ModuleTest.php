@@ -103,7 +103,7 @@ final class ModuleTest extends TestCase
         $response = Yii::$app->getResponse();
         $headers = $response->getHeaders();
 
-        $headers->set('Content-Security-Policy', "default-src 'none'; img-src data:");
+        $headers->set('Content-Security-Policy', "default-src 'none'; img-src data:;");
         $headers->add(
             'Content-Security-Policy',
             "script-src 'self'; FRAME-ANCESTORS https://example.test; style-src 'unsafe-inline'",
