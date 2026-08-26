@@ -396,6 +396,19 @@ final class LogPanelTest extends TestCase
         );
     }
 
+    public function testGetToolbarItemsReturnsEmptyArrayWhenNoMessagesWereCaptured(): void
+    {
+        $panel = $this->makePanel(
+            LogPanel::class,
+        );
+
+        self::assertSame(
+            [],
+            $this->invoke($panel, 'getToolbarItems'),
+            'No captured log messages must skip the toolbar.',
+        );
+    }
+
     public function testThrowHydrationExceptionWhenMessagesAreNotAnArray(): void
     {
         $panel = $this->makePanel(

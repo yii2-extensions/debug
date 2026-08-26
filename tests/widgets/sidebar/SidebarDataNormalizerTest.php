@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\widgets\sidebar;
 
+use Exception;
 use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
+use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\{ConfigPanel, InertiaPanel, RequestPanel};
+use yii\debug\panels\{ConfigPanel, InertiaPanel, MailPanel, QueuePanel, RequestPanel, VitePanel};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarNavItem};
 
@@ -130,6 +132,52 @@ final class SidebarDataNormalizerTest extends TestCase
         self::assertNull(
             $view->snapshot,
             'Empty manifest must skip the snapshot card.',
+        );
+    }
+
+    public function testFromIndexGroupsExtensionPanelsAfterPrimaryNavigation(): void
+    {
+        $this->mockWebApplication();
+
+        $request = new RequestPanel();
+        $request->id = 'request';
+        $inertia = new InertiaPanel();
+        $inertia->id = 'inertia';
+        $mail = new MailPanel();
+        $mail->id = 'mail';
+        $queue = new QueuePanel();
+        $queue->id = 'queue';
+        $vite = new VitePanel();
+        $vite->id = 'vite';
+
+        $view = SidebarDataNormalizer::fromIndex(
+            [
+                'request' => $request,
+                'mail' => $mail,
+                'queue' => $queue,
+                'inertia' => $inertia,
+                'vite' => $vite,
+            ],
+            ['tag-newest' => $this->requestSummary('tag-newest')],
+        );
+
+        self::assertSame(
+            ['History', 'Request'],
+            array_map(static fn(SidebarNavItem $item): string => $item->label, $view->navItems),
+            'Primary Yii diagnostics must remain in the main navigation.',
+        );
+        self::assertArrayHasKey(
+            'Extensions',
+            $view->navGroups,
+            'Optional integrations need a labeled group.',
+        );
+        self::assertSame(
+            ['Mail', 'Queue', 'Inertia', 'Vite'],
+            array_map(
+                static fn(SidebarNavItem $item): string => $item->label,
+                $view->navGroups['Extensions'],
+            ),
+            'Integration panels must retain their order at the end of the sidebar.',
         );
     }
 
@@ -512,6 +560,36 @@ final class SidebarDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromViewRetainsPanelsWithCaptureErrorsWithoutContent(): void
+    {
+        $this->mockWebApplication();
+
+        $active = new RequestPanel();
+        $active->id = 'request';
+
+        $inertia = new InertiaPanel();
+        $inertia->id = 'inertia';
+        $inertia->setError(ExceptionSnapshot::fromThrowable(new Exception('capture failed')));
+
+        $view = SidebarDataNormalizer::fromView(
+            ['inertia' => $inertia, 'request' => $active],
+            ['tag-1' => $this->requestSummary()],
+            $active,
+            'tag-1',
+            $this->requestSummary(),
+        );
+
+        $extensionItems = $view->navGroups['Extensions'] ?? [];
+
+        $labels = array_map(static fn(SidebarNavItem $item): string => $item->label, $extensionItems);
+
+        self::assertContains(
+            'Inertia',
+            $labels,
+            'A panel capture error must remain discoverable in the request sidebar.',
+        );
+    }
+
     public function testFromViewReturnsFullUrlWhenParseUrlFails(): void
     {
         $this->mockWebApplication();
@@ -582,10 +660,13 @@ final class SidebarDataNormalizerTest extends TestCase
         $this->mockWebApplication();
 
         $active = new RequestPanel();
+
         $active->id = 'request';
 
         $inertia = new InertiaPanel();
+
         $inertia->id = 'inertia';
+
         $this->hydratePanel($inertia, InertiaSnapshot::capture(null, null, [], [], 200));
 
         $view = SidebarDataNormalizer::fromView(
@@ -608,6 +689,7 @@ final class SidebarDataNormalizerTest extends TestCase
             $labels,
             'Content-less panels must be skipped in view mode.',
         );
+        self::assertSame([], $view->navGroups, 'Empty extension groups must not render a sidebar heading.');
     }
 
     public function testStatusVariantMappingForKnownBuckets(): void

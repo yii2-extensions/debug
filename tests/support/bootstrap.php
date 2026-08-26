@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use PHPForge\Inertia\Page as CorePage;
+use PHPForge\Vite\Configuration\{DevelopmentConfiguration, ProductionConfiguration};
+use PHPForge\Vite\Vite as CoreVite;
 use yii\inertia\{Manager, Page as LegacyPage, Vite};
 
 // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
@@ -30,6 +32,20 @@ require_once($vendorRoot . '/yiisoft/yii2/Yii.php');
 
 Yii::setAlias('@yii/debug/tests', dirname(__DIR__));
 Yii::setAlias('@yii/debug', "{$rootPath}/src");
+
+// Stand-ins for the optional `php-forge/vite` package. Tests exercise the production FQCN and canonical Yii
+// constructor configuration without adding Vite as a runtime dependency of the debugger.
+if (class_exists(DevelopmentConfiguration::class) === false) {
+    require_once __DIR__ . '/stub/vite/DevelopmentConfiguration.php';
+}
+
+if (class_exists(ProductionConfiguration::class) === false) {
+    require_once __DIR__ . '/stub/vite/ProductionConfiguration.php';
+}
+
+if (class_exists(CoreVite::class) === false) {
+    require_once __DIR__ . '/stub/vite/Vite.php';
+}
 
 // Stand-ins for the optional `yii2-extensions/inertia` package (not a dev dependency); the InertiaPanel and
 // AssetPanel tests exercise the real class names without pulling the package in.

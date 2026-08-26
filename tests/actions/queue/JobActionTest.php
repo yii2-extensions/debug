@@ -235,7 +235,7 @@ final class JobActionTest extends TestCase
 
         @mkdir(Yii::getAlias('@runtime/assets'), 0o777, true);
 
-        $module = new Module('debug');
+        $module = new Module('debug', null, ['panels' => ['queue' => QueuePanel::class]]);
 
         $module->allowedIPs = ['*'];
 

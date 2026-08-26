@@ -301,6 +301,13 @@ class LogTarget extends Target
             return;
         }
 
+        if (
+            ExtensionAvailability::isAvailable($id) === false
+            && $this->module->getCollectorCoordinator()->hasCollector($id) === false
+        ) {
+            return;
+        }
+
         $panel = new JsonPanel();
 
         $panel->id = $id;

@@ -4,22 +4,14 @@ declare(strict_types=1);
 
 namespace yii\debug\collectors;
 
-use Closure;
-use PHPForge\Debug\Helper\Coerce;
-use PHPForge\Debug\Panel\Asset\{AssetBundleRow, AssetSnapshot, ViteChunk, ViteManifest};
+use PHPForge\Debug\Panel\Asset\{AssetBundleRow, AssetSnapshot};
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\helpers\ArrayHelper;
+use yii\debug\ToolbarAsset;
 use yii\web\{AssetBundle, AssetManager};
 
-use function count;
-use function file_get_contents;
-use function is_a;
 use function is_array;
-use function is_file;
-use function is_object;
 use function is_string;
-use function json_decode;
 
 /**
  * Captures the asset bundles registered on the request for the Asset Bundles panel.
@@ -27,13 +19,8 @@ use function json_decode;
 class AssetCollector extends Collector
 {
     /**
-     * Vite bridge FQCN from `yii2-extensions/inertia`, referenced as a string to avoid a hard package dependency.
-     */
-    private const string VITE_CLASS = 'yii\inertia\Vite';
-
-    /**
-     * Captures every registered asset bundle — plus the Vite manifest when the application wires the
-     * `yii2-extensions/inertia` Vite bridge — into the snapshot consumed by the detail view.
+     * Captures every application asset bundle registered during the request into the snapshot consumed by the detail
+     * view. The debug toolbar's own bundle is excluded because it is infrastructure rather than application content.
      *
      * @return AssetSnapshot|null Captured bundle payload; `null` when the collector never started or the application
      * exposes no `assetManager` component.
@@ -60,7 +47,7 @@ class AssetCollector extends Collector
 
         if (is_array($bundles)) {
             foreach ($bundles as $name => $bundle) {
-                if (!is_string($name) || !$bundle instanceof AssetBundle) {
+                if (!is_string($name) || $name === ToolbarAsset::class || !$bundle instanceof AssetBundle) {
                     continue;
                 }
 
@@ -68,7 +55,7 @@ class AssetCollector extends Collector
             }
         }
 
-        return new AssetSnapshot($rows, self::captureVite());
+        return new AssetSnapshot($rows, null);
     }
 
     /**
@@ -79,75 +66,6 @@ class AssetCollector extends Collector
     public function id(): string
     {
         return 'asset';
-    }
-
-    /**
-     * Captures the Vite bridge configuration and its build manifest when the application wires one.
-     *
-     * @return ViteManifest|null Vite snapshot, or `null` when no Vite component is registered.
-     */
-    private static function captureVite(): ViteManifest|null
-    {
-        $component = self::viteComponent();
-
-        if ($component === null) {
-            return null;
-        }
-
-        // A bridge that declares no manifest path coerces to '', which Yii::getAlias() returns unchanged.
-        $manifestPath = (string) Yii::getAlias(
-            Coerce::string(ArrayHelper::getValue($component, 'manifestPath')),
-            false,
-        );
-
-        $devServerUrl = ArrayHelper::getValue($component, 'devServerUrl');
-
-        return new ViteManifest(
-            baseUrl: Coerce::string(ArrayHelper::getValue($component, 'baseUrl')),
-            devMode: ArrayHelper::getValue($component, 'devMode') === true,
-            devServerUrl: is_string($devServerUrl) ? $devServerUrl : null,
-            manifestPath: $manifestPath,
-            chunks: self::manifestEntries($manifestPath),
-        );
-    }
-
-    /**
-     * Reads the Vite build manifest and narrows every chunk to the fields the panel renders.
-     *
-     * @param string $manifestPath Absolute path to the build manifest, already resolved from its alias.
-     *
-     * @return list<ViteChunk> Chunks in manifest order; `[]` when the manifest is missing or unreadable (a dev-server
-     * run never writes one).
-     */
-    private static function manifestEntries(string $manifestPath): array
-    {
-        if (is_file($manifestPath) === false) {
-            return [];
-        }
-
-        $decoded = json_decode((string) file_get_contents($manifestPath), true);
-
-        if (is_array($decoded) === false) {
-            return [];
-        }
-
-        $entries = [];
-
-        foreach ($decoded as $name => $chunk) {
-            if (!is_string($name) || !is_array($chunk)) {
-                continue;
-            }
-
-            $entries[] = new ViteChunk(
-                name: $name,
-                file: Coerce::string($chunk['file'] ?? null),
-                cssCount: is_array($chunk['css'] ?? null) ? count($chunk['css']) : 0,
-                imports: is_array($chunk['imports'] ?? null) ? count($chunk['imports']) : 0,
-                isEntry: ($chunk['isEntry'] ?? false) === true,
-            );
-        }
-
-        return $entries;
     }
 
     /**
@@ -172,34 +90,5 @@ class AssetCollector extends Collector
             'js' => $bundle->js,
             'sourcePath' => $bundle->sourcePath,
         ];
-    }
-
-    /**
-     * Resolves the first registered application component whose definition points at the Vite bridge.
-     */
-    private static function viteComponent(): object|null
-    {
-        foreach (Yii::$app->getComponents() as $id => $definition) {
-            $class = match (true) {
-                is_object($definition) && !$definition instanceof Closure => $definition::class,
-                is_string($definition) => $definition,
-                is_array($definition) && is_string($definition['class'] ?? null) => $definition['class'],
-                default => null,
-            };
-
-            if ($class === null || is_a($class, self::VITE_CLASS, true) === false) {
-                continue;
-            }
-
-            try {
-                $component = Yii::$app->get((string) $id);
-            } catch (InvalidConfigException) {
-                continue;
-            }
-
-            return is_object($component) ? $component : null;
-        }
-
-        return null;
     }
 }

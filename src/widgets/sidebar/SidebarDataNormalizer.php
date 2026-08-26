@@ -6,6 +6,7 @@ namespace yii\debug\widgets\sidebar;
 
 use PHPForge\Debug\Helper\{Coerce, Icon, Vocabulary};
 use PHPForge\Debug\Storage\RequestSummary;
+use yii\debug\ExtensionAvailability;
 use yii\debug\Module;
 use yii\debug\Panel;
 
@@ -51,15 +52,18 @@ final class SidebarDataNormalizer
             cursorInit: $cursorInit,
         );
 
+        $navigation = self::buildNavigation(
+            panels: $panels,
+            manifest: $manifest,
+            activePanel: null,
+            activeTag: null,
+            mode: 'index',
+        );
+
         return new SidebarView(
             snapshot: $snapshot,
-            navItems: self::buildNavItems(
-                panels: $panels,
-                manifest: $manifest,
-                activePanel: null,
-                activeTag: null,
-                mode: 'index',
-            ),
+            navItems: $navigation['items'],
+            navGroups: $navigation['groups'],
         );
     }
 
@@ -87,15 +91,18 @@ final class SidebarDataNormalizer
             cursorInit: '',
         );
 
+        $navigation = self::buildNavigation(
+            panels: $panels,
+            manifest: $manifest,
+            activePanel: $activePanel,
+            activeTag: $tag,
+            mode: 'view',
+        );
+
         return new SidebarView(
             snapshot: $snapshot,
-            navItems: self::buildNavItems(
-                panels: $panels,
-                manifest: $manifest,
-                activePanel: $activePanel,
-                activeTag: $tag,
-                mode: 'view',
-            ),
+            navItems: $navigation['items'],
+            navGroups: $navigation['groups'],
         );
     }
 
@@ -106,9 +113,9 @@ final class SidebarDataNormalizer
      * @param array<string, Panel> $panels
      * @param array<string, RequestSummary> $manifest
      *
-     * @return list<SidebarNavItem>
+     * @return array{items: list<SidebarNavItem>, groups: array<string, list<SidebarNavItem>>}
      */
-    private static function buildNavItems(
+    private static function buildNavigation(
         array $panels,
         array $manifest,
         Panel|null $activePanel,
@@ -132,13 +139,14 @@ final class SidebarDataNormalizer
                 isActive: $mode === 'index',
             ),
         ];
+        $extensionItems = [];
 
         foreach ($panels as $id => $panel) {
             if ($id === 'config') {
                 continue;
             }
 
-            if ($mode === 'view' && $panel->hasContent() === false) {
+            if ($mode === 'view' && $panel->hasContent() === false && $panel->hasError() === false) {
                 continue;
             }
 
@@ -159,16 +167,27 @@ final class SidebarDataNormalizer
                 $tooltip = 'Pick a request first';
             }
 
-            $items[] = new SidebarNavItem(
+            $item = new SidebarNavItem(
                 label: $panel->getName(),
                 iconSvg: $iconSvg,
                 url: $url,
                 tooltip: $tooltip,
                 isActive: $isActive,
             );
+
+            if (ExtensionAvailability::isOptional($id)) {
+                $extensionItems[] = $item;
+
+                continue;
+            }
+
+            $items[] = $item;
         }
 
-        return $items;
+        return [
+            'items' => $items,
+            'groups' => $extensionItems === [] ? [] : ['Extensions' => $extensionItems],
+        ];
     }
 
     /**

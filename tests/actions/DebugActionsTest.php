@@ -400,8 +400,15 @@ final class DebugActionsTest extends TestCase
         );
     }
 
-    public function testActionMapAdoptsEveryRegisteredPanelAction(): void
+    public function testActionMapAdoptsOnlyAvailablePanelActions(): void
     {
+        MockerState::addCondition(
+            'yii\debug',
+            'class_exists',
+            ['yii\queue\Queue'],
+            false,
+        );
+
         $module = $this->bootDebugModule();
 
         self::assertArrayHasKey(
@@ -419,10 +426,10 @@ final class DebugActionsTest extends TestCase
             $module->actionMap,
             "'db-explain' action must be adopted from the DbPanel.",
         );
-        self::assertArrayHasKey(
+        self::assertArrayNotHasKey(
             'queue-job',
             $module->actionMap,
-            "'queue-job' action must be adopted from the QueuePanel.",
+            "'queue-job' must stay unregistered when the Queue extension is unavailable.",
         );
     }
 

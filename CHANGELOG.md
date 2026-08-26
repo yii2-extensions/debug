@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix/docs(ui): refine filters, metrics, accessibility, history, Queue, EXPLAIN, and refresh debugger screenshots and Inertia examples.
 - feat(ui): improve debugger routing, snapshots, history, diagnostics, N+1 detection, redaction, and accessibility.
 - refactor: simplify module collaborators, snapshot storage, capture comparisons, error messages, and regression coverage.
+- feat(ui): add Vite collector and panel, group Inertia, Mail, Queue, and Vite under `Extensions`, hide empty items, and retain failed panels.
 
 ## 0.1.1 May 18, 2026
 
