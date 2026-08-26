@@ -11,8 +11,6 @@ use PHPForge\Debug\Storage\{
     SnapshotStore as CoreSnapshotStore,
     StorageException,
 };
-use ReflectionException;
-use ReflectionMethod;
 use yii\base\InvalidConfigException;
 use yii\debug\Module;
 
@@ -111,16 +109,8 @@ final class SnapshotStore
     public function writeSnapshotResult(DebugSnapshot $snapshot, int $historySize): SnapshotWriteResult
     {
         try {
-            $writer = $this->coreResultWriter();
-
-            if ($writer !== null) {
-                /**
-                 * @var object{
-                 *     entries: array<string, RequestSummary>,
-                 *     removed: list<RequestSummary>
-                 * } $result
-                 */
-                $result = $writer->invoke($this->store, $snapshot, $historySize);
+            if (self::supportsResultWrites($this->store)) {
+                $result = $this->store->writeSnapshotResult($snapshot, $historySize);
 
                 return new SnapshotWriteResult($result->entries, $result->removed);
             }
@@ -141,14 +131,10 @@ final class SnapshotStore
     }
 
     /**
-     * Resolves the additive result API when the installed debug-core version provides it.
+     * Returns whether the installed debug-core version exposes its additive result API.
      */
-    private function coreResultWriter(): ReflectionMethod|null
+    private static function supportsResultWrites(object $store): bool
     {
-        try {
-            return new ReflectionMethod($this->store, 'writeSnapshotResult');
-        } catch (ReflectionException) {
-            return null;
-        }
+        return method_exists($store, 'writeSnapshotResult');
     }
 }

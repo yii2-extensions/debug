@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\Group;
 use yii\debug\{Module, Panel};
 use yii\debug\tests\support\stub\CustomPanel;
 use yii\debug\tests\support\TestCase;
+use yii\helpers\VarDumper;
 
 /**
  * Unit tests for {@see Panel} covering trace-line rendering, the `getToolbarData` template flow, and the
@@ -213,6 +214,17 @@ final class PanelTest extends TestCase
             '<a href="ide://open?url=file:///local/file.php&line=10">/app/file.php:10</a>',
             $panel->getTraceLine(['file' => '/app/file.php', 'line' => 10]),
             'A later valid mapping must still apply after a skipped entry.',
+        );
+    }
+
+    public function testGetTraceLineDumpsOptionsWhenFileOrLineIsMissing(): void
+    {
+        $options = ['file' => 'file.php'];
+
+        self::assertSame(
+            VarDumper::dumpAsString($options),
+            $this->createPanel()->getTraceLine($options),
+            'Incomplete trace frames must retain every available value in their dumped representation.',
         );
     }
 

@@ -933,6 +933,27 @@ final class LogTargetTest extends TestCase
         $this->cleanupDataPath($module);
     }
 
+    public function testReconcileMailFilesIsSkippedWithoutAMailCollector(): void
+    {
+        $module = new class ('debug') extends Module {
+            protected function coreCollectors(): array
+            {
+                return [];
+            }
+        };
+
+        $this->invoke(
+            new LogTarget($module),
+            'reconcileMailFiles',
+            [[]],
+        );
+
+        self::assertNull(
+            $module->getCollectorCoordinator()->collector('mail'),
+            'Mail reconciliation must remain optional when the module has no mail collector.',
+        );
+    }
+
     public function testReconcileMailFilesPreservesFilesWhenManifestIsCorrupt(): void
     {
         $module = $this->newModuleWithIsolatedDataPath();

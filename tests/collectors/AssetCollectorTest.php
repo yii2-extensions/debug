@@ -324,6 +324,22 @@ final class AssetCollectorTest extends TestCase
         );
     }
 
+    public function testCaptureReturnsNullWhenAssetManagerHasWrongType(): void
+    {
+        $this->mockWebApplication(
+            ['components' => ['assetManager' => new stdClass()]],
+        );
+
+        $collector = new AssetCollector();
+
+        $collector->startup();
+
+        self::assertNull(
+            $collector->capture(),
+            'A non-asset-manager application component must yield no snapshot.',
+        );
+    }
+
     public function testCaptureSerializesRegisteredBundleAndReplacesClosureCallbacks(): void
     {
         $collector = $this->makeCollector();

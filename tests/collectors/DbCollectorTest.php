@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use Closure;
+use LogicException;
 use PDO;
 use PHPForge\Debug\Panel\Db\QueryRow;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
@@ -54,6 +55,51 @@ final class DbCollectorTest extends TestCase
             $first,
             $collector->calculateTimings(),
             'Second call must return the cached list.',
+        );
+    }
+
+    public function testCalculateTimingsKeepsTraceFramesWithoutStringFile(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->setInaccessibleProperty(
+            $collector,
+            'profileLogs',
+            [
+                [
+                    'SELECT 1',
+                    Logger::LEVEL_PROFILE_BEGIN,
+                    'yii\db\Command::query',
+                    0.0,
+                    [
+                        ['line' => 1],
+                        ['file' => '/tmp/ignored/query.php', 'line' => 2],
+                    ],
+                    0,
+                ],
+                [
+                    'SELECT 1',
+                    Logger::LEVEL_PROFILE_END,
+                    'yii\db\Command::query',
+                    0.001,
+                    [
+                        ['line' => 1],
+                        ['file' => '/tmp/ignored/query.php', 'line' => 2],
+                    ],
+                    0,
+                ],
+            ],
+        );
+
+        $collector->ignoredPathsInBacktrace = ['/tmp/ignored'];
+
+        $timings = $collector->calculateTimings();
+        $first = $timings[0] ?? self::fail('Expected one timing.');
+
+        self::assertSame(
+            [['line' => 1]],
+            $first['trace'],
+            'Frames without a string file must remain while matching file paths are removed.',
         );
     }
 
@@ -134,6 +180,34 @@ final class DbCollectorTest extends TestCase
             $row->rows,
             'A zero row count must remain a valid driver result.',
         );
+    }
+
+    public function testCaptureRejectsMissingDuplicateCountInvariant(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        $module->logTarget = new LogTarget($module);
+
+        $collector = $this->getMockBuilder(DbCollector::class)
+            ->onlyMethods(['countDuplicateQuery'])
+            ->getMock();
+
+        $collector->expects(self::once())->method('countDuplicateQuery')->willReturn([]);
+        $collector->module = $module;
+        $collector->startup();
+
+        $this->primeCollector(
+            $collector,
+            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [],
+        );
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Missing duplicate count for query: SELECT 1');
+
+        $collector->capture();
     }
 
     public function testCaptureResolvesStableRows(): void
@@ -264,6 +338,38 @@ final class DbCollectorTest extends TestCase
             [],
             $collector->getExcessiveCallers(),
             'A null threshold must disable caller detection.',
+        );
+    }
+
+    public function testGetExcessiveCallersReturnsOnlyCountsAtOrAboveThreshold(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->excessiveCallerThreshold = 2;
+
+        $repeatedTrace = [['file' => '/app/Repository.php', 'line' => 42]];
+
+        $this->primeCollector(
+            $collector,
+            $this->flatten(
+                [
+                    $this->makeMessage('SELECT 1', 0.001, 0.000, $repeatedTrace),
+                    $this->makeMessage('SELECT 2', 0.001, 0.002, $repeatedTrace),
+                    $this->makeMessage(
+                        'SELECT 3',
+                        0.001,
+                        0.004,
+                        [['file' => '/app/OtherRepository.php', 'line' => 7]],
+                    ),
+                ],
+            ),
+            [],
+        );
+
+        self::assertSame(
+            [2],
+            array_values($collector->getExcessiveCallers()),
+            'Only callers reaching the inclusive threshold must be reported.',
         );
     }
 

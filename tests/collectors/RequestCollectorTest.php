@@ -23,6 +23,31 @@ use yii\web\{Controller, Session};
 #[Group('request')]
 final class RequestCollectorTest extends TestCase
 {
+    public function testApplyConfiguredCensorsContinuesAfterNonArrayHeaderSection(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->censoredVariableNames = ['X-Secret'];
+
+        self::assertSame(
+            [
+                'requestHeaders' => 'not-an-array',
+                'responseHeaders' => ['X-Secret' => '****'],
+            ],
+            $this->invoke(
+                $collector,
+                'applyConfiguredCensors',
+                [
+                    [
+                        'requestHeaders' => 'not-an-array',
+                        'responseHeaders' => ['X-Secret' => 'secret'],
+                    ],
+                ],
+            ),
+            'A non-array request-header section must not prevent response-header censorship.',
+        );
+    }
+
     public function testCaptureBuildsActionFromInlineAction(): void
     {
         $collector = $this->makeCollector();

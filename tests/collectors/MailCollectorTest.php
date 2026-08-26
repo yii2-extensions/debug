@@ -484,6 +484,38 @@ final class MailCollectorTest extends TestCase
         rmdir($path);
     }
 
+    public function testReconcileFilesReturnsWhenTheMailGlobFails(): void
+    {
+        $this->mockWebApplication();
+
+        $path = sys_get_temp_dir() . '/yii2-debug-mail-glob-failure-' . uniqid('', true);
+        $orphan = "{$path}/orphan.eml";
+
+        mkdir($path, recursive: true);
+        file_put_contents($orphan, 'orphan');
+        touch($orphan, 10_000);
+
+        MockerState::addCondition(
+            'yii\\debug\\collectors',
+            'glob',
+            ["{$path}/*.eml"],
+            false,
+        );
+
+        $collector = new MailCollector();
+        $collector->mailPath = $path;
+
+        $collector->reconcileFiles([]);
+
+        self::assertFileExists(
+            $orphan,
+            'A glob failure must return before attempting orphan cleanup.',
+        );
+
+        unlink($orphan);
+        rmdir($path);
+    }
+
     public function testSafeMailFileValidationRejectsEmptyAndNestedPaths(): void
     {
         self::assertTrue(

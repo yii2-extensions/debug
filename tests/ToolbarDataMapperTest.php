@@ -260,6 +260,54 @@ final class ToolbarDataMapperTest extends TestCase
         );
     }
 
+    public function testMergePanelExtensionsReturnsTypedEnvelopeWhenItemsAreNotArrays(): void
+    {
+        self::assertSame(
+            [
+                'extension' => 'preserved',
+                'items' => [],
+                'id' => 'typed',
+            ],
+            $this->invokeStatic(
+                ToolbarDataMapper::class,
+                'mergePanelExtensions',
+                [
+                    ['extension' => 'preserved', 'items' => 'legacy'],
+                    ['items' => [], 'id' => 'typed'],
+                ],
+            ),
+            'Non-array legacy items must leave the normalized item list unchanged.',
+        );
+    }
+
+    public function testPanelRejectsInvalidLegacyEnvelopes(): void
+    {
+        self::assertNull(
+            $this->invokeStatic(
+                ToolbarDataMapper::class,
+                'panel',
+                [['id' => 'invalid-item', 'title' => 'Invalid item', 'items' => ['not-an-array']]],
+            ),
+            'A non-array toolbar item cannot be normalized.',
+        );
+        self::assertNull(
+            $this->invokeStatic(
+                ToolbarDataMapper::class,
+                'panel',
+                [['id' => 'missing-value', 'title' => 'Missing value', 'items' => [[]]]],
+            ),
+            'A toolbar item without a coercible value cannot be normalized.',
+        );
+        self::assertNull(
+            $this->invokeStatic(
+                ToolbarDataMapper::class,
+                'panel',
+                [['id' => [], 'title' => 'Invalid ID', 'items' => []]],
+            ),
+            'A toolbar panel without a coercible ID cannot be normalized.',
+        );
+    }
+
     protected function tearDown(): void
     {
         $this->destroyApplication();

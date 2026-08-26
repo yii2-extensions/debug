@@ -103,7 +103,7 @@ final class ModuleTest extends TestCase
         $response = Yii::$app->getResponse();
         $headers = $response->getHeaders();
 
-        $headers->set('Content-Security-Policy', "default-src 'none'; img-src data:;");
+        $headers->set('Content-Security-Policy', "default-src 'none'; ; img-src data:;");
         $headers->add(
             'Content-Security-Policy',
             "script-src 'self'; FRAME-ANCESTORS https://example.test; style-src 'unsafe-inline'",
@@ -123,7 +123,7 @@ final class ModuleTest extends TestCase
                 "img-src frame-ancestors; frame-ancestors 'self'",
             ],
             $headers->get('Content-Security-Policy', null, false),
-            'Every host CSP value must retain its directives while enforcing only same-origin debugger framing.',
+            'Every host CSP value, including directives after empty segments, must remain while enforcing framing.',
         );
     }
 
@@ -1205,6 +1205,24 @@ final class ModuleTest extends TestCase
         self::assertSame('log', $ids[array_key_last($ids)], 'Override must move the collector to its configured slot.');
     }
 
+    public function testInitCollectorsRejectsConfigurationWithoutResolvableClass(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(Message::COLLECTOR_CLASS_INVALID->getMessage());
+
+        new Module('debug', null, ['collectors' => [['class' => 'No\Such\Collector']]]);
+    }
+
+    public function testInitCollectorsRejectsObjectWithoutCollectorInterface(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            Message::COLLECTOR_INTERFACE_INVALID->getMessage(CollectorInterface::class, stdClass::class),
+        );
+
+        new Module('debug', null, ['collectors' => [stdClass::class]]);
+    }
+
     public function testInitConfiguresSharedViewAlias(): void
     {
         Yii::setAlias(Module::VIEW_PATH_ALIAS, '@runtime/not-debug-core');
@@ -1311,6 +1329,21 @@ final class ModuleTest extends TestCase
             'ghost',
             $module->panels,
             'Disabled panels must be removed.',
+        );
+    }
+
+    public function testInitPanelsDropsResolvedObjectsThatAreNotPanels(): void
+    {
+        $module = new Module(
+            'debug',
+            null,
+            ['panels' => ['not-panel' => ['class' => ConfigurableAction::class]]],
+        );
+
+        self::assertArrayNotHasKey(
+            'not-panel',
+            $module->panels,
+            'Resolved objects that do not implement the panel contract must be dropped.',
         );
     }
 

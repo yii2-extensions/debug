@@ -176,6 +176,38 @@ final class DebugActionsTest extends TestCase
         );
     }
 
+    public function testActionCompareRendersFailedPanelState(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-compare-baseline',
+            ['log' => LogSnapshot::capture([])],
+        );
+        $this->writeSnapshotWithExceptions(
+            $module,
+            'tag-compare-target',
+            ['log' => new RuntimeException('Log capture failed.')],
+        );
+
+        $html = $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            [
+                'baseline' => 'tag-compare-baseline',
+                'target' => 'tag-compare-target',
+            ],
+        );
+
+        self::assertIsString($html, 'Comparison action must return rendered HTML.');
+        self::assertStringContainsString(
+            'yii-debug-badge-danger">Failed</span>',
+            $html,
+            'A failed panel capture must use the danger state badge.',
+        );
+    }
+
     public function testActionCompareRendersSummaryAndStructuralPanelDifferences(): void
     {
         $module = $this->bootDebugModule();
@@ -306,6 +338,23 @@ final class DebugActionsTest extends TestCase
             '',
             $html,
             'Index must still render when a cursor query param is present.',
+        );
+    }
+
+    public function testActionIndexRendersComparisonFormWhenManifestHasTwoCaptures(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot($module, 'tag-index-older', []);
+        $this->writeSnapshot($module, 'tag-index-newest', []);
+
+        $html = $this->runDebugAction(new IndexAction('index'), $module);
+
+        self::assertIsString($html, 'Index action must return rendered HTML.');
+        self::assertStringContainsString(
+            'id="yii-debug-history-compare-title"',
+            $html,
+            'Two captures must expose the comparison form on the history page.',
         );
     }
 
