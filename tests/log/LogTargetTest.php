@@ -107,6 +107,22 @@ final class LogTargetTest extends TestCase
         );
     }
 
+    public function testCollectAppendsStringKeyedMessageBatchesByValue(): void
+    {
+        $target = new LogTarget(new Module('debug'));
+
+        $first = self::message('first');
+        $second = self::message('second');
+
+        $target->collect(['alpha' => $first, 'beta' => $second], false);
+
+        self::assertSame(
+            [$first, $second],
+            $target->messages,
+            'String-keyed batches must append by value without key collisions.',
+        );
+    }
+
     public function testCollectSummaryCapturesRequestTime(): void
     {
         Yii::$app->getRequest()->setUrl('dummy');
@@ -901,7 +917,7 @@ final class LogTargetTest extends TestCase
         );
 
         $target = new LogTarget($module);
-        $store = new SnapshotStore($module->dataPath, $module->dirMode, $module->fileMode);
+        $store = SnapshotStore::forModule($module);
 
         $this->invoke($target, 'reconcileMailFiles', [$store->loadManifest()]);
 
@@ -941,7 +957,7 @@ final class LogTargetTest extends TestCase
         file_put_contents("{$module->dataPath}/index.json", '{');
 
         $target = new LogTarget($module);
-        $store = new SnapshotStore($module->dataPath, $module->dirMode, $module->fileMode);
+        $store = SnapshotStore::forModule($module);
         $manifest = $store->loadManifestResult();
 
         $this->invoke(

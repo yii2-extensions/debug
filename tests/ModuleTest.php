@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests;
 
+use InvalidArgumentException;
+use PHPForge\Debug\Collector\CollectorInterface;
 use PHPForge\Debug\Helper\{Icon, SensitiveDataRedactor};
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
@@ -13,12 +15,14 @@ use Yii;
 use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfigException};
 use yii\caching\FileCache;
 use yii\db\Connection;
-use yii\debug\actions\{PhpInfoAction, ToolbarDataAction};
+use yii\debug\actions\{PhpInfoAction, ToolbarDataAction, ViewAction};
+use yii\debug\collectors\LogCollector;
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, ToolbarRenderer, VersionResolver};
 use yii\debug\exception\Message;
 use yii\debug\panels\{DbPanel, LogPanel};
 use yii\debug\tests\provider\{ModuleProvider, VisibilityProvider};
 use yii\debug\tests\support\stub\{
+    ConfigurableAction,
     CustomCollector,
     CustomDbPanel,
     CustomUrlRule,
@@ -104,6 +108,7 @@ final class ModuleTest extends TestCase
             'Content-Security-Policy',
             "script-src 'self'; FRAME-ANCESTORS https://example.test; style-src 'unsafe-inline'",
         );
+        $headers->add('Content-Security-Policy', 'img-src frame-ancestors');
 
         $action = new Action('index', new Controller('default', $module));
 
@@ -115,6 +120,7 @@ final class ModuleTest extends TestCase
             [
                 "default-src 'none'; img-src data:; frame-ancestors 'self'",
                 "script-src 'self'; frame-ancestors 'self'; style-src 'unsafe-inline'",
+                "img-src frame-ancestors; frame-ancestors 'self'",
             ],
             $headers->get('Content-Security-Policy', null, false),
             'Every host CSP value must retain its directives while enforcing only same-origin debugger framing.',
@@ -298,6 +304,33 @@ final class ModuleTest extends TestCase
             ['class' => LogTargetBase::class],
             $dispatcher->targets['pending'],
             'Unresolved entries must be left untouched.',
+        );
+    }
+
+    public function testBeforeActionUsesTheResponseHeaderExtensionPoint(): void
+    {
+        $module = new class ('debug') extends Module {
+            public bool $responseHeadersApplied = false;
+
+            protected function setDebuggerResponseHeaders(Response $response): void
+            {
+                $this->responseHeadersApplied = true;
+
+                parent::setDebuggerResponseHeaders($response);
+            }
+        };
+
+        $module->allowedIPs = ['*'];
+
+        Yii::$app->setModule('debug', $module);
+
+        self::assertTrue(
+            $module->beforeAction(new Action('index', new Controller('default', $module))),
+            'An allowed debugger action must continue.',
+        );
+        self::assertTrue(
+            $module->responseHeadersApplied,
+            'The protected response-header extension point must participate in the action lifecycle.',
         );
     }
 
@@ -701,6 +734,25 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testCheckAccessUsesTheCurrentPublicAllowlistConfiguration(): void
+    {
+        $module = new Module('debug');
+        $module->allowedIPs = ['*'];
+
+        self::assertTrue(
+            $this->invoke($module, 'checkAccess'),
+            'The initial allowlist must grant access.',
+        );
+
+        $module->allowedIPs = [];
+        $module->disableIpRestrictionWarning = true;
+
+        self::assertFalse(
+            $this->invoke($module, 'checkAccess'),
+            'A later public allowlist update must take effect on the next access check.',
+        );
+    }
+
     public function testCoreActionsAndCollectorsExposeEveryBuiltInId(): void
     {
         $module = new Module('debug');
@@ -822,6 +874,37 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testCreateCapturePolicyEnablesDefaultPatternsOnlyForUntouchedDefaults(): void
+    {
+        $module = new Module('debug');
+
+        $withDefaults = $module->createCapturePolicy(['queueSecret']);
+
+        self::assertSame(
+            [SensitiveDataRedactor::PLACEHOLDER],
+            array_values($withDefaults->redact(['my.password.value' => 'x'])),
+            'Default patterns must engage when the exact-key list is untouched.',
+        );
+
+        $noCollectorKeys = $module->createCapturePolicy();
+
+        self::assertSame(
+            [SensitiveDataRedactor::PLACEHOLDER],
+            array_values($noCollectorKeys->redact(['my.password.value' => 'x'])),
+            'Untouched defaults must keep the Debug Core patterns active.',
+        );
+
+        $module->sensitiveKeys = [...SensitiveDataRedactor::DEFAULT_KEYS, 'extra'];
+
+        $customized = $module->createCapturePolicy(['queueSecret']);
+
+        self::assertSame(
+            ['x'],
+            array_values($customized->redact(['my.password.value' => 'x'])),
+            'Customized exact keys must not enable the default patterns implicitly.',
+        );
+    }
+
     public function testCreateStandaloneActionDoesNotTreatNestedMapKeysAsDirectActions(): void
     {
         $module = new Module('debug');
@@ -849,6 +932,32 @@ final class ModuleTest extends TestCase
             $action->id,
             'The action resolved for the module root must retain the canonical index ID.',
         );
+    }
+
+    public function testCreateStandaloneActionSupportsYiiDoubleUnderscoreClassConfiguration(): void
+    {
+        $module = new Module('debug');
+        $module->actionMap['configured'] = [
+            '__class' => ConfigurableAction::class,
+            'label' => 'resolved',
+        ];
+
+        $action = $this->invoke($module, 'createStandaloneAction', ['configured']);
+
+        self::assertInstanceOf(ConfigurableAction::class, $action, 'Yii `__class` configuration must resolve.');
+        self::assertSame('configured', $action->id, 'The resolved action ID must be assigned.');
+        self::assertSame('resolved', $action->label, 'Configured action properties must be preserved.');
+        self::assertSame($module, $action->getModule(), 'The resolved action must be bound to its module.');
+    }
+
+    public function testCreateStandaloneActionTrimsSurroundingSlashesFromMappedRoutes(): void
+    {
+        $module = new Module('debug');
+
+        $action = $this->invoke($module, 'createStandaloneAction', ['/view/']);
+
+        self::assertInstanceOf(ViewAction::class, $action, 'Mapped action must resolve despite surrounding slashes.');
+        self::assertSame('view', $action->id, 'Resolved ID must drop the surrounding slashes.');
     }
 
     public function testDebugAssetShipsLocalFrameworkAgnosticScript(): void
@@ -1039,6 +1148,9 @@ final class ModuleTest extends TestCase
 
     public function testGetYiiLogoUsesSharedFrontendAsset(): void
     {
+        // Reset the static cache so this test always exercises the lazy data-URI composition.
+        $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+
         self::assertSame(
             'data:image/svg+xml;base64,' . base64_encode(Icon::render('yii')),
             Module::getYiiLogo(),
@@ -1073,6 +1185,24 @@ final class ModuleTest extends TestCase
             $module->htmlTitle(),
             'Literal page title must be preserved.',
         );
+    }
+
+    public function testInitCollectorsMoveOverriddenCoreCollectorToConfiguredPosition(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug', null, ['collectors' => ['log' => LogCollector::class]]);
+
+        $ids = [];
+
+        foreach ($module->collectors as $collector) {
+            self::assertInstanceOf(CollectorInterface::class, $collector, 'Collectors must resolve to instances.');
+
+            $ids[] = $collector->id();
+        }
+
+        self::assertNotSame([], $ids, 'Collectors must be registered.');
+        self::assertSame('log', $ids[array_key_last($ids)], 'Override must move the collector to its configured slot.');
     }
 
     public function testInitConfiguresSharedViewAlias(): void
@@ -1233,6 +1363,17 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testInitPanelsMoveOverriddenCorePanelToConfiguredPosition(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug', null, ['panels' => ['log' => LogPanel::class]]);
+
+        $lastId = array_key_last($module->panels);
+
+        self::assertSame('log', $lastId, 'Override must move the panel to its configured slot.');
+    }
+
     public function testInitPanelsOverridesCorePanelByMatchingId(): void
     {
         $override = new LogPanel();
@@ -1248,6 +1389,13 @@ final class ModuleTest extends TestCase
             $module->panels['log'],
             'Matching custom panel must replace the core entry.',
         );
+    }
+
+    public function testInitPanelsRejectsUnknownStringPanelClass(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+
+        new Module('debug', null, ['panels' => ['broken' => 'No\\Such\\Panel']]);
     }
 
     public function testInitPanelsReturnsNullWhenConfigClassIsInvalid(): void
@@ -1316,10 +1464,23 @@ final class ModuleTest extends TestCase
 
     public function testInitRejectsInvalidCapturePolicyConfiguration(): void
     {
-        $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage('Sensitive key prefixes must not be empty.');
+        try {
+            new Module('debug', null, ['sensitiveKeyPrefixes' => ['']]);
 
-        new Module('debug', null, ['sensitiveKeyPrefixes' => ['']]);
+            self::fail('Invalid capture policy configuration must be rejected.');
+        } catch (InvalidConfigException $exception) {
+            self::assertSame(
+                'Sensitive key prefixes must not be empty.',
+                $exception->getMessage(),
+                'Cause message must surface unchanged.',
+            );
+            self::assertSame(0, $exception->getCode(), 'Code must stay at `0`.');
+            self::assertInstanceOf(
+                InvalidArgumentException::class,
+                $exception->getPrevious(),
+                'Original cause must be chained.',
+            );
+        }
     }
 
     public function testInitSkipsServiceRegistrationForDisabledPanels(): void
@@ -1632,7 +1793,7 @@ final class ModuleTest extends TestCase
             'yii\\debug',
             'microtime',
             [true],
-            1001.0,
+            1000.5,
             true,
         );
 
@@ -1650,7 +1811,7 @@ final class ModuleTest extends TestCase
         self::assertSame(
             [
                 'tag' => $module->logTarget->tag,
-                'duration' => '1000.000',
+                'duration' => '500.000',
                 'link' => \yii\helpers\Url::toRoute(['/debug/view', 'tag' => $module->logTarget->tag]),
             ],
             [

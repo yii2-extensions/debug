@@ -41,6 +41,19 @@ final class DebugUrlGeneratorTest extends TestCase
         );
     }
 
+    public function testQueryKeepsNumericExtrasAndEveryAdditionalParameter(): void
+    {
+        $this->mockWebApplication();
+
+        $urls = new DebugUrlGenerator();
+
+        self::assertSame(
+            '/index.php?r=debug%2Findex&1=extra&sort=duration&page=2',
+            $urls->history([1 => 'extra', 'sort' => 'duration', 'page' => 2, 'tag' => 'discarded']),
+            'Numeric extras and every additional parameter must survive.',
+        );
+    }
+
     protected function tearDown(): void
     {
         $this->destroyApplication();

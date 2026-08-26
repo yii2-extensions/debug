@@ -17,8 +17,6 @@ use yii\debug\tests\support\TestCase;
  * payload JSON-safe, and the strict hydration of every tagged type.
  *
  * {@see DebugValueProvider} for test case data providers.
- *
- * @since 0.2
  */
 #[Group('storage')]
 final class DebugValueTest extends TestCase

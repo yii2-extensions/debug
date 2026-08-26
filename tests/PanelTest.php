@@ -82,6 +82,33 @@ final class PanelTest extends TestCase
         );
     }
 
+    public function testGetToolbarDataRendersErrorEnvelopeWhenCaptureFailed(): void
+    {
+        $panel = $this->makeCustomPanel('broken');
+
+        $panel->stubName = 'Broken';
+        $panel->stubItems = [['value' => 1]];
+
+        $panel->setError(ExceptionSnapshot::fromThrowable(new Exception('capture failed')));
+
+        $data = $panel->getToolbarData();
+
+        self::assertSame('Broken', $data['title'] ?? null, 'Title must mirror the panel name.');
+        self::assertIsString($data['url'] ?? null, 'URL must be present.');
+        self::assertSame(
+            [
+                [
+                    'label' => 'Broken',
+                    'status' => 'danger',
+                    'title' => 'capture failed',
+                    'value' => 'error',
+                ],
+            ],
+            $data['items'] ?? null,
+            'Error envelope must carry one danger item with the failure message.',
+        );
+    }
+
     public function testGetToolbarDataReturnsEmptyArrayWhenItemsAreEmpty(): void
     {
         $panel = $this->makeCustomPanel('quiet');
@@ -172,6 +199,23 @@ final class PanelTest extends TestCase
         );
     }
 
+    public function testGetTraceLineContinuesPastNonScalarMappingToNextMatch(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $this->setInaccessibleProperty(
+            $module,
+            'tracePathMappings',
+            ['/skip' => ['ignored', 'array'], '/app' => '/local'],
+        );
+
+        self::assertSame(
+            '<a href="ide://open?url=file:///local/file.php&line=10">/app/file.php:10</a>',
+            $panel->getTraceLine(['file' => '/app/file.php', 'line' => 10]),
+            'A later valid mapping must still apply after a skipped entry.',
+        );
+    }
+
     public function testGetTraceLineDumpsValueWhenTraceLineClosureReturnsNonString(): void
     {
         [$panel, $module] = $this->createPanelWithModule();
@@ -201,6 +245,19 @@ final class PanelTest extends TestCase
             'file.php:10',
             $panel->getTraceLine(['file' => 'file.php', 'line' => 10]),
             "Disabled traceLine should emit plain 'file:line' text without anchor markup.",
+        );
+    }
+
+    public function testGetTraceLineNormalizesWindowsPathsAcrossMappings(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $module->tracePathMappings = ['C:\\app\\' => 'D:\\local'];
+
+        self::assertSame(
+            '<a href="ide://open?url=file://D:/local/file.php&line=10">C:\app\file.php:10</a>',
+            $panel->getTraceLine(['file' => 'C:\\app\\file.php', 'line' => 10]),
+            'Backslashes must normalize on the path, the mapping key, and the mapping value.',
         );
     }
 
@@ -282,6 +339,47 @@ final class PanelTest extends TestCase
             $panel->getTraceLine(['file' => '/app/data/file.php', 'line' => 10]),
             "Only the first matching key in 'tracePathMappings' should be applied.",
         );
+    }
+
+    public function testGetUrlUsesRenderContextOnlyForItsOwnTagAndPanel(): void
+    {
+        $panel = $this->makeCustomPanel('custom');
+        $context = new PanelRenderContext(
+            tag: 'test-tag',
+            panel: 'custom',
+            queryParams: [],
+            theme: 'dark',
+            urls: new class implements DebugUrlGeneratorInterface {
+                public function action(string $action, string $tag, array $queryParams = []): string
+                {
+                    return "/ctx/{$action}/{$tag}";
+                }
+
+                public function history(array $queryParams = []): string
+                {
+                    return '/ctx/index';
+                }
+
+                public function panel(string $tag, string $panel, array $queryParams = []): string
+                {
+                    return "/ctx/{$tag}/{$panel}";
+                }
+            },
+        );
+
+        $panel->setRenderContext($context);
+
+        self::assertSame('/ctx/test-tag/custom', $panel->getUrl(), 'Matching tag and panel must use the context.');
+
+        $foreignTag = $panel->getUrl(['tag' => 'other-tag']);
+
+        self::assertStringNotContainsString('/ctx/', $foreignTag, 'A foreign tag must bypass the context.');
+        self::assertStringContainsString('other-tag', $foreignTag, 'Foreign tag must reach the URL generator.');
+
+        $foreignPanel = $panel->getUrl(['panel' => 'other']);
+
+        self::assertStringNotContainsString('/ctx/', $foreignPanel, 'A foreign panel must bypass the context.');
+        self::assertStringContainsString('panel=other', $foreignPanel, 'Foreign panel must reach the URL generator.');
     }
 
     public function testRenderContextIsAnAdditivePortablePanelContract(): void

@@ -45,6 +45,8 @@ class ActionRoutes extends Model
 
     public function init(): void
     {
+        // Yii lifecycle convention: the parent chain is a no-op today, so removing this call is unobservable.
+        // @infection-ignore-all
         parent::init();
 
         $appRoutes = $this->getAppRoutes();
@@ -220,7 +222,7 @@ class ActionRoutes extends Model
                 $iterator = new RecursiveIteratorIterator(
                     new RecursiveDirectoryIterator(
                         $controllerPath,
-                        RecursiveDirectoryIterator::KEY_AS_PATHNAME | FilesystemIterator::SKIP_DOTS,
+                        FilesystemIterator::SKIP_DOTS,
                     ),
                 );
 

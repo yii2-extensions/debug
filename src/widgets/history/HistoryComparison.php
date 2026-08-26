@@ -12,14 +12,12 @@ use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_unique;
-use function array_values;
 use function count;
-use function get_debug_type;
 use function hash;
 use function in_array;
 use function is_array;
-use function json_encode;
 use function number_format;
+use function serialize;
 use function sort;
 use function str_replace;
 
@@ -74,7 +72,7 @@ final readonly class HistoryComparison
         }
 
         foreach ($this->panels as $panel) {
-            if ($panel->differenceCount() > 0 || $panel->baselineState !== $panel->targetState) {
+            if ($panel->differenceCount() > 0) {
                 return true;
             }
         }
@@ -145,7 +143,7 @@ final readonly class HistoryComparison
             }
         }
 
-        $extraIds = array_values(array_diff($observedIds, $orderedIds));
+        $extraIds = array_diff($observedIds, $orderedIds);
 
         sort($extraIds);
 
@@ -218,8 +216,6 @@ final readonly class HistoryComparison
         if (is_array($value)) {
             if ($value === []) {
                 $leaves[$path] = 'array:[]';
-
-                return;
             }
 
             foreach ($value as $key => $child) {
@@ -231,11 +227,7 @@ final readonly class HistoryComparison
             return;
         }
 
-        $encoded = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        $fingerprint = get_debug_type($value) . ':' . ($encoded === false ? '' : $encoded);
-
-        $leaves[$path] = hash('sha256', $fingerprint);
+        $leaves[$path] = hash('sha256', serialize($value));
     }
 
     private static function formatNumber(float|int $value, string $unit, int $precision): string
@@ -290,12 +282,12 @@ final readonly class HistoryComparison
         $scaledDelta = $scaledTarget - $scaledBaseline;
         $trend = $scaledDelta > 0 ? 'up' : ($scaledDelta < 0 ? 'down' : 'neutral');
 
-        if ($scaledDelta === 0.0) {
-            $delta = 'No change';
-        } else {
-            $sign = $scaledDelta > 0 ? '+' : '';
-            $percentage = $baseline !== 0
-                ? ' (' . ($scaledDelta > 0 ? '+' : '') . number_format((($target - $baseline) / $baseline) * 100, 1) . '%)'
+        $delta = 'No change';
+
+        if ($scaledDelta !== 0.0) {
+            $sign = $trend === 'up' ? '+' : '';
+            $percentage = (float) $baseline !== 0.0
+                ? " ({$sign}" . number_format((($target - $baseline) / $baseline) * 100, 1) . '%)'
                 : '';
             $delta = $sign . self::formatNumber($scaledDelta, $unit, $precision) . $percentage;
         }

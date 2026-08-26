@@ -295,7 +295,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         }
 
         $requestSummary = $this->requestSummary($tag, $summary);
-        $store = new SnapshotStore(Yii::getAlias($module->dataPath), $module->dirMode, $module->fileMode);
+        $store = SnapshotStore::forModule($module);
         $panelFailures = [];
 
         foreach ($failures as $id => $throwable) {

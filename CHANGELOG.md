@@ -58,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - perf: reuse committed snapshot manifests during mail reconciliation, append log buffers in place, and report unbiased millisecond debug durations.
 - fix/docs(ui): refine filters, metrics, accessibility, history, Queue, EXPLAIN, and refresh debugger screenshots and Inertia examples.
 - feat(ui): improve debugger routing, snapshots, history, diagnostics, N+1 detection, redaction, and accessibility.
+- refactor: simplify module collaborators, snapshot storage, capture comparisons, error messages, and regression coverage.
 
 ## 0.1.1 May 18, 2026
 

@@ -12,15 +12,6 @@ use function microtime;
 
 /**
  * Captures the request boundaries for the Timeline panel.
- *
- * Snapshots the request start, end, and peak memory so the timeline chart can place the profile spans on a shared
- * time axis.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\TimelineCollector())->capture();
- * ```
  */
 class TimelineCollector extends Collector
 {
@@ -45,12 +36,6 @@ class TimelineCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Timeline panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\TimelineCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

@@ -20,6 +20,21 @@ use yii\debug\tests\support\TestCase;
 #[Group('event')]
 final class EventPanelTest extends TestCase
 {
+    public function testEventsRemainReadableThroughTheYiiGetterContract(): void
+    {
+        $panel = $this->makePanel(EventPanel::class);
+        $events = [new EventRow(1.0, 'afterSave', Event::class, '0', 'App')];
+
+        $this->hydratePanel($panel, new EventSnapshot($events));
+
+        self::assertTrue($panel->canGetProperty('events'), 'Yii must recognize the events getter.');
+        self::assertSame(
+            $panel->getEvents(),
+            $panel->__get('events'),
+            'Magic property access must return the captured event rows.',
+        );
+    }
+
     public function testGetDetailRendersEmptyStateWhenNoEventsCaptured(): void
     {
         $panel = $this->makePanel(EventPanel::class);

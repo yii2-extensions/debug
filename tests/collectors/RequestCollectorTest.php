@@ -583,6 +583,9 @@ final class RequestCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
+        // Remove the core definition entirely so the lookup exercises the undefined-component path.
+        Yii::$app->clear('session');
+
         self::assertSame(
             [],
             $this->invoke(

@@ -34,12 +34,6 @@ final class JsonPanel extends Panel
     /**
      * Returns the stored payload as escaped, formatted JSON.
      *
-     * Usage example:
-     *
-     * ```php
-     * $html = $panel->getDetail();
-     * ```
-     *
      * @throws JsonException When the stored payload cannot be encoded.
      *
      * @return string Escaped JSON detail markup.
@@ -58,12 +52,6 @@ final class JsonPanel extends Panel
     /**
      * Returns a readable name derived from the stable panel ID.
      *
-     * Usage example:
-     *
-     * ```php
-     * $name = $panel->getName();
-     * ```
-     *
      * @return string Derived panel name.
      */
     #[Override]
@@ -76,12 +64,6 @@ final class JsonPanel extends Panel
 
     /**
      * Stores the decoded snapshot payload for safe JSON rendering.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $panel->hydrate(['value' => 42]);
-     * ```
      *
      * @param array<string, mixed> $payload Stored panel payload.
      */

@@ -26,7 +26,8 @@ final class CompareAction extends Action
      * @param string|null $baseline Baseline request tag.
      * @param string|null $target Target request tag.
      *
-     * @throws NotFoundHttpException When fewer than two captures exist or either requested snapshot is unavailable.
+     * @throws NotFoundHttpException When omitted tags cannot resolve a comparison pair or a requested snapshot is
+     * unavailable.
      *
      * @return string Rendered comparison page.
      */
@@ -41,12 +42,12 @@ final class CompareAction extends Action
             );
         }
 
-        $target ??= $tags[0] ?? null;
-        $baseline ??= $tags[1] ?? null;
+        $target ??= $tags[0] ?? '';
+        $baseline ??= $tags[1] ?? '';
 
-        if ($baseline === null || $target === null || !isset($manifest[$baseline], $manifest[$target])) {
+        if (!isset($manifest[$baseline], $manifest[$target])) {
             throw new NotFoundHttpException(
-                Message::DEBUG_DATA_NOT_FOUND->getMessage($baseline ?? $target ?? ''),
+                Message::DEBUG_DATA_NOT_FOUND->getMessage(isset($manifest[$baseline]) ? $target : $baseline),
             );
         }
 
@@ -65,7 +66,9 @@ final class CompareAction extends Action
         $panelLabels = [];
 
         foreach ($module->panels as $id => $panel) {
-            $panelLabels[$id] = $panel->getName() !== '' ? $panel->getName() : $id;
+            $name = $panel->getName();
+
+            $panelLabels[$id] = $name !== '' ? $name : $id;
         }
 
         $comparison = HistoryComparison::fromSnapshots($baselineSnapshot, $targetSnapshot, $panelLabels);

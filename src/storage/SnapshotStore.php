@@ -14,6 +14,7 @@ use PHPForge\Debug\Storage\{
 use ReflectionException;
 use ReflectionMethod;
 use yii\base\InvalidConfigException;
+use yii\debug\Module;
 
 /**
  * Yii2 compatibility facade for the framework-neutral snapshot store.
@@ -35,13 +36,19 @@ final class SnapshotStore
     }
 
     /**
+     * Creates a store bound to the module's data path and permission settings.
+     *
+     * @param Module $module Debug module whose `dataPath`, `dirMode`, and `fileMode` configure the store.
+     *
+     * @return self Store bound to the module settings.
+     */
+    public static function forModule(Module $module): self
+    {
+        return new self($module->dataPath, $module->dirMode, $module->fileMode);
+    }
+
+    /**
      * Returns manifest entries ordered from newest to oldest.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $entries = $store->loadManifest();
-     * ```
      *
      * @return array<string, RequestSummary> Newest entries first.
      */
@@ -61,12 +68,6 @@ final class SnapshotStore
     /**
      * Returns a stored snapshot or `null` when unavailable.
      *
-     * Usage example:
-     *
-     * ```php
-     * $snapshot = $store->readSnapshot('request-1');
-     * ```
-     *
      * @param string $tag Snapshot tag.
      *
      * @return DebugSnapshot|null Hydrated snapshot or `null` when unavailable.
@@ -78,12 +79,6 @@ final class SnapshotStore
 
     /**
      * Writes a snapshot and manifest update through one core storage transaction.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $removed = $store->writeSnapshot($snapshot, 50);
-     * ```
      *
      * @param DebugSnapshot $snapshot Snapshot to persist.
      * @param int $historySize Maximum number of retained entries.

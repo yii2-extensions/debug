@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
+use PHPForge\Debug\Capture\CapturePolicy;
+use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPForge\Debug\Panel\Queue\JobRecord;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
@@ -60,6 +62,20 @@ final class QueueCollectorTest extends TestCase
         );
 
         Event::offAll();
+    }
+
+    public function testCapturePolicyFallsBackToDefaultKeysWithoutModule(): void
+    {
+        $collector = new QueueCollector();
+
+        $policy = $this->invoke($collector, 'capturePolicy');
+
+        self::assertInstanceOf(CapturePolicy::class, $policy, 'Fallback policy must be built.');
+        self::assertSame(
+            [SensitiveDataRedactor::PLACEHOLDER, SensitiveDataRedactor::PLACEHOLDER, 'ok'],
+            array_values($policy->redact(['auth_key' => 'a', 'refreshToken' => 'b', 'safe' => 'ok'])),
+            'Default keys and queue-specific keys must combine in the fallback policy.',
+        );
     }
 
     public function testCaptureRecordsErrorEventAndExtractsMessage(): void

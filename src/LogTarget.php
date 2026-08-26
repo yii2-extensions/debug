@@ -322,10 +322,6 @@ class LogTarget extends Target
 
     private function store(): SnapshotStore
     {
-        return $this->store ??= new SnapshotStore(
-            $this->module->dataPath,
-            $this->module->dirMode,
-            $this->module->fileMode,
-        );
+        return $this->store ??= SnapshotStore::forModule($this->module);
     }
 }

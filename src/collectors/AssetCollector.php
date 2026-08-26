@@ -23,15 +23,6 @@ use function json_decode;
 
 /**
  * Captures the asset bundles registered on the request for the Asset Bundles panel.
- *
- * Stores each bundle's source path, base path, base URL, CSS/JS files, and dependency tree as typed rows — plus the
- * Vite manifest when the application wires the `yii2-extensions/inertia` Vite bridge.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\AssetCollector())->capture();
- * ```
  */
 class AssetCollector extends Collector
 {
@@ -82,12 +73,6 @@ class AssetCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Asset Bundles panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\AssetCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

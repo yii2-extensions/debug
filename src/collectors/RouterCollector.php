@@ -13,15 +13,6 @@ use function is_array;
 
 /**
  * Captures the routing trace of the request for the Router panel.
- *
- * Records the URL-rule resolution log emitted by the URL manager (and any REST / Composite / per-rule subclasses), the
- * resolved route, and the dispatched action.
- *
- * Usage example:
- *
- * ```php
- * $categories = (new \yii\debug\collectors\RouterCollector())->getCategories();
- * ```
  */
 class RouterCollector extends Collector
 {
@@ -67,12 +58,6 @@ class RouterCollector extends Collector
     /**
      * Returns the log categories scanned for routing trace messages.
      *
-     * Usage example:
-     *
-     * ```php
-     * $categories = $collector->getCategories();
-     * ```
-     *
      * @return list<string> Category names in declaration order.
      */
     public function getCategories(): array
@@ -83,12 +68,6 @@ class RouterCollector extends Collector
     /**
      * Returns the stable ID pairing this collector with the Router panel.
      *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\RouterCollector())->id();
-     * ```
-     *
      * @return string Stable collector ID.
      */
     public function id(): string
@@ -98,12 +77,6 @@ class RouterCollector extends Collector
 
     /**
      * Appends one or more log categories to {@see $categories}.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $collector->setCategories('app\components\UrlRule::parseRequest');
-     * ```
      *
      * @param list<string>|string $values Single category, or list of categories.
      */

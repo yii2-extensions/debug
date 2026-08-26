@@ -367,6 +367,12 @@ final class MailCollectorTest extends TestCase
             $warning[2],
             'Persistence failure must be logged from the collector.',
         );
+        self::assertIsString($warning[0], 'Logged warning must be a message string.');
+        self::assertStringContainsString(
+            'Unable to persist captured mail file:',
+            $warning[0],
+            'Warning must name the write failure, not a later side effect.',
+        );
 
         rmdir($path);
 

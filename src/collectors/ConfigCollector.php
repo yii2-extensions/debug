@@ -17,14 +17,6 @@ use function is_string;
 
 /**
  * Captures the application configuration and runtime environment for the Configuration panel.
- *
- * Snapshots the Yii framework / PHP / application identity and the installed-extensions roster.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\ConfigCollector())->capture();
- * ```
  */
 class ConfigCollector extends Collector
 {
@@ -83,12 +75,6 @@ class ConfigCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Configuration panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\ConfigCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

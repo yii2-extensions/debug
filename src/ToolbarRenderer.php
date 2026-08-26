@@ -31,12 +31,6 @@ final readonly class ToolbarRenderer
     /**
      * Injects toolbar markup immediately before the final closing body tag.
      *
-     * Usage example:
-     *
-     * ```php
-     * $html = $renderer->inject($html, $toolbar);
-     * ```
-     *
      * @param string $html Response HTML.
      * @param string $toolbar Rendered toolbar markup.
      *
@@ -53,12 +47,6 @@ final readonly class ToolbarRenderer
 
     /**
      * Renders the framework-neutral toolbar template through the Yii2 view component.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $element = $renderer->renderElement('/debug/toolbar-data?tag=request-1');
-     * ```
      *
      * @param string $dataUrl Toolbar payload URL.
      * @param list<string> $skipUrls Same-origin URLs excluded from AJAX tracking.
@@ -91,12 +79,6 @@ final readonly class ToolbarRenderer
      *
      * Emits `type="module"` so the ES-module chunk keeps its own top-level scope and cannot collide with host-page
      * globals or other classic scripts.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $script = $renderer->scriptTag();
-     * ```
      *
      * @return string Toolbar runtime script tag.
      */

@@ -33,12 +33,6 @@ abstract class Collector implements CollectorInterface
 
     /**
      * Deactivates the collector once, releasing any subscription created by {@see start()}.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $collector->shutdown();
-     * ```
      */
     final public function shutdown(): void
     {
@@ -53,12 +47,6 @@ abstract class Collector implements CollectorInterface
 
     /**
      * Activates the collector once at the start of the request lifecycle.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $collector->startup();
-     * ```
      */
     final public function startup(): void
     {
