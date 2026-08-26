@@ -359,6 +359,29 @@ final class UserCollectorTest extends TestCase
         self::assertMethodVisibility($class, $method, $expected);
     }
 
+    public function testGetUserReturnsConfiguredInstance(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'user' => [
+                        'class' => User::class,
+                        'identityClass' => Identity::class,
+                    ],
+                ],
+            ],
+        );
+
+        $collector = new UserCollector();
+        $collector->userComponent = Yii::$app->user;
+
+        self::assertSame(
+            Yii::$app->user,
+            $this->invoke($collector, 'getUser'),
+            'A configured user instance must be returned without resolving an application component ID.',
+        );
+    }
+
     public function testIdentityDataUsesTheModelAttributeContract(): void
     {
         $collector = new UserCollector();

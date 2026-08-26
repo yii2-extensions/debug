@@ -19,25 +19,6 @@ use function is_string;
 
 /**
  * Captures the HTTP request and response state for the Request panel.
- *
- * Snapshots the routing target, request/response headers, status code, body, flash messages, and the configured PHP
- * superglobals, with optional value censoring for sensitive keys.
- *
- * Usage example:
- *
- * ```php
- * 'modules' => [
- *     'debug' => [
- *         'class' => \yii\debug\Module::class,
- *         'collectors' => [
- *             'request' => [
- *                 'class' => \yii\debug\collectors\RequestCollector::class,
- *                 'censoredVariableNames' => ['Authorization'],
- *             ],
- *         ],
- *     ],
- * ],
- * ```
  */
 class RequestCollector extends Collector
 {
@@ -147,12 +128,6 @@ class RequestCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Request panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\RequestCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

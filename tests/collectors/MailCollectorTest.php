@@ -21,6 +21,8 @@ use function sys_get_temp_dir;
 use function touch;
 use function uniqid;
 
+use const DIRECTORY_SEPARATOR;
+
 /**
  * Unit tests for {@see MailCollector} covering the mailer listener capture, the recipient-list flattening, the `.eml`
  * file bookkeeping, and the startup/shutdown lifecycle.
@@ -367,6 +369,12 @@ final class MailCollectorTest extends TestCase
             $warning[2],
             'Persistence failure must be logged from the collector.',
         );
+        self::assertIsString($warning[0], 'Logged warning must be a message string.');
+        self::assertStringContainsString(
+            'Unable to persist captured mail file:',
+            $warning[0],
+            'Warning must name the write failure, not a later side effect.',
+        );
 
         rmdir($path);
 
@@ -475,6 +483,39 @@ final class MailCollectorTest extends TestCase
         );
 
         unlink($referenced);
+        rmdir($path);
+    }
+
+    public function testReconcileFilesReturnsWhenTheMailGlobFails(): void
+    {
+        $this->mockWebApplication();
+
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'yii2-debug-mail-glob-failure-' . uniqid('', true);
+
+        $orphan = $path . DIRECTORY_SEPARATOR . 'orphan.eml';
+
+        mkdir($path, recursive: true);
+        file_put_contents($orphan, 'orphan');
+        touch($orphan, 10_000);
+
+        MockerState::addCondition(
+            'yii\\debug\\collectors',
+            'glob',
+            [$path . DIRECTORY_SEPARATOR . '*.eml'],
+            false,
+        );
+
+        $collector = new MailCollector();
+        $collector->mailPath = $path;
+
+        $collector->reconcileFiles([]);
+
+        self::assertFileExists(
+            $orphan,
+            'A glob failure must return before attempting orphan cleanup.',
+        );
+
+        unlink($orphan);
         rmdir($path);
     }
 

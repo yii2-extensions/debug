@@ -46,12 +46,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
     /**
      * Returns the owning debug module.
      *
-     * Usage example:
-     *
-     * ```php
-     * $module = $this->getDebugModule();
-     * ```
-     *
      * @throws InvalidConfigException When the action was dispatched without a debug module.
      *
      * @return Module Owning debug module.
@@ -71,12 +65,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
     /**
      * Returns the debug entry manifest, reloading it from the log target on demand.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $manifest = $this->getManifest();
-     * ```
      *
      * @param bool $forceReload `true` to bypass the in-memory cache and re-read the manifest from disk.
      *
@@ -107,12 +95,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
      *
      * Retries up to `$maxRetry` times (waiting one second between attempts) because debug data is logged from a PHP
      * shutdown function whose execution may be delayed (notably when xdebug is enabled).
-     *
-     * Usage example:
-     *
-     * ```php
-     * $this->loadData($tag);
-     * ```
      *
      * @see https://github.com/yiisoft/yii2/issues/1504
      *
@@ -155,12 +137,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
     /**
      * Prepares the shared shell for a request panel or nested panel action.
      *
-     * Usage example:
-     *
-     * ```php
-     * $this->prepareShell($activePanel, $tag);
-     * ```
-     *
      * @param Panel $activePanel Panel focused by the rendered page.
      * @param string $tag Tag of the loaded debug entry.
      *
@@ -192,12 +168,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
     /**
      * Renders a debugger view wrapped in the shared page layout.
      *
-     * Usage example:
-     *
-     * ```php
-     * return $this->render('index', ['manifest' => $manifest]);
-     * ```
-     *
      * @param string $view View name relative to {@see getViewPath()}.
      * @param array<string, mixed> $params View parameters.
      *
@@ -216,12 +186,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
     /**
      * Renders a debugger view without the page layout.
-     *
-     * Usage example:
-     *
-     * ```php
-     * return $this->renderPartial('queue-job', ['record' => $record]);
-     * ```
      *
      * @param string $view View name relative to {@see getViewPath()}.
      * @param array<string, mixed> $params View parameters.
@@ -314,8 +278,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
         $peakMemory = $summary?->peakMemory;
 
-        $peakMemory = $peakMemory !== null ? Format::bytesToMb($peakMemory) : null;
-
         return new ShellContext(
             mode: $mode,
             useShell: true,
@@ -326,7 +288,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
             themeIconMoon: Icon::render('moon'),
             yiiVersion: $yiiVersion ?? Yii::getVersion(),
             phpVersion: $phpVersion ?? PHP_VERSION,
-            peakMemory: $peakMemory,
+            peakMemory: $peakMemory !== null ? Format::bytesToMb($peakMemory) : null,
             configUrl: $configUrl,
             sidebar: $sidebar,
         );

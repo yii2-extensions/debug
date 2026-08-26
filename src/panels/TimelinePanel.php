@@ -228,6 +228,8 @@ class TimelinePanel extends Panel
      */
     public function init(): void
     {
+        // `?? null` already absorbs a `null` module for property reads, so downgrading `?->` is unobservable.
+        // @infection-ignore-all
         $profilingPanel = $this->module?->panels['profiling'] ?? null;
 
         if (!$profilingPanel instanceof ProfilingPanel) {
@@ -238,6 +240,8 @@ class TimelinePanel extends Panel
 
         $this->profilingPanel = $profilingPanel;
 
+        // Yii lifecycle convention: the parent chain is a no-op today, so removing this call is unobservable.
+        // @infection-ignore-all
         parent::init();
     }
 

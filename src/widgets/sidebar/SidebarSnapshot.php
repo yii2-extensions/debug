@@ -10,10 +10,6 @@ use yii\helpers\Url;
 /**
  * Typed view-model for the snapshot card surfaced at the top of the debugger sidebar ('CURRENT REQUEST' /
  * 'NEWEST REQUEST').
- *
- * Pre-resolves every loose-array access on the request summary ('method', 'url', 'statusCode', 'time', 'ajax') plus
- * the navigation URLs ('Newest' / 'Newer' / 'Older' / 'Oldest'), the status-pill variant, path-only URL display, and
- * the cursor-mode flag that the `index.php` JS bridge needs to wire the GridView highlight.
  */
 final readonly class SidebarSnapshot
 {

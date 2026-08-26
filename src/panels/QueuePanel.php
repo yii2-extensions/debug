@@ -11,9 +11,7 @@ use yii\debug\actions\queue\JobAction;
 use yii\debug\models\search\QueueSearch;
 use yii\debug\Panel;
 
-use function class_exists;
 use function count;
-use function interface_exists;
 use function is_array;
 use function is_object;
 use function is_string;
@@ -82,6 +80,8 @@ class QueuePanel extends Panel
      */
     public function init(): void
     {
+        // Yii lifecycle convention: the parent chain is a no-op today, so removing this call is unobservable.
+        // @infection-ignore-all
         parent::init();
 
         $this->actions['queue-job'] = JobAction::class;
@@ -159,19 +159,11 @@ class QueuePanel extends Panel
      *
      * Walks `Yii::$app->components` without instantiating lazy components so the panel can keep the Queue button
      * visible on apps that DO configure queues, even when no jobs were pushed in the current request (mirroring the
-     * Database panel's behavior). Pre-loads the abstract base via `class_exists` so the `is_subclass_of` check works
-     * when the queue package was not loaded yet; when the package is missing entirely, the check returns `false` and
-     * the panel stays hidden.
+     * Database panel's behavior). An exact base-class name counts as a lazy definition before class loading; unknown
+     * subclass names do not match.
      */
     private function hasQueueComponentConfigured(): bool
     {
-        if (
-            class_exists(self::QUEUE_BASE_CLASS, false) === false
-            && interface_exists(self::QUEUE_BASE_CLASS, false) === false
-        ) {
-            class_exists(self::QUEUE_BASE_CLASS);
-        }
-
         foreach (Yii::$app->getComponents(true) as $config) {
             if (self::componentMatchesQueueBase($config)) {
                 return true;

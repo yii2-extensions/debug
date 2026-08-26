@@ -305,6 +305,56 @@ final class ExplainActionTest extends TestCase
         );
     }
 
+    public function testRunUsesPlainExplainPrefixForNonSqliteDrivers(): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        Yii::$app->set(
+            'db',
+            new class (['dsn' => 'sqlite::memory:']) extends Connection {
+                public function getDriverName(): string
+                {
+                    return 'mysql';
+                }
+
+                protected function initConnection(): void
+                {
+                    // Skip the MySQL charset bootstrap so the faked driver name can run over the SQLite backend.
+                    $this->trigger(self::EVENT_AFTER_OPEN);
+                }
+            },
+        );
+
+        $dbPanel = $module->panels['db'] ?? null;
+
+        self::assertInstanceOf(
+            DbPanel::class,
+            $dbPanel,
+            'DB panel must be wired in the bootstrap.',
+        );
+
+        $this->writeSnapshot(
+            $module,
+            'tag-prefix',
+            ['db' => new DbSnapshot([self::queryRow('SELECT 1')])],
+        );
+
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
+
+        Yii::$app->getRequest()->setUrl('dummy');
+        Yii::$app->getRequest()->setBodyParams([]);
+
+        $html = $action->run('0', 'tag-prefix', $dbPanel);
+
+        self::assertStringContainsString(
+            'opcode',
+            $html,
+            'Plain EXPLAIN must reach the driver and list virtual-machine opcodes.',
+        );
+    }
+
     public function testThrowHttpExceptionForMissingTimingSeq(): void
     {
         $module = $this->bootDebugModuleWithSqlite();

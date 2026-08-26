@@ -23,16 +23,6 @@ use function spl_object_id;
 /**
  * Captures every queue lifecycle event (`afterPush`, `afterExec`, `afterError`) emitted by any class extending
  * `yii\queue\Queue` from `yiisoft/yii2-queue`.
- *
- * Listeners are attached at {@see startup()} via `Event::on()` using the queue base class FQCN as a string, so the
- * collector registers cleanly even when the `yiisoft/yii2-queue` package is not installed, and detached again at
- * {@see shutdown()} so a reused worker process starts clean.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\QueueCollector())->capture();
- * ```
  */
 class QueueCollector extends Collector
 {
@@ -111,12 +101,6 @@ class QueueCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Queue panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\QueueCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

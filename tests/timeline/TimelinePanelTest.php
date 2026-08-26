@@ -360,6 +360,16 @@ final class TimelinePanelTest extends TestCase
         $panel->hydrate(['end' => 1_700_000_000.1, 'memory' => 1024]);
     }
 
+    public function testThrowInvalidConfigExceptionWhenPanelHasNoModule(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            Message::PROFILING_PANEL_UNAVAILABLE->getMessage(),
+        );
+
+        new TimelinePanel();
+    }
+
     public function testThrowInvalidConfigExceptionWhenProfilingPanelIsMissing(): void
     {
         $this->mockWebApplication();

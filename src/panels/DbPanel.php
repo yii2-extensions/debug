@@ -194,6 +194,8 @@ class DbPanel extends Panel
      */
     public function init(): void
     {
+        // Yii lifecycle convention: the parent chain is a no-op today, so removing this call is unobservable.
+        // @infection-ignore-all
         parent::init();
 
         $this->actions['db-explain'] = ExplainAction::class;

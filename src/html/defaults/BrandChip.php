@@ -6,12 +6,6 @@ namespace yii\debug\html\defaults;
 
 /**
  * Supplies the shared `yii-debug-brand-chip` base class for brand-bar chips.
- *
- * Usage example:
- * ```php
- * \UIAwesome\Html\Palpable\A::tag(\yii\debug\html\defaults\BrandChip::DEFINITION)
- *     ->class('yii-debug-brand-chip-config');
- * ```
  */
 final class BrandChip
 {

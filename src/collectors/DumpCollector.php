@@ -12,15 +12,6 @@ use yii\log\Logger;
 
 /**
  * Captures trace-level log messages emitted by `Yii::debug()` for the Dump panel.
- *
- * Filters the trace log by {@see $categories} (and skips categories owned by the Router collector) and stringifies
- * each captured value through {@see varDump()}, so the detail view can render the result without re-serializing.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\DumpCollector())->capture();
- * ```
  */
 class DumpCollector extends Collector
 {
@@ -74,12 +65,6 @@ class DumpCollector extends Collector
     /**
      * Returns the stable ID pairing this collector with the Dump panel.
      *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\DumpCollector())->id();
-     * ```
-     *
      * @return string Stable collector ID.
      */
     public function id(): string
@@ -92,12 +77,6 @@ class DumpCollector extends Collector
      *
      * The built-in highlighter emits safe markup, so highlighted output is passed through unchanged. Plain output
      * and custom callback output are HTML-escaped explicitly.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $html = $collector->varDump(['answer' => 42]);
-     * ```
      */
     public function varDump(mixed $var): string
     {

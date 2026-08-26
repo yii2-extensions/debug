@@ -13,15 +13,6 @@ use function microtime;
 
 /**
  * Captures profile-level log messages emitted by `Yii::beginProfile()` for the Profiling panel.
- *
- * Records the request peak memory and total processing time alongside the profile messages; the exported summary
- * adopts both totals for the history grid.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\ProfilingCollector())->capture();
- * ```
  */
 class ProfilingCollector extends Collector
 {
@@ -49,12 +40,6 @@ class ProfilingCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Profiling panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\ProfilingCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

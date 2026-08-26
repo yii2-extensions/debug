@@ -37,12 +37,6 @@ use const JSON_THROW_ON_ERROR;
  * the profile log, and exposes the totals the exported summary adopts (query count, excessive callers).
  *
  * @phpstan-import-type LogMessage from \PHPForge\Debug\Panel\Log\LogSnapshot
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\DbCollector())->capture();
- * ```
  */
 class DbCollector extends Collector
 {
@@ -97,12 +91,6 @@ class DbCollector extends Collector
     /**
      * Calculates and caches the per-query timings for the request, dropping backtrace frames that match
      * {@see $ignoredPathsInBacktrace} and tagging each timing with a stable hash of its remaining trace.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $timings = $collector->calculateTimings();
-     * ```
      *
      * @return array<int, array{
      *   info: string,
@@ -176,12 +164,6 @@ class DbCollector extends Collector
     /**
      * Counts how many times the same backtrace originated a DB query.
      *
-     * Usage example:
-     *
-     * ```php
-     * $counts = $collector->countCallerCals();
-     * ```
-     *
      * @return array<string, int> Call counts indexed by the backtrace hash of the caller.
      */
     public function countCallerCals(): array
@@ -197,12 +179,6 @@ class DbCollector extends Collector
 
     /**
      * Counts how many times each distinct SQL statement appears in the given timings.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $counts = $collector->countDuplicateQuery($collector->calculateTimings());
-     * ```
      *
      * @param array<int, array{
      *   info: string,
@@ -233,12 +209,6 @@ class DbCollector extends Collector
     /**
      * Returns the call counts for backtraces that exceed {@see $excessiveCallerThreshold}.
      *
-     * Usage example:
-     *
-     * ```php
-     * $callers = $collector->getExcessiveCallers();
-     * ```
-     *
      * @return array<string, int> Call counts indexed by the backtrace hash of each excessive caller; empty when the
      * check is disabled.
      */
@@ -256,12 +226,6 @@ class DbCollector extends Collector
 
     /**
      * Returns the number of distinct backtraces flagged as excessive callers.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $count = $collector->getExcessiveCallersCount();
-     * ```
      */
     public function getExcessiveCallersCount(): int
     {
@@ -270,12 +234,6 @@ class DbCollector extends Collector
 
     /**
      * Returns the profile log entries scanned for query timings (categories listed in {@see $dbEventNames}).
-     *
-     * Usage example:
-     *
-     * ```php
-     * $logs = $collector->getProfileLogs();
-     * ```
      *
      * @return list<LogMessage> Profile log entries in capture order.
      */
@@ -290,12 +248,6 @@ class DbCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Database panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\DbCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

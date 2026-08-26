@@ -39,9 +39,15 @@ use yii\debug\widgets\sidebar\SidebarView;
 use yii\helpers\Url;
 use yii\web\{AssetManager, NotFoundHttpException, Response};
 
+use function file_get_contents;
 use function file_put_contents;
 use function is_array;
+use function json_decode;
+use function json_encode;
 use function mkdir;
+use function unlink;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Unit tests for the standalone debugger actions covering every dispatched endpoint and the shared plumbing.
@@ -51,6 +57,106 @@ use function mkdir;
 #[Group('actions')]
 final class DebugActionsTest extends TestCase
 {
+    public function testActionCompareKeepsExplicitBaselineWhenTargetOmitted(): void
+    {
+        $module = $this->bootModuleWithComparePair();
+
+        $html = $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            ['baseline' => 'tag-compare-newest'],
+        );
+
+        self::assertIsString($html, 'Comparison action must return rendered HTML.');
+        self::assertStringNotContainsString('+4 (', $html, 'Explicit baseline must not be replaced by the default.');
+    }
+
+    public function testActionCompareLoadsTargetDataAndPreparesIndexShell(): void
+    {
+        $module = $this->bootModuleWithComparePair(
+            ['request' => RequestSnapshot::capture(['statusCode' => 200, 'method' => 'GET'])],
+        );
+
+        $this->runDebugAction(new CompareAction('compare'), $module, []);
+
+        $shell = Yii::$app->getView()->params['debugShell'] ?? null;
+
+        self::assertInstanceOf(ShellContext::class, $shell, 'Shell context must be installed on the view.');
+        self::assertSame(ShellContext::MODE_INDEX, $shell->mode, 'Shell must use the index mode.');
+        self::assertNotNull($shell->sidebar, 'Index shell must carry the sidebar payload.');
+
+        $requestPanel = $module->panels['request'] ?? null;
+
+        self::assertInstanceOf(Panel::class, $requestPanel, 'Request panel must stay registered.');
+        self::assertSame('tag-compare-newest', $requestPanel->tag, 'Target data must be loaded into the panels.');
+    }
+
+    public function testActionCompareRejectsManifestEntryWhoseSnapshotFileIsMissing(): void
+    {
+        $module = $this->bootModuleWithComparePair();
+        $snapshotFile = "{$module->dataPath}/tag-compare-older.json";
+
+        self::assertTrue(unlink($snapshotFile), 'Baseline snapshot fixture must be removable.');
+        self::assertFileDoesNotExist($snapshotFile, 'Baseline must remain in the manifest without its snapshot file.');
+
+        $this->expectException(NotFoundHttpException::class);
+        $this->expectExceptionMessage('tag-compare-older');
+
+        $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            [
+                'baseline' => 'tag-compare-older',
+                'target' => 'tag-compare-newest',
+            ],
+        );
+    }
+
+    public function testActionCompareRejectsSnapshotMissingFromTheManifest(): void
+    {
+        $module = $this->bootModuleWithComparePair();
+        $indexFile = "{$module->dataPath}/index.json";
+        $manifest = json_decode((string) file_get_contents($indexFile), true, flags: JSON_THROW_ON_ERROR);
+
+        self::assertIsArray($manifest, 'Stored manifest must decode to an array.');
+        self::assertIsArray($manifest['entries'] ?? null, 'Stored manifest must contain entries.');
+
+        unset($manifest['entries']['tag-compare-older']);
+
+        file_put_contents($indexFile, json_encode($manifest, JSON_THROW_ON_ERROR));
+
+        $this->expectException(NotFoundHttpException::class);
+        $this->expectExceptionMessage('tag-compare-older');
+
+        $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            [
+                'baseline' => 'tag-compare-older',
+                'target' => 'tag-compare-newest',
+            ],
+        );
+    }
+
+    public function testActionCompareRejectsUnknownBaselineTag(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot($module, 'tag-compare-known', []);
+
+        $this->expectException(NotFoundHttpException::class);
+        $this->expectExceptionMessage('tag-compare-absent');
+
+        $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            [
+                'baseline' => 'tag-compare-absent',
+                'target' => 'tag-compare-known',
+            ],
+        );
+    }
+
     public function testActionCompareRejectsUnknownTag(): void
     {
         $module = $this->bootDebugModule();
@@ -58,7 +164,7 @@ final class DebugActionsTest extends TestCase
         $this->writeSnapshot($module, 'tag-compare-known', []);
 
         $this->expectException(NotFoundHttpException::class);
-        $this->expectExceptionMessage('Unable to find debug data tagged with');
+        $this->expectExceptionMessage('tag-compare-missing');
 
         $this->runDebugAction(
             new CompareAction('compare'),
@@ -67,6 +173,38 @@ final class DebugActionsTest extends TestCase
                 'baseline' => 'tag-compare-known',
                 'target' => 'tag-compare-missing',
             ],
+        );
+    }
+
+    public function testActionCompareRendersFailedPanelState(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-compare-baseline',
+            ['log' => LogSnapshot::capture([])],
+        );
+        $this->writeSnapshotWithExceptions(
+            $module,
+            'tag-compare-target',
+            ['log' => new RuntimeException('Log capture failed.')],
+        );
+
+        $html = $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            [
+                'baseline' => 'tag-compare-baseline',
+                'target' => 'tag-compare-target',
+            ],
+        );
+
+        self::assertIsString($html, 'Comparison action must return rendered HTML.');
+        self::assertStringContainsString(
+            'yii-debug-badge-danger">Failed</span>',
+            $html,
+            'A failed panel capture must use the danger state badge.',
         );
     }
 
@@ -125,10 +263,25 @@ final class DebugActionsTest extends TestCase
             'Comparison page must expose privacy-preserving panel structural differences.',
         );
         self::assertStringContainsString(
+            '<th scope="row">Request</th>',
+            $html,
+            'Panel rows must use the display name, not the panel ID.',
+        );
+        self::assertStringContainsString(
             '+5.00 ms (+50.0%)',
             $html,
             'Duration delta must be computed relative to the baseline.',
         );
+    }
+
+    public function testActionCompareUsesNewestCaptureAsTargetAndPreviousAsBaseline(): void
+    {
+        $module = $this->bootModuleWithComparePair();
+
+        $html = $this->runDebugAction(new CompareAction('compare'), $module, []);
+
+        self::assertIsString($html, 'Comparison action must return rendered HTML.');
+        self::assertStringContainsString('+4 (', $html, 'Delta must run from the older baseline to the newest target.');
     }
 
     public function testActionDownloadMailStreamsExistingMailFile(): void
@@ -185,6 +338,23 @@ final class DebugActionsTest extends TestCase
             '',
             $html,
             'Index must still render when a cursor query param is present.',
+        );
+    }
+
+    public function testActionIndexRendersComparisonFormWhenManifestHasTwoCaptures(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot($module, 'tag-index-older', []);
+        $this->writeSnapshot($module, 'tag-index-newest', []);
+
+        $html = $this->runDebugAction(new IndexAction('index'), $module);
+
+        self::assertIsString($html, 'Index action must return rendered HTML.');
+        self::assertStringContainsString(
+            'id="yii-debug-history-compare-title"',
+            $html,
+            'Two captures must expose the comparison form on the history page.',
         );
     }
 
@@ -413,9 +583,10 @@ final class DebugActionsTest extends TestCase
             $result['tag'] ?? null,
             'Payload must echo the active tag.',
         );
-        self::assertNotNull(
+        self::assertSame(
+            Url::toRoute(['/debug/view', 'tag' => 'tag-toolbar-ok', 'panel' => 'config']),
             $result['configUrl'] ?? null,
-            "'configUrl' must surface when the Config panel is wired.",
+            "'configUrl' must deep-link the Config panel for the active tag.",
         );
 
         $iconBaseUrl = $result['iconBaseUrl'] ?? null;
@@ -1357,6 +1528,22 @@ final class DebugActionsTest extends TestCase
         );
     }
 
+    public function testThrowNotFoundHttpExceptionWhenSingleCaptureAndTargetOmitted(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot($module, 'tag-compare-only', []);
+
+        $this->expectException(NotFoundHttpException::class);
+        $this->expectExceptionMessage('At least two captured requests are required for comparison.');
+
+        $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            ['baseline' => 'tag-compare-only'],
+        );
+    }
+
     public function testThrowNotFoundHttpExceptionWhenTagIsNotFoundAfterRetries(): void
     {
         $module = $this->bootDebugModule();
@@ -1448,6 +1635,21 @@ final class DebugActionsTest extends TestCase
         foreach ($files === false ? [] : $files as $file) {
             @unlink($file);
         }
+
+        return $module;
+    }
+
+    /**
+     * Boots the debug module with an older/newest capture pair for the comparison tests.
+     *
+     * @param array<string, PanelSnapshot> $newestPanels Panel payloads stored with the newest capture.
+     */
+    private function bootModuleWithComparePair(array $newestPanels = []): Module
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeDebugSnapshot($module, 'tag-compare-older', [], ['sqlCount' => 1]);
+        $this->writeDebugSnapshot($module, 'tag-compare-newest', $newestPanels, ['sqlCount' => 5]);
 
         return $module;
     }

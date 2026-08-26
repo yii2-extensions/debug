@@ -9,14 +9,6 @@ use yii\log\Logger;
 
 /**
  * Captures error, warning, info, and trace log messages emitted during the request for the Logs panel.
- *
- * Skips categories owned by the Router collector to avoid duplicate rows in the routing trace.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\LogCollector())->capture();
- * ```
  */
 class LogCollector extends Collector
 {
@@ -50,12 +42,6 @@ class LogCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Logs panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\LogCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

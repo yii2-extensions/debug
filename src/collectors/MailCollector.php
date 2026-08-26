@@ -19,7 +19,6 @@ use yii\symfonymailer\Message;
 
 use function basename;
 use function filemtime;
-use function glob;
 use function is_array;
 use function is_file;
 use function is_string;
@@ -31,16 +30,6 @@ use const LOCK_EX;
 
 /**
  * Captures every mail message dispatched during the request for the Mail panel.
- *
- * Subscribes to `BaseMailer::EVENT_AFTER_SEND` at {@see startup()} and detaches at {@see shutdown()}, persists each
- * message to disk under {@see $mailPath} as a `.eml` file, and records the metadata (sender, recipients, subject,
- * headers, charset, time) consumed by the detail view and the toolbar.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\MailCollector())->capture();
- * ```
  */
 class MailCollector extends Collector
 {
@@ -77,12 +66,6 @@ class MailCollector extends Collector
     /**
      * Returns the file names of the captured `.eml` files persisted under {@see $mailPath}.
      *
-     * Usage example:
-     *
-     * ```php
-     * $files = $collector->getMessagesFileName();
-     * ```
-     *
      * @return array<int, string> File names in send order.
      */
     public function getMessagesFileName(): array
@@ -100,12 +83,6 @@ class MailCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Mail panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\MailCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

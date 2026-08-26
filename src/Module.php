@@ -57,7 +57,7 @@ use yii\debug\panels\{
     TimelinePanel,
     UserPanel,
 };
-use yii\helpers\{IpHelper, Url};
+use yii\helpers\Url;
 use yii\log\{Dispatcher, Target};
 use yii\rbac\BaseManager;
 use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
@@ -66,19 +66,12 @@ use function array_diff_key;
 use function array_unique;
 use function array_values;
 use function base64_encode;
-use function class_exists;
-use function explode;
 use function get_parent_class;
-use function gethostbyname;
-use function implode;
 use function is_array;
 use function is_callable;
 use function is_string;
 use function number_format;
-use function preg_match;
 use function str_contains;
-use function strncmp;
-use function strpos;
 use function trim;
 
 /**
@@ -349,22 +342,21 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $errorHandler->on(ErrorHandler::EVENT_AFTER_RENDER, [$this, 'injectToolbarOnErrorPage']);
 
-        $route = $this->getUniqueId();
-        $pattern = $this->getUniqueId();
+        $id = $this->getUniqueId();
 
         $app->getUrlManager()->addRules(
             [
                 [
                     'class' => $this->urlRuleClass,
-                    'route' => $this->getUniqueId(),
-                    'pattern' => $this->getUniqueId(),
+                    'route' => $id,
+                    'pattern' => $id,
                     'normalizer' => false,
                     'suffix' => false,
                 ],
                 [
                     'class' => $this->urlRuleClass,
-                    'route' => "{$route}/<action>",
-                    'pattern' => "{$pattern}/<action:[\w\-]+>",
+                    'route' => "{$id}/<action>",
+                    'pattern' => "{$id}/<action:[\w\-]+>",
                     'normalizer' => false,
                     'suffix' => false,
                 ],
@@ -400,12 +392,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
     /**
      * Returns the validated collector coordinator used by the request log target.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $coordinator = $module->getCollectorCoordinator();
-     * ```
      *
      * @throws InvalidConfigException When module initialization has not completed.
      *
@@ -510,9 +496,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         Yii::setAlias(self::VIEW_PATH_ALIAS, $this->viewPath);
 
-        $alias = Yii::getAlias($this->dataPath);
-
-        $this->dataPath = $alias;
+        $this->dataPath = Yii::getAlias($this->dataPath);
 
         $this->initCollectors();
         $this->initPanels();
@@ -576,12 +560,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * Resolves the module ID from the standalone action currently being dispatched, so widgets and views can build
      * links without a controller context; outside a debugger dispatch the conventional `debug` module ID is used.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $url = \yii\helpers\Url::to(\yii\debug\Module::route('view', ['tag' => $tag]));
-     * ```
      *
      * @param string $action Debugger action ID.
      * @param array<string, TValue> $params Query parameters merged into the route array.
@@ -653,7 +631,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         $ip = Yii::$app->getRequest()->getUserIP() ?? '';
 
-        $allowed = $this->matchesAllowedIp($ip) || $this->matchesAllowedHost($ip);
+        $allowed = (new IpAllowlist($this->allowedIPs, $this->allowedHosts))->matches($ip);
 
         if ($allowed === false) {
             if (!$this->disableIpRestrictionWarning) {
@@ -776,23 +754,15 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $id = trim($route, '/');
 
-        if ($id !== '' && strpos($id, '/') === false && isset($this->actionMap[$id])) {
-            $config = $this->actionMap[$id];
-            $class = is_array($config) ? ($config['class'] ?? null) : $config;
+        if ($id !== '' && !str_contains($id, '/') && isset($this->actionMap[$id])) {
+            $action = ComponentResolver::createMapped($this->actionMap[$id]);
 
-            if (is_string($class) && class_exists($class)) {
-                // Instantiate the full mapped configuration exactly as `runMappedAction()` does, preserving configured
-                // properties. TODO: drop the ignore once `yii2-extensions/phpstan` stubs `Yii::createObject()` for the
-                // `class-string|array` action-map value.
-                $action = Yii::createObject($config); // @phpstan-ignore argument.type
+            if ($action instanceof Action) {
+                $action->id = $id;
 
-                if ($action instanceof Action) {
-                    $action->id = $id;
+                $action->setModule($this);
 
-                    $action->setModule($this);
-
-                    return $action;
-                }
+                return $action;
             }
         }
 
@@ -875,14 +845,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
         foreach ($merged as $id => $config) {
             $panel = $this->buildPanel($id, $config);
 
-            if ($panel === null) {
-                continue;
-            }
-
-            $this->panels[$id] = $panel;
-
-            if (!$panel->isEnabled()) {
-                unset($this->panels[$id]);
+            if ($panel !== null && $panel->isEnabled()) {
+                $this->panels[$id] = $panel;
             }
         }
     }
@@ -920,30 +884,14 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Applies defense-in-depth headers to debugger endpoints without preventing the same-origin toolbar iframe.
+     * Applies the debugger response hardening policy.
      *
-     * Debug responses contain request bodies, environment values, logs, and application metadata. They must never be
-     * cached, indexed, or leaked through referrers. The frame policy deliberately allows only the current origin because
-     * the toolbar drawer embeds panel pages in a same-origin iframe.
+     * Kept as an extension point so applications can customize the policy without replacing the complete
+     * {@see beforeAction()} lifecycle.
      */
     protected function setDebuggerResponseHeaders(Response $response): void
     {
-        $headers = $response->getHeaders();
-        $policies = array_values($headers->get('Content-Security-Policy', [], false));
-
-        $headers
-            ->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-            ->set('Pragma', 'no-cache')
-            ->set('Referrer-Policy', 'no-referrer')
-            ->set('X-Content-Type-Options', 'nosniff')
-            ->set('X-Robots-Tag', 'noindex, nofollow, noarchive')
-            ->set('X-Frame-Options', 'SAMEORIGIN');
-
-        $headers->remove('Content-Security-Policy');
-
-        foreach (self::composeDebuggerContentSecurityPolicies($policies) as $policy) {
-            $headers->add('Content-Security-Policy', $policy);
-        }
+        DebugResponseHeaders::apply($response);
     }
 
     /**
@@ -961,17 +909,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return $config;
         }
 
-        if (is_string($config)) {
-            $class = $config;
-            $properties = [];
-        } else {
-            $class = $config['class'] ?? null;
-            $properties = $config;
+        [$class, $properties] = ComponentResolver::classAndProperties($config);
 
-            unset($properties['class']);
-        }
-
-        if (!is_string($class) || !class_exists($class)) {
+        if ($class === null) {
             throw new InvalidConfigException(
                 Message::COLLECTOR_CLASS_INVALID->getMessage(),
             );
@@ -1013,15 +953,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
             $class = $config;
             $properties = [];
         } else {
-            $class = $config['class'] ?? null;
+            [$class, $properties] = ComponentResolver::classAndProperties($config);
 
-            if (!is_string($class) || !class_exists($class)) {
+            if ($class === null) {
                 return null;
             }
-
-            $properties = $config;
-
-            unset($properties['class']);
         }
 
         $properties['module'] = $this;
@@ -1036,57 +972,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $object->moduleBound();
 
         return $object;
-    }
-
-    /**
-     * Preserves every host CSP directive while replacing or adding only the debugger frame policy in each header value.
-     *
-     * Multiple Content-Security-Policy header fields are enforced cumulatively by browsers, so each policy must allow
-     * the same-origin toolbar frame instead of collapsing the host policies into a single, potentially weaker value.
-     *
-     * @param list<string> $policies Existing enforcing CSP header values.
-     *
-     * @return non-empty-list<string> Composed CSP header values.
-     */
-    private static function composeDebuggerContentSecurityPolicies(array $policies): array
-    {
-        if ($policies === []) {
-            return ["frame-ancestors 'self'"];
-        }
-
-        $composedPolicies = [];
-
-        foreach ($policies as $policy) {
-            $composedDirectives = [];
-            $frameAncestorsReplaced = false;
-
-            foreach (explode(';', $policy) as $directive) {
-                $directive = trim($directive);
-
-                if ($directive === '') {
-                    continue;
-                }
-
-                if (preg_match('/^frame-ancestors(?:\s|$)/i', $directive) === 1) {
-                    if (!$frameAncestorsReplaced) {
-                        $composedDirectives[] = "frame-ancestors 'self'";
-                        $frameAncestorsReplaced = true;
-                    }
-
-                    continue;
-                }
-
-                $composedDirectives[] = $directive;
-            }
-
-            if (!$frameAncestorsReplaced) {
-                $composedDirectives[] = "frame-ancestors 'self'";
-            }
-
-            $composedPolicies[] = implode('; ', $composedDirectives);
-        }
-
-        return $composedPolicies;
     }
 
     /**
@@ -1125,44 +1010,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Returns whether the IP matches any entry in {@see $allowedHosts} after DNS resolution.
-     */
-    private function matchesAllowedHost(string $ip): bool
-    {
-        foreach ($this->allowedHosts as $hostname) {
-            if (gethostbyname($hostname) === $ip) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns whether the IP matches any entry in {@see $allowedIPs} (exact, wildcard, or CIDR).
-     */
-    private function matchesAllowedIp(string $ip): bool
-    {
-        foreach ($this->allowedIPs as $filter) {
-            if ($filter === '*' || $filter === $ip) {
-                return true;
-            }
-
-            $wildcardPos = strpos($filter, '*');
-
-            if ($wildcardPos !== false && strncmp($ip, $filter, $wildcardPos) === 0) {
-                return true;
-            }
-
-            if (str_contains($filter, '/') && IpHelper::inRange($ip, $filter)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Resolves the {@see $logTarget} configuration into a {@see LogTarget} instance, accepting a class-name string,
      * a configuration array with a `class` key, or an already-instantiated target.
      *
@@ -1174,22 +1021,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return $this->logTarget;
         }
 
-        if (is_string($this->logTarget)) {
-            $class = $this->logTarget;
+        [$class, $properties] = ComponentResolver::classAndProperties($this->logTarget, LogTarget::class);
 
-            $properties = [];
-        } else {
-            $class = $this->logTarget['class'] ?? LogTarget::class;
-
-            if (!is_string($class) || !class_exists($class)) {
-                throw new InvalidConfigException(
-                    Message::LOG_TARGET_CLASS_INVALID->getMessage(),
-                );
-            }
-
-            $properties = $this->logTarget;
-
-            unset($properties['class']);
+        if ($class === null) {
+            throw new InvalidConfigException(
+                Message::LOG_TARGET_CLASS_INVALID->getMessage(),
+            );
         }
 
         $target = Yii::$container->get($class, [$this], $properties);

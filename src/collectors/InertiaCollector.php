@@ -22,16 +22,6 @@ use function json_encode;
 
 /**
  * Captures the Inertia page object rendered for the request for the Inertia panel.
- *
- * Records the server-side page payload (component, props, URL, asset version) for both full page loads and Inertia
- * XHR visits, together with the `X-Inertia-*` negotiation headers. The collector captures only when the application
- * wires the `yii2-extensions/inertia` `Manager` under the `inertia` component id.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\InertiaCollector())->capture();
- * ```
  */
 class InertiaCollector extends Collector
 {
@@ -112,12 +102,6 @@ class InertiaCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Inertia panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\InertiaCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

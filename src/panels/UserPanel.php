@@ -10,6 +10,7 @@ use Yii;
 use yii\base\{Action as BaseAction, InvalidConfigException, Model};
 use yii\data\{ArrayDataProvider, DataProviderInterface};
 use yii\db\ActiveRecord;
+use yii\debug\ComponentResolver;
 use yii\debug\exception\Message;
 use yii\debug\models\search\{UserSearch, UserSearchInterface};
 use yii\debug\models\UserSwitch;
@@ -124,22 +125,7 @@ class UserPanel extends Panel
 
         $rule = new AccessRule($this->ruleUserSwitch);
 
-        $config = $module->actionMap['set-identity'] ?? null;
-
-        if ($config === null) {
-            return false;
-        }
-
-        $class = is_array($config) ? ($config['class'] ?? null) : $config;
-
-        if (!is_string($class) || !class_exists($class)) {
-            return false;
-        }
-
-        // Instantiate the full mapped configuration (preserving configured properties), extracting the class only for
-        // validation. TODO: drop the ignore once `yii2-extensions/phpstan` stubs `Yii::createObject()` for the
-        // `class-string|array` action-map value.
-        $action = Yii::createObject($config); // @phpstan-ignore argument.type
+        $action = ComponentResolver::createMapped($module->actionMap['set-identity'] ?? null);
 
         if (!$action instanceof BaseAction) {
             return false;

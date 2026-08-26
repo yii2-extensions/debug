@@ -6,6 +6,7 @@ namespace yii\debug\tests\provider;
 
 use yii\debug\actions\{
     Action,
+    CompareAction,
     DownloadMailAction,
     IndexAction,
     PhpInfoAction,
@@ -36,6 +37,7 @@ final class VisibilityProvider
             'protected',
             ['createBareShellContext', 'createShellContext', 'getLogTarget', 'resolveTheme'],
         );
+        yield from self::cases(CompareAction::class, 'public', ['run']);
         yield from self::cases(DownloadMailAction::class, 'public', ['run']);
         yield from self::cases(IndexAction::class, 'public', ['run']);
         yield from self::cases(PhpInfoAction::class, 'public', ['run']);
@@ -157,6 +159,7 @@ final class VisibilityProvider
                 'initPanels',
                 'initPanelServices',
                 'resetGlobalSettings',
+                'setDebuggerResponseHeaders',
             ],
         );
     }

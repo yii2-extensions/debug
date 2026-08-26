@@ -630,6 +630,18 @@ final class UserPanelTest extends TestCase
             $panel->getPermissionsProvider(),
             'Missing permissions key must yield `null`.',
         );
+
+        $html = Yii::$app->view->render(
+            'panels/user/roles',
+            ['panel' => $panel],
+            $panel,
+        );
+
+        self::assertStringNotContainsString(
+            '<h2',
+            $html,
+            'Unavailable RBAC providers must omit both sections from the roles view.',
+        );
     }
 
     public function testGetToolbarItemsRendersGuestWhenNoIdInData(): void

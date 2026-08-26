@@ -13,15 +13,6 @@ use function microtime;
 
 /**
  * Captures every framework event triggered during the request for the Events panel.
- *
- * Subscribes a wildcard `Event::on('*', '*', …)` listener at {@see startup()} and detaches it at {@see shutdown()},
- * recording each fired event's name, class, sender, and capture timestamp.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\EventCollector())->capture();
- * ```
  */
 class EventCollector extends Collector
 {
@@ -50,12 +41,6 @@ class EventCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the Events panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\EventCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

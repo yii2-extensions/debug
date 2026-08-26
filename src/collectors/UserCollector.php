@@ -21,15 +21,6 @@ use function is_string;
 
 /**
  * Captures the authenticated identity for the User panel.
- *
- * Snapshots the identity's attributes, RBAC roles, and permissions. A configured user component without an active
- * identity captures the shared Guest payload, while a missing user component keeps the panel absent.
- *
- * Usage example:
- *
- * ```php
- * $snapshot = (new \yii\debug\collectors\UserCollector())->capture();
- * ```
  */
 class UserCollector extends Collector
 {
@@ -126,12 +117,6 @@ class UserCollector extends Collector
 
     /**
      * Returns the stable ID pairing this collector with the User panel.
-     *
-     * Usage example:
-     *
-     * ```php
-     * $id = (new \yii\debug\collectors\UserCollector())->id();
-     * ```
      *
      * @return string Stable collector ID.
      */

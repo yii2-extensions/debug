@@ -9,8 +9,6 @@ use yii\debug\collectors\Collector;
 
 /**
  * Collector fixture counting its lifecycle hook invocations for {@see \yii\debug\tests\collectors\CollectorTest}.
- *
- * @since 0.2
  */
 final class LifecycleCollector extends Collector
 {
