@@ -31,6 +31,7 @@ final class ToolbarDataMapperTest extends TestCase
         self::assertSame('bottom', $result['position'], 'Position must default to `bottom`.');
         self::assertSame(50, $result['defaultHeight'], 'Drawer height must default to `50`.');
     }
+
     public function testMapNormalizesPortablePanelsWithoutDroppingExtensionFields(): void
     {
         $this->mockWebApplication();
