@@ -21,6 +21,8 @@ use function sys_get_temp_dir;
 use function touch;
 use function uniqid;
 
+use const DIRECTORY_SEPARATOR;
+
 /**
  * Unit tests for {@see MailCollector} covering the mailer listener capture, the recipient-list flattening, the `.eml`
  * file bookkeeping, and the startup/shutdown lifecycle.
@@ -488,8 +490,9 @@ final class MailCollectorTest extends TestCase
     {
         $this->mockWebApplication();
 
-        $path = sys_get_temp_dir() . '/yii2-debug-mail-glob-failure-' . uniqid('', true);
-        $orphan = "{$path}/orphan.eml";
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'yii2-debug-mail-glob-failure-' . uniqid('', true);
+
+        $orphan = $path . DIRECTORY_SEPARATOR . 'orphan.eml';
 
         mkdir($path, recursive: true);
         file_put_contents($orphan, 'orphan');
@@ -498,7 +501,7 @@ final class MailCollectorTest extends TestCase
         MockerState::addCondition(
             'yii\\debug\\collectors',
             'glob',
-            ["{$path}/*.eml"],
+            [$path . DIRECTORY_SEPARATOR . '*.eml'],
             false,
         );
 
