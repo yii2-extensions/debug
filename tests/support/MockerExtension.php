@@ -4,24 +4,15 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support;
 
-use PHPUnit\Event\Test\PreparationStarted;
-use PHPUnit\Event\Test\PreparationStartedSubscriber;
-use PHPUnit\Event\TestSuite\Started;
-use PHPUnit\Event\TestSuite\StartedSubscriber;
-use PHPUnit\Runner\Extension\Extension;
-use PHPUnit\Runner\Extension\Facade;
-use PHPUnit\Runner\Extension\ParameterCollection;
+use PHPUnit\Event\Test\{PreparationStarted, PreparationStartedSubscriber};
+use PHPUnit\Event\TestSuite\{Started, StartedSubscriber};
+use PHPUnit\Runner\Extension\{Extension, Facade, ParameterCollection};
 use PHPUnit\TextUI\Configuration\Configuration;
 use ReflectionClass;
-use Xepozz\InternalMocker\Mocker;
-use Xepozz\InternalMocker\MockerState;
+use Xepozz\InternalMocker\{Mocker, MockerState};
 
 /**
  * PHPUnit extension that swaps PHP built-in functions inside production namespaces.
- *
- * Lets unit tests suppress retry delays or cover defensive branches that depend on `preg_replace()` returning `null`,
- * `is_string()` / `is_iterable()` returning `false`, or a filesystem call failing — guards that Yii's runtime
- * contracts and a healthy disk make unreachable under normal fixtures.
  */
 final class MockerExtension implements Extension
 {
@@ -51,6 +42,7 @@ final class MockerExtension implements Extension
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_iterable'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_string'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'count'],
+            ['namespace' => 'yii\debug', 'name' => 'class_exists'],
             ['namespace' => 'yii\debug', 'name' => 'microtime'],
             ['namespace' => 'yii\debug\actions', 'name' => 'sleep'],
             ['namespace' => 'yii\debug\collectors', 'name' => 'chmod'],
@@ -76,6 +68,7 @@ final class MockerExtension implements Extension
     public static function resetDefaults(): void
     {
         $defaults = (new ReflectionClass(MockerState::class))->getProperty('defaults');
+
         $defaults->setValue(null, []);
     }
 }

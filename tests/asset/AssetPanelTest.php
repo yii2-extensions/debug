@@ -274,6 +274,62 @@ final class AssetPanelTest extends TestCase
         );
     }
 
+    public function testHasContentReturnsFalseWithoutBundlesOrLegacyViteData(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $this->hydratePanel(
+            $panel,
+            self::assetSnapshot([]),
+        );
+
+        self::assertFalse(
+            $panel->hasContent(),
+            'Empty captures must hide the sidebar entry.',
+        );
+    }
+
+    public function testHasContentReturnsTrueWithCapturedBundles(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $this->hydratePanel(
+            $panel,
+            self::assetSnapshot(['BundleA' => []]),
+        );
+
+        self::assertTrue(
+            $panel->hasContent(),
+            'Captured bundles must surface the sidebar entry.',
+        );
+    }
+
+    public function testHasContentReturnsTrueWithLegacyEmbeddedViteData(): void
+    {
+        $panel = $this->makePanel(AssetPanel::class);
+
+        $this->hydratePanel(
+            $panel,
+            self::assetSnapshot(
+                [
+                    '@vite' => [
+                        'baseUrl' => '@web/build',
+                        'devMode' => true,
+                        'devServerUrl' => 'http://localhost:5173',
+                        'entries' => [],
+                        'entrypoints' => [],
+                        'manifestPath' => '',
+                    ],
+                ],
+            ),
+        );
+
+        self::assertTrue(
+            $panel->hasContent(),
+            'Legacy captures with embedded Vite data must keep the sidebar entry accessible.',
+        );
+    }
+
     public function testIsEnabledFalseWhenAssetManagerComponentIsMissing(): void
     {
         $this->mockWebApplication();

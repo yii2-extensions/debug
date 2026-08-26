@@ -7,16 +7,12 @@ namespace yii\debug\tests\queue;
 use PHPForge\Debug\Panel\Queue\JobRecord;
 use PHPForge\Debug\Panel\Queue\QueueSnapshot;
 use PHPUnit\Framework\Attributes\Group;
-use stdClass;
-use Yii;
 use yii\debug\panels\QueuePanel;
 use yii\debug\tests\support\TestCase;
 
-use function class_exists;
-
 /**
- * Unit tests for {@see QueuePanel} covering snapshot hydration, the toolbar items, the `queue-job` action registration,
- * and the queue base-class detection.
+ * Unit tests for {@see QueuePanel} covering snapshot hydration, the toolbar items, and the `queue-job` action
+ * registration.
  */
 #[Group('panel')]
 #[Group('queue')]
@@ -45,77 +41,6 @@ final class QueuePanelTest extends TestCase
             [],
             $panel->getRecords(),
             "Missing 'records' key must collapse to '[]'.",
-        );
-    }
-
-    public function testComponentMatchesQueueBaseHandlesStringConfigArrayAndObjectInputs(): void
-    {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
-
-        self::assertFalse(
-            $this->invoke(
-                $panel,
-                'componentMatchesQueueBase',
-                [new stdClass()]
-            ),
-            'Foreign object must not match the queue base class.',
-        );
-        self::assertFalse(
-            $this->invoke(
-                $panel,
-                'componentMatchesQueueBase',
-                ['some\\Unrelated\\Class']
-            ),
-            'Unrelated class string must not match.',
-        );
-        self::assertFalse(
-            $this->invoke(
-                $panel,
-                'componentMatchesQueueBase',
-                [['class' => 'some\\Unrelated\\Class']]
-            ),
-            'Config array with unrelated class must not match.',
-        );
-        self::assertFalse(
-            $this->invoke(
-                $panel,
-                'componentMatchesQueueBase',
-                [['no-class-key' => 'foo']]
-            ),
-            "Config array without 'class' key must not match.",
-        );
-        self::assertFalse(
-            $this->invoke(
-                $panel,
-                'componentMatchesQueueBase',
-                [42]
-            ),
-            'Non-class scalar must not match.',
-        );
-    }
-
-    public function testComponentMatchesQueueBaseReturnsSubclassResultForObjects(): void
-    {
-        if (!class_exists('yii\\queue\\Queue', false)) {
-            eval('namespace yii\\queue; abstract class Queue extends \\yii\\base\\Component {}');
-        }
-
-        $component = eval('return new class extends \\yii\\queue\\Queue {};');
-
-        self::assertIsObject(
-            $component,
-            'Test component must be an object.',
-        );
-
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
-
-        self::assertTrue(
-            $this->invoke($panel, 'componentMatchesQueueBase', [$component]),
-            'Subclass of queue base must match.',
         );
     }
 
@@ -272,7 +197,7 @@ final class QueuePanelTest extends TestCase
         );
     }
 
-    public function testGetNameAndIconAndIsEnabled(): void
+    public function testGetNameAndIconAndKeepsRendererEnabled(): void
     {
         $panel = $this->makePanel(
             QueuePanel::class,
@@ -290,7 +215,7 @@ final class QueuePanelTest extends TestCase
         );
         self::assertTrue(
             $panel->isEnabled(),
-            'Panel must always be enabled.',
+            'The renderer must defer provider availability gating to the module registration boundary.',
         );
     }
 
@@ -321,46 +246,7 @@ final class QueuePanelTest extends TestCase
         );
     }
 
-    public function testGetToolbarItemsEmitsCountChipWhenComponentConfiguredAndNoRecords(): void
-    {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
-
-        Yii::$app->set(
-            'queue',
-            ['class' => 'yii\\queue\\Queue'],
-        );
-
-        $items = $this->invoke(
-            $panel,
-            'getToolbarItems',
-        );
-
-        self::assertIsArray(
-            $items,
-            'Toolbar items must be a list.',
-        );
-        self::assertCount(
-            1,
-            $items,
-            'No events means a single count chip.',
-        );
-
-        $first = $items[0] ?? self::fail('Expected count chip.');
-
-        self::assertIsArray(
-            $first,
-            'Count chip must be an array.',
-        );
-        self::assertSame(
-            0,
-            $first['value'] ?? null,
-            "Empty roster must report '0' events.",
-        );
-    }
-
-    public function testGetToolbarItemsReturnsEmptyArrayWhenNoComponentAndNoRecords(): void
+    public function testGetToolbarItemsReturnsEmptyArrayWhenNoRecordsWereCaptured(): void
     {
         $panel = $this->makePanel(
             QueuePanel::class,
@@ -372,7 +258,7 @@ final class QueuePanelTest extends TestCase
                 $panel,
                 'getToolbarItems',
             ),
-            'No queue component and no records must skip the toolbar.',
+            'No captured queue events must skip the toolbar.',
         );
     }
 

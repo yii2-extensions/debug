@@ -51,6 +51,15 @@ class AssetPanel extends Panel
     }
 
     /**
+     * Returns whether the loaded capture contains asset bundles or legacy embedded Vite data.
+     */
+    #[Override]
+    public function hasContent(): bool
+    {
+        return $this->getBundles() !== [] || $this->snapshot?->vite() !== null;
+    }
+
+    /**
      * @param array<string, mixed> $payload
      */
     #[Override]

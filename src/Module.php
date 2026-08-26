@@ -39,6 +39,7 @@ use yii\debug\collectors\{
     RouterCollector,
     TimelineCollector,
     UserCollector,
+    ViteCollector,
 };
 use yii\debug\exception\Message;
 use yii\debug\panels\{
@@ -56,6 +57,7 @@ use yii\debug\panels\{
     RouterPanel,
     TimelinePanel,
     UserPanel,
+    VitePanel,
 };
 use yii\helpers\Url;
 use yii\log\{Dispatcher, Target};
@@ -694,6 +696,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'dump' => DumpCollector::class,
             'event' => EventCollector::class,
             'inertia' => InertiaCollector::class,
+            'vite' => ViteCollector::class,
             'log' => LogCollector::class,
             'mail' => MailCollector::class,
             'profiling' => ProfilingCollector::class,
@@ -708,10 +711,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Returns the built-in panel configurations, ordered as the request itself unfolds.
      *
-     * Three groups follow one another: what came in and how it was dispatched (request, routing, page render,
-     * identity), what the application did while handling it (logs, queries, timings, events), and what it left
-     * behind (side effects and served resources). `config` opens the list but is surfaced through the brand bar
-     * rather than the panel nav.
+     * Core Yii diagnostics follow the request flow, while optional integration panels finish the list in the order
+     * Inertia, Mail, Queue, and Vite. `config` opens the list but is surfaced through the brand bar rather than the
+     * panel nav.
      *
      * @return array<string, class-string<Panel>> Panel classes indexed by panel id.
      */
@@ -721,17 +723,18 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'config' => ConfigPanel::class,
             'request' => RequestPanel::class,
             'router' => RouterPanel::class,
-            'inertia' => InertiaPanel::class,
             'user' => UserPanel::class,
             'log' => LogPanel::class,
             'db' => DbPanel::class,
             'profiling' => ProfilingPanel::class,
             'timeline' => TimelinePanel::class,
             'event' => EventPanel::class,
-            'mail' => MailPanel::class,
-            'queue' => QueuePanel::class,
             'dump' => DumpPanel::class,
             'asset' => AssetPanel::class,
+            'inertia' => InertiaPanel::class,
+            'mail' => MailPanel::class,
+            'queue' => QueuePanel::class,
+            'vite' => VitePanel::class,
         ];
     }
 
@@ -800,11 +803,15 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Resolves configured collectors and validates their stable IDs before request capture.
      *
+     * Built-in extension collectors are omitted when their provider package is unavailable. Explicit application
+     * configuration remains authoritative and may still register a custom collector under the same ID.
+     *
      * @throws InvalidConfigException When a collector configuration or ID is invalid.
      */
     protected function initCollectors(): void
     {
-        $merged = [...array_diff_key($this->coreCollectors(), $this->collectors), ...$this->collectors];
+        $coreCollectors = $this->availableCoreDefinitions($this->coreCollectors());
+        $merged = [...array_diff_key($coreCollectors, $this->collectors), ...$this->collectors];
         $collectors = [];
 
         foreach ($merged as $config) {
@@ -831,14 +838,16 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Merges custom panels on top of the built-in core panels and instantiates each entry, dropping any panel whose
-     * {@see Panel::isEnabled()} returns `false`.
+     * Merges custom panels on top of the available built-in panels and instantiates each entry, dropping any panel
+     * whose {@see Panel::isEnabled()} returns `false`. Explicit application configuration remains authoritative when
+     * an optional provider package is unavailable.
      *
      * @throws InvalidConfigException When a panel configuration cannot be resolved into a {@see Panel} instance.
      */
     protected function initPanels(): void
     {
-        $merged = [...array_diff_key($this->corePanels(), $this->panels), ...$this->panels];
+        $corePanels = $this->availableCoreDefinitions($this->corePanels());
+        $merged = [...array_diff_key($corePanels, $this->panels), ...$this->panels];
 
         $this->panels = [];
 
@@ -892,6 +901,26 @@ class Module extends \yii\base\Module implements BootstrapInterface
     protected function setDebuggerResponseHeaders(Response $response): void
     {
         DebugResponseHeaders::apply($response);
+    }
+
+    /**
+     * Removes unavailable optional integrations from a built-in definition map.
+     *
+     * @template TDefinition
+     *
+     * @param array<string, TDefinition> $definitions Built-in collectors or panels indexed by stable ID.
+     *
+     * @return array<string, TDefinition> Definitions whose runtime providers are installed.
+     */
+    private function availableCoreDefinitions(array $definitions): array
+    {
+        foreach ($definitions as $id => $_definition) {
+            if (ExtensionAvailability::isAvailable($id) === false) {
+                unset($definitions[$id]);
+            }
+        }
+
+        return $definitions;
     }
 
     /**

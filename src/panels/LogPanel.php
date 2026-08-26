@@ -97,6 +97,10 @@ class LogPanel extends Panel implements ProvidesMemorySamples
     {
         $counts = LogCounts::fromRows($this->getMessages());
 
+        if ($counts->total === 0) {
+            return [];
+        }
+
         $errorCount = $counts->errors;
         $warningCount = $counts->warnings;
 

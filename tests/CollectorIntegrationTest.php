@@ -6,6 +6,7 @@ namespace yii\debug\tests;
 
 use PHPForge\Debug\Storage\SnapshotStore;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\base\{Application, InvalidConfigException};
 use yii\debug\{LogTarget, Module};
@@ -334,6 +335,57 @@ final class CollectorIntegrationTest extends TestCase
 
             $this->cleanup($module);
         }
+    }
+
+    public function testUnavailableExtensionStoredPayloadDoesNotCreateFallbackPanel(): void
+    {
+        MockerState::addCondition('yii\debug', 'class_exists', ['yii\queue\Queue'], false);
+
+        $module = $this->module();
+        $target = new LogTarget($module);
+
+        $this->writeDebugSnapshot(
+            $module,
+            'unavailable-queue',
+            ['queue' => StubSnapshot::capture(['value' => 'legacy queue payload'])],
+        );
+
+        $target->loadTagToPanels('unavailable-queue');
+
+        self::assertArrayNotHasKey(
+            'queue',
+            $module->panels,
+            'A stored payload must not resurrect an extension whose provider is unavailable.',
+        );
+
+        $this->cleanup($module);
+    }
+
+    public function testUnavailableExtensionStoredPayloadKeepsExplicitCollectorFallback(): void
+    {
+        MockerState::addCondition('yii\debug', 'class_exists', ['yii\queue\Queue'], false);
+
+        $collector = new CustomCollector();
+        $collector->collectorId = 'queue';
+
+        $module = $this->module([$collector]);
+        $target = new LogTarget($module);
+
+        $this->writeDebugSnapshot(
+            $module,
+            'custom-queue',
+            ['queue' => StubSnapshot::capture(['value' => 'custom queue payload'])],
+        );
+
+        $target->loadTagToPanels('custom-queue');
+
+        self::assertInstanceOf(
+            JsonPanel::class,
+            $module->panels['queue'] ?? null,
+            'An explicitly configured collector must retain the generic fallback for its stored payload.',
+        );
+
+        $this->cleanup($module);
     }
 
     public function testUnknownStoredPanelUsesEscapedJsonFallback(): void

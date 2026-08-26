@@ -24,6 +24,12 @@ final readonly class SidebarView
          * @var list<SidebarNavItem>
          */
         public array $navItems,
+        /**
+         * Additional labeled navigation groups rendered after {@see $navItems}.
+         *
+         * @var array<string, list<SidebarNavItem>>
+         */
+        public array $navGroups = [],
     ) {}
 
     /**
@@ -36,6 +42,13 @@ final readonly class SidebarView
             navItems: array_map(
                 static fn(SidebarNavItem $item): CoreSidebarNavItem => $item->toCore(),
                 $this->navItems,
+            ),
+            navGroups: array_map(
+                static fn(array $items): array => array_map(
+                    static fn(SidebarNavItem $item): CoreSidebarNavItem => $item->toCore(),
+                    $items,
+                ),
+                $this->navGroups,
             ),
         );
     }

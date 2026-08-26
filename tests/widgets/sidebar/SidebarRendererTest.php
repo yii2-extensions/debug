@@ -16,6 +16,43 @@ use yii\debug\widgets\sidebar\{SidebarNavItem, SidebarRenderer, SidebarSnapshot,
 #[Group('sidebar')]
 final class SidebarRendererTest extends TestCase
 {
+    public function testRenderDelegatesLabeledNavigationGroupsToDebugCore(): void
+    {
+        $view = new SidebarView(
+            snapshot: null,
+            navItems: [new SidebarNavItem('History', '', ['/debug/index'], 'History', false)],
+            navGroups: [
+                'Extensions' => [
+                    new SidebarNavItem('Inertia', '', ['/debug/view', 'panel' => 'inertia'], 'Inertia', false),
+                    new SidebarNavItem('Vite', '', ['/debug/view', 'panel' => 'vite'], 'Vite', true),
+                ],
+            ],
+        );
+
+        $html = SidebarRenderer::render($view);
+
+        self::assertStringContainsString(
+            'yii-debug-side-section yii-debug-nav-group',
+            $html,
+            'The extension group must use the shared sidebar card.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-side-section-title',
+            $html,
+            'The extension title must render inside its card.',
+        );
+        self::assertStringContainsString(
+            'Extensions',
+            $html,
+            'The extension group must keep its visible label.',
+        );
+        self::assertStringContainsString(
+            'panel=vite',
+            $html,
+            'Grouped Yii route arrays must still resolve to URLs.',
+        );
+    }
+
     public function testRenderEmitsAriaCurrentOnActiveNavLink(): void
     {
         $view = new SidebarView(

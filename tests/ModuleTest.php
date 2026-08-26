@@ -16,10 +16,10 @@ use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfig
 use yii\caching\FileCache;
 use yii\db\Connection;
 use yii\debug\actions\{PhpInfoAction, ToolbarDataAction, ViewAction};
-use yii\debug\collectors\LogCollector;
+use yii\debug\collectors\{LogCollector, QueueCollector};
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, ToolbarRenderer, VersionResolver};
 use yii\debug\exception\Message;
-use yii\debug\panels\{DbPanel, LogPanel};
+use yii\debug\panels\{DbPanel, LogPanel, QueuePanel};
 use yii\debug\tests\provider\{ModuleProvider, VisibilityProvider};
 use yii\debug\tests\support\stub\{
     ConfigurableAction,
@@ -788,6 +788,7 @@ final class ModuleTest extends TestCase
                 'dump',
                 'event',
                 'inertia',
+                'vite',
                 'log',
                 'mail',
                 'profiling',
@@ -820,20 +821,21 @@ final class ModuleTest extends TestCase
                 'config',
                 'request',
                 'router',
-                'inertia',
                 'user',
                 'log',
                 'db',
                 'profiling',
                 'timeline',
                 'event',
-                'mail',
-                'queue',
                 'dump',
                 'asset',
+                'inertia',
+                'mail',
+                'queue',
+                'vite',
             ],
             array_keys($corePanels),
-            'Order: dispatch, then diagnostics, then side effects.',
+            'Order: Yii request diagnostics first, then Inertia, Mail, Queue, and Vite integrations.',
         );
     }
 
@@ -1248,6 +1250,28 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testInitOmitsUnavailableCoreExtensionCollectorAndPanel(): void
+    {
+        MockerState::addCondition(
+            'yii\debug',
+            'class_exists',
+            ['yii\queue\Queue'],
+            false,
+        );
+
+        $module = new Module('debug');
+
+        self::assertFalse(
+            $module->getCollectorCoordinator()->hasCollector('queue'),
+            'An unavailable core extension must not start a collector.',
+        );
+        self::assertArrayNotHasKey(
+            'queue',
+            $module->panels,
+            'An unavailable core extension must not register a panel.',
+        );
+    }
+
     public function testInitPanelsAcceptsArrayConfigWithExtraProperties(): void
     {
         $module = new Module('debug', null, ['panels' => ['log' => ['class' => LogPanel::class]]]);
@@ -1439,6 +1463,40 @@ final class ModuleTest extends TestCase
             'broken',
             $module->panels,
             'Panel configs with an unloadable class must be dropped silently.',
+        );
+    }
+
+    public function testInitPreservesExplicitExtensionConfigurationWhenProviderIsUnavailable(): void
+    {
+        MockerState::addCondition(
+            'yii\debug',
+            'class_exists',
+            ['yii\queue\Queue'],
+            false,
+        );
+
+        $module = new Module(
+            'debug',
+            null,
+            [
+                'collectors' => ['queue' => QueueCollector::class],
+                'panels' => ['queue' => QueuePanel::class],
+            ],
+        );
+
+        self::assertTrue(
+            $module->getCollectorCoordinator()->hasCollector('queue'),
+            'An explicitly configured collector must override automatic extension detection.',
+        );
+        self::assertInstanceOf(
+            QueuePanel::class,
+            $module->panels['queue'] ?? null,
+            'An explicitly configured panel must override automatic extension detection.',
+        );
+        self::assertArrayHasKey(
+            'queue-job',
+            $module->actionMap,
+            'An explicitly configured extension panel must still contribute its standalone actions.',
         );
     }
 

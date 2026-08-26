@@ -12,10 +12,6 @@ use yii\debug\models\search\QueueSearch;
 use yii\debug\Panel;
 
 use function count;
-use function is_array;
-use function is_object;
-use function is_string;
-use function is_subclass_of;
 
 /**
  * Renders the queue lifecycle events captured by the Queue collector.
@@ -28,12 +24,6 @@ class QueuePanel extends Panel
 {
     protected const string ICON = 'queue';
     protected const string NAME = 'Queue';
-
-    /**
-     * Queue base class used to detect configured queue components; the abstract base `yii\queue\Queue` from
-     * `yiisoft/yii2-queue` that every concrete driver extends.
-     */
-    private const string QUEUE_BASE_CLASS = 'yii\queue\Queue';
 
     private QueueSnapshot|null $snapshot = null;
 
@@ -90,18 +80,17 @@ class QueuePanel extends Panel
     /**
      * Builds the toolbar items.
      *
-     * Hides the button entirely on apps that don't configure any queue component, and surfaces an `Errors` chip in
-     * `danger` when at least one error event was captured.
+     * Hides the button when no queue events were captured, and surfaces an `Errors` chip in `danger` when at least one
+     * error event was captured.
      *
-     * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no queue component is configured and no
-     * events were captured.
+     * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no events were captured.
      */
     #[Override]
     protected function getToolbarItems(): array
     {
         $records = $this->getRecords();
 
-        if ($records === [] && $this->hasQueueComponentConfigured() === false) {
+        if ($records === []) {
             return [];
         }
 
@@ -124,52 +113,5 @@ class QueuePanel extends Panel
         }
 
         return $items;
-    }
-
-    /**
-     * Tests whether a single `Yii::$app->components` entry references one of the known queue base classes.
-     *
-     * Accepts the three shapes Yii allows: a class-name string, a config array with a `class` key, or an
-     * already-instantiated component object. For object inputs only `is_subclass_of` matches, since the queue base
-     * class is abstract.
-     */
-    private static function componentMatchesQueueBase(mixed $config): bool
-    {
-        if (is_object($config)) {
-            return is_subclass_of($config, self::QUEUE_BASE_CLASS);
-        }
-
-        $class = null;
-
-        if (is_string($config)) {
-            $class = $config;
-        } elseif (is_array($config) && is_string($config['class'] ?? null)) {
-            $class = $config['class'];
-        }
-
-        if ($class === null) {
-            return false;
-        }
-
-        return $class === self::QUEUE_BASE_CLASS || is_subclass_of($class, self::QUEUE_BASE_CLASS);
-    }
-
-    /**
-     * Returns whether the application registers at least one queue component.
-     *
-     * Walks `Yii::$app->components` without instantiating lazy components so the panel can keep the Queue button
-     * visible on apps that DO configure queues, even when no jobs were pushed in the current request (mirroring the
-     * Database panel's behavior). An exact base-class name counts as a lazy definition before class loading; unknown
-     * subclass names do not match.
-     */
-    private function hasQueueComponentConfigured(): bool
-    {
-        foreach (Yii::$app->getComponents(true) as $config) {
-            if (self::componentMatchesQueueBase($config)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
