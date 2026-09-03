@@ -802,7 +802,7 @@ final class ModuleTest extends TestCase
         );
     }
 
-    public function testCorePanelsFollowTheRequestFlowOrder(): void
+    public function testCorePanelsFollowTheNavigationAndToolbarRequestFlowOrder(): void
     {
         $module = new Module('debug');
 
@@ -820,11 +820,11 @@ final class ModuleTest extends TestCase
                 'config',
                 'request',
                 'log',
+                'event',
                 'profiling',
                 'router',
                 'user',
                 'db',
-                'event',
                 'dump',
                 'asset',
                 'inertia',
@@ -833,7 +833,7 @@ final class ModuleTest extends TestCase
                 'vite',
             ],
             array_keys($corePanels),
-            'Order: Request, Logs, and Profiling first, then the remaining diagnostics and integrations.',
+            'Navigation and toolbar order: Request, Logs, Events, and Profiling first, then diagnostics and integrations.',
         );
     }
 
