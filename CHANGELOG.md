@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(ui): improve debugger routing, snapshots, history, diagnostics, N+1 detection, redaction, and accessibility.
 - refactor: simplify module collaborators, snapshot storage, capture comparisons, error messages, and regression coverage.
 - feat(ui): add Vite collector and panel, group Inertia, Mail, Queue, and Vite under `Extensions`, hide empty items, and retain failed panels.
+- feat(ui): unify Profiling and Timeline into one filterable screen, normalize legacy links and active filters, omit redundant equal span totals, show short class names with full hover titles, standardize chart markers on the shared blue, and keep the legacy Timeline panel available through explicit configuration.
 
 ## 0.1.1 May 18, 2026
 

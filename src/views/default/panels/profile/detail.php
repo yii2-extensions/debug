@@ -2,35 +2,38 @@
 
 declare(strict_types=1);
 
-use UIAwesome\Html\Flow\{P, Pre};
-use UIAwesome\Html\Heading\H1;
-use UIAwesome\Html\Palpable\A;
-use UIAwesome\Html\Phrasing\{Code, Span, Strong};
+use PHPForge\Debug\Helper\EmptyState;
+use PHPForge\Debug\Panel\Profile\{ProfileCellRenderer, ProfileRow};
+use UIAwesome\Html\Flow\{Div, P, Pre};
+use UIAwesome\Html\Form\{Button, Form, InputHidden, InputNumber, InputText};
+use UIAwesome\Html\Heading\{H1, H2};
+use UIAwesome\Html\Phrasing\{Code, Label, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
-use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\ProfileSearch;
-use PHPForge\Debug\Panel\Profile\{ProfileCellRenderer, ProfileRow};
 use yii\debug\panels\ProfilingPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
 
 /**
  * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.
+ * @var string $filterAction URL submitted by the shared profiling filter form.
+ * @var array<string, string> $filterHiddenParams Adapter-owned route and display parameters.
  * @var string $memory Peak memory consumption.
  * @var ProfilingPanel $panel Panel providing the detail content.
- * @var ProfileSearch $searchModel Search model for filtering the profile grid.
+ * @var ProfileSearch $searchModel Search model shared by the Timeline and details grid.
  * @var string $time Total request processing time.
- * @var string $timelineUrl URL to the Timeline panel.
+ * @var string $timeline Rendered Timeline chart or its unavailable state.
  */
 $capturedModels = $panel->getModels();
 
 $capturedCount = count($capturedModels);
+
 $visibleCount = $dataProvider->getTotalCount();
 
-$hasCapturedProfileBlocks = $capturedCount > 0;
-$hasVisibleProfileBlocks = $visibleCount > 0;
+$spanLabel = ' span' . ($capturedCount === 1 ? '' : 's');
+$countLabel = $visibleCount === $capturedCount ? $spanLabel : " of {$capturedCount}{$spanLabel}";
 
 $maxDuration = ProfileRow::maxDuration($capturedModels);
 
@@ -38,9 +41,7 @@ $summaryItems = [
     Span::tag()
         ->html(
             Strong::tag()->content((string) $visibleCount),
-            ' of ',
-            Strong::tag()->content((string) $capturedCount),
-            $capturedCount === 1 ? ' profile block' : ' profile blocks',
+            $countLabel,
         ),
     Span::tag()
         ->class('yii-debug-grid-summary-sep')
@@ -59,19 +60,6 @@ $summaryItems = [
             ' peak',
         ),
 ];
-
-if ($hasCapturedProfileBlocks) {
-    $summaryItems[] = Span::tag()
-        ->class('yii-debug-grid-summary-sep')
-        ->content('·');
-    $summaryItems[] = A::tag()
-        ->content('Open timeline')
-        ->href($timelineUrl);
-}
-
-if ($hasVisibleProfileBlocks) {
-    $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
-}
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
@@ -79,19 +67,18 @@ if ($hasVisibleProfileBlocks) {
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>
-<?php if (!$hasCapturedProfileBlocks): ?>
+<?php if ($capturedModels === []): ?>
     <?= EmptyState::card(
-        'No profile blocks captured',
+        'No profiling data captured',
         P::tag()
             ->html(
                 'This request did not produce any ',
                 Code::tag()->content('Yii::beginProfile()'),
                 ' / ',
                 Code::tag()->content('Yii::endProfile()'),
-                ' blocks, so the timing table is empty.',
+                ' spans, so the Timeline and details are empty.',
             ),
-        P::tag()
-            ->content('To populate this view, wrap interesting sections of code with profile markers:'),
+        P::tag()->content('To populate this view, wrap interesting sections of code with profile markers:'),
         Pre::tag()
             ->class('yii-debug-empty-state-code')
             ->content("Yii::beginProfile('my-token');\n// …work…\nYii::endProfile('my-token');"),
@@ -104,23 +91,90 @@ if ($hasVisibleProfileBlocks) {
     ) ?>
     <?php return; ?>
 <?php endif; ?>
-<?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
+<?php
+$filterFields = [];
+
+foreach ($filterHiddenParams as $name => $value) {
+    $filterFields[] = InputHidden::tag()->name($name)->value($value);
+}
+
+$filterFields[] = Div::tag()
+    ->class('yii-debug-tl-field')
+    ->html(
+        Label::tag()
+            ->content('Min duration (ms)')
+            ->for('profile-duration'),
+        InputNumber::tag()
+            ->id('profile-duration')
+            ->min(0)
+            ->name('Profile[duration]')
+            ->placeholder('0')
+            ->step(0.1)
+            ->value($searchModel->duration),
+    );
+$filterFields[] = Div::tag()
+    ->class('yii-debug-tl-field yii-debug-tl-field-grow')
+    ->html(
+        Label::tag()
+            ->content('Category')
+            ->for('profile-category'),
+        InputText::tag()
+            ->id('profile-category')
+            ->name('Profile[category]')
+            ->placeholder('yii\\db\\Command::query')
+            ->value($searchModel->category),
+    );
+$filterFields[] = Div::tag()
+    ->class('yii-debug-tl-field yii-debug-tl-field-grow')
+    ->html(
+        Label::tag()
+            ->content('Info')
+            ->for('profile-info'),
+        InputText::tag()
+            ->id('profile-info')
+            ->name('Profile[info]')
+            ->placeholder('SELECT')
+            ->value($searchModel->info),
+    );
+$filterFields[] = Button::tag()
+    ->class('yii-debug-btn yii-debug-btn-primary yii-debug-btn-sm')
+    ->content('Apply')
+    ->type('submit');
+?>
+<?= Form::tag()
+    ->action($filterAction)
+    ->addAriaAttribute('label', 'Profiling filters')
+    ->class('yii-debug-tl-filter')
+    ->html(...$filterFields)
+    ->method('get') ?>
+<?= FilterBanner::widget(
+    [
+        'activeFilters' => $searchModel->getAttributes(),
+        'searchModel' => $searchModel,
+    ],
+) ?>
+<?php if ($visibleCount === 0): ?>
+    <?= EmptyState::card(
+        'No spans match the active filters',
+        P::tag()->content('Adjust or clear the filters to show the captured spans.'),
+    ) ?>
+    <?php return; ?>
+<?php endif; ?>
+<?= H2::tag()->content('Timeline') ?>
+<?= $timeline ?>
+<?= Header::tag()
+    ->class('yii-debug-section-header')
+    ->html(
+        H2::tag()->content('Details'),
+        GridViewConfig::pageSizeSelectorHtml(),
+    ) ?>
 <?= GridView::widget(
     [
         ...GridViewConfig::defaults(),
         'dataProvider' => $dataProvider,
-        'emptyText' => EmptyState::card(
-            'No profile blocks match the active filters',
-            P::tag()
-                ->content(
-                    'This request captured profile blocks, but none match the filters currently applied to the table.',
-                ),
-            P::tag()
-                ->content('Remove individual filters or use Clear all above to restore every captured block.'),
-        ),
         'id' => 'profile-panel-detailed-grid',
-        'filterModel' => $searchModel,
-        'filterUrl' => $panel->getUrl(),
+        'filterModel' => null,
+        'options' => ['class' => 'yii-debug-grid yii-debug-grid-profile'],
         'columns' => [
             [
                 'attribute' => 'seq',
@@ -154,4 +208,4 @@ if ($hasVisibleProfileBlocks) {
             ],
         ],
     ],
-);
+); ?>

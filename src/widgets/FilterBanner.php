@@ -15,7 +15,9 @@ use yii\helpers\Url;
 use function array_fill_keys;
 use function array_keys;
 use function array_replace_recursive;
+use function array_unique;
 use function array_unshift;
+use function array_values;
 use function count;
 use function is_scalar;
 use function is_string;
@@ -23,12 +25,23 @@ use function is_string;
 /**
  * Renders the active-filter banner above a panel's GridView.
  *
- * The banner surfaces every `<FormName>[<attr>]` query param currently applied to the page as a removable pill, plus a
- * "Clear all" action. Removal links rebuild the current URL minus the targeted param(s); every other query param (sort,
- * page, theme, etc.) is preserved so the developer keeps their context.
+ * The banner surfaces normalized active filters as removable pills, plus a "Clear all" action. By default it derives
+ * those filters from scalar `<FormName>[<attr>]` query parameters; callers may supply sanitized values after applying
+ * domain validation. Removal links rebuild the current URL minus the targeted parameters while preserving unrelated
+ * state such as sort and theme.
  */
 class FilterBanner extends Widget
 {
+    /**
+     * Normalized filter values to display, or `null` to derive them from the request.
+     *
+     * The Clear all link still removes every raw filter key, including submitted values omitted from this map after
+     * validation.
+     *
+     * @var array<string, mixed>|null
+     */
+    public array|null $activeFilters = null;
+
     /**
      * The search model whose {@see Model::formName()} defines the query-param prefix to scan (for example, 'Debug',
      * 'Log', 'Db', 'Profile', 'Event', 'Mail', 'User').
@@ -56,19 +69,7 @@ class FilterBanner extends Widget
 
         $rawFilters = (array) $request->get($formName, []);
 
-        $activeFilters = [];
-
-        foreach ($rawFilters as $attr => $val) {
-            if ($val === '' || $val === null) {
-                continue;
-            }
-
-            if (!is_string($attr) || !is_scalar($val)) {
-                continue;
-            }
-
-            $activeFilters[$attr] = (string) $val;
-        }
+        $activeFilters = self::normalizeFilters($this->activeFilters ?? $rawFilters);
 
         if ($activeFilters === []) {
             return '';
@@ -115,11 +116,20 @@ class FilterBanner extends Widget
 
         $list = Span::tag()->class('yii-debug-active-filters-list')->html($pills)->render();
 
+        $clearAttributes = array_values(
+            array_unique(
+                [
+                    ...self::attributeNames($rawFilters),
+                    ...array_keys($activeFilters),
+                ],
+            ),
+        );
+
         $clearAll = A::tag()
             ->class('yii-debug-active-filters-clear')
             ->addAriaAttribute('label', 'Clear all active filters')
             ->addAttribute('title', 'Clear all filters and show every row')
-            ->href($this->buildUrl($formName, array_keys($activeFilters)))
+            ->href($this->buildUrl($formName, $clearAttributes))
             ->content('Clear all')
             ->render();
 
@@ -131,6 +141,24 @@ class FilterBanner extends Widget
             ->addAriaAttribute('label', 'Active filters')
             ->html($content)
             ->render();
+    }
+
+    /**
+     * @param array<array-key, mixed> $filters
+     *
+     * @return list<string>
+     */
+    private static function attributeNames(array $filters): array
+    {
+        $names = [];
+
+        foreach (array_keys($filters) as $attribute) {
+            if (is_string($attribute)) {
+                $names[] = $attribute;
+            }
+        }
+
+        return $names;
     }
 
     /**
@@ -157,5 +185,29 @@ class FilterBanner extends Widget
         array_unshift($params, '/' . (Yii::$app->requestedAction?->getUniqueId() ?? ''));
 
         return Url::to($params);
+    }
+
+    /**
+     * @param array<array-key, mixed> $filters
+     *
+     * @return array<string, string>
+     */
+    private static function normalizeFilters(array $filters): array
+    {
+        $normalized = [];
+
+        foreach ($filters as $attribute => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+
+            if (!is_string($attribute) || !is_scalar($value)) {
+                continue;
+            }
+
+            $normalized[$attribute] = (string) $value;
+        }
+
+        return $normalized;
     }
 }

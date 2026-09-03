@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\tests\log;
 
 use PHPForge\Debug\Panel\Config\ConfigSnapshot;
+use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPForge\Debug\Storage\{DebugSnapshot, ExceptionSnapshot, PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\Group;
+use RuntimeException;
 use Yii;
 use yii\base\{Exception, InvalidConfigException};
 use yii\debug\collectors\MailCollector;
@@ -694,6 +696,33 @@ final class LogTargetTest extends TestCase
         self::assertNull(
             (new LogTarget($module))->loadTagToPanels('old'),
             "Incompatible snapshot storage version must be rejected and return 'null'.",
+        );
+
+        $this->cleanupDataPath($module);
+    }
+
+    public function testLoadTagSkipsOrphanTimelinePayloadAndFailure(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        $this->writeDebugSnapshot(
+            $module,
+            'orphan-timeline',
+            ['timeline' => new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024)],
+            failures: ['timeline' => new RuntimeException('Legacy Timeline failure.')],
+        );
+
+        $summary = (new LogTarget($module))->loadTagToPanels('orphan-timeline');
+
+        self::assertInstanceOf(
+            RequestSummary::class,
+            $summary,
+            'An orphan Timeline payload must not prevent the remaining snapshot from loading.',
+        );
+        self::assertArrayNotHasKey(
+            'timeline',
+            $module->panels,
+            'Stored Timeline data must not resurrect a raw JSON panel when Timeline is not configured.',
         );
 
         $this->cleanupDataPath($module);

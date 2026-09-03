@@ -10,7 +10,9 @@ use PHPForge\Debug\Panel\Config\ConfigSnapshot;
 use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\PanelRenderContext;
+use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
+use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
@@ -30,7 +32,7 @@ use yii\debug\actions\{
 use yii\debug\collectors\MailCollector;
 use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module, Panel};
-use yii\debug\panels\ConfigPanel;
+use yii\debug\panels\{ConfigPanel, RequestSummaryAwarePanelInterface, TimelinePanel};
 use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\{ConfigurableAction, MinimalToolbarPanel, StubSnapshot};
 use yii\debug\tests\support\TestCase;
@@ -67,8 +69,15 @@ final class DebugActionsTest extends TestCase
             ['baseline' => 'tag-compare-newest'],
         );
 
-        self::assertIsString($html, 'Comparison action must return rendered HTML.');
-        self::assertStringNotContainsString('+4 (', $html, 'Explicit baseline must not be replaced by the default.');
+        self::assertIsString(
+            $html,
+            'Comparison action must return rendered HTML.',
+        );
+        self::assertStringNotContainsString(
+            '+4 (',
+            $html,
+            'Explicit baseline must not be replaced by the default.',
+        );
     }
 
     public function testActionCompareLoadsTargetDataAndPreparesIndexShell(): void
@@ -81,26 +90,54 @@ final class DebugActionsTest extends TestCase
 
         $shell = Yii::$app->getView()->params['debugShell'] ?? null;
 
-        self::assertInstanceOf(ShellContext::class, $shell, 'Shell context must be installed on the view.');
-        self::assertSame(ShellContext::MODE_INDEX, $shell->mode, 'Shell must use the index mode.');
-        self::assertNotNull($shell->sidebar, 'Index shell must carry the sidebar payload.');
+        self::assertInstanceOf(
+            ShellContext::class,
+            $shell,
+            'Shell context must be installed on the view.',
+        );
+        self::assertSame(
+            ShellContext::MODE_INDEX,
+            $shell->mode,
+            'Shell must use the index mode.',
+        );
+        self::assertNotNull(
+            $shell->sidebar,
+            'Index shell must carry the sidebar payload.',
+        );
 
         $requestPanel = $module->panels['request'] ?? null;
 
-        self::assertInstanceOf(Panel::class, $requestPanel, 'Request panel must stay registered.');
-        self::assertSame('tag-compare-newest', $requestPanel->tag, 'Target data must be loaded into the panels.');
+        self::assertInstanceOf(
+            Panel::class,
+            $requestPanel,
+            'Request panel must stay registered.',
+        );
+        self::assertSame(
+            'tag-compare-newest',
+            $requestPanel->tag,
+            'Target data must be loaded into the panels.',
+        );
     }
 
     public function testActionCompareRejectsManifestEntryWhoseSnapshotFileIsMissing(): void
     {
         $module = $this->bootModuleWithComparePair();
+
         $snapshotFile = "{$module->dataPath}/tag-compare-older.json";
 
-        self::assertTrue(unlink($snapshotFile), 'Baseline snapshot fixture must be removable.');
-        self::assertFileDoesNotExist($snapshotFile, 'Baseline must remain in the manifest without its snapshot file.');
+        self::assertTrue(
+            unlink($snapshotFile),
+            'Baseline snapshot fixture must be removable.',
+        );
+        self::assertFileDoesNotExist(
+            $snapshotFile,
+            'Baseline must remain in the manifest without its snapshot file.',
+        );
 
         $this->expectException(NotFoundHttpException::class);
-        $this->expectExceptionMessage('tag-compare-older');
+        $this->expectExceptionMessage(
+            'tag-compare-older',
+        );
 
         $this->runDebugAction(
             new CompareAction('compare'),
@@ -115,18 +152,27 @@ final class DebugActionsTest extends TestCase
     public function testActionCompareRejectsSnapshotMissingFromTheManifest(): void
     {
         $module = $this->bootModuleWithComparePair();
+
         $indexFile = "{$module->dataPath}/index.json";
+
         $manifest = json_decode((string) file_get_contents($indexFile), true, flags: JSON_THROW_ON_ERROR);
 
-        self::assertIsArray($manifest, 'Stored manifest must decode to an array.');
-        self::assertIsArray($manifest['entries'] ?? null, 'Stored manifest must contain entries.');
+        self::assertIsArray(
+            $manifest,
+            'Stored manifest must decode to an array.',
+        );
+        self::assertIsArray(
+            $manifest['entries'] ?? null,
+            'Stored manifest must contain entries.',
+        );
 
         unset($manifest['entries']['tag-compare-older']);
-
         file_put_contents($indexFile, json_encode($manifest, JSON_THROW_ON_ERROR));
 
         $this->expectException(NotFoundHttpException::class);
-        $this->expectExceptionMessage('tag-compare-older');
+        $this->expectExceptionMessage(
+            'tag-compare-older',
+        );
 
         $this->runDebugAction(
             new CompareAction('compare'),
@@ -145,7 +191,9 @@ final class DebugActionsTest extends TestCase
         $this->writeSnapshot($module, 'tag-compare-known', []);
 
         $this->expectException(NotFoundHttpException::class);
-        $this->expectExceptionMessage('tag-compare-absent');
+        $this->expectExceptionMessage(
+            'tag-compare-absent',
+        );
 
         $this->runDebugAction(
             new CompareAction('compare'),
@@ -164,7 +212,9 @@ final class DebugActionsTest extends TestCase
         $this->writeSnapshot($module, 'tag-compare-known', []);
 
         $this->expectException(NotFoundHttpException::class);
-        $this->expectExceptionMessage('tag-compare-missing');
+        $this->expectExceptionMessage(
+            'tag-compare-missing',
+        );
 
         $this->runDebugAction(
             new CompareAction('compare'),
@@ -200,7 +250,10 @@ final class DebugActionsTest extends TestCase
             ],
         );
 
-        self::assertIsString($html, 'Comparison action must return rendered HTML.');
+        self::assertIsString(
+            $html,
+            'Comparison action must return rendered HTML.',
+        );
         self::assertStringContainsString(
             'yii-debug-badge-danger">Failed</span>',
             $html,
@@ -280,8 +333,15 @@ final class DebugActionsTest extends TestCase
 
         $html = $this->runDebugAction(new CompareAction('compare'), $module, []);
 
-        self::assertIsString($html, 'Comparison action must return rendered HTML.');
-        self::assertStringContainsString('+4 (', $html, 'Delta must run from the older baseline to the newest target.');
+        self::assertIsString(
+            $html,
+            'Comparison action must return rendered HTML.',
+        );
+        self::assertStringContainsString(
+            '+4 (',
+            $html,
+            'Delta must run from the older baseline to the newest target.',
+        );
     }
 
     public function testActionDownloadMailStreamsExistingMailFile(): void
@@ -350,7 +410,10 @@ final class DebugActionsTest extends TestCase
 
         $html = $this->runDebugAction(new IndexAction('index'), $module);
 
-        self::assertIsString($html, 'Index action must return rendered HTML.');
+        self::assertIsString(
+            $html,
+            'Index action must return rendered HTML.',
+        );
         self::assertStringContainsString(
             'id="yii-debug-history-compare-title"',
             $html,
@@ -652,6 +715,64 @@ final class DebugActionsTest extends TestCase
         );
     }
 
+    public function testActionViewAliasesLegacyTimelineLinkToProfiling(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-view-legacy-timeline',
+            ['profiling' => new ProfilingSnapshot(1024, 0.001, [], [])],
+        );
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'tag' => 'tag-view-legacy-timeline',
+                'panel' => 'timeline',
+                'view' => 'timeline',
+                'Timeline' => ['duration' => '5', 'category' => 'legacy'],
+                'Profile' => ['category' => 'current', 'info' => 'SELECT'],
+            ],
+        );
+
+        $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+            [
+                'tag' => 'tag-view-legacy-timeline',
+                'panel' => 'timeline',
+            ],
+        );
+
+        $profilingPanel = $module->panels['profiling'] ?? null;
+
+        self::assertInstanceOf(
+            Panel::class,
+            $profilingPanel,
+            'The Profiling panel must remain registered for a legacy Timeline link.',
+        );
+        $context = $profilingPanel->getRenderContext();
+
+        self::assertNotNull(
+            $context,
+            'A legacy Timeline link must provide the unified Profiling render context.',
+        );
+        self::assertSame(
+            'profiling',
+            $context->panel,
+            'A legacy Timeline link must activate Profiling when no Timeline panel is configured.',
+        );
+        self::assertSame(
+            [
+                'tag' => 'tag-view-legacy-timeline',
+                'panel' => 'profiling',
+                'Profile' => ['category' => 'current', 'info' => 'SELECT', 'duration' => '5'],
+            ],
+            $context->queryParams,
+            'Legacy Timeline filters must map to Profile without overriding current filter values.',
+        );
+    }
+
     public function testActionViewFallsBackToFirstTagWhenTagIsNull(): void
     {
         $module = $this->bootDebugModule();
@@ -671,6 +792,132 @@ final class DebugActionsTest extends TestCase
             '',
             $html,
             "'view' must render the most recent tag when none is given.",
+        );
+    }
+
+    public function testActionViewInjectsLoadedSummaryIntoAwarePanel(): void
+    {
+        $module = $this->bootDebugModule();
+        $awarePanel = new class extends Panel implements RequestSummaryAwarePanelInterface {
+            public RequestSummary|null $receivedSummary = null;
+
+            public function getDetail(): string
+            {
+                return 'Summary-aware panel';
+            }
+
+            public function hydrate(array $payload): void {}
+
+            public function setRequestSummary(RequestSummary $summary): void
+            {
+                $this->receivedSummary = $summary;
+            }
+        };
+
+        $awarePanel->id = 'summary-aware';
+        $awarePanel->module = $module;
+        $module->panels = ['summary-aware' => $awarePanel];
+
+        $this->writeSnapshot(
+            $module,
+            'tag-view-summary-aware',
+            ['summary-aware' => ConfigSnapshot::capture([])],
+        );
+
+        $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+            [
+                'tag' => 'tag-view-summary-aware',
+                'panel' => 'summary-aware',
+            ],
+        );
+
+        self::assertSame(
+            'tag-view-summary-aware',
+            $awarePanel->receivedSummary?->tag,
+            'The active summary-aware panel must receive the loaded request summary before rendering.',
+        );
+    }
+
+    public function testActionViewKeepsExplicitTimelinePanelActive(): void
+    {
+        $module = $this->bootDebugModule();
+        $timelinePanel = new TimelinePanel(['id' => 'timeline', 'module' => $module]);
+
+        $module->panels['timeline'] = $timelinePanel;
+
+        $start = 1_700_000_000.0;
+
+        $this->writeSnapshot(
+            $module,
+            'tag-view-explicit-timeline',
+            [
+                'profiling' => new ProfilingSnapshot(1024, 0.001, [], []),
+                'timeline' => new TimelineSnapshot($start, $start + 0.001, 1024),
+            ],
+        );
+
+        $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+            [
+                'tag' => 'tag-view-explicit-timeline',
+                'panel' => 'timeline',
+            ],
+        );
+
+        self::assertSame(
+            'timeline',
+            $timelinePanel->getRenderContext()?->panel,
+            'An explicitly configured Timeline panel must continue to handle its own legacy links.',
+        );
+    }
+
+    public function testActionViewNormalizesLegacyTimelineStateOnProfiling(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-view-profiling-legacy-state',
+            ['profiling' => new ProfilingSnapshot(1024, 0.001, [], [])],
+        );
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'tag' => 'tag-view-profiling-legacy-state',
+                'panel' => 'profiling',
+                'view' => 'timeline',
+                'Timeline' => ['duration' => ['nested'], 'category' => 'legacy'],
+                'Profile' => ['duration' => '7', 'category' => ['nested'], 'info' => 'SELECT'],
+            ],
+        );
+
+        $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+            [
+                'tag' => 'tag-view-profiling-legacy-state',
+                'panel' => 'profiling',
+            ],
+        );
+
+        $profilingPanel = $module->panels['profiling'] ?? null;
+
+        self::assertInstanceOf(
+            Panel::class,
+            $profilingPanel,
+            'The Profiling panel must remain registered while legacy state is normalized.',
+        );
+        self::assertSame(
+            [
+                'tag' => 'tag-view-profiling-legacy-state',
+                'panel' => 'profiling',
+                'Profile' => ['duration' => '7', 'info' => 'SELECT', 'category' => 'legacy'],
+            ],
+            $profilingPanel->getRenderContext()?->queryParams,
+            'Profiling must discard obsolete view state, preserve scalar Profile values, and map scalar legacy filters.',
         );
     }
 

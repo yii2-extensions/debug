@@ -45,7 +45,7 @@
     "require-dev": {
         "infection/infection": "^0.35",
         "maglnet/composer-require-checker": "^4.1",
-        "php-forge/baseline": "^0.1",
+        "php-forge/baseline": "^0.2",
         "php-forge/coding-standard": "^0.3",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan-phpunit": "^2.0",

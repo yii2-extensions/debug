@@ -37,7 +37,6 @@ use yii\debug\collectors\{
     QueueCollector,
     RequestCollector,
     RouterCollector,
-    TimelineCollector,
     UserCollector,
     ViteCollector,
 };
@@ -55,7 +54,6 @@ use yii\debug\panels\{
     QueuePanel,
     RequestPanel,
     RouterPanel,
-    TimelinePanel,
     UserPanel,
     VitePanel,
 };
@@ -703,7 +701,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'queue' => QueueCollector::class,
             'request' => RequestCollector::class,
             'router' => RouterCollector::class,
-            'timeline' => TimelineCollector::class,
             'user' => UserCollector::class,
         ];
     }
@@ -727,7 +724,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'log' => LogPanel::class,
             'db' => DbPanel::class,
             'profiling' => ProfilingPanel::class,
-            'timeline' => TimelinePanel::class,
             'event' => EventPanel::class,
             'dump' => DumpPanel::class,
             'asset' => AssetPanel::class,

@@ -301,6 +301,10 @@ class LogTarget extends Target
             return;
         }
 
+        if ($id === 'timeline' && $this->module->getCollectorCoordinator()->hasCollector($id) === false) {
+            return;
+        }
+
         if (
             ExtensionAvailability::isAvailable($id) === false
             && $this->module->getCollectorCoordinator()->hasCollector($id) === false
