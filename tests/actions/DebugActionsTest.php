@@ -773,6 +773,52 @@ final class DebugActionsTest extends TestCase
         );
     }
 
+    public function testActionViewDropsEmptyProfileFilterState(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeSnapshot(
+            $module,
+            'tag-view-empty-profile-state',
+            ['profiling' => new ProfilingSnapshot(1024, 0.001, [], [])],
+        );
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'tag' => 'tag-view-empty-profile-state',
+                'panel' => 'profiling',
+                'view' => 'timeline',
+                'Timeline' => [],
+                'Profile' => [],
+            ],
+        );
+
+        $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+            [
+                'tag' => 'tag-view-empty-profile-state',
+                'panel' => 'profiling',
+            ],
+        );
+
+        $profilingPanel = $module->panels['profiling'] ?? null;
+
+        self::assertInstanceOf(
+            Panel::class,
+            $profilingPanel,
+            'The Profiling panel must remain registered while empty filter state is normalized.',
+        );
+        self::assertSame(
+            [
+                'tag' => 'tag-view-empty-profile-state',
+                'panel' => 'profiling',
+            ],
+            $profilingPanel->getRenderContext()?->queryParams,
+            'Profiling must remove obsolete view state and empty filter groups.',
+        );
+    }
+
     public function testActionViewFallsBackToFirstTagWhenTagIsNull(): void
     {
         $module = $this->bootDebugModule();
