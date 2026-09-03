@@ -36,7 +36,7 @@ class LogSearch extends Base
             'level' => 'Level',
             'category' => 'Category',
             'message' => 'Message',
-            'timeSincePrevious' => 'Since previous',
+            'timeSincePrevious' => 'Delta',
         ];
     }
 

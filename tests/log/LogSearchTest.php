@@ -42,6 +42,11 @@ final class LogSearchTest extends TestCase
             $labels,
             "'timeSincePrevious' label must be defined.",
         );
+        self::assertSame(
+            'Delta',
+            $labels['timeSincePrevious'],
+            "'timeSincePrevious' must use the compact Delta heading.",
+        );
     }
 
     public function testRulesMarkEveryFilterAsSafe(): void

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use UIAwesome\Html\Heading\H1;
+use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
@@ -21,6 +22,22 @@ use yii\log\Logger;
  */
 $counts = LogCounts::fromRows($panel->getMessages());
 
+$levelUrl = static function (int $level) use ($panel): string {
+    $queryParams = [];
+
+    foreach (Yii::$app->getRequest()->getQueryParams() as $name => $value) {
+        if (is_string($name)) {
+            $queryParams[$name] = $value;
+        }
+    }
+
+    $queryParams['Log'] = ['level' => $level];
+
+    unset($queryParams['page']);
+
+    return $panel->getUrl($queryParams);
+};
+
 $summaryItems = [
     Span::tag()
         ->html(
@@ -33,8 +50,11 @@ if ($counts->hasErrors()) {
     $summaryItems[] = Span::tag()
         ->class('yii-debug-grid-summary-sep')
         ->content('·');
-    $summaryItems[] = Span::tag()
+    $summaryItems[] = A::tag()
         ->class('yii-debug-grid-summary-stat-danger')
+        ->href($levelUrl(Logger::LEVEL_ERROR))
+        ->addAriaAttribute('label', "{$counts->errors} errors; filter log messages by error level")
+        ->title('Show only error log messages')
         ->html(
             Strong::tag()->content((string) $counts->errors),
             ' errors',
@@ -45,8 +65,11 @@ if ($counts->hasWarnings()) {
     $summaryItems[] = Span::tag()
         ->class('yii-debug-grid-summary-sep')
         ->content('·');
-    $summaryItems[] = Span::tag()
+    $summaryItems[] = A::tag()
         ->class('yii-debug-grid-summary-stat-warn')
+        ->href($levelUrl(Logger::LEVEL_WARNING))
+        ->addAriaAttribute('label', "{$counts->warnings} warnings; filter log messages by warning level")
+        ->title('Show only warning log messages')
         ->html(
             Strong::tag()->content((string) $counts->warnings),
             ' warnings',
@@ -57,10 +80,29 @@ if ($counts->hasInfo()) {
     $summaryItems[] = Span::tag()
         ->class('yii-debug-grid-summary-sep')
         ->content('·');
-    $summaryItems[] = Span::tag()
+    $summaryItems[] = A::tag()
+        ->class('yii-debug-grid-summary-stat-info')
+        ->href($levelUrl(Logger::LEVEL_INFO))
+        ->addAriaAttribute('label', "{$counts->info} info; filter log messages by info level")
+        ->title('Show only info log messages')
         ->html(
             Strong::tag()->content((string) $counts->info),
             ' info',
+        );
+}
+
+if ($counts->hasTrace()) {
+    $summaryItems[] = Span::tag()
+        ->class('yii-debug-grid-summary-sep')
+        ->content('·');
+    $summaryItems[] = A::tag()
+        ->class('yii-debug-grid-summary-stat-trace')
+        ->href($levelUrl(Logger::LEVEL_TRACE))
+        ->addAriaAttribute('label', "{$counts->trace} trace; filter log messages by trace level")
+        ->title('Show only trace log messages')
+        ->html(
+            Strong::tag()->content((string) $counts->trace),
+            ' trace',
         );
 }
 
