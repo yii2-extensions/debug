@@ -186,7 +186,8 @@ final class LogPanelTest extends TestCase
                 'Each summary link must replace the complete Log filter group with its severity.',
             );
             self::assertSame(
-                '-message', $query['sort'] ?? null,
+                '-message',
+                $query['sort'] ?? null,
                 'The sort parameter must be preserved.',
             );
             self::assertSame(
