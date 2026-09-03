@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\actions;
 
+use PHPForge\Debug\Data\{FilterPrefix, QueryInput};
+use Yii;
 use yii\debug\exception\Message;
+use yii\debug\panels\RequestSummaryAwarePanelInterface;
 use yii\web\NotFoundHttpException;
 
+use function array_key_exists;
 use function array_key_first;
 
 /**
@@ -44,10 +48,22 @@ class ViewAction extends Action
 
         $module = $this->getDebugModule();
 
+        if ($panel === 'timeline' && !isset($module->panels['timeline']) && isset($module->panels['profiling'])) {
+            $panel = 'profiling';
+        }
+
         if ($panel !== null && isset($module->panels[$panel])) {
             $activePanel = $module->panels[$panel];
         } else {
             $activePanel = $this->getPanel($module->defaultPanel);
+        }
+
+        if ($activePanel->id === 'profiling') {
+            self::normalizeLegacyTimelineQuery();
+        }
+
+        if ($activePanel instanceof RequestSummaryAwarePanelInterface && $this->summary !== null) {
+            $activePanel->setRequestSummary($this->summary);
         }
 
         $activePanel->setRenderContext($this->createPanelRenderContext($activePanel, $tag));
@@ -64,5 +80,39 @@ class ViewAction extends Action
             'view',
             ['activePanel' => $activePanel],
         );
+    }
+
+    /**
+     * Maps bookmarked Timeline filters to the unified Profiling filter group and removes obsolete view state.
+     */
+    private static function normalizeLegacyTimelineQuery(): void
+    {
+        $request = Yii::$app->getRequest();
+
+        $queryParams = $request->getQueryParams();
+
+        $legacyFilters = QueryInput::group($queryParams, FilterPrefix::TIMELINE);
+        $profileFilters = QueryInput::group($queryParams, FilterPrefix::PROFILE);
+
+        foreach (['duration', 'category'] as $attribute) {
+            if (
+                !array_key_exists($attribute, $profileFilters)
+                && array_key_exists($attribute, $legacyFilters)
+            ) {
+                $profileFilters[$attribute] = $legacyFilters[$attribute];
+            }
+        }
+
+        $queryParams['panel'] = 'profiling';
+
+        unset($queryParams['view'], $queryParams[FilterPrefix::TIMELINE]);
+
+        if ($profileFilters === []) {
+            unset($queryParams[FilterPrefix::PROFILE]);
+        } else {
+            $queryParams[FilterPrefix::PROFILE] = $profileFilters;
+        }
+
+        $request->setQueryParams($queryParams);
     }
 }

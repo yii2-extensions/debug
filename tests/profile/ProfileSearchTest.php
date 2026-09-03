@@ -32,6 +32,11 @@ final class ProfileSearchTest extends TestCase
             $labels,
             "'info' label must be defined.",
         );
+        self::assertArrayHasKey(
+            'duration',
+            $labels,
+            "'duration' label must be defined.",
+        );
     }
 
     public function testRulesMarkEveryFilterAsSafe(): void
@@ -46,6 +51,40 @@ final class ProfileSearchTest extends TestCase
             'safe',
             $firstRule[1] ?? null,
             "First rule must mark filter fields as 'safe'.",
+        );
+        self::assertSame(
+            ['category', 'duration', 'info'],
+            $firstRule[0] ?? null,
+            'The safe rule must cover every Profiling filter field.',
+        );
+    }
+
+    public function testSearchAppliesInclusiveMinimumDurationWithOtherFilters(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::block('yii\\db', 'SELECT users', 1.4, 0),
+            self::block('yii\\db', 'SELECT posts', 1.5, 1),
+            self::block('yii\\db', 'UPDATE posts', 3.0, 2),
+            self::block('app', 'SELECT cache', 4.0, 3),
+        ];
+
+        $provider = (new ProfileSearch())->search(
+            [
+                'Profile' => [
+                    'category' => 'db',
+                    'duration' => '1.5',
+                    'info' => 'select',
+                ],
+            ],
+            $records,
+        );
+
+        self::assertSame(
+            [$records[1]],
+            $provider->allModels,
+            'Minimum duration must be inclusive and compose with category and info substring filters.',
         );
     }
 
@@ -103,6 +142,78 @@ final class ProfileSearchTest extends TestCase
             ['duration' => SORT_DESC],
             $sort->defaultOrder,
             'Profiling rows must sort by longest duration first.',
+        );
+    }
+
+    public function testSearchIgnoresInvalidDurationWithoutDiscardingOtherFilters(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::block('yii\\db', 'SELECT users', 1.0, 0),
+            self::block('app', 'boot', 2.0, 1),
+        ];
+
+        foreach (['invalid', '-1', '1e309'] as $duration) {
+            $search = new ProfileSearch();
+            $provider = $search->search(
+                ['Profile' => ['category' => 'db', 'duration' => $duration]],
+                $records,
+            );
+
+            self::assertSame(
+                [$records[0]],
+                $provider->allModels,
+                "Invalid duration '{$duration}' must be ignored while the valid category filter remains active.",
+            );
+            self::assertSame(
+                '',
+                $search->duration,
+                "Invalid duration '{$duration}' must not remain in the rendered filter input.",
+            );
+        }
+    }
+
+    public function testSearchIgnoresNestedFilterValuesWithoutTypeErrors(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::block('yii\\db', 'SELECT users', 1.0, 0),
+            self::block('app', 'boot', 2.0, 1),
+        ];
+        $search = new ProfileSearch();
+
+        $provider = $search->search(
+            [
+                'Profile' => [
+                    'category' => ['db'],
+                    'duration' => ['1'],
+                    'info' => ['SELECT'],
+                ],
+            ],
+            $records,
+        );
+
+        self::assertSame(
+            $records,
+            $provider->allModels,
+            'Nested query values must be ignored instead of being assigned to typed search properties.',
+        );
+        self::assertSame(
+            '',
+            $search->category,
+            'A nested category must normalize to an empty filter.',
+        );
+        self::assertSame(
+            '',
+            $search->duration,
+            'A nested duration must normalize to an empty filter.',
+        );
+        self::assertSame(
+            '',
+            $search->info,
+            'Nested profiling info must normalize to an empty filter.',
         );
     }
 

@@ -119,11 +119,31 @@ The phpinfo presentation classes also moved to `php-forge/debug-core`: import `P
 the removed `yii\debug\widgets\phpinfo\*` namespace. `PhpInfoDataNormalizer::capture()` now buffers the live
 `phpinfo()` output that the view previously captured inline.
 
+### Use the unified Profiling panel
+
+Profiling now presents the request-relative Timeline above the sortable span details. Both representations use the
+same `Profile[duration]`, `Profile[category]`, and `Profile[info]` filters, so the standalone Timeline collector and
+panel are no longer registered by default. Existing `panel=timeline` debugger links open Profiling instead.
+Timeline labels now show only the short class name, such as `HomeAction`; the full FQCN and method are available on
+hover and remain visible in Details.
+
+The public Timeline collector and panel remain available for applications that intentionally need the former
+standalone screen. Register both explicitly under their stable ID:
+
+```php
+'collectors' => [
+    'timeline' => \yii\debug\collectors\TimelineCollector::class,
+],
+'panels' => [
+    'timeline' => \yii\debug\panels\TimelinePanel::class,
+],
+```
+
 ### Configure capture through collectors
 
 Built-in data acquisition moved from panels to native collectors under `yii\debug\collectors\*`, registered by default
 and paired with their panels by stable ID (`asset`, `config`, `db`, `dump`, `event`, `inertia`, `log`, `mail`,
-`profiling`, `queue`, `request`, `router`, `timeline`, `user`). Panels are pure presentation now; collectors own the
+`profiling`, `queue`, `request`, `router`, `user`). Panels are pure presentation now; collectors own the
 per-request lifecycle: they subscribe to framework events at `Application::EVENT_BEFORE_REQUEST` and detach again
 after the snapshot is exported, so long-running workers start every request clean.
 

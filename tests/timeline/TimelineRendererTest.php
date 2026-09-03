@@ -8,6 +8,7 @@ use PHPForge\Debug\Panel\Profile\ProfileRow;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
+use yii\debug\collectors\TimelineCollector;
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\Module;
@@ -446,7 +447,15 @@ final class TimelineRendererTest extends TestCase
 
     private function stubPanel(float $duration, int $memory): TimelinePanel
     {
-        $module = new Module('debug', null, ['dataPath' => '@runtime/debug']);
+        $module = new Module(
+            'debug',
+            null,
+            [
+                'collectors' => ['timeline' => TimelineCollector::class],
+                'dataPath' => '@runtime/debug',
+                'panels' => ['timeline' => TimelinePanel::class],
+            ],
+        );
 
         $module->allowedIPs = ['*'];
 

@@ -222,19 +222,15 @@ support. Internet Explorer and other legacy browsers are not supported.
 
 <details>
 <summary>Profiling</summary>
+
+Profiling combines the request-relative Timeline and sortable span details under one shared set of filters.
+Timeline labels show only the short class name, such as `HomeAction`; hover a label to inspect its full FQCN and
+method, which also remain visible in Details.
+
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/profiling-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/images/profiling-light.png">
     <img src="docs/images/profiling-light.png" alt="Profiling panel">
-</picture>
-</details>
-
-<details>
-<summary>Timeline</summary>
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/timeline-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/timeline-light.png">
-    <img src="docs/images/timeline-light.png" alt="Timeline panel">
 </picture>
 </details>
 

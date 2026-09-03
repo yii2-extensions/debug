@@ -16,10 +16,10 @@ use yii\base\{Action, ActionEvent, Application, Controller, Event, InvalidConfig
 use yii\caching\FileCache;
 use yii\db\Connection;
 use yii\debug\actions\{PhpInfoAction, ToolbarDataAction, ViewAction};
-use yii\debug\collectors\{LogCollector, QueueCollector};
+use yii\debug\collectors\{LogCollector, QueueCollector, TimelineCollector};
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, ToolbarRenderer, VersionResolver};
 use yii\debug\exception\Message;
-use yii\debug\panels\{DbPanel, LogPanel, QueuePanel};
+use yii\debug\panels\{DbPanel, LogPanel, QueuePanel, TimelinePanel};
 use yii\debug\tests\provider\{ModuleProvider, VisibilityProvider};
 use yii\debug\tests\support\stub\{
     ConfigurableAction,
@@ -795,7 +795,6 @@ final class ModuleTest extends TestCase
                 'queue',
                 'request',
                 'router',
-                'timeline',
                 'user',
             ],
             array_keys($coreCollectors),
@@ -825,7 +824,6 @@ final class ModuleTest extends TestCase
                 'log',
                 'db',
                 'profiling',
-                'timeline',
                 'event',
                 'dump',
                 'asset',
@@ -1669,6 +1667,28 @@ final class ModuleTest extends TestCase
         );
 
         unset($_SERVER['HTTP_X_REQUESTED_WITH']);
+    }
+
+    public function testLegacyTimelineCanBeConfiguredExplicitly(): void
+    {
+        $module = new Module(
+            'debug',
+            null,
+            [
+                'collectors' => ['timeline' => TimelineCollector::class],
+                'panels' => ['timeline' => TimelinePanel::class],
+            ],
+        );
+
+        self::assertTrue(
+            $module->getCollectorCoordinator()->hasCollector('timeline'),
+            'Explicit configuration must continue to register the legacy Timeline collector.',
+        );
+        self::assertInstanceOf(
+            TimelinePanel::class,
+            $module->panels['timeline'] ?? null,
+            'Explicit configuration must continue to register the legacy Timeline panel.',
+        );
     }
 
     public function testLogTargetObjectIsAcceptedAsConfig(): void

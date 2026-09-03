@@ -10,7 +10,7 @@ use yii\base\InvalidConfigException;
 use yii\debug\actions\IndexAction;
 use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
-use yii\debug\models\search\LogSearch;
+use yii\debug\models\search\{LogSearch, ProfileSearch};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\FilterBanner;
 use yii\helpers\{Html, Url};
@@ -24,6 +24,53 @@ use yii\helpers\{Html, Url};
 #[Group('filter-banner')]
 final class FilterBannerTest extends TestCase
 {
+    public function testNormalizedFiltersHideInvalidValuesAndClearTheirRawKeys(): void
+    {
+        $this->bootApp();
+
+        $_GET['Profile'] = ['duration' => 'invalid', 'category' => 'db'];
+
+        $searchModel = new ProfileSearch();
+
+        $searchModel->search($_GET, []);
+
+        $html = FilterBanner::widget(
+            [
+                'activeFilters' => $searchModel->getAttributes(),
+                'searchModel' => $searchModel,
+            ],
+        );
+
+        self::assertStringContainsString(
+            '1 filter active',
+            $html,
+            'Only the normalized category filter must count as active.',
+        );
+        self::assertStringContainsString(
+            '>category<',
+            $html,
+            'The valid normalized category must remain visible.',
+        );
+        self::assertStringNotContainsString(
+            '>duration<',
+            $html,
+            'An ignored invalid duration must not render as an active-filter pill.',
+        );
+        self::assertStringNotContainsString(
+            '>invalid<',
+            $html,
+            'An ignored invalid value must not be presented as active.',
+        );
+
+        $expectedClearUrl = Url::to(['/debug/index']);
+
+        self::assertStringContainsString(
+            'class="yii-debug-active-filters-clear" href="' . Html::encode($expectedClearUrl) . '"',
+            $html,
+            'Clear all must remove both the visible category and the raw invalid duration key.',
+        );
+    }
+
     public function testRunPreservesOtherQueryParamsInRemovalLinks(): void
     {
         $this->bootApp();
