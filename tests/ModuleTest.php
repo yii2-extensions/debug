@@ -819,11 +819,11 @@ final class ModuleTest extends TestCase
             [
                 'config',
                 'request',
+                'log',
+                'profiling',
                 'router',
                 'user',
-                'log',
                 'db',
-                'profiling',
                 'event',
                 'dump',
                 'asset',
@@ -833,7 +833,7 @@ final class ModuleTest extends TestCase
                 'vite',
             ],
             array_keys($corePanels),
-            'Order: Yii request diagnostics first, then Inertia, Mail, Queue, and Vite integrations.',
+            'Order: Request, Logs, and Profiling first, then the remaining diagnostics and integrations.',
         );
     }
 

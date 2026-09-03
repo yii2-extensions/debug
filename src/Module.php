@@ -708,9 +708,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Returns the built-in panel configurations, ordered as the request itself unfolds.
      *
-     * Core Yii diagnostics follow the request flow, while optional integration panels finish the list in the order
-     * Inertia, Mail, Queue, and Vite. `config` opens the list but is surfaced through the brand bar rather than the
-     * panel nav.
+     * The primary navigation starts with Request, Logs, and Profiling before the remaining Yii diagnostics. Optional
+     * integration panels finish the list in the order Inertia, Mail, Queue, and Vite. `config` opens the list but is
+     * surfaced through the brand bar rather than the panel nav.
      *
      * @return array<string, class-string<Panel>> Panel classes indexed by panel id.
      */
@@ -719,11 +719,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
         return [
             'config' => ConfigPanel::class,
             'request' => RequestPanel::class,
+            'log' => LogPanel::class,
+            'profiling' => ProfilingPanel::class,
             'router' => RouterPanel::class,
             'user' => UserPanel::class,
-            'log' => LogPanel::class,
             'db' => DbPanel::class,
-            'profiling' => ProfilingPanel::class,
             'event' => EventPanel::class,
             'dump' => DumpPanel::class,
             'asset' => AssetPanel::class,

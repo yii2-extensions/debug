@@ -7,10 +7,18 @@ namespace yii\debug\tests\log;
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Storage\HydrationException;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use Yii;
 use yii\debug\panels\LogPanel;
 use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
+
+use function html_entity_decode;
+use function is_string;
+use function parse_str;
+use function parse_url;
+use function preg_match;
+use function preg_quote;
 
 /**
  * Unit tests for {@see LogPanel} covering payload narrowing, toolbar items per level, the rendered detail and summary
@@ -121,6 +129,100 @@ final class LogPanelTest extends TestCase
             $panel->getDetail(),
             'Detail view must produce markup.',
         );
+    }
+
+    public function testGetDetailSummaryLinksReplaceLogFiltersAndPreserveUnrelatedQueryState(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        $panel->id = 'log';
+        $panel->tag = 'log-tag';
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'tag' => 'log-tag',
+                'panel' => 'log',
+                'Log' => [
+                    'level' => (string) Logger::LEVEL_WARNING,
+                    'category' => 'application',
+                    'message' => 'needle',
+                ],
+                'sort' => '-message',
+                'per-page' => '25',
+                'page' => '3',
+                'yii_debug_theme' => 'dark',
+                'Debug' => ['statusCode' => '302'],
+                'custom' => 'kept',
+            ],
+        );
+
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['oops', Logger::LEVEL_ERROR, 'application', 1.0, []],
+                    ['careful', Logger::LEVEL_WARNING, 'application', 2.0, []],
+                    ['hello', Logger::LEVEL_INFO, 'application', 3.0, []],
+                    ['details', Logger::LEVEL_TRACE, 'application', 4.0, []],
+                ],
+            ),
+        );
+
+        $html = $panel->getDetail();
+
+        foreach (
+            [
+                'Show only error log messages' => (string) Logger::LEVEL_ERROR,
+                'Show only warning log messages' => (string) Logger::LEVEL_WARNING,
+                'Show only info log messages' => (string) Logger::LEVEL_INFO,
+                'Show only trace log messages' => (string) Logger::LEVEL_TRACE,
+            ] as $title => $level
+        ) {
+            $query = self::summaryLinkQuery($html, $title);
+
+            self::assertSame(
+                ['level' => $level],
+                $query['Log'] ?? null,
+                'Each summary link must replace the complete Log filter group with its severity.',
+            );
+            self::assertSame(
+                '-message', $query['sort'] ?? null,
+                'The sort parameter must be preserved.',
+            );
+            self::assertSame(
+                '25',
+                $query['per-page'] ?? null,
+                'The page-size parameter must be preserved.',
+            );
+            self::assertSame(
+                'dark',
+                $query['yii_debug_theme'] ?? null,
+                'The theme parameter must be preserved.',
+            );
+            self::assertSame(
+                ['statusCode' => '302'],
+                $query['Debug'] ?? null,
+                'Unrelated filter groups must be preserved.',
+            );
+            self::assertSame(
+                'kept',
+                $query['custom'] ?? null,
+                'Custom query state must be preserved.',
+            );
+        }
+
+        foreach ([
+            '1 errors; filter log messages by error level',
+            '1 warnings; filter log messages by warning level',
+            '1 info; filter log messages by info level',
+            '1 trace; filter log messages by trace level',
+        ] as $ariaLabel) {
+            self::assertStringContainsString(
+                'aria-label="' . $ariaLabel . '"',
+                $html,
+                'Severity shortcuts must retain their visible count and label in the accessible name.',
+            );
+        }
     }
 
     public function testGetMessagesReflectsTheLatestHydration(): void
@@ -421,5 +523,48 @@ final class LogPanelTest extends TestCase
         );
 
         $panel->hydrate(['messages' => 'corrupt']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function summaryLinkQuery(string $html, string $title): array
+    {
+        $matches = [];
+
+        $result = preg_match(
+            '/<a\\b(?=[^>]*\\btitle="' . preg_quote($title, '/') . '")(?=[^>]*\\bhref="([^"]+)")[^>]*>/',
+            $html,
+            $matches,
+        );
+
+        self::assertSame(
+            1,
+            $result,
+            "Expected a summary link titled '{$title}'.",
+        );
+
+        $encodedUrl = $matches[1];
+
+        $url = html_entity_decode($encodedUrl, ENT_QUOTES | ENT_HTML5);
+        $queryString = parse_url($url, PHP_URL_QUERY);
+
+        if (!is_string($queryString)) {
+            self::fail("Expected the '{$title}' link to contain a query string.");
+        }
+
+        $parsedQuery = [];
+
+        parse_str($queryString, $parsedQuery);
+
+        $query = [];
+
+        foreach ($parsedQuery as $name => $value) {
+            if (is_string($name)) {
+                $query[$name] = $value;
+            }
+        }
+
+        return $query;
     }
 }
