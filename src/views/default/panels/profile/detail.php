@@ -98,6 +98,8 @@ foreach ($filterHiddenParams as $name => $value) {
     $filterFields[] = InputHidden::tag()->name($name)->value($value);
 }
 
+$filterPrefix = $searchModel->formName();
+
 $filterFields[] = Div::tag()
     ->class('yii-debug-tl-field')
     ->html(
@@ -107,7 +109,7 @@ $filterFields[] = Div::tag()
         InputNumber::tag()
             ->id('profile-duration')
             ->min(0)
-            ->name('Profile[duration]')
+            ->name("{$filterPrefix}[duration]")
             ->placeholder('0')
             ->step(0.1)
             ->value($searchModel->duration),
@@ -120,7 +122,7 @@ $filterFields[] = Div::tag()
             ->for('profile-category'),
         InputText::tag()
             ->id('profile-category')
-            ->name('Profile[category]')
+            ->name("{$filterPrefix}[category]")
             ->placeholder('yii\\db\\Command::query')
             ->value($searchModel->category),
     );
@@ -132,7 +134,7 @@ $filterFields[] = Div::tag()
             ->for('profile-info'),
         InputText::tag()
             ->id('profile-info')
-            ->name('Profile[info]')
+            ->name("{$filterPrefix}[info]")
             ->placeholder('SELECT')
             ->value($searchModel->info),
     );

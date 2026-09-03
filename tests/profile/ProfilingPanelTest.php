@@ -11,6 +11,7 @@ use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
 use Yii;
+use yii\debug\models\search\ProfileSearch;
 use yii\debug\panels\ProfilingPanel;
 use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\CapturingView;
@@ -176,6 +177,9 @@ final class ProfilingPanelTest extends TestCase
             ['view' => CapturingView::class],
         );
 
+        $panel->id = 'custom-profile';
+        $panel->tag = 'profile-tag';
+
         $this->hydratePanel(
             $panel,
             ProfilingSnapshot::capture(1_234_567, 1.25, []),
@@ -214,6 +218,15 @@ final class ProfilingPanelTest extends TestCase
             $view->renderParams,
             'Detail view must receive the rendered Timeline state.',
         );
+        self::assertSame(
+            [
+                'r' => 'debug/view',
+                'panel' => 'custom-profile',
+                'tag' => 'profile-tag',
+            ],
+            $view->renderParams['filterHiddenParams'] ?? null,
+            'Profiling filters must preserve the registered panel identifier.',
+        );
         self::assertArrayNotHasKey(
             'timelineUrl',
             $view->renderParams,
@@ -226,6 +239,8 @@ final class ProfilingPanelTest extends TestCase
         $panel = $this->makePanel(
             ProfilingPanel::class,
         );
+
+        $filterPrefix = (new ProfileSearch())->formName();
 
         $panel->setRequestSummary($this->requestSummary(overrides: ['time' => 1_700_000_000.0]));
 
@@ -263,17 +278,17 @@ final class ProfilingPanelTest extends TestCase
             'Equal visible and captured counts must use the concise singular summary.',
         );
         self::assertStringContainsString(
-            'name="Profile[duration]"',
+            "name=\"{$filterPrefix}[duration]\"",
             $detail,
             'Timeline and details must share the profiling minimum-duration filter.',
         );
         self::assertStringContainsString(
-            'name="Profile[category]"',
+            "name=\"{$filterPrefix}[category]\"",
             $detail,
             'Timeline and details must share the profiling category filter.',
         );
         self::assertStringContainsString(
-            'name="Profile[info]"',
+            "name=\"{$filterPrefix}[info]\"",
             $detail,
             'Timeline and details must share the profiling info filter.',
         );

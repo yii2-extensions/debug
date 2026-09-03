@@ -177,7 +177,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     {
         $params = [
             'r' => ($this->module?->getUniqueId() ?? 'debug') . '/view',
-            'panel' => 'profiling',
+            'panel' => $this->id,
             'tag' => $this->tag,
         ];
 
