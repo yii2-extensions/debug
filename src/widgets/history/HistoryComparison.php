@@ -4,22 +4,17 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
+use PHPForge\Debug\Comparison\PayloadDifference;
 use PHPForge\Debug\Storage\{DebugSnapshot, RequestSummary};
 
 use function array_diff;
-use function array_diff_key;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_unique;
-use function count;
-use function hash;
 use function in_array;
-use function is_array;
 use function number_format;
-use function serialize;
 use function sort;
-use function str_replace;
 
 /**
  * Builds a privacy-preserving comparison of two immutable debugger snapshots.
@@ -86,9 +81,21 @@ final readonly class HistoryComparison
     private static function buildMetrics(RequestSummary $baseline, RequestSummary $target): array
     {
         return [
-            self::textMetric('Status', self::status($baseline->statusCode), self::status($target->statusCode)),
-            self::textMetric('Method', $baseline->method, $target->method),
-            self::textMetric('AJAX', self::yesNo($baseline->ajax), self::yesNo($target->ajax)),
+            self::textMetric(
+                'Status',
+                self::status($baseline->statusCode),
+                self::status($target->statusCode),
+            ),
+            self::textMetric(
+                'Method',
+                $baseline->method,
+                $target->method,
+            ),
+            self::textMetric(
+                'AJAX',
+                self::yesNo($baseline->ajax),
+                self::yesNo($target->ajax),
+            ),
             self::nullableFloatMetric(
                 'Duration',
                 $baseline->processingTime,
@@ -105,8 +112,18 @@ final readonly class HistoryComparison
                 'MB',
                 'profiling',
             ),
-            self::integerMetric('SQL queries', $baseline->sqlCount, $target->sqlCount, 'db'),
-            self::integerMetric('Mail messages', $baseline->mailCount, $target->mailCount, 'mail'),
+            self::integerMetric(
+                'SQL queries',
+                $baseline->sqlCount,
+                $target->sqlCount,
+                'db',
+            ),
+            self::integerMetric(
+                'Mail messages',
+                $baseline->mailCount,
+                $target->mailCount,
+                'mail',
+            ),
             self::integerMetric(
                 'Excessive DB callers',
                 $baseline->excessiveCallersCount,
@@ -121,18 +138,15 @@ final readonly class HistoryComparison
      *
      * @return list<HistoryPanelComparison>
      */
-    private static function buildPanels(
-        DebugSnapshot $baseline,
-        DebugSnapshot $target,
-        array $panelLabels,
-    ): array {
+    private static function buildPanels(DebugSnapshot $baseline, DebugSnapshot $target, array $panelLabels): array
+    {
         $observedIds = array_unique(
-            array_merge(
-                array_keys($baseline->panels),
-                array_keys($baseline->failures),
-                array_keys($target->panels),
-                array_keys($target->failures),
-            ),
+            [
+                ...array_keys($baseline->panels),
+                ...array_keys($baseline->failures),
+                ...array_keys($target->panels),
+                ...array_keys($target->failures),
+            ],
         );
 
         $orderedIds = [];
@@ -153,25 +167,16 @@ final readonly class HistoryComparison
         foreach ($orderedIds as $id) {
             $baselineState = self::panelState($baseline, $id);
             $targetState = self::panelState($target, $id);
-            $baselineLeaves = self::panelLeaves($baseline, $id);
-            $targetLeaves = self::panelLeaves($target, $id);
 
-            $added = count(array_diff_key($targetLeaves, $baselineLeaves));
-            $removed = count(array_diff_key($baselineLeaves, $targetLeaves));
-            $changed = 0;
-            $unchanged = 0;
+            $difference = PayloadDifference::between(
+                self::panelPayload($baseline, $id),
+                self::panelPayload($target, $id),
+            );
 
-            foreach ($baselineLeaves as $path => $baselineValue) {
-                if (!array_key_exists($path, $targetLeaves)) {
-                    continue;
-                }
-
-                if ($baselineValue === $targetLeaves[$path]) {
-                    ++$unchanged;
-                } else {
-                    ++$changed;
-                }
-            }
+            $added = $difference->added;
+            $removed = $difference->removed;
+            $changed = $difference->changed;
+            $unchanged = $difference->unchanged;
 
             if ($added + $removed + $changed === 0 && $baselineState !== $targetState) {
                 $changed = 1;
@@ -190,44 +195,6 @@ final readonly class HistoryComparison
         }
 
         return $comparisons;
-    }
-
-    /**
-     * Flattens a panel payload into typed JSON-leaf fingerprints keyed by JSON Pointer-like paths.
-     *
-     * @param array<string, mixed> $payload
-     *
-     * @return array<string, string>
-     */
-    private static function flatten(array $payload): array
-    {
-        $leaves = [];
-
-        self::flattenValue($payload, '$', $leaves);
-
-        return $leaves;
-    }
-
-    /**
-     * @param array<string, string> $leaves
-     */
-    private static function flattenValue(mixed $value, string $path, array &$leaves): void
-    {
-        if (is_array($value)) {
-            if ($value === []) {
-                $leaves[$path] = 'array:[]';
-            }
-
-            foreach ($value as $key => $child) {
-                $segment = str_replace(['~', '/'], ['~0', '~1'], (string) $key);
-
-                self::flattenValue($child, "{$path}/{$segment}", $leaves);
-            }
-
-            return;
-        }
-
-        $leaves[$path] = hash('sha256', serialize($value));
     }
 
     private static function formatNumber(float|int $value, string $unit, int $precision): string
@@ -303,17 +270,17 @@ final readonly class HistoryComparison
     }
 
     /**
-     * Returns typed fingerprints for the captured panel payload or its isolated failure envelope.
+     * Returns the captured payload or failure envelope, preserving the distinction between absent and empty.
      *
-     * @return array<string, string>
+     * @return array<string, mixed>|null
      */
-    private static function panelLeaves(DebugSnapshot $snapshot, string $id): array
+    private static function panelPayload(DebugSnapshot $snapshot, string $id): array|null
     {
         if (isset($snapshot->failures[$id])) {
-            return self::flatten(['failure' => $snapshot->failures[$id]->jsonSerialize()]);
+            return ['failure' => $snapshot->failures[$id]->jsonSerialize()];
         }
 
-        return isset($snapshot->panels[$id]) ? self::flatten($snapshot->panels[$id]) : [];
+        return $snapshot->panels[$id] ?? null;
     }
 
     private static function panelState(DebugSnapshot $snapshot, string $id): string
