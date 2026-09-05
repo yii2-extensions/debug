@@ -142,7 +142,7 @@ final class SidebarDataNormalizer
         $extensionItems = [];
 
         foreach ($panels as $id => $panel) {
-            if ($id === 'config') {
+            if ($id === 'config' || !$panel->isVisible()) {
                 continue;
             }
 

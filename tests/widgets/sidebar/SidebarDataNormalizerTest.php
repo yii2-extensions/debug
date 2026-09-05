@@ -8,7 +8,7 @@ use Exception;
 use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\{ConfigPanel, InertiaPanel, MailPanel, QueuePanel, RequestPanel, VitePanel};
+use yii\debug\panels\{ConfigPanel, InertiaPanel, MailPanel, QueuePanel, RequestPanel, RouterPanel, VitePanel};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarNavItem};
 
@@ -690,6 +690,32 @@ final class SidebarDataNormalizerTest extends TestCase
             'Content-less panels must be skipped in view mode.',
         );
         self::assertSame([], $view->navGroups, 'Empty extension groups must not render a sidebar heading.');
+    }
+
+    public function testInvisiblePanelsAreSkippedFromIndexAndViewNavigation(): void
+    {
+        $this->mockWebApplication();
+
+        $request = new RequestPanel();
+        $request->id = 'request';
+
+        $router = new RouterPanel();
+        $router->id = 'router';
+        $router->standalone = false;
+
+        $summary = $this->requestSummary('tag-1');
+        $panels = ['request' => $request, 'router' => $router];
+        $manifest = ['tag-1' => $summary];
+
+        $index = SidebarDataNormalizer::fromIndex($panels, $manifest);
+        $view = SidebarDataNormalizer::fromView($panels, $manifest, $request, 'tag-1', $summary);
+
+        foreach ([$index, $view] as $sidebar) {
+            $labels = array_map(static fn(SidebarNavItem $item): string => $item->label, $sidebar->navItems);
+
+            self::assertContains('Request', $labels, 'Visible panels must remain in sidebar navigation.');
+            self::assertNotContains('Router', $labels, 'Invisible panels must be omitted from sidebar navigation.');
+        }
     }
 
     public function testStatusVariantMappingForKnownBuckets(): void

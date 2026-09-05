@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Helper\{Coerce, Vocabulary};
-use PHPForge\Debug\Panel\Request\{RequestDataNormalizer, RequestSnapshot};
+use PHPForge\Debug\Helper\Coerce;
+use PHPForge\Debug\Panel\Request\{
+    RequestDataNormalizer,
+    RequestSnapshot,
+    RequestToolbarItemFactory,
+};
+use PHPForge\Debug\Toolbar\ToolbarItem;
 use Yii;
 use yii\debug\actions\Action as DebugAction;
 use yii\debug\Panel;
+use yii\debug\panels\request\RequestRoutingViewFactory;
 use yii\web\Response;
+
+use function array_map;
+use function is_string;
 
 /**
  * Renders the HTTP request and response state captured by the Request collector.
@@ -26,7 +35,7 @@ class RequestPanel extends Panel
     private RequestSnapshot|null $snapshot = null;
 
     /**
-     * Renders the detail view with the request hero header and the per-tab sections.
+     * Renders one composed request and routing view with a persistent overview and canonical request-data tabs.
      */
     #[Override]
     public function getDetail(): string
@@ -35,11 +44,21 @@ class RequestPanel extends Panel
 
         $summary = $action instanceof DebugAction ? $action->summary : null;
 
-        $view = RequestDataNormalizer::fromPanelData($this->payload(), $summary);
+        $data = $this->payload();
+        $view = RequestDataNormalizer::fromPanelData($data, $summary);
+        $router = $this->module->panels['router'] ?? null;
+        $router = $router instanceof RouterPanel ? $router : null;
 
         return Yii::$app->view->render(
             'panels/request/detail',
-            ['view' => $view],
+            [
+                'routing' => RequestRoutingViewFactory::fromRequestData(
+                    $data,
+                    $router?->getSnapshot(),
+                    $router?->getError(),
+                ),
+                'view' => $view,
+            ],
             $this,
         );
     }
@@ -54,29 +73,21 @@ class RequestPanel extends Panel
     }
 
     /**
-     * Builds the toolbar item with the response status code, colored by its vocabulary status class
-     * (`status-2xx` ... `status-5xx`, or `default` for uncaptured codes).
+     * Builds one Request toolbar group containing the resolved route followed by the response status code.
      *
-     * @return array<int, array<string, mixed>> Single-element list with the status chip.
+     * @return array<int, array<string, mixed>> Route/status items in display order.
      */
     #[Override]
     protected function getToolbarItems(): array
     {
+        $route = $this->payload()['route'] ?? null;
         $statusCode = $this->getStatusCode();
-
-        $statusClass = Vocabulary::statusClass($statusCode);
-
-        $status = $statusClass === 'none' ? 'default' : "status-{$statusClass}";
-
         $statusText = Coerce::string(Response::$httpStatuses[$statusCode] ?? null);
 
-        return [
-            [
-                'status' => $status,
-                'title' => "Status code: $statusCode $statusText",
-                'value' => $statusCode,
-            ],
-        ];
+        return array_map(
+            static fn(ToolbarItem $item): array => $item->jsonSerialize(),
+            RequestToolbarItemFactory::create(is_string($route) ? $route : '', $statusCode, $statusText),
+        );
     }
 
     /**

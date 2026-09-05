@@ -394,6 +394,14 @@ final class PanelTest extends TestCase
         self::assertStringContainsString('panel=other', $foreignPanel, 'Foreign panel must reach the URL generator.');
     }
 
+    public function testIsVisibleDefaultsToTrue(): void
+    {
+        self::assertTrue(
+            $this->createPanel()->isVisible(),
+            'Panels must remain visible by default for backward compatibility.',
+        );
+    }
+
     public function testRenderContextIsAnAdditivePortablePanelContract(): void
     {
         $panel = $this->createPanel();

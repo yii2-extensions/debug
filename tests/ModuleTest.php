@@ -19,7 +19,7 @@ use yii\debug\actions\{PhpInfoAction, ToolbarDataAction, ViewAction};
 use yii\debug\collectors\{LogCollector, QueueCollector, TimelineCollector};
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, ToolbarRenderer, VersionResolver};
 use yii\debug\exception\Message;
-use yii\debug\panels\{DbPanel, LogPanel, QueuePanel, TimelinePanel};
+use yii\debug\panels\{DbPanel, LogPanel, QueuePanel, RouterPanel, TimelinePanel};
 use yii\debug\tests\provider\{ModuleProvider, VisibilityProvider};
 use yii\debug\tests\support\stub\{
     ConfigurableAction,
@@ -623,6 +623,29 @@ final class ModuleTest extends TestCase
         );
     }
 
+    public function testBuiltInRouterPanelIsHiddenWhileItsCollectorRemainsRegistered(): void
+    {
+        $module = new Module('debug');
+        $corePanels = $this->invoke($module, 'corePanels');
+        $router = $module->panels['router'] ?? self::fail('Built-in Router panel must remain registered.');
+
+        self::assertIsArray($corePanels, 'Core panel definitions must remain an array.');
+        self::assertSame(
+            ['class' => RouterPanel::class, 'standalone' => false],
+            $corePanels['router'] ?? null,
+            'The built-in Router definition must explicitly opt out of standalone presentation.',
+        );
+        self::assertInstanceOf(RouterPanel::class, $router, 'Built-in Router must resolve its standard panel class.');
+        self::assertFalse(
+            $router->isVisible(),
+            'Built-in Router must act as a hidden compatibility data source for Request.',
+        );
+        self::assertTrue(
+            $module->getCollectorCoordinator()->hasCollector('router'),
+            'Hiding Router presentation must not disable route-trace collection.',
+        );
+    }
+
     public function testCheckAccessAppliesCallbackBeforeGrantingAccess(): void
     {
         $module = new Module('debug');
@@ -1071,6 +1094,18 @@ final class ModuleTest extends TestCase
             VersionResolver::forPackage('yii2-extensions/debug'),
             $module->getVersion(),
             'Module version must resolve from Composer package metadata.',
+        );
+    }
+
+    public function testExplicitRouterPanelClassRetainsStandaloneVisibility(): void
+    {
+        $module = new Module('debug', null, ['panels' => ['router' => RouterPanel::class]]);
+        $router = $module->panels['router'] ?? self::fail('Explicit Router panel must be registered.');
+
+        self::assertInstanceOf(RouterPanel::class, $router, 'Explicit Router class must resolve normally.');
+        self::assertTrue(
+            $router->isVisible(),
+            'Explicit class configuration must preserve RouterPanel standalone compatibility.',
         );
     }
 

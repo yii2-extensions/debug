@@ -21,6 +21,11 @@ class RouterPanel extends Panel
     protected const string ICON = 'router';
     protected const string NAME = 'Router';
 
+    /**
+     * Whether Router should retain its legacy standalone toolbar and sidebar entries.
+     */
+    public bool $standalone = true;
+
     private RouterSnapshot|null $snapshot = null;
 
     /**
@@ -41,12 +46,30 @@ class RouterPanel extends Panel
     }
 
     /**
+     * Returns the captured routing snapshot for composition by another panel.
+     */
+    public function getSnapshot(): RouterSnapshot|null
+    {
+        return $this->snapshot;
+    }
+
+    /**
      * @param array<string, mixed> $payload
      */
     #[Override]
     public function hydrate(array $payload): void
     {
         $this->snapshot = RouterSnapshot::fromArray($payload, "$.panels.{$this->id}");
+    }
+
+    /**
+     * Keeps explicitly configured Router panels standalone while allowing the built-in instance to act as a hidden
+     * compatibility data source for Request.
+     */
+    #[Override]
+    public function isVisible(): bool
+    {
+        return $this->standalone;
     }
 
     /**

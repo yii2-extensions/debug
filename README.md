@@ -74,6 +74,32 @@ frontend, including the panel stylesheet, JavaScript, fonts, icons, and toolbar 
 `php-forge/debug-core`. This package publishes those shared assets and supplies the Yii2-specific panels and data.
 Shared PHP templates are resolved through the adapter-owned `@yiiDebugViews` alias.
 
+Request presents the resolved route before the response status in one toolbar group. Its detail view keeps the request
+identity, route, action, duration, and routing constraints visible above the canonical Input, Headers, Session, Routes,
+and Server tabs. The Routes tab reads the current URL manager configuration and labels that live provenance explicitly,
+because it can differ from the historical capture; the resolution trace itself remains capture-time data.
+
+Server shows additional diagnostics without a second execution summary. Exact duplicates of the Request overview
+and inbound headers move to the collapsed **Raw server variables** disclosure, which preserves every captured key
+and value. Differences and unknown values remain visible; each group has an independent filter.
+
+Input and Session sections use the shared disclosure: populated sections open by default, empty sections stay
+collapsed, and each populated section has its own filter. Session data and Flashes can be searched independently.
+
+Routes use the same expandable ledger as the Yii3 adapter, with full-width metadata details and a filter that searches
+collapsed content. Rules owned by loaded debugger modules are omitted from this inventory, including renamed and
+nested modules. Their trace entries are also omitted from Request; a debugger-only resolution block is hidden. The
+original captured trace remains intact for the legacy Router view. Application routes are not hidden merely because
+their URL contains `debug`.
+
+The built-in Router collector and panel remain registered as Request's compatibility data source, but their duplicate
+toolbar and sidebar entries are hidden. Applications that still need the legacy standalone Router screen can opt in
+explicitly while migrating custom integrations:
+
+```php
+$config['modules']['debug']['panels']['router'] = \yii\debug\panels\RouterPanel::class;
+```
+
 The drawer moves focus to its close control and restores the activating chip when closed. Use `Escape` to close it,
 or resize it from the keyboard with `ArrowUp`, `ArrowDown`, `Home`, and `End` on the separator.
 
@@ -185,7 +211,9 @@ support. Internet Explorer and other legacy browsers are not supported.
 </details>
 
 <details>
-<summary>Router</summary>
+<summary>Router (legacy standalone)</summary>
+<p>The same captured routing trace is shown in Request by default. This screen remains available when Router is
+configured explicitly for compatibility.</p>
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/router-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/images/router-light.png">

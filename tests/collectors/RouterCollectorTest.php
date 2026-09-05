@@ -122,6 +122,35 @@ final class RouterCollectorTest extends TestCase
         );
     }
 
+    public function testCapturePreservesStructuredRuleTracePayloads(): void
+    {
+        $collector = $this->makeCollector();
+
+        $module = $collector->module ?? self::fail('Module must be wired.');
+        $logTarget = $module->logTarget;
+
+        self::assertInstanceOf(LogTarget::class, $logTarget, 'Log target must be wired.');
+
+        $logTarget->messages = [
+            [
+                ['rule' => 'site/<action>', 'match' => true, 'parent' => ''],
+                Logger::LEVEL_TRACE,
+                'yii\\web\\UrlRule::parseRequest',
+                0.0,
+                [],
+                0,
+            ],
+        ];
+
+        Yii::$app->requestedRoute = 'site/index';
+
+        $snapshot = $this->captureSnapshot($collector);
+        $row = $snapshot->entries()[0] ?? self::fail('Expected the structured rule probe to survive capture.');
+
+        self::assertSame('site/<action>', $row->rule, 'Structured rule name must remain inspectable.');
+        self::assertTrue($row->match, 'Structured match result must remain inspectable.');
+    }
+
     public function testCaptureReturnsNullAfterShutdown(): void
     {
         $collector = $this->makeCollector();
