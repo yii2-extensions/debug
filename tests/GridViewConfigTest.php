@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests;
 
+use PHPForge\Debug\View\Grid\RowClass;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
@@ -323,6 +324,11 @@ final class GridViewConfigTest extends TestCase
             $expected,
             GridViewConfig::rowClassFor($level),
             'Known levels must map to scoped row classes while unknown levels remain unstyled.',
+        );
+        self::assertSame(
+            $expected,
+            RowClass::for($level),
+            'The shared row-class policy must preserve the adapter mapping.',
         );
     }
 }

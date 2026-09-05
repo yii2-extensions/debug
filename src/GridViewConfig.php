@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use PHPForge\Debug\Data\{PageSize, QueryInput};
+use PHPForge\Debug\View\Grid\RowClass;
 use Yii;
 use yii\debug\widgets\DebugDataColumn;
-
-use function in_array;
 
 /**
  * Shared default configuration for GridView widgets rendered inside the debug panel UI.
@@ -116,13 +115,7 @@ final class GridViewConfig
      */
     public static function rowClassFor(string|null $level): array
     {
-        $normalized = $level === 'error' ? 'danger' : $level;
-
-        if (!in_array($normalized, ['success', 'info', 'warning', 'danger'], true)) {
-            return [];
-        }
-
-        return ['class' => 'yii-debug-row-' . $normalized];
+        return RowClass::for($level);
     }
 
     /**
