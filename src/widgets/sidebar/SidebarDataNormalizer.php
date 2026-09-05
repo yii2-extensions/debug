@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
-use PHPForge\Debug\Helper\{Coerce, Icon, Vocabulary};
+use PHPForge\Debug\Helper\{Coerce, Icon, Text, Vocabulary};
 use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\ExtensionAvailability;
 use yii\debug\Module;
@@ -16,8 +16,6 @@ use function array_keys;
 use function array_search;
 use function date;
 use function is_int;
-use function is_string;
-use function parse_url;
 use function reset;
 
 /**
@@ -239,7 +237,7 @@ final class SidebarDataNormalizer
             title: $mode === 'view' ? 'Current request' : 'Newest request',
             ariaLabel: $mode === 'view' ? 'Current request' : 'Newest captured request',
             method: $method,
-            path: self::urlToPath($fullUrl),
+            path: Text::urlToPath($fullUrl),
             fullUrl: $fullUrl,
             statusCode: $statusCode,
             statusVariant: self::statusVariant($statusCode),
@@ -296,28 +294,5 @@ final class SidebarDataNormalizer
     private static function statusVariant(int $statusCode): string
     {
         return Vocabulary::statusClass($statusCode);
-    }
-
-    /**
-     * Strips the scheme/host/port from a captured URL so the snapshot card only shows the meaningful path + query +
-     * fragment. Console invocations pass through verbatim because `parse_url()` treats them as a path.
-     */
-    private static function urlToPath(string $url): string
-    {
-        $parsed = parse_url($url);
-
-        if ($parsed === false) {
-            return $url;
-        }
-
-        $path = is_string($parsed['path'] ?? null) ? $parsed['path'] : '/';
-        $query = is_string($parsed['query'] ?? null) && $parsed['query'] !== ''
-            ? '?' . $parsed['query']
-            : '';
-        $fragment = is_string($parsed['fragment'] ?? null) && $parsed['fragment'] !== ''
-            ? '#' . $parsed['fragment']
-            : '';
-
-        return "{$path}{$query}{$fragment}";
     }
 }
