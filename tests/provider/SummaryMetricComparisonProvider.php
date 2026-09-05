@@ -111,7 +111,8 @@ final class SummaryMetricComparisonProvider
                     'sqlCount' => 5,
                     'mailCount' => 7,
                     'excessiveCallersCount' => 10,
-                ]),
+                ]
+            ),
             [
                 [
                     'Status',
