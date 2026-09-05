@@ -379,7 +379,15 @@ For detailed configuration options and advanced usage.
 ## History comparison architecture
 
 `HistoryComparison::fromSnapshots()` delegates typed structural payload comparison to Debug Core's
-`PHPForge\Debug\Comparison\PayloadDifference`. The adapter retains metric formatting, panel labels, ordering, capture
-states, and its existing public comparison models. No constructor, result type, captured value, or storage format changes.
+`PHPForge\Debug\Comparison\PayloadDifference` and request-summary metric calculation and formatting to
+`PHPForge\Debug\Comparison\SummaryMetricComparison`. The adapter maps the shared metric results into its existing
+public models and retains panel labels, ordering, and capture states. No constructor, property, getter, return type,
+captured value, or storage format changes. Metric labels, order, units, precision, separators, signs, percentages, trends,
+and panel IDs retain their exact previous behavior, including missing values, zero baselines, and unrounded float deltas.
+
+Publish the Core revision providing `SummaryMetricComparison` first and update consuming application locks before
+installing this adapter revision. The existing `^0.1@dev` constraint also admits older development revisions without the
+new class; local workspace links do not guarantee that a published installation has been updated.
+
 Missing panels remain distinct from captured empty arrays; failure envelopes take precedence over payloads, and
 state-only transitions still count as a change. Comparison does not apply capture-policy redaction to Logs.

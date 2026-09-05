@@ -7,7 +7,7 @@ namespace yii\debug\tests\widgets\history;
 use PHPForge\Debug\Storage\{DebugSnapshot, PanelFailure, RequestSummary};
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
-use yii\debug\tests\provider\HistoryComparisonProvider;
+use yii\debug\tests\provider\{HistoryComparisonProvider, SummaryMetricComparisonProvider};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\history\{HistoryComparison, HistoryMetricComparison, HistoryPanelComparison};
 
@@ -54,7 +54,10 @@ final class HistoryComparisonTest extends TestCase
         $baseline = new DebugSnapshot($this->summary('baseline', processingTime: 0.015), [], []);
         $target = new DebugSnapshot($this->summary('target', processingTime: 0.01), [], []);
 
-        $duration = self::metric(HistoryComparison::fromSnapshots($baseline, $target), 'Duration');
+        $duration = self::metric(
+            HistoryComparison::fromSnapshots($baseline, $target),
+            'Duration',
+        );
 
         self::assertSame(
             'down',
@@ -621,6 +624,48 @@ final class HistoryComparisonTest extends TestCase
             ['request', 'db', 'alpha', 'zeta'],
             $ids,
             'Order: label order, then sorted extras.',
+        );
+    }
+
+    /**
+     * @param list<array{string, string, string, string, string, string|null}> $expected
+     */
+    #[DataProviderExternal(SummaryMetricComparisonProvider::class, 'summaries')]
+    public function testFromSnapshotsPreservesSummaryMetricContracts(
+        RequestSummary $baseline,
+        RequestSummary $target,
+        array $expected,
+    ): void {
+        $baselineSnapshot = new DebugSnapshot($baseline, [], []);
+        $targetSnapshot = new DebugSnapshot($target, [], []);
+        $comparison = HistoryComparison::fromSnapshots($baselineSnapshot, $targetSnapshot);
+        $actual = [];
+
+        foreach ($comparison->metrics as $metric) {
+            $actual[] = [
+                $metric->label,
+                $metric->baseline,
+                $metric->target,
+                $metric->delta,
+                $metric->trend,
+                $metric->panelId,
+            ];
+        }
+
+        self::assertSame(
+            $expected,
+            $actual,
+            'All summary metric fields and their order must remain exact.',
+        );
+        self::assertSame(
+            $baselineSnapshot,
+            $comparison->baseline,
+            'The original baseline snapshot must be retained.',
+        );
+        self::assertSame(
+            $targetSnapshot,
+            $comparison->target,
+            'The original target snapshot must be retained.',
         );
     }
 
