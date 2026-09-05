@@ -75,3 +75,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: initial `yii2-extensions/debug` package structure.
 - Enh!: Rebuilt the debug UI: removed bundled Bootstrap4 + jQuery, scoped Pico-inspired CSS, file-based icons, standalone phpinfo, brand chip, GridViewConfig helper, deprecation shim for `data-toggle`.
 - Enh!: Update README.md with new screenshots and remove deprecated extension configuration.
+- refactor: delegate history metric calculations and formatting to Debug Core while preserving adapter models, public contracts, and exact comparison output.
