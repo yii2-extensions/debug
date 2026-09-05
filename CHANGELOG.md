@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(ui): place Events immediately after Logs in the primary debugger navigation and toolbar.
 - feat(ui): improve Request routing, Server diagnostics, tabs, headers, collapsible inputs, URL rules, and router traces.
 - refactor(history): share typed payload comparison with Debug Core while preserving adapter APIs, capture states, and diagnostic values.
+- refactor: delegate history metric calculations and formatting to Debug Core while preserving adapter models, public contracts, and exact comparison output.
 
 ## 0.1.1 May 18, 2026
 
@@ -75,4 +76,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: initial `yii2-extensions/debug` package structure.
 - Enh!: Rebuilt the debug UI: removed bundled Bootstrap4 + jQuery, scoped Pico-inspired CSS, file-based icons, standalone phpinfo, brand chip, GridViewConfig helper, deprecation shim for `data-toggle`.
 - Enh!: Update README.md with new screenshots and remove deprecated extension configuration.
-- refactor: delegate history metric calculations and formatting to Debug Core while preserving adapter models, public contracts, and exact comparison output.
