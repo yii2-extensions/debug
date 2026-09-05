@@ -317,6 +317,18 @@ class Panel extends Component implements ViewContextInterface
     }
 
     /**
+     * Returns whether the panel should appear in the toolbar and sidebar navigation.
+     *
+     * Visibility is independent from {@see hasContent()} and does not disable capture, hydration, or direct detail
+     * URLs. This lets compatibility panels keep collecting data without competing with a panel that presents the same
+     * diagnostics.
+     */
+    public function isVisible(): bool
+    {
+        return true;
+    }
+
+    /**
      * Completes module-dependent wiring after the container module binds {@see $id} and {@see $module}.
      *
      * Invoked once by {@see Module} for every registered panel, whether configured as a class name, a configuration

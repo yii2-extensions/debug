@@ -260,6 +260,43 @@ final class ToolbarDataMapperTest extends TestCase
         );
     }
 
+    public function testMapSkipsInvisiblePanelsBeforeReadingToolbarData(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new class extends Panel {
+            public bool $toolbarDataRead = false;
+
+            #[Override]
+            public function getToolbarData(): array
+            {
+                $this->toolbarDataRead = true;
+
+                return ['items' => [['value' => 'hidden']]];
+            }
+
+            #[Override]
+            public function isVisible(): bool
+            {
+                return false;
+            }
+        };
+
+        $result = (new ToolbarDataMapper())->map(
+            tag: 'capture-tag',
+            title: 'Yii Debugger',
+            indexUrl: '/debug/index',
+            configUrl: null,
+            panels: ['hidden' => $panel],
+        );
+
+        self::assertFalse(
+            $panel->toolbarDataRead,
+            'An invisible panel must be rejected before its toolbar payload is requested.',
+        );
+        self::assertSame([], $result['items'], 'Invisible panels must not create toolbar entries.');
+    }
+
     public function testMergePanelExtensionsReturnsTypedEnvelopeWhenItemsAreNotArrays(): void
     {
         self::assertSame(

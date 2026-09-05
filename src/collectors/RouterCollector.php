@@ -7,6 +7,7 @@ namespace yii\debug\collectors;
 use PHPForge\Debug\Panel\Router\RouterSnapshot;
 use Yii;
 use yii\base\InlineAction;
+use yii\debug\LogTarget;
 use yii\log\Logger;
 
 use function is_array;
@@ -50,7 +51,11 @@ class RouterCollector extends Collector
 
         return RouterSnapshot::capture(
             $action,
-            $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories),
+            LogTarget::filterMessages(
+                $this->getLogTarget()->messages,
+                Logger::LEVEL_TRACE,
+                $this->categories,
+            ),
             $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
         );
     }

@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(ui): unify Profiling and Timeline into one filterable screen, normalize legacy links and active filters, omit redundant equal span totals, show short class names with full hover titles, standardize chart markers on the shared blue, and keep the legacy Timeline panel available through explicit configuration.
 - feat(ui): add Logs severity filters, rename timing to `Delta`, and place History, Request, Logs, and Profiling first in the sidebar.
 - fix(ui): place Events immediately after Logs in the primary debugger navigation and toolbar.
+- feat(ui): improve Request routing, Server diagnostics, tabs, headers, collapsible inputs, URL rules, and router traces.
 
 ## 0.1.1 May 18, 2026
 

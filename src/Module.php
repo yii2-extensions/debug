@@ -712,7 +712,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Optional integration panels finish the list in the order Inertia, Mail, Queue, and Vite. `config` opens the list
      * but is surfaced through the brand bar rather than the panel nav.
      *
-     * @return array<string, class-string<Panel>> Panel classes indexed by panel id.
+     * @return array<string, array<string, mixed>|class-string<Panel>> Panel definitions indexed by panel id.
      */
     protected function corePanels(): array
     {
@@ -722,7 +722,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'log' => LogPanel::class,
             'event' => EventPanel::class,
             'profiling' => ProfilingPanel::class,
-            'router' => RouterPanel::class,
+            'router' => ['class' => RouterPanel::class, 'standalone' => false],
             'user' => UserPanel::class,
             'db' => DbPanel::class,
             'dump' => DumpPanel::class,

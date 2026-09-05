@@ -60,6 +60,10 @@ final readonly class ToolbarDataMapper
         $compatiblePanels = [];
 
         foreach ($panels as $id => $panel) {
+            if (!$panel->isVisible()) {
+                continue;
+            }
+
             $legacy = $panel->getToolbarData();
 
             if ($legacy === []) {

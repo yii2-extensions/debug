@@ -138,6 +138,35 @@ final class RouterPanelTest extends TestCase
         );
     }
 
+    public function testHiddenRouterRetainsItsSnapshotDetailToolbarAndDirectUrl(): void
+    {
+        $panel = $this->makePanel(
+            RouterPanel::class,
+        );
+        $panel->id = 'router';
+        $panel->tag = 'capture-tag';
+        $panel->standalone = false;
+
+        $this->hydratePanel(
+            $panel,
+            RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'),
+        );
+
+        self::assertFalse($panel->isVisible(), 'A non-standalone Router panel must opt out of shared navigation.');
+        self::assertSame(
+            'site/index',
+            $panel->getSnapshot()?->route,
+            'A hidden Router panel must keep its captured snapshot available for Request composition.',
+        );
+        self::assertNotEmpty($panel->getDetail(), 'Visibility must not remove the legacy detail renderer.');
+        self::assertNotEmpty($panel->getToolbarData(), 'Visibility must not change direct legacy toolbar generation.');
+        self::assertStringContainsString(
+            'panel=router',
+            $panel->getUrl(),
+            'Visibility must not remove the direct Router detail URL.',
+        );
+    }
+
     public function testHydrateRestoresTheRuleTraceFromTheSnapshot(): void
     {
         $panel = $this->makePanel(
@@ -196,6 +225,14 @@ final class RouterPanelTest extends TestCase
         self::assertTrue(
             $restored->hasMatch(),
             'A matching rule must raise the snapshot flag.',
+        );
+    }
+
+    public function testStandaloneVisibilityDefaultsToTrue(): void
+    {
+        self::assertTrue(
+            (new RouterPanel())->isVisible(),
+            'Direct RouterPanel configurations must retain their legacy standalone visibility.',
         );
     }
 }
