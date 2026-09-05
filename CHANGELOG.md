@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(ui): add Logs severity filters, rename timing to `Delta`, and place History, Request, Logs, and Profiling first in the sidebar.
 - fix(ui): place Events immediately after Logs in the primary debugger navigation and toolbar.
 - feat(ui): improve Request routing, Server diagnostics, tabs, headers, collapsible inputs, URL rules, and router traces.
+- refactor(history): share typed payload comparison with Debug Core while preserving adapter APIs, capture states, and diagnostic values.
 
 ## 0.1.1 May 18, 2026
 

@@ -375,3 +375,11 @@ For detailed configuration options and advanced usage.
 ## License
 
 [![License](https://img.shields.io/badge/License-BSD--3--Clause-brightgreen.svg?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=555555)](LICENSE)
+
+## History comparison architecture
+
+`HistoryComparison::fromSnapshots()` delegates typed structural payload comparison to Debug Core's
+`PHPForge\Debug\Comparison\PayloadDifference`. The adapter retains metric formatting, panel labels, ordering, capture
+states, and its existing public comparison models. No constructor, result type, captured value, or storage format changes.
+Missing panels remain distinct from captured empty arrays; failure envelopes take precedence over payloads, and
+state-only transitions still count as a change. Comparison does not apply capture-policy redaction to Logs.
