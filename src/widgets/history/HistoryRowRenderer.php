@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\widgets\history;
 
 use PHPForge\Debug\Helper\{Format, Gauge, Vocabulary};
-use PHPForge\Debug\View\History\{HistoryRow, HistoryScale, HistorySummary};
+use PHPForge\Debug\View\History\{HistoryCellRenderer, HistoryRow, HistoryScale, HistorySummary};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
 use UIAwesome\Html\Root\Header;
@@ -36,18 +36,7 @@ final class HistoryRowRenderer
      */
     public static function buildRowOptions(HistoryRow $row, DebugSearch $searchModel): array
     {
-        $base = $searchModel->isCodeCritical($row->statusCode)
-            ? GridViewConfig::rowClassFor('danger')
-            : [];
-
-        $base['data-yii-debug-tag'] = $row->tag;
-        $base['data-yii-debug-method'] = $row->method;
-        $base['data-yii-debug-url'] = $row->url;
-        $base['data-yii-debug-status'] = (string) $row->statusCode;
-        $base['data-yii-debug-time'] = $row->timeCompact;
-        $base['data-yii-debug-ajax'] = $row->ajax ? '1' : '';
-
-        return $base;
+        return HistoryCellRenderer::buildRowAttributes($row, $searchModel->isCodeCritical($row->statusCode));
     }
 
     /**
@@ -55,7 +44,7 @@ final class HistoryRowRenderer
      */
     public static function renderAjaxCell(HistoryRow $row): string
     {
-        return $row->ajax ? 'Yes' : 'No';
+        return HistoryCellRenderer::renderAjaxCell($row);
     }
 
     /**
@@ -109,14 +98,7 @@ final class HistoryRowRenderer
      */
     public static function renderMethodCell(HistoryRow $row): string
     {
-        if ($row->method === '') {
-            return '';
-        }
-
-        return Span::tag()
-            ->class('yii-debug-method yii-debug-verb-' . Vocabulary::verb($row->method))
-            ->content($row->method)
-            ->render();
+        return HistoryCellRenderer::renderMethodCell($row);
     }
 
     /**
@@ -249,10 +231,6 @@ final class HistoryRowRenderer
      */
     public static function renderUrlCell(HistoryRow $row): string
     {
-        return Span::tag()
-            ->class('yii-debug-url-cell')
-            ->title($row->url)
-            ->content($row->url)
-            ->render();
+        return HistoryCellRenderer::renderUrlCell($row);
     }
 }
