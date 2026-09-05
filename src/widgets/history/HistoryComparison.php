@@ -4,15 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
-use PHPForge\Debug\Comparison\{PayloadDifference, SummaryMetricComparison};
+use PHPForge\Debug\Comparison\{PanelComparison, SummaryMetricComparison};
 use PHPForge\Debug\Storage\{DebugSnapshot, RequestSummary};
-
-use function array_diff;
-use function array_key_exists;
-use function array_keys;
-use function array_unique;
-use function in_array;
-use function sort;
 
 /**
  * Builds a privacy-preserving comparison of two immutable debugger snapshots.
@@ -98,87 +91,21 @@ final readonly class HistoryComparison
      */
     private static function buildPanels(DebugSnapshot $baseline, DebugSnapshot $target, array $panelLabels): array
     {
-        $observedIds = array_unique(
-            [
-                ...array_keys($baseline->panels),
-                ...array_keys($baseline->failures),
-                ...array_keys($target->panels),
-                ...array_keys($target->failures),
-            ],
-        );
-
-        $orderedIds = [];
-
-        foreach ($panelLabels as $id => $_label) {
-            if (in_array($id, $observedIds, true)) {
-                $orderedIds[] = $id;
-            }
-        }
-
-        $extraIds = array_diff($observedIds, $orderedIds);
-
-        sort($extraIds);
-
-        $orderedIds = [
-            ...$orderedIds,
-            ...$extraIds,
-        ];
-
         $comparisons = [];
 
-        foreach ($orderedIds as $id) {
-            $baselineState = self::panelState($baseline, $id);
-            $targetState = self::panelState($target, $id);
-
-            $difference = PayloadDifference::between(
-                self::panelPayload($baseline, $id),
-                self::panelPayload($target, $id),
-            );
-
-            $added = $difference->added;
-            $removed = $difference->removed;
-            $changed = $difference->changed;
-            $unchanged = $difference->unchanged;
-
-            if ($added + $removed + $changed === 0 && $baselineState !== $targetState) {
-                $changed = 1;
-            }
-
+        foreach (PanelComparison::between($baseline, $target, $panelLabels) as $panel) {
             $comparisons[] = new HistoryPanelComparison(
-                id: $id,
-                label: $panelLabels[$id] ?? $id,
-                baselineState: $baselineState,
-                targetState: $targetState,
-                added: $added,
-                removed: $removed,
-                changed: $changed,
-                unchanged: $unchanged,
+                id: $panel->id,
+                label: $panel->label,
+                baselineState: $panel->baselineState,
+                targetState: $panel->targetState,
+                added: $panel->added,
+                removed: $panel->removed,
+                changed: $panel->changed,
+                unchanged: $panel->unchanged,
             );
         }
 
         return $comparisons;
-    }
-
-    /**
-     * Returns the captured payload or failure envelope, preserving the distinction between absent and empty.
-     *
-     * @return array<string, mixed>|null
-     */
-    private static function panelPayload(DebugSnapshot $snapshot, string $id): array|null
-    {
-        if (isset($snapshot->failures[$id])) {
-            return ['failure' => $snapshot->failures[$id]->jsonSerialize()];
-        }
-
-        return $snapshot->panels[$id] ?? null;
-    }
-
-    private static function panelState(DebugSnapshot $snapshot, string $id): string
-    {
-        if (array_key_exists($id, $snapshot->failures)) {
-            return 'Failed';
-        }
-
-        return array_key_exists($id, $snapshot->panels) ? 'Captured' : 'Not captured';
     }
 }

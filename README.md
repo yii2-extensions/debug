@@ -378,16 +378,20 @@ For detailed configuration options and advanced usage.
 
 ## History comparison architecture
 
-`HistoryComparison::fromSnapshots()` delegates typed structural payload comparison to Debug Core's
-`PHPForge\Debug\Comparison\PayloadDifference` and request-summary metric calculation and formatting to
-`PHPForge\Debug\Comparison\SummaryMetricComparison`. The adapter maps the shared metric results into its existing
-public models and retains panel labels, ordering, and capture states. No constructor, property, getter, return type,
+`HistoryComparison::fromSnapshots()` delegates panel selection, ordering, failure precedence, capture states, and
+combined structural/state counts to Debug Core's `PHPForge\Debug\Comparison\PanelComparison`, which reuses
+`PayloadDifference`. Request-summary metrics remain delegated to `SummaryMetricComparison`. The adapter only maps
+these results into its existing public models, including `HistoryPanelComparison`. No constructor, property, getter,
+return type,
 captured value, or storage format changes. Metric labels, order, units, precision, separators, signs, percentages, trends,
 and panel IDs retain their exact previous behavior, including missing values, zero baselines, and unrounded float deltas.
 
-Publish the Core revision providing `SummaryMetricComparison` first and update consuming application locks before
-installing this adapter revision. The existing `^0.1@dev` constraint also admits older development revisions without the
-new class; local workspace links do not guarantee that a published installation has been updated.
+Publish the Core revision providing `SummaryMetricComparison` and `PanelComparison` first and update consuming application
+locks before installing this adapter revision. The existing `^0.1@dev` constraint also admits older development revisions without the
+new classes; local workspace links do not guarantee that a published installation has been updated.
 
 Missing panels remain distinct from captured empty arrays; failure envelopes take precedence over payloads, and
-state-only transitions still count as a change. Comparison does not apply capture-policy redaction to Logs.
+state-only transitions still count as one change without discarding unchanged leaves. Transitions with structural
+additions, removals, or changes do not increment the changed count again. Observed configured IDs retain label order;
+extras retain regular ascending sorting and ID labels. Unknown configured IDs do not create rows.
+Comparison does not apply capture-policy redaction to Logs.
