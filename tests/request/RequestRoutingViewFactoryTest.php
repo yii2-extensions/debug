@@ -264,6 +264,7 @@ final class RequestRoutingViewFactoryTest extends TestCase
             'Only a successful, non-empty trace rule or exact target may select the current route definition.',
         );
     }
+
     public function testInventoryOmitsLoadedDebuggerModulesWithoutLoadingApplicationModules(): void
     {
         $this->mockWebApplication();

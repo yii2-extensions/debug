@@ -85,8 +85,8 @@ final class RequestRoutingViewFactory
     }
 
     /**
-     * @param list<RouteDefinition> $routes
      * @param list<RouteTraceRow> $trace
+     * @param list<RouteDefinition> $routes
      */
     private static function currentDefinition(string $route, array $trace, array $routes): RouteDefinition|null
     {
