@@ -7,8 +7,9 @@ namespace yii\debug\tests\widgets\sidebar;
 use Exception;
 use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use yii\debug\panels\{ConfigPanel, InertiaPanel, MailPanel, QueuePanel, RequestPanel, RouterPanel, VitePanel};
+use yii\debug\tests\provider\UrlPathProvider;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarNavItem};
 
@@ -22,6 +23,45 @@ use function array_map;
 #[Group('sidebar')]
 final class SidebarDataNormalizerTest extends TestCase
 {
+    #[DataProviderExternal(UrlPathProvider::class, 'paths')]
+    public function testCapturedUrlDisplayPreservesDiagnostics(string $url, string $expected): void
+    {
+        $this->mockWebApplication();
+
+        $panel = $this->makePanel(RequestPanel::class);
+        $summary = $this->requestSummary('tag-1', ['url' => $url]);
+
+        $original = $summary->jsonSerialize();
+
+        $view = SidebarDataNormalizer::fromView(
+            ['request' => $panel],
+            ['tag-1' => $summary],
+            $panel,
+            'tag-1',
+            $summary,
+        );
+
+        self::assertNotNull(
+            $view->snapshot,
+            'A captured request must retain its sidebar model.',
+        );
+        self::assertSame(
+            $expected,
+            $view->snapshot->path,
+            'The displayed path must remain exact.',
+        );
+        self::assertSame(
+            $url,
+            $view->snapshot->fullUrl,
+            'The full diagnostic URL must remain intact.',
+        );
+        self::assertSame(
+            $original,
+            $summary->jsonSerialize(),
+            'Presentation must not mutate the request summary.',
+        );
+    }
+
     public function testConsoleInvocationUrlIsShownVerbatim(): void
     {
         $this->mockWebApplication();
