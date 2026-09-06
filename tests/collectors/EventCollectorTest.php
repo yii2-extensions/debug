@@ -117,6 +117,78 @@ final class EventCollectorTest extends TestCase
         );
     }
 
+    public function testFailedTracePreservesContextAndEventPropagation(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->captureContext = true;
+        $collector->traceLimit = 8;
+
+        $component = new Component();
+        $event = new \yii\base\ViewEvent(['viewFile' => '/views/site/index.php']);
+        $executed = false;
+
+        Event::on(
+            Component::class,
+            'beforeRender',
+            static function () use (&$executed): void {
+                $executed = true;
+            },
+        );
+
+        $aliases = \Yii::$aliases;
+
+        try {
+            \Yii::setAlias('@yii', null);
+
+            $component->trigger('beforeRender', $event);
+        } finally {
+            \Yii::$aliases = $aliases;
+        }
+
+        $entries = $this->captureEntries($collector);
+
+        self::assertCount(
+            1,
+            $entries,
+            'A trace failure must not discard the observed event.',
+        );
+
+        $inspection = $entries[0]->inspection();
+
+        self::assertNotNull(
+            $inspection,
+            'A trace failure must retain the event inspection.',
+        );
+        self::assertSame(
+            'failed',
+            $inspection->getTraceStatus(),
+            'An unresolved framework path must be reported as a trace capture failure.',
+        );
+        self::assertSame(
+            [],
+            $inspection->getTrace(),
+            'Failed trace capture must not expose partial trace data.',
+        );
+        self::assertSame(
+            'captured',
+            $inspection->getContextStatus(),
+            'A trace failure must not change the successful context status.',
+        );
+        self::assertSame(
+            [
+                'View file' => '/views/site/index.php',
+                'Continue allowed (observed)' => 'Yes',
+            ],
+            $inspection->getContext(),
+            'A trace failure must preserve the independently captured context.',
+        );
+        self::assertTrue(
+            $executed,
+            'A trace failure must not prevent later event handlers from running.',
+        );
+    }
+
     public function testIdPairsWithTheEventsPanel(): void
     {
         self::assertSame(
