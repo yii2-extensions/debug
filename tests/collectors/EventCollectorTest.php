@@ -225,7 +225,7 @@ final class EventCollectorTest extends TestCase
         );
         self::assertSame(
             '/views/site/index.php',
-            ($inspection->getContext()['View file'] ?? null),
+            $inspection->getContext()['View file'] ?? null,
             'The selected view must be inspectable.',
         );
         self::assertSame(
