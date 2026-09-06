@@ -395,3 +395,36 @@ state-only transitions still count as one change without discarding unchanged le
 additions, removals, or changes do not increment the changed count again. Observed configured IDs retain label order;
 extras retain regular ascending sorting and ID labels. Unknown configured IDs do not create rows.
 Comparison does not apply capture-policy redaction to Logs.
+
+### Event table and opt-in context
+
+Events uses a single table with original observation numbers, relative times, visible column filters, sorting, and
+pagination. Open an event name to inspect its context and source trace in a full-width detail row.
+Diagnostics appear side by side on larger screens without repeating the table fields.
+Event/source group shortcuts count the complete capture. All offsets use the first captured event, not request start.
+Gaps do not measure handler execution.
+
+The collector observes events through the global class-level wildcard listener. Instance handlers run before this
+observer and may stop propagation, so such events can be absent; observed state is not final event state.
+
+Context and argument-free source traces are disabled by default. Enable them only in development configuration:
+
+```php
+use yii\debug\collectors\EventCollector;
+
+// Add this entry to the existing debug module configuration.
+'collectors' => [
+    'event' => [
+        'class' => EventCollector::class,
+        'captureContext' => true,
+        'traceLimit' => 8,
+    ],
+],
+```
+
+Selected context contains action/controller IDs or the rendered view filename, plus the observed `isValid` flag.
+No action result, view parameter values, rendered output, arbitrary event properties, or sender object is dumped.
+Context is redacted and bounded to sixteen fields of 2,048 bytes; traces retain at most sixteen file/line locations,
+without arguments or objects. Capture failures appear explicitly in event details and do not interrupt propagation.
+Previously stored snapshots remain readable but cannot acquire missing context retroactively. Upgrade the core and
+adapter together; listeners and their final results remain outside the capture scope.

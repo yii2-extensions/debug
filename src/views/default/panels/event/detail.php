@@ -10,7 +10,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\EventSearch;
-use PHPForge\Debug\Panel\Event\{EventCellRenderer, EventRow};
+use PHPForge\Debug\Panel\Event\{EventCellRenderer, EventInspectorRenderer, EventRow, EventSequence};
 use yii\debug\panels\EventPanel;
 use yii\debug\widgets\FilterBanner;
 use yii\grid\GridView;
@@ -66,8 +66,8 @@ if ($hasEvents) {
         'No events triggered in this request',
         P::tag()
             ->content(
-                'The event panel records every event the framework or the application fires through a wildcard '
-                . 'listener, so this request completed without triggering any.',
+                'No events reached the global debug listener. Events stopped by instance handlers, or fired '
+                . 'outside the capture window, may be absent.',
             ),
         P::tag()
             ->content('Any component that attaches a handler and triggers an event populates this view:'),
@@ -78,40 +78,83 @@ if ($hasEvents) {
     <?php return; ?>
 <?php endif; ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
+<?php
+$sequence = new EventSequence($panel->getEvents());
+
+$filterUrl = static function (string $attribute, string $value) use ($panel, $searchModel): string {
+    $params = [];
+
+    foreach (Yii::$app->request->get() as $key => $valueFromQuery) {
+        if (is_string($key)) {
+            $params[$key] = $valueFromQuery;
+        }
+    }
+
+    unset($params['page']);
+
+    $filters = $searchModel->getAttributes(['name', 'class', 'senderClass', 'isStatic']);
+
+    $filters[$attribute] = $value;
+    $params['Event'] = $filters;
+
+    return $panel->getUrl($params);
+};
+?>
+<?= EventInspectorRenderer::renderControls(
+    $panel->getEvents(),
+    $filterUrl,
+    'name',
+    'Observed by the global Yii listener. Events stopped by instance handlers may be absent; order is observation order.',
+) ?>
 <?= GridView::widget(
     [
         ...GridViewConfig::defaults(),
         'dataProvider' => $dataProvider,
+        'afterRow' => static fn(EventRow $data): string => EventInspectorRenderer::renderDetailRow($data, $sequence, 6),
         'id' => 'event-panel-detailed-grid',
         'options' => ['class' => 'yii-debug-grid yii-debug-grid-event'],
         'filterModel' => $searchModel,
         'filterUrl' => $panel->getUrl(),
         'columns' => [
             [
+                'label' => '#',
+                'value' => static fn(EventRow $data): int => $sequence->index($data),
+                'contentOptions' => ['class' => 'yii-debug-col-num'],
+                'headerOptions' => ['class' => 'yii-debug-col-num'],
+            ],
+            [
                 'attribute' => 'time',
-                'value' => static fn(EventRow $data): string => EventCellRenderer::renderTimeCell($data),
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+                'value' => static fn(EventRow $data): string => EventInspectorRenderer::renderTimeCell($data, $sequence),
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'yii-debug-event-time-cell'],
                 'headerOptions' => ['class' => 'sort-numerical'],
                 'options' => ['width' => '10%'],
             ],
             [
                 'attribute' => 'name',
-                'contentOptions' => ['class' => 'yii-debug-cell-mono'],
+                'label' => 'Event',
+                'value' => static fn(EventRow $data): string => EventInspectorRenderer::renderEventCell($data, $sequence),
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'yii-debug-event-cell'],
+                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => 'Filter by event name'],
             ],
             [
                 'attribute' => 'class',
+                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => 'Filter by event class'],
                 'value' => static fn(EventRow $data): string => EventCellRenderer::renderClassCell($data),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-cell-mono'],
             ],
             [
                 'attribute' => 'senderClass',
+                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => 'Filter by sender'],
                 'value' => static fn(EventRow $data): string => EventCellRenderer::renderSenderCell($data),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-cell-mono'],
             ],
             [
                 'attribute' => 'isStatic',
+                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => 'Filter by static events'],
                 'value' => static fn(EventRow $data): string => EventCellRenderer::renderStaticCell($data),
                 'format' => 'raw',
                 'filter' => ['1' => 'Yes', '0' => 'No'],

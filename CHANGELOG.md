@@ -70,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: delegate captured URL-to-path display conversion to Debug Core while preserving original diagnostic URLs, public models, navigation, and rendered output.
 - refactor: reuse Debug Core History cursor attributes and Ajax, method, and URL cells while preserving Yii2 critical-status policy and public renderer methods.
 - refactor: delegate row-status classes to Debug Core while preserving `GridViewConfig::rowClassFor()` and Yii2 grid configuration.
+- feat(events): add shared execution inspector with opt-in action/view context and source traces, preserving limits and snapshots.
 
 ## 0.1.1 May 18, 2026
 
