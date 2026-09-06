@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\event;
 
-use PHPForge\Debug\Panel\Event\{EventRow, EventSnapshot};
-use PHPUnit\Framework\Attributes\Group;
+use PHPForge\Debug\Panel\Event\{EventInspection, EventRow, EventSnapshot};
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use stdClass;
 use Yii;
 use yii\base\Event;
 use yii\debug\panels\EventPanel;
+use yii\debug\tests\provider\EventPanelProvider;
 use yii\debug\tests\support\TestCase;
+
+use function substr_count;
 
 /**
  * Unit tests for {@see EventPanel} covering snapshot hydration, the toolbar count chip, and the rendered detail/summary
@@ -23,11 +26,15 @@ final class EventPanelTest extends TestCase
     public function testEventsRemainReadableThroughTheYiiGetterContract(): void
     {
         $panel = $this->makePanel(EventPanel::class);
+
         $events = [new EventRow(1.0, 'afterSave', Event::class, '0', 'App')];
 
         $this->hydratePanel($panel, new EventSnapshot($events));
 
-        self::assertTrue($panel->canGetProperty('events'), 'Yii must recognize the events getter.');
+        self::assertTrue(
+            $panel->canGetProperty('events'),
+            'Yii must recognize the events getter.',
+        );
         self::assertSame(
             $panel->getEvents(),
             $panel->__get('events'),
@@ -222,6 +229,97 @@ final class EventPanelTest extends TestCase
                 'getToolbarItems',
             ),
             'Empty data must skip the toolbar item.',
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    #[DataProviderExternal(EventPanelProvider::class, 'queryControls')]
+    public function testUnifiedTablePreservesObservationIdentity(array $query, int $index, string $offset, string $gap): void
+    {
+        $inspection = (new EventInspection())
+            ->withContext(['Action' => '<diagnostic>'], 'captured');
+        $snapshot = new EventSnapshot(
+            [
+                new EventRow(10.0, 'first', 'Event', '0', 'Worker'),
+                (new EventRow(10.125, 'second', 'Event', '0', 'Worker'))->withInspection($inspection),
+                (new EventRow(10.5, 'third', 'Event', '0', 'Worker'))->withInspection($inspection),
+            ],
+        );
+
+        $panel = $this->makePanel(EventPanel::class);
+
+        Yii::$app->getRequest()->setQueryParams($query);
+
+        $this->hydratePanel($panel, $snapshot);
+
+        $html = $panel->getDetail();
+
+        self::assertSame(
+            1,
+            substr_count($html, '<table'),
+            'Events must render exactly one table.',
+        );
+        self::assertSame(
+            1,
+            substr_count($html, 'class="yii-debug-event-item"'),
+            'Each visible event must appear once.',
+        );
+        self::assertSame(
+            1,
+            substr_count($html, "id=\"event-{$index}\""),
+            'Pagination and sorting must preserve the original observation identity.',
+        );
+        self::assertSame(
+            1,
+            substr_count($html, 'class="yii-debug-event-detail-row"'),
+            'Each visible event must have one companion diagnostic row.',
+        );
+        self::assertStringContainsString(
+            'colspan="6"',
+            $html,
+            'Diagnostics must span all event columns.',
+        );
+        self::assertStringContainsString(
+            "aria-controls=\"event-{$index}-detail\"",
+            $html,
+            'The disclosure must identify its companion diagnostics.',
+        );
+        self::assertSame(
+            1,
+            substr_count($html, '&lt;diagnostic&gt;'),
+            'Captured context must not be duplicated in the event summary.',
+        );
+        self::assertStringContainsString(
+            $offset,
+            $html,
+            'The visible offset must refer to the original capture.',
+        );
+        self::assertStringContainsString(
+            $gap,
+            $html,
+            'The visible gap must refer to the previous original observation.',
+        );
+        self::assertStringContainsString(
+            '&lt;diagnostic&gt;',
+            $html,
+            'Inline diagnostics must preserve escaped captured context.',
+        );
+        self::assertStringContainsString(
+            'name="Event[class]"',
+            $html,
+            'Column filters must remain available.',
+        );
+        self::assertStringNotContainsString(
+            'yii-debug-event-raw',
+            $html,
+            'The secondary event table must be removed.',
+        );
+        self::assertStringNotContainsString(
+            'Execution flow',
+            $html,
+            'Sorted results must not be labeled as chronological execution flow.',
         );
     }
 }

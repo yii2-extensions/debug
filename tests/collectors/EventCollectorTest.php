@@ -99,12 +99,188 @@ final class EventCollectorTest extends TestCase
         );
     }
 
+    public function testFailedContextDoesNotBreakEventPropagation(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->captureContext = true;
+
+        $event = new \yii\base\ViewEvent();
+
+        (new Component())->trigger('beforeRender', $event);
+
+        self::assertSame(
+            'failed',
+            ($this->captureEntries($collector)[0]
+                ?? self::fail('Expected one captured row.'))->inspection()?->getContextStatus(),
+            'Invalid view metadata must be reported as a diagnostic failure.',
+        );
+    }
+
+    public function testFailedTracePreservesContextAndEventPropagation(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->captureContext = true;
+        $collector->traceLimit = 8;
+
+        $component = new Component();
+        $event = new \yii\base\ViewEvent(['viewFile' => '/views/site/index.php']);
+        $executed = false;
+
+        Event::on(
+            Component::class,
+            'beforeRender',
+            static function () use (&$executed): void {
+                $executed = true;
+            },
+        );
+
+        $aliases = \Yii::$aliases;
+
+        try {
+            \Yii::setAlias('@yii', null);
+
+            $component->trigger('beforeRender', $event);
+        } finally {
+            \Yii::$aliases = $aliases;
+        }
+
+        $entries = $this->captureEntries($collector);
+
+        self::assertCount(
+            1,
+            $entries,
+            'A trace failure must not discard the observed event.',
+        );
+
+        $inspection = $entries[0]->inspection();
+
+        self::assertNotNull(
+            $inspection,
+            'A trace failure must retain the event inspection.',
+        );
+        self::assertSame(
+            'failed',
+            $inspection->getTraceStatus(),
+            'An unresolved framework path must be reported as a trace capture failure.',
+        );
+        self::assertSame(
+            [],
+            $inspection->getTrace(),
+            'Failed trace capture must not expose partial trace data.',
+        );
+        self::assertSame(
+            'captured',
+            $inspection->getContextStatus(),
+            'A trace failure must not change the successful context status.',
+        );
+        self::assertSame(
+            [
+                'View file' => '/views/site/index.php',
+                'Continue allowed (observed)' => 'Yes',
+            ],
+            $inspection->getContext(),
+            'A trace failure must preserve the independently captured context.',
+        );
+        self::assertTrue(
+            $executed,
+            'A trace failure must not prevent later event handlers from running.',
+        );
+    }
+
     public function testIdPairsWithTheEventsPanel(): void
     {
         self::assertSame(
             'event',
             (new EventCollector())->id(),
             "Stable ID must be 'event'.",
+        );
+    }
+
+    public function testOptInContextCapturesViewMetadataWithoutPayloadValues(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->captureContext = true;
+        $collector->traceLimit = 8;
+
+        $event = new \yii\base\ViewEvent(
+            [
+                'viewFile' => '/views/site/index.php',
+                'params' => ['password' => 'SENSITIVE_EVENT_VALUE'],
+                'output' => 'SENSITIVE_RENDERED_OUTPUT',
+            ]
+        );
+
+        (new Component())->trigger('beforeRender', $event);
+
+        $row = ($this->captureEntries($collector)[0] ?? self::fail('Expected one captured row.'));
+
+        $inspection = $row->inspection();
+
+        self::assertNotNull(
+            $inspection,
+            'Opt-in capture must enrich the event.',
+        );
+        self::assertSame(
+            '/views/site/index.php',
+            $inspection->getContext()['View file'] ?? null,
+            'The selected view must be inspectable.',
+        );
+        self::assertSame(
+            'captured',
+            $inspection->getContextStatus(),
+            'Context availability must be explicit.',
+        );
+        self::assertNotEmpty(
+            $inspection->getTrace(),
+            'Opt-in source traces must record file locations.',
+        );
+        self::assertLessThanOrEqual(
+            8,
+            count($inspection->getTrace()),
+            'Source traces must respect their configured depth.',
+        );
+
+        $serialized = json_encode($row->jsonSerialize(), JSON_THROW_ON_ERROR);
+
+        self::assertStringNotContainsString(
+            'SENSITIVE_EVENT_VALUE',
+            $serialized,
+            'Parameter values must never be captured.',
+        );
+        self::assertStringNotContainsString(
+            'SENSITIVE_RENDERED_OUTPUT',
+            $serialized,
+            'Rendered output must never be captured.',
+        );
+    }
+
+    public function testOptInContextIdentifiesTheActionAtObservationTime(): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->captureContext = true;
+
+        $controller = new \yii\base\Controller('site', \Yii::$app);
+        $action = new \yii\base\Action('index', $controller);
+        $event = new \yii\base\ActionEvent($action);
+
+        $controller->trigger('beforeAction', $event);
+
+        $context = ($this->captureEntries($collector)[0] ?? self::fail('Expected one captured row.'))
+            ->inspection()
+            ?->getContext();
+
+        self::assertSame(
+            [
+                'Action ID' => 'index',
+                'Controller ID' => 'site',
+                'Continue allowed (observed)' => 'Yes',
+            ],
+            $context,
+            'Action context must identify the actual action without dumping its result.',
         );
     }
 
@@ -122,6 +298,35 @@ final class EventCollectorTest extends TestCase
             [],
             $this->getInaccessibleProperty($collector, 'events'),
             'A stopped collector must not retain events fired after listener detachment.',
+        );
+    }
+
+    public function testStoppedInstanceEventsDoNotReachTheGlobalObserver(): void
+    {
+        $collector = $this->makeCollector();
+
+        $component = new Component();
+
+        $executed = false;
+
+        $component->on(
+            'stopped',
+            static function (Event $event) use (&$executed): void {
+                $executed = true;
+                $event->handled = true;
+            }
+        );
+
+        $component->trigger('stopped');
+
+        self::assertTrue(
+            $executed,
+            'The instance handler must execute normally.',
+        );
+        self::assertSame(
+            [],
+            $this->captureEntries($collector),
+            'Global observation must not claim to capture stopped instance events.',
         );
     }
 
