@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\widgets\sidebar;
 
 use PHPForge\Debug\Helper\{Coerce, Icon, Text, Vocabulary};
+use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\ExtensionAvailability;
 use yii\debug\Module;
@@ -130,7 +131,7 @@ final class SidebarDataNormalizer
 
         $items = [
             new SidebarNavItem(
-                label: 'History',
+                label: PanelTitle::HISTORY->value,
                 iconSvg: Icon::render('history'),
                 url: $historyParams,
                 tooltip: 'Browse all captured requests',

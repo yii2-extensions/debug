@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
 use UIAwesome\Html\Heading\H1;
 use yii\debug\Module;
@@ -16,7 +17,7 @@ use yii\web\View;
  * @var string $target Selected target tag.
  * @var View $this View component instance.
  */
-$this->title = 'Compare captures';
+$this->title = PanelTitle::COMPARE->value;
 
 $baselineSummary = $comparison->baseline->summary;
 $targetSummary = $comparison->target->summary;
@@ -43,7 +44,7 @@ $panelLink = static function (HistoryPanelComparison $panel, string $tag, string
     return Html::a('Open panel', $captureUrl($tag, $panel->id), ['class' => 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm']);
 };
 ?>
-<?= H1::tag()->class('yii-debug-hero-title')->content('Compare captures') ?>
+<?= H1::tag()->class('yii-debug-hero-title')->content(PanelTitle::COMPARE) ?>
 
 <section class="yii-debug-section" aria-labelledby="yii-debug-compare-selection">
     <h2 class="yii-debug-section-title" id="yii-debug-compare-selection">

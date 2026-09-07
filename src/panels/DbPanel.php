@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\data\Sort;
@@ -27,9 +28,6 @@ use function count;
  */
 class DbPanel extends Panel
 {
-    protected const string ICON = 'db';
-    protected const string NAME = 'Database';
-
     /**
      * Critical-query-count threshold; when the captured query count exceeds this value the toolbar item flips to a
      * warning state. `null` disables the check.
@@ -155,6 +153,15 @@ class DbPanel extends Panel
     }
 
     /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::DATABASE->value;
+    }
+
+    /**
      * Returns the executed statements as typed rows hydrated from the stored snapshot.
      *
      * @return list<QueryRow> Rows in capture order.
@@ -162,6 +169,15 @@ class DbPanel extends Panel
     public function getRows(): array
     {
         return $this->snapshot?->entries() ?? [];
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::DATABASE->value;
     }
 
     /**

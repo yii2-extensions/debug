@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Helper\Coerce;
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\Profile\ProfileRow;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use RuntimeException;
@@ -25,9 +26,6 @@ use yii\debug\Panel;
  */
 class TimelinePanel extends Panel
 {
-    protected const string ICON = 'timeline';
-    protected const string NAME = 'Timeline';
-
     /**
      * Request duration in milliseconds (resolved from the Profiling panel when available, otherwise `end - start`).
      */
@@ -106,6 +104,15 @@ class TimelinePanel extends Panel
     }
 
     /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::TIMELINE->value;
+    }
+
+    /**
      * Returns the request start timestamp in milliseconds since the Unix epoch.
      */
     public function getStart(): float
@@ -161,6 +168,15 @@ class TimelinePanel extends Panel
     public function getSvgOptions(): array
     {
         return $this->svgOptions;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::TIMELINE->value;
     }
 
     /**

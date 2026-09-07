@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\Vite\{ViteComponent, ViteSectionRenderer, ViteSnapshot, ViteSummary};
 use yii\debug\Panel;
 
@@ -16,9 +17,6 @@ use yii\debug\Panel;
  */
 class VitePanel extends Panel
 {
-    protected const string ICON = 'brand-javascript';
-    protected const string NAME = 'Vite';
-
     private ViteSnapshot|null $snapshot = null;
 
     /**
@@ -36,6 +34,24 @@ class VitePanel extends Panel
     public function getDetail(): string
     {
         return ViteSectionRenderer::render($this->summary());
+    }
+
+    /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::VITE->value;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::VITE->value;
     }
 
     /**

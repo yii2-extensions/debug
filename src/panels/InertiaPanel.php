@@ -7,6 +7,7 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\Panel;
@@ -25,9 +26,6 @@ use function is_object;
  */
 class InertiaPanel extends Panel
 {
-    protected const string ICON = 'inertia';
-    protected const string NAME = 'Inertia';
-
     /**
      * Application component id under which the Inertia manager is registered.
      */
@@ -57,6 +55,15 @@ class InertiaPanel extends Panel
     }
 
     /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::INERTIA->value;
+    }
+
+    /**
      * @return array<array-key, mixed>
      */
     public function getSnapshotData(): array
@@ -70,6 +77,15 @@ class InertiaPanel extends Panel
     public function getStatusCode(): int
     {
         return $this->snapshot === null ? 0 : $this->snapshot->statusCode;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::INERTIA->value;
     }
 
     /**

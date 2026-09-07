@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\Router\RouterSnapshot;
 use Yii;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
@@ -18,9 +19,6 @@ use yii\debug\Panel;
  */
 class RouterPanel extends Panel
 {
-    protected const string ICON = 'router';
-    protected const string NAME = 'Router';
-
     /**
      * Whether Router should retain its legacy standalone toolbar and sidebar entries.
      */
@@ -46,11 +44,29 @@ class RouterPanel extends Panel
     }
 
     /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::ROUTER->value;
+    }
+
+    /**
      * Returns the captured routing snapshot for composition by another panel.
      */
     public function getSnapshot(): RouterSnapshot|null
     {
         return $this->snapshot;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::ROUTER->value;
     }
 
     /**

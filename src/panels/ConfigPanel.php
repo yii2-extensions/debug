@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Panel\Config\{ConfigDataNormalizer, ConfigSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Yii;
 use yii\debug\Panel;
 
@@ -23,9 +24,6 @@ use function ksort;
  */
 class ConfigPanel extends Panel
 {
-    protected const string ICON = 'config';
-    protected const string NAME = 'Configuration';
-
     private ConfigSnapshot|null $snapshot = null;
 
     /**
@@ -77,11 +75,29 @@ class ConfigPanel extends Panel
     }
 
     /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::CONFIGURATION->value;
+    }
+
+    /**
      * Returns the saved PHP version (`php.version`), or `null` when the snapshot is missing.
      */
     public function getPhpVersion(): string|null
     {
         return self::nestedScalar($this->payload(), 'php', 'version');
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::CONFIGURATION->value;
     }
 
     /**

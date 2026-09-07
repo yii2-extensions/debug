@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use JsonException;
 use Override;
+use PHPForge\Debug\Panel\PanelIcon;
 use yii\debug\Panel;
 use yii\helpers\Html;
 
@@ -24,8 +25,6 @@ use const JSON_UNESCAPED_UNICODE;
  */
 final class JsonPanel extends Panel
 {
-    protected const string ICON = 'dump';
-
     /**
      * @var array<string, mixed> Stored panel payload.
      */
@@ -60,6 +59,15 @@ final class JsonPanel extends Panel
         $name = ucwords(str_replace(['_', '.', '-'], ' ', trim($this->id, '_')));
 
         return $name === '' ? 'Panel' : $name;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::DUMP->value;
     }
 
     /**

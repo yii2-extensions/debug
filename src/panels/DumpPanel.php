@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Panel\Dump\{DumpRow, DumpSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Yii;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
@@ -20,9 +21,6 @@ use function count;
  */
 class DumpPanel extends Panel
 {
-    protected const string ICON = 'dump';
-    protected const string NAME = 'Dump';
-
     private DumpSnapshot|null $snapshot = null;
 
     /**
@@ -52,6 +50,24 @@ class DumpPanel extends Panel
     public function getDumps(): array
     {
         return $this->snapshot?->entries() ?? [];
+    }
+
+    /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::DUMP->value;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::DUMP->value;
     }
 
     public function hasDumps(): bool

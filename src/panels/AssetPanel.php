@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Panel\Asset\{AssetBundleNormalizer, AssetBundleRow, AssetSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\Panel;
@@ -21,9 +22,6 @@ use function count;
  */
 class AssetPanel extends Panel
 {
-    protected const string ICON = 'asset';
-    protected const string NAME = 'Asset Bundles';
-
     private AssetSnapshot|null $snapshot = null;
 
     /**
@@ -48,6 +46,24 @@ class AssetPanel extends Panel
             ],
             $this,
         );
+    }
+
+    /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::ASSETS->value;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::ASSETS->value;
     }
 
     /**

@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Panel\Event\{EventRow, EventSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Yii;
 use yii\debug\models\search\EventSearch;
 use yii\debug\Panel;
@@ -20,9 +21,6 @@ use function count;
  */
 class EventPanel extends Panel
 {
-    protected const string ICON = 'events';
-    protected const string NAME = 'Events';
-
     private EventSnapshot|null $snapshot = null;
 
     /**
@@ -52,6 +50,24 @@ class EventPanel extends Panel
     public function getEvents(): array
     {
         return $this->snapshot?->entries() ?? [];
+    }
+
+    /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::EVENTS->value;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::EVENTS->value;
     }
 
     public function hasEvents(): bool

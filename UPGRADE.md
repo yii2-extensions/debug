@@ -5,6 +5,20 @@
 Version 0.2 is a development-tooling release with intentional internal API removals. Application configuration for
 the debug module remains unchanged.
 
+### Panel icons use `getToolbarIcon()` instead of `ICON` constants
+
+The base panel and built-in panels no longer declare `ICON` constants. Custom panels that previously overrode
+`ICON` must override `public function getToolbarIcon(): string|null` instead. Built-in panels return the backed
+value of the shared `PanelIcon` enum and declare a `string` return type. Direct subclasses of the base `Panel`
+may return another SVG key or `null`; subclasses of a built-in panel must return a `string` and may use `''` to omit
+the icon.
+
+### Panel names use `getName()` instead of `NAME` constants
+
+The base panel and built-in panels no longer declare `NAME` constants. Custom panels that previously overrode
+`NAME` must override `public function getName(): string` instead. Built-in panels return their shared `PanelTitle`
+backed values; custom panels may return any display string. `UserPanel::$displayName` remains configurable.
+
 ### Yii2 22 standalone actions replace the debugger controllers
 
 The package now requires `yiisoft/yii2` `^22.0` and dispatches every debugger endpoint as a standalone action through

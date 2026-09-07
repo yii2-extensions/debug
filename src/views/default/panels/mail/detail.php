@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Helper\Coerce;
 use yii\debug\Module;
 use UIAwesome\Html\Flow\P;
@@ -74,7 +75,7 @@ if ($hasVisibleMessages) {
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
-    ->content('Email messages') ?>
+    ->content(PanelTitle::MAIL_MESSAGES) ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>

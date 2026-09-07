@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use UIAwesome\Html\Heading\H1;
 use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
 use yii\debug\panels\router\RouterRenderer;
@@ -14,5 +15,5 @@ use yii\web\View;
  * @var View $this View component instance.
  */
 ?>
-<?= H1::tag()->class('yii-debug-sr-only')->content('Router') ?>
+<?= H1::tag()->class('yii-debug-sr-only')->content(PanelTitle::ROUTER) ?>
 <?= RouterRenderer::renderTabs($currentRoute, $routerRules, $actionRoutes);

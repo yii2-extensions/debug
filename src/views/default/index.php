@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\models\search\DebugSearch;
@@ -35,7 +36,7 @@ $comparisonTags = array_keys($manifest);
 $comparisonTarget = $comparisonTags[0] ?? null;
 $comparisonBaseline = $comparisonTags[1] ?? null;
 ?>
-<?= H1::tag()->class('yii-debug-sr-only')->content('Request history') ?>
+<?= H1::tag()->class('yii-debug-sr-only')->content(PanelTitle::REQUEST_HISTORY) ?>
 <?= HistoryRowRenderer::renderSummary($summary) ?>
 <?php if ($comparisonBaseline !== null && $comparisonTarget !== null): ?>
     <section class="yii-debug-section" aria-labelledby="yii-debug-history-compare-title">

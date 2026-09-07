@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Helper\EmptyState;
 use PHPForge\Debug\Panel\Profile\{ProfileCellRenderer, ProfileRow};
 use UIAwesome\Html\Flow\{Div, P, Pre};
@@ -63,7 +64,7 @@ $summaryItems = [
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
-    ->content('Performance Profiling') ?>
+    ->content(PanelTitle::PROFILING_DETAILS) ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>
@@ -162,7 +163,7 @@ $filterFields[] = Button::tag()
     ) ?>
     <?php return; ?>
 <?php endif; ?>
-<?= H2::tag()->content('Timeline') ?>
+<?= H2::tag()->content(PanelTitle::TIMELINE) ?>
 <?= $timeline ?>
 <?= Header::tag()
     ->class('yii-debug-section-header')

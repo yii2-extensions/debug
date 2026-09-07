@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use UIAwesome\Html\Heading\H1;
 use yii\debug\models\search\TimelineSearch;
 use yii\debug\models\timeline\DataProvider;
@@ -16,7 +17,7 @@ use yii\web\View;
  * @var View $this View component instance.
  */
 ?>
-<?= H1::tag()->class('yii-debug-sr-only')->content('Timeline') ?>
+<?= H1::tag()->class('yii-debug-sr-only')->content(PanelTitle::TIMELINE) ?>
 <?= TimelineRenderer::renderSummary($panel, $dataProvider) ?>
 <?= TimelineRenderer::renderFilterForm($panel, $searchModel) ?>
 <?= TimelineRenderer::renderEmptyHint($panel, $dataProvider) ?>

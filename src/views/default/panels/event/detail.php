@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use UIAwesome\Html\Flow\{P, Pre};
 use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\{Span, Strong};
@@ -57,7 +58,7 @@ if ($hasEvents) {
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
-    ->content('Events') ?>
+    ->content(PanelTitle::EVENTS) ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>
