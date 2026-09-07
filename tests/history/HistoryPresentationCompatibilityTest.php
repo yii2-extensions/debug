@@ -44,6 +44,7 @@ final class HistoryPresentationCompatibilityTest extends TestCase
             'data-yii-debug-status' => $expectedStatus,
             'data-yii-debug-time' => 'custom clock',
             'data-yii-debug-ajax' => $expectedAjax,
+            'data-yii-debug-memory' => '',
         ];
 
         self::assertSame(

@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: reuse Debug Core History cursor attributes and Ajax, method, and URL cells while preserving Yii2 critical-status policy and public renderer methods.
 - refactor: delegate row-status classes to Debug Core while preserving `GridViewConfig::rowClassFor()` and Yii2 grid configuration.
 - feat(events): add execution inspector; docs: document enums and exception formats; refactor: exception enums and share PanelTitle UI labels.
+- fix(history): use shared capture-selection labels; chore(dev): link the local Debug Core checkout through a Composer path repository.
 
 ## 0.1.1 May 18, 2026
 
