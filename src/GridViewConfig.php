@@ -73,7 +73,7 @@ final class GridViewConfig
      */
     public static function pageSizeSelectorHtml(): string
     {
-        return PageSize::selectorHtml(PageSize::current(self::queryParamString('per-page')));
+        return PageSize::selectorFor(Yii::$app->getRequest()->getQueryParams());
     }
 
     /**

@@ -8,7 +8,7 @@ use Override;
 use PHPForge\Debug\Data\QueryInput;
 use PHPForge\Debug\Helper\{EmptyState, Format};
 use PHPForge\Debug\Panel\{MemorySample, PanelIcon, PanelTitle};
-use PHPForge\Debug\Panel\Profile\{ProfileRow, ProfilingSnapshot};
+use PHPForge\Debug\Panel\Profile\{ProfileMessage, ProfileRow, ProfilingSnapshot};
 use PHPForge\Debug\Panel\Timeline\{TimelineGeometry, TimelineMemoryRenderer, TimelineRenderer};
 use PHPForge\Debug\Storage\RequestSummary;
 use UIAwesome\Html\Flow\P;
@@ -234,10 +234,9 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
 
         if ($spans === []) {
             return EmptyState::card(
-                'Timeline unavailable',
-                P::tag()
-                    ->content('The filtered spans cannot be positioned on this request timeline.'),
-                P::tag()->content('The profiling details remain available below.'),
+                ProfileMessage::TIMELINE_UNAVAILABLE_HEADLINE->value,
+                P::tag()->content('The filtered spans cannot be positioned on this request timeline.'),
+                P::tag()->content(ProfileMessage::TIMELINE_UNAVAILABLE_DETAILS),
             );
         }
 
@@ -263,13 +262,9 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     private function renderTimelineUnavailable(): string
     {
         return EmptyState::card(
-            'Timeline unavailable',
-            P::tag()
-                ->content(
-                    'This capture does not contain the valid request start, duration, and peak-memory values required '
-                    . 'to position the chart.',
-                ),
-            P::tag()->content('The profiling details remain available below.'),
+            ProfileMessage::TIMELINE_UNAVAILABLE_HEADLINE->value,
+            P::tag()->content(ProfileMessage::TIMELINE_UNAVAILABLE_EXPLANATION),
+            P::tag()->content(ProfileMessage::TIMELINE_UNAVAILABLE_DETAILS),
         );
     }
 

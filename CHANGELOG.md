@@ -72,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: delegate row-status classes to Debug Core while preserving `GridViewConfig::rowClassFor()` and Yii2 grid configuration.
 - feat(events): add execution inspector; docs: document enums and exception formats; refactor: exception enums and share PanelTitle UI labels.
 - fix(history): use shared capture-selection labels; chore(dev): link the local Debug Core checkout through a Composer path repository.
+- refactor: reuse Debug Core page-size selector, type labels, panel messages, and history cells; follow the `LogTuple` alias rename.
 
 ## 0.1.1 May 18, 2026
 
