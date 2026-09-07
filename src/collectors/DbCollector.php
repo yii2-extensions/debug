@@ -36,7 +36,7 @@ use const JSON_THROW_ON_ERROR;
  * Hooks the bound DB connection so each prepared statement records its row count, calculates per-query timings from
  * the profile log, and exposes the totals the exported summary adopts (query count, excessive callers).
  *
- * @phpstan-import-type LogMessage from \PHPForge\Debug\Panel\Log\LogSnapshot
+ * @phpstan-import-type LogTuple from \PHPForge\Debug\Panel\Log\LogSnapshot
  */
 class DbCollector extends Collector
 {
@@ -68,7 +68,7 @@ class DbCollector extends Collector
      */
     private Closure|null $afterOpenListener = null;
     /**
-     * @var list<LogMessage>|null Current database profile logs
+     * @var list<LogTuple>|null Current database profile logs
      */
     private array|null $profileLogs = null;
     private Connection|null $subscribedConnection = null;
@@ -235,7 +235,7 @@ class DbCollector extends Collector
     /**
      * Returns the profile log entries scanned for query timings (categories listed in {@see $dbEventNames}).
      *
-     * @return list<LogMessage> Profile log entries in capture order.
+     * @return list<LogTuple> Profile log entries in capture order.
      */
     public function getProfileLogs(): array
     {

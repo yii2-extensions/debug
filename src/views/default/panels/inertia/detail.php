@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\Inertia\InertiaMessage;
 use PHPForge\Debug\Panel\PanelTitle;
 use UIAwesome\Html\Flow\{Div, P, Pre};
 use UIAwesome\Html\Heading\{H1, H2};
@@ -9,7 +10,7 @@ use UIAwesome\Html\Helper\Encode;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
 use UIAwesome\Html\Root\Header;
 use UIAwesome\Html\Table\{Table, Tbody, Td, Th, Thead, Tr};
-use PHPForge\Debug\Helper\{CellMore, Coerce, Disclosure, EmptyState};
+use PHPForge\Debug\Helper\{CellMore, Coerce, Disclosure, EmptyState, Format};
 use yii\debug\panels\InertiaPanel;
 
 /** @var InertiaPanel $panel Panel providing the detail content. */
@@ -35,16 +36,6 @@ $visit = match (true) {
     $isPartial => 'Partial reload',
     $isXhr => 'Inertia visit',
     default => 'Full page load',
-};
-
-$typeOf = static fn(mixed $value): string => match (true) {
-    is_array($value) => 'array(' . count($value) . ')',
-    is_string($value) => 'string(' . strlen($value) . ')',
-    is_int($value) => 'int',
-    is_float($value) => 'float',
-    is_bool($value) => 'bool',
-    $value === null => 'null',
-    default => gettype($value),
 };
 
 /**
@@ -90,7 +81,7 @@ if ($page !== null) {
 <?php if ($page === null): ?>
     <?php if ($statusCode === 409): ?>
         <?= EmptyState::card(
-            'Version conflict interrupted this visit',
+            InertiaMessage::VERSION_CONFLICT_HEADLINE->value,
             P::tag()
                 ->html(
                     'The client asset version sent in ',
@@ -107,18 +98,14 @@ if ($page !== null) {
         ) ?>
     <?php else: ?>
         <?= EmptyState::card(
-            'No Inertia page in this request',
+            InertiaMessage::EMPTY_HEADLINE->value,
             P::tag()
                 ->html(
                     'This response was not produced by ',
                     Code::tag()->content('Inertia::render()'),
                     ', so there is no page object to inspect.',
                 ),
-            P::tag()
-                ->content(
-                    'Both full page loads and Inertia XHR visits populate this view; plain JSON endpoints, '
-                    . 'redirects, and asset requests do not.',
-                ),
+            P::tag()->content(InertiaMessage::EMPTY_COVERAGE),
         ) ?>
     <?php endif; ?>
     <?php return; ?>
@@ -177,7 +164,7 @@ foreach ($props as $key => $value) {
                 ->html($origin),
             Td::tag()
                 ->class('yii-debug-cell-mono yii-debug-cell-nowrap')
-                ->content($typeOf($value)),
+                ->content(Format::typeOf($value)),
             Td::tag()
                 ->class('yii-debug-cell-mono yii-debug-cell-payload')
                 ->html($previewOf($value)),

@@ -20,7 +20,7 @@ use function is_string;
  * Owns the idempotent startup/shutdown lifecycle and the debug-module context; subclasses hook event subscription
  * into {@see start()} / {@see stop()} and read accumulated log messages through {@see getLogMessages()}.
  *
- * @phpstan-import-type LogMessage from \PHPForge\Debug\Panel\Log\LogSnapshot
+ * @phpstan-import-type LogTuple from \PHPForge\Debug\Panel\Log\LogSnapshot
  */
 abstract class Collector implements CollectorInterface
 {
@@ -69,7 +69,7 @@ abstract class Collector implements CollectorInterface
      *
      * @throws InvalidConfigException When the debug module log target is not initialized.
      *
-     * @return list<LogMessage> Canonical string-based log messages in capture order.
+     * @return list<LogTuple> Canonical string-based log messages in capture order.
      */
     protected function getLogMessages(
         int $levels = 0,

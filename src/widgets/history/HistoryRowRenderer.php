@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
-use PHPForge\Debug\Helper\{Format, Gauge, Vocabulary};
+use PHPForge\Debug\Helper\Vocabulary;
 use PHPForge\Debug\View\History\{HistoryCellRenderer, HistoryRow, HistoryScale, HistorySummary};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
@@ -15,9 +15,6 @@ use yii\debug\models\search\DebugSearch;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
 use yii\helpers\Url;
-
-use function implode;
-use function number_format;
 
 /**
  * Renders the History index summary header + the per-cell HTML consumed by the GridView columns and the typed
@@ -56,18 +53,7 @@ final class HistoryRowRenderer
      */
     public static function renderDurationCell(HistoryRow $row, float $maxProcessingTime): string
     {
-        if ($row->processingTime === null) {
-            return Span::tag()
-                ->class('yii-debug-not-set')
-                ->content('(not set)')
-                ->render();
-        }
-
-        return Gauge::render(
-            number_format($row->processingTime * 1000) . ' ms',
-            $row->processingTime,
-            $maxProcessingTime,
-        );
+        return HistoryCellRenderer::renderDurationCell($row, $maxProcessingTime);
     }
 
     /**
@@ -79,18 +65,7 @@ final class HistoryRowRenderer
      */
     public static function renderMemoryCell(HistoryRow $row, int $maxPeakMemory): string
     {
-        if ($row->peakMemory === null) {
-            return Span::tag()
-                ->class('yii-debug-not-set')
-                ->content('(not set)')
-                ->render();
-        }
-
-        return Gauge::render(
-            Format::bytesToMb($row->peakMemory, 3),
-            (float) $row->peakMemory,
-            (float) $maxPeakMemory,
-        );
+        return HistoryCellRenderer::renderMemoryCell($row, $maxPeakMemory);
     }
 
     /**
@@ -106,37 +81,12 @@ final class HistoryRowRenderer
      */
     public static function renderSqlCountCell(HistoryRow $row, DbPanel $dbPanel): string
     {
-        $title = "Executed {$row->sqlCount} database queries.";
-
-        $warningParts = [];
-
-        if ($dbPanel->isQueryCountCritical($row->sqlCount)) {
-            $warningParts[] = "Too many queries. Allowed count is {$dbPanel->criticalQueryThreshold}";
-        }
-
-        if ($row->excessiveCallersCount > 0) {
-            $callerLabel = $row->excessiveCallersCount === 1 ? 'caller is' : 'callers are';
-            $warningParts[] = "{$row->excessiveCallersCount} {$callerLabel} making too many calls.";
-        }
-
-        $warning = implode(' &#10;', $warningParts);
-
-        $content = (string) $row->sqlCount;
-
-        if ($warning !== '') {
-            $warningHtml = Span::tag()
-                ->title($warning)
-                ->content('⚠')
-                ->render();
-
-            $content = "{$content} {$warningHtml}";
-        }
-
-        return A::tag()
-            ->href(Url::to(Module::route('view', ['panel' => 'db', 'tag' => $row->tag])))
-            ->title($title)
-            ->html($content)
-            ->render();
+        return HistoryCellRenderer::renderSqlCountCell(
+            $row,
+            Url::to(Module::route('view', ['panel' => 'db', 'tag' => $row->tag])),
+            $dbPanel->isQueryCountCritical($row->sqlCount),
+            $dbPanel->criticalQueryThreshold ?? 0,
+        );
     }
 
     /**

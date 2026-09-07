@@ -26,7 +26,7 @@ use function array_key_exists;
  * Unit tests for {@see TimelinePanel} covering the strict `hydrate()` validation, the SVG renderer lazy factory, the
  * cached span rows, and the toolbar metadata.
  *
- * @phpstan-import-type LogMessage from \PHPForge\Debug\Panel\Log\LogSnapshot
+ * @phpstan-import-type LogTuple from \PHPForge\Debug\Panel\Log\LogSnapshot
  */
 #[Group('panel')]
 #[Group('timeline')]
@@ -514,7 +514,7 @@ final class TimelinePanelTest extends TestCase
     /**
      * Hydrates the profiling panel used for the duration override and span rows.
      *
-     * @param array{time?: float, messages?: list<LogMessage>} $data Profiling payload to inject.
+     * @param array{time?: float, messages?: list<LogTuple>} $data Profiling payload to inject.
      */
     private function primeProfilingPanel(TimelinePanel $panel, array $data): void
     {

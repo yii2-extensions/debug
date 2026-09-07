@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Helper\EmptyState;
-use PHPForge\Debug\Panel\Profile\{ProfileCellRenderer, ProfileRow};
+use PHPForge\Debug\Panel\Profile\{ProfileCellRenderer, ProfileMessage, ProfileRow};
 use UIAwesome\Html\Flow\{Div, P, Pre};
 use UIAwesome\Html\Form\{Button, Form, InputHidden, InputNumber, InputText};
 use UIAwesome\Html\Heading\{H1, H2};
@@ -70,7 +70,7 @@ $summaryItems = [
     ->html(...$summaryItems) ?>
 <?php if ($capturedModels === []): ?>
     <?= EmptyState::card(
-        'No profiling data captured',
+        ProfileMessage::EMPTY_HEADLINE->value,
         P::tag()
             ->html(
                 'This request did not produce any ',
@@ -79,7 +79,7 @@ $summaryItems = [
                 Code::tag()->content('Yii::endProfile()'),
                 ' spans, so the Timeline and details are empty.',
             ),
-        P::tag()->content('To populate this view, wrap interesting sections of code with profile markers:'),
+        P::tag()->content(ProfileMessage::EMPTY_CALL_TO_ACTION),
         Pre::tag()
             ->class('yii-debug-empty-state-code')
             ->content("Yii::beginProfile('my-token');\n// …work…\nYii::endProfile('my-token');"),
@@ -158,8 +158,8 @@ $filterFields[] = Button::tag()
 ) ?>
 <?php if ($visibleCount === 0): ?>
     <?= EmptyState::card(
-        'No spans match the active filters',
-        P::tag()->content('Adjust or clear the filters to show the captured spans.'),
+        ProfileMessage::NO_MATCH_HEADLINE->value,
+        P::tag()->content(ProfileMessage::NO_MATCH_EXPLANATION),
     ) ?>
     <?php return; ?>
 <?php endif; ?>
