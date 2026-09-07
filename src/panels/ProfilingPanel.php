@@ -7,7 +7,7 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Data\QueryInput;
 use PHPForge\Debug\Helper\{EmptyState, Format};
-use PHPForge\Debug\Panel\MemorySample;
+use PHPForge\Debug\Panel\{MemorySample, PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\Profile\{ProfileRow, ProfilingSnapshot};
 use PHPForge\Debug\Panel\Timeline\{TimelineGeometry, TimelineMemoryRenderer, TimelineRenderer};
 use PHPForge\Debug\Storage\RequestSummary;
@@ -27,9 +27,6 @@ use function str_replace;
  */
 class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSummaryAwarePanelInterface
 {
-    protected const string ICON = 'profiling';
-    protected const string NAME = 'Profiling';
-
     private ProfilingSnapshot|null $snapshot = null;
     private RequestSummary|null $summary = null;
 
@@ -86,6 +83,15 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         return $this->snapshot?->entries() ?? [];
     }
 
+    /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::PROFILING->value;
+    }
+
     public function getProcessingTime(): float|null
     {
         return $this->snapshot?->time;
@@ -106,6 +112,15 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         }
 
         return $data;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::PROFILING->value;
     }
 
     /**

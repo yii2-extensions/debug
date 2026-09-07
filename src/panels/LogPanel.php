@@ -6,7 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Panel\Log\{LogCounts, LogRow, LogSnapshot};
-use PHPForge\Debug\Panel\MemorySample;
+use PHPForge\Debug\Panel\{MemorySample, PanelIcon, PanelTitle};
 use Yii;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
@@ -22,9 +22,6 @@ use function array_map;
  */
 class LogPanel extends Panel implements ProvidesMemorySamples
 {
-    protected const string ICON = 'logs';
-    protected const string NAME = 'Logs';
-
     private LogSnapshot|null $snapshot = null;
 
     /**
@@ -65,6 +62,24 @@ class LogPanel extends Panel implements ProvidesMemorySamples
     public function getMessages(): array
     {
         return $this->snapshot?->entries() ?? [];
+    }
+
+    /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::LOGS->value;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::LOGS->value;
     }
 
     /**

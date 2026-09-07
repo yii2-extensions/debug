@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\User\{UserRbacRow, UserSnapshot};
 use Yii;
 use yii\base\{Action as BaseAction, InvalidConfigException, Model};
@@ -35,12 +36,10 @@ use function is_string;
  */
 class UserPanel extends Panel
 {
-    protected const string ICON = 'user';
-
     /**
      * Display name shown in the panel header and the toolbar chip.
      */
-    public string $displayName = 'User';
+    public string $displayName = PanelTitle::USER->value;
     /**
      * @var array<int|string, mixed> GridView column definitions for the user-switch table.
      */
@@ -181,6 +180,15 @@ class UserPanel extends Panel
     public function getSnapshotData(): array
     {
         return $this->snapshot?->data() ?? [];
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::USER->value;
     }
 
     /**

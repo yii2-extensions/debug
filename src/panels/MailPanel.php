@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Panel\Mail\{MailMessage, MailSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Throwable;
 use Yii;
 use yii\debug\{LogTarget, Panel};
@@ -23,9 +24,6 @@ use function is_string;
  */
 class MailPanel extends Panel
 {
-    protected const string ICON = 'mail';
-    protected const string NAME = 'Mail';
-
     private MailSnapshot|null $snapshot = null;
 
     /**
@@ -55,6 +53,24 @@ class MailPanel extends Panel
     public function getMessages(): array
     {
         return $this->snapshot?->entries() ?? [];
+    }
+
+    /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::MAIL->value;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::MAIL->value;
     }
 
     /**

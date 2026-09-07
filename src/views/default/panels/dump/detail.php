@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use UIAwesome\Html\Flow\{P, Pre};
 use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
@@ -36,7 +37,7 @@ if ($hasDumps) {
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
-    ->content('Dump') ?>
+    ->content(PanelTitle::DUMP) ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>

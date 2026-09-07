@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use yii\debug\Module;
 use UIAwesome\Html\Flow\P;
 use UIAwesome\Html\Heading\H1;
@@ -103,7 +104,7 @@ if ($totalRecords > 0) {
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
-    ->content('Queue') ?>
+    ->content(PanelTitle::QUEUE) ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use UIAwesome\Html\Flow\{Div, P, Pre};
 use UIAwesome\Html\Heading\{H1, H2};
 use UIAwesome\Html\Helper\Encode;
@@ -82,7 +83,7 @@ if ($page !== null) {
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
-    ->content('Inertia') ?>
+    ->content(PanelTitle::INERTIA) ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>

@@ -38,7 +38,7 @@ final class CompareAction extends Action
 
         if (count($tags) < 2 && ($baseline === null || $target === null)) {
             throw new NotFoundHttpException(
-                'At least two captured requests are required for comparison.',
+                Message::COMPARISON_CAPTURES_REQUIRED->getMessage(),
             );
         }
 

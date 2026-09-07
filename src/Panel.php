@@ -25,15 +25,6 @@ use function strlen;
 class Panel extends Component implements ViewContextInterface
 {
     /**
-     * SVG icon key used by the toolbar.
-     */
-    protected const string|null ICON = null;
-    /**
-     * Panel display name.
-     */
-    protected const string NAME = '';
-
-    /**
      * @var array<string, array<string, mixed>|class-string> Standalone actions merged into the debug module's
      * {@see \yii\base\Module::$actionMap}, keyed by action ID. Class-string entries are instantiated with no
      * constructor arguments and receive typed dependencies, including the owning panel, through `run()` parameter
@@ -101,7 +92,7 @@ class Panel extends Component implements ViewContextInterface
      */
     public function getName(): string
     {
-        return static::NAME;
+        return '';
     }
 
     /**
@@ -171,7 +162,7 @@ class Panel extends Component implements ViewContextInterface
      */
     public function getToolbarIcon(): string|null
     {
-        return static::ICON;
+        return null;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use UIAwesome\Html\Heading\H1;
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
@@ -110,7 +111,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
 ?>
 <?= H1::tag()
     ->class('yii-debug-sr-only')
-    ->content('Log Messages') ?>
+    ->content(PanelTitle::LOG_MESSAGES) ?>
 <?= Header::tag()
     ->class('yii-debug-grid-summary')
     ->html(...$summaryItems) ?>

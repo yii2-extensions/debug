@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\Queue\{JobRecord, QueueSnapshot};
 use Yii;
 use yii\debug\actions\queue\JobAction;
@@ -22,9 +23,6 @@ use function count;
  */
 class QueuePanel extends Panel
 {
-    protected const string ICON = 'queue';
-    protected const string NAME = 'Queue';
-
     private QueueSnapshot|null $snapshot = null;
 
     /**
@@ -49,11 +47,29 @@ class QueuePanel extends Panel
     }
 
     /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::QUEUE->value;
+    }
+
+    /**
      * @return list<JobRecord> Captured job events in event order.
      */
     public function getRecords(): array
     {
         return $this->snapshot?->entries() ?? [];
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::QUEUE->value;
     }
 
     /**

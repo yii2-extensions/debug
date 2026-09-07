@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\Phrasing\{Code, Span, Strong};
@@ -54,7 +55,7 @@ use PHPForge\Debug\Panel\Asset\{AssetSectionRenderer, AssetSummary, ViteManifest
         $viteIndex++;
     }
     ?>
-    <?= H2::tag()->content('Vite') ?>
+    <?= H2::tag()->content(PanelTitle::VITE) ?>
     <?= Div::tag()
         ->class('yii-debug-table-wrap')
         ->html(

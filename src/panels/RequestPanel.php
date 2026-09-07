@@ -6,6 +6,7 @@ namespace yii\debug\panels;
 
 use Override;
 use PHPForge\Debug\Helper\Coerce;
+use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\Request\{
     RequestDataNormalizer,
     RequestSnapshot,
@@ -29,9 +30,6 @@ use function is_string;
  */
 class RequestPanel extends Panel
 {
-    protected const string ICON = 'request';
-    protected const string NAME = 'Request';
-
     private RequestSnapshot|null $snapshot = null;
 
     /**
@@ -61,6 +59,24 @@ class RequestPanel extends Panel
             ],
             $this,
         );
+    }
+
+    /**
+     * Returns the panel display name from the shared title enum.
+     */
+    #[Override]
+    public function getName(): string
+    {
+        return PanelTitle::REQUEST->value;
+    }
+
+    /**
+     * Returns the icon key from the shared panel icon enum.
+     */
+    #[Override]
+    public function getToolbarIcon(): string
+    {
+        return PanelIcon::REQUEST->value;
     }
 
     /**

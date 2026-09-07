@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Panel\Db\DbExplainRenderer;
 use yii\web\View;
 
@@ -11,7 +12,7 @@ use yii\web\View;
  * @var array<int, array<string, scalar|null>> $results Explain query results.
  * @var View $this View component instance.
  */
-$this->title = 'EXPLAIN';
+$this->title = PanelTitle::EXPLAIN->value;
 ?>
 <?= $error === null
     ? DbExplainRenderer::render($query, $results)

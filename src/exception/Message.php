@@ -70,6 +70,13 @@ enum Message: string
     case COLLECTORS_NOT_INITIALIZED = 'Debug collectors have not been initialized.';
 
     /**
+     * A comparison requires at least two captured requests.
+     *
+     * Format: "At least two captured requests are required for comparison."
+     */
+    case COMPARISON_CAPTURES_REQUIRED = 'At least two captured requests are required for comparison.';
+
+    /**
      * CSRF validation has failed.
      *
      * Format: "Unable to verify your data submission."
