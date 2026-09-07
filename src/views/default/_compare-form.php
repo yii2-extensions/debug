@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\View\History\CaptureLabel;
 use yii\debug\Module;
 use yii\helpers\{Html, Url};
 use yii\web\View;
@@ -16,12 +17,7 @@ use yii\web\View;
 $options = [];
 
 foreach ($manifest as $tag => $summary) {
-    $time = $summary->time > 0 ? date('H:i:s', (int) $summary->time) : 'time unavailable';
-    $url = mb_strimwidth($summary->url, 0, 72, '...');
-    $shortTag = substr($tag, 0, 8);
-    $method = $summary->method !== '' ? $summary->method : 'UNKNOWN';
-
-    $options[$tag] = "{$time} · {$method} · {$url} · {$shortTag}";
+    $options[$tag] = CaptureLabel::fromSummary($summary);
 }
 ?>
 <?= Html::beginForm(Url::to(Module::route('compare')), 'get', ['class' => 'yii-debug-compare-form']) ?>
