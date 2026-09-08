@@ -75,6 +75,7 @@ class LogSearch extends Base
                         'message',
                     ],
                     'defaultOrder' => ['time' => SORT_ASC],
+                    'params' => GridViewConfig::sortParams(),
                 ],
             ],
         );

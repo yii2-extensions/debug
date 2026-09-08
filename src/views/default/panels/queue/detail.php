@@ -14,8 +14,7 @@ use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\QueueSearch;
 use PHPForge\Debug\Panel\Queue\{JobRecord, QueueCardRenderer, QueueGridRenderer, QueueSummary};
 use yii\debug\panels\QueuePanel;
-use yii\debug\widgets\FilterBanner;
-use yii\grid\GridView;
+use yii\debug\widgets\{FilterBanner, GridView};
 use yii\helpers\Url;
 
 /**

@@ -12,8 +12,7 @@ use yii\debug\GridViewConfig;
 use yii\debug\models\search\LogSearch;
 use PHPForge\Debug\Panel\Log\{LogCellRenderer, LogCounts, LogRow};
 use yii\debug\panels\LogPanel;
-use yii\debug\widgets\FilterBanner;
-use yii\grid\GridView;
+use yii\debug\widgets\{FilterBanner, GridView};
 use yii\log\Logger;
 
 /**

@@ -25,12 +25,14 @@ final class GridViewConfig
      * wraps the summary and pager into a single footer, and the pager's active/disabled CSS modifiers used by the
      * debug stylesheet.
      *
+     * The summary carries no options because {@see \yii\debug\widgets\GridView::renderSummary()} renders it through the
+     * shared {@see \PHPForge\Debug\View\Grid\GridCount} renderer, which owns the wrapper markup.
+     *
      * @return array{
      *   dataColumnClass: class-string<DebugDataColumn>,
      *   tableOptions: array{class: string},
      *   options: array{class: string},
      *   layout: string,
-     *   summaryOptions: array{class: string},
      *   pager: array{
      *     options: array{class: string},
      *     linkContainerOptions: array{class: string},
@@ -49,7 +51,6 @@ final class GridViewConfig
             'options' => ['class' => 'yii-debug-grid'],
             'layout' => "<div class=\"yii-debug-table-wrap\">{items}</div>\n"
                 . "<div class=\"yii-debug-grid-footer\">{summary}\n{pager}\n</div>",
-            'summaryOptions' => ['class' => 'summary yii-debug-grid-count'],
             'pager' => [
                 'options' => ['class' => 'yii-debug-pager'],
                 'linkContainerOptions' => ['class' => 'yii-debug-pager-item'],
@@ -116,6 +117,23 @@ final class GridViewConfig
     public static function rowClassFor(string|null $level): array
     {
         return RowClass::for($level);
+    }
+
+    /**
+     * Returns the current request query parameters without the `page` cursor.
+     *
+     * Feeding the result to a data provider's `sort` configuration makes every sort link land on page one, matching the
+     * Yii3 debugger, while preserving the active filters, the page size, and the current sort semantics.
+     *
+     * @return array<array-key, mixed> Query parameters with `page` removed.
+     */
+    public static function sortParams(): array
+    {
+        $params = Yii::$app->getRequest()->getQueryParams();
+
+        unset($params['page']);
+
+        return $params;
     }
 
     /**

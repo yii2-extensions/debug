@@ -4,21 +4,24 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\actions\db;
 
-use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
+use PHPForge\Debug\Panel\Db\{DbMessage, DbSnapshot, QueryRow};
 use PHPForge\Debug\Storage\PanelSnapshot;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\db\Connection;
 use yii\debug\actions\db\ExplainAction;
-use yii\debug\exception\Message;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
+use yii\debug\tests\provider\ExplainActionProvider;
 use yii\debug\tests\support\TestCase;
-use yii\web\{AssetManager, HttpException, ServerErrorHttpException};
+use yii\web\{AssetManager, ServerErrorHttpException};
 
 /**
- * Unit tests for {@see ExplainAction} covering the missing-panel-service and missing-seq error paths, plus the happy
- * paths that render the SQLite `EXPLAIN QUERY PLAN` view for a captured query.
+ * Unit tests for {@see ExplainAction} covering the missing-panel-service path, the `400`/`404` empty-body lookup
+ * contract, the unexplainable-statement diagnostic, and the happy paths that render the SQLite `EXPLAIN QUERY PLAN`
+ * view for a captured query.
+ *
+ * {@see ExplainActionProvider} for test case data providers.
  */
 #[Group('actions')]
 #[Group('db')]
@@ -69,6 +72,78 @@ final class ExplainActionTest extends TestCase
             1,
             substr_count($html, '<em>NULL</em>'),
             "Only the 'null' cell may render the 'NULL' placeholder; '' must stay an empty cell.",
+        );
+    }
+
+    /**
+     * @param mixed $seq Sequence number sent by the request.
+     * @param mixed $tag Request tag sent by the request.
+     * @param int $expected HTTP status code the lookup must answer with.
+     */
+    #[DataProviderExternal(ExplainActionProvider::class, 'rejectedLookups')]
+    public function testRunAnswersEmptyBodyForRejectedLookups(mixed $seq, mixed $tag, int $expected): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        $dbPanel = $module->panels['db'] ?? null;
+
+        self::assertInstanceOf(
+            DbPanel::class,
+            $dbPanel,
+            'DB panel must be wired in the bootstrap.',
+        );
+
+        $this->writeSnapshot(
+            $module,
+            ExplainActionProvider::KNOWN_TAG,
+            ['db' => new DbSnapshot([self::queryRow('SELECT 7', seq: ExplainActionProvider::KNOWN_SEQ)])],
+        );
+
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
+
+        self::assertSame(
+            '',
+            $action->run($seq, $tag, $dbPanel),
+            'Body must stay empty.',
+        );
+        self::assertSame(
+            $expected,
+            Yii::$app->getResponse()->getStatusCode(),
+            'Status must classify the rejection.',
+        );
+    }
+
+    public function testRunAnswersNotFoundForAnUnknownTagEvenWhenTheSequenceIsHydrated(): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        $dbPanel = $module->panels['db'] ?? null;
+
+        self::assertInstanceOf(
+            DbPanel::class,
+            $dbPanel,
+            'DB panel must be wired in the bootstrap.',
+        );
+
+        $dbPanel->hydrate(
+            (new DbSnapshot([self::queryRow('SELECT 7', seq: ExplainActionProvider::KNOWN_SEQ)]))->jsonSerialize(),
+        );
+
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
+
+        self::assertSame(
+            '',
+            $action->run((string) ExplainActionProvider::KNOWN_SEQ, 'tag-missing', $dbPanel),
+            'Body must stay empty.',
+        );
+        self::assertSame(
+            404,
+            Yii::$app->getResponse()->getStatusCode(),
+            'Rows left over from an earlier snapshot must not serve an unknown tag.',
         );
     }
 
@@ -273,6 +348,59 @@ final class ExplainActionTest extends TestCase
         );
     }
 
+    public function testRunReportsExplainUnavailableForUnexplainableStatements(): void
+    {
+        $module = $this->bootDebugModuleWithSqlite();
+
+        $dbPanel = $module->panels['db'] ?? null;
+
+        self::assertInstanceOf(
+            DbPanel::class,
+            $dbPanel,
+            'DB panel must be wired in the bootstrap.',
+        );
+
+        $this->writeSnapshot(
+            $module,
+            'tag-unexplainable',
+            [
+                'db' => new DbSnapshot(
+                    [
+                        self::queryRow('DROP TABLE x', 'DROP'),
+                        self::queryRow('SELECT 1; SELECT 2', seq: 1),
+                    ],
+                ),
+            ],
+        );
+
+        $action = new ExplainAction('db-explain');
+
+        $action->setModule($module);
+
+        Yii::$app->getRequest()->setUrl('dummy');
+        Yii::$app->getRequest()->setBodyParams([]);
+
+        foreach (['0', '1'] as $seq) {
+            $html = $action->run($seq, 'tag-unexplainable', $dbPanel);
+
+            self::assertSame(
+                200,
+                Yii::$app->getResponse()->getStatusCode(),
+                'Unexplainable statements stay a successful diagnostic.',
+            );
+            self::assertStringContainsString(
+                DbMessage::EXPLAIN_UNAVAILABLE->value,
+                $html,
+                'The shared unavailable message must replace the plan.',
+            );
+            self::assertStringNotContainsString(
+                'SQLSTATE',
+                $html,
+                'No EXPLAIN command may reach the driver.',
+            );
+        }
+    }
+
     public function testRunResolvesPanelFromModuleServiceLocatorOnDispatch(): void
     {
         $module = $this->bootDebugModuleWithSqlite();
@@ -355,55 +483,6 @@ final class ExplainActionTest extends TestCase
         );
     }
 
-    public function testThrowHttpExceptionForMissingTimingSeq(): void
-    {
-        $module = $this->bootDebugModuleWithSqlite();
-
-        $dbPanel = $module->panels['db'] ?? null;
-
-        self::assertInstanceOf(
-            DbPanel::class,
-            $dbPanel,
-            'DB panel must be wired in the bootstrap.',
-        );
-
-        $this->writeSnapshot(
-            $module,
-            'tag-empty',
-            ['db' => new DbSnapshot([])],
-        );
-
-        $action = new ExplainAction('db-explain');
-
-        $action->setModule($module);
-
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage(
-            Message::LOG_MESSAGE_NOT_FOUND->getMessage(),
-        );
-
-        try {
-            $action->run('99', 'tag-empty', $dbPanel);
-
-            self::fail(
-                'A missing timing sequence must throw.',
-            );
-        } catch (HttpException $exception) {
-            self::assertSame(
-                404,
-                $exception->statusCode,
-                "A missing timing sequence must throw a '404'.",
-            );
-            self::assertSame(
-                Message::LOG_MESSAGE_NOT_FOUND->getMessage(),
-                $exception->getMessage(),
-                'A missing timing sequence must report the adapter error.',
-            );
-
-            throw $exception;
-        }
-    }
-
     public function testThrowServerErrorHttpExceptionWhenDbPanelIsDisabled(): void
     {
         $this->mockWebApplication();
@@ -450,16 +529,16 @@ final class ExplainActionTest extends TestCase
         return $module;
     }
 
-    private static function queryRow(string $query): QueryRow
+    private static function queryRow(string $query, string $type = 'SELECT', int $seq = 0): QueryRow
     {
         return new QueryRow(
-            type: 'SELECT',
+            type: $type,
             query: $query,
             duration: 50.0,
             trace: [],
             traceHash: 'hash',
             timestamp: 1_700_000_000_000.0,
-            seq: 0,
+            seq: $seq,
             duplicate: 1,
             rows: null,
         );

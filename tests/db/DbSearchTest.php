@@ -6,6 +6,7 @@ namespace yii\debug\tests\db;
 
 use PHPForge\Debug\Panel\Db\QueryRow;
 use PHPUnit\Framework\Attributes\Group;
+use Yii;
 use yii\data\{Pagination, Sort};
 use yii\debug\models\search\DbSearch;
 use yii\debug\tests\support\TestCase;
@@ -121,6 +122,41 @@ final class DbSearchTest extends TestCase
             ['duration', 'seq', 'type', 'query', 'duplicate', 'rows'],
             array_keys($sort->attributes),
             'Every displayed database field must remain sortable.',
+        );
+    }
+
+    public function testSearchDropsThePageCursorFromSortLinks(): void
+    {
+        $this->mockWebApplication();
+
+        Yii::$app->requestedRoute = 'debug/view';
+
+        $_GET = ['page' => '3', 'sort' => 'seq'];
+
+        $sort = (new DbSearch())->search([])->getSort();
+
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'Database query sorting must be enabled.',
+        );
+        self::assertSame(
+            ['seq' => SORT_ASC],
+            $sort->getAttributeOrders(),
+            'The active ordering must still come from the request.',
+        );
+
+        $url = $sort->createUrl('duration');
+
+        self::assertStringNotContainsString(
+            'page=',
+            $url,
+            'Sorting must land on page one.',
+        );
+        self::assertStringContainsString(
+            'sort=duration',
+            $url,
+            'The link must switch to the clicked attribute.',
         );
     }
 

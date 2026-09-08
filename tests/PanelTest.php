@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use Exception;
+use PHPForge\Debug\Helper\Dump;
 use PHPForge\Debug\Panel\PanelRenderContext;
+use PHPForge\Debug\Panel\Request\RequestDiagnosticValueRenderer;
 use PHPForge\Debug\Routing\DebugUrlGeneratorInterface;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException};
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\{Module, Panel};
-use yii\debug\tests\support\stub\CustomPanel;
+use yii\debug\tests\support\stub\{CustomPanel, TraceLineRenderer};
 use yii\debug\tests\support\TestCase;
-use yii\helpers\VarDumper;
 
 /**
  * Unit tests for {@see Panel} covering trace-line rendering, the `getToolbarData` template flow, and the
@@ -161,6 +162,31 @@ final class PanelTest extends TestCase
         );
     }
 
+    public function testGetTraceLineAcceptsArrayCallableTemplate(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $renderer = new TraceLineRenderer();
+
+        $module->traceLine = [$renderer, 'render'];
+
+        self::assertSame(
+            '<a href="app://open?file=file.php&line=10">custom text</a>',
+            $panel->getTraceLine(['file' => 'file.php', 'line' => 10, 'text' => 'custom text']),
+            'Placeholders must resolve in the returned template.',
+        );
+        self::assertSame(
+            ['file' => 'file.php', 'line' => '10', 'text' => 'custom text'],
+            $renderer->frame,
+            'Normalized frame must arrive as the first argument.',
+        );
+        self::assertSame(
+            $panel,
+            $renderer->panel,
+            'Owning panel must arrive as the second argument.',
+        );
+    }
+
     public function testGetTraceLineAcceptsClosureTemplate(): void
     {
         [$panel, $module] = $this->createPanelWithModule();
@@ -184,6 +210,31 @@ final class PanelTest extends TestCase
             '<a href="ide://open?url=file.php&line=10">custom text</a>',
             $panel->getTraceLine(['file' => 'file.php', 'line' => 10, 'text' => 'custom text']),
             "Closure-returned templates should still resolve '{file}/{line}/{text}' placeholders.",
+        );
+    }
+
+    public function testGetTraceLineAcceptsInvokableObjectTemplate(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $renderer = new TraceLineRenderer();
+
+        $module->traceLine = $renderer;
+
+        self::assertSame(
+            '<a href="app://open?file=file.php&line=10">file.php:10</a>',
+            $panel->getTraceLine(['file' => 'file.php', 'line' => 10]),
+            'Placeholders must resolve in the returned template.',
+        );
+        self::assertSame(
+            ['file' => 'file.php', 'line' => '10', 'text' => 'file.php:10'],
+            $renderer->frame,
+            'Normalized frame must arrive as the first argument.',
+        );
+        self::assertSame(
+            $panel,
+            $renderer->panel,
+            'Owning panel must arrive as the second argument.',
         );
     }
 
@@ -211,7 +262,7 @@ final class PanelTest extends TestCase
         );
 
         self::assertSame(
-            '<a href="ide://open?url=file:///local/file.php&line=10">/app/file.php:10</a>',
+            '<a href="ide://open?url=file:///local/file.php&amp;line=10">/app/file.php:10</a>',
             $panel->getTraceLine(['file' => '/app/file.php', 'line' => 10]),
             'A later valid mapping must still apply after a skipped entry.',
         );
@@ -222,9 +273,9 @@ final class PanelTest extends TestCase
         $options = ['file' => 'file.php'];
 
         self::assertSame(
-            VarDumper::dumpAsString($options),
+            RequestDiagnosticValueRenderer::escape(Dump::asString($options)),
             $this->createPanel()->getTraceLine($options),
-            'Incomplete trace frames must retain every available value in their dumped representation.',
+            'Incomplete trace frames must retain every available value in their escaped dump.',
         );
     }
 
@@ -241,9 +292,9 @@ final class PanelTest extends TestCase
         $line = $panel->getTraceLine(['file' => 'file.php', 'line' => 10]);
 
         self::assertStringContainsString(
-            "'not'",
+            '&#039;not&#039;',
             $line,
-            'Non-string closure return must fall back to a VarDumper representation.',
+            'Non-string closure return must fall back to an escaped dump.',
         );
     }
 
@@ -267,7 +318,7 @@ final class PanelTest extends TestCase
         $module->tracePathMappings = ['C:\\app\\' => 'D:\\local'];
 
         self::assertSame(
-            '<a href="ide://open?url=file://D:/local/file.php&line=10">C:\app\file.php:10</a>',
+            '<a href="ide://open?url=file://D:/local/file.php&amp;line=10">C:\app\file.php:10</a>',
             $panel->getTraceLine(['file' => 'C:\\app\\file.php', 'line' => 10]),
             'Backslashes must normalize on the path, the mapping key, and the mapping value.',
         );
@@ -280,7 +331,7 @@ final class PanelTest extends TestCase
         $line = $panel->getTraceLine(['file' => 'file.php', 'line' => 10]);
 
         self::assertSame(
-            '<a href="ide://open?url=file://file.php&line=10">file.php:10</a>',
+            '<a href="ide://open?url=file://file.php&amp;line=10">file.php:10</a>',
             $line,
             'Default trace line should expose an IDE-protocol anchor with file:line text.',
         );
@@ -293,7 +344,7 @@ final class PanelTest extends TestCase
         $module->tracePathMappings = ['/app' => '/newpath/'];
 
         self::assertSame(
-            '<a href="ide://open?url=file:///newpath/file.php&line=10">/app/file.php:10</a>',
+            '<a href="ide://open?url=file:///newpath/file.php&amp;line=10">/app/file.php:10</a>',
             $panel->getTraceLine(['file' => '/app/file.php', 'line' => 10]),
             "'tracePathMappings' should rewrite the URL path while keeping the displayed text intact.",
         );
@@ -331,7 +382,7 @@ final class PanelTest extends TestCase
         );
 
         self::assertSame(
-            '<a href="ide://open?url=file://file.php&line=10">custom text</a>',
+            '<a href="ide://open?url=file://file.php&amp;line=10">custom text</a>',
             $line,
             "Custom text should replace the default 'file:line' anchor body.",
         );
@@ -347,7 +398,7 @@ final class PanelTest extends TestCase
         ];
 
         self::assertSame(
-            '<a href="ide://open?url=file:///app/localdata/file.php&line=10">/app/data/file.php:10</a>',
+            '<a href="ide://open?url=file:///app/localdata/file.php&amp;line=10">/app/data/file.php:10</a>',
             $panel->getTraceLine(['file' => '/app/data/file.php', 'line' => 10]),
             "Only the first matching key in 'tracePathMappings' should be applied.",
         );

@@ -29,7 +29,22 @@ abstract class Collector implements CollectorInterface
      */
     public Module|null $module = null;
 
+    /**
+     * Whether the collector has been started.
+     */
     private bool $started = false;
+
+    /**
+     * Installs low-level instrumentation as soon as the module registers the collector, before the panels are built.
+     *
+     * {@see Module::initCollectors()} calls this hook while the debugger is still bootstrapping, so a subclass whose
+     * data would otherwise miss the debugger's own bootstrap work (queries issued by a panel constructor, for
+     * instance) can hook the framework here instead of waiting for {@see start()}. Implementations must be idempotent
+     * and must not depend on the log target, which is wired later.
+     *
+     * The default implementation does nothing.
+     */
+    public function instrument(): void {}
 
     /**
      * Deactivates the collector once, releasing any subscription created by {@see start()}.

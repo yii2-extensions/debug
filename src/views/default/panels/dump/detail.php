@@ -13,8 +13,7 @@ use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\LogSearch;
 use PHPForge\Debug\Panel\Dump\{DumpCardRenderer, DumpRow};
 use yii\debug\panels\DumpPanel;
-use yii\debug\widgets\FilterBanner;
-use yii\grid\GridView;
+use yii\debug\widgets\{FilterBanner, GridView};
 
 /**
  * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.

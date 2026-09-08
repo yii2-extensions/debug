@@ -845,9 +845,9 @@ final class ModuleTest extends TestCase
                 'log',
                 'event',
                 'profiling',
+                'db',
                 'router',
                 'user',
-                'db',
                 'dump',
                 'asset',
                 'inertia',
@@ -856,7 +856,7 @@ final class ModuleTest extends TestCase
                 'vite',
             ],
             array_keys($corePanels),
-            'Navigation and toolbar order: Request, Logs, Events, and Profiling first, then diagnostics and integrations.',
+            'Navigation and toolbar order: Request, Logs, Events, Profiling, and Database first, then diagnostics and integrations.',
         );
     }
 

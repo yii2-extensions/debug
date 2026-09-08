@@ -13,7 +13,6 @@ use yii\web\View;
  * @var DbPanel $panel Panel providing the detail content.
  * @var ArrayDataProvider $queryDataProvider Data provider for the query GridView widget.
  * @var DbSearch $searchModel Search model for filtering the database query grid.
- * @var int $sumDuplicates Number of duplicated queries.
  * @var View $this View component instance.
  */
 ?>
@@ -25,6 +24,5 @@ use yii\web\View;
         'searchModel' => $searchModel,
         'queryDataProvider' => $queryDataProvider,
         'hasExplain' => $hasExplain,
-        'sumDuplicates' => $sumDuplicates,
     ],
 );

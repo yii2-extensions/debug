@@ -120,6 +120,7 @@ class DebugSearch extends Base
                         'processingTime',
                         'peakMemory',
                     ],
+                    'params' => GridViewConfig::sortParams(),
                 ],
                 'pagination' => GridViewConfig::paginationFromRequest(50),
             ],

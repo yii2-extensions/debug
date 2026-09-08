@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
-use Closure;
-use PHPForge\Debug\Helper\Coerce;
+use PHPForge\Debug\Helper\{Coerce, Trace};
 use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException, PanelSnapshot};
 use yii\base\{Component, ViewContextInterface};
 use yii\debug\exception\Message;
 use yii\debug\routing\DebugUrlGenerator;
-use yii\helpers\{StringHelper, VarDumper};
 
-use function strlen;
+use function is_callable;
+use function is_string;
 
 /**
  * Base class for debug toolbar panels.
@@ -166,11 +165,15 @@ class Panel extends Component implements ViewContextInterface
     }
 
     /**
-     * Builds a trace line for the toolbar, applying {@see Module::$tracePathMappings} and the configured
-     * {@see Module::$traceLine} template (or callable).
+     * Builds a trace line for the toolbar through the shared {@see Trace} renderer, applying
+     * {@see Module::$tracePathMappings} and the configured {@see Module::$traceLine} template (or callable).
      *
-     * Falls back to dumping the input when `file` or `line` is missing internal PHP functions such as
-     * {@see call_user_func()} may produce frames without those keys, see
+     * A missing module, `null`, `false`, and any value outside the documented contract render escaped plain text; a
+     * `string` always becomes the placeholder template, never a function name; any other callable keeps receiving the
+     * frame and the panel, so the documented `($options, $panel)` contract survives the delegation.
+     *
+     * The renderer escapes every substituted value, and falls back to an escaped dump when `file` or `line` is missing
+     * internal PHP functions such as {@see call_user_func()} may produce frames without those keys, see
      * {@link https://www.php.net/manual/en/function.debug-backtrace.php#59713}.
      *
      * @param array<string, mixed> $options Trace frame; consumes `file`, `line`, and optional `text`.
@@ -179,57 +182,23 @@ class Panel extends Component implements ViewContextInterface
      */
     public function getTraceLine(array $options): string
     {
-        $file = Coerce::stringOrNull($options['file'] ?? null);
-        $line = Coerce::stringOrNull($options['line'] ?? null);
+        $module = $this->module;
 
-        if ($file === null || $line === null) {
-            return VarDumper::dumpAsString($options);
+        $traceLine = $module?->traceLine;
+
+        $trace = Trace::create()->withPathMappings($module === null ? [] : $module->tracePathMappings);
+
+        if (is_string($traceLine)) {
+            return $trace->withTemplate($traceLine)->render($options);
         }
 
-        if (!isset($options['text'])) {
-            $text = "{$file}:{$line}";
-        } else {
-            $text = Coerce::stringOrNull($options['text']) ?? VarDumper::dumpAsString($options['text']);
+        if (is_callable($traceLine)) {
+            return $trace
+                ->withTemplate(fn($frame): mixed => $traceLine($frame, $this))
+                ->render($options);
         }
 
-        $traceLine = $this->module?->traceLine;
-
-        if ($traceLine === null || $traceLine === false) {
-            return $text;
-        }
-
-        $file = str_replace('\\', '/', $file);
-
-        foreach ($this->module->tracePathMappings as $old => $new) {
-            $old = Coerce::stringOrNull($old);
-            $new = Coerce::stringOrNull($new);
-
-            if ($old === null || $new === null) {
-                continue;
-            }
-
-            $old = rtrim(str_replace('\\', '/', $old), '/') . '/';
-
-            if (StringHelper::startsWith($file, $old)) {
-                $new = rtrim(str_replace('\\', '/', $new), '/') . '/';
-                $file = $new . substr($file, strlen($old));
-
-                break;
-            }
-        }
-
-        $options['file'] = $file;
-        $options['line'] = $line;
-        $options['text'] = $text;
-
-        $rawLink = $traceLine instanceof Closure ? $traceLine($options, $this) : $traceLine;
-        $rawLinkString = Coerce::stringOrNull($rawLink);
-
-        if ($rawLinkString === null) {
-            return VarDumper::dumpAsString($rawLink);
-        }
-
-        return strtr($rawLinkString, ['{file}' => $file, '{line}' => $line, '{text}' => $text]);
+        return $trace->withTemplate(false)->render($options);
     }
 
     /**
@@ -242,6 +211,7 @@ class Panel extends Component implements ViewContextInterface
     public function getUrl(array|null $additionalParams = null): string
     {
         $params = $additionalParams ?? [];
+
         $tag = Coerce::stringOrNull($params['tag'] ?? null) ?? $this->tag;
         $panel = Coerce::stringOrNull($params['panel'] ?? null) ?? $this->id;
 

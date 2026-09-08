@@ -167,10 +167,68 @@ not an authentication boundary.
 
 When upgrading from 0.1, review the [0.2 upgrade guide](UPGRADE.md) before deploying the package.
 
+## History comparison architecture
+
+`HistoryComparison::fromSnapshots()` delegates to Debug Core's `PHPForge\Debug\Comparison\SnapshotComparison`, which
+composes `SummaryMetricComparison` for request-summary metrics and `PanelComparison` (reusing `PayloadDifference`) for
+panel selection, ordering, failure precedence, capture states, and combined structural/state counts. The adapter only maps
+these results into its existing public models, including `HistoryPanelComparison`. No constructor, property, getter,
+return type,
+captured value, or storage format changes. Metric labels, order, units, precision, separators, signs, percentages, trends,
+and panel IDs retain their exact previous behavior, including missing values, zero baselines, and unrounded float deltas.
+
+Publish the Core revision providing `SnapshotComparison`, `ToolbarInjector`, `QueryInput::minimumBound()`, and the
+private `ToolbarItem`, `ToolbarPanel`, `RequestSummary`, and `SidebarSnapshot` constructors first and update consuming
+application locks before installing this adapter revision. The existing `^0.1@dev` constraint also admits older development revisions without the
+new classes; local workspace links do not guarantee that a published installation has been updated.
+
+Missing panels remain distinct from captured empty arrays; failure envelopes take precedence over payloads, and
+state-only transitions still count as one change without discarding unchanged leaves. Transitions with structural
+additions, removals, or changes do not increment the changed count again. Observed configured IDs retain label order;
+extras retain regular ascending sorting and ID labels. Unknown configured IDs do not create rows.
+Comparison does not apply capture-policy redaction to Logs.
+
+### Event table and opt-in context
+
+Events uses a single table with original observation numbers, relative times, visible column filters, sorting, and
+pagination. Open an event name to inspect its context and source trace in a full-width detail row.
+Diagnostics appear side by side on larger screens without repeating the table fields.
+Event/source group shortcuts count the complete capture. All offsets use the first captured event, not request start.
+Gaps do not measure handler execution.
+
+The collector observes events through the global class-level wildcard listener. Instance handlers run before this
+observer and may stop propagation, so such events can be absent; observed state is not final event state.
+
+Context and argument-free source traces are disabled by default. Enable them only in development configuration:
+
+```php
+use yii\debug\collectors\EventCollector;
+
+// Add this entry to the existing debug module configuration.
+'collectors' => [
+    'event' => [
+        'class' => EventCollector::class,
+        'captureContext' => true,
+        'traceLimit' => 8,
+    ],
+],
+```
+
+Selected context contains action/controller IDs or the rendered view filename, plus the observed `isValid` flag.
+No action result, view parameter values, rendered output, arbitrary event properties, or sender object is dumped.
+Context is redacted and bounded to sixteen fields of 2,048 bytes; traces retain at most sixteen file/line locations,
+without arguments or objects. Capture failures appear explicitly in event details and do not interrupt propagation.
+Previously stored snapshots remain readable but cannot acquire missing context retroactively. Upgrade the core and
+adapter together; listeners and their final results remain outside the capture scope.
+
+### Database demo
+
+See [the local SQLite demo](examples/database/README.md) to verify Database after Profiling with real queries and EXPLAIN.
+
 ### Browser support
 
-The debugger targets evergreen browsers with ES2022, Web Components, CSS custom properties, and native module
-support. Internet Explorer and other legacy browsers are not supported.
+The debugger targets evergreen browsers with ES2022, Web Components, CSS custom properties, and native module support.
+Internet Explorer and other legacy browsers are not supported.
 
 ## Screenshots
 
@@ -375,57 +433,3 @@ For detailed configuration options and advanced usage.
 ## License
 
 [![License](https://img.shields.io/badge/License-BSD--3--Clause-brightgreen.svg?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=555555)](LICENSE)
-
-## History comparison architecture
-
-`HistoryComparison::fromSnapshots()` delegates to Debug Core's `PHPForge\Debug\Comparison\SnapshotComparison`, which
-composes `SummaryMetricComparison` for request-summary metrics and `PanelComparison` (reusing `PayloadDifference`) for
-panel selection, ordering, failure precedence, capture states, and combined structural/state counts. The adapter only maps
-these results into its existing public models, including `HistoryPanelComparison`. No constructor, property, getter,
-return type,
-captured value, or storage format changes. Metric labels, order, units, precision, separators, signs, percentages, trends,
-and panel IDs retain their exact previous behavior, including missing values, zero baselines, and unrounded float deltas.
-
-Publish the Core revision providing `SnapshotComparison`, `ToolbarInjector`, `QueryInput::minimumBound()`, and the
-private `ToolbarItem`, `ToolbarPanel`, `RequestSummary`, and `SidebarSnapshot` constructors first and update consuming
-application locks before installing this adapter revision. The existing `^0.1@dev` constraint also admits older development revisions without the
-new classes; local workspace links do not guarantee that a published installation has been updated.
-
-Missing panels remain distinct from captured empty arrays; failure envelopes take precedence over payloads, and
-state-only transitions still count as one change without discarding unchanged leaves. Transitions with structural
-additions, removals, or changes do not increment the changed count again. Observed configured IDs retain label order;
-extras retain regular ascending sorting and ID labels. Unknown configured IDs do not create rows.
-Comparison does not apply capture-policy redaction to Logs.
-
-### Event table and opt-in context
-
-Events uses a single table with original observation numbers, relative times, visible column filters, sorting, and
-pagination. Open an event name to inspect its context and source trace in a full-width detail row.
-Diagnostics appear side by side on larger screens without repeating the table fields.
-Event/source group shortcuts count the complete capture. All offsets use the first captured event, not request start.
-Gaps do not measure handler execution.
-
-The collector observes events through the global class-level wildcard listener. Instance handlers run before this
-observer and may stop propagation, so such events can be absent; observed state is not final event state.
-
-Context and argument-free source traces are disabled by default. Enable them only in development configuration:
-
-```php
-use yii\debug\collectors\EventCollector;
-
-// Add this entry to the existing debug module configuration.
-'collectors' => [
-    'event' => [
-        'class' => EventCollector::class,
-        'captureContext' => true,
-        'traceLimit' => 8,
-    ],
-],
-```
-
-Selected context contains action/controller IDs or the rendered view filename, plus the observed `isValid` flag.
-No action result, view parameter values, rendered output, arbitrary event properties, or sender object is dumped.
-Context is redacted and bounded to sixteen fields of 2,048 bytes; traces retain at most sixteen file/line locations,
-without arguments or objects. Capture failures appear explicitly in event details and do not interrupt propagation.
-Previously stored snapshots remain readable but cannot acquire missing context retroactively. Upgrade the core and
-adapter together; listeners and their final results remain outside the capture scope.

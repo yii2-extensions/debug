@@ -35,41 +35,6 @@ use function is_string;
 #[Group('db')]
 final class DbPanelTest extends TestCase
 {
-    public function testCountCallerCallsAndExcessiveThresholdReturnExactHashes(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-        $messages = [
-            ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
-            ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/a.php', 'line' => 1]]),
-            ...$this->makeMessage('SELECT 3', 0.001, 0.002, trace: [['file' => '/a.php', 'line' => 1]]),
-            ...$this->makeMessage('SELECT 4', 0.001, 0.003, trace: [['file' => '/b.php', 'line' => 2]]),
-        ];
-
-        $this->hydrateFromLive($panel, $messages, []);
-
-        $rows = $panel->getRows();
-
-        $first = $rows[0] ?? self::fail('Expected the first query row.');
-        $last = $rows[3] ?? self::fail('Expected the fourth query row.');
-
-        $firstHash = $first->traceHash;
-        $lastHash = $last->traceHash;
-
-        self::assertSame(
-            [$firstHash => 3, $lastHash => 1],
-            $panel->countCallerCals(),
-            'Caller counts must be keyed by the exact trace hash.',
-        );
-
-        $this->setDbCollectorThreshold($panel, 3);
-
-        self::assertSame(
-            [$firstHash => 3],
-            $panel->getExcessiveCallers(),
-            'Excessive callers must be keyed by the exact trace hash.',
-        );
-    }
-
     /**
      * @param class-string $class
      * @param 'protected'|'public' $expected
@@ -210,6 +175,49 @@ final class DbPanelTest extends TestCase
             'yii-debug-grid-summary',
             $html,
             'Summary strip must render alongside the card.',
+        );
+    }
+
+    public function testGetDetailRendersNoMatchStateWhenFiltersExcludeEveryQuery(): void
+    {
+        $panel = $this->makePanel(DbPanel::class, ['db' => $this->makeSqliteConnection()]);
+
+        $this->hydrateFromLive(
+            $panel,
+            [
+                ...$this->makeMessage('SELECT 1', 0.001, 0.0),
+                ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.001, 0.001),
+            ],
+            [],
+        );
+
+        Yii::$app->getRequest()->setQueryParams(
+            [
+                'Db' => ['type' => 'UPDATE', 'query' => 'no-such-needle'],
+            ],
+        );
+
+        $html = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'No database queries match these filters',
+            $html,
+            'Headline must describe the filtered-out result set.',
+        );
+        self::assertStringContainsString(
+            'Remove an active filter or clear all filters to see the captured queries.',
+            $html,
+            'Card must explain how to recover the captured rows.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-active-filters',
+            $html,
+            'Filter banner must precede the card.',
+        );
+        self::assertStringNotContainsString(
+            '<table',
+            $html,
+            'No-match state must replace the grid entirely.',
         );
     }
 
@@ -427,51 +435,6 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testGetExcessiveCallersReturnsCallersAtOrAboveThreshold(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->hydrateFromLive(
-            $panel,
-            $this->fakeMessages(3),
-            [],
-        );
-        $this->setDbCollectorThreshold($panel, 2);
-
-        self::assertCount(
-            1,
-            $panel->getExcessiveCallers(),
-            'Three identical callers must yield one excessive entry.',
-        );
-        self::assertSame(
-            1,
-            $panel->getExcessiveCallersCount(),
-            'Excessive caller count must be 1.',
-        );
-    }
-
-    public function testGetExcessiveCallersReturnsEmptyWhenThresholdIsNull(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $this->hydrateFromLive(
-            $panel,
-            $this->fakeMessages(5),
-            [],
-        );
-
-        self::assertSame(
-            [],
-            $panel->getExcessiveCallers(),
-            'Null threshold must yield no excessive callers.',
-        );
-        self::assertSame(
-            0,
-            $panel->getExcessiveCallersCount(),
-            'Null threshold must report zero count.',
-        );
-    }
-
     public function testGetNameAndIcon(): void
     {
         $panel = $this->makePanel(DbPanel::class);
@@ -646,12 +609,13 @@ final class DbPanelTest extends TestCase
 
         $rows = [$this->makeRowWithDuration(1.0), $this->makeRowWithDuration(2.0)];
 
+        $this->hydratePanel($panel, new DbSnapshot($rows));
+
         self::assertEqualsWithDelta(
             3.0,
             $this->invoke(
                 $panel,
                 'getTotalQueryTime',
-                [$rows],
             ),
             1e-9,
             'Total query time must equal the sum of durations, in milliseconds.',
@@ -748,6 +712,30 @@ final class DbPanelTest extends TestCase
         );
     }
 
+    public function testHydrateResetsMemoizedSummary(): void
+    {
+        $panel = $this->makePanel(DbPanel::class);
+
+        $this->hydratePanel($panel, new DbSnapshot([$this->makeRowWithDuration(1.0)]));
+
+        self::assertSame(
+            1,
+            $panel->getSummary()->count,
+            'First snapshot must report a single query.',
+        );
+
+        $this->hydratePanel(
+            $panel,
+            new DbSnapshot([$this->makeRowWithDuration(1.0), $this->makeRowWithDuration(2.0)]),
+        );
+
+        self::assertSame(
+            2,
+            $panel->getSummary()->count,
+            'Stale metrics must not survive re-hydration.',
+        );
+    }
+
     public function testInitRegistersExplainAction(): void
     {
         $this->mockWebApplication(
@@ -823,24 +811,6 @@ final class DbPanelTest extends TestCase
         );
     }
 
-    public function testSumDuplicateQueriesCountsRowsWithDuplicateGreaterThanOne(): void
-    {
-        $panel = $this->makePanel(DbPanel::class);
-
-        $rows = [
-            $this->makeRow(duplicate: 1),
-            $this->makeRow(duplicate: 2),
-            $this->makeRow(duplicate: 5),
-            $this->makeRow(duplicate: 1),
-        ];
-
-        self::assertSame(
-            2,
-            $panel->sumDuplicateQueries($rows),
-            "Only rows with 'duplicate > 1' must be counted.",
-        );
-    }
-
     public function testThrowInvalidConfigExceptionWhenDbComponentIsMissing(): void
     {
         $this->mockWebApplication();
@@ -873,20 +843,6 @@ final class DbPanelTest extends TestCase
         );
 
         $panel->getDb();
-    }
-
-    /**
-     * @return list<StringLogMessage>
-     */
-    private function fakeMessages(int $count): array
-    {
-        $pairs = [];
-
-        for ($i = 0; $i < $count; $i++) {
-            $pairs[] = $this->makeMessage("SELECT {$i}", 0.001 * ($i + 1), 0.001 * $i);
-        }
-
-        return $this->flatten($pairs);
     }
 
     /**
@@ -926,26 +882,6 @@ final class DbPanelTest extends TestCase
     }
 
     /**
-     * Spreads a list of begin/end pairs (each from {@see makeMessage()}) into a flat profile-log list.
-     *
-     * @param list<list<StringLogMessage>> $pairs
-     *
-     * @return list<StringLogMessage>
-     */
-    private function flatten(array $pairs): array
-    {
-        $out = [];
-
-        foreach ($pairs as $pair) {
-            foreach ($pair as $entry) {
-                $out[] = $entry;
-            }
-        }
-
-        return $out;
-    }
-
-    /**
      * Captures the given live sources through the module's Database collector and hydrates the panel from the result.
      *
      * @param list<StringLogMessage> $messages Raw profile tuples.
@@ -975,10 +911,10 @@ final class DbPanelTest extends TestCase
         );
 
         $logTarget->messages = $messages;
+
         DebugPdoStatement::$rowCounts = $rowCounts;
 
         $snapshot = $collector->capture();
-
         $coordinator->shutdown();
 
         self::assertNotNull(

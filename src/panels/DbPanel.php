@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
+use PHPForge\Debug\Panel\Db\{DbMessage, DbSnapshot, DbSummary, DbSummaryRenderer, QueryRow};
 use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Yii;
 use yii\base\InvalidConfigException;
@@ -16,9 +16,6 @@ use yii\debug\collectors\DbCollector;
 use yii\debug\exception\Message;
 use yii\debug\models\search\DbSearch;
 use yii\debug\Panel;
-
-use function array_filter;
-use function count;
 
 /**
  * Renders the database queries captured by the Database collector.
@@ -50,23 +47,14 @@ class DbPanel extends Panel
         'seq' => SORT_ASC,
     ];
 
-    private DbSnapshot|null $snapshot = null;
-
     /**
-     * Counts how many times the same backtrace originated a DB query.
-     *
-     * @return array<string, int> Call counts indexed by the backtrace hash of the caller.
+     * The captured database snapshot for the current request.
      */
-    public function countCallerCals(): array
-    {
-        $counts = [];
-
-        foreach ($this->getRows() as $row) {
-            $counts[$row->traceHash] = ($counts[$row->traceHash] ?? 0) + 1;
-        }
-
-        return $counts;
-    }
+    private DbSnapshot|null $snapshot = null;
+    /**
+     * The computed summary of the captured database snapshot.
+     */
+    private DbSummary|null $summary = null;
 
     /**
      * Returns the DB connection used by the panel for EXPLAIN queries.
@@ -109,8 +97,6 @@ class DbPanel extends Panel
             $sort->defaultOrder = $this->defaultOrder;
         }
 
-        $sumDuplicates = $this->sumDuplicateQueries($models);
-
         return Yii::$app->view->render(
             'panels/db/detail',
             [
@@ -118,38 +104,9 @@ class DbPanel extends Panel
                 'panel' => $this,
                 'queryDataProvider' => $queryDataProvider,
                 'searchModel' => $searchModel,
-                'sumDuplicates' => $sumDuplicates,
             ],
             $this,
         );
-    }
-
-    /**
-     * Returns the call counts for backtraces that exceed the Database collector's excessive-caller threshold.
-     *
-     * @return array<string, int> Call counts indexed by the backtrace hash of each excessive caller; empty when the
-     * check is disabled.
-     */
-    public function getExcessiveCallers(): array
-    {
-        $threshold = $this->excessiveCallerThreshold();
-
-        if ($threshold === null) {
-            return [];
-        }
-
-        return array_filter(
-            $this->countCallerCals(),
-            static fn(int $count): bool => $count >= $threshold,
-        );
-    }
-
-    /**
-     * Returns the number of distinct backtraces flagged as excessive callers.
-     */
-    public function getExcessiveCallersCount(): int
-    {
-        return count($this->getExcessiveCallers());
     }
 
     /**
@@ -172,6 +129,14 @@ class DbPanel extends Panel
     }
 
     /**
+     * Returns the request-wide query metrics, computed once per hydrated snapshot and reused by every consumer.
+     */
+    public function getSummary(): DbSummary
+    {
+        return $this->summary ??= new DbSummary($this->getRows());
+    }
+
+    /**
      * Returns the icon key from the shared panel icon enum.
      */
     #[Override]
@@ -187,13 +152,7 @@ class DbPanel extends Panel
      */
     public function getTypes(): array
     {
-        $types = [];
-
-        foreach ($this->getModels() as $model) {
-            $types[$model->type] = $model->type;
-        }
-
-        return $types;
+        return $this->getSummary()->types;
     }
 
     /**
@@ -203,6 +162,8 @@ class DbPanel extends Panel
     public function hydrate(array $payload): void
     {
         $this->snapshot = DbSnapshot::fromArray($payload, "$.panels.{$this->id}");
+
+        $this->summary = null;
     }
 
     /**
@@ -243,24 +204,6 @@ class DbPanel extends Panel
     }
 
     /**
-     * Returns the number of query rows whose `duplicate` count is greater than one.
-     *
-     * @param list<QueryRow> $modelData Query rows produced by {@see getModels()}.
-     */
-    public function sumDuplicateQueries(array $modelData): int
-    {
-        $numDuplicates = 0;
-
-        foreach ($modelData as $data) {
-            if ($data->duplicate > 1) {
-                $numDuplicates++;
-            }
-        }
-
-        return $numDuplicates;
-    }
-
-    /**
      * Returns the typed query rows consumed by the queries grid.
      *
      * @return list<QueryRow> Rows in capture order, suitable for {@see \yii\data\ArrayDataProvider}.
@@ -279,38 +222,30 @@ class DbPanel extends Panel
     #[Override]
     protected function getToolbarItems(): array
     {
-        $rows = $this->getRows();
+        $summary = $this->getSummary();
 
-        $queryCount = count($rows);
-
-        if ($queryCount === 0) {
+        if ($summary->count === 0) {
             return [];
         }
 
-        $excessiveCallerCount = $this->getExcessiveCallersCount();
+        $excessiveCallerThreshold = $this->excessiveCallerThreshold();
 
-        $warning = '';
-
-        if ($this->isQueryCountCritical($queryCount)) {
-            $warning = "Too many queries, allowed count is {$this->criticalQueryThreshold}.";
-        }
-
-        if ($excessiveCallerCount > 0) {
-            $separator = $warning !== '' ? "\n" : '';
-            $callerLabel = $excessiveCallerCount === 1 ? 'caller is' : 'callers are';
-            $warning = "{$warning}{$separator}{$excessiveCallerCount} {$callerLabel} making too many calls.";
-        }
-
-        $totalQueryTime = number_format($this->getTotalQueryTime($rows));
+        $totalQueryTime = number_format($this->getTotalQueryTime());
 
         return [
             [
-                'status' => $warning !== '' ? 'warning' : 'info',
-                'title' => $warning !== '' ? $warning : "Executed $queryCount database queries.",
-                'value' => $queryCount,
+                'status' => $summary->hasWarning($this->criticalQueryThreshold, $excessiveCallerThreshold)
+                    ? 'warning'
+                    : 'info',
+                'title' => DbSummaryRenderer::toolbarTitle(
+                    $summary,
+                    $this->criticalQueryThreshold,
+                    $excessiveCallerThreshold,
+                ),
+                'value' => $summary->count,
             ],
             [
-                'title' => 'Total query time',
+                'title' => DbMessage::TOTAL_TIME->value,
                 'value' => "{$totalQueryTime} ms",
             ],
         ];
@@ -319,19 +254,11 @@ class DbPanel extends Panel
     /**
      * Returns the sum of every captured query's duration.
      *
-     * @param list<QueryRow> $rows Captured query rows.
-     *
      * @return float Total query time, in milliseconds.
      */
-    protected function getTotalQueryTime(array $rows): float
+    protected function getTotalQueryTime(): float
     {
-        $queryTime = 0.0;
-
-        foreach ($rows as $row) {
-            $queryTime += $row->duration;
-        }
-
-        return $queryTime;
+        return $this->getSummary()->duration;
     }
 
     /**

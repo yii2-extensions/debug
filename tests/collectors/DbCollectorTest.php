@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
-use Closure;
 use LogicException;
 use PDO;
 use PHPForge\Debug\Panel\Db\QueryRow;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
+use yii\base\Event;
 use yii\db\Connection;
 use yii\debug\collectors\DbCollector;
 use yii\debug\db\DebugPdoStatement;
@@ -18,6 +18,7 @@ use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
+use function array_map;
 use function hash_algos;
 use function in_array;
 
@@ -94,6 +95,7 @@ final class DbCollectorTest extends TestCase
         $collector->ignoredPathsInBacktrace = ['/tmp/ignored'];
 
         $timings = $collector->calculateTimings();
+
         $first = $timings[0] ?? self::fail('Expected one timing.');
 
         self::assertSame(
@@ -144,6 +146,59 @@ final class DbCollectorTest extends TestCase
         );
     }
 
+    public function testCaptureAlignsRowCountsAcrossEveryProfiledConnection(): void
+    {
+        $db = $this->makeSqliteConnection();
+        $other = $this->makeSqliteConnection();
+
+        $collector = $this->makeCollector(['db' => $db, 'db2' => $other]);
+
+        $logger = Yii::getLogger();
+
+        $logger->messages = [];
+
+        $db->createCommand('CREATE TABLE first (id INTEGER PRIMARY KEY)')->execute();
+        $other->createCommand('CREATE TABLE second (id INTEGER PRIMARY KEY)')->execute();
+        $db->createCommand('INSERT INTO first (id) VALUES (1)')->execute();
+        $other->createCommand('INSERT INTO second (id) VALUES (1), (2)')->execute();
+        $db->createCommand('INSERT INTO first (id) VALUES (2), (3), (4)')->execute();
+
+        $logTarget = $collector->module?->logTarget;
+
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Log target must be wired.',
+        );
+
+        $logTarget->collect($logger->messages, false);
+
+        self::assertSame(
+            [0, 0, 1, 2, 3],
+            $this->rowsOf($this->captureEntries($collector)),
+            'Every profiled connection must contribute its own counts, in execution order.',
+        );
+
+        $collector->shutdown();
+    }
+
+    public function testCaptureAlignsRowCountsWithTheTrailingTimings(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(5),
+            [5, 7],
+        );
+
+        self::assertSame(
+            [null, null, null, 5, 7],
+            $this->rowsOf($this->captureEntries($collector)),
+            'Counts must land on the last timings.',
+        );
+    }
+
     public function testCaptureAssemblesTimingsWithMillisecondScaling(): void
     {
         $collector = $this->makeCollector();
@@ -179,6 +234,23 @@ final class DbCollectorTest extends TestCase
             0,
             $row->rows,
             'A zero row count must remain a valid driver result.',
+        );
+    }
+
+    public function testCaptureKeepsAlignmentWhenAnExecutionRecordedNoRowCount(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(4),
+            [3, null, 8],
+        );
+
+        self::assertSame(
+            [null, 3, null, 8],
+            $this->rowsOf($this->captureEntries($collector)),
+            'A failed execution must keep its slot.',
         );
     }
 
@@ -249,6 +321,23 @@ final class DbCollectorTest extends TestCase
         self::assertNull(
             (new DbCollector())->capture(),
             'Idle collector must record nothing.',
+        );
+    }
+
+    public function testCaptureReturnsNullRowsWhenCountsOutnumberTimings(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(1),
+            [5, 7],
+        );
+
+        self::assertSame(
+            [null],
+            $this->rowsOf($this->captureEntries($collector)),
+            'An unalignable list must yield no counts.',
         );
     }
 
@@ -429,60 +518,106 @@ final class DbCollectorTest extends TestCase
         );
     }
 
+    public function testInstrumentInstallsTheStatementHookOnlyOnce(): void
+    {
+        $db = $this->makeSqliteConnection();
+
+        $this->mockWebApplication(['components' => ['db' => $db]]);
+
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so the listener under test is the only one left.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
+        $collector = new DbCollector();
+
+        DebugPdoStatement::$rowCounts = [1, 2];
+
+        $collector->instrument();
+
+        self::assertSame(
+            [],
+            DebugPdoStatement::$rowCounts,
+            'The first installation must discard stale counts.',
+        );
+
+        DebugPdoStatement::$rowCounts = [5];
+
+        $collector->instrument();
+
+        self::assertSame(
+            [5],
+            DebugPdoStatement::$rowCounts,
+            'A repeated installation must keep the counts.',
+        );
+
+        $collector->startup();
+        $collector->shutdown();
+
+        $late = $this->makeSqliteConnection();
+
+        $late->open();
+
+        self::assertNotNull(
+            $late->pdo,
+            'PDO must be open.',
+        );
+        self::assertNotSame(
+            [DebugPdoStatement::class, []],
+            $late->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'Shutdown must leave no duplicate listener behind.',
+        );
+
+        DebugPdoStatement::$rowCounts = [];
+    }
+
+    public function testModuleInstrumentsTheCollectorWhileInitializing(): void
+    {
+        $db = $this->makeSqliteConnection();
+
+        $db->open();
+
+        $this->mockWebApplication(['components' => ['db' => $db]]);
+
+        new Module('debug');
+
+        self::assertNotNull(
+            $db->pdo,
+            'PDO must be open.',
+        );
+        self::assertSame(
+            [DebugPdoStatement::class, []],
+            $db->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'Bootstrap must install the statement class ahead of the panels.',
+        );
+    }
+
     public function testShutdownDetachesAfterOpenListener(): void
     {
         $db = $this->makeSqliteConnection();
 
         $this->mockWebApplication(['components' => ['db' => $db]]);
 
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so the listener under test is the only one left.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
         $collector = new DbCollector();
 
         $collector->startup();
-
-        $listener = $this->getInaccessibleProperty($collector, 'afterOpenListener');
-        $events = $this->getInaccessibleProperty($db, '_events');
-
-        self::assertInstanceOf(
-            Closure::class,
-            $listener,
-            'Startup must retain the DB listener.',
-        );
-        self::assertIsArray(
-            $events,
-            'Connection events must be stored as an array.',
-        );
-
-        $afterOpenEvents = $events[Connection::EVENT_AFTER_OPEN] ?? null;
-
-        self::assertIsArray(
-            $afterOpenEvents,
-            'The after-open handler list must be stored.',
-        );
-
-        $firstEvent = $afterOpenEvents[0] ?? null;
-
-        self::assertIsArray(
-            $firstEvent,
-            'The first after-open handler must be stored.',
-        );
-        self::assertSame(
-            $listener,
-            $firstEvent[0] ?? null,
-            'Startup must attach the DB listener.',
-        );
-
         $collector->shutdown();
 
-        $events = $this->getInaccessibleProperty($db, '_events');
+        $late = $this->makeSqliteConnection();
 
-        self::assertIsArray(
-            $events,
-            'Connection events must remain an array after shutdown.',
+        $late->open();
+
+        self::assertNotNull(
+            $late->pdo,
+            'PDO must be open.',
         );
-        self::assertSame(
-            [],
-            $events[Connection::EVENT_AFTER_OPEN] ?? [],
-            'Shutdown must detach the DB listener.',
+        self::assertNotSame(
+            [DebugPdoStatement::class, []],
+            $late->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'A connection opened afterwards must keep the default statement class.',
         );
     }
 
@@ -536,9 +671,83 @@ final class DbCollectorTest extends TestCase
         $collector->shutdown();
     }
 
+    public function testStartAppliesStatementClassToOpenConnectionsBuiltFromConfiguration(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'db' => $this->makeSqliteConnection(),
+                    'db2' => ['class' => Connection::class, 'dsn' => 'sqlite::memory:'],
+                ],
+            ],
+        );
+
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so only the startup sweep can instrument the connection below.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
+        $other = Yii::$app->get('db2');
+
+        self::assertInstanceOf(
+            Connection::class,
+            $other,
+            'Configured component must build a connection.',
+        );
+
+        $other->open();
+
+        $collector = new DbCollector();
+
+        $collector->startup();
+
+        self::assertNotNull(
+            $other->pdo,
+            'PDO must be open.',
+        );
+        self::assertSame(
+            [DebugPdoStatement::class, []],
+            $other->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'A connection built from configuration and already open must be instrumented.',
+        );
+
+        $collector->shutdown();
+    }
+
+    public function testStartDiscardsRowCountsRecordedForAnotherRequest(): void
+    {
+        $collector = $this->makeCollector(['db' => $this->makeSqliteConnection()]);
+        $logTarget = $collector->module?->logTarget;
+
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Log target must be wired.',
+        );
+
+        DebugPdoStatement::$rowCounts = [4, 9];
+
+        $collector->shutdown();
+
+        $logTarget->beginRequest();
+
+        $collector->startup();
+
+        self::assertSame(
+            [],
+            DebugPdoStatement::$rowCounts,
+            'A new request must start from an empty list.',
+        );
+
+        $collector->shutdown();
+    }
+
     public function testStartIsANoopWhenDbComponentIsMissing(): void
     {
         $this->mockWebApplication();
+
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so no foreign listener answers for the collector under test.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
 
         $collector = new DbCollector();
 
@@ -546,12 +755,64 @@ final class DbCollectorTest extends TestCase
 
         $collector->startup();
 
+        $late = $this->makeSqliteConnection();
+
+        $late->open();
+
+        self::assertNotNull(
+            $late->pdo,
+            'PDO must be open.',
+        );
+        self::assertNotSame(
+            [DebugPdoStatement::class, []],
+            $late->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'A missing connection must leave every connection uninstrumented.',
+        );
+
         $collector->shutdown();
 
         self::assertNull(
             $collector->capture(),
             'Stopped collector must record nothing.',
         );
+    }
+
+    public function testStartKeepsRowCountsRecordedForTheSameRequest(): void
+    {
+        $collector = $this->makeCollector(['db' => $this->makeSqliteConnection()]);
+
+        DebugPdoStatement::$rowCounts = [4, 9];
+
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so only the restarted collector can instrument the connection below.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
+        $collector->shutdown();
+        $collector->startup();
+
+        self::assertSame(
+            [4, 9],
+            DebugPdoStatement::$rowCounts,
+            'A second capture of one request must keep the counts.',
+        );
+
+        $late = $this->makeSqliteConnection();
+
+        $late->open();
+
+        self::assertNotNull(
+            $late->pdo,
+            'PDO must be open.',
+        );
+        self::assertSame(
+            [DebugPdoStatement::class, []],
+            $late->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'The hook must be reinstalled.',
+        );
+
+        $collector->shutdown();
+
+        DebugPdoStatement::$rowCounts = [];
     }
 
     public function testTraceHashAlgoIsCachedAcrossCalls(): void
@@ -708,7 +969,7 @@ final class DbCollectorTest extends TestCase
      * Primes the collector's live sources so the capture path resolves the given queries.
      *
      * @param list<StringLogMessage> $messages Raw profile tuples.
-     * @param list<int> $rowCounts Row counts reported by the driver, in execution order.
+     * @param list<int|null> $rowCounts Row counts reported by the driver, in execution order.
      */
     private function primeCollector(DbCollector $collector, array $messages, array $rowCounts): void
     {
@@ -725,5 +986,15 @@ final class DbCollectorTest extends TestCase
         $logTarget->messages = $messages;
 
         DebugPdoStatement::$rowCounts = $rowCounts;
+    }
+
+    /**
+     * @param list<QueryRow> $rows Captured query rows.
+     *
+     * @return list<int|null> Row count of each captured row, in capture order.
+     */
+    private function rowsOf(array $rows): array
+    {
+        return array_map(static fn(QueryRow $row): int|null => $row->rows, $rows);
     }
 }
