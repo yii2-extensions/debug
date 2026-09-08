@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
-use Closure;
 use LogicException;
 use PDO;
 use PHPForge\Debug\Panel\Db\QueryRow;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
+use yii\base\Event;
 use yii\db\Connection;
 use yii\debug\collectors\DbCollector;
 use yii\debug\db\DebugPdoStatement;
@@ -144,6 +144,42 @@ final class DbCollectorTest extends TestCase
             $first['trace'],
             'Ignored-path frames must be dropped and the remaining trace reindexed.',
         );
+    }
+
+    public function testCaptureAlignsRowCountsAcrossEveryProfiledConnection(): void
+    {
+        $db = $this->makeSqliteConnection();
+        $other = $this->makeSqliteConnection();
+
+        $collector = $this->makeCollector(['db' => $db, 'db2' => $other]);
+
+        $logger = Yii::getLogger();
+
+        $logger->messages = [];
+
+        $db->createCommand('CREATE TABLE first (id INTEGER PRIMARY KEY)')->execute();
+        $other->createCommand('CREATE TABLE second (id INTEGER PRIMARY KEY)')->execute();
+        $db->createCommand('INSERT INTO first (id) VALUES (1)')->execute();
+        $other->createCommand('INSERT INTO second (id) VALUES (1), (2)')->execute();
+        $db->createCommand('INSERT INTO first (id) VALUES (2), (3), (4)')->execute();
+
+        $logTarget = $collector->module?->logTarget;
+
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Log target must be wired.',
+        );
+
+        $logTarget->collect($logger->messages, false);
+
+        self::assertSame(
+            [0, 0, 1, 2, 3],
+            $this->rowsOf($this->captureEntries($collector)),
+            'Every profiled connection must contribute its own counts, in execution order.',
+        );
+
+        $collector->shutdown();
     }
 
     public function testCaptureAlignsRowCountsWithTheTrailingTimings(): void
@@ -488,6 +524,10 @@ final class DbCollectorTest extends TestCase
 
         $this->mockWebApplication(['components' => ['db' => $db]]);
 
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so the listener under test is the only one left.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
         $collector = new DbCollector();
 
         DebugPdoStatement::$rowCounts = [1, 2];
@@ -510,26 +550,22 @@ final class DbCollectorTest extends TestCase
             'A repeated installation must keep the counts.',
         );
 
-        $events = $this->getInaccessibleProperty($db, '_events');
-
-        self::assertIsArray(
-            $events,
-            'Connection events must be stored as an array.',
-        );
-
-        $afterOpenEvents = $events[Connection::EVENT_AFTER_OPEN] ?? null;
-
-        self::assertIsArray(
-            $afterOpenEvents,
-            'The after-open handler list must be stored.',
-        );
-        self::assertCount(
-            1,
-            $afterOpenEvents,
-            'Only one after-open handler must be attached.',
-        );
-
+        $collector->startup();
         $collector->shutdown();
+
+        $late = $this->makeSqliteConnection();
+
+        $late->open();
+
+        self::assertNotNull(
+            $late->pdo,
+            'PDO must be open.',
+        );
+        self::assertNotSame(
+            [DebugPdoStatement::class, []],
+            $late->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'Shutdown must leave no duplicate listener behind.',
+        );
 
         DebugPdoStatement::$rowCounts = [];
     }
@@ -561,54 +597,27 @@ final class DbCollectorTest extends TestCase
 
         $this->mockWebApplication(['components' => ['db' => $db]]);
 
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so the listener under test is the only one left.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
         $collector = new DbCollector();
 
         $collector->startup();
-
-        $listener = $this->getInaccessibleProperty($collector, 'afterOpenListener');
-        $events = $this->getInaccessibleProperty($db, '_events');
-
-        self::assertInstanceOf(
-            Closure::class,
-            $listener,
-            'Startup must retain the DB listener.',
-        );
-        self::assertIsArray(
-            $events,
-            'Connection events must be stored as an array.',
-        );
-
-        $afterOpenEvents = $events[Connection::EVENT_AFTER_OPEN] ?? null;
-
-        self::assertIsArray(
-            $afterOpenEvents,
-            'The after-open handler list must be stored.',
-        );
-
-        $firstEvent = $afterOpenEvents[0] ?? null;
-
-        self::assertIsArray(
-            $firstEvent,
-            'The first after-open handler must be stored.',
-        );
-        self::assertSame(
-            $listener,
-            $firstEvent[0] ?? null,
-            'Startup must attach the DB listener.',
-        );
-
         $collector->shutdown();
 
-        $events = $this->getInaccessibleProperty($db, '_events');
+        $late = $this->makeSqliteConnection();
 
-        self::assertIsArray(
-            $events,
-            'Connection events must remain an array after shutdown.',
+        $late->open();
+
+        self::assertNotNull(
+            $late->pdo,
+            'PDO must be open.',
         );
-        self::assertSame(
-            [],
-            $events[Connection::EVENT_AFTER_OPEN] ?? [],
-            'Shutdown must detach the DB listener.',
+        self::assertNotSame(
+            [DebugPdoStatement::class, []],
+            $late->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'A connection opened afterwards must keep the default statement class.',
         );
     }
 
@@ -662,6 +671,48 @@ final class DbCollectorTest extends TestCase
         $collector->shutdown();
     }
 
+    public function testStartAppliesStatementClassToOpenConnectionsBuiltFromConfiguration(): void
+    {
+        $this->mockWebApplication(
+            [
+                'components' => [
+                    'db' => $this->makeSqliteConnection(),
+                    'db2' => ['class' => Connection::class, 'dsn' => 'sqlite::memory:'],
+                ],
+            ],
+        );
+
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so only the startup sweep can instrument the connection below.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
+        $other = Yii::$app->get('db2');
+
+        self::assertInstanceOf(
+            Connection::class,
+            $other,
+            'Configured component must build a connection.',
+        );
+
+        $other->open();
+
+        $collector = new DbCollector();
+
+        $collector->startup();
+
+        self::assertNotNull(
+            $other->pdo,
+            'PDO must be open.',
+        );
+        self::assertSame(
+            [DebugPdoStatement::class, []],
+            $other->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'A connection built from configuration and already open must be instrumented.',
+        );
+
+        $collector->shutdown();
+    }
+
     public function testStartDiscardsRowCountsRecordedForAnotherRequest(): void
     {
         $collector = $this->makeCollector(['db' => $this->makeSqliteConnection()]);
@@ -694,11 +745,29 @@ final class DbCollectorTest extends TestCase
     {
         $this->mockWebApplication();
 
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so no foreign listener answers for the collector under test.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
         $collector = new DbCollector();
 
         $collector->db = 'absent';
 
         $collector->startup();
+
+        $late = $this->makeSqliteConnection();
+
+        $late->open();
+
+        self::assertNotNull(
+            $late->pdo,
+            'PDO must be open.',
+        );
+        self::assertNotSame(
+            [DebugPdoStatement::class, []],
+            $late->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'A missing connection must leave every connection uninstrumented.',
+        );
 
         $collector->shutdown();
 
@@ -714,6 +783,10 @@ final class DbCollectorTest extends TestCase
 
         DebugPdoStatement::$rowCounts = [4, 9];
 
+        // Debug modules built earlier in the process may still listen for opening connections; start from a clean
+        // registration so only the restarted collector can instrument the connection below.
+        Event::off(Connection::class, Connection::EVENT_AFTER_OPEN);
+
         $collector->shutdown();
         $collector->startup();
 
@@ -722,9 +795,18 @@ final class DbCollectorTest extends TestCase
             DebugPdoStatement::$rowCounts,
             'A second capture of one request must keep the counts.',
         );
-        self::assertInstanceOf(
-            Closure::class,
-            $this->getInaccessibleProperty($collector, 'afterOpenListener'),
+
+        $late = $this->makeSqliteConnection();
+
+        $late->open();
+
+        self::assertNotNull(
+            $late->pdo,
+            'PDO must be open.',
+        );
+        self::assertSame(
+            [DebugPdoStatement::class, []],
+            $late->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
             'The hook must be reinstalled.',
         );
 

@@ -12,7 +12,7 @@ use PHPForge\Debug\Routing\DebugUrlGeneratorInterface;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException};
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\{Module, Panel};
-use yii\debug\tests\support\stub\CustomPanel;
+use yii\debug\tests\support\stub\{CustomPanel, TraceLineRenderer};
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -162,6 +162,31 @@ final class PanelTest extends TestCase
         );
     }
 
+    public function testGetTraceLineAcceptsArrayCallableTemplate(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $renderer = new TraceLineRenderer();
+
+        $module->traceLine = [$renderer, 'render'];
+
+        self::assertSame(
+            '<a href="app://open?file=file.php&line=10">custom text</a>',
+            $panel->getTraceLine(['file' => 'file.php', 'line' => 10, 'text' => 'custom text']),
+            'Placeholders must resolve in the returned template.',
+        );
+        self::assertSame(
+            ['file' => 'file.php', 'line' => '10', 'text' => 'custom text'],
+            $renderer->frame,
+            'Normalized frame must arrive as the first argument.',
+        );
+        self::assertSame(
+            $panel,
+            $renderer->panel,
+            'Owning panel must arrive as the second argument.',
+        );
+    }
+
     public function testGetTraceLineAcceptsClosureTemplate(): void
     {
         [$panel, $module] = $this->createPanelWithModule();
@@ -185,6 +210,31 @@ final class PanelTest extends TestCase
             '<a href="ide://open?url=file.php&line=10">custom text</a>',
             $panel->getTraceLine(['file' => 'file.php', 'line' => 10, 'text' => 'custom text']),
             "Closure-returned templates should still resolve '{file}/{line}/{text}' placeholders.",
+        );
+    }
+
+    public function testGetTraceLineAcceptsInvokableObjectTemplate(): void
+    {
+        [$panel, $module] = $this->createPanelWithModule();
+
+        $renderer = new TraceLineRenderer();
+
+        $module->traceLine = $renderer;
+
+        self::assertSame(
+            '<a href="app://open?file=file.php&line=10">file.php:10</a>',
+            $panel->getTraceLine(['file' => 'file.php', 'line' => 10]),
+            'Placeholders must resolve in the returned template.',
+        );
+        self::assertSame(
+            ['file' => 'file.php', 'line' => '10', 'text' => 'file.php:10'],
+            $renderer->frame,
+            'Normalized frame must arrive as the first argument.',
+        );
+        self::assertSame(
+            $panel,
+            $renderer->panel,
+            'Owning panel must arrive as the second argument.',
         );
     }
 

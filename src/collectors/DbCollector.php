@@ -36,8 +36,11 @@ use const JSON_THROW_ON_ERROR;
 /**
  * Captures every database query emitted during the request for the Database panel.
  *
- * Hooks the bound DB connection so each prepared statement records its row count, calculates per-query timings from
- * the profile log, and exposes the totals the exported summary adopts (query count, excessive callers).
+ * Hooks every DB connection so each prepared statement records its row count, calculates per-query timings from the
+ * profile log, and exposes the totals the exported summary adopts (query count, excessive callers).
+ *
+ * The hook installs {@see PDO::ATTR_STATEMENT_CLASS} on each profiled connection, an attribute PDO rejects on
+ * persistent instances, so persistent PDO connections are not supported while the collector is active.
  *
  * @phpstan-import-type LogTuple from \PHPForge\Debug\Panel\Log\LogSnapshot
  */
@@ -67,7 +70,7 @@ class DbCollector extends Collector
     public array $ignoredPathsInBacktrace = [];
 
     /**
-     * @var (Closure(Event): void)|null Active after-open listener, kept so {@see stop()} can detach it.
+     * @var (Closure(Event): void)|null Active class-level after-open listener, kept so {@see stop()} can detach it.
      */
     private Closure|null $afterOpenListener = null;
     /**
@@ -85,10 +88,6 @@ class DbCollector extends Collector
      * @var list<LogTuple>|null Current database profile logs
      */
     private array|null $profileLogs = null;
-    /**
-     * @var Connection|null The currently subscribed DB connection.
-     */
-    private Connection|null $subscribedConnection = null;
     /**
      * @var array<int, array{
      *   info: string,
@@ -275,12 +274,14 @@ class DbCollector extends Collector
     }
 
     /**
-     * Installs the {@see DebugPdoStatement} class on the bound DB connection so every prepared statement records its
+     * Installs the {@see DebugPdoStatement} class on every DB connection so each prepared statement records its
      * `rowCount()`.
      *
      * The hook is applied through {@see PDO::ATTR_STATEMENT_CLASS} rather than `Connection::$commandClass`, since the
-     * latter is not exposed by every Yii 2 fork. An {@see Connection::EVENT_AFTER_OPEN} listener covers connections
-     * opened later in the request.
+     * latter is not exposed by every Yii 2 fork. Connections already instantiated and open are hooked immediately; a
+     * class-level {@see Connection::EVENT_AFTER_OPEN} listener covers every connection opened later in the request,
+     * whatever its component id. Instrumenting them all keeps the recorded counts aligned with the profile timings,
+     * which the logger collects from every profiled connection.
      *
      * {@see \yii\debug\Module::initCollectors()} calls this while the debugger bootstraps, ahead of the panels, so
      * queries issued by a panel constructor are counted as well; that first call also opens the row-count window.
@@ -308,23 +309,15 @@ class DbCollector extends Collector
             DebugPdoStatement::$rowCounts = [];
         }
 
-        $apply = static function (Connection $conn): void {
-            $conn->pdo?->setAttribute(PDO::ATTR_STATEMENT_CLASS, [DebugPdoStatement::class, []]);
-        };
-
-        if ($db->pdo !== null) {
-            $apply($db);
+        foreach (Yii::$app->getComponents(false) as $component) {
+            self::installStatementClass($component);
         }
 
-        $this->afterOpenListener = static function (Event $event) use ($apply): void {
-            if ($event->sender instanceof Connection) {
-                $apply($event->sender);
-            }
+        $this->afterOpenListener = static function (Event $event): void {
+            self::installStatementClass($event->sender);
         };
 
-        $db->on(Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
-
-        $this->subscribedConnection = $db;
+        Event::on(Connection::class, Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
     }
 
     /**
@@ -369,7 +362,8 @@ class DbCollector extends Collector
     }
 
     /**
-     * Detaches the after-open listener and clears the per-request caches, so a reused worker process starts clean.
+     * Detaches the class-level after-open listener and clears the per-request caches, so a reused worker process starts
+     * clean.
      *
      * The recorded row counts stay in place: they are discarded by the next {@see start()} that belongs to a different
      * request, which keeps them readable when the same request captures more than once.
@@ -377,15 +371,27 @@ class DbCollector extends Collector
     protected function stop(): void
     {
         if ($this->afterOpenListener !== null) {
-            $this->subscribedConnection?->off(Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
+            Event::off(Connection::class, Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
 
             $this->afterOpenListener = null;
-            $this->subscribedConnection = null;
         }
 
         $this->instrumented = false;
         $this->profileLogs = null;
         $this->timings = null;
+    }
+
+    /**
+     * Installs the row-count statement class on the given candidate when it is an open DB connection.
+     *
+     * @param mixed $candidate Application component or event sender to hook; anything but an open {@see Connection} is
+     * ignored.
+     */
+    private static function installStatementClass(mixed $candidate): void
+    {
+        if ($candidate instanceof Connection) {
+            $candidate->pdo?->setAttribute(PDO::ATTR_STATEMENT_CLASS, [DebugPdoStatement::class, []]);
+        }
     }
 
     /**

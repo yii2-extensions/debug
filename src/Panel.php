@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
-use Closure;
 use PHPForge\Debug\Helper\{Coerce, Trace};
 use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, HydrationException, PanelSnapshot};
@@ -12,6 +11,7 @@ use yii\base\{Component, ViewContextInterface};
 use yii\debug\exception\Message;
 use yii\debug\routing\DebugUrlGenerator;
 
+use function is_callable;
 use function is_string;
 
 /**
@@ -169,8 +169,8 @@ class Panel extends Component implements ViewContextInterface
      * {@see Module::$tracePathMappings} and the configured {@see Module::$traceLine} template (or callable).
      *
      * A missing module, `null`, `false`, and any value outside the documented contract render escaped plain text; a
-     * `string` becomes the placeholder template; a {@see Closure} keeps receiving the frame and the panel, so the
-     * documented `($options, $panel)` callable contract survives the delegation.
+     * `string` always becomes the placeholder template, never a function name; any other callable keeps receiving the
+     * frame and the panel, so the documented `($options, $panel)` contract survives the delegation.
      *
      * The renderer escapes every substituted value, and falls back to an escaped dump when `file` or `line` is missing
      * internal PHP functions such as {@see call_user_func()} may produce frames without those keys, see
@@ -188,15 +188,17 @@ class Panel extends Component implements ViewContextInterface
 
         $trace = Trace::create()->withPathMappings($module === null ? [] : $module->tracePathMappings);
 
-        if ($traceLine instanceof Closure) {
+        if (is_string($traceLine)) {
+            return $trace->withTemplate($traceLine)->render($options);
+        }
+
+        if (is_callable($traceLine)) {
             return $trace
-                ->withTemplate(fn(array $frame): mixed => $traceLine($frame, $this))
+                ->withTemplate(fn($frame): mixed => $traceLine($frame, $this))
                 ->render($options);
         }
 
-        return $trace
-            ->withTemplate(is_string($traceLine) ? $traceLine : false)
-            ->render($options);
+        return $trace->withTemplate(false)->render($options);
     }
 
     /**
