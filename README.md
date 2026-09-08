@@ -227,7 +227,7 @@ See [the local SQLite demo](examples/database/README.md) to verify Database afte
 
 ### Browser support
 
-The debugger targets evergreen browsers with ES2022, Web Components, CSS custom properties, and native module support. 
+The debugger targets evergreen browsers with ES2022, Web Components, CSS custom properties, and native module support.
 Internet Explorer and other legacy browsers are not supported.
 
 ## Screenshots
