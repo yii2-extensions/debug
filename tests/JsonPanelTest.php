@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests;
 
+use PHPForge\Debug\Panel\PanelIcon;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\JsonPanel;
 use yii\debug\tests\support\TestCase;
@@ -36,6 +37,15 @@ final class JsonPanelTest extends TestCase
             'Custom Panel Id Test',
             $panel->getName(),
             'Method should normalize panel ID by replacing underscores, hyphens, and dots with spaces and capitalizing words.',
+        );
+    }
+
+    public function testGetToolbarIconUsesTheSharedDumpKey(): void
+    {
+        self::assertSame(
+            PanelIcon::DUMP->value,
+            (new JsonPanel())->getToolbarIcon(),
+            'Fallback panels must reuse the dump icon key.',
         );
     }
 }

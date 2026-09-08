@@ -39,6 +39,7 @@ final class MockerExtension implements Extension
     {
         $mocks = [
             ['namespace' => 'yii\debug\models\router', 'name' => 'preg_replace'],
+            ['namespace' => 'yii\debug\panels\request', 'name' => 'preg_split'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_iterable'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'is_string'],
             ['namespace' => 'yii\debug\models\router', 'name' => 'count'],
