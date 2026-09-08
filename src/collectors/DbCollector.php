@@ -389,7 +389,7 @@ class DbCollector extends Collector
      */
     private static function installStatementClass(mixed $candidate): void
     {
-        if ($candidate instanceof Connection) {
+        if ($candidate instanceof Connection && $candidate->enableProfiling) {
             $candidate->pdo?->setAttribute(PDO::ATTR_STATEMENT_CLASS, [DebugPdoStatement::class, []]);
         }
     }
