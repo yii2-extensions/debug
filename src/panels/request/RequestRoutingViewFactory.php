@@ -27,7 +27,6 @@ use function array_values;
 use function explode;
 use function is_array;
 use function is_string;
-use function preg_split;
 use function sprintf;
 use function str_ends_with;
 use function strtoupper;

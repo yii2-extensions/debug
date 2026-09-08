@@ -9,6 +9,7 @@ use PHPForge\Debug\Panel\Router\{CurrentRouteLogRow, RouterSnapshot};
 use PHPForge\Debug\Storage\ExceptionSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
+use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\base\Component;
 use yii\base\Module as BaseModule;
@@ -265,6 +266,32 @@ final class RequestRoutingViewFactoryTest extends TestCase
         );
     }
 
+    public function testInventoryLeavesTheMethodListEmptyWhenPregSplitFails(): void
+    {
+        MockerState::addCondition(
+            'yii\\debug\\panels\\request',
+            'preg_split',
+            ['/[\\s,|]+/', 'GET, POST', -1, PREG_SPLIT_NO_EMPTY],
+            false,
+        );
+
+        $this->mockWebApplication();
+
+        $rules = $this->routerRules([['name' => 'orders', 'route' => 'order/index', 'verb' => 'GET, POST']]);
+
+        $routing = RequestRoutingViewFactory::fromRequestData([], null, null, $rules);
+
+        self::assertNotNull(
+            $routing->inventory,
+            'The application inventory must remain available.',
+        );
+        self::assertSame(
+            [[]],
+            array_map(static fn($route): array => $route->getMethods(), $routing->inventory->getRoutes()),
+            'A failed split must not invent methods.',
+        );
+    }
+
     public function testInventoryOmitsLoadedDebuggerModulesWithoutLoadingApplicationModules(): void
     {
         $this->mockWebApplication();
@@ -287,6 +314,7 @@ final class RequestRoutingViewFactoryTest extends TestCase
                 ['name' => 'debugging', 'route' => 'debugging/index'],
                 ['name' => 'admin/reports', 'route' => 'admin/reports'],
                 ['name' => 'custom-rule'],
+                ['name' => 'admin', 'route' => 'admin'],
             ],
         );
 
@@ -297,7 +325,7 @@ final class RequestRoutingViewFactoryTest extends TestCase
             'The application inventory must remain available.',
         );
         self::assertSame(
-            ['debug/tutorial', 'debugging', 'admin/reports', 'custom-rule'],
+            ['debug/tutorial', 'debugging', 'admin/reports', 'custom-rule', 'admin'],
             array_map(static fn($route): string => $route->getPattern(), $routing->inventory->getRoutes()),
             'Ownership, not a matching URL substring, must identify debugger routes.',
         );
@@ -306,7 +334,7 @@ final class RequestRoutingViewFactoryTest extends TestCase
             'Inventory inspection must not initialize application modules.',
         );
         self::assertCount(
-            7,
+            8,
             $rules->rules,
             'Original URL rules must remain unchanged.',
         );

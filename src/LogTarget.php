@@ -238,21 +238,17 @@ class LogTarget extends Target
             $mailFiles = $mailCollector->getMessagesFileName();
         }
 
-        return new RequestSummary(
-            tag: $this->tag,
-            url: $this->module->createCapturePolicy()->redactUrl($request->getAbsoluteUrl()),
-            ajax: $request->getIsAjax(),
-            method: $request->getMethod(),
-            ip: $request->getUserIP() ?? '',
-            time: is_int($requestTime) || is_float($requestTime) ? $requestTime : microtime(true),
-            statusCode: $response->statusCode,
-            sqlCount: $this->getSqlTotalCount(),
-            excessiveCallersCount: $this->getExcessiveDbCallersCount(),
-            mailCount: count($mailFiles),
-            mailFiles: array_values($mailFiles),
-            processingTime: null,
-            peakMemory: null,
-        );
+        return RequestSummary::create($this->tag)
+            ->withRequest(
+                $this->module->createCapturePolicy()->redactUrl($request->getAbsoluteUrl()),
+                $request->getMethod(),
+                $request->getUserIP() ?? '',
+                is_int($requestTime) || is_float($requestTime) ? $requestTime : microtime(true),
+                $request->getIsAjax(),
+            )
+            ->withResponse($response->statusCode)
+            ->withDatabase($this->getSqlTotalCount(), $this->getExcessiveDbCallersCount())
+            ->withMail(count($mailFiles), array_values($mailFiles));
     }
 
     protected function getExcessiveDbCallersCount(): int

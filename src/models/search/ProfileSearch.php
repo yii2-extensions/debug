@@ -11,8 +11,6 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 
 use function array_key_exists;
-use function is_finite;
-use function is_numeric;
 use function trim;
 
 /**
@@ -97,18 +95,13 @@ class ProfileSearch extends Base
         $this->addCondition('info', true);
 
         $duration = trim($this->duration);
+        $minimumDuration = QueryInput::minimumBound($duration);
 
-        if ($duration !== '' && is_numeric($duration)) {
-            $minimumDuration = (float) $duration;
-
-            if (is_finite($minimumDuration) && $minimumDuration >= 0.0) {
-                $this->duration = $duration;
-                $this->addMinimumCondition('duration', $minimumDuration);
-            } else {
-                $this->duration = '';
-            }
-        } else {
+        if ($minimumDuration === null) {
             $this->duration = '';
+        } else {
+            $this->duration = $duration;
+            $this->addMinimumCondition('duration', $minimumDuration);
         }
 
         $dataProvider->allModels = $this->filter($models);

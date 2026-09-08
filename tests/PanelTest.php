@@ -362,16 +362,6 @@ final class PanelTest extends TestCase
             queryParams: [],
             theme: 'dark',
             urls: new class implements DebugUrlGeneratorInterface {
-                public function action(string $action, string $tag, array $queryParams = []): string
-                {
-                    return "/ctx/{$action}/{$tag}";
-                }
-
-                public function history(array $queryParams = []): string
-                {
-                    return '/ctx/index';
-                }
-
                 public function panel(string $tag, string $panel, array $queryParams = []): string
                 {
                     return "/ctx/{$tag}/{$panel}";
@@ -411,16 +401,6 @@ final class PanelTest extends TestCase
             queryParams: [],
             theme: 'dark',
             urls: new class implements DebugUrlGeneratorInterface {
-                public function action(string $action, string $tag, array $queryParams = []): string
-                {
-                    return "/debug/{$action}?tag={$tag}";
-                }
-
-                public function history(array $queryParams = []): string
-                {
-                    return '/debug/index';
-                }
-
                 public function panel(string $tag, string $panel, array $queryParams = []): string
                 {
                     return "/debug/view?tag={$tag}&panel={$panel}";
