@@ -378,16 +378,17 @@ For detailed configuration options and advanced usage.
 
 ## History comparison architecture
 
-`HistoryComparison::fromSnapshots()` delegates panel selection, ordering, failure precedence, capture states, and
-combined structural/state counts to Debug Core's `PHPForge\Debug\Comparison\PanelComparison`, which reuses
-`PayloadDifference`. Request-summary metrics remain delegated to `SummaryMetricComparison`. The adapter only maps
+`HistoryComparison::fromSnapshots()` delegates to Debug Core's `PHPForge\Debug\Comparison\SnapshotComparison`, which
+composes `SummaryMetricComparison` for request-summary metrics and `PanelComparison` (reusing `PayloadDifference`) for
+panel selection, ordering, failure precedence, capture states, and combined structural/state counts. The adapter only maps
 these results into its existing public models, including `HistoryPanelComparison`. No constructor, property, getter,
 return type,
 captured value, or storage format changes. Metric labels, order, units, precision, separators, signs, percentages, trends,
 and panel IDs retain their exact previous behavior, including missing values, zero baselines, and unrounded float deltas.
 
-Publish the Core revision providing `SummaryMetricComparison` and `PanelComparison` first and update consuming application
-locks before installing this adapter revision. The existing `^0.1@dev` constraint also admits older development revisions without the
+Publish the Core revision providing `SnapshotComparison`, `ToolbarInjector`, `QueryInput::minimumBound()`, and the
+private `ToolbarItem`, `ToolbarPanel`, `RequestSummary`, and `SidebarSnapshot` constructors first and update consuming
+application locks before installing this adapter revision. The existing `^0.1@dev` constraint also admits older development revisions without the
 new classes; local workspace links do not guarantee that a published installation has been updated.
 
 Missing panels remain distinct from captured empty arrays; failure envelopes take precedence over payloads, and

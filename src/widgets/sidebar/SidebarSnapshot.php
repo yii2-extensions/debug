@@ -106,27 +106,17 @@ final readonly class SidebarSnapshot
      */
     public function toCore(): CoreSidebarSnapshot
     {
-        return new CoreSidebarSnapshot(
-            title: $this->title,
-            ariaLabel: $this->ariaLabel,
-            method: $this->method,
-            path: $this->path,
-            fullUrl: $this->fullUrl,
-            statusCode: $this->statusCode,
-            statusVariant: $this->statusVariant,
-            time: $this->time,
-            isAjax: $this->isAjax,
-            isCursor: $this->isCursor,
-            cursorInitTag: $this->cursorInitTag,
-            newestUrl: self::url($this->newestUrl),
-            oldestUrl: self::url($this->oldestUrl),
-            newerUrl: self::url($this->newerUrl),
-            olderUrl: self::url($this->olderUrl),
-            isNewest: $this->isNewest,
-            isOldest: $this->isOldest,
-            hasNewer: $this->hasNewer,
-            hasOlder: $this->hasOlder,
-        );
+        return CoreSidebarSnapshot::create($this->title, $this->ariaLabel)
+            ->withRequest($this->method, $this->path, $this->fullUrl, $this->time, $this->isAjax)
+            ->withResponse($this->statusCode, $this->statusVariant)
+            ->withCursor($this->isCursor, $this->cursorInitTag)
+            ->withNavigationUrls(
+                self::url($this->newestUrl),
+                self::url($this->oldestUrl),
+                self::url($this->newerUrl),
+                self::url($this->olderUrl),
+            )
+            ->withNavigationState($this->isNewest, $this->isOldest, $this->hasNewer, $this->hasOlder);
     }
 
     /**

@@ -179,15 +179,13 @@ final readonly class ToolbarDataMapper
                 return null;
             }
 
-            $items[] = new ToolbarItem(
-                value: $value,
-                label: self::optionalString($rawItem, 'label'),
-                icon: self::optionalString($rawItem, 'icon'),
-                status: self::optionalString($rawItem, 'status') ?? 'default',
-                title: self::optionalString($rawItem, 'title'),
-                url: self::optionalString($rawItem, 'url'),
-                id: self::optionalString($rawItem, 'id'),
-            );
+            $items[] = ToolbarItem::create($value)
+                ->withLabel(self::optionalString($rawItem, 'label'))
+                ->withIcon(self::optionalString($rawItem, 'icon'))
+                ->withStatus(self::optionalString($rawItem, 'status') ?? 'default')
+                ->withTitle(self::optionalString($rawItem, 'title'))
+                ->withUrl(self::optionalString($rawItem, 'url'))
+                ->withId(self::optionalString($rawItem, 'id'));
         }
 
         $id = Coerce::stringOrNull($data['id'] ?? null);
@@ -197,12 +195,9 @@ final readonly class ToolbarDataMapper
             return null;
         }
 
-        return new ToolbarPanel(
-            id: $id,
-            title: $title,
-            url: self::optionalString($data, 'url'),
-            icon: self::optionalString($data, 'icon'),
-            items: $items,
-        );
+        return ToolbarPanel::create($id, $title)
+            ->withUrl(self::optionalString($data, 'url'))
+            ->withIcon(self::optionalString($data, 'icon'))
+            ->withItems($items);
     }
 }

@@ -24,26 +24,6 @@ final readonly class DebugUrlGenerator implements DebugUrlGeneratorInterface
     }
 
     /**
-     * Builds a debugger action URL while keeping the captured tag authoritative.
-     */
-    public function action(string $action, string $tag, array $queryParams = []): string
-    {
-        $action = trim($action, '/');
-
-        return Url::toRoute(
-            ["/{$this->moduleId}/{$action}", 'tag' => $tag] + self::query($queryParams),
-        );
-    }
-
-    /**
-     * Builds the canonical request-history URL used by existing Yii2 integrations.
-     */
-    public function history(array $queryParams = []): string
-    {
-        return Url::toRoute(["/{$this->moduleId}/index"] + self::query($queryParams));
-    }
-
-    /**
      * Builds a panel URL while keeping the captured tag and target panel authoritative.
      */
     public function panel(string $tag, string $panel, array $queryParams = []): string

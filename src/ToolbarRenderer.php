@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use PHPForge\Debug\Toolbar\ToolbarInjector;
 use yii\base\View;
 use yii\helpers\Html;
 use yii\web\AssetManager;
 
-use function strripos;
-use function substr_replace;
 use function trim;
 
 /**
@@ -38,11 +37,7 @@ final readonly class ToolbarRenderer
      */
     public function inject(string $html, string $toolbar): string
     {
-        $offset = strripos($html, '</body>');
-
-        return $offset === false
-            ? "{$html}{$toolbar}"
-            : substr_replace($html, $toolbar, $offset, 0);
+        return ToolbarInjector::inject($html, $toolbar);
     }
 
     /**

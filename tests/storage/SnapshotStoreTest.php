@@ -329,20 +329,8 @@ final class SnapshotStoreTest extends TestCase
      */
     private function summary(string $tag, float $time): RequestSummary
     {
-        return new RequestSummary(
-            tag: $tag,
-            url: 'https://example.test/',
-            ajax: false,
-            method: 'GET',
-            ip: '127.0.0.1',
-            time: $time,
-            statusCode: 200,
-            sqlCount: 0,
-            excessiveCallersCount: 0,
-            mailCount: 0,
-            mailFiles: [],
-            processingTime: null,
-            peakMemory: null,
-        );
+        return RequestSummary::create($tag)
+            ->withRequest('https://example.test/', 'GET', '127.0.0.1', $time)
+            ->withResponse(200);
     }
 }

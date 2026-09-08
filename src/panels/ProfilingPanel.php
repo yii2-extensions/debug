@@ -42,8 +42,6 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
 
         $filteredRows = $this->filteredRows($dataProvider->allModels);
 
-        $processingTime = number_format(($this->getProcessingTime() ?? 0.0) * 1000);
-
         return Yii::$app->view->render(
             'panels/profile/detail',
             [
@@ -53,7 +51,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
                 'memory' => Format::bytesToMb($this->getMemoryUsage(), 2),
                 'panel' => $this,
                 'searchModel' => $searchModel,
-                'time' => "{$processingTime} ms",
+                'time' => Format::milliseconds($this->getProcessingTime() ?? 0.0),
                 'timeline' => $this->renderTimeline($filteredRows),
             ],
             $this,
@@ -149,12 +147,10 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     #[Override]
     protected function getToolbarItems(): array
     {
-        $processingTime = number_format(($this->getProcessingTime() ?? 0.0) * 1000);
-
         return [
             [
                 'title' => 'Total processing time',
-                'value' => "{$processingTime} ms",
+                'value' => Format::milliseconds($this->getProcessingTime() ?? 0.0),
             ],
             [
                 'title' => 'Peak memory',

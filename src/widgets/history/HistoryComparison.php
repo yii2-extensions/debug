@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
-use PHPForge\Debug\Comparison\{PanelComparison, SummaryMetricComparison};
-use PHPForge\Debug\Storage\{DebugSnapshot, RequestSummary};
+use PHPForge\Debug\Comparison\{PanelComparison, SnapshotComparison, SummaryMetricComparison};
+use PHPForge\Debug\Storage\DebugSnapshot;
 
 /**
  * Builds a privacy-preserving comparison of two immutable debugger snapshots.
@@ -16,17 +16,27 @@ use PHPForge\Debug\Storage\{DebugSnapshot, RequestSummary};
 final readonly class HistoryComparison
 {
     /**
-     * @param DebugSnapshot $baseline Baseline snapshot.
-     * @param DebugSnapshot $target Target snapshot.
+     * Baseline snapshot.
+     */
+    public DebugSnapshot $baseline;
+    /**
+     * Target snapshot.
+     */
+    public DebugSnapshot $target;
+
+    /**
+     * @param SnapshotComparison $comparison Shared comparison the presentation models are derived from.
      * @param list<HistoryMetricComparison> $metrics Request-summary metric comparisons.
      * @param list<HistoryPanelComparison> $panels Per-panel structural comparisons.
      */
     private function __construct(
-        public DebugSnapshot $baseline,
-        public DebugSnapshot $target,
+        private SnapshotComparison $comparison,
         public array $metrics,
         public array $panels,
-    ) {}
+    ) {
+        $this->baseline = $comparison->baseline;
+        $this->target = $comparison->target;
+    }
 
     /**
      * Creates a comparison from two snapshots.
@@ -35,11 +45,12 @@ final readonly class HistoryComparison
      */
     public static function fromSnapshots(DebugSnapshot $baseline, DebugSnapshot $target, array $panelLabels = []): self
     {
+        $comparison = SnapshotComparison::between($baseline, $target, $panelLabels);
+
         return new self(
-            baseline: $baseline,
-            target: $target,
-            metrics: self::buildMetrics($baseline->summary, $target->summary),
-            panels: self::buildPanels($baseline, $target, $panelLabels),
+            comparison: $comparison,
+            metrics: self::buildMetrics($comparison->metrics),
+            panels: self::buildPanels($comparison->panels),
         );
     }
 
@@ -48,30 +59,20 @@ final readonly class HistoryComparison
      */
     public function hasDifferences(): bool
     {
-        foreach ($this->metrics as $metric) {
-            if ($metric->delta !== 'No change') {
-                return true;
-            }
-        }
-
-        foreach ($this->panels as $panel) {
-            if ($panel->differenceCount() > 0) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->comparison->hasDifferences();
     }
 
     /**
+     * @param list<SummaryMetricComparison> $metrics
+     *
      * @return list<HistoryMetricComparison>
      */
-    private static function buildMetrics(RequestSummary $baseline, RequestSummary $target): array
+    private static function buildMetrics(array $metrics): array
     {
-        $metrics = [];
+        $presentation = [];
 
-        foreach (SummaryMetricComparison::between($baseline, $target) as $metric) {
-            $metrics[] = new HistoryMetricComparison(
+        foreach ($metrics as $metric) {
+            $presentation[] = new HistoryMetricComparison(
                 label: $metric->label,
                 baseline: $metric->baseline,
                 target: $metric->target,
@@ -81,20 +82,20 @@ final readonly class HistoryComparison
             );
         }
 
-        return $metrics;
+        return $presentation;
     }
 
     /**
-     * @param array<string, string> $panelLabels
+     * @param list<PanelComparison> $panels
      *
      * @return list<HistoryPanelComparison>
      */
-    private static function buildPanels(DebugSnapshot $baseline, DebugSnapshot $target, array $panelLabels): array
+    private static function buildPanels(array $panels): array
     {
-        $comparisons = [];
+        $presentation = [];
 
-        foreach (PanelComparison::between($baseline, $target, $panelLabels) as $panel) {
-            $comparisons[] = new HistoryPanelComparison(
+        foreach ($panels as $panel) {
+            $presentation[] = new HistoryPanelComparison(
                 id: $panel->id,
                 label: $panel->label,
                 baselineState: $panel->baselineState,
@@ -106,6 +107,6 @@ final readonly class HistoryComparison
             );
         }
 
-        return $comparisons;
+        return $presentation;
     }
 }

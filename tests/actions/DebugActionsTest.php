@@ -1238,20 +1238,22 @@ final class DebugActionsTest extends TestCase
 
         $action = new ViewAction('view');
 
-        $summary = new RequestSummary(
-            tag: 'tag-shell',
-            url: 'dummy',
-            ajax: false,
-            method: 'GET',
-            ip: '127.0.0.1',
-            time: 1_700_000_000.0,
-            statusCode: 200,
-            sqlCount: 0,
-            excessiveCallersCount: 0,
-            mailCount: 0,
-            mailFiles: [],
-            processingTime: null,
-            peakMemory: 1_048_576,
+        $summary = RequestSummary::fromArray(
+            [
+                'tag' => 'tag-shell',
+                'url' => 'dummy',
+                'ajax' => false,
+                'method' => 'GET',
+                'ip' => '127.0.0.1',
+                'time' => 1_700_000_000.0,
+                'statusCode' => 200,
+                'sqlCount' => 0,
+                'excessiveCallersCount' => 0,
+                'mailCount' => 0,
+                'mailFiles' => [],
+                'processingTime' => null,
+                'peakMemory' => 1_048_576,
+            ],
         );
 
         $action->setModule($module);

@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(events): add execution inspector; docs: document enums and exception formats; refactor: exception enums and share PanelTitle UI labels.
 - fix(history): use shared capture-selection labels; chore(dev): link the local Debug Core checkout through a Composer path repository.
 - refactor: reuse Debug Core page-size selector, type labels, panel messages, and history cells; follow the `LogTuple` alias rename.
+- refactor!: delegate history, toolbar, and duration parsing to Debug Core; use fluent factories and remove unused URL helpers.
 
 ## 0.1.1 May 18, 2026
 
