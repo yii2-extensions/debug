@@ -12,7 +12,8 @@ use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\widgets\FilterBanner;
 use PHPForge\Debug\View\History\{HistoryRow, HistoryScale, HistorySummary};
 use yii\debug\widgets\history\HistoryRowRenderer;
-use yii\grid\{GridView, SerialColumn};
+use yii\debug\widgets\GridView;
+use yii\grid\SerialColumn;
 use yii\web\View;
 use UIAwesome\Html\Heading\H1;
 
@@ -32,11 +33,15 @@ $scale = HistoryScale::fromModels(
 
 $dbPanel = $panels['db'] ?? null;
 $mailPanel = $panels['mail'] ?? null;
+
 $comparisonTags = array_keys($manifest);
+
 $comparisonTarget = $comparisonTags[0] ?? null;
 $comparisonBaseline = $comparisonTags[1] ?? null;
 ?>
-<?= H1::tag()->class('yii-debug-sr-only')->content(PanelTitle::REQUEST_HISTORY) ?>
+<?= H1::tag()
+    ->class('yii-debug-sr-only')
+    ->content(PanelTitle::REQUEST_HISTORY) ?>
 <?= HistoryRowRenderer::renderSummary($summary) ?>
 <?php if ($comparisonBaseline !== null && $comparisonTarget !== null): ?>
     <section class="yii-debug-section" aria-labelledby="yii-debug-history-compare-title">

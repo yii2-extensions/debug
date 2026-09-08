@@ -80,6 +80,7 @@ class EventSearch extends Base
                         'isStatic',
                     ],
                     'defaultOrder' => ['time' => SORT_ASC],
+                    'params' => GridViewConfig::sortParams(),
                 ],
             ],
         );

@@ -6,6 +6,7 @@ namespace yii\debug\tests\log;
 
 use PHPForge\Debug\Panel\Log\LogRow;
 use PHPUnit\Framework\Attributes\Group;
+use Yii;
 use yii\data\{Pagination, Sort};
 use yii\debug\models\search\LogSearch;
 use yii\debug\tests\support\TestCase;
@@ -155,6 +156,33 @@ final class LogSearchTest extends TestCase
             ['time' => SORT_ASC],
             $sort->defaultOrder,
             'Default sort order must be by time ascending.',
+        );
+    }
+
+    public function testSearchDropsThePageCursorFromSortLinks(): void
+    {
+        $this->mockWebApplication();
+
+        Yii::$app->requestedRoute = 'debug/view';
+
+        $_GET = ['page' => '4', 'sort' => 'category'];
+
+        $sort = (new LogSearch())->search([], [])->getSort();
+
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'Log sorting must be enabled.',
+        );
+        self::assertSame(
+            ['category' => SORT_ASC],
+            $sort->getAttributeOrders(),
+            'The active ordering must still come from the request.',
+        );
+        self::assertStringNotContainsString(
+            'page=',
+            $sort->createUrl('level'),
+            'Sorting must land on page one.',
         );
     }
 

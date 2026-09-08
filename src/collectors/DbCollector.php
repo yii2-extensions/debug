@@ -14,9 +14,12 @@ use yii\base\Event;
 use yii\db\Connection;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\exception\Message;
+use yii\debug\LogTarget;
 use yii\log\Logger;
 
 use function array_filter;
+use function array_pad;
+use function array_shift;
 use function array_values;
 use function count;
 use function hash;
@@ -68,9 +71,23 @@ class DbCollector extends Collector
      */
     private Closure|null $afterOpenListener = null;
     /**
+     * Request tag the counts in {@see DebugPdoStatement::$rowCounts} belong to: `false` while no window has been
+     * opened, `null` for the window {@see instrument()} opens during the module bootstrap, before the log target
+     * exists.
+     */
+    private string|false|null $countsTag = false;
+    /**
+     * Whether the statement hook is installed; guards {@see instrument()} against reinstalling the listener and
+     * against reopening the row-count window.
+     */
+    private bool $instrumented = false;
+    /**
      * @var list<LogTuple>|null Current database profile logs
      */
     private array|null $profileLogs = null;
+    /**
+     * @var Connection|null The currently subscribed DB connection.
+     */
     private Connection|null $subscribedConnection = null;
     /**
      * @var array<int, array{
@@ -86,6 +103,10 @@ class DbCollector extends Collector
      * }>|null Current database request timings
      */
     private array|null $timings = null;
+
+    /**
+     * @var string|null Algorithm used to hash the backtrace for stable identification.
+     */
     private static string|null $traceHashAlgo = null;
 
     /**
@@ -112,10 +133,7 @@ class DbCollector extends Collector
 
             $rawTimings = ProfileTimings::calculate($this->getProfileLogs());
 
-            $ignoredPathsInBacktrace = array_map(
-                Yii::getAlias(...),
-                $this->ignoredPathsInBacktrace,
-            );
+            $ignoredPathsInBacktrace = array_map(Yii::getAlias(...), $this->ignoredPathsInBacktrace);
 
             $hashAlgo = self::traceHashAlgo();
 
@@ -257,39 +275,37 @@ class DbCollector extends Collector
     }
 
     /**
-     * Returns the uppercase SQL command verb extracted from the leading word of the profile-log token.
-     *
-     * @param string $timing Profile-log token (the captured SQL statement).
-     *
-     * @return string Uppercase command verb (`SELECT`, `INSERT`, `DELETE`, ...), or `''` when none could be extracted.
-     */
-    protected function getQueryType(string $timing): string
-    {
-        $timing = ltrim($timing);
-
-        preg_match('/^[a-zA-Z]+/', $timing, $matches);
-
-        return strtoupper($matches[0] ?? '');
-    }
-
-    /**
      * Installs the {@see DebugPdoStatement} class on the bound DB connection so every prepared statement records its
-     * `rowCount()`, and resets the per-request caches.
+     * `rowCount()`.
      *
      * The hook is applied through {@see PDO::ATTR_STATEMENT_CLASS} rather than `Connection::$commandClass`, since the
-     * latter is not exposed by every Yii 2 fork.
+     * latter is not exposed by every Yii 2 fork. An {@see Connection::EVENT_AFTER_OPEN} listener covers connections
+     * opened later in the request.
+     *
+     * {@see \yii\debug\Module::initCollectors()} calls this while the debugger bootstraps, ahead of the panels, so
+     * queries issued by a panel constructor are counted as well; that first call also opens the row-count window.
+     * Reinstallation is skipped while the hook is active, so the counts recorded so far survive {@see start()}.
      */
-    protected function start(): void
+    public function instrument(): void
     {
-        $this->profileLogs = null;
-        $this->timings = null;
-
-        DebugPdoStatement::$rowCounts = [];
+        if ($this->instrumented) {
+            return;
+        }
 
         $db = Yii::$app->get($this->db, false);
 
         if (!$db instanceof Connection) {
             return;
+        }
+
+        $this->instrumented = true;
+
+        if ($this->countsTag === false) {
+            // The log target, and with it the request tag, is wired after the collectors: leave the window anonymous
+            // until start() adopts the tag of the request it belongs to.
+            $this->countsTag = null;
+
+            DebugPdoStatement::$rowCounts = [];
         }
 
         $apply = static function (Connection $conn): void {
@@ -307,11 +323,56 @@ class DbCollector extends Collector
         };
 
         $db->on(Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
+
         $this->subscribedConnection = $db;
     }
 
     /**
+     * Returns the uppercase SQL command verb extracted from the leading word of the profile-log token.
+     *
+     * @param string $timing Profile-log token (the captured SQL statement).
+     *
+     * @return string Uppercase command verb (`SELECT`, `INSERT`, `DELETE`, ...), or `''` when none could be extracted.
+     */
+    protected function getQueryType(string $timing): string
+    {
+        $timing = ltrim($timing);
+
+        preg_match('/^[a-zA-Z]+/', $timing, $matches);
+
+        return strtoupper($matches[0] ?? '');
+    }
+
+    /**
+     * Resets the per-request caches, binds the row-count window to the current request tag, and installs the statement
+     * hook through {@see instrument()} when the module has not already done so.
+     *
+     * The counts are discarded only when they belong to another request, so the collector survives being restarted
+     * inside one request: a handled exception makes the logger flush twice, and each flush drives
+     * {@see LogTarget::export()} through a full shutdown/startup cycle.
+     */
+    protected function start(): void
+    {
+        $this->profileLogs = null;
+        $this->timings = null;
+
+        $logTarget = $this->module?->logTarget;
+        $tag = $logTarget instanceof LogTarget ? $logTarget->tag : null;
+
+        if ($this->countsTag !== null && $this->countsTag !== $tag) {
+            DebugPdoStatement::$rowCounts = [];
+        }
+
+        $this->countsTag = $tag;
+
+        $this->instrument();
+    }
+
+    /**
      * Detaches the after-open listener and clears the per-request caches, so a reused worker process starts clean.
+     *
+     * The recorded row counts stay in place: they are discarded by the next {@see start()} that belongs to a different
+     * request, which keeps them readable when the same request captures more than once.
      */
     protected function stop(): void
     {
@@ -322,14 +383,20 @@ class DbCollector extends Collector
             $this->subscribedConnection = null;
         }
 
+        $this->instrumented = false;
         $this->profileLogs = null;
         $this->timings = null;
-
-        DebugPdoStatement::$rowCounts = [];
     }
 
     /**
      * Resolves the typed query rows from the live logger timings.
+     *
+     * Row counts are appended from the moment {@see instrument()} installs the statement hook and every instrumented
+     * execution contributes exactly one entry, so the recorded list maps onto the trailing timings: queries the logger
+     * profiled before the hook was in place (the debugger's own bootstrap, or another bootstrap component) report
+     * `null`. The list is therefore left-padded to the timing count instead of being read by absolute position, which
+     * would shift every count onto the wrong query. Counts outnumbering timings means the profiler missed executions
+     * the hook saw, leaving nothing to align against; the whole request falls back to `null`.
      *
      * @return list<QueryRow> Rows in capture order.
      */
@@ -337,15 +404,22 @@ class DbCollector extends Collector
     {
         $timings = $this->calculateTimings();
         $duplicates = $this->countDuplicateQuery($timings);
+
         $rowCounts = DebugPdoStatement::$rowCounts;
+
         $rows = [];
 
+        $aligned = count($rowCounts) > count($timings) ? [] : array_pad($rowCounts, -count($timings), null);
+
         foreach ($timings as $seq => $timing) {
-            $count = $rowCounts[$seq] ?? null;
+            $count = array_shift($aligned);
+
             $info = $timing['info'];
 
             if (!isset($duplicates[$info])) {
-                throw new LogicException(Message::DUPLICATE_QUERY_COUNT_MISSING->getMessage($info));
+                throw new LogicException(
+                    Message::DUPLICATE_QUERY_COUNT_MISSING->getMessage($info),
+                );
             }
 
             $rows[] = QueryRow::fromTiming(

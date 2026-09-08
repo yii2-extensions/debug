@@ -107,6 +107,7 @@ class MailSearch extends Base
                         'body',
                         'charset',
                     ],
+                    'params' => GridViewConfig::sortParams(),
                 ],
             ],
         );

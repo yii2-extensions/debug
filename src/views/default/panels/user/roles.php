@@ -5,7 +5,7 @@ declare(strict_types=1);
 use PHPForge\Debug\Panel\User\UserRbacRenderer;
 use yii\debug\GridViewConfig;
 use yii\debug\panels\UserPanel;
-use yii\grid\GridView;
+use yii\debug\widgets\GridView;
 
 /** @var UserPanel $panel User panel providing role and permission data. */
 $columns = [
@@ -40,4 +40,4 @@ $permissionsProvider = $panel->getPermissionsProvider();
             'columns' => $columns,
         ],
     ),
-) ?>
+);

@@ -14,8 +14,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\models\search\ProfileSearch;
 use yii\debug\panels\ProfilingPanel;
-use yii\debug\widgets\FilterBanner;
-use yii\grid\GridView;
+use yii\debug\widgets\{FilterBanner, GridView};
 
 /**
  * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.
@@ -211,4 +210,4 @@ $filterFields[] = Button::tag()
             ],
         ],
     ],
-); ?>
+);

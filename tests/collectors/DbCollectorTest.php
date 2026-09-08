@@ -18,6 +18,7 @@ use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
+use function array_map;
 use function hash_algos;
 use function in_array;
 
@@ -94,6 +95,7 @@ final class DbCollectorTest extends TestCase
         $collector->ignoredPathsInBacktrace = ['/tmp/ignored'];
 
         $timings = $collector->calculateTimings();
+
         $first = $timings[0] ?? self::fail('Expected one timing.');
 
         self::assertSame(
@@ -144,6 +146,23 @@ final class DbCollectorTest extends TestCase
         );
     }
 
+    public function testCaptureAlignsRowCountsWithTheTrailingTimings(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(5),
+            [5, 7],
+        );
+
+        self::assertSame(
+            [null, null, null, 5, 7],
+            $this->rowsOf($this->captureEntries($collector)),
+            'Counts must land on the last timings.',
+        );
+    }
+
     public function testCaptureAssemblesTimingsWithMillisecondScaling(): void
     {
         $collector = $this->makeCollector();
@@ -179,6 +198,23 @@ final class DbCollectorTest extends TestCase
             0,
             $row->rows,
             'A zero row count must remain a valid driver result.',
+        );
+    }
+
+    public function testCaptureKeepsAlignmentWhenAnExecutionRecordedNoRowCount(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(4),
+            [3, null, 8],
+        );
+
+        self::assertSame(
+            [null, 3, null, 8],
+            $this->rowsOf($this->captureEntries($collector)),
+            'A failed execution must keep its slot.',
         );
     }
 
@@ -249,6 +285,23 @@ final class DbCollectorTest extends TestCase
         self::assertNull(
             (new DbCollector())->capture(),
             'Idle collector must record nothing.',
+        );
+    }
+
+    public function testCaptureReturnsNullRowsWhenCountsOutnumberTimings(): void
+    {
+        $collector = $this->makeCollector();
+
+        $this->primeCollector(
+            $collector,
+            $this->fakeMessages(1),
+            [5, 7],
+        );
+
+        self::assertSame(
+            [null],
+            $this->rowsOf($this->captureEntries($collector)),
+            'An unalignable list must yield no counts.',
         );
     }
 
@@ -429,6 +482,79 @@ final class DbCollectorTest extends TestCase
         );
     }
 
+    public function testInstrumentInstallsTheStatementHookOnlyOnce(): void
+    {
+        $db = $this->makeSqliteConnection();
+
+        $this->mockWebApplication(['components' => ['db' => $db]]);
+
+        $collector = new DbCollector();
+
+        DebugPdoStatement::$rowCounts = [1, 2];
+
+        $collector->instrument();
+
+        self::assertSame(
+            [],
+            DebugPdoStatement::$rowCounts,
+            'The first installation must discard stale counts.',
+        );
+
+        DebugPdoStatement::$rowCounts = [5];
+
+        $collector->instrument();
+
+        self::assertSame(
+            [5],
+            DebugPdoStatement::$rowCounts,
+            'A repeated installation must keep the counts.',
+        );
+
+        $events = $this->getInaccessibleProperty($db, '_events');
+
+        self::assertIsArray(
+            $events,
+            'Connection events must be stored as an array.',
+        );
+
+        $afterOpenEvents = $events[Connection::EVENT_AFTER_OPEN] ?? null;
+
+        self::assertIsArray(
+            $afterOpenEvents,
+            'The after-open handler list must be stored.',
+        );
+        self::assertCount(
+            1,
+            $afterOpenEvents,
+            'Only one after-open handler must be attached.',
+        );
+
+        $collector->shutdown();
+
+        DebugPdoStatement::$rowCounts = [];
+    }
+
+    public function testModuleInstrumentsTheCollectorWhileInitializing(): void
+    {
+        $db = $this->makeSqliteConnection();
+
+        $db->open();
+
+        $this->mockWebApplication(['components' => ['db' => $db]]);
+
+        new Module('debug');
+
+        self::assertNotNull(
+            $db->pdo,
+            'PDO must be open.',
+        );
+        self::assertSame(
+            [DebugPdoStatement::class, []],
+            $db->pdo->getAttribute(PDO::ATTR_STATEMENT_CLASS),
+            'Bootstrap must install the statement class ahead of the panels.',
+        );
+    }
+
     public function testShutdownDetachesAfterOpenListener(): void
     {
         $db = $this->makeSqliteConnection();
@@ -536,6 +662,34 @@ final class DbCollectorTest extends TestCase
         $collector->shutdown();
     }
 
+    public function testStartDiscardsRowCountsRecordedForAnotherRequest(): void
+    {
+        $collector = $this->makeCollector(['db' => $this->makeSqliteConnection()]);
+        $logTarget = $collector->module?->logTarget;
+
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Log target must be wired.',
+        );
+
+        DebugPdoStatement::$rowCounts = [4, 9];
+
+        $collector->shutdown();
+
+        $logTarget->beginRequest();
+
+        $collector->startup();
+
+        self::assertSame(
+            [],
+            DebugPdoStatement::$rowCounts,
+            'A new request must start from an empty list.',
+        );
+
+        $collector->shutdown();
+    }
+
     public function testStartIsANoopWhenDbComponentIsMissing(): void
     {
         $this->mockWebApplication();
@@ -552,6 +706,31 @@ final class DbCollectorTest extends TestCase
             $collector->capture(),
             'Stopped collector must record nothing.',
         );
+    }
+
+    public function testStartKeepsRowCountsRecordedForTheSameRequest(): void
+    {
+        $collector = $this->makeCollector(['db' => $this->makeSqliteConnection()]);
+
+        DebugPdoStatement::$rowCounts = [4, 9];
+
+        $collector->shutdown();
+        $collector->startup();
+
+        self::assertSame(
+            [4, 9],
+            DebugPdoStatement::$rowCounts,
+            'A second capture of one request must keep the counts.',
+        );
+        self::assertInstanceOf(
+            Closure::class,
+            $this->getInaccessibleProperty($collector, 'afterOpenListener'),
+            'The hook must be reinstalled.',
+        );
+
+        $collector->shutdown();
+
+        DebugPdoStatement::$rowCounts = [];
     }
 
     public function testTraceHashAlgoIsCachedAcrossCalls(): void
@@ -708,7 +887,7 @@ final class DbCollectorTest extends TestCase
      * Primes the collector's live sources so the capture path resolves the given queries.
      *
      * @param list<StringLogMessage> $messages Raw profile tuples.
-     * @param list<int> $rowCounts Row counts reported by the driver, in execution order.
+     * @param list<int|null> $rowCounts Row counts reported by the driver, in execution order.
      */
     private function primeCollector(DbCollector $collector, array $messages, array $rowCounts): void
     {
@@ -725,5 +904,15 @@ final class DbCollectorTest extends TestCase
         $logTarget->messages = $messages;
 
         DebugPdoStatement::$rowCounts = $rowCounts;
+    }
+
+    /**
+     * @param list<QueryRow> $rows Captured query rows.
+     *
+     * @return list<int|null> Row count of each captured row, in capture order.
+     */
+    private function rowsOf(array $rows): array
+    {
+        return array_map(static fn(QueryRow $row): int|null => $row->rows, $rows);
     }
 }

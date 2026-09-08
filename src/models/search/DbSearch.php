@@ -69,6 +69,7 @@ class DbSearch extends Base
                         'duplicate',
                         'rows',
                     ],
+                    'params' => GridViewConfig::sortParams(),
                 ],
             ],
         );

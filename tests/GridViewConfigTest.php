@@ -331,4 +331,39 @@ final class GridViewConfigTest extends TestCase
             'The shared row-class policy must preserve the adapter mapping.',
         );
     }
+
+    public function testSortParamsDropsOnlyThePageCursor(): void
+    {
+        $this->mockWebApplication();
+
+        $_GET = [
+            'page' => '3',
+            'per-page' => '25',
+            'sort' => '-duration',
+            'Db' => ['type' => 'SELECT'],
+        ];
+
+        self::assertSame(
+            [
+                'per-page' => '25',
+                'sort' => '-duration',
+                'Db' => ['type' => 'SELECT'],
+            ],
+            GridViewConfig::sortParams(),
+            "Only 'page' may be dropped.",
+        );
+    }
+
+    public function testSortParamsReturnsQueryParamsUnchangedWithoutPageCursor(): void
+    {
+        $this->mockWebApplication();
+
+        $_GET = ['sort' => 'seq'];
+
+        self::assertSame(
+            ['sort' => 'seq'],
+            GridViewConfig::sortParams(),
+            'Absent cursor must leave the parameters untouched.',
+        );
+    }
 }

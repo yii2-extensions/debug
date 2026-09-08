@@ -6,16 +6,22 @@ use yii\debug\Module;
 use UIAwesome\Html\Flow\{Div, P};
 use UIAwesome\Html\Form\Button;
 use UIAwesome\Html\Form\Values\ButtonType;
-use UIAwesome\Html\Phrasing\{Code, Span, Strong};
-use UIAwesome\Html\Root\Header;
+use UIAwesome\Html\Phrasing\Code;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\DbSearch;
-use PHPForge\Debug\Panel\Db\{DbQueryRenderer, NPlusOneDetector, NPlusOneFinding, QueryRow};
+use PHPForge\Debug\Panel\Db\{
+    DbMessage,
+    DbQueryRenderer,
+    DbSummaryRenderer,
+    NPlusOneDetector,
+    NPlusOneFinding,
+    QueryRow,
+};
 use yii\debug\panels\DbPanel;
 use yii\debug\widgets\FilterBanner;
-use yii\grid\GridView;
+use yii\debug\widgets\GridView;
 use yii\helpers\Url;
 use yii\web\View;
 
@@ -24,7 +30,6 @@ use yii\web\View;
  * @var DbPanel $panel Panel providing the detail content.
  * @var ArrayDataProvider $queryDataProvider Data provider for the query GridView widget.
  * @var DbSearch $searchModel Search model for filtering the database query grid.
- * @var int $sumDuplicates Number of duplicated queries.
  * @var View $this View component instance.
  */
 $rows = $panel->getRows();
@@ -34,7 +39,7 @@ $hasQueries = $rows !== [];
 /** @var list<QueryRow> $pageRows */
 $pageRows = array_values($queryDataProvider->getModels());
 
-$nPlusOneFindings = NPlusOneDetector::detect($pageRows, 3);
+$nPlusOneFindings = NPlusOneDetector::detect($pageRows);
 
 /** @var array<int, NPlusOneFinding> $nPlusOneBySequence */
 $nPlusOneBySequence = [];
@@ -45,54 +50,19 @@ foreach ($nPlusOneFindings as $finding) {
     }
 }
 
-$nPlusOneSummary = DbQueryRenderer::renderNPlusOneSummary($nPlusOneFindings, 'on this page');
-
-$totalMs = number_format(array_sum(array_column($rows, 'duration')), 3);
+$nPlusOneSummary = DbQueryRenderer::renderNPlusOneSummary($nPlusOneFindings, DbMessage::PAGE_SCOPE->value);
 
 $tag = $panel->tag;
 
-$explainUrlBuilder = static fn(int $seq): string => Url::to(Module::route('db-explain', ['seq' => $seq, 'tag' => $tag]));
-
-$summaryItems = [
-    Span::tag()
-        ->html(
-            Strong::tag()->content((string) count($rows)),
-            ' queries',
-        ),
-    Span::tag()
-        ->class('yii-debug-grid-summary-sep')
-        ->content('·'),
-    Span::tag()
-        ->html(
-            Strong::tag()->content($totalMs),
-            ' ms total',
-        ),
-];
-
-if ($sumDuplicates > 0) {
-    $summaryItems[] = Span::tag()
-        ->class('yii-debug-grid-summary-sep')
-        ->content('·');
-    $summaryItems[] = Span::tag()
-        ->class('yii-debug-grid-summary-stat-warn')
-        ->html(
-            Strong::tag()->content((string) $sumDuplicates),
-            ' duplicated',
-        );
-}
-
-if ($hasQueries) {
-    $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
-}
+$explainUrlBuilder = static fn(int $seq): string => Url::to(
+    Module::route('db-explain', ['seq' => $seq, 'tag' => $tag]),
+);
 ?>
-<?= Header::tag()
-    ->class('yii-debug-grid-summary')
-    ->html(...$summaryItems) ?>
+<?= DbSummaryRenderer::render($panel->getSummary(), $hasQueries ? GridViewConfig::pageSizeSelectorHtml() : null) ?>
 <?php if (!$hasQueries): ?>
     <?= EmptyState::card(
-        'No database queries in this request',
-        P::tag()
-            ->content('This request completed without executing SQL through a Yii DB connection, so the query log is empty.'),
+        DbMessage::EMPTY_HEADLINE->value,
+        P::tag()->content(DbMessage::EMPTY_EXPLANATION),
         P::tag()
             ->html(
                 'Queries are captured from the profiling messages logged by ',
@@ -106,6 +76,13 @@ if ($hasQueries) {
 <?php endif; ?>
 <?= $nPlusOneSummary ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
+<?php if ($queryDataProvider->getTotalCount() === 0): ?>
+    <?= EmptyState::card(
+        DbMessage::NO_MATCH_HEADLINE->value,
+        P::tag()->content(DbMessage::NO_MATCH_EXPLANATION),
+    ) ?>
+    <?php return; ?>
+<?php endif; ?>
 <?= GridView::widget(
     [
         ...GridViewConfig::defaults(),
@@ -117,37 +94,38 @@ if ($hasQueries) {
         'columns' => [
             [
                 'attribute' => 'type',
-                'label' => 'Type',
+                'label' => DbMessage::TYPE->value,
                 'format' => 'raw',
                 'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderTypeCell($data),
                 'filter' => $panel->getTypes(),
-                'options' => ['width' => '8%'],
+                'filterInputOptions' => ['class' => 'yii-debug-select'],
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
             ],
             [
                 'attribute' => 'seq',
-                'label' => 'Time',
+                'label' => DbMessage::TIME->value,
                 'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderTimeCell($data),
                 'headerOptions' => ['class' => 'sort-numerical'],
-                'options' => ['width' => '10%'],
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
             ],
             [
                 'attribute' => 'duration',
                 'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderDurationCell($data),
-                'options' => ['width' => '8%'],
                 'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
             ],
             [
                 'attribute' => 'rows',
-                'label' => 'Rows',
+                'label' => DbMessage::ROWS->value,
                 'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderRowsCell($data),
-                'options' => ['width' => '7%'],
                 'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
             ],
             [
                 'attribute' => 'duplicate',
-                'label' => 'Dup',
-                'options' => ['width' => '5%'],
+                'label' => DbMessage::DUPLICATE->value,
                 'headerOptions' => ['class' => 'sort-numerical'],
+                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
             ],
             [
                 'attribute' => 'query',
@@ -159,7 +137,7 @@ if ($hasQueries) {
                     $nPlusOneBySequence[$data->seq] ?? null,
                 ),
                 'format' => 'raw',
-                'options' => ['width' => '60%'],
+                'filterInputOptions' => ['class' => 'yii-debug-input'],
             ],
         ],
     ],
@@ -171,7 +149,7 @@ if ($hasQueries) {
             Button::tag()
                 ->addAriaAttribute('expanded', 'false')
                 ->class('yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm yii-debug-db-explain-all-toggle')
-                ->content('Explain all')
+                ->content(DbMessage::EXPLAIN_ALL)
                 ->type(ButtonType::BUTTON),
         ) ?>
 <?php endif;

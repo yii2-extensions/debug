@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Override;
 use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Collector\{CollectorCoordinator, CollectorInterface};
-use PHPForge\Debug\Helper\{Coerce, Icon, SensitiveDataRedactor};
+use PHPForge\Debug\Helper\{Coerce, Icon, SensitiveDataRedactor, Trace};
 use RuntimeException;
 use Throwable;
 use Yii;
@@ -84,10 +84,10 @@ use function trim;
 class Module extends \yii\base\Module implements BootstrapInterface
 {
     /**
-     * Default {@see $traceLine} template: renders each backtrace entry as an `ide://` deep link that IDE extensions
-     * resolve into "open file at line".
+     * Default {@see $traceLine} template: the shared `ide://` deep link that IDE extensions resolve into "open file at
+     * line".
      */
-    public const string DEFAULT_IDE_TRACELINE = '<a href="ide://open?url=file://{file}&line={line}">{text}</a>';
+    public const string DEFAULT_IDE_TRACELINE = Trace::DEFAULT_TEMPLATE;
     /**
      * Default source path for the framework-neutral Debug Core assets. The framework adapter may override this to
      * provide a different path.
@@ -240,6 +240,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public string $viewPath = '@vendor/php-forge/debug-core/resources/views';
 
+    /**
+     * Coordinator responsible for managing data collectors.
+     */
     private CollectorCoordinator|null $collectorCoordinator = null;
 
     /**
@@ -708,7 +711,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Returns the built-in panel configurations, ordered as the request itself unfolds.
      *
-     * The primary navigation starts with Request, Logs, Events, and Profiling before the remaining Yii diagnostics.
+     * The primary navigation starts with Request, Logs, Events, Profiling, and Database before the remaining Yii diagnostics.
      * Optional integration panels finish the list in the order Inertia, Mail, Queue, and Vite. `config` opens the list
      * but is surfaced through the brand bar rather than the panel nav.
      *
@@ -722,9 +725,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'log' => LogPanel::class,
             'event' => EventPanel::class,
             'profiling' => ProfilingPanel::class,
+            'db' => DbPanel::class,
             'router' => ['class' => RouterPanel::class, 'standalone' => false],
             'user' => UserPanel::class,
-            'db' => DbPanel::class,
             'dump' => DumpPanel::class,
             'asset' => AssetPanel::class,
             'inertia' => InertiaPanel::class,
@@ -802,6 +805,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Built-in extension collectors are omitted when their provider package is unavailable. Explicit application
      * configuration remains authoritative and may still register a custom collector under the same ID.
      *
+     * Each resolved collector is instrumented right away through {@see Collector::instrument()}: {@see initPanels()}
+     * runs afterwards and a panel constructor may already hit the framework, so instrumentation installed only at
+     * {@see Application::EVENT_BEFORE_REQUEST} would miss the debugger's own bootstrap work.
+     *
      * @throws InvalidConfigException When a collector configuration or ID is invalid.
      */
     protected function initCollectors(): void
@@ -815,6 +822,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
             if ($collector instanceof Collector) {
                 $collector->module = $this;
+
+                $collector->instrument();
             }
 
             $collectors[] = $collector;

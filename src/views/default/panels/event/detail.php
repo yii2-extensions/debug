@@ -13,8 +13,7 @@ use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\EventSearch;
 use PHPForge\Debug\Panel\Event\{EventCellRenderer, EventInspectorRenderer, EventRow, EventSequence};
 use yii\debug\panels\EventPanel;
-use yii\debug\widgets\FilterBanner;
-use yii\grid\GridView;
+use yii\debug\widgets\{FilterBanner, GridView};
 
 /**
  * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.
@@ -29,17 +28,19 @@ $models = $dataProvider->allModels;
 $staticCount = EventRow::staticCount($models);
 
 $summaryItems = [
-    Span::tag()->html(
-        Strong::tag()->content((string) count($models)),
-        ' events',
-    ),
+    Span::tag()
+        ->html(
+            Strong::tag()->content((string) count($models)),
+            ' events',
+        ),
     Span::tag()
         ->class('yii-debug-grid-summary-sep')
         ->content('·'),
-    Span::tag()->html(
-        Strong::tag()->content((string) EventRow::distinctClassCount($models)),
-        ' classes',
-    ),
+    Span::tag()
+        ->html(
+            Strong::tag()->content((string) EventRow::distinctClassCount($models)),
+            ' classes',
+        ),
 ];
 
 if ($staticCount > 0) {

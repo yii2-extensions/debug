@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\db;
 
 use PDO;
+use PDOException;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\tests\provider\VisibilityProvider;
@@ -55,6 +56,52 @@ final class DebugPdoStatementTest extends TestCase
             [1, 1],
             $rowCounts,
             'Each INSERT must record `1` rows affected.',
+        );
+    }
+
+    public function testExecuteKeepsSequenceAlignmentWhenAStatementFails(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, [DebugPdoStatement::class]);
+        $pdo->exec('CREATE TABLE rowcounts (id INTEGER PRIMARY KEY, label TEXT NOT NULL)');
+
+        $failing = $pdo->prepare('INSERT INTO rowcounts (label) VALUES (:label)');
+
+        self::assertInstanceOf(
+            DebugPdoStatement::class,
+            $failing,
+            'Prepared statements must use the debug wrapper.',
+        );
+
+        try {
+            $failing->execute([':label' => null]);
+
+            self::fail('The NOT NULL constraint must reject the statement.');
+        } catch (PDOException) {
+            // The rethrown driver failure is the trigger; the recorded slot is asserted below.
+        }
+
+        $succeeding = $pdo->prepare('INSERT INTO rowcounts (label) VALUES (:label)');
+
+        self::assertInstanceOf(
+            DebugPdoStatement::class,
+            $succeeding,
+            'The follow-up statement must use the debug wrapper too.',
+        );
+        self::assertTrue(
+            $succeeding->execute([':label' => 'second']),
+            'The statement after the failure must still run.',
+        );
+
+        $rowCounts = DebugPdoStatement::$rowCounts;
+        DebugPdoStatement::$rowCounts = [];
+
+        self::assertSame(
+            [null, 1],
+            $rowCounts,
+            'A failed statement must hold its slot so later counts stay aligned.',
         );
     }
 

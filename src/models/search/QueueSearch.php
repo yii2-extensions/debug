@@ -8,6 +8,7 @@ use Override;
 use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Panel\Queue\JobRecord;
 use yii\data\ArrayDataProvider;
+use yii\debug\GridViewConfig;
 
 /**
  * Backs the filter form above the Queue panel's cards list of captured job events.
@@ -88,6 +89,7 @@ class QueueSearch extends Base
                         'duration',
                     ],
                     'defaultOrder' => ['time' => SORT_ASC],
+                    'params' => GridViewConfig::sortParams(),
                 ],
             ],
         );

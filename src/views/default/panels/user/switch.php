@@ -10,8 +10,7 @@ use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\Phrasing\Span;
 use yii\debug\GridViewConfig;
 use yii\debug\panels\UserPanel;
-use yii\debug\widgets\FilterBanner;
-use yii\grid\GridView;
+use yii\debug\widgets\{FilterBanner, GridView};
 use yii\helpers\Url;
 use yii\web\View;
 use yii\widgets\ActiveForm;
@@ -23,8 +22,7 @@ use yii\widgets\ActiveForm;
 $userSwitch = $panel->userSwitch;
 ?>
 <div class="yii-debug-section-header">
-    <?= H2::tag()
-        ->content('Switch user') ?>
+    <?= H2::tag()->content('Switch user') ?>
     <?php if ($userSwitch !== null && !$userSwitch->isMainUser()): ?>
         <?php ActiveForm::begin(
             [

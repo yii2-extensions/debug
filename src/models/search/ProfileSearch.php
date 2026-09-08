@@ -75,6 +75,7 @@ class ProfileSearch extends Base
                         'info',
                     ],
                     'defaultOrder' => ['duration' => SORT_DESC],
+                    'params' => GridViewConfig::sortParams(),
                 ],
             ],
         );
@@ -95,6 +96,7 @@ class ProfileSearch extends Base
         $this->addCondition('info', true);
 
         $duration = trim($this->duration);
+
         $minimumDuration = QueryInput::minimumBound($duration);
 
         if ($minimumDuration === null) {

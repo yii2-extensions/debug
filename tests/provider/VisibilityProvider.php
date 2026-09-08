@@ -31,17 +31,50 @@ final class VisibilityProvider
      */
     public static function actionContracts(): iterable
     {
-        yield from self::cases(Action::class, 'public', ['getDebugModule', 'prepareShell', 'render']);
+        yield from self::cases(
+            Action::class,
+            'public',
+            [
+                'getDebugModule',
+                'prepareShell',
+                'render',
+            ],
+        );
         yield from self::cases(
             Action::class,
             'protected',
-            ['createBareShellContext', 'createShellContext', 'getLogTarget', 'resolveTheme'],
+            [
+                'createBareShellContext',
+                'createShellContext',
+                'getLogTarget',
+                'resolveTheme',
+            ],
         );
-        yield from self::cases(CompareAction::class, 'public', ['run']);
-        yield from self::cases(DownloadMailAction::class, 'public', ['run']);
-        yield from self::cases(IndexAction::class, 'public', ['run']);
-        yield from self::cases(PhpInfoAction::class, 'public', ['run']);
-        yield from self::cases(ViewAction::class, 'public', ['run']);
+        yield from self::cases(
+            CompareAction::class,
+            'public',
+            ['run'],
+        );
+        yield from self::cases(
+            DownloadMailAction::class,
+            'public',
+            ['run'],
+        );
+        yield from self::cases(
+            IndexAction::class,
+            'public',
+            ['run'],
+        );
+        yield from self::cases(
+            PhpInfoAction::class,
+            'public',
+            ['run'],
+        );
+        yield from self::cases(
+            ViewAction::class,
+            'public',
+            ['run'],
+        );
     }
 
     /**
@@ -52,7 +85,13 @@ final class VisibilityProvider
         yield from self::cases(
             ActionRoutes::class,
             'protected',
-            ['getActions', 'getAppRoutes', 'getMatchedCreationRule', 'getModuleControllers', 'validateControllerClass'],
+            [
+                'getActions',
+                'getAppRoutes',
+                'getMatchedCreationRule',
+                'getModuleControllers',
+                'validateControllerClass',
+            ],
         );
     }
 
@@ -61,7 +100,11 @@ final class VisibilityProvider
      */
     public static function assetPanelContracts(): iterable
     {
-        yield from self::cases(AssetPanel::class, 'public', ['getBundles']);
+        yield from self::cases(
+            AssetPanel::class,
+            'public',
+            ['getBundles'],
+        );
     }
 
     /**
@@ -72,7 +115,12 @@ final class VisibilityProvider
         yield from self::cases(
             Collector::class,
             'protected',
-            ['getLogMessages', 'getLogTarget', 'start', 'stop'],
+            [
+                'getLogMessages',
+                'getLogTarget',
+                'start',
+                'stop',
+            ],
         );
     }
 
@@ -81,7 +129,11 @@ final class VisibilityProvider
      */
     public static function configCollectorContracts(): iterable
     {
-        yield from self::cases(ConfigCollector::class, 'protected', ['getApplication']);
+        yield from self::cases(
+            ConfigCollector::class,
+            'protected',
+            ['getApplication'],
+        );
     }
 
     /**
@@ -89,7 +141,11 @@ final class VisibilityProvider
      */
     public static function dbCollectorContracts(): iterable
     {
-        yield from self::cases(DbCollector::class, 'protected', ['getQueryType']);
+        yield from self::cases(
+            DbCollector::class,
+            'protected',
+            ['getQueryType'],
+        );
     }
 
     /**
@@ -97,11 +153,14 @@ final class VisibilityProvider
      */
     public static function dbPanelContracts(): iterable
     {
-        yield from self::cases(DbPanel::class, 'public', ['countCallerCals']);
         yield from self::cases(
             DbPanel::class,
             'protected',
-            ['getModels', 'getTotalQueryTime', 'hasExplain'],
+            [
+                'getModels',
+                'getTotalQueryTime',
+                'hasExplain',
+            ],
         );
     }
 
@@ -110,7 +169,11 @@ final class VisibilityProvider
      */
     public static function debugPdoStatementContracts(): iterable
     {
-        yield from self::cases(DebugPdoStatement::class, 'protected', ['__construct']);
+        yield from self::cases(
+            DebugPdoStatement::class,
+            'protected',
+            ['__construct'],
+        );
     }
 
     /**
@@ -118,7 +181,11 @@ final class VisibilityProvider
      */
     public static function dumpPanelContracts(): iterable
     {
-        yield from self::cases(DumpPanel::class, 'protected', ['getModels']);
+        yield from self::cases(
+            DumpPanel::class,
+            'protected',
+            ['getModels'],
+        );
     }
 
     /**
@@ -126,7 +193,11 @@ final class VisibilityProvider
      */
     public static function logPanelContracts(): iterable
     {
-        yield from self::cases(LogPanel::class, 'protected', ['getModels']);
+        yield from self::cases(
+            LogPanel::class,
+            'protected',
+            ['getModels'],
+        );
     }
 
     /**
@@ -137,7 +208,11 @@ final class VisibilityProvider
         yield from self::cases(
             LogTarget::class,
             'protected',
-            ['collectSummary', 'getExcessiveDbCallersCount', 'getSqlTotalCount'],
+            [
+                'collectSummary',
+                'getExcessiveDbCallersCount',
+                'getSqlTotalCount',
+            ],
         );
     }
 
@@ -169,7 +244,11 @@ final class VisibilityProvider
      */
     public static function profilingPanelContracts(): iterable
     {
-        yield from self::cases(ProfilingPanel::class, 'public', ['getMemoryUsage']);
+        yield from self::cases(
+            ProfilingPanel::class,
+            'public',
+            ['getMemoryUsage'],
+        );
     }
 
     /**
@@ -192,7 +271,11 @@ final class VisibilityProvider
         yield from self::cases(
             RouterRules::class,
             'protected',
-            ['scanGroupRule', 'scanRestRule', 'scanRule'],
+            [
+                'scanGroupRule',
+                'scanRestRule',
+                'scanRule',
+            ],
         );
     }
 
@@ -201,7 +284,11 @@ final class VisibilityProvider
      */
     public static function svgContracts(): iterable
     {
-        yield from self::cases(Svg::class, 'protected', ['addPoints']);
+        yield from self::cases(
+            Svg::class,
+            'protected',
+            ['addPoints'],
+        );
     }
 
     /**
@@ -226,7 +313,11 @@ final class VisibilityProvider
     private static function cases(string $class, string $visibility, array $methods): iterable
     {
         foreach ($methods as $method) {
-            yield "{$class}::{$method} is {$visibility}" => [$class, $method, $visibility];
+            yield "{$class}::{$method} is {$visibility}" => [
+                $class,
+                $method,
+                $visibility,
+            ];
         }
     }
 }

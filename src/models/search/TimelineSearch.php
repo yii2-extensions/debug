@@ -6,6 +6,7 @@ namespace yii\debug\models\search;
 
 use Override;
 use PHPForge\Debug\Data\FilterPrefix;
+use yii\debug\GridViewConfig;
 use yii\debug\models\timeline\DataProvider;
 use yii\debug\panels\TimelinePanel;
 
@@ -70,6 +71,7 @@ class TimelineSearch extends Base
                         'category',
                         'timestamp',
                     ],
+                    'params' => GridViewConfig::sortParams(),
                 ],
             ],
         );
