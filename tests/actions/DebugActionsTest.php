@@ -429,54 +429,6 @@ final class DebugActionsTest extends TestCase
         );
     }
 
-    public function testActionIndexRetainsStatusFilteringWithoutStatusColumn(): void
-    {
-        $module = $this->bootDebugModule();
-
-        $this->writeDebugSnapshot($module, 'tag-history-success', [], ['statusCode' => 200]);
-        $this->writeDebugSnapshot($module, 'tag-history-error', [], ['statusCode' => 500]);
-
-        Yii::$app->getRequest()->setQueryParams(['Debug' => ['statusCode' => '500']]);
-
-        $html = $this->runDebugAction(new IndexAction('index'), $module);
-
-        self::assertStringNotContainsString(
-            'name="Debug[statusCode]"',
-            $html,
-            'History must not render the redundant status dropdown.',
-        );
-        self::assertDoesNotMatchRegularExpression(
-            '/<th\b[^>]*>(?:(?!<\/th>).)*>Status<(?:(?!<\/th>).)*<\/th>/s',
-            $html,
-            'History must not render a Status column header.',
-        );
-        self::assertStringContainsString(
-            'Debug%5BstatusCode%5D=200',
-            $html,
-            'The summary must retain the successful-response filter link.',
-        );
-        self::assertStringContainsString(
-            'Debug%5BstatusCode%5D=500',
-            $html,
-            'The summary must retain the server-error filter link.',
-        );
-        self::assertStringContainsString(
-            'data-yii-debug-tag="tag-history-error"',
-            $html,
-            'Status filtering must retain the matching history row.',
-        );
-        self::assertStringNotContainsString(
-            'data-yii-debug-tag="tag-history-success"',
-            $html,
-            'Status filtering must exclude nonmatching history rows.',
-        );
-        self::assertStringContainsString(
-            'yii-debug-active-filter-pill',
-            $html,
-            'The selected status must remain removable through the active-filter banner.',
-        );
-    }
-
     public function testActionIndexRendersWhenManifestIsPopulated(): void
     {
         $module = $this->bootDebugModule();
@@ -516,6 +468,58 @@ final class DebugActionsTest extends TestCase
             'captured-index-php',
             $shell->phpVersion,
             'Index must load the latest entry before building its shell.',
+        );
+    }
+
+    public function testActionIndexRetainsStatusFilteringWithoutStatusColumn(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeDebugSnapshot($module, 'tag-history-success', [], ['statusCode' => 200]);
+        $this->writeDebugSnapshot($module, 'tag-history-error', [], ['statusCode' => 500]);
+
+        Yii::$app->getRequest()->setQueryParams(['Debug' => ['statusCode' => '500']]);
+
+        $html = $this->runDebugAction(new IndexAction('index'), $module);
+
+        self::assertIsString(
+            $html,
+            'Index action must return rendered HTML.',
+        );
+        self::assertStringNotContainsString(
+            'name="Debug[statusCode]"',
+            $html,
+            'History must not render the redundant status dropdown.',
+        );
+        self::assertDoesNotMatchRegularExpression(
+            '/<th\b[^>]*>(?:(?!<\/th>).)*>Status<(?:(?!<\/th>).)*<\/th>/s',
+            $html,
+            'History must not render a Status column header.',
+        );
+        self::assertStringContainsString(
+            'Debug%5BstatusCode%5D=200',
+            $html,
+            'The summary must retain the successful-response filter link.',
+        );
+        self::assertStringContainsString(
+            'Debug%5BstatusCode%5D=500',
+            $html,
+            'The summary must retain the server-error filter link.',
+        );
+        self::assertStringContainsString(
+            'data-yii-debug-tag="tag-history-error"',
+            $html,
+            'Status filtering must retain the matching history row.',
+        );
+        self::assertStringNotContainsString(
+            'data-yii-debug-tag="tag-history-success"',
+            $html,
+            'Status filtering must exclude nonmatching history rows.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-active-filter-pill',
+            $html,
+            'The selected status must remain removable through the active-filter banner.',
         );
     }
 
