@@ -36,6 +36,10 @@
     <img src="docs/images/home-light.png" alt="Debug toolbar">
 </picture>
 
+> [!WARNING]
+> **Development only.** Never enable the debugger in production. Keep access restricted to trusted development IPs
+> and install production dependencies with `composer install --no-dev`.
+
 ## Features
 
 <picture>
@@ -47,17 +51,19 @@
 
 ### Installation
 
+Requires PHP 8.3 or newer and Yii2 22.x. The 0.2 line does not support Yii2 2.0.x.
+
 ```bash
 composer require yii2-extensions/debug:^0.2 --dev
 ```
 
-The package installs `php-forge/debug-core` transitively. The core owns the portable snapshot and persistence model,
-shared views, and frontend files; this package owns the Yii2 lifecycle, collectors, standalone actions, view rendering,
-toolbar injection, and asset bundle definitions.
+When upgrading from 0.1, review the [changelog](CHANGELOG.md) for breaking changes. Keep the debugger and
+`php-forge/debug-core` up to date together in the application's lock file.
 
-### Basic Usage
+### Enable the debugger
 
-Enable the debug module in your application configuration (`config/web.php`).
+In your application's entry script, set `YII_ENV` to `dev` before loading Yii. Then register the module in
+`config/web.php`, before returning `$config`:
 
 ```php
 if (YII_ENV_DEV) {
@@ -69,186 +75,103 @@ if (YII_ENV_DEV) {
 }
 ```
 
-The toolbar appears at the bottom of every rendered page; click any panel chip to open the full debugger. The complete
-frontend, including the panel stylesheet, JavaScript, fonts, icons, and toolbar Web Component, is provided by
-`php-forge/debug-core`. This package publishes those shared assets and supplies the Yii2-specific panels and data.
-Shared PHP templates are resolved through the adapter-owned `@yiiDebugViews` alias.
+Keep the registration inside the development guard. Do not bootstrap the module in production.
 
-Request presents the resolved route before the response status in one toolbar group. Its detail view keeps the request
-identity, route, action, duration, and routing constraints visible above the canonical Input, Headers, Session, Routes,
-and Server tabs. The Routes tab reads the current URL manager configuration and labels that live provenance explicitly,
-because it can differ from the historical capture; the resolution trace itself remains capture-time data.
+### Basic usage
 
-Server shows additional diagnostics without a second execution summary. Exact duplicates of the Request overview
-and inbound headers move to the collapsed **Raw server variables** disclosure, which preserves every captured key
-and value. Differences and unknown values remain visible; each group has an independent filter.
+Open an application page, expand the toolbar at the bottom, and select a panel chip to inspect the request.
+Use the Yii chip for Configuration and the PHP chip for PHP info. Switch between light and dark themes from the
+toolbar, and press `Escape` to close the drawer.
 
-Input and Session sections use the shared disclosure: populated sections open by default, empty sections stay
-collapsed, and each populated section has its own filter. Session data and Flashes can be searched independently.
+Open the `debug/index` route to browse retained requests. Select two captures in History to compare request metrics
+and panel changes, then open either capture for its details. Comparison shows structural counts without exposing
+panel values.
 
-Routes use the same expandable ledger as the Yii3 adapter, with full-width metadata details and a filter that searches
-collapsed content. Rules owned by loaded debugger modules are omitted from this inventory, including renamed and
-nested modules. Their trace entries are also omitted from Request; a debugger-only resolution block is hidden. The
-original captured trace remains intact for the standalone Router view. Application routes are not hidden merely because
-their URL contains `debug`.
+## Configuration
 
-The built-in Router collector and panel remain registered as Request's compatibility data source, but their duplicate
-toolbar and sidebar entries are hidden. Applications that need a standalone Router screen can opt in explicitly while
-migrating custom integrations:
+Add only the options you need to the existing development-only module configuration:
+
+```php
+$config['modules']['debug']['historySize'] = 50;
+$config['modules']['debug']['dataPath'] = '@runtime/debug';
+$config['modules']['debug']['toolbarPosition'] = 'bottom';
+```
+
+These are the defaults: up to 50 retained requests, captures stored under `@runtime/debug`, and a bottom toolbar.
+The storage path accepts a registered Yii alias.
+
+### Inertia and Vite
+
+The built-in integrations use the application's existing services; no custom panel registration is needed.
+For Inertia, configure the `yii2-extensions/inertia` manager as the `inertia` application component. Vite inspects
+supported services already loaded during the request, including `PHPForge\Vite\Vite` and `yii\inertia\Vite`.
+
+An integration's data depends on the selected capture. Vite's **Production** label means it is inspecting built
+assets in a development application, not that the debugger can run in production.
+
+### Database
+
+The debugger captures queries from the application's existing Yii2 database connections. Keep `enableProfiling`
+enabled on those connections; Yii2 enables it by default.
+
+Use the Database panel to filter queries, inspect duplicate and potential N+1 calls, and open EXPLAIN where supported.
+Query timings also appear in Profiling. Keep the application's existing driver and connection settings.
+
+### IDE links
+
+Source traces use `ide://` links by default. To use another editor, set its URL template in the existing module
+configuration:
+
+```php
+$config['modules']['debug']['traceLine'] = '<a href="phpstorm://open?file={file}&line={line}">{text}</a>';
+```
+
+For containers or remote environments, map captured paths to your local project:
+
+```php
+$config['modules']['debug']['tracePathMappings'] = [
+    '/var/www/html' => '/home/developer/projects/app',
+];
+```
+
+### Standalone Router
+
+Routing details appear in Request by default. To show a separate Router panel for an existing integration, opt in
+within the development-only module configuration:
 
 ```php
 $config['modules']['debug']['panels']['router'] = \yii\debug\panels\RouterPanel::class;
 ```
 
-The drawer moves focus to its close control and restores the activating chip when closed. Use `Escape` to close it,
-or resize it from the keyboard with `ArrowUp`, `ArrowDown`, `Home`, and `End` on the separator.
+## Security
 
-The History page can compare any two retained captures. The comparison shows request metric deltas and per-panel
-counts of added, removed, changed, and unchanged JSON paths. It never renders panel values in the overview; use the
-baseline and target deep links to inspect each panel through its normal redaction and presentation rules.
+The toolbar and debugger routes allow `127.0.0.1` and `::1` by default. Add only trusted development addresses to
+`allowedIPs`; never expose the debugger publicly. A `checkAccessCallback` can further restrict allowed requests.
 
-### Custom collectors and panels
+Request, identity, queue, and Inertia captures redact common sensitive fields. Logs preserve original diagnostic
+values and are not redacted by the capture policy; SQL diagnostics can include substituted query values. Treat
+stored captures as sensitive and review them before sharing.
 
-Register collectors explicitly through the debug module. A collector returns a typed
-`PHPForge\Debug\Storage\PanelSnapshot`; a panel with the same stable ID hydrates and presents that payload. Existing
-custom panels continue to capture normally when no matching collector is registered.
+In the Events panel, context capture and source traces are disabled by default. This does not disable source
+traces in Logs or Database.
 
-```php
-$config['modules']['debug'] = [
-    'class' => \yii\debug\Module::class,
-    'collectors' => [
-        \App\Debug\OrderCollector::class,
-    ],
-    'panels' => [
-        'app.orders' => \App\Debug\OrderPanel::class,
-    ],
-];
-```
-
-`OrderCollector::id()` must return `app.orders`. Collector instances and Yii configuration arrays with a `class` key
-are accepted as alternatives to class names. Stored collector data without a matching panel remains available through
-an escaped JSON fallback.
-
-### Capture redaction
-
-Every persistent capture uses the shared Debug Core policy. Its defaults redact common credentials plus
-environment-style keys such as `DB_PASSWORD`, `AWS_SECRET_ACCESS_KEY`, and `DATABASE_URL`, while segment-aware
-matching keeps unrelated keys such as `DATABASE_HOST`, `tokenizer`, and `passwordless_mode` visible.
-
-Configure additional rules once on the module; they apply to request bodies and superglobals, identity attributes,
-queue job payloads, Inertia page props and page/location URLs, and manifest URLs:
+To redact additional exact keys, extend the defaults instead of replacing them:
 
 ```php
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
 
-$config['modules']['debug'] = [
-    'class' => \yii\debug\Module::class,
-    'maxBodyBytes' => 65_536,
-    'sensitiveKeys' => [
-        ...SensitiveDataRedactor::DEFAULT_KEYS,
-        'tenant_signing_key',
-    ],
-    'sensitiveKeyPrefixes' => ['internal_secret_'],
-    'sensitiveKeyPatterns' => [
-        '~(?:^|_)private_credential(?:$|_)~i',
-    ],
+$config['modules']['debug']['sensitiveKeys'] = [
+    ...SensitiveDataRedactor::DEFAULT_KEYS,
+    'tenant_signing_key',
 ];
 ```
 
-`sensitiveKeys` replaces the exact-key list, so include `SensitiveDataRedactor::DEFAULT_KEYS` when extending it.
-Patterns are PCRE expressions applied to the complete original key. Leave `sensitiveKeyPatterns` as `null` to use
-the segment-aware defaults with the default exact-key list, or set it to `[]` to disable pattern matching explicitly.
-An invalid pattern or an empty prefix rejects module initialization rather than silently weakening redaction.
+## Browser support
 
-Debugger endpoints emit `no-store`, `no-referrer`, `nosniff`, `noindex`, and same-origin framing policies. The adapter
-preserves existing host CSP directives and replaces or adds only `frame-ancestors 'self'` on debugger responses. Keep
-the module restricted to trusted development IPs or an explicit access callback; these headers are defense in depth,
-not an authentication boundary.
-
-When upgrading from 0.1, review the [0.2 upgrade guide](UPGRADE.md) before deploying the package.
-
-## History comparison architecture
-
-`HistoryComparison::fromSnapshots()` delegates to Debug Core's `PHPForge\Debug\Comparison\SnapshotComparison`, which
-composes `SummaryMetricComparison` for request-summary metrics and `PanelComparison` (reusing `PayloadDifference`) for
-panel selection, ordering, failure precedence, capture states, and combined structural/state counts. The adapter only maps
-these results into its existing public models, including `HistoryPanelComparison`. No constructor, property, getter,
-return type,
-captured value, or storage format changes. Metric labels, order, units, precision, separators, signs, percentages, trends,
-and panel IDs retain their exact previous behavior, including missing values, zero baselines, and unrounded float deltas.
-
-Publish the Core revision providing `SnapshotComparison`, `ToolbarInjector`, `QueryInput::minimumBound()`, and the
-private `ToolbarItem`, `ToolbarPanel`, `RequestSummary`, and `SidebarSnapshot` constructors first and update consuming
-application locks before installing this adapter revision. The existing `^0.1@dev` constraint also admits older development revisions without the
-new classes; local workspace links do not guarantee that a published installation has been updated.
-
-Missing panels remain distinct from captured empty arrays; failure envelopes take precedence over payloads, and
-state-only transitions still count as one change without discarding unchanged leaves. Transitions with structural
-additions, removals, or changes do not increment the changed count again. Observed configured IDs retain label order;
-extras retain regular ascending sorting and ID labels. Unknown configured IDs do not create rows.
-Comparison does not apply capture-policy redaction to Logs.
-
-### Event table and opt-in context
-
-Events uses a single table with original observation numbers, relative times, visible column filters, sorting, and
-pagination. Open an event name to inspect its context and source trace in a full-width detail row.
-Diagnostics appear side by side on larger screens without repeating the table fields.
-Event/source group shortcuts count the complete capture. All offsets use the first captured event, not request start.
-Gaps do not measure handler execution.
-
-The collector observes events through the global class-level wildcard listener. Instance handlers run before this
-observer and may stop propagation, so such events can be absent; observed state is not final event state.
-
-Context and argument-free source traces are disabled by default. Enable them only in development configuration:
-
-```php
-use yii\debug\collectors\EventCollector;
-
-// Add this entry to the existing debug module configuration.
-'collectors' => [
-    'event' => [
-        'class' => EventCollector::class,
-        'captureContext' => true,
-        'traceLimit' => 8,
-    ],
-],
-```
-
-Selected context contains action/controller IDs or the rendered view filename, plus the observed `isValid` flag.
-No action result, view parameter values, rendered output, arbitrary event properties, or sender object is dumped.
-Context is redacted and bounded to sixteen fields of 2,048 bytes; traces retain at most sixteen file/line locations,
-without arguments or objects. Capture failures appear explicitly in event details and do not interrupt propagation.
-Previously stored snapshots remain readable but cannot acquire missing context retroactively. Upgrade the core and
-adapter together; listeners and their final results remain outside the capture scope.
-
-### Database demo
-
-See [the local SQLite demo](examples/database/README.md) to verify Database after Profiling with real queries and EXPLAIN.
-
-### Browser support
-
-The debugger targets evergreen browsers with ES2022, Web Components, CSS custom properties, and native module support.
-Browsers without these capabilities, including Internet Explorer, are not supported.
+Use a current browser with Web Components, native JavaScript modules, and CSS custom properties. Internet Explorer
+is not supported.
 
 ## Screenshots
-
-<details>
-<summary>Configuration</summary>
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/config-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/config-light.png">
-    <img src="docs/images/config-light.png" alt="Configuration panel">
-</picture>
-</details>
-
-<details>
-<summary>PHP info</summary>
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/phpinfo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/phpinfo-light.png">
-    <img src="docs/images/phpinfo-light.png" alt="PHP info panel">
-</picture>
-</details>
 
 <details>
 <summary>History</summary>
@@ -269,26 +192,6 @@ Browsers without these capabilities, including Internet Explorer, are not suppor
 </details>
 
 <details>
-<summary>Router (standalone)</summary>
-<p>The same captured routing trace is shown in Request by default. This screen remains available when Router is
-configured explicitly for compatibility.</p>
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/router-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/router-light.png">
-    <img src="docs/images/router-light.png" alt="Router panel">
-</picture>
-</details>
-
-<details>
-<summary>Inertia</summary>
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/inertia-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/inertia-light.png">
-    <img src="docs/images/inertia-light.png" alt="Inertia panel">
-</picture>
-</details>
-
-<details>
 <summary>Logs</summary>
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/log-dark.png">
@@ -298,11 +201,11 @@ configured explicitly for compatibility.</p>
 </details>
 
 <details>
-<summary>Database</summary>
+<summary>Events</summary>
 <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/database-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/database-light.png">
-    <img src="docs/images/database-light.png" alt="Database panel">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/event-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/event-light.png">
+    <img src="docs/images/event-light.png" alt="Events panel">
 </picture>
 </details>
 
@@ -321,11 +224,49 @@ method, which also remain visible in Details.
 </details>
 
 <details>
-<summary>Events</summary>
+<summary>Database</summary>
 <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/event-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/event-light.png">
-    <img src="docs/images/event-light.png" alt="Events panel">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/database-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/database-light.png">
+    <img src="docs/images/database-light.png" alt="Database panel">
+</picture>
+</details>
+
+<details>
+<summary>Configuration</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/config-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/config-light.png">
+    <img src="docs/images/config-light.png" alt="Configuration panel">
+</picture>
+</details>
+
+<details>
+<summary>PHP info</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/phpinfo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/phpinfo-light.png">
+    <img src="docs/images/phpinfo-light.png" alt="PHP info panel">
+</picture>
+</details>
+
+<details>
+<summary>Router (standalone)</summary>
+<p>The same captured routing trace is shown in Request by default. This screen remains available when Router is
+configured explicitly for compatibility.</p>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/router-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/router-light.png">
+    <img src="docs/images/router-light.png" alt="Router panel">
+</picture>
+</details>
+
+<details>
+<summary>Inertia</summary>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/inertia-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/inertia-light.png">
+    <img src="docs/images/inertia-light.png" alt="Inertia panel">
 </picture>
 </details>
 
@@ -403,15 +344,12 @@ method, which also remain visible in Details.
 
 ## Documentation
 
-For detailed configuration options and advanced usage.
-
-- 🧪 [Testing Guide](docs/testing.md)
-- [Upgrade Guide](UPGRADE.md)
+- [Testing guide](docs/testing.md)
+- [Changelog](CHANGELOG.md)
 
 ## Package information
 
 [![PHP](https://img.shields.io/badge/%3E%3D8.3-777BB4.svg?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/releases/8.3/en.php)
-[![Yii 2.0.x](https://img.shields.io/badge/dynamic/json.svg?style=for-the-badge&logo=yii&logoColor=white&color=0073AA&label=&url=https%3A%2F%2Frepo.packagist.org%2Fp2%2Fyiisoft%2Fyii2.json&query=%24.packages%5B%27yiisoft%2Fyii2%27%5D%5B0%5D.version)](https://packagist.org/packages/yiisoft/yii2)
 [![Yii 22.0.x](https://img.shields.io/badge/22.0.x-0073AA.svg?style=for-the-badge&logo=yii&logoColor=white)](https://github.com/yiisoft/yii2/tree/22.0)
 [![Latest Stable Version](https://img.shields.io/packagist/v/yii2-extensions/debug.svg?style=for-the-badge&logo=packagist&logoColor=white&label=Stable)](https://packagist.org/packages/yii2-extensions/debug)
 [![Total Downloads](https://img.shields.io/packagist/dt/yii2-extensions/debug.svg?style=for-the-badge&logo=composer&logoColor=white&label=Downloads)](https://packagist.org/packages/yii2-extensions/debug)
