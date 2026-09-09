@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\support;
 
 use PHPUnit\Event\Test\{PreparationStarted, PreparationStartedSubscriber};
-use PHPUnit\Event\TestSuite\{Started, StartedSubscriber};
+use PHPUnit\Event\TestRunner\{ExecutionStarted, ExecutionStartedSubscriber};
 use PHPUnit\Runner\Extension\{Extension, Facade, ParameterCollection};
 use PHPUnit\TextUI\Configuration\Configuration;
 use ReflectionClass;
@@ -19,8 +19,8 @@ final class MockerExtension implements Extension
     public function bootstrap(Configuration $configuration, Facade $facade, ParameterCollection $parameters): void
     {
         $facade->registerSubscribers(
-            new class implements StartedSubscriber {
-                public function notify(Started $event): void
+            new class implements ExecutionStartedSubscriber {
+                public function notify(ExecutionStarted $event): void
                 {
                     MockerExtension::load();
                 }
