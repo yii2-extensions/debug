@@ -13,7 +13,7 @@ use stdClass;
 use Yii;
 use yii\debug\collectors\ViteCollector;
 use yii\debug\tests\support\TestCase;
-use yii\inertia\Vite as LegacyVite;
+use yii\inertia\Vite as InertiaVite;
 
 use function dirname;
 use function file_put_contents;
@@ -125,7 +125,11 @@ final class ViteCollectorTest extends TestCase
                     'frontend' => [
                         'class' => Vite::class,
                         '__construct()' => [
-                            'configuration' => new ProductionConfiguration($manifestPath, '/build', false),
+                            'configuration' => new ProductionConfiguration(
+                                $manifestPath,
+                                '/build',
+                                false,
+                            ),
                             'entrypoints' => ['resources/js/app.js'],
                         ],
                     ],
@@ -240,6 +244,7 @@ final class ViteCollectorTest extends TestCase
         Yii::$app->get('unrelated');
 
         $collector = new ViteCollector();
+
         $collector->startup();
 
         self::assertNull(
@@ -306,11 +311,36 @@ final class ViteCollectorTest extends TestCase
 
         $definitions = [
             ['class' => Vite::class],
-            ['__construct()' => ['configuration' => $configuration, 'entrypoints' => 'app.js']],
-            ['__construct()' => ['configuration' => $configuration, 'entrypoints' => [42]]],
-            ['__construct()' => ['configuration' => new stdClass(), 'entrypoints' => []]],
-            ['__construct()' => ['configuration' => $malformedDevelopment, 'entrypoints' => []]],
-            ['__construct()' => ['configuration' => $malformedProduction, 'entrypoints' => []]],
+            [
+                '__construct()' => [
+                    'configuration' => $configuration,
+                    'entrypoints' => 'app.js',
+                ],
+            ],
+            [
+                '__construct()' => [
+                    'configuration' => $configuration,
+                    'entrypoints' => [42],
+                ],
+            ],
+            [
+                '__construct()' => [
+                    'configuration' => new stdClass(),
+                    'entrypoints' => [],
+                ],
+            ],
+            [
+                '__construct()' => [
+                    'configuration' => $malformedDevelopment,
+                    'entrypoints' => [],
+                ],
+            ],
+            [
+                '__construct()' => [
+                    'configuration' => $malformedProduction,
+                    'entrypoints' => [],
+                ],
+            ],
         ];
 
         foreach ($definitions as $definition) {
@@ -337,35 +367,35 @@ final class ViteCollectorTest extends TestCase
         }
     }
 
-    public function testCapturePreservesLoadedLegacyDevelopmentAndProductionComponents(): void
+    public function testCapturePreservesLoadedInertiaDevelopmentAndProductionComponents(): void
     {
-        $manifestPath = dirname(__DIR__, 2) . '/runtime/legacy-vite-panel-manifest.json';
+        $manifestPath = dirname(__DIR__, 2) . '/runtime/inertia-vite-panel-manifest.json';
 
         file_put_contents(
             $manifestPath,
-            json_encode(['resources/js/legacy.js' => ['file' => 'assets/legacy.js', 'isEntry' => true]]),
+            json_encode(['resources/js/inertia.js' => ['file' => 'assets/inertia.js', 'isEntry' => true]]),
         );
 
         try {
             $collector = $this->makeCollector(
                 [
-                    'legacyDev' => [
-                        'class' => LegacyVite::class,
+                    'inertiaDev' => [
+                        'class' => InertiaVite::class,
                         'baseUrl' => '@web/build',
                         'devMode' => true,
                         'devServerUrl' => 'http://localhost:5174',
                         'entrypoints' => ['resources/js/dev.js'],
                         'includeViteClient' => false,
                     ],
-                    'legacyBuild' => [
-                        'class' => LegacyVite::class,
+                    'inertiaBuild' => [
+                        'class' => InertiaVite::class,
                         'baseUrl' => '/build',
-                        'entrypoints' => ['resources/js/legacy.js'],
+                        'entrypoints' => ['resources/js/inertia.js'],
                         'manifestPath' => $manifestPath,
                         'modulePreload' => false,
                     ],
                 ],
-                ['legacyDev', 'legacyBuild'],
+                ['inertiaDev', 'inertiaBuild'],
             );
 
             $snapshot = $this->captureSnapshot($collector);
@@ -380,28 +410,35 @@ final class ViteCollectorTest extends TestCase
             );
             self::assertTrue(
                 $development->inspectionAvailable,
-                'The legacy component exposes inspectable public configuration.',
+                'The Inertia Vite component exposes inspectable public configuration.',
             );
-            self::assertSame(ViteComponent::MODE_DEVELOPMENT, $development->mode, 'Legacy dev mode must be retained.');
+            self::assertSame(
+                ViteComponent::MODE_DEVELOPMENT,
+                $development->mode,
+                'Inertia Vite dev mode must be retained.',
+            );
             self::assertSame(
                 'http://localhost:5174',
                 $development->devServerUrl,
-                'Legacy development URL must be retained.',
+                'Inertia Vite development URL must be retained.',
             );
-            self::assertFalse($development->includeViteClient, 'Legacy Vite-client configuration must be retained.');
+            self::assertFalse(
+                $development->includeViteClient,
+                'Inertia Vite Vite-client configuration must be retained.',
+            );
             self::assertSame(
                 ViteComponent::MODE_PRODUCTION,
                 $production->mode,
-                'Legacy build mode must be retained.',
+                'Inertia Vite build mode must be retained.',
             );
             self::assertFalse(
                 $production->modulePreload,
-                'Legacy module-preload configuration must be retained.',
+                'Inertia Vite module-preload configuration must be retained.',
             );
             self::assertCount(
                 1,
                 $production->chunks(),
-                'Legacy production manifests must remain inspectable.',
+                'Inertia Vite production manifests must remain inspectable.',
             );
         } finally {
             @unlink($manifestPath);
@@ -422,13 +459,19 @@ final class ViteCollectorTest extends TestCase
                     'invalid' => [
                         'class' => Vite::class,
                         '__construct()' => [
-                            'configuration' => new ProductionConfiguration($invalidPath, '/invalid'),
+                            'configuration' => new ProductionConfiguration(
+                                $invalidPath,
+                                '/invalid',
+                            ),
                         ],
                     ],
                     'missing' => [
                         'class' => Vite::class,
                         '__construct()' => [
-                            'configuration' => new ProductionConfiguration($missingPath, '/missing'),
+                            'configuration' => new ProductionConfiguration(
+                                $missingPath,
+                                '/missing',
+                            ),
                         ],
                     ],
                 ],

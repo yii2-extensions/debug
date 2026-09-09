@@ -5,7 +5,7 @@ declare(strict_types=1);
 use PHPForge\Inertia\Page as CorePage;
 use PHPForge\Vite\Configuration\{DevelopmentConfiguration, ProductionConfiguration};
 use PHPForge\Vite\Vite as CoreVite;
-use yii\inertia\{Manager, Page as LegacyPage, Vite};
+use yii\inertia\{Manager, Page as AdapterPage, Vite};
 
 // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
 // ensure we get report on all possible php errors
@@ -57,7 +57,7 @@ if (class_exists(CorePage::class) === false) {
     require_once __DIR__ . '/stub/inertia/CorePage.php';
 }
 
-if (class_exists(LegacyPage::class) === false) {
+if (class_exists(AdapterPage::class) === false) {
     require_once __DIR__ . '/stub/inertia/Page.php';
 }
 

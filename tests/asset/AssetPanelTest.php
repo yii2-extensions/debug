@@ -261,7 +261,7 @@ final class AssetPanelTest extends TestCase
         );
     }
 
-    public function testHasContentReturnsFalseWithoutBundlesOrLegacyViteData(): void
+    public function testHasContentReturnsFalseWithoutBundlesOrEmbeddedViteData(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
 
@@ -291,7 +291,7 @@ final class AssetPanelTest extends TestCase
         );
     }
 
-    public function testHasContentReturnsTrueWithLegacyEmbeddedViteData(): void
+    public function testHasContentReturnsTrueWithEmbeddedViteData(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
 
@@ -313,7 +313,7 @@ final class AssetPanelTest extends TestCase
 
         self::assertTrue(
             $panel->hasContent(),
-            'Legacy captures with embedded Vite data must keep the sidebar entry accessible.',
+            'Captures with embedded Vite data must keep the sidebar entry accessible.',
         );
     }
 
@@ -348,7 +348,7 @@ final class AssetPanelTest extends TestCase
     }
 
     /**
-     * Builds a snapshot from the legacy bundle-map fixture shape, splitting out the reserved Vite entry.
+     * Builds a snapshot from the bundle-map fixture shape, splitting out the reserved Vite entry.
      *
      * @param array<array-key, mixed> $map Bundle map, optionally carrying a `@vite` entry.
      */
@@ -370,7 +370,7 @@ final class AssetPanelTest extends TestCase
     }
 
     /**
-     * @param array<array-key, mixed> $vite Legacy Vite fixture shape.
+     * @param array<array-key, mixed> $vite Embedded Vite fixture shape.
      */
     private static function viteManifest(array $vite): ViteManifest
     {

@@ -11,13 +11,13 @@ use yii\debug\Panel;
 use yii\helpers\Html;
 
 /**
- * Presents custom collector data and provides a legacy capture path for Yii2 integration tests.
+ * Presents custom collector data and provides a panel-owned capture path for Yii2 integration tests.
  */
 final class CollectorPanel extends Panel
 {
     public int $captureCount = 0;
+    public mixed $captureValue = 'custom';
     public bool $collectorOnly = true;
-    public mixed $legacyValue = 'legacy';
 
     /**
      * @var array<array-key, mixed> Hydrated custom data.
@@ -33,7 +33,7 @@ final class CollectorPanel extends Panel
             throw new RuntimeException('Matching panel capture must not run.');
         }
 
-        return StubSnapshot::capture(['value' => $this->legacyValue]);
+        return StubSnapshot::capture(['value' => $this->captureValue]);
     }
 
     #[Override]

@@ -67,7 +67,7 @@ class AssetPanel extends Panel
     }
 
     /**
-     * Returns whether the loaded capture contains asset bundles or legacy embedded Vite data.
+     * Returns whether the loaded capture contains asset bundles or embedded Vite data.
      */
     #[Override]
     public function hasContent(): bool

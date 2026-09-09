@@ -33,7 +33,7 @@ use function json_decode;
 class ViteCollector extends Collector
 {
     private const string DEVELOPMENT_CONFIGURATION_CLASS = 'PHPForge\Vite\Configuration\DevelopmentConfiguration';
-    private const string LEGACY_VITE_CLASS = 'yii\inertia\Vite';
+    private const string INERTIA_VITE_CLASS = 'yii\inertia\Vite';
     private const string MODERN_VITE_CLASS = 'PHPForge\Vite\Vite';
     private const string PRODUCTION_CONFIGURATION_CLASS = 'PHPForge\Vite\Configuration\ProductionConfiguration';
 
@@ -50,6 +50,7 @@ class ViteCollector extends Collector
         }
 
         $definitions = Yii::$app->getComponents(true);
+
         $components = [];
 
         foreach (array_filter(Yii::$app->getComponents(false), is_object(...)) as $id => $component) {
@@ -61,8 +62,8 @@ class ViteCollector extends Collector
                 continue;
             }
 
-            if (is_a($component, self::LEGACY_VITE_CLASS)) {
-                $components[] = self::legacyComponent($id, $component);
+            if (is_a($component, self::INERTIA_VITE_CLASS)) {
+                $components[] = self::inertiaComponent($id, $component);
             }
         }
 
@@ -78,9 +79,9 @@ class ViteCollector extends Collector
     }
 
     /**
-     * Captures the public configuration exposed by the former Yii-specific Vite component.
+     * Captures the public configuration exposed by the Inertia Vite component.
      */
-    private static function legacyComponent(string $id, object $component): ViteComponent
+    private static function inertiaComponent(string $id, object $component): ViteComponent
     {
         $properties = get_object_vars($component);
 

@@ -142,12 +142,22 @@ final class RequestPanelTest extends TestCase
             'Live route provenance must be explicit.',
         );
 
+        $labels = [
+            'Input',
+            'Headers',
+            'Session',
+            'Routes (1)',
+            'Server',
+        ];
         $positions = [];
 
-        foreach (['Input', 'Headers', 'Session', 'Routes (1)', 'Server'] as $label) {
+        foreach ($labels as $label) {
             $position = strpos($detail, ">{$label}<");
 
-            self::assertNotFalse($position, "The '{$label}' canonical Request tab must be rendered.");
+            self::assertNotFalse(
+                $position,
+                "The '{$label}' canonical Request tab must be rendered.",
+            );
 
             $positions[] = $position;
         }
@@ -189,7 +199,7 @@ final class RequestPanelTest extends TestCase
                         'SCRIPT_FILENAME' => '/srv/app/public/index.php',
                         'HTTP_ACCEPT' => 'text/html, application/json',
                         'APP_ENV' => 'debug',
-                        'CUSTOM_LEGACY' => ['nested' => '<value>'],
+                        'CUSTOM_NESTED' => ['nested' => '<value>'],
                     ],
                 ],
             ),
@@ -254,7 +264,7 @@ final class RequestPanelTest extends TestCase
         self::assertStringContainsString(
             '&lt;value&gt;',
             $detail,
-            'Malformed legacy SERVER values must remain inspectable and escaped.',
+            'Malformed SERVER values must remain inspectable and escaped.',
         );
     }
 
@@ -303,9 +313,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetDetailRendersWithCapturedData(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -334,9 +342,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetDetailUsesEmptySummaryWhenRequestedActionIsNotADebugAction(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         Yii::$app->controller = new Controller('plain', Yii::$app);
 
@@ -371,9 +377,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         self::assertSame(
             'Request',
@@ -389,9 +393,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetStatusCodeFallsBackTo200ForNonArrayData(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         self::assertSame(
             200,
@@ -417,9 +419,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetStatusCodeReturnsIntStatusCode(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -438,11 +438,15 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsOmitsEmptyOrNonStringRoutes(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
-        foreach (['', null, 42] as $route) {
+        $routes = [
+            '',
+            null,
+            42,
+        ];
+
+        foreach ($routes as $route) {
             $this->hydratePanel(
                 $panel,
                 RequestSnapshot::capture(['route' => $route, 'statusCode' => 200]),
@@ -479,9 +483,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsRendersResolvedRouteBeforeStatus(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -515,9 +517,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsRendersStatus2xxForSuccess(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -561,9 +561,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsRendersStatus3xxForRedirects(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -595,9 +593,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsRendersStatus5xxForServerErrors(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -634,9 +630,7 @@ final class RequestPanelTest extends TestCase
 
     public function testGetToolbarItemsTreatsUnknownStatusTextAsEmpty(): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -669,9 +663,7 @@ final class RequestPanelTest extends TestCase
     #[DataProviderExternal(RequestPanelProvider::class, 'invalidStoredStatusCodes')]
     public function testThrowHydrationExceptionForInvalidStoredStatusCode(string $statusCode): void
     {
-        $panel = $this->makePanel(
-            RequestPanel::class,
-        );
+        $panel = $this->makePanel(RequestPanel::class);
 
         $payload = RequestSnapshot::capture(['statusCode' => 200])->jsonSerialize();
 
@@ -704,6 +696,9 @@ final class RequestPanelTest extends TestCase
             "Invalid debug snapshot value at '\$.panels.request.statusCode'",
         );
 
-        RequestSnapshot::fromArray([...$payload, 'statusCode' => 404], '$.panels.request');
+        RequestSnapshot::fromArray(
+            [...$payload, 'statusCode' => 404],
+            '$.panels.request',
+        );
     }
 }
