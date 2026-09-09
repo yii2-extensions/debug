@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\Db\{DbMessage, DbSnapshot, DbSummary, DbSummaryRenderer, QueryRow};
+use PHPForge\Debug\Panel\Db\{DbExplainSupport, DbSnapshot, DbSummary, DbSummaryRenderer, QueryRow};
 use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use Yii;
 use yii\base\InvalidConfigException;
@@ -161,7 +161,10 @@ class DbPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = DbSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = DbSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
 
         $this->summary = null;
     }
@@ -214,8 +217,7 @@ class DbPanel extends Panel
     }
 
     /**
-     * Builds the toolbar items: the query-count chip (flipped to a warning when the count is critical or callers are
-     * excessive) and the total-query-time chip.
+     * Builds the query-count toolbar chip, with a warning when the count is critical or callers are excessive.
      *
      * @return array<int, array<string, mixed>> Toolbar items, or `[]` when no queries were captured.
      */
@@ -230,8 +232,6 @@ class DbPanel extends Panel
 
         $excessiveCallerThreshold = $this->excessiveCallerThreshold();
 
-        $totalQueryTime = number_format($this->getTotalQueryTime());
-
         return [
             [
                 'status' => $summary->hasWarning($this->criticalQueryThreshold, $excessiveCallerThreshold)
@@ -243,10 +243,6 @@ class DbPanel extends Panel
                     $excessiveCallerThreshold,
                 ),
                 'value' => $summary->count,
-            ],
-            [
-                'title' => DbMessage::TOTAL_TIME->value,
-                'value' => "{$totalQueryTime} ms",
             ],
         ];
     }
@@ -274,10 +270,7 @@ class DbPanel extends Panel
             return false;
         }
 
-        return match ($db->getDriverName()) {
-            'mysql', 'sqlite', 'pgsql' => true,
-            default => false,
-        };
+        return DbExplainSupport::isSupported($db->getDriverName() ?? '');
     }
 
     /**

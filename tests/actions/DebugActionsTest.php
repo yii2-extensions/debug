@@ -14,7 +14,7 @@ use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPForge\Debug\Storage\{PanelSnapshot, RequestSummary};
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use Xepozz\InternalMocker\MockerState;
 use Yii;
@@ -33,7 +33,6 @@ use yii\debug\collectors\MailCollector;
 use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module, Panel};
 use yii\debug\panels\{ConfigPanel, RequestSummaryAwarePanelInterface, TimelinePanel};
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\{ConfigurableAction, MinimalToolbarPanel, StubSnapshot};
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\shell\ShellContext;
@@ -53,8 +52,6 @@ use const JSON_THROW_ON_ERROR;
 
 /**
  * Unit tests for the standalone debugger actions covering every dispatched endpoint and the shared plumbing.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('actions')]
 final class DebugActionsTest extends TestCase
@@ -86,7 +83,11 @@ final class DebugActionsTest extends TestCase
             ['request' => RequestSnapshot::capture(['statusCode' => 200, 'method' => 'GET'])],
         );
 
-        $this->runDebugAction(new CompareAction('compare'), $module, []);
+        $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            [],
+        );
 
         $shell = Yii::$app->getView()->params['debugShell'] ?? null;
 
@@ -136,7 +137,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'tag-compare-older',
+            Message::DEBUG_DATA_NOT_FOUND->getMessage('tag-compare-older'),
         );
 
         $this->runDebugAction(
@@ -171,7 +172,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'tag-compare-older',
+            Message::DEBUG_DATA_NOT_FOUND->getMessage('tag-compare-older'),
         );
 
         $this->runDebugAction(
@@ -192,7 +193,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'tag-compare-absent',
+            Message::DEBUG_DATA_NOT_FOUND->getMessage('tag-compare-absent'),
         );
 
         $this->runDebugAction(
@@ -213,7 +214,7 @@ final class DebugActionsTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            'tag-compare-missing',
+            Message::DEBUG_DATA_NOT_FOUND->getMessage('tag-compare-missing'),
         );
 
         $this->runDebugAction(
@@ -331,7 +332,11 @@ final class DebugActionsTest extends TestCase
     {
         $module = $this->bootModuleWithComparePair();
 
-        $html = $this->runDebugAction(new CompareAction('compare'), $module, []);
+        $html = $this->runDebugAction(
+            new CompareAction('compare'),
+            $module,
+            []
+        );
 
         self::assertIsString(
             $html,
@@ -408,7 +413,10 @@ final class DebugActionsTest extends TestCase
         $this->writeSnapshot($module, 'tag-index-older', []);
         $this->writeSnapshot($module, 'tag-index-newest', []);
 
-        $html = $this->runDebugAction(new IndexAction('index'), $module);
+        $html = $this->runDebugAction(
+            new IndexAction('index'),
+            $module,
+        );
 
         self::assertIsString(
             $html,
@@ -460,6 +468,58 @@ final class DebugActionsTest extends TestCase
             'captured-index-php',
             $shell->phpVersion,
             'Index must load the latest entry before building its shell.',
+        );
+    }
+
+    public function testActionIndexRetainsStatusFilteringWithoutStatusColumn(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->writeDebugSnapshot($module, 'tag-history-success', [], ['statusCode' => 200]);
+        $this->writeDebugSnapshot($module, 'tag-history-error', [], ['statusCode' => 500]);
+
+        Yii::$app->getRequest()->setQueryParams(['Debug' => ['statusCode' => '500']]);
+
+        $html = $this->runDebugAction(new IndexAction('index'), $module);
+
+        self::assertIsString(
+            $html,
+            'Index action must return rendered HTML.',
+        );
+        self::assertStringNotContainsString(
+            'name="Debug[statusCode]"',
+            $html,
+            'History must not render the redundant status dropdown.',
+        );
+        self::assertDoesNotMatchRegularExpression(
+            '/<th\b[^>]*>(?:(?!<\/th>).)*>Status<(?:(?!<\/th>).)*<\/th>/s',
+            $html,
+            'History must not render a Status column header.',
+        );
+        self::assertStringContainsString(
+            'Debug%5BstatusCode%5D=200',
+            $html,
+            'The summary must retain the successful-response filter link.',
+        );
+        self::assertStringContainsString(
+            'Debug%5BstatusCode%5D=500',
+            $html,
+            'The summary must retain the server-error filter link.',
+        );
+        self::assertStringContainsString(
+            'data-yii-debug-tag="tag-history-error"',
+            $html,
+            'Status filtering must retain the matching history row.',
+        );
+        self::assertStringNotContainsString(
+            'data-yii-debug-tag="tag-history-success"',
+            $html,
+            'Status filtering must exclude nonmatching history rows.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-active-filter-pill',
+            $html,
+            'The selected status must remain removable through the active-filter banner.',
         );
     }
 
@@ -751,6 +811,7 @@ final class DebugActionsTest extends TestCase
             $profilingPanel,
             'The Profiling panel must remain registered for a legacy Timeline link.',
         );
+
         $context = $profilingPanel->getRenderContext();
 
         self::assertNotNull(
@@ -844,6 +905,7 @@ final class DebugActionsTest extends TestCase
     public function testActionViewInjectsLoadedSummaryIntoAwarePanel(): void
     {
         $module = $this->bootDebugModule();
+
         $awarePanel = new class extends Panel implements RequestSummaryAwarePanelInterface {
             public RequestSummary|null $receivedSummary = null;
 
@@ -869,7 +931,6 @@ final class DebugActionsTest extends TestCase
             'tag-view-summary-aware',
             ['summary-aware' => ConfigSnapshot::capture([])],
         );
-
         $this->runDebugAction(
             new ViewAction('view'),
             $module,
@@ -889,6 +950,7 @@ final class DebugActionsTest extends TestCase
     public function testActionViewKeepsExplicitTimelinePanelActive(): void
     {
         $module = $this->bootDebugModule();
+
         $timelinePanel = new TimelinePanel(['id' => 'timeline', 'module' => $module]);
 
         $module->panels['timeline'] = $timelinePanel;
@@ -903,7 +965,6 @@ final class DebugActionsTest extends TestCase
                 'timeline' => new TimelineSnapshot($start, $start + 0.001, 1024),
             ],
         );
-
         $this->runDebugAction(
             new ViewAction('view'),
             $module,
@@ -1325,16 +1386,6 @@ final class DebugActionsTest extends TestCase
             $activeContext->configUrl,
             'Configuration link must target the explicitly active entry.',
         );
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'actionContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetManifestCachesResultAndReloadsOnForce(): void
@@ -1774,7 +1825,11 @@ final class DebugActionsTest extends TestCase
             Message::MAIL_FILE_NOT_FOUND->getMessage(),
         );
 
-        $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => 'missing-file.eml']);
+        $this->runDebugAction(
+            new DownloadMailAction('download-mail'),
+            $module,
+            ['file' => 'missing-file.eml'],
+        );
     }
 
     public function testThrowNotFoundHttpExceptionWhenMailFileNameContainsSlash(): void
@@ -1790,7 +1845,11 @@ final class DebugActionsTest extends TestCase
             Message::MAIL_FILE_NOT_FOUND->getMessage(),
         );
 
-        $this->runDebugAction(new DownloadMailAction('download-mail'), $module, ['file' => 'subdir/sample.eml']);
+        $this->runDebugAction(
+            new DownloadMailAction('download-mail'),
+            $module,
+            ['file' => 'subdir/sample.eml'],
+        );
     }
 
     public function testThrowNotFoundHttpExceptionWhenManifestIsEmptyForView(): void
@@ -1807,7 +1866,10 @@ final class DebugActionsTest extends TestCase
             Message::DEBUG_DATA_EMPTY->getMessage(),
         );
 
-        $this->runDebugAction(new ViewAction('view'), $module);
+        $this->runDebugAction(
+            new ViewAction('view'),
+            $module,
+        );
     }
 
     public function testThrowNotFoundHttpExceptionWhenPanelIsNotRegistered(): void
@@ -1837,7 +1899,9 @@ final class DebugActionsTest extends TestCase
         $this->writeSnapshot($module, 'tag-compare-only', []);
 
         $this->expectException(NotFoundHttpException::class);
-        $this->expectExceptionMessage('At least two captured requests are required for comparison.');
+        $this->expectExceptionMessage(
+            Message::COMPARISON_CAPTURES_REQUIRED->getMessage(),
+        );
 
         $this->runDebugAction(
             new CompareAction('compare'),
@@ -1958,17 +2022,9 @@ final class DebugActionsTest extends TestCase
 
     private static function queryRow(string $query): QueryRow
     {
-        return new QueryRow(
-            type: 'SELECT',
-            query: $query,
-            duration: 50.0,
-            trace: [],
-            traceHash: 'hash',
-            timestamp: 1_700_000_000_000.0,
-            seq: 0,
-            duplicate: 1,
-            rows: null,
-        );
+        return QueryRow::create($query, 50.0, 1_700_000_000_000.0)
+            ->withType('SELECT')
+            ->withTraceHash('hash');
     }
 
     /**

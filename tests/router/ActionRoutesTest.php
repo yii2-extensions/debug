@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\router;
 
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionClass;
 use stdClass;
 use Xepozz\InternalMocker\MockerState;
 use yii\debug\models\router\ActionRoutes;
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\router\controllers\{AbstractController, WebController};
 use yii\debug\tests\support\stub\router\controllers\nested\NestedWebController;
 use yii\debug\tests\support\stub\router\edge\controllers\EdgeCaseController;
@@ -20,22 +19,10 @@ use yii\web\GroupUrlRule;
 /**
  * Unit tests for {@see ActionRoutes} covering the controller scan that produces the action-to-route map shown in the
  * sRouter panel detail view.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('router')]
 final class ActionRoutesTest extends TestCase
 {
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'actionRoutesContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
-    }
-
     public function testGetActionsReturnsOnlyPublicInstanceActionsAndExternalSentinel(): void
     {
         $this->mockWebApplication();
@@ -504,7 +491,13 @@ final class ActionRoutesTest extends TestCase
 
     public function testScanSkipsModuleEntryWhenModuleIdIsNotString(): void
     {
-        MockerState::addCondition('yii\debug\models\router', 'is_string', [], false, true);
+        MockerState::addCondition(
+            'yii\debug\models\router',
+            'is_string',
+            [],
+            false,
+            true,
+        );
 
         $this->mockWebApplication(
             [

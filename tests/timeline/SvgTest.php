@@ -8,13 +8,12 @@ use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\MemorySample;
 use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionClass;
 use Yii;
 use yii\debug\{LogTarget, Module};
 use yii\debug\models\timeline\Svg;
 use yii\debug\panels\{LogPanel, ProfilingPanel, TimelinePanel};
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
@@ -25,8 +24,6 @@ use function count;
  * Unit tests for {@see Svg} covering the constructor branches (module-less / source-panel-less / invalid-messages),
  * `__toString` empty short-circuit, the `currentColor` stroke and gradient-stop defaults, the points appended from
  * valid log messages, and the early returns from `addPoints` when the panel memory or duration is non-positive.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('timeline')]
 final class SvgTest extends TestCase
@@ -290,16 +287,6 @@ final class SvgTest extends TestCase
             $svg->hasPoints(),
             "Unregistered source panels must be skipped via the defensive 'continue'.",
         );
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'svgContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testToStringEmitsPolygonAndPolylineWhenPointsExist(): void

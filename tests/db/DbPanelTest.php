@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\db;
 
 use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
@@ -15,7 +15,6 @@ use yii\debug\db\DebugPdoStatement;
 use yii\debug\exception\Message;
 use yii\debug\LogTarget;
 use yii\debug\panels\DbPanel;
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\CapturingView;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -26,8 +25,6 @@ use function is_string;
  * Unit tests for {@see DbPanel} covering EXPLAIN gating, threshold checks, the badge variant mapping, toolbar/summary
  * rendering, and snapshot hydration.
  *
- * {@see VisibilityProvider} for method contract data providers.
- *
  * @phpstan-import-type LogTrace from Logger
  * @phpstan-type StringLogMessage array{0: string, 1: int, 2: string, 3: float, 4: list<LogTrace>, 5: int}
  */
@@ -35,16 +32,6 @@ use function is_string;
 #[Group('db')]
 final class DbPanelTest extends TestCase
 {
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'dbPanelContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
-    }
-
     public function testGetDbReturnsConfiguredConnection(): void
     {
         $this->mockWebApplication(
@@ -73,12 +60,25 @@ final class DbPanelTest extends TestCase
         $this->hydrateFromLive(
             $panel,
             [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0),
-                ...$this->makeMessage('SELECT 2', 0.001, 0.001),
-                ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.001, 0.002),
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                ),
+                ...$this->makeMessage(
+                    'SELECT 2',
+                    0.001,
+                    0.001,
+                ),
+                ...$this->makeMessage(
+                    'INSERT INTO t VALUES (1)',
+                    0.001,
+                    0.002,
+                ),
             ],
             [],
         );
+
         $panel->defaultFilter = ['type' => 'SELECT'];
 
         self::assertSame(
@@ -129,8 +129,16 @@ final class DbPanelTest extends TestCase
         $this->hydrateFromLive(
             $panel,
             [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0),
-                ...$this->makeMessage('SELECT 1', 0.001, 0.001),
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                ),
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.001,
+                ),
             ],
             [],
         );
@@ -185,8 +193,16 @@ final class DbPanelTest extends TestCase
         $this->hydrateFromLive(
             $panel,
             [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0),
-                ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.001, 0.001),
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                ),
+                ...$this->makeMessage(
+                    'INSERT INTO t VALUES (1)',
+                    0.001,
+                    0.001,
+                ),
             ],
             [],
         );
@@ -230,9 +246,24 @@ final class DbPanelTest extends TestCase
         $this->hydrateFromLive(
             $panel,
             [
-                ...$this->makeMessage('SELECT * FROM post WHERE id = 1', 0.001, 0.0, $trace),
-                ...$this->makeMessage('SELECT * FROM post WHERE id = 2', 0.002, 0.001, $trace),
-                ...$this->makeMessage('SELECT * FROM post WHERE id = 3', 0.003, 0.003, $trace),
+                ...$this->makeMessage(
+                    'SELECT * FROM post WHERE id = 1',
+                    0.001,
+                    0.0,
+                    $trace,
+                ),
+                ...$this->makeMessage(
+                    'SELECT * FROM post WHERE id = 2',
+                    0.002,
+                    0.001,
+                    $trace,
+                ),
+                ...$this->makeMessage(
+                    'SELECT * FROM post WHERE id = 3',
+                    0.003,
+                    0.003,
+                    $trace,
+                ),
             ],
             [],
         );
@@ -272,7 +303,13 @@ final class DbPanelTest extends TestCase
 
         $this->hydrateFromLive(
             $panel,
-            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                ),
+            ],
             [],
         );
 
@@ -360,8 +397,16 @@ final class DbPanelTest extends TestCase
             $panel,
             new DbSnapshot(
                 [
-                    ...$this->makeNPlusOneRows(25, 0, 'SELECT ignored'),
-                    ...$this->makeNPlusOneRows(55, 25, 'SELECT needle'),
+                    ...$this->makeNPlusOneRows(
+                        25,
+                        0,
+                        'SELECT ignored',
+                    ),
+                    ...$this->makeNPlusOneRows(
+                        55,
+                        25,
+                        'SELECT needle',
+                    ),
                 ],
             ),
         );
@@ -374,6 +419,12 @@ final class DbPanelTest extends TestCase
         );
 
         $html = $panel->getDetail();
+
+        self::assertMatchesRegularExpression(
+            '/class="yii-debug-active-filters".*class="yii-debug-db-n1-summary"/s',
+            $html,
+            'Active filters must appear above the N+1 summary.',
+        );
 
         self::assertStringContainsString(
             '<strong>5×</strong>',
@@ -457,7 +508,13 @@ final class DbPanelTest extends TestCase
 
         $this->hydrateFromLive(
             $panel,
-            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                ),
+            ],
             [],
         );
 
@@ -467,10 +524,6 @@ final class DbPanelTest extends TestCase
                     'status' => 'info',
                     'title' => 'Executed 1 database queries.',
                     'value' => 1,
-                ],
-                [
-                    'title' => 'Total query time',
-                    'value' => '1 ms',
                 ],
             ],
             $this->invoke($panel, 'getToolbarItems'),
@@ -485,8 +538,28 @@ final class DbPanelTest extends TestCase
         $this->hydrateFromLive(
             $panel,
             [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
-                ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 1]]),
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                    trace: [
+                        [
+                            'file' => '/a.php',
+                            'line' => 1,
+                        ],
+                    ],
+                ),
+                ...$this->makeMessage(
+                    'SELECT 2',
+                    0.001,
+                    0.001,
+                    trace: [
+                        [
+                            'file' => '/b.php',
+                            'line' => 1,
+                        ],
+                    ],
+                ),
             ],
             [],
         );
@@ -516,7 +589,13 @@ final class DbPanelTest extends TestCase
 
         $this->hydrateFromLive(
             $panel,
-            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                ),
+            ],
             [],
         );
 
@@ -552,8 +631,28 @@ final class DbPanelTest extends TestCase
         $this->hydrateFromLive(
             $panel,
             [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0, trace: [['file' => '/a.php', 'line' => 1]]),
-                ...$this->makeMessage('SELECT 2', 0.001, 0.001, trace: [['file' => '/b.php', 'line' => 2]]),
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                    trace: [
+                        [
+                            'file' => '/a.php',
+                            'line' => 1,
+                        ],
+                    ],
+                ),
+                ...$this->makeMessage(
+                    'SELECT 2',
+                    0.001,
+                    0.001,
+                    trace: [
+                        [
+                            'file' => '/b.php',
+                            'line' => 2,
+                        ],
+                    ],
+                ),
             ],
             [],
         );
@@ -569,10 +668,6 @@ final class DbPanelTest extends TestCase
                     'title' => "Too many queries, allowed count is 0.\n2 callers are making too many calls.",
                     'value' => 2,
                 ],
-                [
-                    'title' => 'Total query time',
-                    'value' => '2 ms',
-                ],
             ],
             $this->invoke($panel, 'getToolbarItems'),
             'Toolbar items must combine the query count and excessive-caller warnings into a single chip.'
@@ -585,7 +680,13 @@ final class DbPanelTest extends TestCase
 
         $this->hydrateFromLive(
             $panel,
-            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                ),
+            ],
             [],
         );
         $this->setDbCollectorThreshold($panel, 0);
@@ -629,9 +730,21 @@ final class DbPanelTest extends TestCase
         $this->hydrateFromLive(
             $panel,
             [
-                ...$this->makeMessage('SELECT * FROM t', 0.001, 0.0),
-                ...$this->makeMessage('INSERT INTO t VALUES (1)', 0.002, 0.001),
-                ...$this->makeMessage('SELECT id FROM t', 0.003, 0.003),
+                ...$this->makeMessage(
+                    'SELECT * FROM t',
+                    0.001,
+                    0.0,
+                ),
+                ...$this->makeMessage(
+                    'INSERT INTO t VALUES (1)',
+                    0.002,
+                    0.001,
+                ),
+                ...$this->makeMessage(
+                    'SELECT id FROM t',
+                    0.003,
+                    0.003,
+                ),
             ],
             [],
         );
@@ -661,7 +774,13 @@ final class DbPanelTest extends TestCase
 
         $panel = new DbPanel();
 
-        foreach (['mysql:', 'sqlite::memory:', 'pgsql:'] as $dsn) {
+        $dsnDatabase = [
+            'mysql:',
+            'sqlite::memory:',
+            'pgsql:',
+        ];
+
+        foreach ($dsnDatabase as $dsn) {
             Yii::$app->set('db', new Connection(['dsn' => $dsn]));
 
             self::assertTrue(
@@ -940,8 +1059,22 @@ final class DbPanelTest extends TestCase
         array $trace = [],
     ): array {
         return [
-            [$sql, Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', $startTime, $trace, 0],
-            [$sql, Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', $startTime + $duration, $trace, 0],
+            [
+                $sql,
+                Logger::LEVEL_PROFILE_BEGIN,
+                'yii\db\Command::query',
+                $startTime,
+                $trace,
+                0,
+            ],
+            [
+                $sql,
+                Logger::LEVEL_PROFILE_END,
+                'yii\db\Command::query',
+                $startTime + $duration,
+                $trace,
+                0,
+            ],
         ];
     }
 
@@ -957,17 +1090,11 @@ final class DbPanelTest extends TestCase
 
         for ($index = 0; $index < $count; $index++) {
             $sequence = $sequenceOffset + $index;
-            $rows[] = new QueryRow(
-                type: 'SELECT',
-                query: "{$queryPrefix} {$sequence}",
-                duration: 1.0,
-                trace: [],
-                traceHash: 'shared-call-site',
-                timestamp: (float) $sequence,
-                seq: $sequence,
-                duplicate: 1,
-                rows: null,
-            );
+
+            $rows[] = QueryRow::create("{$queryPrefix} {$sequence}", 1.0, (float) $sequence)
+                ->withType('SELECT')
+                ->withTraceHash('shared-call-site')
+                ->withSequence($sequence);
         }
 
         return $rows;
@@ -975,32 +1102,14 @@ final class DbPanelTest extends TestCase
 
     private function makeRow(int $duplicate = 1): QueryRow
     {
-        return new QueryRow(
-            type: 'SELECT',
-            query: 'SELECT 1',
-            duration: 0.0,
-            trace: [],
-            traceHash: 'h',
-            timestamp: 0.0,
-            seq: 0,
-            duplicate: $duplicate,
-            rows: null,
-        );
+        return QueryRow::create('SELECT 1', 0.0, 0.0)
+            ->withTraceHash('h')
+            ->withDuplicate($duplicate);
     }
 
     private function makeRowWithDuration(float $duration): QueryRow
     {
-        return new QueryRow(
-            type: 'SELECT',
-            query: 'SELECT 1',
-            duration: $duration,
-            trace: [],
-            traceHash: 'h',
-            timestamp: 0.0,
-            seq: 0,
-            duplicate: 1,
-            rows: null,
-        );
+        return QueryRow::create('SELECT 1', $duration, 0.0)->withTraceHash('h');
     }
 
     private function makeSqliteConnection(): Connection

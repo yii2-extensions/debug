@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\actions\db;
 
-use PHPForge\Debug\Panel\Db\{DbMessage, QueryRow};
+use PHPForge\Debug\Panel\Db\{DbExplainSupport, DbMessage, QueryRow};
 use Yii;
 use yii\db\Exception as DbException;
 use yii\debug\actions\Action;
@@ -51,7 +51,7 @@ class ExplainAction extends Action
             return $this->respondEmpty(404);
         }
 
-        $row = $this->findRow($panel, $seq);
+        $row = QueryRow::findBySequence($panel->getRows(), $seq);
 
         if ($row === null) {
             return $this->respondEmpty(404);
@@ -61,7 +61,7 @@ class ExplainAction extends Action
 
         $this->prepareShell($panel, $tag);
 
-        $params = ['error' => $error, 'query' => $row->query, 'results' => $results];
+        $params = ['error' => $error, 'query' => $row->getQuery(), 'results' => $results];
 
         return Yii::$app->request->isAjax
             ? $this->renderPartial('db-explain', $params)
@@ -84,30 +84,14 @@ class ExplainAction extends Action
         }
 
         $db = $panel->getDb();
-        $explainPrefix = $db->getDriverName() === 'sqlite' ? 'EXPLAIN QUERY PLAN ' : 'EXPLAIN ';
+
+        $explainPrefix = DbExplainSupport::prefix($db->getDriverName() ?? '');
 
         try {
-            return [null, $db->createCommand("{$explainPrefix}{$row->query}")->queryAll()];
+            return [null, $db->createCommand("{$explainPrefix}{$row->getQuery()}")->queryAll()];
         } catch (DbException $exception) {
             return [$exception->getMessage(), []];
         }
-    }
-
-    /**
-     * Returns the captured row whose sequence number matches the requested one exactly, or `null` when none does.
-     *
-     * @param DbPanel $panel Panel holding the hydrated rows.
-     * @param string $seq Requested sequence number, compared as a string so `'02'` never matches sequence `2`.
-     */
-    private function findRow(DbPanel $panel, string $seq): QueryRow|null
-    {
-        foreach ($panel->getRows() as $row) {
-            if ((string) $row->seq === $seq) {
-                return $row;
-            }
-        }
-
-        return null;
     }
 
     /**

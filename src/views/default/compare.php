@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPForge\Debug\Comparison\PanelComparison;
 use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
 use UIAwesome\Html\Heading\H1;
@@ -28,23 +29,37 @@ $captureUrl = static fn(string $tag, string $panel = 'request'): string => Url::
 
 $stateBadge = static function (string $state): string {
     $variant = match ($state) {
-        'Captured' => 'success',
-        'Failed' => 'danger',
+        PanelComparison::STATE_CAPTURED => 'success',
+        PanelComparison::STATE_FAILED => 'danger',
         default => 'muted',
     };
 
-    return Html::tag('span', Html::encode($state), ['class' => "yii-debug-badge yii-debug-badge-{$variant}"]);
+    return Html::tag(
+        'span',
+        Html::encode($state),
+        ['class' => "yii-debug-badge yii-debug-badge-{$variant}"],
+    );
 };
 
 $panelLink = static function (HistoryPanelComparison $panel, string $tag, string $state) use ($captureUrl): string {
-    if ($state === 'Not captured') {
-        return Html::tag('span', '—', ['class' => 'yii-debug-not-set']);
+    if ($state === PanelComparison::STATE_NOT_CAPTURED) {
+        return Html::tag(
+            'span',
+            '—',
+            ['class' => 'yii-debug-not-set'],
+        );
     }
 
-    return Html::a('Open panel', $captureUrl($tag, $panel->id), ['class' => 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm']);
+    return Html::a(
+        'Open panel',
+        $captureUrl($tag, $panel->id),
+        ['class' => 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm'],
+    );
 };
 ?>
-<?= H1::tag()->class('yii-debug-hero-title')->content(PanelTitle::COMPARE) ?>
+<?= H1::tag()
+    ->class('yii-debug-hero-title')
+    ->content(PanelTitle::COMPARE) ?>
 
 <section class="yii-debug-section" aria-labelledby="yii-debug-compare-selection">
     <h2 class="yii-debug-section-title" id="yii-debug-compare-selection">

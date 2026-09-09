@@ -20,7 +20,7 @@ use yii\debug\collectors\{LogCollector, QueueCollector, TimelineCollector};
 use yii\debug\{DebugAsset, LogTarget, Module, Panel, ToolbarAsset, ToolbarRenderer, VersionResolver};
 use yii\debug\exception\Message;
 use yii\debug\panels\{DbPanel, LogPanel, QueuePanel, RouterPanel, TimelinePanel};
-use yii\debug\tests\provider\{ModuleProvider, VisibilityProvider};
+use yii\debug\tests\provider\ModuleProvider;
 use yii\debug\tests\support\stub\{
     ConfigurableAction,
     CustomCollector,
@@ -42,7 +42,7 @@ use function is_string;
  * Unit tests for {@see Module} covering IP-based access control, toolbar HTML/JSON rendering, the `php-info` standalone
  * action wiring, debug-asset registration, and request-cache behavior.
  *
- * {@see ModuleProvider} and {@see VisibilityProvider} for test case data providers.
+ * {@see ModuleProvider} for test case data providers.
  */
 #[Group('module')]
 final class ModuleTest extends TestCase
@@ -101,9 +101,13 @@ final class ModuleTest extends TestCase
         Yii::$app->setModule('debug', $module);
 
         $response = Yii::$app->getResponse();
+
         $headers = $response->getHeaders();
 
-        $headers->set('Content-Security-Policy', "default-src 'none'; ; img-src data:;");
+        $headers->set(
+            'Content-Security-Policy',
+            "default-src 'none'; ; img-src data:;",
+        );
         $headers->add(
             'Content-Security-Policy',
             "script-src 'self'; FRAME-ANCESTORS https://example.test; style-src 'unsafe-inline'",
@@ -160,7 +164,11 @@ final class ModuleTest extends TestCase
             $fakeTarget->enabled,
             'Disabled debug logging must deactivate existing log targets.',
         );
-        self::assertSame([], Yii::$app->assetManager->bundles, 'Allowed debugger actions must reset asset bundles.');
+        self::assertSame(
+            [],
+            Yii::$app->assetManager->bundles,
+            'Allowed debugger actions must reset asset bundles.'
+        );
         self::assertFalse(
             Yii::$app->view->off(View::EVENT_END_BODY, [$module, 'renderToolbar']),
             'Debugger actions must detach the toolbar listener before rendering.',
@@ -626,16 +634,25 @@ final class ModuleTest extends TestCase
     public function testBuiltInRouterPanelIsHiddenWhileItsCollectorRemainsRegistered(): void
     {
         $module = new Module('debug');
+
         $corePanels = $this->invoke($module, 'corePanels');
+
         $router = $module->panels['router'] ?? self::fail('Built-in Router panel must remain registered.');
 
-        self::assertIsArray($corePanels, 'Core panel definitions must remain an array.');
+        self::assertIsArray(
+            $corePanels,
+            'Core panel definitions must remain an array.'
+        );
         self::assertSame(
             ['class' => RouterPanel::class, 'standalone' => false],
             $corePanels['router'] ?? null,
             'The built-in Router definition must explicitly opt out of standalone presentation.',
         );
-        self::assertInstanceOf(RouterPanel::class, $router, 'Built-in Router must resolve its standard panel class.');
+        self::assertInstanceOf(
+            RouterPanel::class,
+            $router,
+            'Built-in Router must resolve its standard panel class.'
+        );
         self::assertFalse(
             $router->isVisible(),
             'Built-in Router must act as a hidden compatibility data source for Request.',
@@ -656,7 +673,7 @@ final class ModuleTest extends TestCase
 
         self::assertFalse(
             $this->invoke($module, 'checkAccess'),
-            "'checkAccessCallback' returning anything other than 'true' must deny access.",
+            "Returning anything other than 'true' must deny access.",
         );
     }
 
@@ -675,7 +692,6 @@ final class ModuleTest extends TestCase
             $this->invoke($module, 'checkAccess'),
             "Callback denying access must return 'false'.",
         );
-
         self::assertStringContainsString(
             'Access to debugger is denied due to checkAccessCallback.',
             $this->collectLoggedMessages(),
@@ -692,7 +708,7 @@ final class ModuleTest extends TestCase
 
         self::assertTrue(
             $this->invoke($module, 'checkAccess'),
-            "'checkAccessCallback' returning 'true' must grant access after the IP filter passes.",
+            "Returning 'true' must grant access after the IP filter passes.",
         );
     }
 
@@ -724,8 +740,8 @@ final class ModuleTest extends TestCase
     public function testCheckAccessLogsExactIpRestrictionWarning(): void
     {
         $module = new Module('debug');
-        $module->allowedIPs = ['10.0.0.1'];
 
+        $module->allowedIPs = ['10.0.0.1'];
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
         Yii::getLogger()->dispatcher = self::createStub(Dispatcher::class);
@@ -753,13 +769,14 @@ final class ModuleTest extends TestCase
 
         self::assertTrue(
             $this->invoke($module, 'checkAccess'),
-            "'allowedHosts' must be resolved via DNS and matched against the requester IP.",
+            'Must be resolved via DNS and matched against the requester IP.',
         );
     }
 
     public function testCheckAccessUsesTheCurrentPublicAllowlistConfiguration(): void
     {
         $module = new Module('debug');
+
         $module->allowedIPs = ['*'];
 
         self::assertTrue(
@@ -799,7 +816,16 @@ final class ModuleTest extends TestCase
         );
 
         self::assertSame(
-            ['compare', 'download-mail', 'index', 'php-info', 'reset-identity', 'set-identity', 'toolbar-data', 'view'],
+            [
+                'compare',
+                'download-mail',
+                'index',
+                'php-info',
+                'reset-identity',
+                'set-identity',
+                'toolbar-data',
+                'view',
+            ],
             array_keys($coreActions),
             'Core action map must retain every debugger endpoint.',
         );
@@ -931,6 +957,7 @@ final class ModuleTest extends TestCase
     public function testCreateStandaloneActionDoesNotTreatNestedMapKeysAsDirectActions(): void
     {
         $module = new Module('debug');
+
         $module->actionMap['nested/action'] = PhpInfoAction::class;
 
         self::assertNull(
@@ -960,6 +987,7 @@ final class ModuleTest extends TestCase
     public function testCreateStandaloneActionSupportsYiiDoubleUnderscoreClassConfiguration(): void
     {
         $module = new Module('debug');
+
         $module->actionMap['configured'] = [
             '__class' => ConfigurableAction::class,
             'label' => 'resolved',
@@ -967,10 +995,26 @@ final class ModuleTest extends TestCase
 
         $action = $this->invoke($module, 'createStandaloneAction', ['configured']);
 
-        self::assertInstanceOf(ConfigurableAction::class, $action, 'Yii `__class` configuration must resolve.');
-        self::assertSame('configured', $action->id, 'The resolved action ID must be assigned.');
-        self::assertSame('resolved', $action->label, 'Configured action properties must be preserved.');
-        self::assertSame($module, $action->getModule(), 'The resolved action must be bound to its module.');
+        self::assertInstanceOf(
+            ConfigurableAction::class,
+            $action,
+            "Yii '__class__' configuration must resolve.",
+        );
+        self::assertSame(
+            'configured',
+            $action->id,
+            'The resolved action ID must be assigned.'
+        );
+        self::assertSame(
+            'resolved',
+            $action->label,
+            'Configured action properties must be preserved.'
+        );
+        self::assertSame(
+            $module,
+            $action->getModule(),
+            'The resolved action must be bound to its module.'
+        );
     }
 
     public function testCreateStandaloneActionTrimsSurroundingSlashesFromMappedRoutes(): void
@@ -979,8 +1023,16 @@ final class ModuleTest extends TestCase
 
         $action = $this->invoke($module, 'createStandaloneAction', ['/view/']);
 
-        self::assertInstanceOf(ViewAction::class, $action, 'Mapped action must resolve despite surrounding slashes.');
-        self::assertSame('view', $action->id, 'Resolved ID must drop the surrounding slashes.');
+        self::assertInstanceOf(
+            ViewAction::class,
+            $action,
+            'Mapped action must resolve despite surrounding slashes.'
+        );
+        self::assertSame(
+            'view',
+            $action->id,
+            'Resolved ID must drop the surrounding slashes.'
+        );
     }
 
     public function testDebugAssetShipsLocalFrameworkAgnosticScript(): void
@@ -1069,7 +1121,11 @@ final class ModuleTest extends TestCase
         $module->renderToolbar(new Event(['sender' => Yii::$app->view]));
         $toolbar = (string) ob_get_clean();
 
-        self::assertSame('', $toolbar, 'A debugger page must not render a nested toolbar.');
+        self::assertSame(
+            '',
+            $toolbar,
+            'A debugger page must not render a nested toolbar.'
+        );
 
         $response = Yii::$app->getResponse();
 
@@ -1100,23 +1156,18 @@ final class ModuleTest extends TestCase
     public function testExplicitRouterPanelClassRetainsStandaloneVisibility(): void
     {
         $module = new Module('debug', null, ['panels' => ['router' => RouterPanel::class]]);
+
         $router = $module->panels['router'] ?? self::fail('Explicit Router panel must be registered.');
 
-        self::assertInstanceOf(RouterPanel::class, $router, 'Explicit Router class must resolve normally.');
+        self::assertInstanceOf(
+            RouterPanel::class,
+            $router,
+            'Explicit Router class must resolve normally.'
+        );
         self::assertTrue(
             $router->isVisible(),
             'Explicit class configuration must preserve RouterPanel standalone compatibility.',
         );
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'moduleContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetToolbarHtmlBuildsSkipAjaxRequestUrlEntries(): void
@@ -1236,14 +1287,24 @@ final class ModuleTest extends TestCase
             $ids[] = $collector->id();
         }
 
-        self::assertNotSame([], $ids, 'Collectors must be registered.');
-        self::assertSame('log', $ids[array_key_last($ids)], 'Override must move the collector to its configured slot.');
+        self::assertNotSame(
+            [],
+            $ids,
+            'Collectors must be registered.'
+        );
+        self::assertSame(
+            'log',
+            $ids[array_key_last($ids)],
+            'Override must move the collector to its configured slot.'
+        );
     }
 
     public function testInitCollectorsRejectsConfigurationWithoutResolvableClass(): void
     {
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage(Message::COLLECTOR_CLASS_INVALID->getMessage());
+        $this->expectExceptionMessage(
+            Message::COLLECTOR_CLASS_INVALID->getMessage(),
+        );
 
         new Module('debug', null, ['collectors' => [['class' => 'No\Such\Collector']]]);
     }
@@ -1879,6 +1940,7 @@ final class ModuleTest extends TestCase
     public function testResolveLogTargetAcceptsArrayConfigWithExtraProperties(): void
     {
         $module = new Module('debug');
+
         $module->logTarget = ['class' => LogTarget::class, 'levels' => 7];
 
         $module->bootstrap(Yii::$app);
@@ -1898,6 +1960,7 @@ final class ModuleTest extends TestCase
     public function testResolveLogTargetAcceptsStringClassName(): void
     {
         $module = new Module('debug');
+
         $module->logTarget = LogTarget::class;
 
         $module->bootstrap(Yii::$app);

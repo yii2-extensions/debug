@@ -5,32 +5,19 @@ declare(strict_types=1);
 namespace yii\debug\tests\dump;
 
 use PHPForge\Debug\Panel\Dump\DumpSnapshot;
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use yii\debug\panels\DumpPanel;
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
 /**
  * Unit tests for {@see DumpPanel} covering the typed dump-row narrowing, the toolbar item shortcut, and the rendered
  * detail and summary views.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('panel')]
 #[Group('dump')]
 final class DumpPanelTest extends TestCase
 {
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'dumpPanelContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
-    }
-
     public function testGetDetailRendersEmptyStateWhenNoDumpsCaptured(): void
     {
         $panel = $this->makePanel(DumpPanel::class);

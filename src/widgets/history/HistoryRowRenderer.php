@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\history;
 
-use PHPForge\Debug\Helper\Vocabulary;
 use PHPForge\Debug\View\History\{HistoryCellRenderer, HistoryRow, HistoryScale, HistorySummary};
 use UIAwesome\Html\Palpable\A;
 use UIAwesome\Html\Phrasing\{Span, Strong};
@@ -87,20 +86,6 @@ final class HistoryRowRenderer
             $dbPanel->isQueryCountCritical($row->sqlCount),
             $dbPanel->criticalQueryThreshold ?? 0,
         );
-    }
-
-    /**
-     * Renders the status-code badge cell; an uncaptured (`0`) code displays as an unknown neutral status.
-     */
-    public static function renderStatusCell(HistoryRow $row): string
-    {
-        $statusCode = $row->statusCode;
-        $content = $statusCode === 0 ? '–' : (string) $statusCode;
-
-        return Span::tag()
-            ->class('yii-debug-badge yii-debug-status-' . Vocabulary::statusClass($statusCode))
-            ->content($content)
-            ->render();
     }
 
     /**

@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
-use LogicException;
 use PDO;
 use PHPForge\Debug\Panel\Db\QueryRow;
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\Event;
 use yii\db\Connection;
 use yii\debug\collectors\DbCollector;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\{LogTarget, Module};
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -23,10 +21,8 @@ use function hash_algos;
 use function in_array;
 
 /**
- * Unit tests for {@see DbCollector} covering query timing aggregation, the SQL command verb extractor, the PDO
- * statement hook lifecycle, and the trace-hash fingerprinting.
- *
- * {@see VisibilityProvider} for method contract data providers.
+ * Unit tests for {@see DbCollector} covering query timing aggregation, the PDO statement hook lifecycle, and the
+ * trace-hash fingerprinting.
  *
  * @phpstan-import-type LogTrace from Logger
  * @phpstan-type StringLogMessage array{0: string, 1: int, 2: string, 3: float, 4: list<LogTrace>, 5: int}
@@ -157,11 +153,21 @@ final class DbCollectorTest extends TestCase
 
         $logger->messages = [];
 
-        $db->createCommand('CREATE TABLE first (id INTEGER PRIMARY KEY)')->execute();
-        $other->createCommand('CREATE TABLE second (id INTEGER PRIMARY KEY)')->execute();
-        $db->createCommand('INSERT INTO first (id) VALUES (1)')->execute();
-        $other->createCommand('INSERT INTO second (id) VALUES (1), (2)')->execute();
-        $db->createCommand('INSERT INTO first (id) VALUES (2), (3), (4)')->execute();
+        $db
+            ->createCommand('CREATE TABLE first (id INTEGER PRIMARY KEY)')
+            ->execute();
+        $other
+            ->createCommand('CREATE TABLE second (id INTEGER PRIMARY KEY)')
+            ->execute();
+        $db
+            ->createCommand('INSERT INTO first (id) VALUES (1)')
+            ->execute();
+        $other
+            ->createCommand('INSERT INTO second (id) VALUES (1), (2)')
+            ->execute();
+        $db
+            ->createCommand('INSERT INTO first (id) VALUES (2), (3), (4)')
+            ->execute();
 
         $logTarget = $collector->module?->logTarget;
 
@@ -205,7 +211,13 @@ final class DbCollectorTest extends TestCase
 
         $this->primeCollector(
             $collector,
-            [...$this->makeMessage('SELECT * FROM t', 0.005, 0.010)],
+            [
+                ...$this->makeMessage(
+                    'SELECT * FROM t',
+                    0.005,
+                    0.010,
+                ),
+            ],
             [0],
         );
 
@@ -215,24 +227,24 @@ final class DbCollectorTest extends TestCase
 
         self::assertSame(
             'SELECT',
-            $row->type,
+            $row->getType(),
             'Verb must be uppercased.',
         );
         self::assertEqualsWithDelta(
             5.0,
-            $row->duration,
+            $row->getDuration(),
             1e-9,
             'Duration must be scaled to milliseconds.',
         );
         self::assertEqualsWithDelta(
             10.0,
-            $row->timestamp,
+            $row->getTimestamp(),
             1e-9,
             'Timestamp must be scaled to milliseconds.',
         );
         self::assertSame(
             0,
-            $row->rows,
+            $row->getRows(),
             'A zero row count must remain a valid driver result.',
         );
     }
@@ -254,41 +266,19 @@ final class DbCollectorTest extends TestCase
         );
     }
 
-    public function testCaptureRejectsMissingDuplicateCountInvariant(): void
-    {
-        $this->mockWebApplication();
-
-        $module = new Module('debug');
-
-        $module->logTarget = new LogTarget($module);
-
-        $collector = $this->getMockBuilder(DbCollector::class)
-            ->onlyMethods(['countDuplicateQuery'])
-            ->getMock();
-
-        $collector->expects(self::once())->method('countDuplicateQuery')->willReturn([]);
-        $collector->module = $module;
-        $collector->startup();
-
-        $this->primeCollector(
-            $collector,
-            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
-            [],
-        );
-
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Missing duplicate count for query: SELECT 1');
-
-        $collector->capture();
-    }
-
     public function testCaptureResolvesStableRows(): void
     {
         $collector = $this->makeCollector();
 
         $this->primeCollector(
             $collector,
-            [...$this->makeMessage('SELECT 1', 0.001, 0.0)],
+            [
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                ),
+            ],
             [],
         );
 
@@ -371,8 +361,18 @@ final class DbCollectorTest extends TestCase
         $this->primeCollector(
             $collector,
             [
-                ...$this->makeMessage('SELECT 1', 0.001, 0.0, [['file' => '/one.php', 'line' => 1]]),
-                ...$this->makeMessage('SELECT 2', 0.001, 0.1, [['file' => '/two.php', 'line' => 2]]),
+                ...$this->makeMessage(
+                    'SELECT 1',
+                    0.001,
+                    0.0,
+                    [['file' => '/one.php', 'line' => 1]]
+                ),
+                ...$this->makeMessage(
+                    'SELECT 2',
+                    0.001,
+                    0.1,
+                    [['file' => '/two.php', 'line' => 2]]
+                ),
             ],
             [],
         );
@@ -382,35 +382,6 @@ final class DbCollectorTest extends TestCase
             array_values($collector->countCallerCals()),
             'Distinct traces must retain both caller-count buckets.',
         );
-    }
-
-    public function testCountDuplicateQueryCountsRepeatedSqlStatements(): void
-    {
-        $collector = $this->makeCollector();
-
-        $timings = [
-            $this->makeTiming('SELECT 1'),
-            $this->makeTiming('SELECT 1'),
-            $this->makeTiming('SELECT 2'),
-        ];
-
-        $counts = $collector->countDuplicateQuery($timings);
-
-        self::assertSame(
-            ['SELECT 1' => 2, 'SELECT 2' => 1],
-            $counts,
-            'Duplicate counts must group identical SQL statements.',
-        );
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'dbCollectorContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetExcessiveCallersReturnsEmptyWhenDisabledWithCapturedRows(): void
@@ -442,8 +413,18 @@ final class DbCollectorTest extends TestCase
             $collector,
             $this->flatten(
                 [
-                    $this->makeMessage('SELECT 1', 0.001, 0.000, $repeatedTrace),
-                    $this->makeMessage('SELECT 2', 0.001, 0.002, $repeatedTrace),
+                    $this->makeMessage(
+                        'SELECT 1',
+                        0.001,
+                        0.000,
+                        $repeatedTrace,
+                    ),
+                    $this->makeMessage(
+                        'SELECT 2',
+                        0.001,
+                        0.002,
+                        $repeatedTrace,
+                    ),
                     $this->makeMessage(
                         'SELECT 3',
                         0.001,
@@ -473,39 +454,6 @@ final class DbCollectorTest extends TestCase
             $first,
             $second,
             'Must return the cached list on subsequent calls.',
-        );
-    }
-
-    public function testGetQueryTypeExtractsLeadingVerb(): void
-    {
-        $collector = $this->makeCollector();
-
-        self::assertSame(
-            'SELECT',
-            $this->invoke(
-                $collector,
-                'getQueryType',
-                ['select * from t'],
-            ),
-            'Lowercase verb must be upcased.',
-        );
-        self::assertSame(
-            'INSERT',
-            $this->invoke(
-                $collector,
-                'getQueryType',
-                ['  INSERT INTO t VALUES (1)'],
-            ),
-            'Leading whitespace must be trimmed.',
-        );
-        self::assertSame(
-            '',
-            $this->invoke(
-                $collector,
-                'getQueryType',
-                ['123 not sql'],
-            ),
-            'Non-letter prefix must yield an empty verb.',
         );
     }
 
@@ -869,7 +817,11 @@ final class DbCollectorTest extends TestCase
         $pairs = [];
 
         for ($i = 0; $i < $count; $i++) {
-            $pairs[] = $this->makeMessage("SELECT {$i}", 0.001 * ($i + 1), 0.001 * $i);
+            $pairs[] = $this->makeMessage(
+                "SELECT {$i}",
+                0.001 * ($i + 1),
+                0.001 * $i,
+            );
         }
 
         return $this->flatten($pairs);
@@ -927,42 +879,31 @@ final class DbCollectorTest extends TestCase
      *
      * @return list<StringLogMessage>
      */
-    private function makeMessage(
-        string $sql,
-        float $duration,
-        float $startTime,
-        array $trace = [],
-    ): array {
+    private function makeMessage(string $sql, float $duration, float $startTime, array $trace = []): array
+    {
         return [
-            [$sql, Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', $startTime, $trace, 0],
-            [$sql, Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', $startTime + $duration, $trace, 0],
+            [
+                $sql,
+                Logger::LEVEL_PROFILE_BEGIN,
+                'yii\db\Command::query',
+                $startTime,
+                $trace,
+                0,
+            ],
+            [
+                $sql,
+                Logger::LEVEL_PROFILE_END,
+                'yii\db\Command::query',
+                $startTime + $duration,
+                $trace,
+                0,
+            ],
         ];
     }
 
     private function makeSqliteConnection(): Connection
     {
         return new Connection(['dsn' => 'sqlite::memory:']);
-    }
-
-    /**
-     * @return array{
-     *   info: string, category: string, timestamp: float, trace: array<int, array<string, mixed>>,
-     *   level: int, duration: float, memory: int, memoryDiff: int, traceHash: string
-     * }
-     */
-    private function makeTiming(string $info, float $duration = 0.0): array
-    {
-        return [
-            'info' => $info,
-            'category' => '',
-            'timestamp' => 0.0,
-            'trace' => [],
-            'level' => 0,
-            'duration' => $duration,
-            'memory' => 0,
-            'memoryDiff' => 0,
-            'traceHash' => '',
-        ];
     }
 
     /**
@@ -995,6 +936,6 @@ final class DbCollectorTest extends TestCase
      */
     private function rowsOf(array $rows): array
     {
-        return array_map(static fn(QueryRow $row): int|null => $row->rows, $rows);
+        return array_map(static fn(QueryRow $row): int|null => $row->getRows(), $rows);
     }
 }

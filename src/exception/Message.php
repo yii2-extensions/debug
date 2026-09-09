@@ -7,7 +7,7 @@ namespace yii\debug\exception;
 use function sprintf;
 
 /**
- * Defines the exception message templates authored by the Yii debug adapter.
+ * Defines exception message templates used by the Yii debug adapter.
  *
  * Use {@see Message::getMessage()} to format a template with `sprintf()` arguments.
  */
@@ -131,13 +131,6 @@ enum Message: string
      * Format: "Debug panel '%s' not found."
      */
     case DEBUG_PANEL_NOT_FOUND = "Debug panel '%s' not found.";
-
-    /**
-     * A duplicate query lacks its occurrence count.
-     *
-     * Format: "Missing duplicate count for query: %s"
-     */
-    case DUPLICATE_QUERY_COUNT_MISSING = 'Missing duplicate count for query: %s';
 
     /**
      * The user component lacks an identity class.
@@ -266,6 +259,13 @@ enum Message: string
      * Format: "Unable to determine request start time"
      */
     case REQUEST_START_TIME_UNAVAILABLE = 'Unable to determine request start time';
+
+    /**
+     * Yii cannot resolve a required action service.
+     *
+     * Format: "Could not load required service: %s"
+     */
+    case REQUIRED_SERVICE_NOT_FOUND = 'Could not load required service: %s';
 
     /**
      * A filter banner lacks its required search model.

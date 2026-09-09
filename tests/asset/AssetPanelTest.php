@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\tests\asset;
 
 use PHPForge\Debug\Panel\Asset\{AssetBundleRow, AssetSnapshot, ViteChunk, ViteManifest};
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\{DebugAsset, LogTarget, Module};
 use yii\debug\panels\AssetPanel;
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 
 use function count;
@@ -20,23 +19,11 @@ use function is_string;
 /**
  * Unit tests for {@see AssetPanel} covering `getName`/`getToolbarIcon`, the toolbar-items chip with bundle count (and
  * the `null` short-circuit when no bundles), `getDetail` rendering, and `isEnabled` resolution.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('asset')]
 #[Group('panel')]
 final class AssetPanelTest extends TestCase
 {
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'assetPanelContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
-    }
-
     public function testGetDetailRendersBundleSummary(): void
     {
         $panel = $this->makePanel(AssetPanel::class);

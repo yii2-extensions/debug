@@ -56,7 +56,7 @@ class DbSearch extends Base
      */
     public function search(array $models): ArrayDataProvider
     {
-        $dataProvider = new ArrayDataProvider(
+        $dataProvider = new QueryRowDataProvider(
             [
                 'allModels' => $models,
                 'pagination' => GridViewConfig::paginationFromRequest(50),

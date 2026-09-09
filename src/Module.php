@@ -63,8 +63,6 @@ use yii\rbac\BaseManager;
 use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
 
 use function array_diff_key;
-use function array_unique;
-use function array_values;
 use function base64_encode;
 use function get_parent_class;
 use function is_array;
@@ -180,7 +178,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Maximum raw request or response body bytes retained by the shared capture policy.
      */
-    public int $maxBodyBytes = 65536;
+    public int $maxBodyBytes = CapturePolicy::DEFAULT_MAX_BODY_BYTES;
     /**
      * Page title literal string or a callable receiving the base URL and returning a string.
      *
@@ -372,25 +370,19 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Creates the shared persistent-data policy, optionally extending its exact-key list for one collector.
      *
      * @param list<string> $additionalSensitiveKeys Collector-specific exact keys added without weakening global rules.
+     *
+     * @return CapturePolicy Shared policy covering the global rules and the collector-specific keys.
      */
     public function createCapturePolicy(array $additionalSensitiveKeys = []): CapturePolicy
     {
-        $patterns = $this->sensitiveKeyPatterns;
-
-        if (
-            $patterns === null
-            && $additionalSensitiveKeys !== []
-            && $this->sensitiveKeys === SensitiveDataRedactor::DEFAULT_KEYS
-        ) {
-            $patterns = SensitiveDataRedactor::DEFAULT_PATTERNS;
-        }
-
-        return new CapturePolicy(
-            sensitiveKeys: array_values(array_unique([...$this->sensitiveKeys, ...$additionalSensitiveKeys])),
+        $capturePolicy = new CapturePolicy(
+            sensitiveKeys: $this->sensitiveKeys,
             maxBodyBytes: $this->maxBodyBytes,
             sensitiveKeyPrefixes: $this->sensitiveKeyPrefixes,
-            sensitiveKeyPatterns: $patterns,
+            sensitiveKeyPatterns: $this->sensitiveKeyPatterns,
         );
+
+        return $capturePolicy->withAdditionalSensitiveKeys($additionalSensitiveKeys);
     }
 
     /**

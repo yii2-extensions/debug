@@ -8,7 +8,7 @@ use PHPForge\Debug\Panel\Db\QueryRow;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\data\{Pagination, Sort};
-use yii\debug\models\search\DbSearch;
+use yii\debug\models\search\{DbSearch, QueryRowDataProvider};
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -34,6 +34,25 @@ final class DbSearchTest extends TestCase
         );
     }
 
+    public function testQueryRowProviderPreservesBaseArraySorting(): void
+    {
+        $this->mockWebApplication();
+
+        $provider = new QueryRowDataProvider(
+            [
+                'allModels' => [['duration' => 2], ['duration' => 1]],
+                'pagination' => false,
+                'sort' => ['attributes' => ['duration'], 'defaultOrder' => ['duration' => SORT_ASC]],
+            ],
+        );
+
+        self::assertSame(
+            [['duration' => 1], ['duration' => 2]],
+            $provider->getModels(),
+            'Supporting private query rows must preserve the inherited array-model sorting contract.',
+        );
+    }
+
     public function testSearchAppliesPartialMatchOnQueryType(): void
     {
         $this->mockWebApplication();
@@ -44,8 +63,14 @@ final class DbSearchTest extends TestCase
 
         $rows = $search->search(
             [
-                self::row('SELECT', 'SELECT 1'),
-                self::row('INSERT', 'INSERT INTO logs VALUES (1)'),
+                self::row(
+                    'SELECT',
+                    'SELECT 1',
+                ),
+                self::row(
+                    'INSERT',
+                    'INSERT INTO logs VALUES (1)',
+                ),
             ],
         )->allModels;
 
@@ -64,7 +89,7 @@ final class DbSearchTest extends TestCase
         );
         self::assertSame(
             'SELECT',
-            $first->type,
+            $first->getType(),
             'The matching query type must be retained.',
         );
     }
@@ -74,9 +99,18 @@ final class DbSearchTest extends TestCase
         $this->mockWebApplication();
 
         $models = [
-            self::row('SELECT', 'SELECT * FROM users'),
-            self::row('INSERT', 'INSERT INTO logs VALUES (1)'),
-            self::row('SELECT', 'SELECT * FROM posts'),
+            self::row(
+                'SELECT',
+                'SELECT * FROM users',
+            ),
+            self::row(
+                'INSERT',
+                'INSERT INTO logs VALUES (1)',
+            ),
+            self::row(
+                'SELECT',
+                'SELECT * FROM posts',
+            ),
         ];
 
         $search = new DbSearch();
@@ -102,7 +136,7 @@ final class DbSearchTest extends TestCase
         );
         self::assertSame(
             'SELECT * FROM users',
-            $first->query,
+            $first->getQuery(),
             "Surviving row must carry the matched 'users' query.",
         );
     }
@@ -183,8 +217,14 @@ final class DbSearchTest extends TestCase
         $this->mockWebApplication();
 
         $models = [
-            self::row('SELECT', 'SELECT 1'),
-            self::row('INSERT', 'INSERT INTO logs VALUES (1)'),
+            self::row(
+                'SELECT',
+                'SELECT 1',
+            ),
+            self::row(
+                'INSERT',
+                'INSERT INTO logs VALUES (1)',
+            ),
         ];
 
         $search = new class extends DbSearch {
@@ -205,18 +245,181 @@ final class DbSearchTest extends TestCase
         );
     }
 
+    public function testSearchSortsEveryPrivateFieldInBothDirections(): void
+    {
+        $this->mockWebApplication();
+
+        $first = QueryRow::create('SELECT z', 3.0, 1000.0)
+            ->withSequence(2)
+            ->withDuplicate(3);
+        $second = QueryRow::create('DELETE a', 1.0, 1000.0)->withRows(0);
+        $third = QueryRow::create('UPDATE m', 2.0, 1000.0)
+            ->withSequence(1)
+            ->withDuplicate(2)
+            ->withRows(5);
+        $cases = [
+            [
+                'duration', SORT_ASC,
+                [
+                    $second,
+                    $third,
+                    $first,
+                ],
+            ],
+            [
+                'duration',
+                SORT_DESC,
+                [
+                    $first,
+                    $third,
+                    $second,
+                ],
+            ],
+            [
+                'seq', SORT_ASC,
+                [
+                    $second,
+                    $third,
+                    $first,
+                ],
+            ],
+            [
+                'seq',
+                SORT_DESC,
+                [
+                    $first,
+                    $third,
+                    $second,
+                ],
+            ],
+            [
+                'type', SORT_ASC,
+                [
+                    $second,
+                    $first,
+                    $third,
+                ],
+            ],
+            [
+                'type', SORT_DESC,
+                [
+                    $third,
+                    $first,
+                    $second,
+                ],
+            ],
+            [
+                'query', SORT_ASC,
+                [
+                    $second,
+                    $first,
+                    $third,
+                ],
+            ],
+            [
+                'query', SORT_DESC,
+                [
+                    $third,
+                    $first,
+                    $second,
+                ],
+            ],
+            [
+                'duplicate', SORT_ASC,
+                [
+                    $second,
+                    $third,
+                    $first,
+                ],
+            ],
+            [
+                'duplicate', SORT_DESC,
+                [
+                    $first,
+                    $third,
+                    $second,
+                ],
+            ],
+            [
+                'rows', SORT_ASC,
+                [
+                    $first,
+                    $second,
+                    $third,
+                ],
+            ],
+            [
+                'rows', SORT_DESC,
+                [
+                    $third,
+                    $first,
+                    $second,
+                ],
+            ],
+        ];
+
+        foreach ($cases as [$attribute, $direction, $expected]) {
+            $provider = (new DbSearch())->search([$first, $second, $third]);
+
+            $sort = $provider->getSort();
+
+            self::assertInstanceOf(
+                Sort::class,
+                $sort,
+                'Query-row sorting must be enabled.',
+            );
+
+            $sort->setAttributeOrders([$attribute => $direction]);
+
+            self::assertSame(
+                $expected,
+                $provider->getModels(),
+                "Sorting '{$attribute}' must preserve row identity and stable ordering for equal values.",
+            );
+        }
+    }
+
+    public function testSearchSortsMultipleFieldsBeforePagination(): void
+    {
+        $this->mockWebApplication();
+
+        $first = QueryRow::create('SELECT 1', 1.0, 1000.0)->withSequence(2);
+        $second = QueryRow::create('SELECT 2', 1.0, 1000.0)->withSequence(1);
+        $third = QueryRow::create('SELECT 3', 2.0, 1000.0)->withSequence(0);
+
+        $provider = (new DbSearch())->search([$first, $second, $third]);
+
+        $sort = $provider->getSort();
+        $pagination = $provider->getPagination();
+
+        self::assertInstanceOf(
+            Sort::class,
+            $sort,
+            'Query-row sorting must be enabled.',
+        );
+        self::assertInstanceOf(
+            Pagination::class,
+            $pagination,
+            'Query-row pagination must be enabled.',
+        );
+
+        $sort->enableMultiSort = true;
+
+        $sort->setAttributeOrders(['duration' => SORT_ASC, 'seq' => SORT_ASC]);
+        $pagination->setPageSize(1);
+        $pagination->setPage(1, false);
+
+        self::assertSame(
+            [1 => $first],
+            $provider->getModels(),
+            'Pagination must preserve the sorted row key and apply secondary ordering before slicing.',
+        );
+    }
+
     private static function row(string $type, string $query): QueryRow
     {
-        return new QueryRow(
-            type: $type,
-            query: $query,
-            duration: 0.0,
-            trace: [],
-            traceHash: 'hash',
-            timestamp: 0.0,
-            seq: 0,
-            duplicate: 1,
-            rows: null,
-        );
+        return QueryRow::create($query, 0.0, 0.0)
+            ->withType($type)
+            ->withTraceHash('hash');
     }
 }

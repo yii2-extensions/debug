@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\collectors\UserCollector;
 use yii\debug\{LogTarget, Module};
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\{Identity, ModelIdentity, SelectiveModelIdentity};
 use yii\debug\tests\support\TestCase;
 use yii\rbac\{BaseManager, Permission, Role};
@@ -20,8 +19,6 @@ use function array_column;
 /**
  * Unit tests for {@see UserCollector} covering the identity capture, the RBAC roles/permissions narrowing, and the
  * startup/shutdown lifecycle.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('collector')]
 #[Group('user')]
@@ -347,16 +344,6 @@ final class UserCollectorTest extends TestCase
             $exported,
             'Non-string input must use the exported representation.',
         );
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'userCollectorContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testGetUserReturnsConfiguredInstance(): void

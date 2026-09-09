@@ -6,14 +6,12 @@ namespace yii\debug\collectors;
 
 use Closure;
 use PHPForge\Debug\Capture\CapturePolicy;
-use PHPForge\Debug\Helper\{Coerce, SensitiveDataRedactor};
+use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\Queue\{JobPayloadInspector, JobRecord, QueueDriverDetector, QueueSnapshot};
 use Throwable;
 use Yii;
 use yii\base\Event;
 
-use function array_unique;
-use function array_values;
 use function is_int;
 use function is_object;
 use function is_scalar;
@@ -31,6 +29,7 @@ class QueueCollector extends Collector
      * that every concrete driver extends.
      */
     private const string QUEUE_BASE_CLASS = 'yii\queue\Queue';
+
     /**
      * @var list<string> Public job-property names whose values are replaced before snapshot persistence.
      */
@@ -51,19 +50,16 @@ class QueueCollector extends Collector
      * @var array<int, string>
      */
     private array $componentIdCache = [];
-
     /**
      * @var array<int, float> Track exec start times keyed by `spl_object_id($job)` so the matching `afterExec` /
      * `afterError` event can compute the elapsed duration without depending on the queue driver.
      */
     private array $execStarts = [];
-
     /**
      * @var array<string, Closure(Event): void> Active listeners keyed by event name, kept so {@see stop()} can detach
      * them.
      */
     private array $listeners = [];
-
     /**
      * @var list<array{
      *   eventType: string,
@@ -146,6 +142,8 @@ class QueueCollector extends Collector
 
     /**
      * Returns the global capture policy plus the backward-compatible queue-specific exact-key list.
+     *
+     * @return CapturePolicy Policy denying the global rules and every redacted job property.
      */
     private function capturePolicy(): CapturePolicy
     {
@@ -153,12 +151,7 @@ class QueueCollector extends Collector
             return $this->module->createCapturePolicy($this->redactedProperties);
         }
 
-        return new CapturePolicy(
-            sensitiveKeys: array_values(
-                array_unique([...SensitiveDataRedactor::DEFAULT_KEYS, ...$this->redactedProperties]),
-            ),
-            sensitiveKeyPatterns: SensitiveDataRedactor::DEFAULT_PATTERNS,
-        );
+        return (new CapturePolicy())->withAdditionalSensitiveKeys($this->redactedProperties);
     }
 
     /**
@@ -302,6 +295,7 @@ class QueueCollector extends Collector
     private function onAfterError(Event $event): void
     {
         $this->records[] = $this->makeRecord(JobRecord::TYPE_ERROR, $event);
+
         $this->clearExecStart($event);
     }
 
@@ -311,6 +305,7 @@ class QueueCollector extends Collector
     private function onAfterExec(Event $event): void
     {
         $this->records[] = $this->makeRecord(JobRecord::TYPE_EXEC, $event);
+
         $this->clearExecStart($event);
     }
 

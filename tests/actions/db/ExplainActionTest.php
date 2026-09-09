@@ -10,6 +10,7 @@ use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Yii;
 use yii\db\Connection;
 use yii\debug\actions\db\ExplainAction;
+use yii\debug\exception\Message;
 use yii\debug\Module;
 use yii\debug\panels\DbPanel;
 use yii\debug\tests\provider\ExplainActionProvider;
@@ -488,14 +489,13 @@ final class ExplainActionTest extends TestCase
         $this->mockWebApplication();
 
         $module = new Module('debug');
-
         $action = new ExplainAction('db-explain');
 
         $action->setModule($module);
 
         $this->expectException(ServerErrorHttpException::class);
         $this->expectExceptionMessage(
-            'Could not load required service: panel',
+            Message::REQUIRED_SERVICE_NOT_FOUND->getMessage('panel'),
         );
 
         $action->runWithParams(['seq' => '0', 'tag' => 'irrelevant']);
@@ -531,17 +531,10 @@ final class ExplainActionTest extends TestCase
 
     private static function queryRow(string $query, string $type = 'SELECT', int $seq = 0): QueryRow
     {
-        return new QueryRow(
-            type: $type,
-            query: $query,
-            duration: 50.0,
-            trace: [],
-            traceHash: 'hash',
-            timestamp: 1_700_000_000_000.0,
-            seq: $seq,
-            duplicate: 1,
-            rows: null,
-        );
+        return QueryRow::create($query, 50.0, 1_700_000_000_000.0)
+            ->withType($type)
+            ->withTraceHash('hash')
+            ->withSequence($seq);
     }
 
     /**
