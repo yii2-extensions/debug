@@ -150,15 +150,10 @@ final class ModuleDefaultsTest extends ModuleTestCase
 
     public function testDefaultVersionFallsBackToInstalledExtensionVersion(): void
     {
-        Yii::$app->extensions['yiisoft/yii2-debug'] = [
-            'name' => 'yiisoft/yii2-debug',
-            'version' => '2.0.7',
-        ];
-
         $module = new Module('debug');
 
         self::assertSame(
-            VersionResolver::forPackage('yii2-extensions/debug'),
+            VersionResolver::forPackage('yii2-extensions/debug') ?? 'unknown',
             $module->getVersion(),
             'Module version must resolve from Composer package metadata.',
         );

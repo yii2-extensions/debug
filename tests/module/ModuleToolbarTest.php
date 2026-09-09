@@ -135,6 +135,14 @@ final class ModuleToolbarTest extends ModuleTestCase
             new FileCache(['cachePath' => '@runtime/cache']),
         );
 
+        self::assertInstanceOf(
+            FileCache::class,
+            Yii::$app->getCache(),
+            'Cache component must be an instance of FileCache.',
+        );
+
+        Yii::$app->getCache()->flush();
+
         $view = Yii::$app->view;
 
         $output = ['', ''];
