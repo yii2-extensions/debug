@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace yii\debug\collectors;
 
 use Closure;
-use LogicException;
 use PDO;
 use PHPForge\Debug\Panel\Db\{DbSnapshot, QueryRow};
 use PHPForge\Debug\Panel\Profile\ProfileTimings;
@@ -13,7 +12,6 @@ use Yii;
 use yii\base\Event;
 use yii\db\Connection;
 use yii\debug\db\DebugPdoStatement;
-use yii\debug\exception\Message;
 use yii\debug\LogTarget;
 use yii\log\Logger;
 
@@ -28,8 +26,6 @@ use function in_array;
 use function is_int;
 use function is_string;
 use function json_encode;
-use function preg_match;
-use function strtoupper;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -175,7 +171,7 @@ class DbCollector extends Collector
             return null;
         }
 
-        return new DbSnapshot($this->resolveRows());
+        return DbSnapshot::capture($this->resolveRows());
     }
 
     /**
@@ -188,36 +184,7 @@ class DbCollector extends Collector
         $counts = [];
 
         foreach ($this->resolveRows() as $row) {
-            $counts[$row->traceHash] = ($counts[$row->traceHash] ?? 0) + 1;
-        }
-
-        return $counts;
-    }
-
-    /**
-     * Counts how many times each distinct SQL statement appears in the given timings.
-     *
-     * @param array<int, array{
-     *   info: string,
-     *   category: string,
-     *   timestamp: float,
-     *   trace: array<int, array<string, mixed>>,
-     *   level: int,
-     *   duration: float,
-     *   memory: int,
-     *   memoryDiff: int,
-     *   traceHash: string
-     * }> $timings Timings produced by {@see calculateTimings()}.
-     *
-     * @return array<string, int> Occurrence counts indexed by SQL statement.
-     */
-    public function countDuplicateQuery(array $timings): array
-    {
-        $counts = [];
-
-        foreach ($timings as $timing) {
-            $query = $timing['info'];
-            $counts[$query] = ($counts[$query] ?? 0) + 1;
+            $counts[$row->getTraceHash()] = ($counts[$row->getTraceHash()] ?? 0) + 1;
         }
 
         return $counts;
@@ -321,22 +288,6 @@ class DbCollector extends Collector
     }
 
     /**
-     * Returns the uppercase SQL command verb extracted from the leading word of the profile-log token.
-     *
-     * @param string $timing Profile-log token (the captured SQL statement).
-     *
-     * @return string Uppercase command verb (`SELECT`, `INSERT`, `DELETE`, ...), or `''` when none could be extracted.
-     */
-    protected function getQueryType(string $timing): string
-    {
-        $timing = ltrim($timing);
-
-        preg_match('/^[a-zA-Z]+/', $timing, $matches);
-
-        return strtoupper($matches[0] ?? '');
-    }
-
-    /**
      * Resets the per-request caches, binds the row-count window to the current request tag, and installs the statement
      * hook through {@see instrument()} when the module has not already done so.
      *
@@ -409,7 +360,6 @@ class DbCollector extends Collector
     private function resolveRows(): array
     {
         $timings = $this->calculateTimings();
-        $duplicates = $this->countDuplicateQuery($timings);
 
         $rowCounts = DebugPdoStatement::$rowCounts;
 
@@ -420,19 +370,10 @@ class DbCollector extends Collector
         foreach ($timings as $seq => $timing) {
             $count = array_shift($aligned);
 
-            $info = $timing['info'];
-
-            if (!isset($duplicates[$info])) {
-                throw new LogicException(
-                    Message::DUPLICATE_QUERY_COUNT_MISSING->getMessage($info),
-                );
-            }
-
             $rows[] = QueryRow::fromTiming(
                 $timing,
-                $this->getQueryType($info),
+                QueryRow::extractType($timing['info']),
                 $seq,
-                $duplicates[$info],
                 is_int($count) && $count >= 0 ? $count : null,
             );
         }

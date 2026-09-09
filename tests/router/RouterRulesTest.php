@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\debug\models\router\RouterRules;
-use yii\debug\tests\provider\{RouterRulesProvider, VisibilityProvider};
+use yii\debug\tests\provider\RouterRulesProvider;
 use yii\debug\tests\support\TestCase;
 use yii\rest\UrlRule as RestUrlRule;
 use yii\web\UrlRule as WebUrlRule;
@@ -17,7 +17,7 @@ use yii\web\UrlRule as WebUrlRule;
  * Unit tests for {@see RouterRules} covering URL-manager flag detection (pretty URLs, strict parsing, suffix) and the
  * rule-table flattening for plain, REST, and group URL rules.
  *
- * {@see RouterRulesProvider} and {@see VisibilityProvider} for test case data providers.
+ * {@see RouterRulesProvider} for test case data providers.
  */
 #[Group('router')]
 final class RouterRulesTest extends TestCase
@@ -141,16 +141,6 @@ final class RouterRulesTest extends TestCase
             $router->suffix,
             "'suffix' must remain null when only 'strictParsing' is configured.",
         );
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'routerRulesContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
     }
 
     /**

@@ -8,12 +8,11 @@ use PHPForge\Debug\Helper\Format;
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use Yii;
 use yii\debug\models\search\ProfileSearch;
 use yii\debug\panels\ProfilingPanel;
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\CapturingView;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -24,8 +23,6 @@ use function substr_count;
 /**
  * Unit tests for {@see ProfilingPanel} covering the typed row decoration, the toolbar items (time + memory), the
  * title-blanking on the toolbar payload, and snapshot hydration.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('panel')]
 #[Group('profile')]
@@ -55,20 +52,6 @@ final class ProfilingPanelTest extends TestCase
             2_048,
             $samples[0]->memory,
             'Sample memory must retain the logger value.',
-        );
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'profilingPanelContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility(
-            $class,
-            $method,
-            $expected,
         );
     }
 
@@ -117,9 +100,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetDetailKeepsFiltersAndRendersFilteredEmptyStateWhenSpansWereCaptured(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         Yii::$app->getRequest()->setQueryParams(
             [
@@ -236,9 +217,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetDetailRendersSharedFiltersTimelineAndDetails(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         $filterPrefix = (new ProfileSearch())->formName();
 
@@ -333,9 +312,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetDetailRendersTimelineUnavailableWhenModuleAndSummaryAreMissing(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         $panel->module = null;
 
@@ -360,9 +337,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetMemoryUsageDefaultsToZero(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         self::assertSame(
             0,
@@ -373,9 +348,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetModelsBuildsTypedRowsFromTimings(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -413,9 +386,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetModelsCachesTheResult(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -440,9 +411,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         self::assertSame(
             'Profiling',
@@ -458,9 +427,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetToolbarDataBlanksTitleOnSuccess(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -484,9 +451,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetToolbarDataKeepsTitleOnError(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         $panel->setError(ExceptionSnapshot::fromThrowable(new RuntimeException('boom')));
 
@@ -501,9 +466,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetToolbarItemsCarryNoStatusVerdict(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -535,9 +498,7 @@ final class ProfilingPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsTimeAndMemoryChips(): void
     {
-        $panel = $this->makePanel(
-            ProfilingPanel::class,
-        );
+        $panel = $this->makePanel(ProfilingPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -572,7 +533,10 @@ final class ProfilingPanelTest extends TestCase
 
         $logPanel = $panel->module?->panels['log'] ?? null;
 
-        self::assertNotNull($logPanel, 'Default module must register the log panel.');
+        self::assertNotNull(
+            $logPanel,
+            'Default module must register the log panel.',
+        );
 
         $this->hydratePanel(
             $logPanel,

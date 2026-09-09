@@ -159,13 +159,6 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
                     'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderUrlCell($data),
                     'format' => 'raw',
                 ],
-                [
-                    'attribute' => 'statusCode',
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderStatusCell($data),
-                    'format' => 'raw',
-                    'filter' => $summary->statusCodeFilter,
-                    'label' => 'Status',
-                ],
             ],
         ),
     ],

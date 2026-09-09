@@ -353,39 +353,6 @@ final class HistoryRowRendererTest extends TestCase
         );
     }
 
-    public function testRenderStatusCellMapsRangeToStatusClass(): void
-    {
-        self::assertStringContainsString(
-            'yii-debug-badge yii-debug-status-2xx',
-            HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 200])),
-            "Status code '200' must map to '2xx'.",
-        );
-        self::assertStringContainsString(
-            'yii-debug-status-3xx',
-            HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 301])),
-            "Status code '301' must map to '3xx'.",
-        );
-        self::assertStringContainsString(
-            'yii-debug-status-4xx',
-            HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 404])),
-            "Status code '404' must map to '4xx'.",
-        );
-        self::assertStringContainsString(
-            'yii-debug-status-5xx',
-            HistoryRowRenderer::renderStatusCell(self::row(['statusCode' => 500])),
-            "Status code '500' must map to '5xx'.",
-        );
-    }
-
-    public function testRenderStatusCellMapsUncapturedStatusToNeutralUnknown(): void
-    {
-        self::assertSame(
-            '<span class="yii-debug-badge yii-debug-status-none">–</span>',
-            HistoryRowRenderer::renderStatusCell(self::row(['method' => 'COMMAND', 'statusCode' => 0])),
-            "An uncaptured status must not be misrepresented as a successful '200' response.",
-        );
-    }
-
     public function testRenderSummaryEchoesBucketPills(): void
     {
         $summary = new HistorySummary(

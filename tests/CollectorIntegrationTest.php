@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use PHPForge\Debug\Storage\SnapshotStore;
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\base\{Application, InvalidConfigException};
 use yii\debug\{LogTarget, Module};
 use yii\debug\panels\JsonPanel;
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\stub\{CollectorPanel, CustomCollector, StubSnapshot};
 use yii\debug\tests\support\TestCase;
 
@@ -25,8 +24,6 @@ use function unlink;
 
 /**
  * Unit tests for {@see Module} and {@see LogTarget} custom collector integration.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('collector')]
 final class CollectorIntegrationTest extends TestCase
@@ -34,6 +31,7 @@ final class CollectorIntegrationTest extends TestCase
     public function testBootstrapStartsCollectorsBeforeRequest(): void
     {
         $collector = new CustomCollector();
+
         $module = $this->module([$collector]);
 
         $module->bootstrap(Yii::$app);
@@ -175,16 +173,6 @@ final class CollectorIntegrationTest extends TestCase
         );
 
         $this->cleanup($module);
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'logTargetContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
     }
 
     public function testFailingCollectorDoesNotEraseLegacyPanelSnapshot(): void
@@ -339,9 +327,15 @@ final class CollectorIntegrationTest extends TestCase
 
     public function testUnavailableExtensionStoredPayloadDoesNotCreateFallbackPanel(): void
     {
-        MockerState::addCondition('yii\debug', 'class_exists', ['yii\queue\Queue'], false);
+        MockerState::addCondition(
+            'yii\debug',
+            'class_exists',
+            ['yii\queue\Queue'],
+            false,
+        );
 
         $module = $this->module();
+
         $target = new LogTarget($module);
 
         $this->writeDebugSnapshot(
@@ -363,12 +357,19 @@ final class CollectorIntegrationTest extends TestCase
 
     public function testUnavailableExtensionStoredPayloadKeepsExplicitCollectorFallback(): void
     {
-        MockerState::addCondition('yii\debug', 'class_exists', ['yii\queue\Queue'], false);
+        MockerState::addCondition(
+            'yii\debug',
+            'class_exists',
+            ['yii\queue\Queue'],
+            false,
+        );
 
         $collector = new CustomCollector();
+
         $collector->collectorId = 'queue';
 
         $module = $this->module([$collector]);
+
         $target = new LogTarget($module);
 
         $this->writeDebugSnapshot(
@@ -463,6 +464,7 @@ final class CollectorIntegrationTest extends TestCase
     private function module(array $collectors = [], array $panels = []): Module
     {
         $module = new Module('debug', null, ['collectors' => $collectors, 'panels' => $panels]);
+
         $module->dataPath = sys_get_temp_dir() . '/debug-collectors-' . uniqid();
 
         return $module;

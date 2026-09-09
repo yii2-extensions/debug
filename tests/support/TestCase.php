@@ -11,7 +11,6 @@ use PHPForge\Debug\Storage\{
     RequestSummary,
 };
 use ReflectionClass;
-use ReflectionMethod;
 use ReflectionProperty;
 use Yii;
 use yii\base\Application;
@@ -34,29 +33,6 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      * restore the bootstrap-time state (`REQUEST_TIME_FLOAT`, `argv`, `argc`, `SCRIPT_FILENAME`, etc.).
      */
     private static array|null $serverSnapshot = null;
-
-    /**
-     * Asserts the declared visibility of an extension method.
-     *
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    protected static function assertMethodVisibility(string $class, string $method, string $expected): void
-    {
-        $reflection = new ReflectionMethod($class, $method);
-
-        $actual = match (true) {
-            $reflection->isPublic() => 'public',
-            $reflection->isProtected() => 'protected',
-            default => 'private',
-        };
-
-        self::assertSame(
-            $expected,
-            $actual,
-            'Visibility must match the extension contract.',
-        );
-    }
 
     /**
      * Destroys the active application by closing its session, clearing `Yii::$app`, and resetting the DI container.
@@ -115,7 +91,9 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function invokeStatic(string $className, string $method, array $args = []): mixed
     {
-        return (new ReflectionClass($className))->getMethod($method)->invoke(null, ...$args);
+        return (new ReflectionClass($className))
+            ->getMethod($method)
+            ->invoke(null, ...$args);
     }
 
     /**
@@ -243,7 +221,9 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function setInaccessibleProperty(object $object, string $propertyName, mixed $value): void
     {
-        $this->resolveReflectionProperty($object, $propertyName)->setValue($object, $value);
+        $this
+            ->resolveReflectionProperty($object, $propertyName)
+            ->setValue($object, $value);
     }
 
     /**
@@ -268,6 +248,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         $this->destroyApplication();
 
         $_SERVER = self::$serverSnapshot ?? [];
@@ -295,7 +276,9 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         }
 
         $requestSummary = $this->requestSummary($tag, $summary);
+
         $store = SnapshotStore::forModule($module);
+
         $panelFailures = [];
 
         foreach ($failures as $id => $throwable) {

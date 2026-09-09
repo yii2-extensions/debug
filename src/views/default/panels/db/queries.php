@@ -11,17 +11,9 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\DbSearch;
-use PHPForge\Debug\Panel\Db\{
-    DbMessage,
-    DbQueryRenderer,
-    DbSummaryRenderer,
-    NPlusOneDetector,
-    NPlusOneFinding,
-    QueryRow,
-};
+use PHPForge\Debug\Panel\Db\{DbMessage, DbQueryRenderer, DbSummaryRenderer, NPlusOneDetector, QueryRow};
 use yii\debug\panels\DbPanel;
-use yii\debug\widgets\FilterBanner;
-use yii\debug\widgets\GridView;
+use yii\debug\widgets\{FilterBanner, GridView};
 use yii\helpers\Url;
 use yii\web\View;
 
@@ -41,16 +33,12 @@ $pageRows = array_values($queryDataProvider->getModels());
 
 $nPlusOneFindings = NPlusOneDetector::detect($pageRows);
 
-/** @var array<int, NPlusOneFinding> $nPlusOneBySequence */
-$nPlusOneBySequence = [];
+$nPlusOneBySequence = NPlusOneDetector::bySequence($nPlusOneFindings);
 
-foreach ($nPlusOneFindings as $finding) {
-    foreach ($finding->sequences as $sequence) {
-        $nPlusOneBySequence[$sequence] = $finding;
-    }
-}
-
-$nPlusOneSummary = DbQueryRenderer::renderNPlusOneSummary($nPlusOneFindings, DbMessage::PAGE_SCOPE->value);
+$nPlusOneSummary = DbQueryRenderer::renderNPlusOneSummary(
+    $nPlusOneFindings,
+    DbMessage::PAGE_SCOPE->value,
+);
 
 $tag = $panel->tag;
 
@@ -58,7 +46,10 @@ $explainUrlBuilder = static fn(int $seq): string => Url::to(
     Module::route('db-explain', ['seq' => $seq, 'tag' => $tag]),
 );
 ?>
-<?= DbSummaryRenderer::render($panel->getSummary(), $hasQueries ? GridViewConfig::pageSizeSelectorHtml() : null) ?>
+<?= DbSummaryRenderer::render(
+    $panel->getSummary(),
+    $hasQueries ? GridViewConfig::pageSizeSelectorHtml() : null,
+) ?>
 <?php if (!$hasQueries): ?>
     <?= EmptyState::card(
         DbMessage::EMPTY_HEADLINE->value,
@@ -74,8 +65,8 @@ $explainUrlBuilder = static fn(int $seq): string => Url::to(
     ) ?>
     <?php return; ?>
 <?php endif; ?>
-<?= $nPlusOneSummary ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
+<?= $nPlusOneSummary ?>
 <?php if ($queryDataProvider->getTotalCount() === 0): ?>
     <?= EmptyState::card(
         DbMessage::NO_MATCH_HEADLINE->value,
@@ -124,6 +115,7 @@ $explainUrlBuilder = static fn(int $seq): string => Url::to(
             [
                 'attribute' => 'duplicate',
                 'label' => DbMessage::DUPLICATE->value,
+                'value' => static fn(QueryRow $data): int => $data->getDuplicate(),
                 'headerOptions' => ['class' => 'sort-numerical'],
                 'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
             ],
@@ -134,7 +126,7 @@ $explainUrlBuilder = static fn(int $seq): string => Url::to(
                     $panel->getTraceLine(...),
                     $hasExplain,
                     $explainUrlBuilder,
-                    $nPlusOneBySequence[$data->seq] ?? null,
+                    $nPlusOneBySequence[$data->getSequence()] ?? null,
                 ),
                 'format' => 'raw',
                 'filterInputOptions' => ['class' => 'yii-debug-input'],

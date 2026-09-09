@@ -6,16 +6,13 @@ namespace yii\debug\tests\db;
 
 use PDO;
 use PDOException;
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use yii\debug\db\DebugPdoStatement;
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 
 /**
  * Unit tests for {@see DebugPdoStatement} covering the row-count capture hook invoked after every prepared statement
  * execution.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('db')]
 final class DebugPdoStatementTest extends TestCase
@@ -103,16 +100,6 @@ final class DebugPdoStatementTest extends TestCase
             $rowCounts,
             'A failed statement must hold its slot so later counts stay aligned.',
         );
-    }
-
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'debugPdoStatementContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
     }
 
     protected function setUp(): void

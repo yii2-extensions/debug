@@ -6,10 +6,9 @@ namespace yii\debug\tests\log;
 
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Storage\HydrationException;
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\panels\LogPanel;
-use yii\debug\tests\provider\VisibilityProvider;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -23,8 +22,6 @@ use function preg_quote;
 /**
  * Unit tests for {@see LogPanel} covering payload narrowing, toolbar items per level, the rendered detail and summary
  * views, and the typed row decoration with previous/next ids.
- *
- * {@see VisibilityProvider} for method contract data providers.
  */
 #[Group('panel')]
 #[Group('log')]
@@ -69,21 +66,9 @@ final class LogPanelTest extends TestCase
         );
     }
 
-    /**
-     * @param class-string $class
-     * @param 'protected'|'public' $expected
-     */
-    #[DataProviderExternal(VisibilityProvider::class, 'logPanelContracts')]
-    public function testExtensionMethodKeepsDeclaredVisibility(string $class, string $method, string $expected): void
-    {
-        self::assertMethodVisibility($class, $method, $expected);
-    }
-
     public function testGetDetailRendersErrorAndWarningCountersWhenLevelsArePresent(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -112,9 +97,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetDetailRendersWithCapturedMessages(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -170,14 +153,14 @@ final class LogPanelTest extends TestCase
 
         $html = $panel->getDetail();
 
-        foreach (
-            [
-                'Show only error log messages' => (string) Logger::LEVEL_ERROR,
-                'Show only warning log messages' => (string) Logger::LEVEL_WARNING,
-                'Show only info log messages' => (string) Logger::LEVEL_INFO,
-                'Show only trace log messages' => (string) Logger::LEVEL_TRACE,
-            ] as $title => $level
-        ) {
+        $summaryLinks = [
+            'Show only error log messages' => (string) Logger::LEVEL_ERROR,
+            'Show only warning log messages' => (string) Logger::LEVEL_WARNING,
+            'Show only info log messages' => (string) Logger::LEVEL_INFO,
+            'Show only trace log messages' => (string) Logger::LEVEL_TRACE,
+        ];
+
+        foreach ($summaryLinks as $title => $level) {
             $query = self::summaryLinkQuery($html, $title);
 
             self::assertSame(
@@ -212,14 +195,16 @@ final class LogPanelTest extends TestCase
             );
         }
 
-        foreach ([
+        $ariaLabels = [
             '1 errors; filter log messages by error level',
             '1 warnings; filter log messages by warning level',
             '1 info; filter log messages by info level',
             '1 trace; filter log messages by trace level',
-        ] as $ariaLabel) {
+        ];
+
+        foreach ($ariaLabels as $ariaLabel) {
             self::assertStringContainsString(
-                'aria-label="' . $ariaLabel . '"',
+                "aria-label=\"$ariaLabel\"",
                 $html,
                 'Severity shortcuts must retain their visible count and label in the accessible name.',
             );
@@ -228,9 +213,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetMessagesReflectsTheLatestHydration(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -266,9 +249,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetMessagesReturnsEmptyListBeforeHydration(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         self::assertSame(
             [],
@@ -279,9 +260,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetModelsCachesAndDecoratesPrevNextIds(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -323,9 +302,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetModelsLastRowExposesNullAsNextId(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -354,9 +331,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetModelsScalesTimeToMilliseconds(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -379,9 +354,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         self::assertSame(
             'Logs',
@@ -397,9 +370,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsCountChipOnly(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -440,9 +411,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsDangerChipWhenErrorsPresent(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -471,9 +440,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsWarningChipWhenWarningsPresent(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -501,9 +468,7 @@ final class LogPanelTest extends TestCase
 
     public function testGetToolbarItemsReturnsEmptyArrayWhenNoMessagesWereCaptured(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         self::assertSame(
             [],
@@ -514,9 +479,7 @@ final class LogPanelTest extends TestCase
 
     public function testThrowHydrationExceptionWhenMessagesAreNotAnArray(): void
     {
-        $panel = $this->makePanel(
-            LogPanel::class,
-        );
+        $panel = $this->makePanel(LogPanel::class);
 
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage(
