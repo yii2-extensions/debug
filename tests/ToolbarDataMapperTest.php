@@ -20,16 +20,25 @@ final class ToolbarDataMapperTest extends TestCase
     {
         $this->mockWebApplication();
 
-        $result = (new ToolbarDataMapper())->map(
-            tag: 'capture-tag',
-            title: 'Yii Debugger',
-            indexUrl: '/debug/index',
-            configUrl: null,
-            panels: [],
-        );
+        $result = (new ToolbarDataMapper())
+            ->map(
+                tag: 'capture-tag',
+                title: 'Yii Debugger',
+                indexUrl: '/debug/index',
+                configUrl: null,
+                panels: [],
+            );
 
-        self::assertSame('bottom', $result['position'], 'Position must default to `bottom`.');
-        self::assertSame(50, $result['defaultHeight'], 'Drawer height must default to `50`.');
+        self::assertSame(
+            'bottom',
+            $result['position'],
+            "Position must default to 'bottom'.",
+        );
+        self::assertSame(
+            50,
+            $result['defaultHeight'],
+            "Drawer height must default to '50'.",
+        );
     }
 
     public function testMapNormalizesPortablePanelsWithoutDroppingExtensionFields(): void
@@ -65,13 +74,14 @@ final class ToolbarDataMapperTest extends TestCase
         $panel->module = $module;
         $panel->tag = 'capture-tag';
 
-        $result = (new ToolbarDataMapper())->map(
-            tag: 'capture-tag',
-            title: 'Yii Debugger',
-            indexUrl: '/debug/index',
-            configUrl: null,
-            panels: ['extended' => $panel],
-        );
+        $result = (new ToolbarDataMapper())
+            ->map(
+                tag: 'capture-tag',
+                title: 'Yii Debugger',
+                indexUrl: '/debug/index',
+                configUrl: null,
+                panels: ['extended' => $panel],
+            );
 
         self::assertSame(
             '/debug/index',
@@ -151,32 +161,48 @@ final class ToolbarDataMapperTest extends TestCase
         $panel->module = $module;
         $panel->tag = 'capture-tag';
 
-        $result = (new ToolbarDataMapper())->map(
-            tag: 'capture-tag',
-            title: 'Yii Debugger',
-            indexUrl: '/debug/index',
-            configUrl: null,
-            panels: ['own' => $panel],
-        );
+        $result = (new ToolbarDataMapper())
+            ->map(
+                tag: 'capture-tag',
+                title: 'Yii Debugger',
+                indexUrl: '/debug/index',
+                configUrl: null,
+                panels: ['own' => $panel],
+            );
 
         $mapped = $result['items'][0] ?? null;
 
-        self::assertIsArray($mapped, 'Mapped payload must contain the panel envelope.');
-        self::assertSame('7', $mapped['id'] ?? null, 'Envelope ID must win over the registry key and be coerced.');
-        self::assertSame('Custom Title', $mapped['title'] ?? null, 'Envelope title must win over the panel name.');
-        self::assertSame('/custom-url', $mapped['url'] ?? null, 'Envelope URL must win over the generated URL.');
+        self::assertIsArray(
+            $mapped,
+            'Mapped payload must contain the panel envelope.',
+        );
+        self::assertSame(
+            '7',
+            $mapped['id'] ?? null,
+            'Envelope ID must win over the registry key and be coerced.',
+        );
+        self::assertSame(
+            'Custom Title',
+            $mapped['title'] ?? null,
+            'Envelope title must win over the panel name.',
+        );
+        self::assertSame(
+            '/custom-url',
+            $mapped['url'] ?? null,
+            'Envelope URL must win over the generated URL.',
+        );
     }
 
-    public function testMapProcessesTypedPanelAfterLegacyEnvelope(): void
+    public function testMapProcessesTypedPanelAfterFreeFormEnvelope(): void
     {
         $this->mockWebApplication();
 
         $module = new Module('debug');
-        $legacy = new MinimalToolbarPanel();
+        $freeFormPanel = new MinimalToolbarPanel();
 
-        $legacy->id = 'legacy';
-        $legacy->module = $module;
-        $legacy->tag = 'capture-tag';
+        $freeFormPanel->id = 'free-form';
+        $freeFormPanel->module = $module;
+        $freeFormPanel->tag = 'capture-tag';
 
         $typed = new class extends Panel {
             #[Override]
@@ -196,66 +222,71 @@ final class ToolbarDataMapperTest extends TestCase
         $typed->module = $module;
         $typed->tag = 'capture-tag';
 
-        $result = (new ToolbarDataMapper())->map(
-            tag: 'capture-tag',
-            title: 'Yii Debugger',
-            indexUrl: '/debug/index',
-            configUrl: null,
-            panels: ['legacy' => $legacy, 'typed' => $typed],
-        );
+        $result = (new ToolbarDataMapper())
+            ->map(
+                tag: 'capture-tag',
+                title: 'Yii Debugger',
+                indexUrl: '/debug/index',
+                configUrl: null,
+                panels: ['free-form' => $freeFormPanel, 'typed' => $typed],
+            );
 
-        self::assertCount(2, $result['items'], 'Panels after a legacy envelope must still be processed.');
+        self::assertCount(
+            2,
+            $result['items'],
+            'Panels after a free-form envelope must still be processed.',
+        );
         self::assertSame(
             'typed',
             $result['items'][1]['id'] ?? null,
-            'Typed panel must follow the legacy envelope.',
+            'Typed panel must follow the free-form envelope.',
         );
     }
 
-    public function testMapRetainsLegacyFreeFormPanelEnvelope(): void
+    public function testMapRetainsFreeFormPanelEnvelope(): void
     {
         $this->mockWebApplication();
 
         $module = new Module('debug');
         $panel = new MinimalToolbarPanel();
 
-        $panel->id = 'legacy';
+        $panel->id = 'free-form';
         $panel->module = $module;
         $panel->tag = 'capture-tag';
 
-        $result = (new ToolbarDataMapper())->map(
-            tag: 'capture-tag',
-            title: 'Yii Debugger',
-            indexUrl: '/debug/index',
-            configUrl: '/debug/view?panel=config',
-            panels: ['legacy' => $panel],
-        );
+        $result = (new ToolbarDataMapper())
+            ->map(
+                tag: 'capture-tag',
+                title: 'Yii Debugger',
+                indexUrl: '/debug/index',
+                configUrl: '/debug/view?panel=config',
+                panels: ['free-form' => $panel],
+            );
 
-        $legacyPanel = $result['items'][0] ?? null;
+        $freeFormPanel = $result['items'][0] ?? null;
 
         self::assertIsArray(
-            $legacyPanel,
+            $freeFormPanel,
             'Mapped toolbar payload must retain the free-form panel envelope.',
         );
-
         self::assertSame(
             'minimal',
-            $legacyPanel['chip'] ?? null,
+            $freeFormPanel['chip'] ?? null,
             'A free-form custom panel must remain available through the compatibility lane.',
         );
         self::assertSame(
-            'legacy',
-            $legacyPanel['id'] ?? null,
+            'free-form',
+            $freeFormPanel['id'] ?? null,
             'Historical panel ID defaults must still be injected.',
         );
         self::assertArrayHasKey(
             'title',
-            $legacyPanel,
+            $freeFormPanel,
             'Historical panel title defaults must still be injected.',
         );
         self::assertArrayHasKey(
             'url',
-            $legacyPanel,
+            $freeFormPanel,
             'Historical panel URL defaults must still be injected.',
         );
     }
@@ -282,19 +313,24 @@ final class ToolbarDataMapperTest extends TestCase
             }
         };
 
-        $result = (new ToolbarDataMapper())->map(
-            tag: 'capture-tag',
-            title: 'Yii Debugger',
-            indexUrl: '/debug/index',
-            configUrl: null,
-            panels: ['hidden' => $panel],
-        );
+        $result = (new ToolbarDataMapper())
+            ->map(
+                tag: 'capture-tag',
+                title: 'Yii Debugger',
+                indexUrl: '/debug/index',
+                configUrl: null,
+                panels: ['hidden' => $panel],
+            );
 
         self::assertFalse(
             $panel->toolbarDataRead,
             'An invisible panel must be rejected before its toolbar payload is requested.',
         );
-        self::assertSame([], $result['items'], 'Invisible panels must not create toolbar entries.');
+        self::assertSame(
+            [],
+            $result['items'],
+            'Invisible panels must not create toolbar entries.',
+        );
     }
 
     public function testMergePanelExtensionsReturnsTypedEnvelopeWhenItemsAreNotArrays(): void
@@ -309,15 +345,15 @@ final class ToolbarDataMapperTest extends TestCase
                 ToolbarDataMapper::class,
                 'mergePanelExtensions',
                 [
-                    ['extension' => 'preserved', 'items' => 'legacy'],
+                    ['extension' => 'preserved', 'items' => 'free-form'],
                     ['items' => [], 'id' => 'typed'],
                 ],
             ),
-            'Non-array legacy items must leave the normalized item list unchanged.',
+            'Non-array original items must leave the normalized item list unchanged.',
         );
     }
 
-    public function testPanelRejectsInvalidLegacyEnvelopes(): void
+    public function testPanelRejectsInvalidPanelEnvelopes(): void
     {
         self::assertNull(
             $this->invokeStatic(

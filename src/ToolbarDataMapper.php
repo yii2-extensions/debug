@@ -12,7 +12,7 @@ use function array_replace;
 use function is_array;
 
 /**
- * Maps Yii2 panel envelopes to the shared typed toolbar contract while retaining legacy custom-panel fields.
+ * Maps Yii2 panel envelopes to the shared typed toolbar contract while retaining custom-panel fields.
  */
 final readonly class ToolbarDataMapper
 {
@@ -20,8 +20,8 @@ final readonly class ToolbarDataMapper
      * Creates the JSON-ready toolbar payload.
      *
      * Panels following the documented `items` schema are normalized through the Debug Core DTOs. A custom panel using
-     * the former free-form envelope remains untouched except for the historical `id`, `title`, and `url` defaults. Any
-     * extension fields attached to an otherwise typed panel or item are merged back after DTO serialization.
+     * a free-form envelope remains untouched except for the `id`, `title`, and `url` defaults. Any extension fields
+     * attached to an otherwise typed panel or item are merged back after DTO serialization.
      *
      * @param array<string, Panel> $panels Registered Yii2 panels in toolbar order.
      *
@@ -64,26 +64,26 @@ final readonly class ToolbarDataMapper
                 continue;
             }
 
-            $legacy = $panel->getToolbarData();
+            $original = $panel->getToolbarData();
 
-            if ($legacy === []) {
+            if ($original === []) {
                 continue;
             }
 
-            $legacy['id'] ??= $id;
-            $legacy['title'] ??= $panel->getName();
-            $legacy['url'] ??= $panel->getUrl();
+            $original['id'] ??= $id;
+            $original['title'] ??= $panel->getName();
+            $original['url'] ??= $panel->getUrl();
 
-            $typed = self::panel($legacy);
+            $typed = self::panel($original);
 
             if ($typed === null) {
-                $compatiblePanels[] = $legacy;
+                $compatiblePanels[] = $original;
 
                 continue;
             }
 
             $typedPanels[] = $typed;
-            $compatiblePanels[] = self::mergePanelExtensions($legacy, $typed->jsonSerialize());
+            $compatiblePanels[] = self::mergePanelExtensions($original, $typed->jsonSerialize());
         }
 
         $data = (new ToolbarData(
@@ -103,7 +103,7 @@ final readonly class ToolbarDataMapper
         ))->jsonSerialize();
 
         // The outer metadata always comes from the portable DTO. Only the panel list needs a compatibility lane for
-        // legacy extensions that predate the structured item contract.
+        // custom extensions that use free-form envelopes.
         $data['items'] = $compatiblePanels;
 
         return $data;
@@ -112,29 +112,29 @@ final readonly class ToolbarDataMapper
     /**
      * Merges fields unknown to Debug Core back into a normalized panel and its individual item envelopes.
      *
-     * @param array<string, mixed> $legacy Original panel envelope.
+     * @param array<string, mixed> $original Original panel envelope.
      * @param array<string, mixed> $typed DTO-serialized panel envelope.
      *
      * @return array<string, mixed> Typed envelope with extension fields retained.
      */
-    private static function mergePanelExtensions(array $legacy, array $typed): array
+    private static function mergePanelExtensions(array $original, array $typed): array
     {
-        $merged = array_replace($legacy, $typed);
+        $merged = array_replace($original, $typed);
 
-        $legacyItems = $legacy['items'] ?? null;
+        $originalItems = $original['items'] ?? null;
         $typedItems = $typed['items'] ?? null;
 
-        if (!is_array($legacyItems) || !is_array($typedItems)) {
+        if (!is_array($originalItems) || !is_array($typedItems)) {
             return $merged;
         }
 
         $mergedItems = $typedItems;
 
         foreach ($typedItems as $index => $typedItem) {
-            $legacyItem = $legacyItems[$index] ?? null;
+            $originalItem = $originalItems[$index] ?? null;
 
-            if (is_array($legacyItem) && is_array($typedItem)) {
-                $mergedItems[$index] = array_replace($legacyItem, $typedItem);
+            if (is_array($originalItem) && is_array($typedItem)) {
+                $mergedItems[$index] = array_replace($originalItem, $typedItem);
             }
         }
 
@@ -144,9 +144,9 @@ final readonly class ToolbarDataMapper
     }
 
     /**
-     * Narrows an optional legacy field to the nullable string required by the shared DTO.
+     * Narrows an optional panel field to the nullable string required by the shared DTO.
      *
-     * @param array<array-key, mixed> $data Legacy envelope.
+     * @param array<array-key, mixed> $data Original envelope.
      */
     private static function optionalString(array $data, string $key): string|null
     {
@@ -154,9 +154,9 @@ final readonly class ToolbarDataMapper
     }
 
     /**
-     * Returns a typed panel when the legacy envelope follows the portable schema.
+     * Returns a typed panel when the original envelope follows the portable schema.
      *
-     * @param array<string, mixed> $data Legacy panel envelope.
+     * @param array<string, mixed> $data Original panel envelope.
      */
     private static function panel(array $data): ToolbarPanel|null
     {

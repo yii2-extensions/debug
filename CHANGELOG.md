@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(ui): redesign navigation, toolbar, and panels with responsive layouts, accessible controls, and consistent filtering, sorting, and pagination; remove the redundant History status column.
 - refactor!: move shared contracts, helpers, assets, and views to Debug Core; replace serialized storage with versioned JSON snapshots and remove superseded local APIs.
 - refactor!: require Yii2 `^22.0` and ui-awesome `0.8`; adopt standalone actions and immutable factories, including `QueryRow` getters instead of public properties.
+- refactor(tests): split debugger action and module tests by responsibility and centralize shared action fixtures.
 
 ## 0.1.1 May 18, 2026
 

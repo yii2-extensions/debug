@@ -25,7 +25,11 @@ final class RouterPanelTest extends TestCase
 
         $this->hydratePanel(
             $panel,
-            RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'),
+            RouterSnapshot::capture(
+                'app\\controllers\\SiteController::actionIndex()',
+                [],
+                'site/index',
+            ),
         );
 
         $detail = $panel->getDetail();
@@ -49,9 +53,7 @@ final class RouterPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(
-            RouterPanel::class,
-        );
+        $panel = $this->makePanel(RouterPanel::class);
 
         self::assertSame(
             'Router',
@@ -67,13 +69,15 @@ final class RouterPanelTest extends TestCase
 
     public function testGetToolbarItemsFormatsTitleAndValue(): void
     {
-        $panel = $this->makePanel(
-            RouterPanel::class,
-        );
+        $panel = $this->makePanel(RouterPanel::class);
 
         $this->hydratePanel(
             $panel,
-            RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'),
+            RouterSnapshot::capture(
+                'app\\controllers\\SiteController::actionIndex()',
+                [],
+                'site/index',
+            ),
         );
 
         $items = $this->invoke(
@@ -106,13 +110,15 @@ final class RouterPanelTest extends TestCase
 
     public function testGetToolbarItemsLeavesActionEmptyWhenMissing(): void
     {
-        $panel = $this->makePanel(
-            RouterPanel::class,
-        );
+        $panel = $this->makePanel(RouterPanel::class);
 
         $this->hydratePanel(
             $panel,
-            RouterSnapshot::capture(null, [], 'site/index'),
+            RouterSnapshot::capture(
+                null,
+                [],
+                'site/index',
+            ),
         );
 
         $items = $this->invoke(
@@ -140,26 +146,38 @@ final class RouterPanelTest extends TestCase
 
     public function testHiddenRouterRetainsItsSnapshotDetailToolbarAndDirectUrl(): void
     {
-        $panel = $this->makePanel(
-            RouterPanel::class,
-        );
+        $panel = $this->makePanel(RouterPanel::class);
+
         $panel->id = 'router';
         $panel->tag = 'capture-tag';
         $panel->standalone = false;
 
         $this->hydratePanel(
             $panel,
-            RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'),
+            RouterSnapshot::capture(
+                'app\\controllers\\SiteController::actionIndex()',
+                [],
+                'site/index',
+            ),
         );
 
-        self::assertFalse($panel->isVisible(), 'A non-standalone Router panel must opt out of shared navigation.');
+        self::assertFalse(
+            $panel->isVisible(),
+            'A non-standalone Router panel must opt out of shared navigation.',
+        );
         self::assertSame(
             'site/index',
             $panel->getSnapshot()?->route,
             'A hidden Router panel must keep its captured snapshot available for Request composition.',
         );
-        self::assertNotEmpty($panel->getDetail(), 'Visibility must not remove the legacy detail renderer.');
-        self::assertNotEmpty($panel->getToolbarData(), 'Visibility must not change direct legacy toolbar generation.');
+        self::assertNotEmpty(
+            $panel->getDetail(),
+            'Visibility must not remove the standalone detail renderer.',
+        );
+        self::assertNotEmpty(
+            $panel->getToolbarData(),
+            'Visibility must not change direct toolbar generation.',
+        );
         self::assertStringContainsString(
             'panel=router',
             $panel->getUrl(),
@@ -169,9 +187,7 @@ final class RouterPanelTest extends TestCase
 
     public function testHydrateRestoresTheRuleTraceFromTheSnapshot(): void
     {
-        $panel = $this->makePanel(
-            RouterPanel::class,
-        );
+        $panel = $this->makePanel(RouterPanel::class);
 
         $captured = RouterSnapshot::capture(
             'app\\controllers\\SiteController::actionIndex()',
@@ -204,7 +220,10 @@ final class RouterPanelTest extends TestCase
             'site/index',
         );
 
-        $restored = RouterSnapshot::fromArray($captured->jsonSerialize(), '$.panels.router');
+        $restored = RouterSnapshot::fromArray(
+            $captured->jsonSerialize(),
+            '$.panels.router',
+        );
 
         $row = $restored->entries()[0] ?? self::fail('Expected one rule row.');
 
@@ -232,7 +251,7 @@ final class RouterPanelTest extends TestCase
     {
         self::assertTrue(
             (new RouterPanel())->isVisible(),
-            'Direct RouterPanel configurations must retain their legacy standalone visibility.',
+            'Direct RouterPanel configurations must retain their standalone visibility.',
         );
     }
 }

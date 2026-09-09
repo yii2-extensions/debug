@@ -12,7 +12,7 @@ use PHPForge\Debug\Storage\RequestSummary;
 final readonly class SnapshotWriteResult
 {
     /**
-     * @param array<string, RequestSummary>|null $entries Committed entries, or `null` when a legacy follow-up read
+     * @param array<string, RequestSummary>|null $entries Committed entries, or `null` when a follow-up manifest read
      * failed.
      * @param list<RequestSummary> $removed Entries evicted from the manifest.
      */

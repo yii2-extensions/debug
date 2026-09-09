@@ -76,16 +76,16 @@ final class CollectorIntegrationTest extends TestCase
         $this->cleanup($configuredModule);
     }
 
-    public function testCollectorPrecedenceDoesNotSkipLaterLegacyPanels(): void
+    public function testCollectorPrecedenceDoesNotSkipLaterSelfCapturingPanels(): void
     {
         $collectorPanel = new CollectorPanel();
-        $legacyPanel = new CollectorPanel();
+        $selfCapturingPanel = new CollectorPanel();
 
-        $legacyPanel->collectorOnly = false;
+        $selfCapturingPanel->collectorOnly = false;
 
         $module = $this->module(
             [new CustomCollector()],
-            ['app.example' => $collectorPanel, 'legacy' => $legacyPanel],
+            ['app.example' => $collectorPanel, 'custom' => $selfCapturingPanel],
         );
 
         $target = new LogTarget($module);
@@ -104,9 +104,9 @@ final class CollectorIntegrationTest extends TestCase
             'Matching collector payload must be persisted.',
         );
         self::assertArrayHasKey(
-            'legacy',
+            'custom',
             $snapshot->panels,
-            'Later legacy panel payload must still be captured.',
+            'Later self-capturing panel payload must still be captured.',
         );
         self::assertSame(
             0,
@@ -115,8 +115,8 @@ final class CollectorIntegrationTest extends TestCase
         );
         self::assertSame(
             1,
-            $legacyPanel->captureCount,
-            'Later legacy panel must capture once.',
+            $selfCapturingPanel->captureCount,
+            'Later self-capturing panel must capture once.',
         );
 
         $this->cleanup($module);
@@ -134,7 +134,9 @@ final class CollectorIntegrationTest extends TestCase
         $module->getCollectorCoordinator()->startup();
         $target->export();
 
-        $snapshot = $this->store($module)->readSnapshot($target->tag);
+        $snapshot = $this
+            ->store($module)
+            ->readSnapshot($target->tag);
 
         $summary = $target->loadTagToPanels($target->tag);
 
@@ -175,52 +177,7 @@ final class CollectorIntegrationTest extends TestCase
         $this->cleanup($module);
     }
 
-    public function testFailingCollectorDoesNotEraseLegacyPanelSnapshot(): void
-    {
-        $collector = new CustomCollector();
-
-        $collector->collectorId = 'broken';
-        $collector->failCapture = true;
-
-        $legacy = new CollectorPanel();
-
-        $legacy->collectorOnly = false;
-
-        $module = $this->module([$collector], ['legacy' => $legacy]);
-
-        $target = new LogTarget($module);
-
-        $target->export();
-
-        $snapshot = $this->store($module)->readSnapshot($target->tag);
-
-        self::assertNotNull(
-            $snapshot,
-            'Persisted snapshot must be loadable.',
-        );
-        self::assertArrayHasKey(
-            'legacy',
-            $snapshot->panels,
-            'Legacy payload must survive collector failure.',
-        );
-        self::assertArrayHasKey(
-            'broken',
-            $snapshot->failures,
-            'Collector failure must be persisted.',
-        );
-
-        $target->loadTagToPanels($target->tag);
-
-        self::assertInstanceOf(
-            JsonPanel::class,
-            $module->panels['broken'] ?? null,
-            'Failure without payload must receive the JSON fallback panel.',
-        );
-
-        $this->cleanup($module);
-    }
-
-    public function testLegacyCustomPanelCapturesWithoutCollector(): void
+    public function testCustomPanelCapturesWithoutCollector(): void
     {
         $panel = new CollectorPanel();
 
@@ -236,12 +193,59 @@ final class CollectorIntegrationTest extends TestCase
         self::assertSame(
             1,
             $panel->captureCount,
-            'Legacy panel capture must remain active.',
+            'Custom panel capture must remain active.',
         );
         self::assertSame(
-            'legacy',
+            'custom',
             $panel->getDetail(),
-            'Legacy payload must still hydrate and render.',
+            'Custom panel payload must still hydrate and render.',
+        );
+
+        $this->cleanup($module);
+    }
+
+    public function testFailingCollectorDoesNotEraseSelfCapturingPanelSnapshot(): void
+    {
+        $collector = new CustomCollector();
+
+        $collector->collectorId = 'broken';
+        $collector->failCapture = true;
+
+        $selfCapturingPanel = new CollectorPanel();
+
+        $selfCapturingPanel->collectorOnly = false;
+
+        $module = $this->module([$collector], ['custom' => $selfCapturingPanel]);
+
+        $target = new LogTarget($module);
+
+        $target->export();
+
+        $snapshot = $this
+            ->store($module)
+            ->readSnapshot($target->tag);
+
+        self::assertNotNull(
+            $snapshot,
+            'Persisted snapshot must be loadable.',
+        );
+        self::assertArrayHasKey(
+            'custom',
+            $snapshot->panels,
+            'Custom panel payload must survive collector failure.',
+        );
+        self::assertArrayHasKey(
+            'broken',
+            $snapshot->failures,
+            'Collector failure must be persisted.',
+        );
+
+        $target->loadTagToPanels($target->tag);
+
+        self::assertInstanceOf(
+            JsonPanel::class,
+            $module->panels['broken'] ?? null,
+            'Failure without payload must receive the JSON fallback panel.',
         );
 
         $this->cleanup($module);
@@ -341,7 +345,7 @@ final class CollectorIntegrationTest extends TestCase
         $this->writeDebugSnapshot(
             $module,
             'unavailable-queue',
-            ['queue' => StubSnapshot::capture(['value' => 'legacy queue payload'])],
+            ['queue' => StubSnapshot::capture(['value' => 'custom queue payload'])],
         );
 
         $target->loadTagToPanels('unavailable-queue');

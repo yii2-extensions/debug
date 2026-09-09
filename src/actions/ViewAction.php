@@ -59,7 +59,7 @@ class ViewAction extends Action
         }
 
         if ($activePanel->id === 'profiling') {
-            self::normalizeLegacyTimelineQuery();
+            self::normalizeTimelineQuery();
         }
 
         if ($activePanel instanceof RequestSummaryAwarePanelInterface && $this->summary !== null) {
@@ -85,21 +85,27 @@ class ViewAction extends Action
     /**
      * Maps bookmarked Timeline filters to the unified Profiling filter group and removes obsolete view state.
      */
-    private static function normalizeLegacyTimelineQuery(): void
+    private static function normalizeTimelineQuery(): void
     {
         $request = Yii::$app->getRequest();
 
         $queryParams = $request->getQueryParams();
 
-        $legacyFilters = QueryInput::group($queryParams, FilterPrefix::TIMELINE);
-        $profileFilters = QueryInput::group($queryParams, FilterPrefix::PROFILE);
+        $timelineFilters = QueryInput::group(
+            $queryParams,
+            FilterPrefix::TIMELINE,
+        );
+        $profileFilters = QueryInput::group(
+            $queryParams,
+            FilterPrefix::PROFILE,
+        );
 
         foreach (['duration', 'category'] as $attribute) {
             if (
                 !array_key_exists($attribute, $profileFilters)
-                && array_key_exists($attribute, $legacyFilters)
+                && array_key_exists($attribute, $timelineFilters)
             ) {
-                $profileFilters[$attribute] = $legacyFilters[$attribute];
+                $profileFilters[$attribute] = $timelineFilters[$attribute];
             }
         }
 

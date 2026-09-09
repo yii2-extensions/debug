@@ -228,10 +228,38 @@ final class LogTargetTest extends TestCase
         $logTarget = new LogTarget($module);
 
         $logTarget->messages = [
-            ['SELECT 1', Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', 0.0, [], 0],
-            ['SELECT 1', Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', 0.001, [], 0],
-            ['SELECT 2', Logger::LEVEL_PROFILE_BEGIN, 'yii\db\Command::query', 0.002, [], 0],
-            ['SELECT 2', Logger::LEVEL_PROFILE_END, 'yii\db\Command::query', 0.003, [], 0],
+            [
+                'SELECT 1',
+                Logger::LEVEL_PROFILE_BEGIN,
+                'yii\db\Command::query',
+                0.0,
+                [],
+                0,
+            ],
+            [
+                'SELECT 1',
+                Logger::LEVEL_PROFILE_END,
+                'yii\db\Command::query',
+                0.001,
+                [],
+                0,
+            ],
+            [
+                'SELECT 2',
+                Logger::LEVEL_PROFILE_BEGIN,
+                'yii\db\Command::query',
+                0.002,
+                [],
+                0,
+            ],
+            [
+                'SELECT 2',
+                Logger::LEVEL_PROFILE_END,
+                'yii\db\Command::query',
+                0.003,
+                [],
+                0,
+            ],
         ];
 
         $module->getCollectorCoordinator()->startup();
@@ -709,7 +737,7 @@ final class LogTargetTest extends TestCase
             $module,
             'orphan-timeline',
             ['timeline' => new TimelineSnapshot(1_700_000_000.0, 1_700_000_000.1, 1024)],
-            failures: ['timeline' => new RuntimeException('Legacy Timeline failure.')],
+            failures: ['timeline' => new RuntimeException('Timeline capture failure.')],
         );
 
         $summary = (new LogTarget($module))->loadTagToPanels('orphan-timeline');
@@ -870,7 +898,9 @@ final class LogTargetTest extends TestCase
         $module->historySize = 1;
         $mailPath = "{$module->dataPath}/mail";
 
-        $mailCollector = $module->getCollectorCoordinator()->collector('mail');
+        $mailCollector = $module
+            ->getCollectorCoordinator()
+            ->collector('mail');
 
         self::assertInstanceOf(
             MailCollector::class,
@@ -892,7 +922,9 @@ final class LogTargetTest extends TestCase
                 'message',
             );
 
-            $module->getCollectorCoordinator()->startup();
+            $module
+                ->getCollectorCoordinator()
+                ->startup();
 
             $this->setInaccessibleProperty($mailCollector, 'messages', [['file' => $file]]);
 
@@ -917,7 +949,9 @@ final class LogTargetTest extends TestCase
     {
         $module = $this->newModuleWithIsolatedDataPath();
 
-        $mailCollector = $module->getCollectorCoordinator()->collector('mail');
+        $mailCollector = $module
+            ->getCollectorCoordinator()
+            ->collector('mail');
 
         self::assertInstanceOf(
             MailCollector::class,
@@ -946,9 +980,14 @@ final class LogTargetTest extends TestCase
         );
 
         $target = new LogTarget($module);
+
         $store = SnapshotStore::forModule($module);
 
-        $this->invoke($target, 'reconcileMailFiles', [$store->loadManifest()]);
+        $this->invoke(
+            $target,
+            'reconcileMailFiles',
+            [$store->loadManifest()],
+        );
 
         self::assertFileExists(
             $keep,
@@ -1007,7 +1046,9 @@ final class LogTargetTest extends TestCase
         file_put_contents("{$module->dataPath}/index.json", '{');
 
         $target = new LogTarget($module);
+
         $store = SnapshotStore::forModule($module);
+
         $manifest = $store->loadManifestResult();
 
         $this->invoke(

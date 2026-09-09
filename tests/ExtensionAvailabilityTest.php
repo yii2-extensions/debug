@@ -15,30 +15,7 @@ use yii\debug\tests\support\TestCase;
 #[Group('module')]
 final class ExtensionAvailabilityTest extends TestCase
 {
-    public function testIsAvailableAcceptsInstalledSingleClassProviders(): void
-    {
-        foreach (
-            [
-                'inertia' => 'yii\inertia\Manager',
-                'mail' => 'yii\symfonymailer\Mailer',
-                'queue' => 'yii\queue\Queue',
-            ] as $id => $provider
-        ) {
-            MockerState::addCondition(
-                'yii\debug',
-                'class_exists',
-                [$provider],
-                true,
-            );
-
-            self::assertTrue(
-                ExtensionAvailability::isAvailable($id),
-                "The installed provider for '{$id}' must make the integration available.",
-            );
-        }
-    }
-
-    public function testIsAvailableAcceptsLegacyViteProvider(): void
+    public function testIsAvailableAcceptsInertiaViteProvider(): void
     {
         MockerState::addCondition(
             'yii\debug',
@@ -55,11 +32,34 @@ final class ExtensionAvailabilityTest extends TestCase
 
         self::assertTrue(
             ExtensionAvailability::isAvailable('vite'),
-            'The legacy Inertia Vite implementation must keep the Vite integration available.',
+            'The Inertia Vite implementation must keep the Vite integration available.',
         );
     }
 
-    public function testIsAvailableAcceptsModernViteProviderWithoutCheckingTheLegacyProvider(): void
+    public function testIsAvailableAcceptsInstalledSingleClassProviders(): void
+    {
+        $providers = [
+            'inertia' => 'yii\inertia\Manager',
+            'mail' => 'yii\symfonymailer\Mailer',
+            'queue' => 'yii\queue\Queue',
+        ];
+
+        foreach ($providers as $id => $provider) {
+            MockerState::addCondition(
+                'yii\debug',
+                'class_exists',
+                [$provider],
+                true,
+            );
+
+            self::assertTrue(
+                ExtensionAvailability::isAvailable($id),
+                "The installed provider for '{$id}' must make the integration available.",
+            );
+        }
+    }
+
+    public function testIsAvailableAcceptsModernViteProviderWithoutCheckingTheInertiaProvider(): void
     {
         MockerState::addCondition(
             'yii\debug',
@@ -82,15 +82,15 @@ final class ExtensionAvailabilityTest extends TestCase
 
     public function testIsAvailableRejectsMissingProviders(): void
     {
-        foreach (
-            [
-                'yii\inertia\Manager',
-                'yii\symfonymailer\Mailer',
-                'yii\queue\Queue',
-                'PHPForge\Vite\Vite',
-                'yii\inertia\Vite',
-            ] as $provider
-        ) {
+        $providers = [
+            'yii\inertia\Manager',
+            'yii\symfonymailer\Mailer',
+            'yii\queue\Queue',
+            'PHPForge\Vite\Vite',
+            'yii\inertia\Vite',
+        ];
+
+        foreach ($providers as $provider) {
             MockerState::addCondition(
                 'yii\debug',
                 'class_exists',
@@ -99,7 +99,14 @@ final class ExtensionAvailabilityTest extends TestCase
             );
         }
 
-        foreach (['inertia', 'mail', 'queue', 'vite'] as $id) {
+        $ids = [
+            'inertia',
+            'mail',
+            'queue',
+            'vite',
+        ];
+
+        foreach ($ids as $id) {
             self::assertFalse(
                 ExtensionAvailability::isAvailable($id),
                 "The '{$id}' integration must be unavailable without one of its provider classes.",
@@ -109,7 +116,14 @@ final class ExtensionAvailabilityTest extends TestCase
 
     public function testKnownIdsAreOptional(): void
     {
-        foreach (['mail', 'queue', 'inertia', 'vite'] as $id) {
+        $ids = [
+            'mail',
+            'queue',
+            'inertia',
+            'vite',
+        ];
+
+        foreach ($ids as $id) {
             self::assertTrue(
                 ExtensionAvailability::isOptional($id),
                 "The '{$id}' integration must be classified as optional.",

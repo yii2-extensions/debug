@@ -26,13 +26,13 @@ use function json_encode;
 class InertiaCollector extends Collector
 {
     /**
+     * Yii-specific page FQCN supported alongside the portable core DTO.
+     */
+    private const string ADAPTER_PAGE_CLASS = 'yii\inertia\Page';
+    /**
      * Application component id under which the Inertia manager is registered.
      */
     private const string COMPONENT_ID = 'inertia';
-    /**
-     * Page FQCN returned by earlier adapter releases, retained while applications migrate to the portable core DTO.
-     */
-    private const string LEGACY_PAGE_CLASS = 'yii\inertia\Page';
     /**
      * Manager FQCN from `yii2-extensions/inertia`, referenced as a string to avoid a hard package dependency.
      */
@@ -155,14 +155,14 @@ class InertiaCollector extends Collector
     }
 
     /**
-     * Returns whether the value is a serializable Inertia page from either the current core or the legacy adapter DTO.
+     * Returns whether the value is a serializable Inertia page from either the core or the Yii adapter DTO.
      *
      * @phpstan-assert-if-true JsonSerializable $value
      */
     private static function isPage(mixed $value): bool
     {
         return $value instanceof JsonSerializable
-            && (is_a($value, self::PAGE_CLASS) || is_a($value, self::LEGACY_PAGE_CLASS));
+            && (is_a($value, self::PAGE_CLASS) || is_a($value, self::ADAPTER_PAGE_CLASS));
     }
 
     /**
@@ -206,6 +206,7 @@ class InertiaCollector extends Collector
 
         $policy = $this->capturePolicy();
         $normalized = $policy->redact($normalized);
+
         $url = $normalized['url'] ?? null;
 
         if (is_string($url)) {

@@ -89,12 +89,12 @@ collapsed, and each populated section has its own filter. Session data and Flash
 Routes use the same expandable ledger as the Yii3 adapter, with full-width metadata details and a filter that searches
 collapsed content. Rules owned by loaded debugger modules are omitted from this inventory, including renamed and
 nested modules. Their trace entries are also omitted from Request; a debugger-only resolution block is hidden. The
-original captured trace remains intact for the legacy Router view. Application routes are not hidden merely because
+original captured trace remains intact for the standalone Router view. Application routes are not hidden merely because
 their URL contains `debug`.
 
 The built-in Router collector and panel remain registered as Request's compatibility data source, but their duplicate
-toolbar and sidebar entries are hidden. Applications that still need the legacy standalone Router screen can opt in
-explicitly while migrating custom integrations:
+toolbar and sidebar entries are hidden. Applications that need a standalone Router screen can opt in explicitly while
+migrating custom integrations:
 
 ```php
 $config['modules']['debug']['panels']['router'] = \yii\debug\panels\RouterPanel::class;
@@ -228,7 +228,7 @@ See [the local SQLite demo](examples/database/README.md) to verify Database afte
 ### Browser support
 
 The debugger targets evergreen browsers with ES2022, Web Components, CSS custom properties, and native module support.
-Internet Explorer and other legacy browsers are not supported.
+Browsers without these capabilities, including Internet Explorer, are not supported.
 
 ## Screenshots
 
@@ -269,7 +269,7 @@ Internet Explorer and other legacy browsers are not supported.
 </details>
 
 <details>
-<summary>Router (legacy standalone)</summary>
+<summary>Router (standalone)</summary>
 <p>The same captured routing trace is shown in Request by default. This screen remains available when Router is
 configured explicitly for compatibility.</p>
 <picture>

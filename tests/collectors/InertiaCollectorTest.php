@@ -31,7 +31,12 @@ final class InertiaCollectorTest extends TestCase
             ['inertia' => ['class' => Manager::class]],
         );
 
-        Yii::$app->response->data = new Page('site/index', ['user' => ['id' => 1]], '/site/index', 'v1');
+        Yii::$app->response->data = new Page(
+            'site/index',
+            ['user' => ['id' => 1]],
+            '/site/index',
+            'v1',
+        );
 
         $saved = $this->captureData($collector);
 
@@ -62,7 +67,12 @@ final class InertiaCollectorTest extends TestCase
     {
         $collector = $this->makeCollector(['inertia' => ['class' => Manager::class]]);
 
-        $page = new Page('site/about', [], '/site/about', 'v2');
+        $page = new Page(
+            'site/about',
+            [],
+            '/site/about',
+            'v2',
+        );
 
         Yii::$app->view->trigger(
             View::EVENT_BEFORE_RENDER,
@@ -90,9 +100,18 @@ final class InertiaCollectorTest extends TestCase
             ['inertia' => ['class' => Manager::class]],
         );
 
-        Yii::$app->request->headers->set('X-Inertia', 'true');
-        Yii::$app->request->headers->set('X-Inertia-Partial-Data', 'user,notifications');
-        Yii::$app->request->headers->set('X-Inertia-Partial-Component', 'site/index');
+        Yii::$app->request->headers->set(
+            'X-Inertia',
+            'true',
+        );
+        Yii::$app->request->headers->set(
+            'X-Inertia-Partial-Data',
+            'user,notifications',
+        );
+        Yii::$app->request->headers->set(
+            'X-Inertia-Partial-Component',
+            'site/index',
+        );
 
         $saved = $this->captureData($collector);
 
@@ -113,7 +132,10 @@ final class InertiaCollectorTest extends TestCase
             ['inertia' => ['class' => Manager::class]],
         );
 
-        Yii::$app->response->headers->set('X-Inertia-Location', 'https://example.test/users');
+        Yii::$app->response->headers->set(
+            'X-Inertia-Location',
+            'https://example.test/users',
+        );
 
         self::assertSame(
             'https://example.test/users',
@@ -145,14 +167,17 @@ final class InertiaCollectorTest extends TestCase
         );
     }
 
-    public function testCaptureRedactsConfiguredSensitiveDataFromLegacyPageAndLocation(): void
+    public function testCaptureRedactsConfiguredSensitiveDataFromAdapterPageAndLocation(): void
     {
         $collector = $this->makeCollector(
             ['inertia' => ['class' => Manager::class]],
         );
         $module = new Module('debug');
 
-        $module->sensitiveKeys = [...SensitiveDataRedactor::DEFAULT_KEYS, 'tenant_signing_key'];
+        $module->sensitiveKeys = [
+            ...SensitiveDataRedactor::DEFAULT_KEYS,
+            'tenant_signing_key',
+        ];
         $module->sensitiveKeyPrefixes = ['internal_'];
         $module->sensitiveKeyPatterns = [
             ...SensitiveDataRedactor::DEFAULT_PATTERNS,
@@ -161,7 +186,7 @@ final class InertiaCollectorTest extends TestCase
         $collector->module = $module;
 
         Yii::$app->response->data = new \yii\inertia\Page(
-            'legacy/secrets',
+            'adapter/secrets',
             [
                 'nested' => [
                     'tenant_signing_key' => 'exact-secret',
@@ -170,8 +195,8 @@ final class InertiaCollectorTest extends TestCase
                     'passwordless_mode' => 'safe-passwordless',
                 ],
             ],
-            '/legacy?tenant_signing_key=page-exact&internal_note=page-prefix&team_vault_key=page-pattern&safe=visible',
-            'legacy-v2',
+            '/adapter?tenant_signing_key=page-exact&internal_note=page-prefix&team_vault_key=page-pattern&safe=visible',
+            'adapter-v2',
         );
         Yii::$app->response->headers->set(
             'X-Inertia-Location',
@@ -181,10 +206,17 @@ final class InertiaCollectorTest extends TestCase
         $snapshot = $this->captureSnapshot($collector);
         $page = $snapshot->data()['page'] ?? null;
 
-        self::assertIsArray($page, 'A legacy Inertia page must remain available after redaction.');
+        self::assertIsArray(
+            $page,
+            'An Inertia adapter page must remain available after redaction.',
+        );
+
         $props = $page['props'] ?? null;
 
-        self::assertIsArray($props, 'A legacy Inertia page must retain its props object after redaction.');
+        self::assertIsArray(
+            $props,
+            'An Inertia adapter page must retain its props object after redaction.',
+        );
         self::assertSame(
             [
                 'tenant_signing_key' => SensitiveDataRedactor::PLACEHOLDER,
@@ -193,12 +225,12 @@ final class InertiaCollectorTest extends TestCase
                 'passwordless_mode' => 'safe-passwordless',
             ],
             $props['nested'] ?? null,
-            'Exact, prefix, and PCRE rules must redact nested legacy page props without false positives.',
+            'Exact, prefix, and PCRE rules must redact nested adapter page props without false positives.',
         );
         self::assertSame(
-            '/legacy?tenant_signing_key=%5Bredacted%5D&internal_note=%5Bredacted%5D&team_vault_key=%5Bredacted%5D&safe=visible',
+            '/adapter?tenant_signing_key=%5Bredacted%5D&internal_note=%5Bredacted%5D&team_vault_key=%5Bredacted%5D&safe=visible',
             $page['url'] ?? null,
-            'Configured rules must redact sensitive query values in the legacy page URL.',
+            'Configured rules must redact sensitive query values in the adapter page URL.',
         );
         self::assertSame(
             '/next?tenant_signing_key=%5Bredacted%5D&internal_note=%5Bredacted%5D&team_vault_key=%5Bredacted%5D&safe=visible',
@@ -235,7 +267,10 @@ final class InertiaCollectorTest extends TestCase
         $snapshot = $this->captureSnapshot($collector);
         $page = $snapshot->data()['page'] ?? null;
 
-        self::assertIsArray($page, 'A current Inertia page must remain available after redaction.');
+        self::assertIsArray(
+            $page,
+            'A current Inertia page must remain available after redaction.',
+        );
         self::assertSame(
             [
                 'DB_PASSWORD' => SensitiveDataRedactor::PLACEHOLDER,
@@ -261,17 +296,17 @@ final class InertiaCollectorTest extends TestCase
         );
     }
 
-    public function testCaptureRetainsLegacyAdapterPageCompatibility(): void
+    public function testCaptureRetainsAdapterPageCompatibility(): void
     {
         $collector = $this->makeCollector(
             ['inertia' => ['class' => Manager::class]],
         );
 
         Yii::$app->response->data = new \yii\inertia\Page(
-            'legacy/dashboard',
-            ['legacy' => true],
-            '/legacy',
-            'legacy-v1',
+            'adapter/dashboard',
+            ['adapter' => true],
+            '/adapter',
+            'adapter-v1',
         );
 
         $saved = $this->captureData($collector);
@@ -280,11 +315,11 @@ final class InertiaCollectorTest extends TestCase
 
         self::assertIsArray(
             $page,
-            'Legacy adapter page must be normalized to a serializable array.',
+            'Inertia adapter page must be normalized to a serializable array.',
         );
 
         self::assertSame(
-            'legacy/dashboard',
+            'adapter/dashboard',
             $page['component'] ?? null,
             'Existing applications returning the former adapter page DTO must continue to capture it.',
         );
@@ -343,6 +378,7 @@ final class InertiaCollectorTest extends TestCase
     public function testNormalizePageReturnsNullForInvalidJsonAndScalarPayloads(): void
     {
         $collector = $this->makeCollector();
+
         $invalidJson = new class implements JsonSerializable {
             public function jsonSerialize(): string
             {
@@ -376,7 +412,10 @@ final class InertiaCollectorTest extends TestCase
             'A missing manager must yield no shared keys.',
         );
 
-        Yii::$app->set('inertia', new stdClass());
+        Yii::$app->set(
+            'inertia',
+            new stdClass(),
+        );
 
         self::assertSame(
             [],
@@ -396,7 +435,12 @@ final class InertiaCollectorTest extends TestCase
             new ViewEvent(
                 [
                     'params' => [
-                        'page' => new Page('site/index', [], '/site/index', 'v1'),
+                        'page' => new Page(
+                            'site/index',
+                            [],
+                            '/site/index',
+                            'v1',
+                        ),
                     ],
                     'viewFile' => __FILE__,
                 ],
@@ -410,7 +454,12 @@ final class InertiaCollectorTest extends TestCase
             new ViewEvent(
                 [
                     'params' => [
-                        'page' => new Page('site/after', [], '/site/after', 'v2'),
+                        'page' => new Page(
+                            'site/after',
+                            [],
+                            '/site/after',
+                            'v2',
+                        ),
                     ],
                     'viewFile' => __FILE__,
                 ],

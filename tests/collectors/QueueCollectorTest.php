@@ -30,6 +30,7 @@ final class QueueCollectorTest extends TestCase
     public function testCaptureCombinesGlobalPrefixesWithEnvironmentCredentialDefaults(): void
     {
         $collector = $this->makeCollector();
+
         $module = new Module('debug');
 
         $module->sensitiveKeyPrefixes = ['internal_'];
@@ -58,7 +59,7 @@ final class QueueCollectorTest extends TestCase
                 'tokenizer' => 'safe-tokenizer',
             ],
             $record->payloadFields,
-            'Queue payloads must combine module rules with legacy redactedProperties without false positives.',
+            'Queue payloads must combine module rules with queue redactedProperties without false positives.',
         );
 
         Event::offAll();
@@ -68,9 +69,16 @@ final class QueueCollectorTest extends TestCase
     {
         $collector = new QueueCollector();
 
-        $policy = $this->invoke($collector, 'capturePolicy');
+        $policy = $this->invoke(
+            $collector,
+            'capturePolicy',
+        );
 
-        self::assertInstanceOf(CapturePolicy::class, $policy, 'Fallback policy must be built.');
+        self::assertInstanceOf(
+            CapturePolicy::class,
+            $policy,
+            'Fallback policy must be built.',
+        );
         self::assertSame(
             [SensitiveDataRedactor::PLACEHOLDER, SensitiveDataRedactor::PLACEHOLDER, 'ok'],
             array_values($policy->redact(['auth_key' => 'a', 'refreshToken' => 'b', 'safe' => 'ok'])),
@@ -251,7 +259,10 @@ final class QueueCollectorTest extends TestCase
 
         $queueComponent = new Component();
 
-        Yii::$app->set('lazyQueue', $queueComponent);
+        Yii::$app->set(
+            'lazyQueue',
+            $queueComponent,
+        );
 
         $event = new Event(['sender' => $queueComponent]);
 
@@ -268,7 +279,10 @@ final class QueueCollectorTest extends TestCase
 
         $queueComponent = new Component();
 
-        Yii::$app->set('myQueue', $queueComponent);
+        Yii::$app->set(
+            'myQueue',
+            $queueComponent,
+        );
         Yii::$app->get('myQueue'); // force instantiation so `getComponents(false)` exposes it
 
         $event = new Event();

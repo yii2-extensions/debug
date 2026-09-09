@@ -20,7 +20,7 @@ use yii\debug\Panel;
 class RouterPanel extends Panel
 {
     /**
-     * Whether Router should retain its legacy standalone toolbar and sidebar entries.
+     * Whether Router should retain its standalone toolbar and sidebar entries.
      */
     public bool $standalone = true;
 
