@@ -35,6 +35,7 @@ final class ExtensionAvailabilityTest extends TestCase
             'The Inertia Vite implementation must keep the Vite integration available.',
         );
     }
+
     public function testIsAvailableAcceptsInstalledSingleClassProviders(): void
     {
         $providers = [
