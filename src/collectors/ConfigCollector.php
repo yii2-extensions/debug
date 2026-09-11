@@ -39,6 +39,7 @@ class ConfigCollector extends Collector
 
         return is_object($app) ? $app : null;
     }
+
     /**
      * Snapshots the framework/PHP/application identity and the installed-extensions roster.
      *

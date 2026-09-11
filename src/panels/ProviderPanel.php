@@ -17,32 +17,39 @@ class ProviderPanel extends Panel
 {
     public PortablePanel|null $provider = null;
     private PanelView|null $view = null;
+
     public function getDetail(): string
     {
-        return PanelRenderer::render($this->getName(), ($this->view ?? throw new LogicException('No portable panel capture has been hydrated.')));
+        return PanelRenderer::render($this->getName(), $this->view ?? throw new LogicException('No portable panel capture has been hydrated.'));
     }
+
     public function getName(): string
     {
         return $this->provider()->name();
     }
+
     public function getToolbarIcon(): string
     {
         return $this->provider()->icon();
     }
+
     public function hasContent(): bool
     {
         return $this->hasError() || ($this->view?->isActive() ?? false);
     }
+
     public function hydrate(array $payload): void
     {
         $this->error = null;
         $this->view = null;
         $this->view = $this->provider()->present($payload);
     }
+
     public function moduleBound(): void
     {
         $this->provider();
     }
+
     protected function getToolbarItems(): array
     {
         $items = [];
@@ -51,6 +58,7 @@ class ProviderPanel extends Panel
         }
         return $items;
     }
+
     private function provider(): PortablePanel
     {
         if ($this->provider === null) {

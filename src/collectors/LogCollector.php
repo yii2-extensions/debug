@@ -21,6 +21,7 @@ class LogCollector extends Collector
     {
         return 'log';
     }
+
     /**
      * Captures every error/warning/info/trace log message, excluding the categories owned by the Router collector.
      *

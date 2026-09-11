@@ -25,6 +25,7 @@ class ProfilingCollector extends Collector
     {
         return 'profiling';
     }
+
     /**
      * Snapshots the captured profile messages, the peak memory usage, and the total request time.
      *

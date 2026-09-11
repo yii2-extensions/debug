@@ -85,6 +85,7 @@ final class ExternalCacheTest extends ModuleTestCase
             $store->clear();
         }
     }
+
     public function testRejectsDuplicatePortablePanelIds(): void
     {
         $panel = new CachePanel();

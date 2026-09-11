@@ -27,6 +27,7 @@ class AssetCollector extends Collector
     {
         return 'asset';
     }
+
     /**
      * Captures every application asset bundle registered during the request into the snapshot consumed by the detail
      * view. The debug toolbar's own bundle is excluded because it is infrastructure rather than application content.

@@ -24,6 +24,7 @@ class TimelineCollector extends Collector
     {
         return 'timeline';
     }
+
     /**
      * Snapshots the request start (`$_SERVER['REQUEST_TIME_FLOAT']` with `microtime(true)` fallback), end, and peak
      * memory.
