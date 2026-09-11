@@ -37,6 +37,10 @@ Each provider service emits a single event type, so its collector is also its ow
 application writes no dispatcher code:
 
 ```php
+use PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel};
+use PHPForge\Inertia\Protocol;
+use PHPForge\Vite\Debug\{ViteCollector, VitePanel};
+
 $viteCollector = new ViteCollector();
 $inertiaCollector = new InertiaCollector();
 
