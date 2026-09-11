@@ -82,20 +82,6 @@ class QueueCollector extends Collector
     private array $records = [];
 
     /**
-     * Snapshots the captured queue records.
-     *
-     * @return QueueSnapshot|null Captured queue payload; `null` when the collector never started.
-     */
-    public function capture(): QueueSnapshot|null
-    {
-        if (!$this->isStarted()) {
-            return null;
-        }
-
-        return QueueSnapshot::capture($this->records);
-    }
-
-    /**
      * Returns the stable ID pairing this collector with the Queue panel.
      *
      * @return string Stable collector ID.
@@ -103,6 +89,20 @@ class QueueCollector extends Collector
     public function id(): string
     {
         return 'queue';
+    }
+
+    /**
+     * Snapshots the captured queue records.
+     *
+     * @return QueueSnapshot|null Captured queue payload; `null` when the collector never started.
+     */
+    protected function snapshot(): QueueSnapshot|null
+    {
+        if (!$this->isStarted()) {
+            return null;
+        }
+
+        return QueueSnapshot::capture($this->records);
     }
 
     /**

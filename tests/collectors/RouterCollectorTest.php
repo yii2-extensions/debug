@@ -10,6 +10,7 @@ use Yii;
 use yii\base\{Action, InlineAction};
 use yii\debug\collectors\RouterCollector;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 use yii\web\Controller;
@@ -158,7 +159,7 @@ final class RouterCollectorTest extends TestCase
         $collector->shutdown();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::router($collector),
             'Stopped collector must record nothing.',
         );
     }
@@ -168,7 +169,7 @@ final class RouterCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new RouterCollector())->capture(),
+            Captured::router(new RouterCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -245,7 +246,7 @@ final class RouterCollectorTest extends TestCase
      */
     private function captureSnapshot(RouterCollector $collector): RouterSnapshot
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::router($collector);
 
         self::assertNotNull(
             $snapshot,

@@ -7,6 +7,7 @@ namespace yii\debug\tests\collectors;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\collectors\ConfigCollector;
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 
 use function is_string;
@@ -58,7 +59,7 @@ final class ConfigCollectorTest extends TestCase
         $collector->shutdown();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::config($collector),
             'Stopped collector must record nothing.',
         );
     }
@@ -66,7 +67,7 @@ final class ConfigCollectorTest extends TestCase
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         self::assertNull(
-            (new ConfigCollector())->capture(),
+            Captured::config(new ConfigCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -320,7 +321,7 @@ final class ConfigCollectorTest extends TestCase
      */
     private function captureData(ConfigCollector $collector): array
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::config($collector);
 
         self::assertNotNull(
             $snapshot,

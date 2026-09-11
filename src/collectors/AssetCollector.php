@@ -19,13 +19,23 @@ use function is_string;
 class AssetCollector extends Collector
 {
     /**
+     * Returns the stable ID pairing this collector with the Asset Bundles panel.
+     *
+     * @return string Stable collector ID.
+     */
+    public function id(): string
+    {
+        return 'asset';
+    }
+
+    /**
      * Captures every application asset bundle registered during the request into the snapshot consumed by the detail
      * view. The debug toolbar's own bundle is excluded because it is infrastructure rather than application content.
      *
      * @return AssetSnapshot|null Captured bundle payload; `null` when the collector never started or the application
      * exposes no `assetManager` component.
      */
-    public function capture(): AssetSnapshot|null
+    protected function snapshot(): AssetSnapshot|null
     {
         if (!$this->isStarted()) {
             return null;
@@ -56,16 +66,6 @@ class AssetCollector extends Collector
         }
 
         return new AssetSnapshot($rows, null);
-    }
-
-    /**
-     * Returns the stable ID pairing this collector with the Asset Bundles panel.
-     *
-     * @return string Stable collector ID.
-     */
-    public function id(): string
-    {
-        return 'asset';
     }
 
     /**

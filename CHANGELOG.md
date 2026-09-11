@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor!: require Yii2 `^22.0` and ui-awesome `0.8`; adopt standalone actions and immutable factories, including `QueryRow` getters instead of public properties.
 - refactor(tests): split debugger action and module tests by responsibility and centralize shared action fixtures.
 - docs: focus the `README.md` on installation, essential configuration, and usage; preserve panel screenshots, clarify Yii2 `22.x` support, and remove internal implementation details and broken documentation links.
+- feat: support portable declarative panels and delegate Vite and Inertia presentation to their provider packages.
 
 ## 0.1.1 May 18, 2026
 

@@ -121,7 +121,7 @@ class LogTarget extends Target
                     $panelSnapshot = $panel->capture();
 
                     if ($panelSnapshot !== null) {
-                        $panels[$id] = $panelSnapshot->jsonSerialize();
+                        $panels[$id] = \PHPForge\Debug\Storage\Json::payload($panelSnapshot->jsonSerialize());
                     }
                 } catch (Throwable $throwable) {
                     $failures[$id] = PanelFailure::fromThrowable(PanelFailure::CAPTURE, $throwable);

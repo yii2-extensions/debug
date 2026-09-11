@@ -5,15 +5,13 @@ declare(strict_types=1);
 namespace yii\debug\tests\inertia;
 
 use PHPForge\Debug\Helper\CellMore;
-use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
+use PHPForge\Inertia\Debug\InertiaPanel;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\InertiaPanel;
+use yii\debug\panels\ProviderPanel;
 use yii\debug\tests\support\TestCase;
-use yii\inertia\Manager;
 
 /**
- * Unit tests for {@see InertiaPanel} covering the component-gated enablement, the per-capture sidebar activation, and
- * the detail/toolbar rendering.
+ * Unit tests for the provider-owned {@see InertiaPanel} adapted by the host {@see ProviderPanel}.
  */
 #[Group('panel')]
 #[Group('inertia')]
@@ -64,15 +62,13 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailKeepsLongPropValuesInspectableBehindTheClamp(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
         $needle = str_repeat('z', 700);
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 [
                     'component' => 'site/index',
@@ -107,13 +103,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailMarksSharedAndPageProps(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 [
                     'component' => 'site/index',
@@ -146,13 +140,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersComponentAndProps(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 [
                     'component' => 'site/index',
@@ -192,13 +184,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersEmptyStateWhenPageMissing(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 null,
                 [],
@@ -223,13 +213,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersMessageWhenPageHasNoProps(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 [
                     'component' => 'site/index',
@@ -252,13 +240,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersScalarPropTypesHeadersAndLongPayload(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 [
                     'component' => 'site/index',
@@ -327,13 +313,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetDetailRendersVersionConflictWhenStatusIs409(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 'http://example.test/site/index',
                 null,
                 [
@@ -361,9 +345,7 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
         self::assertSame(
             'Inertia',
@@ -377,28 +359,13 @@ final class InertiaPanelTest extends TestCase
         );
     }
 
-    public function testGetStatusCodeReturnsZeroBeforeHydration(): void
-    {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
-
-        self::assertSame(
-            0,
-            $panel->getStatusCode(),
-            'An un-hydrated panel must expose the neutral status code.',
-        );
-    }
-
     public function testGetToolbarItemsCarryComponentName(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 [
                     'component' => 'site/index',
@@ -431,13 +398,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testGetToolbarItemsReturnEmptyListWithoutCapturedPage(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(null, null, [], [], 200),
+            self::capture(null, null, [], [], 200),
         );
 
         self::assertSame(
@@ -449,13 +414,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testHasContentReturnsFalseForPlainCapture(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 null,
                 [],
@@ -472,13 +435,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testHasContentReturnsTrueForCapturedPage(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 ['component' => 'site/index', 'props' => [], 'url' => '/', 'version' => 'v1'],
                 [],
@@ -495,13 +456,11 @@ final class InertiaPanelTest extends TestCase
 
     public function testHasContentReturnsTrueForInertiaXhrWithoutPage(): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 'http://example.test/',
                 null,
                 ['X-Inertia' => 'true', 'X-Inertia-Version' => 'stale'],
@@ -516,65 +475,39 @@ final class InertiaPanelTest extends TestCase
         );
     }
 
-    public function testIsEnabledReturnsFalseWhenInertiaComponentCannotBeCreated(): void
-    {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-            ['inertia' => ['class' => 'missing\\InertiaManager']],
-        );
-
-        self::assertFalse(
-            $panel->isEnabled(),
-            'An invalid Inertia component definition must disable the panel.',
-        );
+    /**
+     * Builds the plain payload shape the provider-owned collector persists.
+     *
+     * @param array<array-key, mixed>|null $page
+     * @param array<array-key, mixed> $requestHeaders
+     * @param array<array-key, mixed> $sharedKeys
+     *
+     * @return array<string, mixed>
+     */
+    private static function capture(
+        string|null $location,
+        array|null $page,
+        array $requestHeaders,
+        array $sharedKeys,
+        int $statusCode,
+    ): array {
+        return [
+            'location' => $location,
+            'page' => $page,
+            'requestHeaders' => $requestHeaders,
+            'sharedKeys' => $sharedKeys,
+            'statusCode' => $statusCode,
+        ];
     }
 
-    public function testIsEnabledReturnsFalseWithoutInertiaComponent(): void
+    /**
+     * Hydrates the host adapter with the payload the provider-owned collector persists.
+     *
+     * @param array<string, mixed> $payload
+     */
+    private function hydrateCapture(ProviderPanel $panel, array $payload): void
     {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
-
-        self::assertFalse(
-            $panel->isEnabled(),
-            'Missing `inertia` component must disable the panel.',
-        );
-    }
-
-    public function testIsEnabledReturnsTrueWhenManagerIsRegistered(): void
-    {
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-            ['inertia' => ['class' => Manager::class]],
-        );
-
-        self::assertTrue(
-            $panel->isEnabled(),
-            'Registered manager must enable the panel.',
-        );
-    }
-
-    public function testSnapshotDataReturnsEveryCapturedField(): void
-    {
-        $snapshot = InertiaSnapshot::capture(
-            '/users',
-            ['component' => 'Users'],
-            ['X-Inertia' => 'true'],
-            ['auth'],
-            201,
-        );
-
-        self::assertSame(
-            [
-                'location' => '/users',
-                'page' => ['component' => 'Users'],
-                'requestHeaders' => ['X-Inertia' => 'true'],
-                'sharedKeys' => ['auth'],
-                'statusCode' => 201,
-            ],
-            $snapshot->data(),
-            'The display payload must retain every captured Inertia field.',
-        );
+        $panel->hydrate($payload);
     }
 
     /**
@@ -590,13 +523,11 @@ final class InertiaPanelTest extends TestCase
             $props["prop{$i}"] = $i;
         }
 
-        $panel = $this->makePanel(
-            InertiaPanel::class,
-        );
+        $panel = $this->makeProviderPanel(new InertiaPanel());
 
-        $this->hydratePanel(
+        $this->hydrateCapture(
             $panel,
-            InertiaSnapshot::capture(
+            self::capture(
                 null,
                 [
                     'component' => 'site/index',

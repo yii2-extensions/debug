@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\tests\widgets\sidebar;
 
 use Exception;
-use PHPForge\Debug\Panel\Inertia\InertiaSnapshot;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
+use PHPForge\Inertia\Debug\InertiaPanel;
+use PHPForge\Vite\Debug\VitePanel;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
-use yii\debug\panels\{ConfigPanel, InertiaPanel, MailPanel, QueuePanel, RequestPanel, RouterPanel, VitePanel};
+use yii\debug\panels\{ConfigPanel, MailPanel, ProviderPanel, QueuePanel, RequestPanel, RouterPanel};
 use yii\debug\tests\provider\UrlPathProvider;
 use yii\debug\tests\support\TestCase;
 use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarNavItem};
@@ -181,13 +182,15 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $request = new RequestPanel();
         $request->id = 'request';
-        $inertia = new InertiaPanel();
+        $inertia = new ProviderPanel();
+        $inertia->provider = new InertiaPanel();
         $inertia->id = 'inertia';
         $mail = new MailPanel();
         $mail->id = 'mail';
         $queue = new QueuePanel();
         $queue->id = 'queue';
-        $vite = new VitePanel();
+        $vite = new ProviderPanel();
+        $vite->provider = new VitePanel();
         $vite->id = 'vite';
 
         $view = SidebarDataNormalizer::fromIndex(
@@ -607,7 +610,8 @@ final class SidebarDataNormalizerTest extends TestCase
         $active = new RequestPanel();
         $active->id = 'request';
 
-        $inertia = new InertiaPanel();
+        $inertia = new ProviderPanel();
+        $inertia->provider = new InertiaPanel();
         $inertia->id = 'inertia';
         $inertia->setError(ExceptionSnapshot::fromThrowable(new Exception('capture failed')));
 
@@ -703,11 +707,12 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $active->id = 'request';
 
-        $inertia = new InertiaPanel();
+        $inertia = new ProviderPanel();
+        $inertia->provider = new InertiaPanel();
 
         $inertia->id = 'inertia';
 
-        $this->hydratePanel($inertia, InertiaSnapshot::capture(null, null, [], [], 200));
+        $inertia->hydrate(['location' => null, 'page' => null, 'requestHeaders' => [], 'sharedKeys' => [], 'statusCode' => 200]);
 
         $view = SidebarDataNormalizer::fromView(
             ['inertia' => $inertia, 'request' => $active],

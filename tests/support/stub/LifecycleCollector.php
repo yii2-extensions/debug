@@ -15,14 +15,14 @@ final class LifecycleCollector extends Collector
     public int $startCalls = 0;
     public int $stopCalls = 0;
 
-    public function capture(): PanelSnapshot|null
-    {
-        return null;
-    }
-
     public function id(): string
     {
         return 'stub';
+    }
+
+    protected function snapshot(): PanelSnapshot|null
+    {
+        return null;
     }
 
     protected function start(): void

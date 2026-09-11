@@ -11,6 +11,7 @@ use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\base\Event;
 use yii\debug\collectors\MailCollector;
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 use yii\mail\{BaseMailer, MailEvent, MessageInterface};
 use yii\symfonymailer\Mailer;
@@ -80,7 +81,7 @@ final class MailCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new MailCollector())->capture(),
+            Captured::mail(new MailCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -570,7 +571,7 @@ final class MailCollectorTest extends TestCase
      */
     private function captureEntries(MailCollector $collector): array
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::mail($collector);
 
         self::assertNotNull(
             $snapshot,

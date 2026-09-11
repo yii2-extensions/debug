@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\collectors\UserCollector;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\stub\{Identity, ModelIdentity, SelectiveModelIdentity};
 use yii\debug\tests\support\TestCase;
 use yii\rbac\{BaseManager, Permission, Role};
@@ -28,7 +29,7 @@ final class UserCollectorTest extends TestCase
     {
         $collector = $this->bootstrapCollectorWithIdentity(new ModelIdentity());
 
-        $saved = $collector->capture()?->data();
+        $saved = Captured::user($collector)?->data();
 
         self::assertNotNull(
             $saved,
@@ -60,7 +61,7 @@ final class UserCollectorTest extends TestCase
     {
         $collector = $this->bootstrapCollectorWithIdentity(new Identity(7));
 
-        $saved = $collector->capture()?->data();
+        $saved = Captured::user($collector)?->data();
 
         self::assertNotNull(
             $saved,
@@ -98,7 +99,7 @@ final class UserCollectorTest extends TestCase
 
         $collector = $this->wireCollector($module);
 
-        $saved = $collector->capture()?->data();
+        $saved = Captured::user($collector)?->data();
 
         self::assertNotNull(
             $saved,
@@ -165,7 +166,7 @@ final class UserCollectorTest extends TestCase
 
         $collector = $this->wireCollector($module);
 
-        $saved = $collector->capture()?->data();
+        $saved = Captured::user($collector)?->data();
 
         self::assertNotNull(
             $saved,
@@ -229,7 +230,7 @@ final class UserCollectorTest extends TestCase
             }
         };
 
-        $saved = $this->bootstrapCollectorWithIdentity($identity)->capture()?->data();
+        $saved = Captured::user($this->bootstrapCollectorWithIdentity($identity))?->data();
 
         $identityData = $saved['identity'] ?? null;
 
@@ -284,7 +285,7 @@ final class UserCollectorTest extends TestCase
                 'roles' => null,
                 'permissions' => null,
             ],
-            $collector->capture()?->data(),
+            Captured::user($collector)?->data(),
             'A configured guest user must yield the shared Guest snapshot.',
         );
     }
@@ -294,7 +295,7 @@ final class UserCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new UserCollector())->capture(),
+            Captured::user(new UserCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -310,7 +311,7 @@ final class UserCollectorTest extends TestCase
         $collector->startup();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::user($collector),
             'Missing user component must yield no snapshot.',
         );
     }

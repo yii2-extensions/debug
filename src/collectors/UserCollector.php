@@ -32,12 +32,68 @@ class UserCollector extends Collector
     private CapturePolicy|null $capturePolicy = null;
 
     /**
+     * Returns the stable ID pairing this collector with the User panel.
+     *
+     * @return string Stable collector ID.
+     */
+    public function id(): string
+    {
+        return 'user';
+    }
+
+    /**
+     * Returns the value when it is already a string, otherwise renders it with {@see VarDumper::export()}.
+     */
+    protected function dataToString(mixed $data): string
+    {
+        if (is_string($data)) {
+            return $data;
+        }
+
+        return VarDumper::export($data);
+    }
+
+    /**
+     * Returns the user component bound to this collector, or `null` when the configured component id does not resolve
+     * to a {@see User} instance.
+     */
+    protected function getUser(): User|null
+    {
+        if ($this->userComponent instanceof User) {
+            return $this->userComponent;
+        }
+
+        $user = Yii::$app->get($this->userComponent, false);
+
+        return $user instanceof User ? $user : null;
+    }
+
+    /**
+     * Returns the identity attributes as a string-keyed map suitable for {@see \yii\widgets\DetailView::$model}.
+     *
+     * Reads {@see Model::getAttributes()} when the identity is a {@see Model}; otherwise falls back to
+     * {@see get_object_vars()} on the identity object.
+     *
+     * @param IdentityInterface $identity Active identity object.
+     *
+     * @return array<string, mixed> Attribute map ready to feed the detail view.
+     */
+    protected function identityData(IdentityInterface $identity): array
+    {
+        if ($identity instanceof Model) {
+            return self::normalizeStringKeyArray($identity->getAttributes());
+        }
+
+        return self::normalizeStringKeyArray(get_object_vars($identity));
+    }
+
+    /**
      * Snapshots the identity attributes, the RBAC roles, and the permissions for the active user.
      *
      * @return UserSnapshot|null Captured identity or Guest payload; `null` when the collector never started or the
      * user component cannot be resolved.
      */
-    public function capture(): UserSnapshot|null
+    protected function snapshot(): UserSnapshot|null
     {
         if (!$this->isStarted()) {
             return null;
@@ -113,62 +169,6 @@ class UserCollector extends Collector
             'roles' => $roles,
             'permissions' => $permissions,
         ]);
-    }
-
-    /**
-     * Returns the stable ID pairing this collector with the User panel.
-     *
-     * @return string Stable collector ID.
-     */
-    public function id(): string
-    {
-        return 'user';
-    }
-
-    /**
-     * Returns the value when it is already a string, otherwise renders it with {@see VarDumper::export()}.
-     */
-    protected function dataToString(mixed $data): string
-    {
-        if (is_string($data)) {
-            return $data;
-        }
-
-        return VarDumper::export($data);
-    }
-
-    /**
-     * Returns the user component bound to this collector, or `null` when the configured component id does not resolve
-     * to a {@see User} instance.
-     */
-    protected function getUser(): User|null
-    {
-        if ($this->userComponent instanceof User) {
-            return $this->userComponent;
-        }
-
-        $user = Yii::$app->get($this->userComponent, false);
-
-        return $user instanceof User ? $user : null;
-    }
-
-    /**
-     * Returns the identity attributes as a string-keyed map suitable for {@see \yii\widgets\DetailView::$model}.
-     *
-     * Reads {@see Model::getAttributes()} when the identity is a {@see Model}; otherwise falls back to
-     * {@see get_object_vars()} on the identity object.
-     *
-     * @param IdentityInterface $identity Active identity object.
-     *
-     * @return array<string, mixed> Attribute map ready to feed the detail view.
-     */
-    protected function identityData(IdentityInterface $identity): array
-    {
-        if ($identity instanceof Model) {
-            return self::normalizeStringKeyArray($identity->getAttributes());
-        }
-
-        return self::normalizeStringKeyArray(get_object_vars($identity));
     }
 
     /**

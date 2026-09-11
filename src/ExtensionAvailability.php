@@ -13,10 +13,8 @@ final class ExtensionAvailability
      * @var array<string, non-empty-list<non-empty-string>> Runtime provider class names indexed by debugger panel ID.
      */
     private const array PROVIDERS = [
-        'inertia' => ['yii\inertia\Manager'],
         'mail' => ['yii\symfonymailer\Mailer'],
         'queue' => ['yii\queue\Queue'],
-        'vite' => ['PHPForge\Vite\Vite', 'yii\inertia\Vite'],
     ];
 
     /**

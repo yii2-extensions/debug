@@ -21,11 +21,31 @@ use function is_string;
 class ConfigCollector extends Collector
 {
     /**
+     * Returns the stable ID pairing this collector with the Configuration panel.
+     *
+     * @return string Stable collector ID.
+     */
+    public function id(): string
+    {
+        return 'config';
+    }
+
+    /**
+     * Returns the active application instance, or `null` when the framework slot does not contain an object.
+     */
+    protected function getApplication(): object|null
+    {
+        $app = self::applicationValue();
+
+        return is_object($app) ? $app : null;
+    }
+
+    /**
      * Snapshots the framework/PHP/application identity and the installed-extensions roster.
      *
      * @return ConfigSnapshot|null Captured configuration payload; `null` when the collector never started.
      */
-    public function capture(): ConfigSnapshot|null
+    protected function snapshot(): ConfigSnapshot|null
     {
         if (!$this->isStarted()) {
             return null;
@@ -71,26 +91,6 @@ class ConfigCollector extends Collector
             ],
             'extensions' => VersionResolver::forExtensions(self::normalizeExtensions($extensions)),
         ]);
-    }
-
-    /**
-     * Returns the stable ID pairing this collector with the Configuration panel.
-     *
-     * @return string Stable collector ID.
-     */
-    public function id(): string
-    {
-        return 'config';
-    }
-
-    /**
-     * Returns the active application instance, or `null` when the framework slot does not contain an object.
-     */
-    protected function getApplication(): object|null
-    {
-        $app = self::applicationValue();
-
-        return is_object($app) ? $app : null;
     }
 
     /**

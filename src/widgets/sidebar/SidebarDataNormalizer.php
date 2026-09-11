@@ -10,6 +10,7 @@ use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\ExtensionAvailability;
 use yii\debug\Module;
 use yii\debug\Panel;
+use yii\debug\panels\{JsonPanel, ProviderPanel};
 
 use function array_key_first;
 use function array_key_last;
@@ -174,7 +175,7 @@ final class SidebarDataNormalizer
                 isActive: $isActive,
             );
 
-            if (ExtensionAvailability::isOptional($id)) {
+            if ($panel instanceof ProviderPanel || $panel instanceof JsonPanel || ExtensionAvailability::isOptional($id)) {
                 $extensionItems[] = $item;
 
                 continue;

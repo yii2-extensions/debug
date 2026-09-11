@@ -4,31 +4,20 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\vite;
 
+use PHPForge\Vite\Debug\VitePanel;
 use PHPUnit\Framework\Attributes\Group;
-use yii\debug\panels\VitePanel;
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see VitePanel} covering per-capture visibility and detail/toolbar presentation.
+ * Unit tests for the provider-owned {@see VitePanel} adapted by the host {@see ProviderPanel}.
  */
 #[Group('panel')]
 #[Group('vite')]
 final class VitePanelTest extends TestCase
 {
-    public function testGetComponentsReturnsEmptyListBeforeHydration(): void
-    {
-        $panel = $this->makePanel(VitePanel::class);
-
-        self::assertSame(
-            [],
-            $panel->getComponents(),
-            'A panel without a hydrated snapshot must expose no Vite components.',
-        );
-    }
-
     public function testGetDetailRendersCapturedConfigurationAndChunks(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(
             self::snapshot(
@@ -85,7 +74,7 @@ final class VitePanelTest extends TestCase
             'Chunk headers must identify their table-column scope.',
         );
         self::assertStringContainsString(
-            'class="yii-debug-table yii-debug-table-mono yii-debug-table-vite-overview"',
+            'class="yii-debug-table yii-debug-table-mono yii-debug-table-overview"',
             $html,
             'Configuration must use the shared panel table with a readable label column.',
         );
@@ -113,7 +102,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetDetailRendersDevelopmentModeWithoutBuildChunks(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(self::snapshot([self::component()]));
 
@@ -138,7 +127,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetDetailRendersEmptySnapshotState(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(self::snapshot([]));
 
@@ -151,7 +140,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetDetailReportsMissingProductionManifest(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(
             self::snapshot(
@@ -177,7 +166,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetDetailReportsUnavailableRuntimeInspection(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(
             self::snapshot(
@@ -213,7 +202,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetDetailSummarizesMixedComponentModes(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(
             self::snapshot(
@@ -233,7 +222,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetNameAndIconReturnToolbarMetadata(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         self::assertSame(
             'Vite',
@@ -249,7 +238,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetToolbarItemsAggregateMatchingModes(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(
             self::snapshot(
@@ -274,7 +263,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetToolbarItemsReportMixedModes(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(
             self::snapshot(
@@ -299,7 +288,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetToolbarItemsReturnConciseSingleMode(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(self::snapshot([self::component()]));
 
@@ -317,7 +306,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetToolbarItemsReturnEmptyListWithoutComponents(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(self::snapshot([]));
 
@@ -330,7 +319,7 @@ final class VitePanelTest extends TestCase
 
     public function testGetToolbarItemsReturnUnknownWhenInspectionIsUnavailable(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(
             self::snapshot(
@@ -359,7 +348,7 @@ final class VitePanelTest extends TestCase
 
     public function testHasContentReturnsFalseForEmptySnapshot(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(self::snapshot([]));
 
@@ -371,7 +360,7 @@ final class VitePanelTest extends TestCase
 
     public function testHasContentReturnsTrueForCapturedComponent(): void
     {
-        $panel = $this->makePanel(VitePanel::class);
+        $panel = $this->makeProviderPanel(new VitePanel());
 
         $panel->hydrate(self::snapshot([self::component()]));
 

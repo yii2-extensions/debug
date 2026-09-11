@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use yii\base\{Component, Event};
 use yii\debug\collectors\EventCollector;
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -94,7 +95,7 @@ final class EventCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new EventCollector())->capture(),
+            Captured::event(new EventCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -346,7 +347,7 @@ final class EventCollectorTest extends TestCase
      */
     private function captureEntries(EventCollector $collector): array
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::event($collector);
 
         self::assertNotNull(
             $snapshot,

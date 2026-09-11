@@ -13,11 +13,21 @@ use yii\log\Logger;
 class LogCollector extends Collector
 {
     /**
+     * Returns the stable ID pairing this collector with the Logs panel.
+     *
+     * @return string Stable collector ID.
+     */
+    public function id(): string
+    {
+        return 'log';
+    }
+
+    /**
      * Captures every error/warning/info/trace log message, excluding the categories owned by the Router collector.
      *
      * @return LogSnapshot|null Captured log payload; `null` when the collector never started.
      */
-    public function capture(): LogSnapshot|null
+    protected function snapshot(): LogSnapshot|null
     {
         if (!$this->isStarted()) {
             return null;
@@ -38,15 +48,5 @@ class LogCollector extends Collector
         );
 
         return LogSnapshot::capture($messages);
-    }
-
-    /**
-     * Returns the stable ID pairing this collector with the Logs panel.
-     *
-     * @return string Stable collector ID.
-     */
-    public function id(): string
-    {
-        return 'log';
     }
 }

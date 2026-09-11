@@ -7,7 +7,8 @@ namespace yii\debug;
 use InvalidArgumentException;
 use Override;
 use PHPForge\Debug\Capture\CapturePolicy;
-use PHPForge\Debug\Collector\{CollectorCoordinator, CollectorInterface};
+use PHPForge\Debug\Collector\CollectorCoordinator;
+use PHPForge\Debug\{CollectorInterface, Panel as PortablePanel};
 use PHPForge\Debug\Helper\{Coerce, Icon, SensitiveDataRedactor, Trace};
 use RuntimeException;
 use Throwable;
@@ -30,7 +31,6 @@ use yii\debug\collectors\{
     DbCollector,
     DumpCollector,
     EventCollector,
-    InertiaCollector,
     LogCollector,
     MailCollector,
     ProfilingCollector,
@@ -38,7 +38,6 @@ use yii\debug\collectors\{
     RequestCollector,
     RouterCollector,
     UserCollector,
-    ViteCollector,
 };
 use yii\debug\exception\Message;
 use yii\debug\panels\{
@@ -47,15 +46,14 @@ use yii\debug\panels\{
     DbPanel,
     DumpPanel,
     EventPanel,
-    InertiaPanel,
     LogPanel,
     MailPanel,
     ProfilingPanel,
+    ProviderPanel,
     QueuePanel,
     RequestPanel,
     RouterPanel,
     UserPanel,
-    VitePanel,
 };
 use yii\helpers\Url;
 use yii\log\{Dispatcher, Target};
@@ -123,8 +121,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Debug collectors resolved from instances, class names, or Yii configuration arrays during {@see init()}.
      *
-     * Collector IDs come from {@see CollectorInterface::id()} and remain independent from the array keys used in
-     * configuration.
+     * Collectors derive their own IDs; register them as a list or under a key that matches {@see
+     * CollectorInterface::id()}.
      *
      * @var array<array-key, array<string, mixed>|CollectorInterface|string>
      */
@@ -688,8 +686,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'db' => DbCollector::class,
             'dump' => DumpCollector::class,
             'event' => EventCollector::class,
-            'inertia' => InertiaCollector::class,
-            'vite' => ViteCollector::class,
             'log' => LogCollector::class,
             'mail' => MailCollector::class,
             'profiling' => ProfilingCollector::class,
@@ -722,10 +718,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'user' => UserPanel::class,
             'dump' => DumpPanel::class,
             'asset' => AssetPanel::class,
-            'inertia' => InertiaPanel::class,
             'mail' => MailPanel::class,
             'queue' => QueuePanel::class,
-            'vite' => VitePanel::class,
         ];
     }
 
@@ -809,8 +803,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $merged = [...array_diff_key($coreCollectors, $this->collectors), ...$this->collectors];
         $collectors = [];
 
-        foreach ($merged as $config) {
+        foreach ($merged as $id => $config) {
             $collector = $this->buildCollector($config);
+
+            if (is_string($id) && $id !== $collector->id()) {
+                throw new InvalidConfigException('The debug collector registration ID must match its provider.');
+            }
 
             if ($collector instanceof Collector) {
                 $collector->module = $this;
@@ -846,15 +844,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $corePanels = $this->availableCoreDefinitions($this->corePanels());
         $merged = [...array_diff_key($corePanels, $this->panels), ...$this->panels];
 
-        $this->panels = [];
-
-        foreach ($merged as $id => $config) {
-            $panel = $this->buildPanel($id, $config);
-
-            if ($panel !== null && $panel->isEnabled()) {
-                $this->panels[$id] = $panel;
-            }
-        }
+        $this->resolvePanels($merged);
     }
 
     /**
@@ -1064,6 +1054,32 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         return $target;
+    }
+
+    /**
+     * @param array<array-key, array<string, mixed>|Panel|PortablePanel|string> $definitions
+     */
+    private function resolvePanels(array $definitions): void
+    {
+        $this->panels = [];
+
+        foreach ($definitions as $id => $config) {
+            if ($config instanceof PortablePanel) {
+                if (is_string($id) && $id !== $config->id()) {
+                    throw new InvalidConfigException('The debug panel registration ID must match its provider.');
+                }
+                $id = $config->id();
+                $config = new ProviderPanel(['provider' => $config]);
+            }
+            if (isset($this->panels[$id])) {
+                throw new InvalidConfigException('Duplicate debug panel ID: ' . $id);
+            }
+            $panel = $this->buildPanel((string) $id, $config);
+
+            if ($panel !== null && $panel->isEnabled()) {
+                $this->panels[$panel->id] = $panel;
+            }
+        }
     }
 
     /**

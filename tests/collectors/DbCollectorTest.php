@@ -13,6 +13,7 @@ use yii\db\Connection;
 use yii\debug\collectors\DbCollector;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -309,7 +310,7 @@ final class DbCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new DbCollector())->capture(),
+            Captured::db(new DbCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -720,7 +721,7 @@ final class DbCollectorTest extends TestCase
         $collector->shutdown();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::db($collector),
             'Stopped collector must record nothing.',
         );
     }
@@ -799,7 +800,7 @@ final class DbCollectorTest extends TestCase
      */
     private function captureEntries(DbCollector $collector): array
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::db($collector);
 
         self::assertNotNull(
             $snapshot,

@@ -15,6 +15,7 @@ use Yii;
 use yii\base\{Component, Event};
 use yii\debug\collectors\QueueCollector;
 use yii\debug\Module;
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 
 use function class_exists;
@@ -204,7 +205,7 @@ final class QueueCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new QueueCollector())->capture(),
+            Captured::queue(new QueueCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -523,7 +524,7 @@ final class QueueCollectorTest extends TestCase
      */
     private function captureEntries(QueueCollector $collector): array
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::queue($collector);
 
         self::assertNotNull(
             $snapshot,

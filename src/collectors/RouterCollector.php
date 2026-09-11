@@ -29,38 +29,6 @@ class RouterCollector extends Collector
     ];
 
     /**
-     * Snapshots the routing trace, the resolved route, and the dispatched action.
-     *
-     * @return RouterSnapshot|null Captured routing payload; `null` when the collector never started.
-     */
-    public function capture(): RouterSnapshot|null
-    {
-        if (!$this->isStarted()) {
-            return null;
-        }
-
-        $requestedAction = Yii::$app->requestedAction;
-
-        if ($requestedAction === null) {
-            $action = null;
-        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
-            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
-        } else {
-            $action = $requestedAction::class . '::run()';
-        }
-
-        return RouterSnapshot::capture(
-            $action,
-            LogTarget::filterMessages(
-                $this->getLogTarget()->messages,
-                Logger::LEVEL_TRACE,
-                $this->categories,
-            ),
-            $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
-        );
-    }
-
-    /**
      * Returns the log categories scanned for routing trace messages.
      *
      * @return list<string> Category names in declaration order.
@@ -92,5 +60,37 @@ class RouterCollector extends Collector
         }
 
         $this->categories = [...$this->categories, ...$values];
+    }
+
+    /**
+     * Snapshots the routing trace, the resolved route, and the dispatched action.
+     *
+     * @return RouterSnapshot|null Captured routing payload; `null` when the collector never started.
+     */
+    protected function snapshot(): RouterSnapshot|null
+    {
+        if (!$this->isStarted()) {
+            return null;
+        }
+
+        $requestedAction = Yii::$app->requestedAction;
+
+        if ($requestedAction === null) {
+            $action = null;
+        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
+            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
+        } else {
+            $action = $requestedAction::class . '::run()';
+        }
+
+        return RouterSnapshot::capture(
+            $action,
+            LogTarget::filterMessages(
+                $this->getLogTarget()->messages,
+                Logger::LEVEL_TRACE,
+                $this->categories,
+            ),
+            $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
+        );
     }
 }

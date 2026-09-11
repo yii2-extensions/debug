@@ -50,20 +50,6 @@ class MailCollector extends Collector
     private array $messages = [];
 
     /**
-     * Snapshots the captured messages, with their metadata (time, reply, bcc, cc, from, to, subject, headers, etc.).
-     *
-     * @return MailSnapshot|null Captured mail payload; `null` when the collector never started.
-     */
-    public function capture(): MailSnapshot|null
-    {
-        if (!$this->isStarted()) {
-            return null;
-        }
-
-        return MailSnapshot::capture($this->messages);
-    }
-
-    /**
      * Returns the file names of the captured `.eml` files persisted under {@see $mailPath}.
      *
      * @return array<int, string> File names in send order.
@@ -148,6 +134,20 @@ class MailCollector extends Collector
                 @unlink($path);
             }
         }
+    }
+
+    /**
+     * Snapshots the captured messages, with their metadata (time, reply, bcc, cc, from, to, subject, headers, etc.).
+     *
+     * @return MailSnapshot|null Captured mail payload; `null` when the collector never started.
+     */
+    protected function snapshot(): MailSnapshot|null
+    {
+        if (!$this->isStarted()) {
+            return null;
+        }
+
+        return MailSnapshot::capture($this->messages);
     }
 
     /**
