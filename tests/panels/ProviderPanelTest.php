@@ -28,6 +28,7 @@ final class ProviderPanelTest extends TestCase
         $method = new \ReflectionMethod($panel, 'getToolbarItems');
         self::assertSame([['title' => 'Hits', 'value' => '1'], ['title' => 'Misses', 'value' => '2']], $method->invoke($panel), 'Provider metrics must reach the toolbar.');
     }
+
     public function testThrowInvalidConfigExceptionForMismatchedId(): void
     {
         $panel = new ProviderPanel();
@@ -35,6 +36,7 @@ final class ProviderPanelTest extends TestCase
         $this->expectException(InvalidConfigException::class);
         $panel->getName();
     }
+
     public function testThrowInvalidConfigExceptionForMissingProvider(): void
     {
         $this->expectException(InvalidConfigException::class);

@@ -124,7 +124,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Collectors derive their own IDs; register them as a list or under a key that matches {@see
      * CollectorInterface::id()}.
      *
-     * @var array<array-key, CollectorInterface|array<string, mixed>|string>
+     * @var array<array-key, array<string, mixed>|CollectorInterface|string>
      */
     public array $collectors = [];
     /**
@@ -913,7 +913,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Resolves a collector instance, class name, or Yii configuration array.
      *
-     * @param CollectorInterface|array<string, mixed>|string $config Collector configuration.
+     * @param array<string, mixed>|CollectorInterface|string $config Collector configuration.
      *
      * @throws InvalidConfigException When the configuration does not resolve to a collector.
      *
@@ -1057,7 +1057,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * @param array<array-key, Panel|PortablePanel|array<string, mixed>|string> $definitions
+     * @param array<array-key, array<string, mixed>|Panel|PortablePanel|string> $definitions
      */
     private function resolvePanels(array $definitions): void
     {
