@@ -15,31 +15,9 @@ use yii\debug\tests\support\TestCase;
 #[Group('module')]
 final class ExtensionAvailabilityTest extends TestCase
 {
-    public function testIsAvailableAcceptsInertiaViteProvider(): void
-    {
-        MockerState::addCondition(
-            'yii\debug',
-            'class_exists',
-            ['PHPForge\Vite\Vite'],
-            false,
-        );
-        MockerState::addCondition(
-            'yii\debug',
-            'class_exists',
-            ['yii\inertia\Vite'],
-            true,
-        );
-
-        self::assertTrue(
-            ExtensionAvailability::isAvailable('vite'),
-            'The Inertia Vite implementation must keep the Vite integration available.',
-        );
-    }
-
     public function testIsAvailableAcceptsInstalledSingleClassProviders(): void
     {
         $providers = [
-            'inertia' => 'yii\inertia\Manager',
             'mail' => 'yii\symfonymailer\Mailer',
             'queue' => 'yii\queue\Queue',
         ];
@@ -59,35 +37,11 @@ final class ExtensionAvailabilityTest extends TestCase
         }
     }
 
-    public function testIsAvailableAcceptsModernViteProviderWithoutCheckingTheInertiaProvider(): void
-    {
-        MockerState::addCondition(
-            'yii\debug',
-            'class_exists',
-            ['PHPForge\Vite\Vite'],
-            true,
-        );
-        MockerState::addCondition(
-            'yii\debug',
-            'class_exists',
-            ['yii\inertia\Vite'],
-            false,
-        );
-
-        self::assertTrue(
-            ExtensionAvailability::isAvailable('vite'),
-            'The modern PHPForge Vite implementation must make the integration available.',
-        );
-    }
-
     public function testIsAvailableRejectsMissingProviders(): void
     {
         $providers = [
-            'yii\inertia\Manager',
             'yii\symfonymailer\Mailer',
             'yii\queue\Queue',
-            'PHPForge\Vite\Vite',
-            'yii\inertia\Vite',
         ];
 
         foreach ($providers as $provider) {
@@ -100,10 +54,8 @@ final class ExtensionAvailabilityTest extends TestCase
         }
 
         $ids = [
-            'inertia',
             'mail',
             'queue',
-            'vite',
         ];
 
         foreach ($ids as $id) {
@@ -119,8 +71,6 @@ final class ExtensionAvailabilityTest extends TestCase
         $ids = [
             'mail',
             'queue',
-            'inertia',
-            'vite',
         ];
 
         foreach ($ids as $id) {

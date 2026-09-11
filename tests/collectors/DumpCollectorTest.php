@@ -10,6 +10,7 @@ use yii\base\InvalidConfigException;
 use yii\debug\collectors\DumpCollector;
 use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -49,7 +50,7 @@ final class DumpCollectorTest extends TestCase
         $collector->shutdown();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::dump($collector),
             'Stopped collector must record nothing.',
         );
     }
@@ -57,7 +58,7 @@ final class DumpCollectorTest extends TestCase
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         self::assertNull(
-            (new DumpCollector())->capture(),
+            Captured::dump(new DumpCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -101,7 +102,7 @@ final class DumpCollectorTest extends TestCase
             Message::LOG_TARGET_NOT_INITIALIZED_FOR_READING->getMessage(),
         );
 
-        $collector->capture();
+        Captured::dump($collector);
     }
 
     public function testVarDumpDelegatesToCallbackWhenSet(): void
@@ -178,7 +179,7 @@ final class DumpCollectorTest extends TestCase
      */
     private function captureEntries(DumpCollector $collector): array
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::dump($collector);
 
         self::assertNotNull(
             $snapshot,

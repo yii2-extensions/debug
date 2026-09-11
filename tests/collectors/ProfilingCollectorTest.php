@@ -7,6 +7,7 @@ namespace yii\debug\tests\collectors;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\collectors\ProfilingCollector;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -21,7 +22,7 @@ final class ProfilingCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new ProfilingCollector())->capture(),
+            Captured::profiling(new ProfilingCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -30,7 +31,7 @@ final class ProfilingCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $snapshot = $collector->capture();
+        $snapshot = Captured::profiling($collector);
 
         self::assertNotNull(
             $snapshot,

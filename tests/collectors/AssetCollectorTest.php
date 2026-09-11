@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
 use yii\debug\collectors\AssetCollector;
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 use yii\debug\ToolbarAsset;
 use yii\web\AssetBundle;
@@ -50,7 +51,7 @@ final class AssetCollectorTest extends TestCase
         $collector->shutdown();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::asset($collector),
             'Stopped collector must record nothing.',
         );
     }
@@ -60,7 +61,7 @@ final class AssetCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new AssetCollector())->capture(),
+            Captured::asset(new AssetCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -76,7 +77,7 @@ final class AssetCollectorTest extends TestCase
         $collector->startup();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::asset($collector),
             'Missing asset manager must collapse to `null`.',
         );
     }
@@ -92,7 +93,7 @@ final class AssetCollectorTest extends TestCase
         $collector->startup();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::asset($collector),
             'A non-asset-manager application component must yield no snapshot.',
         );
     }
@@ -217,7 +218,7 @@ final class AssetCollectorTest extends TestCase
      */
     private function captureSnapshot(AssetCollector $collector): AssetSnapshot
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::asset($collector);
 
         self::assertNotNull(
             $snapshot,

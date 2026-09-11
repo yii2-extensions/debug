@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support\stub;
 
-use PHPForge\Debug\Collector\CollectorInterface;
-use PHPForge\Debug\Storage\PanelSnapshot;
+use PHPForge\Debug\CollectorInterface;
 use RuntimeException;
 
 /**
@@ -19,13 +18,16 @@ final class CustomCollector implements CollectorInterface
     public int $startupCount = 0;
     public mixed $value = 42;
 
-    public function capture(): PanelSnapshot
+    /**
+     * @return array<string, mixed> Encoded custom payload.
+     */
+    public function capture(): array
     {
         if ($this->failCapture) {
             throw new RuntimeException('Custom collector failed.');
         }
 
-        return StubSnapshot::capture(['value' => $this->value]);
+        return StubSnapshot::capture(['value' => $this->value])->jsonSerialize();
     }
 
     public function id(): string

@@ -17,11 +17,20 @@ use function microtime;
 class ProfilingCollector extends Collector
 {
     /**
+     * Returns the stable ID pairing this collector with the Profiling panel.
+     *
+     * @return string Stable collector ID.
+     */
+    public function id(): string
+    {
+        return 'profiling';
+    }
+    /**
      * Snapshots the captured profile messages, the peak memory usage, and the total request time.
      *
      * @return ProfilingSnapshot|null Captured profiling payload; `null` when the collector never started.
      */
-    public function capture(): ProfilingSnapshot|null
+    protected function snapshot(): ProfilingSnapshot|null
     {
         if (!$this->isStarted()) {
             return null;
@@ -36,15 +45,5 @@ class ProfilingCollector extends Collector
             microtime(true) - $requestStart,
             $messages,
         );
-    }
-
-    /**
-     * Returns the stable ID pairing this collector with the Profiling panel.
-     *
-     * @return string Stable collector ID.
-     */
-    public function id(): string
-    {
-        return 'profiling';
     }
 }

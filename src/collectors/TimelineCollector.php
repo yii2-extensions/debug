@@ -16,12 +16,21 @@ use function microtime;
 class TimelineCollector extends Collector
 {
     /**
+     * Returns the stable ID pairing this collector with the Timeline panel.
+     *
+     * @return string Stable collector ID.
+     */
+    public function id(): string
+    {
+        return 'timeline';
+    }
+    /**
      * Snapshots the request start (`$_SERVER['REQUEST_TIME_FLOAT']` with `microtime(true)` fallback), end, and peak
      * memory.
      *
      * @return TimelineSnapshot|null Captured timeline payload; `null` when the collector never started.
      */
-    public function capture(): TimelineSnapshot|null
+    protected function snapshot(): TimelineSnapshot|null
     {
         if (!$this->isStarted()) {
             return null;
@@ -32,15 +41,5 @@ class TimelineCollector extends Collector
             end: microtime(true),
             memory: memory_get_peak_usage(),
         );
-    }
-
-    /**
-     * Returns the stable ID pairing this collector with the Timeline panel.
-     *
-     * @return string Stable collector ID.
-     */
-    public function id(): string
-    {
-        return 'timeline';
     }
 }

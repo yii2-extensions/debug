@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\collectors;
 
 use Closure;
-use PHPForge\Debug\Collector\CollectorInterface;
+use PHPForge\Debug\CollectorInterface;
+use PHPForge\Debug\Storage\PanelSnapshot;
 use Stringable;
 use yii\base\InvalidConfigException;
 use yii\debug\exception\Message;
@@ -17,7 +18,8 @@ use function is_string;
 /**
  * Base class for the Yii2 debug collectors.
  *
- * Owns the idempotent startup/shutdown lifecycle and the debug-module context; subclasses hook event subscription
+ * Owns the idempotent startup/shutdown lifecycle, the debug-module context, and the single encoding step that turns
+ * the typed snapshot returned by {@see snapshot()} into the persisted payload; subclasses hook event subscription
  * into {@see start()} / {@see stop()} and read accumulated log messages through {@see getLogMessages()}.
  *
  * @phpstan-import-type LogTuple from \PHPForge\Debug\Panel\Log\LogSnapshot
@@ -33,6 +35,23 @@ abstract class Collector implements CollectorInterface
      * Whether the collector has been started.
      */
     private bool $started = false;
+
+    /**
+     * Builds the typed snapshot for the current request.
+     *
+     * @return PanelSnapshot|null Typed payload, or `null` when the collector recorded nothing.
+     */
+    abstract protected function snapshot(): PanelSnapshot|null;
+
+    /**
+     * Encodes the typed snapshot built by the subclass into the payload persisted for the panel.
+     *
+     * @return array<string, mixed>|null Encoded panel payload; `null` when the collector recorded nothing.
+     */
+    final public function capture(): array|null
+    {
+        return $this->snapshot()?->jsonSerialize();
+    }
 
     /**
      * Installs low-level instrumentation as soon as the module registers the collector, before the panels are built.

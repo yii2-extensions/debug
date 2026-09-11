@@ -38,20 +38,6 @@ class EventCollector extends Collector
     private Closure|null $listener = null;
 
     /**
-     * Returns the captured events as a typed snapshot.
-     *
-     * @return EventSnapshot|null Captured event payload; `null` when the collector never started.
-     */
-    public function capture(): EventSnapshot|null
-    {
-        if (!$this->isStarted()) {
-            return null;
-        }
-
-        return new EventSnapshot($this->events);
-    }
-
-    /**
      * Returns the stable ID pairing this collector with the Events panel.
      *
      * @return string Stable collector ID.
@@ -59,6 +45,20 @@ class EventCollector extends Collector
     public function id(): string
     {
         return 'event';
+    }
+
+    /**
+     * Returns the captured events as a typed snapshot.
+     *
+     * @return EventSnapshot|null Captured event payload; `null` when the collector never started.
+     */
+    protected function snapshot(): EventSnapshot|null
+    {
+        if (!$this->isStarted()) {
+            return null;
+        }
+
+        return new EventSnapshot($this->events);
     }
 
     /**

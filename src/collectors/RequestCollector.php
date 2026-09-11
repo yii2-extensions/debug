@@ -48,85 +48,6 @@ class RequestCollector extends Collector
     private CapturePolicy|null $capturePolicy = null;
 
     /**
-     * Snapshots the request/response state: action, route, headers, body, status code, flash messages, and the
-     * configured superglobals.
-     *
-     * Header names listed in {@see $censoredVariableNames} are emitted with {@see $censorString} instead of their real
-     * value; the same masking is applied to top-level keys in the captured payload via {@see censorArray()}.
-     *
-     * @return RequestSnapshot|null Captured request payload; `null` when the collector never started.
-     */
-    public function capture(): RequestSnapshot|null
-    {
-        if (!$this->isStarted()) {
-            return null;
-        }
-
-        $request = Yii::$app->getRequest();
-
-        $headers = $request->getHeaders();
-
-        $requestHeaders = [];
-
-        $hasCensorList = $this->censoredVariableNames !== [];
-
-        foreach ($headers as $name => $value) {
-            if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
-                $value = $this->censorString;
-            }
-
-            if (is_array($value) && count($value) === 1) {
-                $requestHeaders[$name] = current($value);
-            } else {
-                $requestHeaders[$name] = $value;
-            }
-        }
-
-        $responseHeaders = $this->normalizeResponseHeaders(headers_list());
-
-        $requestedAction = Yii::$app->requestedAction;
-
-        if ($requestedAction === null) {
-            $action = null;
-        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
-            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
-        } else {
-            $action = $requestedAction::class . '::run()';
-        }
-
-        $rawBody = $request->getRawBody();
-        $requestBody = $rawBody === '' ? [] : $this->capturePolicy()->redactBody($rawBody, $request->getBodyParams());
-
-        $data = [
-            'action' => $action,
-            'actionParams' => Yii::$app->requestedParams,
-            'flashes' => $this->getFlashes(),
-            'general' => [
-                'isAjax' => $request->getIsAjax(),
-                'isFlash' => $request->getIsFlash(),
-                'isPjax' => $request->getIsPjax(),
-                'isSecureConnection' => $request->getIsSecureConnection(),
-                'method' => $request->getMethod(),
-            ],
-            'requestBody' => $requestBody === [] ? [] : [
-                'Content Type' => $request->getContentType(),
-                'Decoded' => $requestBody['decoded'],
-                'Raw' => $requestBody['raw'],
-            ],
-            'requestHeaders' => $requestHeaders,
-            'responseHeaders' => $responseHeaders,
-            'route' => $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
-            'statusCode' => Yii::$app->getResponse()->getStatusCode(),
-        ];
-
-        foreach ($this->displayVars as $name) {
-            $data[trim($name, '_')] = self::normalizeGlobalValue($GLOBALS[$name] ?? null);
-        }
-
-        return RequestSnapshot::capture($this->applyConfiguredCensors($this->capturePolicy()->redact($data)));
-    }
-
-    /**
      * Returns the stable ID pairing this collector with the Request panel.
      *
      * @return string Stable collector ID.
@@ -234,6 +155,85 @@ class RequestCollector extends Collector
         }
 
         return $responseHeaders;
+    }
+
+    /**
+     * Snapshots the request/response state: action, route, headers, body, status code, flash messages, and the
+     * configured superglobals.
+     *
+     * Header names listed in {@see $censoredVariableNames} are emitted with {@see $censorString} instead of their real
+     * value; the same masking is applied to top-level keys in the captured payload via {@see censorArray()}.
+     *
+     * @return RequestSnapshot|null Captured request payload; `null` when the collector never started.
+     */
+    protected function snapshot(): RequestSnapshot|null
+    {
+        if (!$this->isStarted()) {
+            return null;
+        }
+
+        $request = Yii::$app->getRequest();
+
+        $headers = $request->getHeaders();
+
+        $requestHeaders = [];
+
+        $hasCensorList = $this->censoredVariableNames !== [];
+
+        foreach ($headers as $name => $value) {
+            if ($hasCensorList && in_array($name, $this->censoredVariableNames, true)) {
+                $value = $this->censorString;
+            }
+
+            if (is_array($value) && count($value) === 1) {
+                $requestHeaders[$name] = current($value);
+            } else {
+                $requestHeaders[$name] = $value;
+            }
+        }
+
+        $responseHeaders = $this->normalizeResponseHeaders(headers_list());
+
+        $requestedAction = Yii::$app->requestedAction;
+
+        if ($requestedAction === null) {
+            $action = null;
+        } elseif ($requestedAction instanceof InlineAction && $requestedAction->controller !== null) {
+            $action = $requestedAction->controller::class . '::' . $requestedAction->actionMethod . '()';
+        } else {
+            $action = $requestedAction::class . '::run()';
+        }
+
+        $rawBody = $request->getRawBody();
+        $requestBody = $rawBody === '' ? [] : $this->capturePolicy()->redactBody($rawBody, $request->getBodyParams());
+
+        $data = [
+            'action' => $action,
+            'actionParams' => Yii::$app->requestedParams,
+            'flashes' => $this->getFlashes(),
+            'general' => [
+                'isAjax' => $request->getIsAjax(),
+                'isFlash' => $request->getIsFlash(),
+                'isPjax' => $request->getIsPjax(),
+                'isSecureConnection' => $request->getIsSecureConnection(),
+                'method' => $request->getMethod(),
+            ],
+            'requestBody' => $requestBody === [] ? [] : [
+                'Content Type' => $request->getContentType(),
+                'Decoded' => $requestBody['decoded'],
+                'Raw' => $requestBody['raw'],
+            ],
+            'requestHeaders' => $requestHeaders,
+            'responseHeaders' => $responseHeaders,
+            'route' => $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
+            'statusCode' => Yii::$app->getResponse()->getStatusCode(),
+        ];
+
+        foreach ($this->displayVars as $name) {
+            $data[trim($name, '_')] = self::normalizeGlobalValue($GLOBALS[$name] ?? null);
+        }
+
+        return RequestSnapshot::capture($this->applyConfiguredCensors($this->capturePolicy()->redact($data)));
     }
 
     /**

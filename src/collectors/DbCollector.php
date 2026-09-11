@@ -161,20 +161,6 @@ class DbCollector extends Collector
     }
 
     /**
-     * Resolves the logger timings into typed query rows and snapshots them.
-     *
-     * @return DbSnapshot|null Captured query payload; `null` when the collector never started.
-     */
-    public function capture(): DbSnapshot|null
-    {
-        if (!$this->isStarted()) {
-            return null;
-        }
-
-        return DbSnapshot::capture($this->resolveRows());
-    }
-
-    /**
      * Counts how many times the same backtrace originated a DB query.
      *
      * @return array<string, int> Call counts indexed by the backtrace hash of the caller.
@@ -285,6 +271,20 @@ class DbCollector extends Collector
         };
 
         Event::on(Connection::class, Connection::EVENT_AFTER_OPEN, $this->afterOpenListener);
+    }
+
+    /**
+     * Resolves the logger timings into typed query rows and snapshots them.
+     *
+     * @return DbSnapshot|null Captured query payload; `null` when the collector never started.
+     */
+    protected function snapshot(): DbSnapshot|null
+    {
+        if (!$this->isStarted()) {
+            return null;
+        }
+
+        return DbSnapshot::capture($this->resolveRows());
     }
 
     /**

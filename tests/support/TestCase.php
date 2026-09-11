@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\support;
 
+use PHPForge\Debug\Panel as PortablePanel;
 use PHPForge\Debug\Storage\{
     DebugSnapshot,
     PanelFailure,
@@ -15,6 +16,7 @@ use ReflectionProperty;
 use Yii;
 use yii\base\Application;
 use yii\debug\{LogTarget, Module, Panel};
+use yii\debug\panels\ProviderPanel;
 use yii\debug\storage\SnapshotStore;
 use yii\di\Container;
 use yii\helpers\ArrayHelper;
@@ -66,9 +68,14 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         return $this->resolveReflectionProperty($object, $propertyName)->getValue($object);
     }
 
-    protected function hydratePanel(Panel $panel, PanelSnapshot $snapshot): void
+    /**
+     * Hydrates a panel from an encoded collector payload or from the typed snapshot that produces it.
+     *
+     * @param array<string, mixed>|PanelSnapshot $snapshot Encoded payload, or the snapshot that encodes to it.
+     */
+    protected function hydratePanel(Panel $panel, array|PanelSnapshot $snapshot): void
     {
-        $panel->hydrate($snapshot->jsonSerialize());
+        $panel->hydrate(is_array($snapshot) ? $snapshot : $snapshot->jsonSerialize());
     }
 
     /**
@@ -133,6 +140,20 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
 
         $panel = new $panelClass();
         $panel->module = $module;
+
+        return $panel;
+    }
+
+    /**
+     * Builds the host adapter around a provider-owned declarative panel, deriving its registration ID.
+     *
+     * @param array<string, mixed> $components Extra components merged into the web app config.
+     */
+    protected function makeProviderPanel(PortablePanel $provider, array $components = []): ProviderPanel
+    {
+        $panel = $this->makePanel(ProviderPanel::class, $components);
+        $panel->provider = $provider;
+        $panel->id = $provider->id();
 
         return $panel;
     }

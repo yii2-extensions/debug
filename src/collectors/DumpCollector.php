@@ -33,36 +33,6 @@ class DumpCollector extends Collector
     public Closure|null $varDumpCallback = null;
 
     /**
-     * Captures the trace-level messages allowed by {@see $categories}, excluding the categories owned by the Router
-     * collector, and pre-renders each captured value through {@see varDump()}.
-     *
-     * @return DumpSnapshot|null Captured dump payload; `null` when the collector never started.
-     */
-    public function capture(): DumpSnapshot|null
-    {
-        if (!$this->isStarted()) {
-            return null;
-        }
-
-        $except = [];
-
-        $routerCollector = $this->module?->getCollectorCoordinator()->collector('router');
-
-        if ($routerCollector instanceof RouterCollector) {
-            $except = $routerCollector->getCategories();
-        }
-
-        $messages = $this->getLogMessages(
-            Logger::LEVEL_TRACE,
-            $this->categories,
-            $except,
-            $this->varDump(...),
-        );
-
-        return DumpSnapshot::capture($messages);
-    }
-
-    /**
      * Returns the stable ID pairing this collector with the Dump panel.
      *
      * @return string Stable collector ID.
@@ -91,5 +61,35 @@ class DumpCollector extends Collector
         }
 
         return $message;
+    }
+
+    /**
+     * Captures the trace-level messages allowed by {@see $categories}, excluding the categories owned by the Router
+     * collector, and pre-renders each captured value through {@see varDump()}.
+     *
+     * @return DumpSnapshot|null Captured dump payload; `null` when the collector never started.
+     */
+    protected function snapshot(): DumpSnapshot|null
+    {
+        if (!$this->isStarted()) {
+            return null;
+        }
+
+        $except = [];
+
+        $routerCollector = $this->module?->getCollectorCoordinator()->collector('router');
+
+        if ($routerCollector instanceof RouterCollector) {
+            $except = $routerCollector->getCategories();
+        }
+
+        $messages = $this->getLogMessages(
+            Logger::LEVEL_TRACE,
+            $this->categories,
+            $except,
+            $this->varDump(...),
+        );
+
+        return DumpSnapshot::capture($messages);
     }
 }

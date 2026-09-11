@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\module;
 
-use PHPForge\Debug\Collector\CollectorInterface;
+use PHPForge\Debug\CollectorInterface;
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Xepozz\InternalMocker\MockerState;

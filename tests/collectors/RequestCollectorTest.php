@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\{Action, InlineAction};
 use yii\debug\collectors\RequestCollector;
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 use yii\web\{Controller, Session};
 
@@ -352,7 +353,7 @@ final class RequestCollectorTest extends TestCase
         $collector->shutdown();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::request($collector),
             'Stopped collector must record nothing.',
         );
     }
@@ -362,7 +363,7 @@ final class RequestCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new RequestCollector())->capture(),
+            Captured::request(new RequestCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -801,7 +802,7 @@ final class RequestCollectorTest extends TestCase
      */
     private function captureData(RequestCollector $collector): array
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::request($collector);
 
         self::assertNotNull(
             $snapshot,

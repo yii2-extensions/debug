@@ -7,6 +7,7 @@ namespace yii\debug\tests\collectors;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\collectors\LogCollector;
 use yii\debug\{LogTarget, Module};
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -35,7 +36,7 @@ final class LogCollectorTest extends TestCase
             ['dropped', Logger::LEVEL_TRACE, 'yii\\web\\UrlManager::parseRequest', 0.0, [], 0],
         ];
 
-        $snapshot = $collector->capture();
+        $snapshot = Captured::log($collector);
 
         self::assertNotNull(
             $snapshot,
@@ -55,7 +56,7 @@ final class LogCollectorTest extends TestCase
         $collector->shutdown();
 
         self::assertNull(
-            $collector->capture(),
+            Captured::log($collector),
             'Stopped collector must record nothing.',
         );
     }
@@ -63,7 +64,7 @@ final class LogCollectorTest extends TestCase
     public function testCaptureReturnsNullBeforeStartup(): void
     {
         self::assertNull(
-            (new LogCollector())->capture(),
+            Captured::log(new LogCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -72,7 +73,7 @@ final class LogCollectorTest extends TestCase
     {
         $collector = $this->makeCollector();
 
-        $snapshot = $collector->capture();
+        $snapshot = Captured::log($collector);
 
         self::assertNotNull(
             $snapshot,

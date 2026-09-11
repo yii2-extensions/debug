@@ -7,6 +7,7 @@ namespace yii\debug\tests\collectors;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\collectors\TimelineCollector;
+use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
 
 use function microtime;
@@ -73,7 +74,7 @@ final class TimelineCollectorTest extends TestCase
         $this->mockWebApplication();
 
         self::assertNull(
-            (new TimelineCollector())->capture(),
+            Captured::timeline(new TimelineCollector()),
             'Idle collector must record nothing.',
         );
     }
@@ -96,7 +97,7 @@ final class TimelineCollectorTest extends TestCase
      */
     private function captureSnapshot(TimelineCollector $collector): TimelineSnapshot
     {
-        $snapshot = $collector->capture();
+        $snapshot = Captured::timeline($collector);
 
         self::assertNotNull(
             $snapshot,
