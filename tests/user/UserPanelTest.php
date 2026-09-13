@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\user;
 
-use PHPForge\Debug\Panel\User\{UserRbacRow, UserSnapshot};
+use PHPForge\Debug\Panel\User\UserSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 use Yii;
@@ -224,6 +224,11 @@ final class UserPanelTest extends TestCase
 
         $html = $panel->getDetail();
 
+        self::assertLessThan(
+            (int) strpos($html, 'Switch user'),
+            (int) strpos($html, '<h1 class="yii-debug-sr-only">'),
+            'The identity panel must precede the switch form.',
+        );
         self::assertStringContainsString(
             'aria-label="Switch to user 42"',
             $html,
@@ -273,9 +278,14 @@ final class UserPanelTest extends TestCase
             'Guest state must render the empty-state card.',
         );
         self::assertStringContainsString(
-            'No user authenticated in this request',
+            'No authenticated user',
             $detail,
             'Card headline must describe the guest state.',
+        );
+        self::assertStringNotContainsString(
+            'Switch user',
+            $detail,
+            'A request that cannot switch users must not render the switch form.',
         );
     }
 
@@ -473,182 +483,9 @@ final class UserPanelTest extends TestCase
         );
     }
 
-    public function testGetPermissionsProviderHydratesUserRbacRowModels(): void
-    {
-        $panel = $this->makePanel(UserPanel::class);
-
-        $this->hydratePanel(
-            $panel,
-            UserSnapshot::capture(
-                [
-                    'id' => 1,
-                    'permissions' => [
-                        [
-                            'name' => 'manage',
-                            'description' => 'Manage',
-                            'ruleName' => 'isManager',
-                            'data' => 'null',
-                            'createdAt' => 1_700_000_000,
-                            'updatedAt' => 1_700_000_001,
-                        ],
-                    ],
-                ],
-            ),
-        );
-
-        $provider = $panel->getPermissionsProvider();
-
-        self::assertNotNull(
-            $provider,
-            'Snapshot with permissions must yield a provider.',
-        );
-
-        $models = $provider->getModels();
-
-        self::assertContainsOnlyInstancesOf(
-            UserRbacRow::class,
-            $models,
-            'Models must be typed rows.',
-        );
-
-        $row = $models[0] ?? null;
-
-        self::assertInstanceOf(
-            UserRbacRow::class,
-            $row,
-            'First row must exist.',
-        );
-        self::assertSame(
-            'manage',
-            $row->name,
-            'Row name must survive hydration.',
-        );
-        self::assertSame(
-            'isManager',
-            $row->ruleName,
-            'Rule name must survive hydration.',
-        );
-        self::assertSame(
-            1_700_000_000,
-            $row->createdAt,
-            'Created-at must survive hydration.',
-        );
-    }
-
-    public function testGetRolesProviderHydratesUserRbacRowModels(): void
-    {
-        $panel = $this->makePanel(UserPanel::class);
-
-        $this->hydratePanel(
-            $panel,
-            UserSnapshot::capture(
-                [
-                    'id' => 1,
-                    'roles' => [
-                        [
-                            'name' => 'admin',
-                            'description' => 'Administrator',
-                            'ruleName' => null,
-                            'data' => 'null',
-                            'createdAt' => null,
-                            'updatedAt' => null,
-                        ],
-                        'not-an-array',
-                    ],
-                ],
-            ),
-        );
-
-        $provider = $panel->getRolesProvider();
-
-        self::assertNotNull(
-            $provider,
-            'Snapshot with roles must yield a provider.',
-        );
-
-        $models = $provider->getModels();
-
-        self::assertContainsOnlyInstancesOf(
-            UserRbacRow::class,
-            $models,
-            'Models must be typed rows.',
-        );
-        self::assertCount(
-            2,
-            $models,
-            'Malformed entries must hydrate as empty rows, not vanish.',
-        );
-
-        $first = $models[0] ?? null;
-        $second = $models[1] ?? null;
-
-        self::assertInstanceOf(
-            UserRbacRow::class,
-            $first,
-            'First row must exist.',
-        );
-        self::assertInstanceOf(
-            UserRbacRow::class,
-            $second,
-            'Second row must exist.',
-        );
-        self::assertSame(
-            'admin',
-            $first->name,
-            'Row name must survive hydration.',
-        );
-        self::assertSame(
-            '',
-            $first->ruleName,
-            '`null` rule name must collapse to an empty `string`.',
-        );
-        self::assertNull(
-            $first->createdAt,
-            '`null` created-at must stay `null`.',
-        );
-        self::assertSame(
-            '',
-            $second->name,
-            'Malformed entry must yield an empty row.',
-        );
-    }
-
-    public function testGetRolesProviderReturnsNullWhenSnapshotLacksRoles(): void
-    {
-        $panel = $this->makePanel(UserPanel::class);
-
-        $this->hydratePanel(
-            $panel,
-            UserSnapshot::capture(['id' => 1]),
-        );
-
-        self::assertNull(
-            $panel->getRolesProvider(),
-            'Missing roles key must yield `null`.',
-        );
-        self::assertNull(
-            $panel->getPermissionsProvider(),
-            'Missing permissions key must yield `null`.',
-        );
-
-        $html = Yii::$app->view->render(
-            'panels/user/roles',
-            ['panel' => $panel],
-            $panel,
-        );
-
-        self::assertStringNotContainsString(
-            '<h2',
-            $html,
-            'Unavailable RBAC providers must omit both sections from the roles view.',
-        );
-    }
-
     public function testGetToolbarItemsRendersGuestWhenNoIdInData(): void
     {
-        $panel = $this->makePanel(
-            UserPanel::class,
-        );
+        $panel = $this->makePanel(UserPanel::class);
 
         $panel->userComponent = 'nonexistent';
 
@@ -824,9 +661,7 @@ final class UserPanelTest extends TestCase
 
     public function testGetUserReturnsConfiguredUserInstance(): void
     {
-        $panel = $this->makePanel(
-            UserPanel::class,
-        );
+        $panel = $this->makePanel(UserPanel::class);
 
         $user = new User(['identityClass' => Identity::class]);
 
@@ -890,9 +725,7 @@ final class UserPanelTest extends TestCase
 
     public function testGetUsersFilterModelReturnsNullForStringFilterModel(): void
     {
-        $panel = $this->makePanel(
-            UserPanel::class,
-        );
+        $panel = $this->makePanel(UserPanel::class);
 
         $panel->filterModel = SearchableFilterModel::class;
 
@@ -917,7 +750,6 @@ final class UserPanelTest extends TestCase
         );
 
         $module = new Module('debug');
-
         $module->logTarget = new LogTarget($module);
 
         $module->detachBehavior('access_debug');
@@ -965,9 +797,7 @@ final class UserPanelTest extends TestCase
         $this->mockWebApplication(['components' => ['user' => stdClass::class]]);
 
         $module = new Module('debug');
-
         $module->logTarget = new LogTarget($module);
-
         $panel = new UserPanel(['id' => 'user', 'module' => $module]);
 
         self::assertNull(

@@ -78,9 +78,9 @@ final class AssetPanelTest extends TestCase
             'Empty state must surface the headline.',
         );
         self::assertStringContainsString(
-            'yii-debug-asset-stats',
+            'yii-debug-grid-summary',
             $html,
-            'Stats strip must render alongside the card.',
+            'Summary strip must render alongside the card.',
         );
     }
 
@@ -324,9 +324,7 @@ final class AssetPanelTest extends TestCase
         Yii::$app->setComponents(['assetManager' => null]);
 
         $module = new Module('debug');
-
         $module->logTarget = new LogTarget($module);
-
         $panel = new AssetPanel();
 
         $panel->module = $module;

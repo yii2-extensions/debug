@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
-use PHPForge\Debug\Panel\User\{UserRbacRow, UserSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
+use PHPForge\Debug\Panel\User\{UserPanel as UserPresenter, UserSnapshot};
 use Yii;
 use yii\base\{Action as BaseAction, InvalidConfigException, Model};
-use yii\data\{ArrayDataProvider, DataProviderInterface};
+use yii\data\DataProviderInterface;
 use yii\db\ActiveRecord;
 use yii\debug\ComponentResolver;
 use yii\debug\exception\Message;
@@ -21,7 +21,6 @@ use yii\helpers\VarDumper;
 use yii\web\User;
 
 use function class_exists;
-use function is_array;
 use function is_scalar;
 use function is_string;
 
@@ -137,16 +136,28 @@ class UserPanel extends Panel
     }
 
     /**
-     * Renders the detail view with the identity card and the user-switch GridView.
+     * Renders the detail view through the shared declarative presenter, followed by the user-switch form.
+     *
+     * The switch form stays here because it is an interactive Yii widget the framework-neutral presenter cannot
+     * describe.
+     *
+     * @return string Rendered panel markup.
      */
     #[Override]
     public function getDetail(): string
     {
-        return Yii::$app->view->render(
-            'panels/user/detail',
-            ['panel' => $this],
-            $this,
+        $snapshot = $this->snapshot ?? UserSnapshot::capture([]);
+
+        $html = PanelRenderer::render(
+            $this->getName(),
+            (new UserPresenter())->present($snapshot->jsonSerialize()),
         );
+
+        if ($this->canSwitchUser() === false) {
+            return $html;
+        }
+
+        return $html . Yii::$app->view->render('panels/user/switch', ['panel' => $this], $this);
     }
 
     /**
@@ -156,30 +167,6 @@ class UserPanel extends Panel
     public function getName(): string
     {
         return $this->displayName;
-    }
-
-    /**
-     * Returns the captured RBAC permissions as {@see UserRbacRow} models, or `null` when the snapshot lacks them.
-     */
-    public function getPermissionsProvider(): ArrayDataProvider|null
-    {
-        return $this->rbacProvider('permissions');
-    }
-
-    /**
-     * Returns the captured RBAC roles as {@see UserRbacRow} models, or `null` when the snapshot lacks them.
-     */
-    public function getRolesProvider(): ArrayDataProvider|null
-    {
-        return $this->rbacProvider('roles');
-    }
-
-    /**
-     * @return array<array-key, mixed>
-     */
-    public function getSnapshotData(): array
-    {
-        return $this->snapshot?->data() ?? [];
     }
 
     /**
@@ -241,7 +228,10 @@ class UserPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = UserSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = UserSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**
@@ -382,6 +372,14 @@ class UserPanel extends Panel
     }
 
     /**
+     * @return array<array-key, mixed>
+     */
+    private function getSnapshotData(): array
+    {
+        return $this->snapshot?->data() ?? [];
+    }
+
+    /**
      * Resolves {@see $filterModel} to a usable {@see UserSearchInterface} instance.
      *
      * Instantiates the configured class name when given a string; leaves an already-instantiated model alone;
@@ -419,27 +417,5 @@ class UserPanel extends Panel
         if (is_subclass_of($identityClass, ActiveRecord::class)) {
             $this->filterModel = new UserSearch();
         }
-    }
-
-    /**
-     * Builds an {@see ArrayDataProvider} of {@see UserRbacRow} models from the captured snapshot entry.
-     *
-     * @param string $key Snapshot key holding the normalized RBAC rows (`roles` or `permissions`).
-     */
-    private function rbacProvider(string $key): ArrayDataProvider|null
-    {
-        $rows = $this->getSnapshotData()[$key] ?? null;
-
-        if (is_array($rows) === false) {
-            return null;
-        }
-
-        $models = [];
-
-        foreach ($rows as $row) {
-            $models[] = UserRbacRow::fromArray(is_array($row) ? $row : []);
-        }
-
-        return new ArrayDataProvider(['allModels' => $models]);
     }
 }

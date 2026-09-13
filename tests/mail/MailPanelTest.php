@@ -8,12 +8,12 @@ use DateTimeImmutable;
 use PHPForge\Debug\Panel\Mail\MailSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
-use Yii;
 use yii\debug\LogTarget;
 use yii\debug\panels\MailPanel;
 use yii\debug\tests\support\TestCase;
 use yii\helpers\Url;
 
+use function is_array;
 use function mkdir;
 use function rmdir;
 use function sys_get_temp_dir;
@@ -30,9 +30,7 @@ final class MailPanelTest extends TestCase
 {
     public function testFindPreviousRequestUsesImmediateEntryAfterCurrentTag(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
@@ -42,24 +40,30 @@ final class MailPanelTest extends TestCase
 
         $module->dataPath = $dataPath;
 
-        foreach (
-            [
-                'older' => ['url' => 'https://example.com/older', 'mailCount' => 7],
-                'previous' => ['url' => 'https://example.com/send-mail', 'mailCount' => 2],
-                'current' => ['url' => 'https://example.com/current', 'mailCount' => 0],
-                'newest' => ['url' => 'https://example.com/newest', 'mailCount' => 9],
-            ] as $tag => $summary
-        ) {
-            $this->writeDebugSnapshot(
-                $module,
-                $tag,
-                [],
-                [
-                    'method' => 'POST',
-                    ...$summary,
-                ],
-            );
-        }
+        $this->writeDebugSnapshot(
+            $module,
+            'older',
+            [],
+            ['method' => 'POST', 'url' => 'https://example.com/older', 'mailCount' => 7],
+        );
+        $this->writeDebugSnapshot(
+            $module,
+            'previous',
+            [],
+            ['method' => 'POST', 'url' => 'https://example.com/send-mail', 'mailCount' => 2],
+        );
+        $this->writeDebugSnapshot(
+            $module,
+            'current',
+            [],
+            ['method' => 'POST', 'url' => 'https://example.com/current', 'mailCount' => 0],
+        );
+        $this->writeDebugSnapshot(
+            $module,
+            'newest',
+            [],
+            ['method' => 'POST', 'url' => 'https://example.com/newest', 'mailCount' => 9],
+        );
 
         $panel->tag = 'current';
 
@@ -79,13 +83,12 @@ final class MailPanelTest extends TestCase
 
     public function testFindPreviousRequestUsesNewestEntryWhenCurrentTagIsAbsent(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
         $dataPath = sys_get_temp_dir() . '/debug-mail-fallback-' . uniqid();
+
         mkdir($dataPath, 0o777, true);
 
         $module->dataPath = $dataPath;
@@ -121,9 +124,7 @@ final class MailPanelTest extends TestCase
 
     public function testFindPreviousRequestWithMailReturnsNullWhenLoadManifestThrows(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
@@ -151,9 +152,7 @@ final class MailPanelTest extends TestCase
 
     public function testFindPreviousRequestWithMailReturnsNullWhenLogTargetIsMissing(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
@@ -174,13 +173,12 @@ final class MailPanelTest extends TestCase
 
     public function testFindPreviousRequestWithMailReturnsNullWhenManifestIsEmpty(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
         $dataPath = sys_get_temp_dir() . '/debug-mail-empty-' . uniqid();
+
         mkdir($dataPath, 0o777, true);
 
         $module->dataPath = $dataPath;
@@ -198,9 +196,7 @@ final class MailPanelTest extends TestCase
 
     public function testFindPreviousRequestWithMailReturnsNullWhenModuleIsMissing(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $panel->module = null;
 
@@ -215,13 +211,12 @@ final class MailPanelTest extends TestCase
 
     public function testFindPreviousRequestWithMailReturnsNullWhenOnlyTagInManifestIsCurrent(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
         $dataPath = sys_get_temp_dir() . '/debug-mail-self-' . uniqid();
+
         mkdir($dataPath, 0o777, true);
 
         $module->dataPath = $dataPath;
@@ -248,73 +243,9 @@ final class MailPanelTest extends TestCase
         $this->cleanupDataPath($dataPath);
     }
 
-    public function testGetDetailKeepsFiltersAndRendersFilteredEmptyStateWhenMessagesWereCaptured(): void
-    {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
-
-        Yii::$app->getRequest()->setQueryParams(
-            [
-                'tag' => 'mail-tag',
-                'panel' => 'mail',
-                'Mail' => ['subject' => 'missing subject'],
-            ],
-        );
-
-        $this->hydratePanel(
-            $panel,
-            MailSnapshot::capture(
-                [
-                    [
-                        'from' => 'a@x.com',
-                        'to' => 'b@x.com',
-                        'subject' => 'Welcome',
-                        'time' => new DateTimeImmutable('2026-01-01'),
-                    ],
-                ],
-            ),
-        );
-
-        $detail = $panel->getDetail();
-
-        self::assertStringContainsString(
-            '<strong>0</strong> of <strong>1</strong> message',
-            $detail,
-            'Summary must distinguish the filtered result count from the captured message count.',
-        );
-        self::assertStringContainsString(
-            'No emails match the active filters',
-            $detail,
-            'A zero-result filter must not be presented as an empty capture.',
-        );
-        self::assertStringNotContainsString(
-            'No emails sent in this request',
-            $detail,
-            'Captured messages must keep the capture-empty explanation hidden.',
-        );
-        self::assertStringNotContainsString(
-            '<strong>1</strong> failed',
-            $detail,
-            'Failure metrics must use the same filtered message set as the visible count.',
-        );
-        self::assertStringContainsString(
-            'value="missing subject"',
-            $detail,
-            'The filter form must retain the submitted value when no message matches.',
-        );
-        self::assertStringContainsString(
-            '>Clear all<',
-            $detail,
-            'The filtered empty state must expose a clear-all action.',
-        );
-    }
-
     public function testGetDetailRendersEmptyStateWhenNoMessagesCaptured(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -330,11 +261,20 @@ final class MailPanelTest extends TestCase
         );
     }
 
+    public function testGetDetailRendersEmptyStateWhenThePanelWasNotHydrated(): void
+    {
+        $panel = $this->makePanel(MailPanel::class);
+
+        self::assertStringContainsString(
+            'No emails sent in this request',
+            $panel->getDetail(),
+            'An unhydrated panel must fall back to the no-messages hint.',
+        );
+    }
+
     public function testGetDetailRendersWithCapturedMessages(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -343,7 +283,11 @@ final class MailPanelTest extends TestCase
                     [
                         'from' => 'a@x.com',
                         'to' => 'b@x.com',
+                        'cc' => 'c@x.com',
                         'subject' => 'Hello',
+                        'body' => 'Body text',
+                        'charset' => 'utf-8',
+                        'isSuccessful' => true,
                         'time' => new DateTimeImmutable('2026-01-01'),
                     ],
                 ],
@@ -352,63 +296,41 @@ final class MailPanelTest extends TestCase
 
         $detail = $panel->getDetail();
 
-        self::assertNotEmpty(
+        self::assertStringContainsString(
+            'Hello',
             $detail,
-            'Detail view must produce markup.',
+            'Subject must appear in the rendered output.',
         );
         self::assertStringContainsString(
-            'yii-debug-grid-summary',
+            'a@x.com',
             $detail,
-            'Detail must open with the shared summary strip.',
-        );
-    }
-
-    public function testGetDetailUsesTheSharedPagerMarkup(): void
-    {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
-
-        $messages = [];
-
-        for ($index = 1; $index <= 21; $index++) {
-            $messages[] = [
-                'from' => 'a@x.com',
-                'to' => 'b@x.com',
-                'subject' => "Message {$index}",
-                'time' => new DateTimeImmutable('2026-01-01'),
-            ];
-        }
-
-        $this->hydratePanel(
-            $panel,
-            MailSnapshot::capture($messages),
-        );
-
-        $detail = $panel->getDetail();
-
-        self::assertStringContainsString(
-            'class="yii-debug-pager"',
-            $detail,
-            'Mail pagination must use the shared pager wrapper.',
+            'Sender must appear in the rendered output.',
         );
         self::assertStringContainsString(
-            'class="yii-debug-pager-link"',
+            'c@x.com',
             $detail,
-            'Mail pagination links must use the shared debugger class.',
+            'Carbon copies must appear in the rendered output.',
         );
-        self::assertMatchesRegularExpression(
-            '/<\/ol>\s*<div class="yii-debug-mail-pager">/',
+        self::assertStringContainsString(
+            'utf-8',
             $detail,
-            'Mail pagination must remain outside the ordered message list so every direct list child is a message.',
+            'Charset must appear in the rendered output.',
+        );
+        self::assertStringContainsString(
+            'Body text',
+            $detail,
+            'Body must appear in the rendered output.',
+        );
+        self::assertStringContainsString(
+            'Sent',
+            $detail,
+            'Delivery status must appear in the rendered output.',
         );
     }
 
     public function testGetNameAndIcon(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         self::assertSame(
             'Mail',
@@ -424,9 +346,7 @@ final class MailPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsCountChipWhenMessagesPresent(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -463,13 +383,12 @@ final class MailPanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsCrossRequestChipWhenCurrentTagHasSuccessorInManifest(): void
     {
-        $panel = $this->makePanel(
-            MailPanel::class,
-        );
+        $panel = $this->makePanel(MailPanel::class);
 
         $module = $panel->module ?? self::fail('Module must be wired.');
 
         $dataPath = sys_get_temp_dir() . '/debug-mail-test-' . uniqid();
+
         mkdir($dataPath, 0o777, true);
 
         $module->dataPath = $dataPath;
@@ -533,6 +452,7 @@ final class MailPanelTest extends TestCase
         $module = $panel->module ?? self::fail('Module must be wired.');
 
         $dataPath = sys_get_temp_dir() . '/debug-mail-test-' . uniqid();
+
         mkdir($dataPath, 0o777, true);
 
         $module->dataPath = $dataPath;

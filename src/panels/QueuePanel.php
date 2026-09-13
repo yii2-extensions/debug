@@ -5,44 +5,47 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
-use PHPForge\Debug\Panel\Queue\{JobRecord, QueueSnapshot};
-use Yii;
+use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
+use PHPForge\Debug\Panel\Queue\{JobRecord, QueuePanel as QueuePresenter, QueueSnapshot};
 use yii\debug\actions\queue\JobAction;
-use yii\debug\models\search\QueueSearch;
-use yii\debug\Panel;
+use yii\debug\{Module, Panel};
+use yii\helpers\Url;
 
 use function count;
 
 /**
  * Renders the queue lifecycle events captured by the Queue collector.
  *
- * Presents every `afterPush`, `afterExec`, and `afterError` record emitted by any class extending `yii\queue\Queue`
- * from `yiisoft/yii2-queue`; data acquisition lives in {@see \yii\debug\collectors\QueueCollector}. When the package
- * is not installed the empty-state view is shown.
+ * Delegates the detail view to the framework-neutral {@see QueuePresenter}, feeding it the per-job detail routes;
+ * data acquisition lives in {@see \yii\debug\collectors\QueueCollector}.
  */
 class QueuePanel extends Panel
 {
     private QueueSnapshot|null $snapshot = null;
 
     /**
-     * Renders the detail view with the queue cards list.
+     * Renders the detail view through the shared declarative presenter.
+     *
+     * @return string Rendered panel markup.
      */
     #[Override]
     public function getDetail(): string
     {
-        $searchModel = new QueueSearch();
+        $records = $this->getRecords();
 
-        $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getRecords());
+        $jobUrls = [];
 
-        return Yii::$app->view->render(
-            'panels/queue/detail',
-            [
-                'dataProvider' => $dataProvider,
-                'panel' => $this,
-                'searchModel' => $searchModel,
-            ],
-            $this,
+        foreach ($records as $index => $_record) {
+            $jobUrls[$index] = Url::to(Module::route('queue-job', ['seq' => $index, 'tag' => $this->tag]));
+        }
+
+        $snapshot = $this->snapshot ?? new QueueSnapshot([]);
+
+        $view = (new QueuePresenter())->jobUrls($jobUrls)->present($snapshot->jsonSerialize());
+
+        return PanelRenderer::render(
+            $this->getName(),
+            $view,
         );
     }
 
@@ -78,7 +81,10 @@ class QueuePanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = QueueSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = QueueSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**
