@@ -224,9 +224,20 @@ final class UserPanelTest extends TestCase
 
         $html = $panel->getDetail();
 
+        $identity = strpos($html, '<h1 class="yii-debug-sr-only">');
+        $switch = strpos($html, 'Switch user');
+
+        self::assertNotFalse(
+            $identity,
+            'The identity panel must be rendered.',
+        );
+        self::assertNotFalse(
+            $switch,
+            'The switch form must be rendered.',
+        );
         self::assertLessThan(
-            (int) strpos($html, 'Switch user'),
-            (int) strpos($html, '<h1 class="yii-debug-sr-only">'),
+            $switch,
+            $identity,
             'The identity panel must precede the switch form.',
         );
         self::assertStringContainsString(
