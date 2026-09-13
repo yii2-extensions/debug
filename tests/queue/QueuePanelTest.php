@@ -20,9 +20,7 @@ final class QueuePanelTest extends TestCase
 {
     public function testArrayRecordsReturnsEmptyWhenDataIsNotArray(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         self::assertSame(
             [],
@@ -33,9 +31,7 @@ final class QueuePanelTest extends TestCase
 
     public function testArrayRecordsReturnsEmptyWhenRecordsKeyMissing(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         self::assertSame(
             [],
@@ -46,9 +42,7 @@ final class QueuePanelTest extends TestCase
 
     public function testGetDetailRendersEmptyStateWhenNoRecords(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -58,7 +52,7 @@ final class QueuePanelTest extends TestCase
         $html = $panel->getDetail();
 
         self::assertStringContainsString(
-            'No jobs queued in this request',
+            'No queue activity in this request',
             $html,
             'Empty queue panel must surface the empty-state hint.',
         );
@@ -71,9 +65,7 @@ final class QueuePanelTest extends TestCase
 
     public function testGetDetailRendersExecutedAndErrorStatsAndAsyncHint(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -137,22 +129,25 @@ final class QueuePanelTest extends TestCase
         $html = $panel->getDetail();
 
         self::assertStringContainsString(
-            'executed',
+            '<strong>1</strong> done',
             $html,
             'Executed counter must surface.',
         );
         self::assertStringContainsString(
-            'failed',
+            '<strong>1</strong> failed',
             $html,
             'Failed counter must surface.',
+        );
+        self::assertStringContainsString(
+            'Async driver: Database.',
+            $html,
+            'The async hint must name the out-of-process driver.',
         );
     }
 
     public function testGetDetailRendersWithCapturedRecords(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -186,22 +181,25 @@ final class QueuePanelTest extends TestCase
             'Detail view must produce markup.',
         );
         self::assertStringContainsString(
-            'class="yii-debug-queue-grid-job-link" href="/index.php?r=debug%2Fqueue-job',
+            'seq=0',
             $detail,
-            'The job name must remain a native link to its detail page.',
+            'Each detail link must address its own event.',
         );
-        self::assertStringNotContainsString(
-            'data-href=',
+        self::assertStringContainsString(
+            'href="/index.php?r=debug%2Fqueue-job',
             $detail,
-            'Rows must not advertise an unimplemented click target.',
+            'Each event must keep a native link to its detail page.',
+        );
+        self::assertStringContainsString(
+            'Open job detail',
+            $detail,
+            'The detail link must be labeled.',
         );
     }
 
     public function testGetNameAndIconAndKeepsRendererEnabled(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         self::assertSame(
             'Queue',
@@ -221,9 +219,7 @@ final class QueuePanelTest extends TestCase
 
     public function testGetToolbarItemsEmitsCountAndDangerChipWhenErrorsCaptured(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         $records = [];
 
@@ -248,9 +244,7 @@ final class QueuePanelTest extends TestCase
 
     public function testGetToolbarItemsReturnsEmptyArrayWhenNoRecordsWereCaptured(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         self::assertSame(
             [],
@@ -264,9 +258,7 @@ final class QueuePanelTest extends TestCase
 
     public function testInitRegistersTheQueueJobAction(): void
     {
-        $panel = $this->makePanel(
-            QueuePanel::class,
-        );
+        $panel = $this->makePanel(QueuePanel::class);
 
         self::assertArrayHasKey(
             'queue-job',

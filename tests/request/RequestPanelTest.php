@@ -126,29 +126,13 @@ final class RequestPanelTest extends TestCase
             $detail,
             'The global suffix badge must be present.',
         );
-        self::assertStringContainsString(
-            'GET,POST orders/&lt;id:\\d+&gt;',
+        self::assertStringNotContainsString(
+            'Routes (',
             $detail,
-            'The captured URL-rule trace must be composed into Request.',
-        );
-        self::assertStringContainsString(
-            'Matched',
-            $detail,
-            'The successful route probe must be identified textually.',
-        );
-        self::assertStringContainsString(
-            'Source: Current URL manager configuration. Live configuration may differ from this capture.',
-            $detail,
-            'Live route provenance must be explicit.',
+            'The route inventory must not reopen a tab that repeats the overview.',
         );
 
-        $labels = [
-            'Input',
-            'Headers',
-            'Session',
-            'Routes (1)',
-            'Server',
-        ];
+        $labels = ['Input', 'Headers', 'Session', 'Server'];
         $positions = [];
 
         foreach ($labels as $label) {
@@ -165,9 +149,8 @@ final class RequestPanelTest extends TestCase
         self::assertTrue(
             $positions[0] < $positions[1]
             && $positions[1] < $positions[2]
-            && $positions[2] < $positions[3]
-            && $positions[3] < $positions[4],
-            'Canonical Request tabs must be ordered Input, Headers, Session, Routes, Server.',
+            && $positions[2] < $positions[3],
+            'Canonical Request tabs must be ordered Input, Headers, Session, Server.',
         );
     }
 

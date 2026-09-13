@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(tests): split debugger action and module tests by responsibility and centralize shared action fixtures.
 - docs: focus the `README.md` on installation, essential configuration, and usage; preserve panel screenshots, clarify Yii2 `22.x` support, and remove internal implementation details and broken documentation links.
 - feat: support portable declarative panels and delegate Vite and Inertia presentation to their provider packages.
+- refactor(panels)!: present Mail, Configuration, Assets, Router, Queue, and User declaratively, and drop the Request `Routes` tab.
 
 ## 0.1.1 May 18, 2026
 

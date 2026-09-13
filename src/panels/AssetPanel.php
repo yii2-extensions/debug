@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\Asset\{AssetBundleNormalizer, AssetBundleRow, AssetSnapshot};
-use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
+use PHPForge\Debug\Panel\Asset\{AssetBundleRow, AssetPanel as AssetPresenter, AssetSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\Panel;
@@ -17,34 +17,26 @@ use function count;
 /**
  * Renders the asset bundles captured by the Asset Bundles collector.
  *
- * Presents each bundle's source path, base path, base URL, CSS/JS files, and dependency tree from the static
- * snapshot; data acquisition lives in {@see \yii\debug\collectors\AssetCollector}.
+ * Delegates the detail view to the framework-neutral {@see AssetPresenter}; data acquisition lives in
+ * {@see \yii\debug\collectors\AssetCollector}.
  */
 class AssetPanel extends Panel
 {
     private AssetSnapshot|null $snapshot = null;
 
     /**
-     * @return list<AssetBundleRow> Registered bundles in registration order.
-     */
-    public function getBundles(): array
-    {
-        return $this->snapshot?->bundles() ?? [];
-    }
-
-    /**
-     * Renders the detail view from the normalized bundle summary and the optional Vite manifest snapshot.
+     * Renders the detail view through the shared declarative presenter.
+     *
+     * @return string Rendered panel markup.
      */
     #[Override]
     public function getDetail(): string
     {
-        return Yii::$app->view->render(
-            'panels/assets/detail',
-            [
-                'summary' => (new AssetBundleNormalizer())->normalize($this->getBundles()),
-                'vite' => $this->snapshot?->vite(),
-            ],
-            $this,
+        $snapshot = $this->snapshot ?? new AssetSnapshot([], null);
+
+        return PanelRenderer::render(
+            $this->getName(),
+            (new AssetPresenter())->present($snapshot->jsonSerialize()),
         );
     }
 
@@ -81,7 +73,10 @@ class AssetPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = AssetSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = AssetSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**
@@ -118,5 +113,13 @@ class AssetPanel extends Panel
                 'value' => count($bundles),
             ],
         ];
+    }
+
+    /**
+     * @return list<AssetBundleRow> Registered bundles in registration order.
+     */
+    private function getBundles(): array
+    {
+        return $this->snapshot?->bundles() ?? [];
     }
 }

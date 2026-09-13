@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
-use PHPForge\Debug\Panel\Router\RouterSnapshot;
-use Yii;
-use yii\debug\models\router\{ActionRoutes, CurrentRoute, RouterRules};
+use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
+use PHPForge\Debug\Panel\Router\{ActionRouteRow, RouterPanel as RouterPresenter, RouterRuleRow, RouterSnapshot};
+use yii\debug\models\router\{ActionRoutes, RouterRules};
 use yii\debug\Panel;
 
 /**
  * Renders the routing trace captured by the Router collector.
  *
- * Presents the rules-tested table, the URL-rules table, and the action-routes table side by side; data acquisition
- * lives in {@see \yii\debug\collectors\RouterCollector}.
+ * Delegates the detail view to the framework-neutral {@see RouterPresenter}, feeding it the live URL rules and
+ * action routes; data acquisition lives in {@see \yii\debug\collectors\RouterCollector}.
  */
 class RouterPanel extends Panel
 {
@@ -27,19 +26,40 @@ class RouterPanel extends Panel
     private RouterSnapshot|null $snapshot = null;
 
     /**
-     * Renders the detail view with the Current Route, Router Rules, and Action Routes tabs.
+     * Renders the detail view through the shared declarative presenter.
+     *
+     * @return string Rendered panel markup.
      */
     #[Override]
     public function getDetail(): string
     {
-        return Yii::$app->view->render(
-            'panels/router/detail',
-            [
-                'actionRoutes' => new ActionRoutes(),
-                'currentRoute' => CurrentRoute::fromSnapshot($this->snapshot),
-                'routerRules' => new RouterRules(),
-            ],
-            $this,
+        $routerRules = new RouterRules();
+
+        $ruleRows = [];
+
+        foreach ($routerRules->rules as $rule) {
+            $ruleRows[] = RouterRuleRow::from($rule);
+        }
+
+        $actionRows = [];
+
+        $actionRoutes = new ActionRoutes();
+
+        foreach ($actionRoutes->routes as $action => $route) {
+            $actionRows[] = ActionRouteRow::from($action, $route);
+        }
+
+        $snapshot = $this->snapshot ?? new RouterSnapshot(null, '', null, []);
+
+        $view = (new RouterPresenter())
+            ->urlManager($routerRules->prettyUrl, $routerRules->strictParsing, $routerRules->suffix ?? '')
+            ->rules($ruleRows)
+            ->actionRoutes($actionRows)
+            ->present($snapshot->jsonSerialize());
+
+        return PanelRenderer::render(
+            $this->getName(),
+            $view,
         );
     }
 
@@ -75,7 +95,10 @@ class RouterPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = RouterSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = RouterSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**

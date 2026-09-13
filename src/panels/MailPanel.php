@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\Mail\{MailMessage, MailSnapshot};
-use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
+use PHPForge\Debug\Panel\Mail\{MailMessage, MailPanel as MailPresenter, MailSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
 use Throwable;
-use Yii;
 use yii\debug\{LogTarget, Panel};
-use yii\debug\models\search\MailSearch;
 use yii\helpers\Url;
 
 use function count;
@@ -19,31 +17,26 @@ use function is_string;
 /**
  * Renders the mail messages captured by the Mail collector.
  *
- * Presents each dispatched message's metadata (sender, recipients, subject, headers, charset, time) as mail cards;
- * data acquisition and `.eml` persistence live in {@see \yii\debug\collectors\MailCollector}.
+ * Delegates the detail view to the framework-neutral {@see MailPresenter}; data acquisition and `.eml` persistence
+ * live in {@see \yii\debug\collectors\MailCollector}.
  */
 class MailPanel extends Panel
 {
     private MailSnapshot|null $snapshot = null;
 
     /**
-     * Renders the detail view with the mail card list.
+     * Renders the detail view through the shared declarative presenter.
+     *
+     * @return string Rendered panel markup.
      */
     #[Override]
     public function getDetail(): string
     {
-        $searchModel = new MailSearch();
+        $view = (new MailPresenter())->present($this->snapshot?->jsonSerialize() ?? ['entries' => []]);
 
-        $dataProvider = $searchModel->search(Yii::$app->request->get(), $this->getMessages());
-
-        return Yii::$app->view->render(
-            'panels/mail/detail',
-            [
-                'dataProvider' => $dataProvider,
-                'panel' => $this,
-                'searchModel' => $searchModel,
-            ],
-            $this,
+        return PanelRenderer::render(
+            $this->getName(),
+            $view,
         );
     }
 
@@ -79,7 +72,10 @@ class MailPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = MailSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = MailSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**

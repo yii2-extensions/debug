@@ -6,7 +6,9 @@ namespace yii\debug\tests\router;
 
 use PHPForge\Debug\Panel\Router\RouterSnapshot;
 use PHPUnit\Framework\Attributes\Group;
+use Yii;
 use yii\debug\panels\RouterPanel;
+use yii\debug\tests\support\stub\router\controllers\WebController;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
 
@@ -17,11 +19,49 @@ use yii\log\Logger;
 #[Group('router')]
 final class RouterPanelTest extends TestCase
 {
-    public function testGetDetailRendersWithCapturedData(): void
+    public function testGetDetailListsConfiguredUrlRulesAndDiscoveredActions(): void
     {
         $panel = $this->makePanel(
             RouterPanel::class,
+            [
+                'urlManager' => [
+                    'enablePrettyUrl' => true,
+                    'enableStrictParsing' => true,
+                    'suffix' => '.html',
+                    'rules' => ['post/<id:\\d+>' => 'post/view'],
+                ],
+            ],
         );
+
+        Yii::$app->controllerMap = ['mapped' => WebController::class];
+
+        $this->hydratePanel(
+            $panel,
+            RouterSnapshot::capture('app\\controllers\\SiteController::actionIndex()', [], 'site/index'),
+        );
+
+        $detail = $panel->getDetail();
+
+        self::assertStringContainsString(
+            'post/&lt;id:\\d+&gt;',
+            $detail,
+            'Every configured URL rule must reach the shared presenter.',
+        );
+        self::assertStringContainsString(
+            'WebController::actionFirst()',
+            $detail,
+            'Every discovered action route must reach the shared presenter.',
+        );
+        self::assertStringContainsString(
+            '.html',
+            $detail,
+            'The global suffix must reach the shared presenter.',
+        );
+    }
+
+    public function testGetDetailRendersWithCapturedData(): void
+    {
+        $panel = $this->makePanel(RouterPanel::class);
 
         $this->hydratePanel(
             $panel,
@@ -34,20 +74,20 @@ final class RouterPanelTest extends TestCase
 
         $detail = $panel->getDetail();
 
-        self::assertMatchesRegularExpression(
-            '~id="router-panel-0"(?:(?!id="router-panel-1").)*site/index~s',
+        self::assertStringContainsString(
+            '<code>site/index</code>',
             $detail,
-            'Route must render inside the active pane.',
+            'The resolved route must render in the overview.',
         );
         self::assertStringContainsString(
-            'Resolved route',
+            'app\\controllers\\SiteController::actionIndex()',
             $detail,
-            'Summary label must surface in the detail.',
+            'The dispatched action must render in the overview.',
         );
         self::assertStringContainsString(
-            'Dispatched action',
+            'Action routes (',
             $detail,
-            'Action label must surface in the detail.',
+            'The action routes discovered from the live application must render.',
         );
     }
 
@@ -219,7 +259,6 @@ final class RouterPanelTest extends TestCase
             [[['rule' => 'site/<action>', 'match' => true, 'parent' => 'parent-rule'], 999]],
             'site/index',
         );
-
         $restored = RouterSnapshot::fromArray(
             $captured->jsonSerialize(),
             '$.panels.router',

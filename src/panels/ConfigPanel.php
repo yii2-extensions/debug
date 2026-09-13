@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\Config\{ConfigDataNormalizer, ConfigSnapshot};
-use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
-use Yii;
-use yii\debug\Panel;
+use PHPForge\Debug\Panel\Config\{ConfigPanel as ConfigPresenter, ConfigSnapshot};
+use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
+use yii\debug\{Module, Panel};
+use yii\helpers\Url;
 
 use function is_array;
 use function is_scalar;
@@ -18,29 +18,28 @@ use function ksort;
 /**
  * Renders the application configuration and runtime environment captured by the Configuration collector.
  *
- * Presents the Yii framework / PHP / application identity and the installed-extensions roster through the detail view,
- * the toolbar's `php-info` link, and the brand-chip version readouts; data acquisition lives in
- * {@see \yii\debug\collectors\ConfigCollector}.
+ * Delegates the detail view to the framework-neutral {@see ConfigPresenter} and keeps the brand-chip version
+ * readouts; data acquisition lives in {@see \yii\debug\collectors\ConfigCollector}.
  */
 class ConfigPanel extends Panel
 {
     private ConfigSnapshot|null $snapshot = null;
 
     /**
-     * Renders the detail view from the normalized configuration summary.
+     * Renders the detail view through the shared declarative presenter.
+     *
+     * @return string Rendered panel markup.
      */
     #[Override]
     public function getDetail(): string
     {
-        $data = $this->payload();
+        $snapshot = $this->snapshot ?? ConfigSnapshot::capture([]);
 
-        $summary = (new ConfigDataNormalizer())->normalize($data, $this->getExtensions());
+        $view = (new ConfigPresenter())
+            ->phpInfoUrl(Url::to(Module::route('php-info')))
+            ->present($snapshot->jsonSerialize());
 
-        return Yii::$app->view->render(
-            'panels/config/detail',
-            ['summary' => $summary],
-            $this,
-        );
+        return PanelRenderer::render($this->getName(), $view);
     }
 
     /**
@@ -114,7 +113,10 @@ class ConfigPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = ConfigSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = ConfigSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**
