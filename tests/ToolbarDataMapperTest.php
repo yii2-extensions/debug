@@ -421,7 +421,7 @@ final class ToolbarDataMapperTest extends TestCase
         self::assertNotSame(
             $base,
             $derived,
-            'Each call must return a copy.',
+            'Each fluent method must return a copy.',
         );
 
         $result = $base->map([]);

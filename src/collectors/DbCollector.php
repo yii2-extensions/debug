@@ -177,7 +177,7 @@ class DbCollector extends Collector
     }
 
     /**
-     * Returns the call counts for backtraces that exceed {@see $excessiveCallerThreshold}.
+     * Returns the call counts for backtraces that issued at least {@see $excessiveCallerThreshold} queries.
      *
      * @return array<string, int> Call counts indexed by the backtrace hash of each excessive caller; empty when the
      * check is disabled.
@@ -197,7 +197,7 @@ class DbCollector extends Collector
     /**
      * Returns the number of distinct backtraces flagged as excessive callers.
      *
-     * @return int Number of distinct backtraces that issued more queries than the threshold.
+     * @return int Number of distinct backtraces that issued at least the threshold number of queries.
      */
     public function getExcessiveCallersCount(): int
     {

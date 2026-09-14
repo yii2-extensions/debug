@@ -268,7 +268,7 @@ class LogTarget extends Target
     }
 
     /**
-     * @return int Number of call sites that issued more queries than the configured threshold; `0` when the
+     * @return int Number of call sites that issued at least the configured threshold of queries; `0` when the
      * Database collector is not registered.
      */
     protected function getExcessiveDbCallersCount(): int
