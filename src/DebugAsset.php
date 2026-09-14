@@ -15,14 +15,26 @@ use yii\web\AssetBundle;
  */
 class DebugAsset extends AssetBundle
 {
+    /**
+     * Stylesheet of the debugger pages.
+     */
     public $css = [
         'dist/css/debug.min.css',
     ];
+    /**
+     * Scripts driving panel interactivity, the theme toggle, and the history cursor.
+     */
     public $js = [
         'dist/js/debug.min.js',
     ];
+    /**
+     * Loads the bundle scripts as ES modules, keeping their top-level identifiers module-scoped.
+     */
     public $jsOptions = [
         'type' => 'module',
     ];
+    /**
+     * Published source directory of the packaged debugger assets.
+     */
     public $sourcePath = Module::SOURCE_PATH;
 }

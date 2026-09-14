@@ -61,7 +61,10 @@ class AssetCollector extends Collector
                     continue;
                 }
 
-                $rows[] = AssetBundleRow::fromBundle($name, $this->serializeBundle($bundle));
+                $rows[] = AssetBundleRow::fromBundle(
+                    $name,
+                    $this->serializeBundle($bundle),
+                );
             }
         }
 
@@ -71,6 +74,7 @@ class AssetCollector extends Collector
     /**
      * Snapshots the bundle properties consumed by the detail view (paths, files, dependencies).
      *
+     * @param AssetBundle $bundle Bundle registered during the request.
      * @return array{
      *   basePath: string|null,
      *   baseUrl: string|null,

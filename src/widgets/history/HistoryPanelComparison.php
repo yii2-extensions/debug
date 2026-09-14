@@ -35,6 +35,8 @@ final readonly class HistoryPanelComparison
 
     /**
      * Returns the total number of structural differences detected for the panel.
+     *
+     * @return int Number of structural differences found in the panel.
      */
     public function differenceCount(): int
     {

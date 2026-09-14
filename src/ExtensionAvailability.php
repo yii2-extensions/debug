@@ -19,6 +19,10 @@ final class ExtensionAvailability
 
     /**
      * Returns whether the integration behind `$id` is installed.
+     *
+     * @param string $id Panel id backed by an optional integration.
+     *
+     * @return bool `true` when the integration is installed, or when the id needs none.
      */
     public static function isAvailable(string $id): bool
     {
@@ -39,6 +43,10 @@ final class ExtensionAvailability
 
     /**
      * Returns whether `$id` belongs to an optional integration rather than the built-in Yii diagnostics.
+     *
+     * @param string $id Panel id to classify.
+     *
+     * @return bool `true` when the panel depends on an optional package; `false` otherwise.
      */
     public static function isOptional(string $id): bool
     {

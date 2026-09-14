@@ -53,7 +53,7 @@ final class ComponentResolver
      *
      * @param mixed $config Action-map entry accepted by {@see Yii::createObject()}.
      *
-     * @throws InvalidConfigException When object creation fails for a resolvable configuration.
+     * @throws InvalidConfigException when object creation fails for a resolvable configuration.
      *
      * @return object|null Instantiated object, or `null` when the entry is unresolvable or produces no object.
      */
@@ -87,6 +87,10 @@ final class ComponentResolver
 
     /**
      * Returns whether Yii can resolve the class or registered container identifier.
+     *
+     * @param string $class Class name or container identifier.
+     *
+     * @return bool `true` when the name is resolvable; `false` otherwise.
      */
     private static function isResolvable(string $class): bool
     {

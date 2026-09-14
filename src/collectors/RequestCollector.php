@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\collectors;
 
 use PHPForge\Debug\Capture\CapturePolicy;
-use PHPForge\Debug\Panel\Request\RequestSnapshot;
+use PHPForge\Debug\Panel\Request\{RequestMessage, RequestSnapshot};
 use Yii;
 use yii\base\InlineAction;
 use yii\helpers\ArrayHelper;
@@ -45,6 +45,9 @@ class RequestCollector extends Collector
         '_SESSION',
     ];
 
+    /**
+     * Capture policy applied to the persisted payload, created on first use.
+     */
     private CapturePolicy|null $capturePolicy = null;
 
     /**
@@ -74,10 +77,18 @@ class RequestCollector extends Collector
             $key = ltrim($var, '_');
 
             if (ArrayHelper::getValue($data, $key) !== null) {
-                ArrayHelper::setValue($data, $key, $this->censorString);
+                ArrayHelper::setValue(
+                    $data,
+                    $key,
+                    $this->censorString,
+                );
 
                 if (str_starts_with($key, 'requestBody')) {
-                    ArrayHelper::setValue($data, 'requestBody.Raw', $this->censorString);
+                    ArrayHelper::setValue(
+                        $data,
+                        'requestBody.Raw',
+                        $this->censorString,
+                    );
                 }
             }
         }
@@ -219,8 +230,8 @@ class RequestCollector extends Collector
                 'method' => $request->getMethod(),
             ],
             'requestBody' => $requestBody === [] ? [] : [
-                'Content Type' => $request->getContentType(),
-                'Decoded' => $requestBody['decoded'],
+                RequestMessage::CONTENT_TYPE->value => $request->getContentType(),
+                RequestMessage::DECODED->value => $requestBody['decoded'],
                 'Raw' => $requestBody['raw'],
             ],
             'requestHeaders' => $requestHeaders,
@@ -264,6 +275,8 @@ class RequestCollector extends Collector
 
     /**
      * Returns the shared default policy used for all persistent request data.
+     *
+     * @return CapturePolicy Policy deciding which values are persisted and which are redacted.
      */
     private function capturePolicy(): CapturePolicy
     {
@@ -273,6 +286,10 @@ class RequestCollector extends Collector
     /**
      * Collapses every "empty" superglobal value (`null`, `false`, `''`, `[]`, `0`, `'0'`) to `[]`, so the renderer
      * always sees an iterable shape.
+     *
+     * @param mixed $value Raw superglobal value.
+     *
+     * @return mixed Value unchanged, or `[]` when it is considered empty.
      */
     private static function normalizeGlobalValue(mixed $value): mixed
     {

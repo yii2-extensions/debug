@@ -14,11 +14,20 @@ use yii\web\AssetBundle;
  */
 final class ToolbarAsset extends AssetBundle
 {
+    /**
+     * Runtime driving the floating debug toolbar.
+     */
     public $js = [
         'dist/js/toolbar.min.js',
     ];
+    /**
+     * Loads the bundle scripts as ES modules, keeping their top-level identifiers module-scoped.
+     */
     public $jsOptions = [
         'type' => 'module',
     ];
+    /**
+     * Published source directory of the packaged debugger assets.
+     */
     public $sourcePath = Module::SOURCE_PATH;
 }

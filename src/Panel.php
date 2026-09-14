@@ -78,6 +78,8 @@ class Panel extends Component implements ViewContextInterface
 
     /**
      * Returns the exception captured while collecting the panel payload, if any.
+     *
+     * @return ExceptionSnapshot|null Captured failure, or `null` when the panel ran cleanly.
      */
     public function getError(): ExceptionSnapshot|null
     {
@@ -96,6 +98,8 @@ class Panel extends Component implements ViewContextInterface
 
     /**
      * Returns the framework-neutral render context for the active debugger request, when one has been prepared.
+     *
+     * @return PanelRenderContext|null Prepared render context, or `null` outside a debugger request.
      */
     public function getRenderContext(): PanelRenderContext|null
     {
@@ -228,6 +232,8 @@ class Panel extends Component implements ViewContextInterface
 
     /**
      * Returns the directory under which the panel's relative views resolve.
+     *
+     * @return string Directory the panel views resolve against.
      */
     public function getViewPath(): string
     {
@@ -240,6 +246,8 @@ class Panel extends Component implements ViewContextInterface
      * The sidebar nav skips panels that report `false` for the active capture, so integration panels can activate
      * per request — the way the AJAX flag only surfaces on XHR captures. Returns `true` by default, keeping every
      * core panel listed on every capture.
+     *
+     * @return bool `true` when the panel has content for the loaded capture; `false` otherwise.
      */
     public function hasContent(): bool
     {
@@ -248,6 +256,8 @@ class Panel extends Component implements ViewContextInterface
 
     /**
      * Returns `true` when {@see setError()} captured an exception during panel capture or hydration.
+     *
+     * @return bool `true` when a failure was captured; `false` otherwise.
      */
     public function hasError(): bool
     {
@@ -259,7 +269,9 @@ class Panel extends Component implements ViewContextInterface
      *
      * Invoked by {@see LogTarget::loadTagToPanels()} when the user opens a captured request.
      *
-     * @param array<string, mixed> $payload Panel-specific JSON object.
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload is invalid or cannot be applied to the panel.
      */
     public function hydrate(array $payload): void
     {
@@ -271,6 +283,8 @@ class Panel extends Component implements ViewContextInterface
 
     /**
      * Indicates whether this panel is enabled and should be registered by the module.
+     *
+     * @return bool `true` when the module should register the panel; `false` otherwise.
      */
     public function isEnabled(): bool
     {
@@ -283,6 +297,8 @@ class Panel extends Component implements ViewContextInterface
      * Visibility is independent from {@see hasContent()} and does not disable capture, hydration, or direct detail
      * URLs. This lets compatibility panels keep collecting data without competing with a panel that presents the same
      * diagnostics.
+     *
+     * @return bool `true` when the panel appears in the toolbar and sidebar; `false` otherwise.
      */
     public function isVisible(): bool
     {
@@ -300,6 +316,8 @@ class Panel extends Component implements ViewContextInterface
 
     /**
      * Records an exception thrown during capture or hydration so {@see LogTarget} can surface it in the UI.
+     *
+     * @param ExceptionSnapshot $error Failure captured for this panel.
      */
     public function setError(ExceptionSnapshot $error): void
     {
@@ -308,6 +326,8 @@ class Panel extends Component implements ViewContextInterface
 
     /**
      * Installs the framework-neutral render context prepared for this panel by the debugger action.
+     *
+     * @param PanelRenderContext|null $renderContext Render context, or `null` to clear it.
      */
     public function setRenderContext(PanelRenderContext|null $renderContext): void
     {

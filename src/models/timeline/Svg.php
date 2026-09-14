@@ -84,6 +84,9 @@ class Svg extends BaseObject implements Stringable
         }
     }
 
+    /**
+     * @return string Inline SVG markup, or `''` when no memory sample was plotted.
+     */
     public function __toString(): string
     {
         if ($this->points === []) {
@@ -115,6 +118,8 @@ class Svg extends BaseObject implements Stringable
 
     /**
      * Returns whether at least one point has been plotted.
+     *
+     * @return bool `true` when at least one sample was plotted; `false` otherwise.
      */
     public function hasPoints(): bool
     {
@@ -169,6 +174,8 @@ class Svg extends BaseObject implements Stringable
      *
      * Numeric {@see $gradient} values become `currentColor` stops with the value as `stop-opacity`; string values are
      * emitted verbatim as fixed `stop-color` entries.
+     *
+     * @return LinearGradient Gradient definition referenced by the polygon fill.
      */
     private function buildGradient(): LinearGradient
     {
@@ -193,6 +200,8 @@ class Svg extends BaseObject implements Stringable
 
     /**
      * Returns the value for the polygon's `points` attribute.
+     *
+     * @return string Coordinate pairs closing the filled area under the trace.
      */
     private function polygonPoints(): string
     {
@@ -212,6 +221,8 @@ class Svg extends BaseObject implements Stringable
 
     /**
      * Returns the value for the polyline's `points` attribute.
+     *
+     * @return string Coordinate pairs describing the trace.
      */
     private function polylinePoints(): string
     {

@@ -13,6 +13,8 @@ interface RequestSummaryAwarePanelInterface
 {
     /**
      * Provides the immutable summary for the request currently being rendered.
+     *
+     * @param RequestSummary $summary Summary loaded for the capture under inspection.
      */
     public function setRequestSummary(RequestSummary $summary): void;
 }

@@ -10,6 +10,8 @@ use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Collector\CollectorCoordinator;
 use PHPForge\Debug\{CollectorInterface, Panel as PortablePanel};
 use PHPForge\Debug\Helper\{Coerce, Icon, SensitiveDataRedactor, Trace};
+use PHPForge\Debug\Toolbar\DebugHeader;
+use PHPForge\Debug\View\ViewMessage;
 use RuntimeException;
 use Throwable;
 use Yii;
@@ -250,9 +252,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Disables the application log targets when {@see $enableDebugLogs} is `false`, applies the access check, and
      * detaches the toolbar/header listeners so the debugger response is not polluted with self-debug data.
      *
-     * @throws InvalidConfigException When the log component cannot be resolved.
-     * @throws ForbiddenHttpException When the caller fails the access check on a non-toolbar route.
-     * @throws Throwable When an active collector cannot shut down cleanly.
+     * @param Action $action Action about to run.
+     *
+     * @throws InvalidConfigException when the log component cannot be resolved.
+     * @throws ForbiddenHttpException when the caller fails the access check on a non-toolbar route.
+     * @throws Throwable when an active collector cannot shut down cleanly.
+     *
+     * @return bool `true` when the action may run; `false` to stop the dispatch.
      */
     #[Override]
     public function beforeAction($action): bool
@@ -302,6 +308,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * rules onto the application.
      *
      * Called by Yii during the application bootstrap phase (when this module is listed in `bootstrap`).
+     *
+     * @param Application $app Application being bootstrapped.
      */
     public function bootstrap($app): void
     {
@@ -386,7 +394,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Returns the validated collector coordinator used by the request log target.
      *
-     * @throws InvalidConfigException When module initialization has not completed.
+     * @throws InvalidConfigException when module initialization has not completed.
      *
      * @return CollectorCoordinator Configured collector coordinator.
      */
@@ -400,6 +408,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Returns the toolbar HTML: a `<yii-debug-toolbar>` custom element wired with data attributes the bundled JS
      * reads.
+     *
+     * @return string Rendered `<yii-debug-toolbar>` element.
      */
     public function getToolbarHtml(): string
     {
@@ -432,6 +442,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Returns the Yii logo as a data URI ready to drop into `<img src="…">` or `<link rel="icon">`.
      *
      * Uses the shared frontend file so every framework adapter renders the same Yii mark.
+     *
+     * @return string Logo as a data URI.
      */
     public static function getYiiLogo(): string
     {
@@ -453,6 +465,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Resolves the page title used in the debugger HTML: the literal {@see $pageTitle} string when set, the result of
      * the configured callable, or the default `Yii Debugger` label.
+     *
+     * @return string Page title for the debugger HTML.
      */
     public function htmlTitle(): string
     {
@@ -464,13 +478,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return ($this->pageTitle)(Url::base(true));
         }
 
-        return 'Yii Debugger';
+        return ViewMessage::TITLE->value;
     }
 
     /**
      * Resolves the {@see $dataPath} alias and instantiates every configured panel.
      *
-     * @throws InvalidConfigException When a panel configuration cannot be resolved into a {@see Panel} instance.
+     * @throws InvalidConfigException when a panel configuration cannot be resolved into a {@see Panel} instance.
      */
     #[Override]
     public function init(): void
@@ -502,6 +516,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * Wired in {@see bootstrap()} as a listener for {@see ErrorHandler::EVENT_AFTER_RENDER}; the event fires after
      * `renderException()` produces the HTML body but before the response is sent, so handlers may rewrite the output.
+     *
+     * @param ErrorHandlerRenderEvent $event Render event carrying the error-page HTML.
      */
     public function injectToolbarOnErrorPage(ErrorHandlerRenderEvent $event): void
     {
@@ -525,7 +541,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Wired in {@see bootstrap()} as a listener for {@see View::EVENT_END_BODY}. The toolbar template is rendered
      * dynamically while its runtime URL is resolved through the Yii2 asset manager.
      *
-     * @throws Throwable When the view dynamic render fails for the current request.
+     * @param Event $event End-of-body event raised by the view.
+     *
+     * @throws Throwable when the view dynamic render fails for the current request.
      */
     public function renderToolbar(Event $event): void
     {
@@ -567,12 +585,17 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $moduleId = $module instanceof self ? $module->getUniqueId() : 'debug';
 
-        return ["/{$moduleId}/{$action}", ...$params];
+        return [
+            "/{$moduleId}/{$action}",
+            ...$params,
+        ];
     }
 
     /**
      * Sets headers carrying debug data on AJAX responses so the toolbar can resolve the captured tag and link back to
      * the full view.
+     *
+     * @param Event $event Response event raised after the action ran.
      */
     public function setDebugHeaders(Event $event): void
     {
@@ -601,13 +624,18 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $requestStart = Coerce::floatOrNull($rawStart) ?? microtime(true);
 
         $sender->getHeaders()
-            ->set('X-Debug-Tag', $logTarget->tag)
-            ->set('X-Debug-Duration', number_format((microtime(true) - $requestStart) * 1000, 3, '.', ''))
-            ->set('X-Debug-Link', $url);
+            ->set(DebugHeader::TAG->value, $logTarget->tag)
+            ->set(
+                DebugHeader::DURATION->value,
+                number_format((microtime(true) - $requestStart) * 1000, 3, '.', ''),
+            )
+            ->set(DebugHeader::LINK->value, $url);
     }
 
     /**
      * Sets the logo data URI returned by {@see getYiiLogo()}.
+     *
+     * @param string $logo Logo as a data URI.
      */
     public static function setYiiLogo(string $logo): void
     {
@@ -619,6 +647,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * Checks {@see $allowedIPs}, {@see $allowedHosts}, and the optional {@see $checkAccessCallback} in that order. Warns
      * via {@see Yii::warning()} on a denial unless the matching `disable*RestrictionWarning` flag is set.
+     *
+     * @param Action|null $action Action being dispatched, or `null` outside an action context.
+     *
+     * @return bool `true` when the request may reach the debugger; `false` otherwise.
      */
     protected function checkAccess(Action|null $action = null): bool
     {
@@ -732,6 +764,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * from the action ID (`db-explain` becomes `DbExplainAction`) and cannot see the sub-namespaced panel action
      * classes ({@see \yii\debug\actions\db\ExplainAction}, {@see \yii\debug\actions\queue\JobAction}), so the mapped
      * entries are consulted first to keep those routes reachable.
+     *
+     * @param string $route Action route relative to this module.
+     *
+     * @return Action|null Resolved action, or `null` when the route matches none.
      */
     #[Override]
     protected function createStandaloneAction(string $route): Action|null
@@ -759,6 +795,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
     /**
      * Returns the default module version string.
+     *
+     * @return string Version label reported for this module.
      */
     #[Override]
     protected function defaultVersion(): string
@@ -800,6 +838,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     protected function initCollectors(): void
     {
         $coreCollectors = $this->availableCoreDefinitions($this->coreCollectors());
+
         $merged = [...array_diff_key($coreCollectors, $this->collectors), ...$this->collectors];
         $collectors = [];
 
@@ -807,7 +846,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
             $collector = $this->buildCollector($config);
 
             if (is_string($id) && $id !== $collector->id()) {
-                throw new InvalidConfigException('The debug collector registration ID must match its provider.');
+                throw new InvalidConfigException(
+                    'The debug collector registration ID must match its provider.',
+                );
             }
 
             if ($collector instanceof Collector) {
@@ -837,11 +878,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * whose {@see Panel::isEnabled()} returns `false`. Explicit application configuration remains authoritative when
      * an optional provider package is unavailable.
      *
-     * @throws InvalidConfigException When a panel configuration cannot be resolved into a {@see Panel} instance.
+     * @throws InvalidConfigException when a panel configuration cannot be resolved into a {@see Panel} instance.
      */
     protected function initPanels(): void
     {
         $corePanels = $this->availableCoreDefinitions($this->corePanels());
+
         $merged = [...array_diff_key($corePanels, $this->panels), ...$this->panels];
 
         $this->resolvePanels($merged);
@@ -884,6 +926,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * Kept as an extension point so applications can customize the policy without replacing the complete
      * {@see beforeAction()} lifecycle.
+     *
+     * @param Response $response Response about to be sent.
      */
     protected function setDebuggerResponseHeaders(Response $response): void
     {
@@ -915,7 +959,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * @param array<string, mixed>|CollectorInterface|string $config Collector configuration.
      *
-     * @throws InvalidConfigException When the configuration does not resolve to a collector.
+     * @throws InvalidConfigException when the configuration does not resolve to a collector.
      *
      * @return CollectorInterface Resolved collector.
      */
@@ -948,9 +992,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Resolves a panel configuration into a {@see Panel} instance, binding `id` and `module` references and firing
      * {@see Panel::moduleBound()} once both references are in place.
      *
+     * @param string $id Registration id of the panel.
      * @param array<string, mixed>|Panel|string $config Panel instance, configuration array, or class-name string.
      *
-     * @throws InvalidConfigException When the container fails to build the panel.
+     * @throws InvalidConfigException when the container fails to build the panel.
      *
      * @return Panel|null Resolved panel, or `null` when the class name is unknown.
      */
@@ -992,6 +1037,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
     /**
      * Returns whether the requested action belongs to this debugger module.
+     *
+     * @param Action|null $action Action to classify, or `null` when none is running.
+     *
+     * @return bool `true` when the action is dispatched by this module; `false` otherwise.
      */
     private function isDebuggerAction(Action|null $action): bool
     {
@@ -1011,8 +1060,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Returns the initialized {@see LogTarget}, raising when the module has not been bootstrapped.
      *
-     * @throws InvalidConfigException When {@see bootstrap()} has not run yet (so {@see $logTarget} is still a config
+     * @throws InvalidConfigException when {@see bootstrap()} has not run yet (so {@see $logTarget} is still a config
      * array or class name).
+     *
+     * @return LogTarget Initialized log target of this module.
      */
     private function logTargetOrFail(): LogTarget
     {
@@ -1029,7 +1080,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Resolves the {@see $logTarget} configuration into a {@see LogTarget} instance, accepting a class-name string,
      * a configuration array with a `class` key, or an already-instantiated target.
      *
-     * @throws InvalidConfigException When the configured class is missing or does not produce a {@see LogTarget}.
+     * @throws InvalidConfigException when the configured class is missing or does not produce a {@see LogTarget}.
+     *
+     * @return LogTarget Target built from the configured class name, array, or instance.
      */
     private function resolveLogTarget(): LogTarget
     {
@@ -1037,7 +1090,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return $this->logTarget;
         }
 
-        [$class, $properties] = ComponentResolver::classAndProperties($this->logTarget, LogTarget::class);
+        [$class, $properties] = ComponentResolver::classAndProperties(
+            $this->logTarget,
+            LogTarget::class,
+        );
 
         if ($class === null) {
             throw new InvalidConfigException(
@@ -1057,7 +1113,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * @param array<array-key, array<string, mixed>|Panel|PortablePanel|string> $definitions
+     * @param array<array-key, array<string, mixed>|Panel|PortablePanel|string> $definitions Panel definitions to
+     * resolve.
      */
     private function resolvePanels(array $definitions): void
     {

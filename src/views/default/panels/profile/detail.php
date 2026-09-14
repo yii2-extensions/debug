@@ -32,7 +32,9 @@ $capturedCount = count($capturedModels);
 
 $visibleCount = $dataProvider->getTotalCount();
 
-$spanLabel = ' span' . ($capturedCount === 1 ? '' : 's');
+$spanLabel = $capturedCount === 1
+    ? ProfileMessage::SPAN_SUFFIX->value
+    : ProfileMessage::SPANS_SUFFIX->value;
 $countLabel = $visibleCount === $capturedCount ? $spanLabel : " of {$capturedCount}{$spanLabel}";
 
 $maxDuration = ProfileRow::maxDuration($capturedModels);
@@ -49,7 +51,7 @@ $summaryItems = [
     Span::tag()
         ->html(
             Strong::tag()->content($time),
-            ' total',
+            ProfileMessage::TOTAL_SUFFIX->value,
         ),
     Span::tag()
         ->class('yii-debug-grid-summary-sep')
@@ -57,7 +59,7 @@ $summaryItems = [
     Span::tag()
         ->html(
             Strong::tag()->content($memory),
-            ' peak',
+            ProfileMessage::PEAK_SUFFIX->value,
         ),
 ];
 ?>
@@ -72,11 +74,11 @@ $summaryItems = [
         ProfileMessage::EMPTY_HEADLINE->value,
         P::tag()
             ->html(
-                'This request did not produce any ',
+                ProfileMessage::EMPTY_PRODUCED->value,
                 Code::tag()->content('Yii::beginProfile()'),
-                ' / ',
+                ProfileMessage::EMPTY_SEPARATOR->value,
                 Code::tag()->content('Yii::endProfile()'),
-                ' spans, so the Timeline and details are empty.',
+                ProfileMessage::EMPTY_NO_SPANS->value,
             ),
         P::tag()->content(ProfileMessage::EMPTY_CALL_TO_ACTION),
         Pre::tag()
@@ -104,7 +106,7 @@ $filterFields[] = Div::tag()
     ->class('yii-debug-tl-field')
     ->html(
         Label::tag()
-            ->content('Min duration (ms)')
+            ->content(ProfileMessage::MIN_DURATION->value)
             ->for('profile-duration'),
         InputNumber::tag()
             ->id('profile-duration')
@@ -118,34 +120,34 @@ $filterFields[] = Div::tag()
     ->class('yii-debug-tl-field yii-debug-tl-field-grow')
     ->html(
         Label::tag()
-            ->content('Category')
+            ->content(ProfileMessage::CATEGORY->value)
             ->for('profile-category'),
         InputText::tag()
             ->id('profile-category')
             ->name("{$filterPrefix}[category]")
-            ->placeholder('yii\\db\\Command::query')
+            ->placeholder(ProfileMessage::CATEGORY_PLACEHOLDER->value)
             ->value($searchModel->category),
     );
 $filterFields[] = Div::tag()
     ->class('yii-debug-tl-field yii-debug-tl-field-grow')
     ->html(
         Label::tag()
-            ->content('Info')
+            ->content(ProfileMessage::INFO->value)
             ->for('profile-info'),
         InputText::tag()
             ->id('profile-info')
             ->name("{$filterPrefix}[info]")
-            ->placeholder('SELECT')
+            ->placeholder(ProfileMessage::INFO_PLACEHOLDER->value)
             ->value($searchModel->info),
     );
 $filterFields[] = Button::tag()
     ->class('yii-debug-btn yii-debug-btn-primary yii-debug-btn-sm')
-    ->content('Apply')
+    ->content(ProfileMessage::APPLY->value)
     ->type('submit');
 ?>
 <?= Form::tag()
     ->action($filterAction)
-    ->addAriaAttribute('label', 'Profiling filters')
+    ->addAriaAttribute('label', ProfileMessage::FILTERS->value)
     ->class('yii-debug-tl-filter')
     ->html(...$filterFields)
     ->method('get') ?>
@@ -167,7 +169,7 @@ $filterFields[] = Button::tag()
 <?= Header::tag()
     ->class('yii-debug-section-header')
     ->html(
-        H2::tag()->content('Details'),
+        H2::tag()->content(ProfileMessage::DETAILS->value),
         GridViewConfig::pageSizeSelectorHtml(),
     ) ?>
 <?= GridView::widget(

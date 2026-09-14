@@ -33,7 +33,7 @@ final class JsonPanel extends Panel
     /**
      * Returns the stored payload as escaped, formatted JSON.
      *
-     * @throws JsonException When the stored payload cannot be encoded.
+     * @throws JsonException when the stored payload cannot be encoded.
      *
      * @return string Escaped JSON detail markup.
      */
@@ -63,6 +63,8 @@ final class JsonPanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -73,7 +75,7 @@ final class JsonPanel extends Panel
     /**
      * Stores the decoded snapshot payload for safe JSON rendering.
      *
-     * @param array<string, mixed> $payload Stored panel payload.
+     * @param array<string, mixed> $payload Captured panel payload.
      */
     #[Override]
     public function hydrate(array $payload): void

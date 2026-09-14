@@ -9,6 +9,7 @@ use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\Profile\ProfileRow;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
+use PHPForge\Debug\Storage\HydrationException;
 use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
@@ -59,6 +60,8 @@ class TimelinePanel extends Panel
 
     /**
      * Renders the detail view with the timeline chart and the filter form.
+     *
+     * @return string Rendered detail view.
      */
     #[Override]
     public function getDetail(): string
@@ -79,6 +82,8 @@ class TimelinePanel extends Panel
 
     /**
      * Returns the total request duration in milliseconds.
+     *
+     * @return float Request duration, in milliseconds.
      */
     public function getDuration(): float
     {
@@ -87,6 +92,8 @@ class TimelinePanel extends Panel
 
     /**
      * Returns the peak memory usage in bytes.
+     *
+     * @return int Peak memory of the request, in bytes.
      */
     public function getMemory(): int
     {
@@ -105,6 +112,8 @@ class TimelinePanel extends Panel
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -114,6 +123,8 @@ class TimelinePanel extends Panel
 
     /**
      * Returns the request start timestamp in milliseconds since the Unix epoch.
+     *
+     * @return float Request start, in milliseconds since the Unix epoch.
      */
     public function getStart(): float
     {
@@ -123,8 +134,10 @@ class TimelinePanel extends Panel
     /**
      * Returns the memoized SVG renderer, instantiating it lazily on first call.
      *
-     * @throws InvalidConfigException When `svgOptions['class']` does not extend {@see Svg}, or the container produces
+     * @throws InvalidConfigException when `svgOptions['class']` does not extend {@see Svg}, or the container produces
      * something else.
+     *
+     * @return Svg Renderer of the memory-usage graph.
      */
     public function getSvg(): Svg
     {
@@ -172,6 +185,8 @@ class TimelinePanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -183,7 +198,10 @@ class TimelinePanel extends Panel
      * Hydrates the panel from the saved snapshot: resolves the request start/end, computes the duration (preferring
      * the Profiling panel's authoritative time when available), and records the peak memory.
      *
-     * @throws RuntimeException When any of `start`, `end`, `memory`, or the derived `duration` is missing or invalid.
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
+     * @throws RuntimeException when any of `start`, `end`, `memory`, or the derived `duration` is missing or invalid.
      */
     #[Override]
     public function hydrate(array $payload): void
@@ -239,7 +257,7 @@ class TimelinePanel extends Panel
      * Resolves the {@see ProfilingPanel} the timeline reads its spans and duration from, before delegating to the
      * parent initializer.
      *
-     * @throws InvalidConfigException When the module registers no `profiling` panel, or registers one that is not a
+     * @throws InvalidConfigException when the module registers no `profiling` panel, or registers one that is not a
      * {@see ProfilingPanel}.
      */
     public function init(): void

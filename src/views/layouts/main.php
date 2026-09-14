@@ -5,6 +5,7 @@ declare(strict_types=1);
 use UIAwesome\Html\Helper\{Attributes, Encode};
 use yii\debug\Module;
 use PHPForge\Debug\Helper\Icon;
+use PHPForge\Debug\View\ViewMessage;
 use yii\debug\exception\Message;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarRenderer;
@@ -44,7 +45,7 @@ if (!$shellContext instanceof ShellContext) {
     Module::VIEW_PATH_ALIAS . '/_shell.php',
     [
         'actionIcon' => Icon::render('config'),
-        'actionLabel' => 'Config',
+        'actionLabel' => ViewMessage::CONFIG->value,
         'actionTitle' => $shellContext->configUrl === null
             ? 'No requests captured yet'
             : 'Open the Configuration panel',

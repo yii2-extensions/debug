@@ -47,6 +47,9 @@ class RouterRules extends Model
      */
     public string|null $suffix = null;
 
+    /**
+     * Scans the application on construction so the view model is ready before the panel renders.
+     */
     public function init(): void
     {
         // Yii lifecycle convention: the parent chain is a no-op today, so removing this call is unobservable.
@@ -73,7 +76,7 @@ class RouterRules extends Model
      *
      * @param GroupUrlRule $groupRule Group rule whose children should be flattened.
      *
-     * @throws ReflectionException When reflection is needed for a nested REST rule and fails.
+     * @throws ReflectionException when reflection is needed for a nested REST rule and fails.
      */
     protected function scanGroupRule(GroupUrlRule $groupRule): void
     {
@@ -89,7 +92,9 @@ class RouterRules extends Model
      *
      * Reads the protected `rules` property because {@see RestUrlRule} does not expose it directly.
      *
-     * @throws ReflectionException When the `rules` property cannot be read.
+     * @param RestUrlRule $restRule REST rule whose inner groups are scanned.
+     *
+     * @throws ReflectionException when the `rules` property cannot be read.
      */
     protected function scanRestRule(RestUrlRule $restRule): void
     {
@@ -121,7 +126,7 @@ class RouterRules extends Model
      * @param object $rule Rule instance to summarize.
      * @param string|null $type Origin tag, typically `'REST'`, `'GROUP'`, or `null` for top-level rules.
      *
-     * @throws ReflectionException When reflection over a REST rule's inner `rules` property fails.
+     * @throws ReflectionException when reflection over a REST rule's inner `rules` property fails.
      */
     protected function scanRule(object $rule, string|null $type = null): void
     {

@@ -7,11 +7,8 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
-use PHPForge\Debug\Panel\Request\{
-    RequestDataNormalizer,
-    RequestSnapshot,
-    RequestToolbarItemFactory,
-};
+use PHPForge\Debug\Panel\Request\{RequestDataNormalizer, RequestSnapshot, RequestToolbarItemFactory};
+use PHPForge\Debug\Storage\HydrationException;
 use PHPForge\Debug\Toolbar\ToolbarItem;
 use Yii;
 use yii\debug\actions\Action as DebugAction;
@@ -30,10 +27,15 @@ use function is_string;
  */
 class RequestPanel extends Panel
 {
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private RequestSnapshot|null $snapshot = null;
 
     /**
      * Renders one composed request and routing view with a persistent overview and canonical request-data tabs.
+     *
+     * @return string Rendered detail view.
      */
     #[Override]
     public function getDetail(): string
@@ -63,6 +65,8 @@ class RequestPanel extends Panel
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -72,6 +76,8 @@ class RequestPanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -80,12 +86,19 @@ class RequestPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed request snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = RequestSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = RequestSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**
@@ -102,12 +115,18 @@ class RequestPanel extends Panel
 
         return array_map(
             static fn(ToolbarItem $item): array => $item->jsonSerialize(),
-            RequestToolbarItemFactory::create(is_string($route) ? $route : '', $statusCode, $statusText),
+            RequestToolbarItemFactory::create(
+                is_string($route) ? $route : '',
+                $statusCode,
+                $statusText,
+            ),
         );
     }
 
     /**
      * Returns the saved response status code, narrowed to an int, defaulting to `200` when missing or non-numeric.
+     *
+     * @return int HTTP status code of the captured response.
      */
     private function getStatusCode(): int
     {

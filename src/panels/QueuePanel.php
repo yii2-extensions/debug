@@ -7,6 +7,7 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
 use PHPForge\Debug\Panel\Queue\{JobRecord, QueuePanel as QueuePresenter, QueueSnapshot};
+use PHPForge\Debug\Storage\HydrationException;
 use yii\debug\actions\queue\JobAction;
 use yii\debug\{Module, Panel};
 use yii\helpers\Url;
@@ -21,6 +22,9 @@ use function count;
  */
 class QueuePanel extends Panel
 {
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private QueueSnapshot|null $snapshot = null;
 
     /**
@@ -51,6 +55,8 @@ class QueuePanel extends Panel
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -68,6 +74,8 @@ class QueuePanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -76,7 +84,11 @@ class QueuePanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed queue snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void

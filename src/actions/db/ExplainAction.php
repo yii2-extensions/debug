@@ -51,7 +51,10 @@ class ExplainAction extends Action
             return $this->respondEmpty(404);
         }
 
-        $row = QueryRow::findBySequence($panel->getRows(), $seq);
+        $row = QueryRow::findBySequence(
+            $panel->getRows(),
+            $seq,
+        );
 
         if ($row === null) {
             return $this->respondEmpty(404);
@@ -98,6 +101,8 @@ class ExplainAction extends Action
      * Answers with the given status code and an empty body.
      *
      * @param int $statusCode HTTP status code to send.
+     *
+     * @return string Empty body, with the status code already set on the response.
      */
     private function respondEmpty(int $statusCode): string
     {

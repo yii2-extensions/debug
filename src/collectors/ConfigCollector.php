@@ -32,6 +32,8 @@ class ConfigCollector extends Collector
 
     /**
      * Returns the active application instance, or `null` when the framework slot does not contain an object.
+     *
+     * @return object|null Active application, or `null` when the framework slot holds no object.
      */
     protected function getApplication(): object|null
     {
@@ -95,6 +97,8 @@ class ConfigCollector extends Collector
 
     /**
      * Returns the untyped framework application slot without assuming its PHPDoc type.
+     *
+     * @return mixed Raw framework application slot, untyped.
      */
     private static function applicationValue(): mixed
     {
@@ -124,6 +128,7 @@ class ConfigCollector extends Collector
             }
 
             $entry = [];
+
             $rawName = $extension['name'] ?? null;
             $rawVersion = $extension['version'] ?? null;
             $bootstrap = $extension['bootstrap'] ?? null;

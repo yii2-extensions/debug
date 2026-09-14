@@ -7,6 +7,7 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Panel\Db\{DbExplainSupport, DbSnapshot, DbSummary, DbSummaryRenderer, QueryRow};
 use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
+use PHPForge\Debug\Storage\HydrationException;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\data\Sort;
@@ -20,8 +21,8 @@ use yii\debug\Panel;
 /**
  * Renders the database queries captured by the Database collector.
  *
- * Presents the queries grid with per-query timings, the duplicate-query summary, and the EXPLAIN action that powers
- * the grid's inline plan toggle; data acquisition lives in {@see DbCollector}.
+ * Presents the queries grid with per-query timings, the duplicate-query summary, and the EXPLAIN action that powers the
+ * grid's inline plan toggle; data acquisition lives in {@see DbCollector}.
  */
 class DbPanel extends Panel
 {
@@ -59,7 +60,9 @@ class DbPanel extends Panel
     /**
      * Returns the DB connection used by the panel for EXPLAIN queries.
      *
-     * @throws InvalidConfigException When the configured component id does not resolve to a {@see Connection}.
+     * @throws InvalidConfigException when the configured component id does not resolve to a {@see Connection}.
+     *
+     * @return Connection Connection the EXPLAIN action runs against.
      */
     public function getDb(): Connection
     {
@@ -77,7 +80,9 @@ class DbPanel extends Panel
     /**
      * Renders the detail view with the queries grid, the EXPLAIN toggle, and the duplicate-query summary.
      *
-     * @throws InvalidConfigException When the DB connection cannot be resolved.
+     * @throws InvalidConfigException when the DB connection cannot be resolved.
+     *
+     * @return string Rendered detail view.
      */
     #[Override]
     public function getDetail(): string
@@ -111,6 +116,8 @@ class DbPanel extends Panel
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -130,6 +137,8 @@ class DbPanel extends Panel
 
     /**
      * Returns the request-wide query metrics, computed once per hydrated snapshot and reused by every consumer.
+     *
+     * @return DbSummary Query metrics for the whole request.
      */
     public function getSummary(): DbSummary
     {
@@ -138,6 +147,8 @@ class DbPanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -156,7 +167,11 @@ class DbPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed query snapshot and discards the memoized summary.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void
@@ -183,6 +198,8 @@ class DbPanel extends Panel
 
     /**
      * Returns whether the panel can run: requires both a resolvable DB connection and the parent enable check.
+     *
+     * @return bool `true` when a DB connection resolves and the parent check passes; `false` otherwise.
      */
     #[Override]
     public function isEnabled(): bool
@@ -200,6 +217,8 @@ class DbPanel extends Panel
      * Returns whether the given query count exceeds {@see $criticalQueryThreshold}.
      *
      * @param int $count Query count to test.
+     *
+     * @return bool `true` when the count exceeds the threshold; `false` otherwise.
      */
     public function isQueryCountCritical(int $count): bool
     {
@@ -260,7 +279,9 @@ class DbPanel extends Panel
     /**
      * Returns whether the DB connection's driver supports the EXPLAIN action (currently `mysql`, `sqlite`, `pgsql`).
      *
-     * @throws InvalidConfigException When the DB connection cannot be resolved.
+     * @throws InvalidConfigException when the DB connection cannot be resolved.
+     *
+     * @return bool `true` when the driver supports EXPLAIN; `false` otherwise.
      */
     protected function hasExplain(): bool
     {
@@ -276,6 +297,8 @@ class DbPanel extends Panel
     /**
      * Returns the Database collector's excessive-caller threshold, or `null` when the check is disabled or the
      * collector is not registered.
+     *
+     * @return int|null Threshold in queries, or `null` when the check is off or the collector is absent.
      */
     private function excessiveCallerThreshold(): int|null
     {

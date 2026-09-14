@@ -14,8 +14,8 @@ use function substr;
 /**
  * Resolves human-readable Composer package versions for the debug UI.
  *
- * Replaces Composer's synthetic dev placeholders (`22.0.9999999.9999999-dev`, `dev-master`) with the package alias
- * plus the short Git reference, producing strings such as `22.x-dev @a1b2c3d` or `2.0.45`.
+ * Replaces Composer's synthetic dev placeholders (`22.0.9999999.9999999-dev`, `dev-master`) with the package alias plus
+ * the short Git reference, producing strings such as `22.x-dev @a1b2c3d` or `2.0.45`.
  */
 final class VersionResolver
 {
@@ -98,6 +98,8 @@ final class VersionResolver
 
     /**
      * Returns the Yii framework version for the toolbar brand chip.
+     *
+     * @return string Yii version label for the brand chip.
      */
     public static function yii(): string
     {

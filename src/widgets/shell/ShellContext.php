@@ -14,8 +14,17 @@ use yii\debug\widgets\sidebar\SidebarView;
  */
 final readonly class ShellContext
 {
+    /**
+     * Mode that echoes raw content into `<body>` without the brand bar or sidebar.
+     */
     public const string MODE_BARE = 'bare';
+    /**
+     * Mode of the history grid, where the sidebar navigator acts as a cursor over the captured requests.
+     */
     public const string MODE_INDEX = 'index';
+    /**
+     * Mode of a panel view, where the sidebar highlights the active panel of the inspected request.
+     */
     public const string MODE_VIEW = 'view';
 
     public function __construct(

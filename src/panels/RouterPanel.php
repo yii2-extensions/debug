@@ -7,6 +7,7 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
 use PHPForge\Debug\Panel\Router\{ActionRouteRow, RouterPanel as RouterPresenter, RouterRuleRow, RouterSnapshot};
+use PHPForge\Debug\Storage\HydrationException;
 use yii\debug\models\router\{ActionRoutes, RouterRules};
 use yii\debug\Panel;
 
@@ -23,6 +24,9 @@ class RouterPanel extends Panel
      */
     public bool $standalone = true;
 
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private RouterSnapshot|null $snapshot = null;
 
     /**
@@ -65,6 +69,8 @@ class RouterPanel extends Panel
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -74,6 +80,8 @@ class RouterPanel extends Panel
 
     /**
      * Returns the captured routing snapshot for composition by another panel.
+     *
+     * @return RouterSnapshot|null Captured routing trace, or `null` before hydration.
      */
     public function getSnapshot(): RouterSnapshot|null
     {
@@ -82,6 +90,8 @@ class RouterPanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -90,7 +100,11 @@ class RouterPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed routing snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void
@@ -104,6 +118,8 @@ class RouterPanel extends Panel
     /**
      * Keeps explicitly configured Router panels standalone while allowing the built-in instance to act as a hidden
      * compatibility data source for Request.
+     *
+     * @return bool `true` when the panel renders on its own; `false` when it only feeds Request.
      */
     #[Override]
     public function isVisible(): bool

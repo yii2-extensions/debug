@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\actions;
 
 use PHPForge\Debug\Storage\DebugSnapshot;
+use PHPForge\Debug\View\ViewMessage;
 use yii\debug\exception\Message;
 use yii\debug\widgets\history\HistoryComparison;
 use yii\web\NotFoundHttpException;
@@ -26,7 +27,7 @@ final class CompareAction extends Action
      * @param string|null $baseline Baseline request tag.
      * @param string|null $target Target request tag.
      *
-     * @throws NotFoundHttpException When omitted tags cannot resolve a comparison pair or a requested snapshot is
+     * @throws NotFoundHttpException when omitted tags cannot resolve a comparison pair or a requested snapshot is
      * unavailable.
      *
      * @return string Rendered comparison page.
@@ -38,7 +39,7 @@ final class CompareAction extends Action
 
         if (count($tags) < 2 && ($baseline === null || $target === null)) {
             throw new NotFoundHttpException(
-                Message::COMPARISON_CAPTURES_REQUIRED->getMessage(),
+                ViewMessage::COMPARISON_REQUIRES_TWO->value,
             );
         }
 
@@ -63,6 +64,7 @@ final class CompareAction extends Action
         }
 
         $module = $this->getDebugModule();
+
         $panelLabels = [];
 
         foreach ($module->panels as $id => $panel) {
@@ -71,7 +73,11 @@ final class CompareAction extends Action
             $panelLabels[$id] = $name !== '' ? $name : $id;
         }
 
-        $comparison = HistoryComparison::fromSnapshots($baselineSnapshot, $targetSnapshot, $panelLabels);
+        $comparison = HistoryComparison::fromSnapshots(
+            $baselineSnapshot,
+            $targetSnapshot,
+            $panelLabels,
+        );
 
         $this->loadData($target);
         $this->prepareIndexShell($manifest, $target);

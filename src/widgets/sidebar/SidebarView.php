@@ -34,6 +34,8 @@ final readonly class SidebarView
 
     /**
      * Converts the backward-compatible Yii view-model wrappers to the portable Debug Core view-model.
+     *
+     * @return CoreSidebarView Portable sidebar view-model.
      */
     public function toCore(): CoreSidebarView
     {

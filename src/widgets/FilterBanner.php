@@ -47,7 +47,9 @@ class FilterBanner extends Widget
     /**
      * Returns rendered banner HTML, or empty string when no filters are active.
      *
-     * @throws InvalidConfigException When the widget is instantiated without a `searchModel`.
+     * @throws InvalidConfigException when the widget is instantiated without a `searchModel`.
+     *
+     * @return string Rendered banner, or `''` when no filter is active.
      */
     public function run(): string
     {
@@ -84,9 +86,9 @@ class FilterBanner extends Widget
     }
 
     /**
-     * @param array<array-key, mixed> $filters
+     * @param array<array-key, mixed> $filters Raw filter values from the request.
      *
-     * @return list<string>
+     * @return list<string> Attribute names present in the raw filter array.
      */
     private static function attributeNames(array $filters): array
     {
@@ -108,6 +110,8 @@ class FilterBanner extends Widget
      *
      * @param string $formName Search model's form name (the param prefix to manipulate).
      * @param list<string> $without Attribute names whose `<FormName>[<attr>]` slot should be dropped.
+     *
+     * @return string URL of the current route with the listed filter slots removed.
      */
     private function buildUrl(string $formName, array $without): string
     {
@@ -128,9 +132,9 @@ class FilterBanner extends Widget
     }
 
     /**
-     * @param array<array-key, mixed> $filters
+     * @param array<array-key, mixed> $filters Raw filter values from the request.
      *
-     * @return array<string, string>
+     * @return array<string, string> Normalized filter values, with empty or non-scalar entries removed.
      */
     private static function normalizeFilters(array $filters): array
     {

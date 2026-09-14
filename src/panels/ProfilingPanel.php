@@ -10,7 +10,7 @@ use PHPForge\Debug\Helper\{EmptyState, Format};
 use PHPForge\Debug\Panel\{MemorySample, PanelIcon, PanelTitle};
 use PHPForge\Debug\Panel\Profile\{ProfileMessage, ProfileRow, ProfilingSnapshot};
 use PHPForge\Debug\Panel\Timeline\{TimelineGeometry, TimelineMemoryRenderer, TimelineRenderer};
-use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\Storage\{HydrationException, RequestSummary};
 use UIAwesome\Html\Flow\P;
 use Yii;
 use yii\debug\models\search\ProfileSearch;
@@ -27,11 +27,19 @@ use function str_replace;
  */
 class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSummaryAwarePanelInterface
 {
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private ProfilingSnapshot|null $snapshot = null;
+    /**
+     * Summary of the request being rendered, or `null` before {@see setRequestSummary()} runs.
+     */
     private RequestSummary|null $summary = null;
 
     /**
      * Renders the unified Timeline and profiling-details view.
+     *
+     * @return string Rendered detail view.
      */
     #[Override]
     public function getDetail(): string
@@ -66,6 +74,9 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         return $this->snapshot?->samples() ?? [];
     }
 
+    /**
+     * @return int Peak memory recorded for the capture, in bytes; `0` before hydration.
+     */
     public function getMemoryUsage(): int
     {
         return $this->snapshot === null ? 0 : $this->snapshot->memory;
@@ -83,6 +94,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -90,6 +103,9 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         return PanelTitle::PROFILING->value;
     }
 
+    /**
+     * @return float|null Total request processing time in seconds, or `null` before hydration.
+     */
     public function getProcessingTime(): float|null
     {
         return $this->snapshot?->time;
@@ -114,6 +130,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -122,16 +140,25 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed profiling snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = ProfilingSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = ProfilingSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**
      * Supplies the canonical request start time used to position captured spans on the Timeline.
+     *
+     * @param RequestSummary $summary Summary of the request currently being rendered.
      */
     public function setRequestSummary(RequestSummary $summary): void
     {
@@ -149,11 +176,11 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     {
         return [
             [
-                'title' => 'Total processing time',
+                'title' => ProfileMessage::TOOLBAR_TIME->value,
                 'value' => Format::milliseconds($this->getProcessingTime() ?? 0.0),
             ],
             [
-                'title' => 'Peak memory',
+                'title' => ProfileMessage::TOOLBAR_MEMORY->value,
                 'value' => Format::bytesToMb($this->getMemoryUsage(), 3),
             ],
         ];
@@ -162,9 +189,9 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     /**
      * Narrows the filtered data-provider payload to typed rows while retaining capture order.
      *
-     * @param array<array-key, mixed> $models
+     * @param array<array-key, mixed> $models Filtered data-provider payload.
      *
-     * @return list<ProfileRow>
+     * @return list<ProfileRow> Filtered rows in capture order.
      */
     private function filteredRows(array $models): array
     {
@@ -182,7 +209,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     /**
      * Preserves adapter-owned routing and display state when the shared filter form is submitted.
      *
-     * @return array<string, string>
+     * @return array<string, string> Hidden query parameters to preserve adapter-owned routing and display state.
      */
     private function filterHiddenParams(): array
     {
@@ -195,7 +222,10 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         $queryParams = Yii::$app->getRequest()->getQueryParams();
 
         foreach (['sort', 'per-page', 'yii_debug_theme'] as $name) {
-            $value = QueryInput::scalar($queryParams, $name);
+            $value = QueryInput::scalar(
+                $queryParams,
+                $name,
+            );
 
             if ($value !== null && $value !== '') {
                 $params[$name] = $value;
@@ -207,6 +237,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
 
     /**
      * @param list<ProfileRow> $rows Filtered spans in capture order.
+     *
+     * @return string Rendered Timeline, or the empty-state card when the capture carries no usable geometry.
      */
     private function renderTimeline(array $rows): string
     {
@@ -226,7 +258,11 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         $start = $summary->time * 1000;
         $duration = $snapshot->time * 1000;
 
-        $spans = TimelineGeometry::spans($rows, $start, $duration);
+        $spans = TimelineGeometry::spans(
+            $rows,
+            $start,
+            $duration,
+        );
 
         if ($spans === []) {
             return EmptyState::card(
@@ -255,6 +291,9 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         );
     }
 
+    /**
+     * @return string Empty-state card shown when the capture carries no usable Timeline geometry.
+     */
     private function renderTimelineUnavailable(): string
     {
         return EmptyState::card(
