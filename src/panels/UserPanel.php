@@ -156,10 +156,7 @@ class UserPanel extends Panel
     {
         $snapshot = $this->snapshot ?? UserSnapshot::capture([]);
 
-        $html = PanelRenderer::render(
-            $this->getName(),
-            (new UserPresenter())->present($snapshot->jsonSerialize()),
-        );
+        $html = PanelRenderer::render($this->getName(), (new UserPresenter())->present($snapshot->jsonSerialize()));
 
         if ($this->canSwitchUser() === false) {
             return $html;
@@ -250,10 +247,7 @@ class UserPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = UserSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = UserSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -397,7 +391,9 @@ class UserPanel extends Panel
     }
 
     /**
-     * @return array<array-key, mixed>
+     * Returns the captured identity payload.
+     *
+     * @return array<array-key, mixed> Captured identity payload; empty before hydration.
      */
     private function getSnapshotData(): array
     {

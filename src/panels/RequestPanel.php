@@ -95,10 +95,7 @@ class RequestPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = RequestSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = RequestSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -115,11 +112,7 @@ class RequestPanel extends Panel
 
         return array_map(
             static fn(ToolbarItem $item): array => $item->jsonSerialize(),
-            RequestToolbarItemFactory::create(
-                is_string($route) ? $route : '',
-                $statusCode,
-                $statusText,
-            ),
+            RequestToolbarItemFactory::create(is_string($route) ? $route : '', $statusCode, $statusText),
         );
     }
 
@@ -134,7 +127,9 @@ class RequestPanel extends Panel
     }
 
     /**
-     * @return array<array-key, mixed>
+     * Returns the captured request payload.
+     *
+     * @return array<array-key, mixed> Captured request payload; empty before hydration.
      */
     private function payload(): array
     {

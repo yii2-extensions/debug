@@ -48,9 +48,9 @@ final readonly class DebugUrlGenerator implements DebugUrlGeneratorInterface
     /**
      * Removes route-owned keys before additional query parameters are merged.
      *
-     * @param array<array-key, mixed> $queryParams
+     * @param array<array-key, mixed> $queryParams Extra query parameters supplied by the caller.
      *
-     * @return array<array-key, mixed>
+     * @return array<array-key, mixed> Parameters without the route-owned keys.
      */
     private static function query(array $queryParams): array
     {

@@ -7,6 +7,7 @@ namespace yii\debug\actions;
 use PHPForge\Debug\View\ViewMessage;
 use Throwable;
 use Yii;
+use yii\debug\exception\Message;
 use yii\debug\{Module, ToolbarDataMapper};
 use yii\debug\panels\ConfigPanel;
 use yii\helpers\Url;
@@ -54,7 +55,7 @@ class ToolbarDataAction extends Action
             Yii::$app->getResponse()->setStatusCode(404);
 
             return [
-                'error' => 'Debug tag not found.',
+                'error' => Message::DEBUG_TAG_NOT_FOUND->value,
                 'tag' => $tag,
             ];
         }
@@ -96,15 +97,7 @@ class ToolbarDataAction extends Action
                 : null;
 
         return ToolbarDataMapper::create($tag, ViewMessage::TITLE->value)
-            ->withNavigation(
-                $indexUrl,
-                $configUrl,
-                Url::toRoute(
-                    [
-                        "/{$moduleId}/php-info",
-                    ],
-                ),
-            )
+            ->withNavigation($indexUrl, $configUrl, Url::toRoute(["/{$moduleId}/php-info"]))
             ->withPresentation($module->toolbarPosition, $module->defaultHeight, $iconBaseUrl)
             ->withBranding(
                 $iconBaseUrl !== '' ? "{$iconBaseUrl}yii.svg" : $module::getYiiLogo(),

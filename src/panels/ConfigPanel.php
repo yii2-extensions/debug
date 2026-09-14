@@ -43,10 +43,7 @@ class ConfigPanel extends Panel
             ->phpInfoUrl(Url::to(Module::route('php-info')))
             ->present($snapshot->jsonSerialize());
 
-        return PanelRenderer::render(
-            $this->getName(),
-            $view,
-        );
+        return PanelRenderer::render($this->getName(), $view);
     }
 
     /**
@@ -132,10 +129,7 @@ class ConfigPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = ConfigSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = ConfigSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -174,7 +168,9 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * @return array<array-key, mixed>
+     * Returns the captured configuration payload.
+     *
+     * @return array<array-key, mixed> Captured configuration payload; empty before hydration.
      */
     private function payload(): array
     {

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: support portable declarative panels and delegate Vite and Inertia presentation to their provider packages.
 - refactor(panels)!: present Mail, Configuration, Assets, Router, Queue, and User declaratively, and drop the Request `Routes` tab.
 - refactor: read panel, history, sidebar, comparison, and toolbar text from the shared Debug Core enums instead of local literals.
+- refactor(view): read presentation text from enums, adding `yii\debug\view\ViewMessage` for the wording that names Yii2 concepts.
 
 ## 0.1.1 May 18, 2026
 

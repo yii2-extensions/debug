@@ -15,6 +15,8 @@ use yii\helpers\ArrayHelper;
 final class QueryRowDataProvider extends ArrayDataProvider
 {
     /**
+     * Orders the captured statements by the active sort, keeping capture order as the tiebreaker.
+     *
      * @param array<array-key, mixed> $models Rows accepted by the base data provider.
      * @param Sort $sort Active field ordering.
      *
@@ -33,12 +35,7 @@ final class QueryRowDataProvider extends ArrayDataProvider
             );
         }
 
-        ArrayHelper::multisort(
-            $models,
-            $keys,
-            array_values($orders),
-            $sort->sortFlags,
-        );
+        ArrayHelper::multisort($models, $keys, array_values($orders), $sort->sortFlags);
 
         return $models;
     }

@@ -10,6 +10,7 @@ use UIAwesome\Html\Heading\H2;
 use UIAwesome\Html\Phrasing\Span;
 use yii\debug\GridViewConfig;
 use yii\debug\panels\UserPanel;
+use yii\debug\view\ViewMessage as AdapterMessage;
 use yii\debug\widgets\{FilterBanner, GridView};
 use yii\helpers\Url;
 use yii\web\View;
@@ -90,7 +91,7 @@ $userSwitch = $panel->userSwitch;
             FilterBanner::widget(['searchModel' => $usersFilterModel]),
             Span::tag()
                 ->class('yii-debug-sr-only')
-                ->content('Press Enter or Space on a user row to switch identity.')
+                ->content(AdapterMessage::USER_SWITCH_INSTRUCTIONS)
                 ->id('debug-userswitch__row-instructions'),
             GridView::widget(
                 [
@@ -102,7 +103,7 @@ $userSwitch = $panel->userSwitch;
                         'aria-describedby' => 'debug-userswitch__row-instructions',
                         'aria-label' => is_int($key) || is_string($key)
                             ? "Switch to user {$key}"
-                            : 'Switch to selected user',
+                            : AdapterMessage::USER_SWITCH_ROW_FALLBACK->value,
                         'role' => 'button',
                         'tabindex' => 0,
                     ],

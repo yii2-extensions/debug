@@ -13,6 +13,7 @@ use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\EventSearch;
 use PHPForge\Debug\Panel\Event\{EventCellRenderer, EventInspectorRenderer, EventMessage, EventRow, EventSequence};
 use yii\debug\panels\EventPanel;
+use yii\debug\view\ViewMessage as AdapterMessage;
 use yii\debug\widgets\{FilterBanner, GridView};
 
 /**
@@ -65,7 +66,7 @@ if ($hasEvents) {
     ->html(...$summaryItems) ?>
 <?php if (!$hasEvents): ?>
     <?= EmptyState::card(
-        'No events triggered in this request',
+        AdapterMessage::EVENT_EMPTY_HEADLINE->value,
         P::tag()
             ->content(
                 'No events reached the global debug listener. Events stopped by instance handlers, or fired '
@@ -138,25 +139,25 @@ $filterUrl = static function (string $attribute, string $value) use ($panel, $se
                 'value' => static fn(EventRow $data): string => EventInspectorRenderer::renderEventCell($data, $sequence),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-event-cell'],
-                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => 'Filter by event name'],
+                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => AdapterMessage::EVENT_FILTER_NAME->value],
             ],
             [
                 'attribute' => 'class',
-                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => 'Filter by event class'],
+                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => AdapterMessage::EVENT_FILTER_CLASS->value],
                 'value' => static fn(EventRow $data): string => EventCellRenderer::renderClassCell($data),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-cell-mono'],
             ],
             [
                 'attribute' => 'senderClass',
-                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => 'Filter by sender'],
+                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => AdapterMessage::EVENT_FILTER_SENDER->value],
                 'value' => static fn(EventRow $data): string => EventCellRenderer::renderSenderCell($data),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-cell-mono'],
             ],
             [
                 'attribute' => 'isStatic',
-                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => 'Filter by static events'],
+                'filterInputOptions' => ['class' => 'yii-debug-input', 'aria-label' => AdapterMessage::EVENT_FILTER_STATIC->value],
                 'value' => static fn(EventRow $data): string => EventCellRenderer::renderStaticCell($data),
                 'format' => 'raw',
                 'filter' => ['1' => 'Yes', '0' => 'No'],

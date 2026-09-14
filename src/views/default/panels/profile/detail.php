@@ -106,7 +106,7 @@ $filterFields[] = Div::tag()
     ->class('yii-debug-tl-field')
     ->html(
         Label::tag()
-            ->content(ProfileMessage::MIN_DURATION->value)
+            ->content(ProfileMessage::MIN_DURATION)
             ->for('profile-duration'),
         InputNumber::tag()
             ->id('profile-duration')
@@ -120,7 +120,7 @@ $filterFields[] = Div::tag()
     ->class('yii-debug-tl-field yii-debug-tl-field-grow')
     ->html(
         Label::tag()
-            ->content(ProfileMessage::CATEGORY->value)
+            ->content(ProfileMessage::CATEGORY)
             ->for('profile-category'),
         InputText::tag()
             ->id('profile-category')
@@ -132,7 +132,7 @@ $filterFields[] = Div::tag()
     ->class('yii-debug-tl-field yii-debug-tl-field-grow')
     ->html(
         Label::tag()
-            ->content(ProfileMessage::INFO->value)
+            ->content(ProfileMessage::INFO)
             ->for('profile-info'),
         InputText::tag()
             ->id('profile-info')
@@ -142,7 +142,7 @@ $filterFields[] = Div::tag()
     );
 $filterFields[] = Button::tag()
     ->class('yii-debug-btn yii-debug-btn-primary yii-debug-btn-sm')
-    ->content(ProfileMessage::APPLY->value)
+    ->content(ProfileMessage::APPLY)
     ->type('submit');
 ?>
 <?= Form::tag()
@@ -169,7 +169,7 @@ $filterFields[] = Button::tag()
 <?= Header::tag()
     ->class('yii-debug-section-header')
     ->html(
-        H2::tag()->content(ProfileMessage::DETAILS->value),
+        H2::tag()->content(ProfileMessage::DETAILS),
         GridViewConfig::pageSizeSelectorHtml(),
     ) ?>
 <?= GridView::widget(

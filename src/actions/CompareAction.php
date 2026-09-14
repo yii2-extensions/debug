@@ -35,6 +35,7 @@ final class CompareAction extends Action
     public function run(string|null $baseline = null, string|null $target = null): string
     {
         $manifest = $this->getManifest();
+
         $tags = array_keys($manifest);
 
         if (count($tags) < 2 && ($baseline === null || $target === null)) {
@@ -73,11 +74,7 @@ final class CompareAction extends Action
             $panelLabels[$id] = $name !== '' ? $name : $id;
         }
 
-        $comparison = HistoryComparison::fromSnapshots(
-            $baselineSnapshot,
-            $targetSnapshot,
-            $panelLabels,
-        );
+        $comparison = HistoryComparison::fromSnapshots($baselineSnapshot, $targetSnapshot, $panelLabels);
 
         $this->loadData($target);
         $this->prepareIndexShell($manifest, $target);

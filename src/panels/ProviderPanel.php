@@ -8,6 +8,7 @@ use LogicException;
 use PHPForge\Debug\{Panel as PortablePanel, PanelView};
 use PHPForge\Debug\Panel\PanelRenderer;
 use yii\base\InvalidConfigException;
+use yii\debug\exception\Message;
 use yii\debug\Panel;
 
 /**
@@ -36,11 +37,13 @@ class ProviderPanel extends Panel
     {
         return PanelRenderer::render(
             $this->getName(),
-            $this->view ?? throw new LogicException('No portable panel capture has been hydrated.')
+            $this->view ?? throw new LogicException(Message::PORTABLE_PANEL_NOT_HYDRATED->value)
         );
     }
 
     /**
+     * Returns the human-readable panel name.
+     *
      * @throws InvalidConfigException when no provider is configured, or its ID does not match the registration.
      *
      * @return string Panel display name declared by the provider.
@@ -51,6 +54,8 @@ class ProviderPanel extends Panel
     }
 
     /**
+     * Returns the shared Debug Core icon key.
+     *
      * @throws InvalidConfigException when no provider is configured, or its ID does not match the registration.
      *
      * @return string Toolbar icon key declared by the provider.
@@ -61,6 +66,8 @@ class ProviderPanel extends Panel
     }
 
     /**
+     * Returns whether the capture holds activity worth listing in the sidebar.
+     *
      * @return bool `true` when the panel carries an error or an active presentation; `false` otherwise.
      */
     public function hasContent(): bool
@@ -94,14 +101,18 @@ class ProviderPanel extends Panel
     }
 
     /**
+     * Builds the toolbar metrics the provider declares for a capture.
+     *
      * @return array<int, array<string, mixed>> Toolbar chips built from the provider's metrics, in declared order.
      */
     protected function getToolbarItems(): array
     {
         $items = [];
+
         foreach ($this->view?->toolbarMetrics() ?? [] as $metric) {
             $items[] = ['title' => $metric['label'], 'value' => $metric['value']['value']];
         }
+
         return $items;
     }
 
@@ -122,7 +133,7 @@ class ProviderPanel extends Panel
 
         if ($this->provider->id() !== $this->id) {
             throw new InvalidConfigException(
-                'The debug panel registration ID must match its provider.',
+                Message::PROVIDER_ID_MISMATCH->getMessage('panel'),
             );
         }
 

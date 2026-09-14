@@ -35,10 +35,7 @@ $nPlusOneFindings = NPlusOneDetector::detect($pageRows);
 
 $nPlusOneBySequence = NPlusOneDetector::bySequence($nPlusOneFindings);
 
-$nPlusOneSummary = DbQueryRenderer::renderNPlusOneSummary(
-    $nPlusOneFindings,
-    DbMessage::PAGE_SCOPE->value,
-);
+$nPlusOneSummary = DbQueryRenderer::renderNPlusOneSummary($nPlusOneFindings, DbMessage::PAGE_SCOPE->value);
 
 $tag = $panel->tag;
 
@@ -46,10 +43,7 @@ $explainUrlBuilder = static fn(int $seq): string => Url::to(
     Module::route('db-explain', ['seq' => $seq, 'tag' => $tag]),
 );
 ?>
-<?= DbSummaryRenderer::render(
-    $panel->getSummary(),
-    $hasQueries ? GridViewConfig::pageSizeSelectorHtml() : null,
-) ?>
+<?= DbSummaryRenderer::render($panel->getSummary(), $hasQueries ? GridViewConfig::pageSizeSelectorHtml() : null) ?>
 <?php if (!$hasQueries): ?>
     <?= EmptyState::card(
         DbMessage::EMPTY_HEADLINE->value,

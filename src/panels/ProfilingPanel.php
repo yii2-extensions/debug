@@ -15,6 +15,7 @@ use UIAwesome\Html\Flow\P;
 use Yii;
 use yii\debug\models\search\ProfileSearch;
 use yii\debug\Panel;
+use yii\debug\view\ViewMessage as AdapterMessage;
 
 use function array_values;
 use function str_replace;
@@ -67,6 +68,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     }
 
     /**
+     * Returns the memory readings recorded alongside the spans.
+     *
      * @return list<MemorySample> Memory readings recorded alongside each captured profile message.
      */
     public function getMemorySamples(): array
@@ -75,6 +78,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     }
 
     /**
+     * Returns the peak memory recorded for the request.
+     *
      * @return int Peak memory recorded for the capture, in bytes; `0` before hydration.
      */
     public function getMemoryUsage(): int
@@ -104,6 +109,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     }
 
     /**
+     * Returns the total processing time of the request.
+     *
      * @return float|null Total request processing time in seconds, or `null` before hydration.
      */
     public function getProcessingTime(): float|null
@@ -149,10 +156,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = ProfilingSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = ProfilingSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -222,10 +226,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         $queryParams = Yii::$app->getRequest()->getQueryParams();
 
         foreach (['sort', 'per-page', 'yii_debug_theme'] as $name) {
-            $value = QueryInput::scalar(
-                $queryParams,
-                $name,
-            );
+            $value = QueryInput::scalar($queryParams, $name);
 
             if ($value !== null && $value !== '') {
                 $params[$name] = $value;
@@ -236,6 +237,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     }
 
     /**
+     * Renders the Timeline chart for the captured spans.
+     *
      * @param list<ProfileRow> $rows Filtered spans in capture order.
      *
      * @return string Rendered Timeline, or the empty-state card when the capture carries no usable geometry.
@@ -258,16 +261,12 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
         $start = $summary->time * 1000;
         $duration = $snapshot->time * 1000;
 
-        $spans = TimelineGeometry::spans(
-            $rows,
-            $start,
-            $duration,
-        );
+        $spans = TimelineGeometry::spans($rows, $start, $duration);
 
         if ($spans === []) {
             return EmptyState::card(
                 ProfileMessage::TIMELINE_UNAVAILABLE_HEADLINE->value,
-                P::tag()->content('The filtered spans cannot be positioned on this request timeline.'),
+                P::tag()->content(AdapterMessage::TIMELINE_UNAVAILABLE_FILTERED),
                 P::tag()->content(ProfileMessage::TIMELINE_UNAVAILABLE_DETAILS),
             );
         }
@@ -292,6 +291,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     }
 
     /**
+     * Renders the card shown when the capture carries no usable Timeline geometry.
+     *
      * @return string Empty-state card shown when the capture carries no usable Timeline geometry.
      */
     private function renderTimelineUnavailable(): string
@@ -304,6 +305,8 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     }
 
     /**
+     * Collects the memory samples plotted under the Timeline.
+     *
      * @return list<MemorySample> Profiling and log samples used by the Timeline memory graph.
      */
     private function timelineMemorySamples(): array

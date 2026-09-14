@@ -15,6 +15,8 @@ use PHPForge\Debug\Panel\MemorySample;
 interface ProvidesMemorySamples
 {
     /**
+     * Returns the memory readings this panel contributes to the Timeline graph.
+     *
      * @return list<MemorySample> Samples in capture order.
      */
     public function getMemorySamples(): array;

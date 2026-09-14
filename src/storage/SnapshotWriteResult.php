@@ -16,8 +16,5 @@ final readonly class SnapshotWriteResult
      * failed.
      * @param list<RequestSummary> $removed Entries evicted from the manifest.
      */
-    public function __construct(
-        public array|null $entries,
-        public array $removed,
-    ) {}
+    public function __construct(public array|null $entries, public array $removed) {}
 }

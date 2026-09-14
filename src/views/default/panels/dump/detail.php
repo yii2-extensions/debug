@@ -13,6 +13,7 @@ use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\LogSearch;
 use PHPForge\Debug\Panel\Dump\{DumpCardRenderer, DumpRow};
 use yii\debug\panels\DumpPanel;
+use yii\debug\view\ViewMessage as AdapterMessage;
 use yii\debug\widgets\{FilterBanner, GridView};
 
 /**
@@ -42,7 +43,7 @@ if ($hasDumps) {
     ->html(...$summaryItems) ?>
 <?php if (!$hasDumps): ?>
     <?= EmptyState::card(
-        'No variables dumped in this request',
+        AdapterMessage::DUMP_EMPTY_HEADLINE->value,
         P::tag()
             ->html(
                 'The dump panel collects the trace-level messages logged through ',

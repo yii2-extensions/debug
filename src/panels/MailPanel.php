@@ -38,13 +38,12 @@ class MailPanel extends Panel
     {
         $view = (new MailPresenter())->present($this->snapshot?->jsonSerialize() ?? ['entries' => []]);
 
-        return PanelRenderer::render(
-            $this->getName(),
-            $view,
-        );
+        return PanelRenderer::render($this->getName(), $view);
     }
 
     /**
+     * Returns the mail messages dispatched during the request.
+     *
      * @return list<MailEntry> Captured mail messages in send order.
      */
     public function getMessages(): array
@@ -84,10 +83,7 @@ class MailPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = MailSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = MailSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**

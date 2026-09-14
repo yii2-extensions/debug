@@ -58,11 +58,7 @@ class DumpCollector extends Collector
             return Encode::content(($this->varDumpCallback)($var, $this));
         }
 
-        $message = VarDumper::dumpAsString(
-            $var,
-            $this->depth,
-            $this->highlight,
-        );
+        $message = VarDumper::dumpAsString($var, $this->depth, $this->highlight);
 
         if (!$this->highlight) {
             $message = Encode::content($message);
@@ -91,12 +87,7 @@ class DumpCollector extends Collector
             $except = $routerCollector->getCategories();
         }
 
-        $messages = $this->getLogMessages(
-            Logger::LEVEL_TRACE,
-            $this->categories,
-            $except,
-            $this->varDump(...),
-        );
+        $messages = $this->getLogMessages(Logger::LEVEL_TRACE, $this->categories, $except, $this->varDump(...));
 
         return DumpSnapshot::capture($messages);
     }

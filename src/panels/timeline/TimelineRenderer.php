@@ -97,10 +97,7 @@ final class TimelineRenderer
             'tag' => $panel->tag,
         ];
 
-        return CoreTimelineRenderer::renderEmptyHint(
-            $dataProvider->models !== [],
-            Url::to($profilingUrl),
-        );
+        return CoreTimelineRenderer::renderEmptyHint($dataProvider->models !== [], Url::to($profilingUrl));
     }
 
     /**

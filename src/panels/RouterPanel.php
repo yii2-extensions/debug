@@ -109,10 +109,7 @@ class RouterPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = RouterSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = RouterSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**

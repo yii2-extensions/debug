@@ -38,6 +38,8 @@ class UserSwitch extends Model
     private User|null $user = null;
 
     /**
+     * Returns the labels shown for the switch form attributes.
+     *
      * @return array<string, string> Form labels keyed by attribute name.
      */
     #[Override]
@@ -148,6 +150,8 @@ class UserSwitch extends Model
     }
 
     /**
+     * Declares the validation rules applied to the switch form.
+     *
      * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */
     #[Override]

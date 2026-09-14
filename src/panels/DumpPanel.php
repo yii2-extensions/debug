@@ -11,6 +11,7 @@ use PHPForge\Debug\Storage\HydrationException;
 use Yii;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
+use yii\debug\view\ViewMessage as AdapterMessage;
 
 use function count;
 
@@ -51,6 +52,8 @@ class DumpPanel extends Panel
     }
 
     /**
+     * Returns the values dumped during the request.
+     *
      * @return list<DumpRow> Captured dump rows in capture order.
      */
     public function getDumps(): array
@@ -81,6 +84,8 @@ class DumpPanel extends Panel
     }
 
     /**
+     * Returns whether the capture holds any dump.
+     *
      * @return bool `true` when the capture holds at least one dump; `false` otherwise.
      */
     public function hasDumps(): bool
@@ -98,10 +103,7 @@ class DumpPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = DumpSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = DumpSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -131,7 +133,7 @@ class DumpPanel extends Panel
         return [
             [
                 'status' => 'info',
-                'title' => 'Number of dumped variables',
+                'title' => AdapterMessage::DUMP_COUNT->value,
                 'value' => count($dumps),
             ],
         ];

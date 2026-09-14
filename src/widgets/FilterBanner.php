@@ -86,6 +86,8 @@ class FilterBanner extends Widget
     }
 
     /**
+     * Lists the attributes the search model exposes as filters.
+     *
      * @param array<array-key, mixed> $filters Raw filter values from the request.
      *
      * @return list<string> Attribute names present in the raw filter array.
@@ -132,6 +134,8 @@ class FilterBanner extends Widget
     }
 
     /**
+     * Narrows the submitted filter values to non-empty strings.
+     *
      * @param array<array-key, mixed> $filters Raw filter values from the request.
      *
      * @return array<string, string> Normalized filter values, with empty or non-scalar entries removed.

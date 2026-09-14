@@ -47,10 +47,7 @@ class QueuePanel extends Panel
 
         $view = (new QueuePresenter())->jobUrls($jobUrls)->present($snapshot->jsonSerialize());
 
-        return PanelRenderer::render(
-            $this->getName(),
-            $view,
-        );
+        return PanelRenderer::render($this->getName(), $view);
     }
 
     /**
@@ -65,6 +62,8 @@ class QueuePanel extends Panel
     }
 
     /**
+     * Returns the queue job records captured during the request.
+     *
      * @return list<JobRecord> Captured job events in event order.
      */
     public function getRecords(): array
@@ -93,10 +92,7 @@ class QueuePanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = QueueSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = QueueSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**

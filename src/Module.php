@@ -347,7 +347,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
         $errorHandler = $app->errorHandler;
 
-        $errorHandler->on(ErrorHandler::EVENT_AFTER_RENDER, [$this, 'injectToolbarOnErrorPage']);
+        $errorHandler->on(
+            ErrorHandler::EVENT_AFTER_RENDER,
+            [$this, 'injectToolbarOnErrorPage'],
+        );
 
         $id = $this->getUniqueId();
 
@@ -672,7 +675,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
         if ($this->checkAccessCallback !== null && ($this->checkAccessCallback)($action) !== true) {
             if (!$this->disableCallbackRestrictionWarning) {
                 Yii::warning(
-                    'Access to debugger is denied due to checkAccessCallback.',
+                    Message::ACCESS_DENIED_BY_CALLBACK->value,
                     __METHOD__,
                 );
             }
@@ -847,7 +850,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
             if (is_string($id) && $id !== $collector->id()) {
                 throw new InvalidConfigException(
-                    'The debug collector registration ID must match its provider.',
+                    Message::PROVIDER_ID_MISMATCH->getMessage('collector'),
                 );
             }
 
@@ -1113,6 +1116,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Instantiates every configured panel and binds it to this module.
+     *
      * @param array<array-key, array<string, mixed>|Panel|PortablePanel|string> $definitions Panel definitions to
      * resolve.
      */
@@ -1123,14 +1128,18 @@ class Module extends \yii\base\Module implements BootstrapInterface
         foreach ($definitions as $id => $config) {
             if ($config instanceof PortablePanel) {
                 if (is_string($id) && $id !== $config->id()) {
-                    throw new InvalidConfigException('The debug panel registration ID must match its provider.');
+                    throw new InvalidConfigException(Message::PROVIDER_ID_MISMATCH->getMessage('panel'));
                 }
+
                 $id = $config->id();
+
                 $config = new ProviderPanel(['provider' => $config]);
             }
+
             if (isset($this->panels[$id])) {
                 throw new InvalidConfigException('Duplicate debug panel ID: ' . $id);
             }
+
             $panel = $this->buildPanel((string) $id, $config);
 
             if ($panel !== null && $panel->isEnabled()) {
@@ -1150,10 +1159,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         $view ??= Yii::$app->getView();
 
-        return new ToolbarRenderer(
-            $view,
-            Yii::$app->getAssetManager(),
-            self::VIEW_PATH_ALIAS,
-        );
+        return new ToolbarRenderer($view, Yii::$app->getAssetManager(), self::VIEW_PATH_ALIAS);
     }
 }

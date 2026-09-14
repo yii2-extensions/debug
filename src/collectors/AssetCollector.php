@@ -61,10 +61,7 @@ class AssetCollector extends Collector
                     continue;
                 }
 
-                $rows[] = AssetBundleRow::fromBundle(
-                    $name,
-                    $this->serializeBundle($bundle),
-                );
+                $rows[] = AssetBundleRow::fromBundle($name, $this->serializeBundle($bundle));
             }
         }
 

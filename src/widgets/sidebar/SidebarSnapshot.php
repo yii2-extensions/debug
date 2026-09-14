@@ -124,7 +124,7 @@ final readonly class SidebarSnapshot
     /**
      * Resolves a route-array wrapper, retaining the historical empty-link sentinel.
      *
-     * @param array<int|string, string> $route
+     * @param array<int|string, string> $route Route parameters, or an empty array for no link.
      *
      * @return string Resolved URL, or `''` when the route is empty.
      */

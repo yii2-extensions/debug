@@ -18,6 +18,7 @@ use Throwable;
 use Yii;
 use yii\debug\models\router\RouterRules;
 use yii\debug\Module;
+use yii\debug\view\ViewMessage as AdapterMessage;
 
 use function array_diff;
 use function array_is_list;
@@ -41,7 +42,7 @@ final class RequestRoutingViewFactory
     /**
      * Provenance label shown above the route inventory.
      */
-    private const string INVENTORY_SOURCE = 'Current URL manager configuration';
+    private const string INVENTORY_SOURCE = AdapterMessage::ROUTE_INVENTORY_SOURCE->value;
 
     /**
      * Builds the composed routing view without evaluating controller action maps.
@@ -191,6 +192,8 @@ final class RequestRoutingViewFactory
     }
 
     /**
+     * Returns whether a route is served by the debugger module.
+     *
      * @param string $route Route whose module chain is walked.
      *
      * @return bool `true` when any module along the route is the debugger module; `false` otherwise.
@@ -249,6 +252,8 @@ final class RequestRoutingViewFactory
     }
 
     /**
+     * Narrows a captured value to a non-empty string.
+     *
      * @param mixed $value Captured value of unknown type.
      *
      * @return string|null Value when it is a non-empty string; `null` otherwise.
@@ -288,6 +293,8 @@ final class RequestRoutingViewFactory
     }
 
     /**
+     * Returns whether a trace entry refers to the given rule pattern.
+     *
      * @param string $traceRule Trace entry rule, optionally prefixed by its verbs.
      * @param string $pattern Rule pattern to compare against.
      *
