@@ -16,6 +16,7 @@ use yii\debug\exception\Message;
 use yii\debug\Module;
 use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\support\ActionTestCase;
+use yii\debug\tests\support\stub\BareShellAction;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarView;
 use yii\helpers\Url;
@@ -33,10 +34,7 @@ final class ActionShellTest extends ActionTestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->runDebugAction(
-            new PhpInfoAction('php-info'),
-            $module,
-        );
+        $this->runDebugAction(new BareShellAction('bare'), $module);
 
         self::assertSame(
             Response::FORMAT_HTML,
@@ -175,6 +173,30 @@ final class ActionShellTest extends ActionTestCase
         );
     }
 
+    public function testPhpInfoRendersInsideTheSharedShell(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $this->runDebugAction(new PhpInfoAction('php-info'), $module);
+
+        $shell = Yii::$app->view->params['debugShell'] ?? null;
+
+        self::assertInstanceOf(
+            ShellContext::class,
+            $shell,
+            'A typed shell context must be installed.',
+        );
+        self::assertTrue(
+            $shell->useShell,
+            'The phpinfo page must render inside the shared shell.',
+        );
+        self::assertInstanceOf(
+            SidebarView::class,
+            $shell->sidebar,
+            'The phpinfo page must keep the sidebar.',
+        );
+    }
+
     public function testPrimeThemeContextResolvesDarkFromGlobalCookieFallback(): void
     {
         $module = $this->bootDebugModule();
@@ -187,10 +209,7 @@ final class ActionShellTest extends ActionTestCase
 
             $action->setModule($module);
 
-            $theme = $this->invoke(
-                $action,
-                'resolveTheme',
-            );
+            $theme = $this->invoke($action, 'resolveTheme');
         } finally {
             unset($_COOKIE['yii-debug-toolbar-theme']);
         }
@@ -212,10 +231,7 @@ final class ActionShellTest extends ActionTestCase
 
         $action->setModule($module);
 
-        $theme = $this->invoke(
-            $action,
-            'resolveTheme',
-        );
+        $theme = $this->invoke($action, 'resolveTheme');
 
         self::assertSame(
             'dark',
@@ -232,10 +248,7 @@ final class ActionShellTest extends ActionTestCase
 
         $action->setModule($module);
 
-        $theme = $this->invoke(
-            $action,
-            'resolveTheme',
-        );
+        $theme = $this->invoke($action, 'resolveTheme');
 
         self::assertSame(
             'light',

@@ -346,18 +346,6 @@ final class VitePanelTest extends TestCase
         );
     }
 
-    public function testHasContentReturnsFalseForEmptySnapshot(): void
-    {
-        $panel = $this->makeProviderPanel(new VitePanel());
-
-        $panel->hydrate(self::snapshot([]));
-
-        self::assertFalse(
-            $panel->hasContent(),
-            'An empty Vite snapshot must hide the sidebar entry.',
-        );
-    }
-
     public function testHasContentReturnsTrueForCapturedComponent(): void
     {
         $panel = $this->makeProviderPanel(new VitePanel());
@@ -367,6 +355,18 @@ final class VitePanelTest extends TestCase
         self::assertTrue(
             $panel->hasContent(),
             'A captured Vite component must surface the sidebar entry.',
+        );
+    }
+
+    public function testHasContentReturnsTrueForEmptySnapshot(): void
+    {
+        $panel = $this->makeProviderPanel(new VitePanel());
+
+        $panel->hydrate(self::snapshot([]));
+
+        self::assertTrue(
+            $panel->hasContent(),
+            'An idle capture must keep the sidebar entry.',
         );
     }
 

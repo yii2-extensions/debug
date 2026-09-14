@@ -66,13 +66,16 @@ class ProviderPanel extends Panel
     }
 
     /**
-     * Returns whether the capture holds activity worth listing in the sidebar.
+     * Returns whether the capture holds a presentation for this panel.
      *
-     * @return bool `true` when the panel carries an error or an active presentation; `false` otherwise.
+     * An extension the application enabled stays listed even on a capture where it recorded no activity, so its own
+     * empty state explains the idle capture instead of the entry disappearing from the sidebar.
+     *
+     * @return bool `true` when the panel carries an error or a presentation built from the capture; `false` otherwise.
      */
     public function hasContent(): bool
     {
-        return $this->hasError() || ($this->view?->isActive() ?? false);
+        return $this->hasError() || $this->view !== null;
     }
 
     /**
@@ -86,6 +89,7 @@ class ProviderPanel extends Panel
     {
         $this->error = null;
         $this->view = null;
+
         $this->view = $this->provider()->present($payload);
     }
 

@@ -181,16 +181,25 @@ final class SidebarDataNormalizerTest extends TestCase
         $this->mockWebApplication();
 
         $request = new RequestPanel();
+
         $request->id = 'request';
+
         $inertia = new ProviderPanel();
         $inertia->provider = new InertiaPanel();
+
         $inertia->id = 'inertia';
+
         $mail = new MailPanel();
+
         $mail->id = 'mail';
+
         $queue = new QueuePanel();
+
         $queue->id = 'queue';
+
         $vite = new ProviderPanel();
         $vite->provider = new VitePanel();
+
         $vite->id = 'vite';
 
         $view = SidebarDataNormalizer::fromIndex(
@@ -215,12 +224,12 @@ final class SidebarDataNormalizerTest extends TestCase
             'Optional integrations need a labeled group.',
         );
         self::assertSame(
-            ['Mail', 'Queue', 'Inertia', 'Vite'],
+            ['Inertia', 'Mail', 'Queue', 'Vite'],
             array_map(
                 static fn(SidebarNavItem $item): string => $item->label,
                 $view->navGroups['Extensions'],
             ),
-            'Integration panels must retain their order at the end of the sidebar.',
+            'Integration panels must be listed alphabetically at the end of the sidebar.',
         );
     }
 
@@ -399,6 +408,62 @@ final class SidebarDataNormalizerTest extends TestCase
         self::assertFalse(
             $inactiveItem->isActive,
             'View mode must not mark other panels as active.',
+        );
+    }
+
+    public function testFromViewKeepsEnabledProviderPanelsForAnIdleCapture(): void
+    {
+        $this->mockWebApplication();
+
+        $active = new RequestPanel();
+
+        $active->id = 'request';
+
+        $inertia = new ProviderPanel();
+        $inertia->provider = new InertiaPanel();
+
+        $inertia->id = 'inertia';
+
+        $inertia->hydrate(
+            [
+                'location' => null,
+                'page' => null,
+                'requestHeaders' => [],
+                'sharedKeys' => [],
+                'statusCode' => 200,
+            ],
+        );
+
+        $view = SidebarDataNormalizer::fromView(
+            ['inertia' => $inertia, 'request' => $active],
+            ['tag-1' => $this->requestSummary()],
+            $active,
+            'tag-1',
+            $this->requestSummary(),
+        );
+
+        $labels = array_map(static fn(SidebarNavItem $item): string => $item->label, $view->navItems);
+
+        self::assertContains(
+            'Request',
+            $labels,
+            'Panels with content must stay listed.',
+        );
+        self::assertNotContains(
+            'Inertia',
+            $labels,
+            'Provider panels belong to the extension group, not the primary nav.',
+        );
+
+        $groupLabels = array_map(
+            static fn(SidebarNavItem $item): string => $item->label,
+            $view->navGroups['Extensions'] ?? [],
+        );
+
+        self::assertContains(
+            'Inertia',
+            $groupLabels,
+            'Idle capture must keep the entry in the extension group.',
         );
     }
 
@@ -699,56 +764,21 @@ final class SidebarDataNormalizerTest extends TestCase
         );
     }
 
-    public function testFromViewSkipsPanelsWithoutContentForTheCapture(): void
-    {
-        $this->mockWebApplication();
-
-        $active = new RequestPanel();
-
-        $active->id = 'request';
-
-        $inertia = new ProviderPanel();
-        $inertia->provider = new InertiaPanel();
-
-        $inertia->id = 'inertia';
-
-        $inertia->hydrate(['location' => null, 'page' => null, 'requestHeaders' => [], 'sharedKeys' => [], 'statusCode' => 200]);
-
-        $view = SidebarDataNormalizer::fromView(
-            ['inertia' => $inertia, 'request' => $active],
-            ['tag-1' => $this->requestSummary()],
-            $active,
-            'tag-1',
-            $this->requestSummary(),
-        );
-
-        $labels = array_map(static fn(SidebarNavItem $item): string => $item->label, $view->navItems);
-
-        self::assertContains(
-            'Request',
-            $labels,
-            'Panels with content must stay listed.',
-        );
-        self::assertNotContains(
-            'Inertia',
-            $labels,
-            'Content-less panels must be skipped in view mode.',
-        );
-        self::assertSame([], $view->navGroups, 'Empty extension groups must not render a sidebar heading.');
-    }
-
     public function testInvisiblePanelsAreSkippedFromIndexAndViewNavigation(): void
     {
         $this->mockWebApplication();
 
         $request = new RequestPanel();
+
         $request->id = 'request';
 
         $router = new RouterPanel();
+
         $router->id = 'router';
         $router->standalone = false;
 
         $summary = $this->requestSummary('tag-1');
+
         $panels = ['request' => $request, 'router' => $router];
         $manifest = ['tag-1' => $summary];
 
