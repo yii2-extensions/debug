@@ -8,9 +8,7 @@ use PHPForge\Debug\Helper\{Coerce, Icon, Text, Vocabulary};
 use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPForge\Debug\View\ViewMessage;
-use yii\debug\ExtensionAvailability;
-use yii\debug\Module;
-use yii\debug\Panel;
+use yii\debug\{ExtensionAvailability, Module, Panel};
 use yii\debug\panels\{JsonPanel, ProviderPanel};
 use yii\debug\view\ViewMessage as AdapterMessage;
 
@@ -21,6 +19,8 @@ use function array_search;
 use function date;
 use function is_int;
 use function reset;
+use function strcasecmp;
+use function usort;
 
 /**
  * Builds the typed sidebar data used by history and request views.
@@ -28,6 +28,7 @@ use function reset;
  * - `fromView(...)` used by panel `view` requests; surfaces the active request snapshot and highlights the active panel
  *   in the nav.
  * - `fromIndex(...)`used by `index` requests; surfaces the newest captured request and highlights the History entry.
+ * - `fromStandalone(...)` used by pages outside any capture, such as phpinfo; highlights nothing.
  */
 final class SidebarDataNormalizer
 {
@@ -65,11 +66,41 @@ final class SidebarDataNormalizer
             mode: 'index',
         );
 
-        return new SidebarView(
-            snapshot: $snapshot,
-            navItems: $navigation['items'],
-            navGroups: $navigation['groups'],
+        return new SidebarView(snapshot: $snapshot, navItems: $navigation['items'], navGroups: $navigation['groups']);
+    }
+
+    /**
+     * Builds the typed sidebar view-model for a standalone debugger page such as phpinfo.
+     *
+     * The page belongs to no capture and to no panel, so the navigation highlights nothing and the snapshot card
+     * surfaces the newest capture, keeping the reader one click from the panels.
+     *
+     * @param array<string, Panel> $panels Registered panels keyed by ID.
+     * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
+     *
+     * @return SidebarView Sidebar view-model for the standalone page.
+     */
+    public static function fromStandalone(array $panels, array $manifest): SidebarView
+    {
+        $newestTag = self::newestTag($manifest);
+        $snapshot = self::buildSnapshot(
+            mode: 'view',
+            panels: $panels,
+            manifest: $manifest,
+            activePanel: null,
+            snapshotTag: $newestTag,
+            snapshotSummary: $newestTag !== null ? ($manifest[$newestTag] ?? null) : null,
+            cursorInit: '',
         );
+        $navigation = self::buildNavigation(
+            panels: $panels,
+            manifest: $manifest,
+            activePanel: null,
+            activeTag: $newestTag,
+            mode: 'view',
+        );
+
+        return new SidebarView(snapshot: $snapshot, navItems: $navigation['items'], navGroups: $navigation['groups']);
     }
 
     /**
@@ -100,7 +131,6 @@ final class SidebarDataNormalizer
             snapshotSummary: $summary,
             cursorInit: '',
         );
-
         $navigation = self::buildNavigation(
             panels: $panels,
             manifest: $manifest,
@@ -109,11 +139,7 @@ final class SidebarDataNormalizer
             mode: 'view',
         );
 
-        return new SidebarView(
-            snapshot: $snapshot,
-            navItems: $navigation['items'],
-            navGroups: $navigation['groups'],
-        );
+        return new SidebarView(snapshot: $snapshot, navItems: $navigation['items'], navGroups: $navigation['groups']);
     }
 
     /**
@@ -153,6 +179,7 @@ final class SidebarDataNormalizer
                 isActive: $mode === 'index',
             ),
         ];
+
         $extensionItems = [];
 
         foreach ($panels as $id => $panel) {
@@ -181,13 +208,7 @@ final class SidebarDataNormalizer
                 $tooltip = AdapterMessage::PANEL_TOOLTIP_NO_SELECTION->value;
             }
 
-            $item = new SidebarNavItem(
-                label: $panel->getName(),
-                iconSvg: $iconSvg,
-                url: $url,
-                tooltip: $tooltip,
-                isActive: $isActive,
-            );
+            $item = new SidebarNavItem(label: $panel->getName(), iconSvg: $iconSvg, url: $url, tooltip: $tooltip, isActive: $isActive);
 
             if ($panel instanceof ProviderPanel || $panel instanceof JsonPanel || ExtensionAvailability::isOptional($id)) {
                 $extensionItems[] = $item;
@@ -197,6 +218,11 @@ final class SidebarDataNormalizer
 
             $items[] = $item;
         }
+
+        usort(
+            $extensionItems,
+            static fn(SidebarNavItem $left, SidebarNavItem $right): int => strcasecmp($left->label, $right->label),
+        );
 
         return [
             'items' => $items,
@@ -240,7 +266,9 @@ final class SidebarDataNormalizer
         $statusCode = $snapshotSummary->statusCode;
         $method = $snapshotSummary->method;
         $fullUrl = $snapshotSummary->url;
+
         $time = self::formatTime($snapshotSummary->time);
+
         $isAjax = $snapshotSummary->ajax;
 
         $topTag = self::newestTag($manifest);

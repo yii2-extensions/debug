@@ -412,27 +412,6 @@ final class InertiaPanelTest extends TestCase
         );
     }
 
-    public function testHasContentReturnsFalseForPlainCapture(): void
-    {
-        $panel = $this->makeProviderPanel(new InertiaPanel());
-
-        $this->hydrateCapture(
-            $panel,
-            self::capture(
-                null,
-                null,
-                [],
-                [],
-                200,
-            ),
-        );
-
-        self::assertFalse(
-            $panel->hasContent(),
-            'Plain captures must hide the sidebar entry.',
-        );
-    }
-
     public function testHasContentReturnsTrueForCapturedPage(): void
     {
         $panel = $this->makeProviderPanel(new InertiaPanel());
@@ -472,6 +451,27 @@ final class InertiaPanelTest extends TestCase
         self::assertTrue(
             $panel->hasContent(),
             'Version-conflict XHR must surface the sidebar entry.',
+        );
+    }
+
+    public function testHasContentReturnsTrueForPlainCapture(): void
+    {
+        $panel = $this->makeProviderPanel(new InertiaPanel());
+
+        $this->hydrateCapture(
+            $panel,
+            self::capture(
+                null,
+                null,
+                [],
+                [],
+                200,
+            ),
+        );
+
+        self::assertTrue(
+            $panel->hasContent(),
+            'A plain capture must keep the sidebar entry.',
         );
     }
 

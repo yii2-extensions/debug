@@ -12,7 +12,5 @@ use yii\web\View;
  */
 $this->title = PanelTitle::PHP_INFO->value;
 ?>
-<div class="yii-debug-page">
-    <?= H1::tag()->class('yii-debug-hero-title')->content(PanelTitle::PHPINFO) ?>
-    <?= PhpInfoRenderer::render(PhpInfoDataNormalizer::capture()) ?>
-</div>
+<?= H1::tag()->class('yii-debug-hero-title')->content(PanelTitle::PHPINFO) ?>
+<?= PhpInfoRenderer::render(PhpInfoDataNormalizer::capture());
