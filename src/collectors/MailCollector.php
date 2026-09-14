@@ -280,8 +280,6 @@ class MailCollector extends Collector
      * @param BaseMailer $mailer Mailer supplying the message file name and the target directory mode.
      * @param MessageInterface $message Message to write as an `.eml` file.
      *
-     * @throws RuntimeException when the message file cannot be safely persisted.
-     *
      * @return string Safe file name of the written `.eml`, or `''` when persistence failed.
      */
     private function persistMessage(BaseMailer $mailer, MessageInterface $message): string
