@@ -74,6 +74,7 @@ class AssetCollector extends Collector
     /**
      * Snapshots the bundle properties consumed by the detail view (paths, files, dependencies).
      *
+     * @param AssetBundle $bundle Bundle registered during the request.
      * @return array{
      *   basePath: string|null,
      *   baseUrl: string|null,
@@ -82,8 +83,6 @@ class AssetCollector extends Collector
      *   js: array<array-key, string|array<array-key, mixed>>,
      *   sourcePath: string|null,
      * } Bundle properties keyed by name.
-     *
-     * @param AssetBundle $bundle Bundle registered during the request.
      */
     private function serializeBundle(AssetBundle $bundle): array
     {
