@@ -408,7 +408,7 @@ final class ToolbarDataMapperTest extends TestCase
         );
     }
 
-    public function testWithersLeaveTheSourceMapperUntouched(): void
+    public function testWithMethodsLeaveTheSourceMapperUntouched(): void
     {
         $this->mockWebApplication();
 
@@ -421,7 +421,7 @@ final class ToolbarDataMapperTest extends TestCase
         self::assertNotSame(
             $base,
             $derived,
-            'Each wither must return a copy.',
+            'Each call must return a copy.',
         );
 
         $result = $base->map([]);
