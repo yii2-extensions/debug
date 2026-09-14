@@ -7,7 +7,7 @@ namespace yii\debug\models\search;
 use Override;
 use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Panel\Dump\DumpRow;
-use PHPForge\Debug\Panel\Log\LogRow;
+use PHPForge\Debug\Panel\Log\{LogMessage, LogRow};
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 
@@ -29,23 +29,32 @@ class LogSearch extends Base
      */
     public string $message = '';
 
+    /**
+     * @return array<string, string> Form labels keyed by attribute name.
+     */
     #[Override]
     public function attributeLabels(): array
     {
         return [
-            'level' => 'Level',
-            'category' => 'Category',
-            'message' => 'Message',
-            'timeSincePrevious' => 'Delta',
+            'level' => LogMessage::LEVEL->value,
+            'category' => LogMessage::CATEGORY->value,
+            'message' => LogMessage::MESSAGE->value,
+            'timeSincePrevious' => LogMessage::DELTA->value,
         ];
     }
 
+    /**
+     * @return string Query-string prefix that scopes this form's filter parameters.
+     */
     #[Override]
     public function formName(): string
     {
         return FilterPrefix::LOG;
     }
 
+    /**
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
+     */
     #[Override]
     public function rules(): array
     {
@@ -59,6 +68,8 @@ class LogSearch extends Base
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
      * @param list<DumpRow|LogRow> $models Captured log-shaped rows to wrap and filter.
+     *
+     * @return ArrayDataProvider Sortable provider with the filtered log rows.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

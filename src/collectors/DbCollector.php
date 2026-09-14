@@ -196,6 +196,8 @@ class DbCollector extends Collector
 
     /**
      * Returns the number of distinct backtraces flagged as excessive callers.
+     *
+     * @return int Number of distinct backtraces that issued more queries than the threshold.
      */
     public function getExcessiveCallersCount(): int
     {
@@ -386,6 +388,8 @@ class DbCollector extends Collector
      *
      * Prefers `xxh3`, falling back to `crc32` on hosts whose PHP installation does not expose it. The answer is
      * cached because {@see hash_algos()} is process-stable.
+     *
+     * @return string Hash algorithm name usable with {@see hash()}.
      */
     private static function traceHashAlgo(): string
     {

@@ -29,6 +29,10 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Returns the row's left offset as a percentage of the total request duration.
+     *
+     * @param ProfileRow $row Captured profiling span.
+     *
+     * @return float Left offset, as a percentage of the request duration.
      */
     public function getLeft(ProfileRow $row): float
     {
@@ -48,11 +52,18 @@ class DataProvider extends ArrayDataProvider
      */
     public function getRulers(int $line = 6): array
     {
-        return TimelineGeometry::rulers($this->panel->getDuration(), $line);
+        return TimelineGeometry::rulers(
+            $this->panel->getDuration(),
+            $line,
+        );
     }
 
     /**
      * Returns the row's elapsed time relative to the request start, in milliseconds.
+     *
+     * @param ProfileRow $row Captured profiling span.
+     *
+     * @return float Elapsed time since the request start, in milliseconds.
      */
     public function getTime(ProfileRow $row): float
     {
@@ -61,6 +72,10 @@ class DataProvider extends ArrayDataProvider
 
     /**
      * Returns the row's width as a percentage of the total request duration.
+     *
+     * @param ProfileRow $row Captured profiling span.
+     *
+     * @return float Width, as a percentage of the request duration.
      */
     public function getWidth(ProfileRow $row): float
     {
@@ -79,7 +94,11 @@ class DataProvider extends ArrayDataProvider
 
         foreach ($this->allModels as $model) {
             if ($model instanceof ProfileRow) {
-                $spans[] = TimelineSpanRow::from($model, $this->getLeft($model), $this->getWidth($model));
+                $spans[] = TimelineSpanRow::from(
+                    $model,
+                    $this->getLeft($model),
+                    $this->getWidth($model),
+                );
             }
         }
 

@@ -71,6 +71,8 @@ final class GridViewConfig
      * The dropdown lets the user switch between `10` / `25` / `50` / `100` / `All` rows per page. JavaScript wired in
      * `debug.min.js` picks up the change event, rewrites the `per-page` query param, and reloads the panel while
      * keeping every other filter/sort param intact.
+     *
+     * @return string HTML markup for the page-size selector.
      */
     public static function pageSizeSelectorHtml(): string
     {
@@ -91,7 +93,10 @@ final class GridViewConfig
      */
     public static function paginationFromRequest(int $default = 50): array|false
     {
-        $size = PageSize::resolve(self::queryParamString('per-page'), $default);
+        $size = PageSize::resolve(
+            self::queryParamString('per-page'),
+            $default,
+        );
 
         if ($size === null) {
             return false;
@@ -138,9 +143,16 @@ final class GridViewConfig
 
     /**
      * Reads a query parameter as a string, returning `null` when the parameter is absent or non-scalar.
+     *
+     * @param string $name Query parameter name.
+     *
+     * @return string|null The query parameter value as a string, or `null` if absent or non-scalar.
      */
     private static function queryParamString(string $name): string|null
     {
-        return QueryInput::scalar(Yii::$app->getRequest()->getQueryParams(), $name);
+        return QueryInput::scalar(
+            Yii::$app->getRequest()->getQueryParams(),
+            $name,
+        );
     }
 }

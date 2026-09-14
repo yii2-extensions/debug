@@ -13,6 +13,10 @@ final class SidebarRenderer
 {
     /**
      * Renders the full sidebar from the existing Yii route-array view-model.
+     *
+     * @param SidebarView $view Sidebar view-model holding the snapshot card and the navigation entries.
+     *
+     * @return string Rendered sidebar markup.
      */
     public static function render(SidebarView $view): string
     {

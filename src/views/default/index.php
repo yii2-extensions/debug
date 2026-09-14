@@ -11,6 +11,7 @@ use yii\debug\panels\DbPanel;
 use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\widgets\FilterBanner;
 use PHPForge\Debug\View\History\{HistoryRow, HistoryScale, HistorySummary};
+use PHPForge\Debug\View\ViewMessage;
 use yii\debug\widgets\history\HistoryRowRenderer;
 use yii\debug\widgets\GridView;
 use yii\grid\SerialColumn;
@@ -24,7 +25,7 @@ use UIAwesome\Html\Heading\H1;
  * @var DebugSearch $searchModel Search model for filtering debug data.
  * @var View $this View component instance.
  */
-$this->title = 'Yii Debugger';
+$this->title = ViewMessage::TITLE->value;
 
 $summary = HistorySummary::fromManifest($manifest);
 $scale = HistoryScale::fromModels(
@@ -80,7 +81,7 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
                 ],
                 [
                     'attribute' => 'tag',
-                    'label' => 'ID',
+                    'label' => ViewMessage::ID->value,
                     'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderTagCell($data),
                     'format' => 'raw',
                     'headerOptions' => ['class' => 'yii-debug-col-id'],
@@ -94,7 +95,7 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
                 ],
                 [
                     'attribute' => 'processingTime',
-                    'label' => 'Duration',
+                    'label' => ViewMessage::DURATION->value,
                     'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderDurationCell(
                         $data,
                         $scale->maxProcessingTime,
@@ -103,7 +104,7 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
                 ],
                 [
                     'attribute' => 'peakMemory',
-                    'label' => 'Memory',
+                    'label' => ViewMessage::MEMORY->value,
                     'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderMemoryCell(
                         $data,
                         $scale->maxPeakMemory,
@@ -118,7 +119,7 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
                 ],
                 $dbPanel instanceof DbPanel ? [
                     'attribute' => 'sqlCount',
-                    'label' => 'Query',
+                    'label' => ViewMessage::QUERY->value,
                     'headerOptions' => ['class' => 'yii-debug-col-num'],
                     'contentOptions' => ['class' => 'yii-debug-col-num'],
                     'filterOptions' => ['class' => 'yii-debug-col-num'],
@@ -145,7 +146,7 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
                         'delete' => 'DELETE',
                         'put' => 'PUT',
                         'head' => 'HEAD',
-                        'command' => 'COMMAND',
+                        'command' => ViewMessage::COMMAND->value,
                     ],
                 ],
                 [
@@ -155,7 +156,7 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
                 ],
                 [
                     'attribute' => 'url',
-                    'label' => 'URL',
+                    'label' => ViewMessage::URL->value,
                     'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderUrlCell($data),
                     'format' => 'raw',
                 ],

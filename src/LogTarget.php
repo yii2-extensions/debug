@@ -46,7 +46,8 @@ class LogTarget extends Target
      * Adopts the owning module and registers itself as the module's log target when none is wired yet, so collectors
      * reading through {@see Module::$logTarget} see the messages this target accumulates.
      *
-     * @param array<string, mixed> $config
+     * @param Module $module Debugger module owning this target.
+     * @param array<string, mixed> $config Standard {@see \yii\base\BaseObject} configuration.
      */
     public function __construct(public Module $module, array $config = [])
     {
@@ -70,7 +71,10 @@ class LogTarget extends Target
     }
 
     /**
-     * @param array<int|string, LogMessage> $messages
+     * Accumulates the flushed log messages and writes the capture once the request ends.
+     *
+     * @param array<int|string, LogMessage> $messages Messages flushed by the logger.
+     * @param bool $final Whether this is the final flush of the request.
      */
     #[Override]
     public function collect($messages, $final): void
@@ -87,7 +91,7 @@ class LogTarget extends Target
      *
      * A failing panel is isolated as a {@see PanelFailure}; root, encoding, and filesystem failures remain explicit.
      *
-     * @throws Exception When the debug data directory cannot be created.
+     * @throws Exception when the debug data directory cannot be created.
      */
     public function export(): void
     {
@@ -124,7 +128,10 @@ class LogTarget extends Target
                         $panels[$id] = \PHPForge\Debug\Storage\Json::payload($panelSnapshot->jsonSerialize());
                     }
                 } catch (Throwable $throwable) {
-                    $failures[$id] = PanelFailure::fromThrowable(PanelFailure::CAPTURE, $throwable);
+                    $failures[$id] = PanelFailure::fromThrowable(
+                        PanelFailure::CAPTURE,
+                        $throwable,
+                    );
                 }
             }
 
@@ -177,6 +184,10 @@ class LogTarget extends Target
      *
      * Invalid root JSON or summary data rejects the snapshot. Invalid panel payloads are isolated as visible panel
      * errors while the remaining panels continue to load.
+     *
+     * @param string $tag Capture to load.
+     *
+     * @return RequestSummary|null Summary of the capture, or `null` when it cannot be read.
      */
     public function loadTagToPanels(string $tag): RequestSummary|null
     {
@@ -203,7 +214,10 @@ class LogTarget extends Target
                 try {
                     $panel->hydrate($snapshot->panels[$id]);
                 } catch (Throwable $throwable) {
-                    $failure = PanelFailure::fromThrowable(PanelFailure::HYDRATE, $throwable);
+                    $failure = PanelFailure::fromThrowable(
+                        PanelFailure::HYDRATE,
+                        $throwable,
+                    );
                 }
             } elseif ($failure === null) {
                 unset($this->module->panels[$id]);
@@ -222,6 +236,8 @@ class LogTarget extends Target
 
     /**
      * Captures the canonical manifest summary for the current request.
+     *
+     * @return RequestSummary Manifest entry describing the current request.
      */
     protected function collectSummary(): RequestSummary
     {
@@ -251,6 +267,10 @@ class LogTarget extends Target
             ->withMail(count($mailFiles), array_values($mailFiles));
     }
 
+    /**
+     * @return int Number of call sites that issued more queries than the configured threshold; `0` when the
+     * Database collector is not registered.
+     */
     protected function getExcessiveDbCallersCount(): int
     {
         $collector = $this->module->getCollectorCoordinator()->collector('db');
@@ -258,6 +278,10 @@ class LogTarget extends Target
         return $collector instanceof DbCollector ? $collector->getExcessiveCallersCount() : 0;
     }
 
+    /**
+     * @return int Number of queries executed during the request; `0` when the Database collector is not
+     * registered.
+     */
     protected function getSqlTotalCount(): int
     {
         $collector = $this->module->getCollectorCoordinator()->collector('db');
@@ -291,6 +315,12 @@ class LogTarget extends Target
         $mailCollector->reconcileFiles($referencedFiles);
     }
 
+    /**
+     * Registers a raw JSON panel for a captured payload whose panel is no longer configured, so the data stays
+     * readable instead of disappearing from the UI.
+     *
+     * @param string $id Panel id found in the capture.
+     */
     private function registerFallbackPanel(string $id): void
     {
         if (isset($this->module->panels[$id])) {
@@ -316,6 +346,11 @@ class LogTarget extends Target
         $this->module->panels[$id] = $panel;
     }
 
+    /**
+     * Deletes the `.eml` files referenced by a capture that is being rotated out of the manifest.
+     *
+     * @param RequestSummary $summary Summary of the capture being discarded.
+     */
     private function removeMailFiles(RequestSummary $summary): void
     {
         $mailCollector = $this->module->getCollectorCoordinator()->collector('mail');
@@ -327,6 +362,11 @@ class LogTarget extends Target
         $mailCollector->removeFiles($summary->mailFiles);
     }
 
+    /**
+     * Returns the snapshot store bound to the module's data path, creating it on first use.
+     *
+     * @return SnapshotStore Store reading and writing this module's captures.
+     */
     private function store(): SnapshotStore
     {
         return $this->store ??= SnapshotStore::forModule($this->module);

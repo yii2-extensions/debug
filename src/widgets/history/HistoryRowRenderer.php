@@ -28,15 +28,25 @@ final class HistoryRowRenderer
      * Builds the `rowOptions` attribute map for one captured-request row. The `data-*` attributes feed the sidebar's
      * history cursor.
      *
-     * @return array<string, mixed>
+     * @param HistoryRow $row Typed history row.
+     * @param DebugSearch $searchModel Search model deciding whether the row's status counts as critical.
+     *
+     * @return array<string, mixed> Attribute map the GridView applies to the `<tr>`.
      */
     public static function buildRowOptions(HistoryRow $row, DebugSearch $searchModel): array
     {
-        return HistoryCellRenderer::buildRowAttributes($row, $searchModel->isCodeCritical($row->statusCode));
+        return HistoryCellRenderer::buildRowAttributes(
+            $row,
+            $searchModel->isCodeCritical($row->statusCode),
+        );
     }
 
     /**
      * Renders the AJAX column cell (`'Yes'` / `'No'`).
+     *
+     * @param HistoryRow $row Typed history row.
+     *
+     * @return string Rendered cell.
      */
     public static function renderAjaxCell(HistoryRow $row): string
     {
@@ -49,6 +59,8 @@ final class HistoryRowRenderer
      *
      * @param HistoryRow $row Typed history row.
      * @param float $maxProcessingTime Page maximum in seconds ({@see HistoryScale::$maxProcessingTime}).
+     *
+     * @return string Rendered cell.
      */
     public static function renderDurationCell(HistoryRow $row, float $maxProcessingTime): string
     {
@@ -61,6 +73,8 @@ final class HistoryRowRenderer
      *
      * @param HistoryRow $row Typed history row.
      * @param int $maxPeakMemory Page maximum in bytes ({@see HistoryScale::$maxPeakMemory}).
+     *
+     * @return string Rendered cell.
      */
     public static function renderMemoryCell(HistoryRow $row, int $maxPeakMemory): string
     {
@@ -69,6 +83,10 @@ final class HistoryRowRenderer
 
     /**
      * Renders the method column cell as vocabulary-colored text, or an empty string when the method was not captured.
+     *
+     * @param HistoryRow $row Typed history row.
+     *
+     * @return string Rendered cell, or `''` when no method was captured.
      */
     public static function renderMethodCell(HistoryRow $row): string
     {
@@ -77,6 +95,11 @@ final class HistoryRowRenderer
 
     /**
      * Renders the SQL-query column cell (count + warning chip + deep-link to the DB panel).
+     *
+     * @param HistoryRow $row Typed history row.
+     * @param DbPanel $dbPanel Panel supplying the critical-query threshold.
+     *
+     * @return string Rendered cell.
      */
     public static function renderSqlCountCell(HistoryRow $row, DbPanel $dbPanel): string
     {
@@ -91,6 +114,10 @@ final class HistoryRowRenderer
     /**
      * Renders the summary header (`<header class="yii-debug-grid-summary">`) with the request total and the
      * status-bucket pills.
+     *
+     * @param HistorySummary $summary Totals and status buckets for the listed captures.
+     *
+     * @return string Rendered header, or `''` when no request was captured.
      */
     public static function renderSummary(HistorySummary $summary): string
     {
@@ -126,6 +153,10 @@ final class HistoryRowRenderer
 
     /**
      * Renders the request-tag column cell as a link to the panel view.
+     *
+     * @param HistoryRow $row Typed history row.
+     *
+     * @return string Rendered cell.
      */
     public static function renderTagCell(HistoryRow $row): string
     {
@@ -138,6 +169,10 @@ final class HistoryRowRenderer
 
     /**
      * Renders the time column cell — compact `HH:MM:SS` with a full `yyyy-MM-dd HH:mm:ss` tooltip on hover.
+     *
+     * @param HistoryRow $row Typed history row.
+     *
+     * @return string Rendered cell, or a muted placeholder when no time was captured.
      */
     public static function renderTimeCell(HistoryRow $row): string
     {
@@ -163,6 +198,10 @@ final class HistoryRowRenderer
 
     /**
      * Renders the URL column cell with a hover-truncate wrapper.
+     *
+     * @param HistoryRow $row Typed history row.
+     *
+     * @return string Rendered cell.
      */
     public static function renderUrlCell(HistoryRow $row): string
     {

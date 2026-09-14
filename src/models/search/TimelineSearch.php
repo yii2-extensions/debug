@@ -35,6 +35,9 @@ class TimelineSearch extends Base
         ];
     }
 
+    /**
+     * @return string Query-string prefix that scopes this form's filter parameters.
+     */
     #[Override]
     public function formName(): string
     {
@@ -57,6 +60,8 @@ class TimelineSearch extends Base
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
      * @param TimelinePanel $panel Panel supplying the captured timeline rows and request geometry.
+     *
+     * @return DataProvider Geometry-aware provider with the filtered timeline spans.
      */
     public function search(array $params, TimelinePanel $panel): DataProvider
     {

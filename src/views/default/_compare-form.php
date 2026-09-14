@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPForge\Debug\View\History\CaptureLabel;
+use PHPForge\Debug\View\ViewMessage;
 use yii\debug\Module;
 use yii\helpers\{Html, Url};
 use yii\web\View;
@@ -22,7 +23,7 @@ foreach ($manifest as $tag => $summary) {
 ?>
 <?= Html::beginForm(Url::to(Module::route('compare')), 'get', ['class' => 'yii-debug-compare-form']) ?>
     <div class="yii-debug-field">
-        <?= Html::label('Baseline capture', 'yii-debug-compare-baseline', ['class' => 'yii-debug-label']) ?>
+        <?= Html::label(ViewMessage::BASELINE->value, 'yii-debug-compare-baseline', ['class' => 'yii-debug-label']) ?>
         <?= Html::dropDownList(
             'baseline',
             $baseline,
@@ -35,7 +36,7 @@ foreach ($manifest as $tag => $summary) {
         ) ?>
     </div>
     <div class="yii-debug-field">
-        <?= Html::label('Target capture', 'yii-debug-compare-target', ['class' => 'yii-debug-label']) ?>
+        <?= Html::label(ViewMessage::TARGET->value, 'yii-debug-compare-target', ['class' => 'yii-debug-label']) ?>
         <?= Html::dropDownList(
             'target',
             $target,

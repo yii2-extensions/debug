@@ -11,7 +11,7 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use PHPForge\Debug\Helper\EmptyState;
 use yii\debug\models\search\EventSearch;
-use PHPForge\Debug\Panel\Event\{EventCellRenderer, EventInspectorRenderer, EventRow, EventSequence};
+use PHPForge\Debug\Panel\Event\{EventCellRenderer, EventInspectorRenderer, EventMessage, EventRow, EventSequence};
 use yii\debug\panels\EventPanel;
 use yii\debug\widgets\{FilterBanner, GridView};
 
@@ -31,7 +31,7 @@ $summaryItems = [
     Span::tag()
         ->html(
             Strong::tag()->content((string) count($models)),
-            ' events',
+            EventMessage::EVENTS_SUFFIX->value,
         ),
     Span::tag()
         ->class('yii-debug-grid-summary-sep')
@@ -39,7 +39,7 @@ $summaryItems = [
     Span::tag()
         ->html(
             Strong::tag()->content((string) EventRow::distinctClassCount($models)),
-            ' classes',
+            EventMessage::CLASSES_SUFFIX->value,
         ),
 ];
 
@@ -49,7 +49,7 @@ if ($staticCount > 0) {
         ->content('·');
     $summaryItems[] = Span::tag()->html(
         Strong::tag()->content((string) $staticCount),
-        ' static',
+        EventMessage::STATIC_SUFFIX->value,
     );
 }
 
@@ -119,7 +119,7 @@ $filterUrl = static function (string $attribute, string $value) use ($panel, $se
         'filterUrl' => $panel->getUrl(),
         'columns' => [
             [
-                'label' => '#',
+                'label' => EventMessage::NUMBER->value,
                 'value' => static fn(EventRow $data): int => $sequence->index($data),
                 'contentOptions' => ['class' => 'yii-debug-col-num'],
                 'headerOptions' => ['class' => 'yii-debug-col-num'],
@@ -134,7 +134,7 @@ $filterUrl = static function (string $attribute, string $value) use ($panel, $se
             ],
             [
                 'attribute' => 'name',
-                'label' => 'Event',
+                'label' => EventMessage::EVENT->value,
                 'value' => static fn(EventRow $data): string => EventInspectorRenderer::renderEventCell($data, $sequence),
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'yii-debug-event-cell'],

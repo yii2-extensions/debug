@@ -18,6 +18,8 @@ interface UserSearchInterface
      * Returns a data provider over the identity records, filtered by the submitted search parameters.
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by the implementing model.
+     *
+     * @return DataProviderInterface Provider over the matching identity records.
      */
     public function search(array $params): DataProviderInterface;
 }

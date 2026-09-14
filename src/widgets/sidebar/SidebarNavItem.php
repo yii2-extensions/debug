@@ -43,6 +43,8 @@ final readonly class SidebarNavItem
 
     /**
      * Converts the Yii route-array wrapper to the framework-neutral sidebar contract.
+     *
+     * @return CoreSidebarNavItem Portable navigation entry with the URL already resolved.
      */
     public function toCore(): CoreSidebarNavItem
     {

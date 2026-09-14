@@ -26,6 +26,13 @@ class UserSearch extends Model implements UserSearchInterface
      */
     public Model|null $identityImplement = null;
 
+    /**
+     * Reads an attribute from the identity model.
+     *
+     * @param string $name Attribute name.
+     *
+     * @return mixed Attribute value, or `null` when no identity model is available.
+     */
     #[Override]
     public function __get($name): mixed
     {
@@ -36,6 +43,12 @@ class UserSearch extends Model implements UserSearchInterface
         return $this->identityImplement->__get($name);
     }
 
+    /**
+     * Writes an attribute to the identity model, ignoring the call when no identity model is available.
+     *
+     * @param string $name Attribute name.
+     * @param mixed $value Value to assign.
+     */
     #[Override]
     public function __set($name, $value): void
     {
@@ -46,6 +59,9 @@ class UserSearch extends Model implements UserSearchInterface
         $this->identityImplement->__set($name, $value);
     }
 
+    /**
+     * @return array<int|string, string> Attribute names forwarded from the identity model; empty when unavailable.
+     */
     #[Override]
     public function attributes(): array
     {
@@ -56,12 +72,18 @@ class UserSearch extends Model implements UserSearchInterface
         return $this->identityImplement->attributes();
     }
 
+    /**
+     * @return string Query-string prefix that scopes this form's filter parameters.
+     */
     #[Override]
     public function formName(): string
     {
         return FilterPrefix::USER;
     }
 
+    /**
+     * Instantiates the configured `identityClass` so the search form mirrors the identity model's attributes.
+     */
     public function init(): void
     {
         $user = Yii::$app->user ?? null;
@@ -75,6 +97,10 @@ class UserSearch extends Model implements UserSearchInterface
         }
     }
 
+    /**
+     * @return array<int, array<int|string, mixed>> Safe-attribute rules mirroring the identity model; empty when no
+     * identity model is available.
+     */
     #[Override]
     public function rules(): array
     {
@@ -93,7 +119,9 @@ class UserSearch extends Model implements UserSearchInterface
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
      *
-     * @throws InvalidConfigException When the table schema cannot be resolved during AR filtering.
+     * @throws InvalidConfigException when the table schema cannot be resolved during AR filtering.
+     *
+     * @return DataProviderInterface Provider over the identity model, empty for non-AR identities.
      */
     public function search(array $params): DataProviderInterface
     {
@@ -110,8 +138,11 @@ class UserSearch extends Model implements UserSearchInterface
      * String columns are matched with `LIKE`; all other columns use exact matching.
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param ActiveRecord $model Identity model whose table schema drives the per-column filters.
      *
-     * @throws InvalidConfigException When the table schema cannot be resolved.
+     * @throws InvalidConfigException when the table schema cannot be resolved.
+     *
+     * @return ActiveDataProvider Provider whose query carries the per-column filters.
      */
     private function searchActiveDataProvider(array $params, ActiveRecord $model): ActiveDataProvider
     {

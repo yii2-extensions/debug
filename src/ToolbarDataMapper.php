@@ -13,9 +13,30 @@ use function is_array;
 
 /**
  * Maps Yii2 panel envelopes to the shared typed toolbar contract while retaining custom-panel fields.
+ *
+ * Start from {@see create()} with the values the toolbar cannot render without, then layer the optional chrome through
+ * the immutable `with*()` methods, which mirror {@see ToolbarData}. {@see map()} closes the chain.
  */
 final readonly class ToolbarDataMapper
 {
+    /**
+     * @param ToolbarData $data Payload enriched by the `with*()` methods and serialized by {@see map()}.
+     */
+    private function __construct(private ToolbarData $data) {}
+
+    /**
+     * Creates a mapper for a capture, ready for immutable enrichment.
+     *
+     * @param string $tag Tag of the capture the toolbar links to.
+     * @param string $title Title of the captured request.
+     *
+     * @return self Mapper carrying only the mandatory toolbar identity.
+     */
+    public static function create(string $tag, string $title): self
+    {
+        return new self(ToolbarData::create($tag, $title));
+    }
+
     /**
      * Creates the JSON-ready toolbar payload.
      *
@@ -41,21 +62,8 @@ final readonly class ToolbarDataMapper
      *   yiiVersion: string|null,
      * } Payload consumed by the shared toolbar runtime.
      */
-    public function map(
-        string $tag,
-        string $title,
-        string $indexUrl,
-        string|null $configUrl,
-        array $panels,
-        string $position = 'bottom',
-        int $defaultHeight = 50,
-        string $iconBaseUrl = '',
-        string|null $logo = null,
-        string|null $logoFallback = null,
-        string|null $phpInfoUrl = null,
-        string|null $phpVersion = null,
-        string|null $yiiVersion = null,
-    ): array {
+    public function map(array $panels): array
+    {
         $typedPanels = [];
         $compatiblePanels = [];
 
@@ -86,27 +94,71 @@ final readonly class ToolbarDataMapper
             $compatiblePanels[] = self::mergePanelExtensions($original, $typed->jsonSerialize());
         }
 
-        $data = (new ToolbarData(
-            tag: $tag,
-            title: $title,
-            indexUrl: $indexUrl,
-            configUrl: $configUrl ?? $indexUrl,
-            items: $typedPanels,
-            position: $position,
-            defaultHeight: $defaultHeight,
-            iconBaseUrl: $iconBaseUrl,
-            logo: $logo,
-            logoFallback: $logoFallback,
-            phpInfoUrl: $phpInfoUrl,
-            phpVersion: $phpVersion,
-            yiiVersion: $yiiVersion,
-        ))->jsonSerialize();
+        $data = $this->data->withPanels($typedPanels)->jsonSerialize();
 
         // The outer metadata always comes from the portable DTO. Only the panel list needs a compatibility lane for
         // custom extensions that use free-form envelopes.
         $data['items'] = $compatiblePanels;
 
         return $data;
+    }
+
+    /**
+     * Returns a copy carrying the brand assets and the version labels.
+     *
+     * @param string|null $logo Logo as a data URI, or `null` to fall back.
+     * @param string|null $logoFallback Logo used when the primary one is unavailable, or `null` for none.
+     * @param string|null $phpVersion PHP version label, or `null` when unavailable.
+     * @param string|null $yiiVersion Yii version label, or `null` when unavailable.
+     *
+     * @return self Mapper with the branding applied.
+     */
+    public function withBranding(
+        string|null $logo,
+        string|null $logoFallback = null,
+        string|null $phpVersion = null,
+        string|null $yiiVersion = null,
+    ): self {
+        return new self(
+            $this->data->withBranding($logo, $logoFallback, $phpVersion, $yiiVersion),
+        );
+    }
+
+    /**
+     * Returns a copy carrying the debugger navigation URLs.
+     *
+     * An omitted configuration URL falls back to the history URL, which Debug Core requires to be non-`null`.
+     *
+     * @param string $indexUrl URL of the history page.
+     * @param string|null $configUrl URL of the configuration panel, or `null` to reuse the history URL.
+     * @param string|null $phpInfoUrl URL of the `phpinfo()` page, or `null` when disabled.
+     *
+     * @return self Mapper with the navigation applied.
+     */
+    public function withNavigation(
+        string $indexUrl,
+        string|null $configUrl = null,
+        string|null $phpInfoUrl = null,
+    ): self {
+        return new self(
+            $this->data->withNavigation($indexUrl, $configUrl ?? $indexUrl, $phpInfoUrl),
+        );
+    }
+
+    /**
+     * Returns a copy carrying the drawer presentation settings.
+     *
+     * @param string $position Edge the toolbar docks to.
+     * @param int $defaultHeight Collapsed toolbar height, in pixels.
+     * @param string $iconBaseUrl Base URL the panel icons resolve against.
+     *
+     * @return self Mapper with the presentation applied.
+     */
+    public function withPresentation(string $position, int $defaultHeight, string $iconBaseUrl = ''): self
+    {
+        return new self(
+            $this->data->withPresentation($position, $defaultHeight, $iconBaseUrl),
+        );
     }
 
     /**
@@ -147,6 +199,9 @@ final readonly class ToolbarDataMapper
      * Narrows an optional panel field to the nullable string required by the shared DTO.
      *
      * @param array<array-key, mixed> $data Original envelope.
+     * @param string $key Field to read from the envelope.
+     *
+     * @return string|null Field as a string, or `null` when it is absent or not stringable.
      */
     private static function optionalString(array $data, string $key): string|null
     {
@@ -157,6 +212,8 @@ final readonly class ToolbarDataMapper
      * Returns a typed panel when the original envelope follows the portable schema.
      *
      * @param array<string, mixed> $data Original panel envelope.
+     *
+     * @return ToolbarPanel|null Typed panel, or `null` when the envelope does not follow the portable schema.
      */
     private static function panel(array $data): ToolbarPanel|null
     {

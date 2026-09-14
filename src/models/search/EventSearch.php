@@ -32,6 +32,9 @@ class EventSearch extends Base
      */
     public string $senderClass = '';
 
+    /**
+     * @return array<string, string> Form labels keyed by attribute name.
+     */
     #[Override]
     public function attributeLabels(): array
     {
@@ -43,12 +46,18 @@ class EventSearch extends Base
         ];
     }
 
+    /**
+     * @return string Query-string prefix that scopes this form's filter parameters.
+     */
     #[Override]
     public function formName(): string
     {
         return FilterPrefix::EVENT;
     }
 
+    /**
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
+     */
     #[Override]
     public function rules(): array
     {
@@ -64,6 +73,8 @@ class EventSearch extends Base
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
      * @param list<EventRow> $models Captured event rows to wrap and filter.
+     *
+     * @return ArrayDataProvider Sortable provider with the filtered event rows.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

@@ -12,6 +12,10 @@ use yii\grid\DataColumn;
  */
 final class DebugDataColumn extends DataColumn
 {
+    /**
+     * Marks the header cell as a column scope and gives the filter input an accessible name derived from its
+     * header label.
+     */
     #[Override]
     public function init(): void
     {

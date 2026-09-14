@@ -54,7 +54,9 @@ class UserSwitch extends Model
      *
      * Reads the captured id from the session when present; otherwise treats the current identity as the main one.
      *
-     * @throws InvalidConfigException When the user component cannot be resolved.
+     * @throws InvalidConfigException when the user component cannot be resolved.
+     *
+     * @return User User component carrying the original identity.
      */
     public function getMainUser(): User
     {
@@ -92,7 +94,9 @@ class UserSwitch extends Model
     /**
      * Returns the user component bound to this switch model, resolving it lazily on first call.
      *
-     * @throws InvalidConfigException When the configured component ID does not resolve to a {@see User} instance.
+     * @throws InvalidConfigException when the configured component ID does not resolve to a {@see User} instance.
+     *
+     * @return User Bound user component.
      */
     public function getUser(): User
     {
@@ -118,7 +122,9 @@ class UserSwitch extends Model
     /**
      * Returns whether the current identity is the main user (or a guest).
      *
-     * @throws InvalidConfigException When the user component cannot be resolved.
+     * @throws InvalidConfigException when the user component cannot be resolved.
+     *
+     * @return bool `true` when the session runs as the main user or as a guest; `false` while impersonating.
      */
     public function isMainUser(): bool
     {
@@ -134,7 +140,7 @@ class UserSwitch extends Model
     /**
      * Restores the session to the main user captured before the first switch.
      *
-     * @throws InvalidConfigException When the user component cannot be resolved.
+     * @throws InvalidConfigException when the user component cannot be resolved.
      */
     public function reset(): void
     {
@@ -155,8 +161,10 @@ class UserSwitch extends Model
     /**
      * Switches the session to the given user and tracks the main user id when impersonating.
      *
-     * @throws InvalidConfigException When the user component cannot be resolved.
-     * @throws RuntimeException When the supplied user has no identity attached.
+     * @param User $user User component carrying the identity to switch to.
+     *
+     * @throws InvalidConfigException when the user component cannot be resolved.
+     * @throws RuntimeException when the supplied user has no identity attached.
      */
     public function setUser(User $user): void
     {
@@ -184,7 +192,9 @@ class UserSwitch extends Model
     /**
      * Switches the session to the user identified by `$identity`.
      *
-     * @throws InvalidConfigException When the user component cannot be resolved.
+     * @param IdentityInterface $identity Identity to impersonate.
+     *
+     * @throws InvalidConfigException when the user component cannot be resolved.
      */
     public function setUserByIdentity(IdentityInterface $identity): void
     {

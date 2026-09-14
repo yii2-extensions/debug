@@ -43,6 +43,9 @@ class ActionRoutes extends Model
      */
     public array $routes = [];
 
+    /**
+     * Scans the application on construction so the view model is ready before the panel renders.
+     */
     public function init(): void
     {
         // Yii lifecycle convention: the parent chain is a no-op today, so removing this call is unobservable.
@@ -118,7 +121,7 @@ class ActionRoutes extends Model
     /**
      * Returns every web/REST controller reachable from the application, grouped by controller ID.
      *
-     * @throws ReflectionException When a controller class fails to reflect.
+     * @throws ReflectionException when a controller class fails to reflect.
      *
      * @return array<string, array{class: class-string<Controller>, actions: list<non-empty-string>}> Controllers keyed
      * by ID, each carrying its FQCN and the action method names it exposes.
@@ -187,7 +190,7 @@ class ActionRoutes extends Model
      *
      * @param Module $module Module to scan, including its child modules.
      *
-     * @throws ReflectionException When a controller class fails to reflect.
+     * @throws ReflectionException when a controller class fails to reflect.
      *
      * @return array<string, class-string<Controller>> Controller class names indexed by route prefix.
      */
@@ -285,7 +288,7 @@ class ActionRoutes extends Model
      *
      * @param string $controllerClass Fully qualified class name to validate.
      *
-     * @throws ReflectionException When reflection over the class fails.
+     * @throws ReflectionException when reflection over the class fails.
      *
      * @return bool `true` when the class is loadable, non-abstract, and extends a web/REST controller, `false`
      * otherwise.

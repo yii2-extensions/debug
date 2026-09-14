@@ -47,6 +47,10 @@ class DumpCollector extends Collector
      *
      * The built-in highlighter emits safe markup, so highlighted output is passed through unchanged. Plain output
      * and custom callback output are HTML-escaped explicitly.
+     *
+     * @param mixed $var Value passed to `Yii::debug()`.
+     *
+     * @return string Display string safe to embed in the dump card.
      */
     public function varDump(mixed $var): string
     {
@@ -54,7 +58,11 @@ class DumpCollector extends Collector
             return Encode::content(($this->varDumpCallback)($var, $this));
         }
 
-        $message = VarDumper::dumpAsString($var, $this->depth, $this->highlight);
+        $message = VarDumper::dumpAsString(
+            $var,
+            $this->depth,
+            $this->highlight,
+        );
 
         if (!$this->highlight) {
             $message = Encode::content($message);

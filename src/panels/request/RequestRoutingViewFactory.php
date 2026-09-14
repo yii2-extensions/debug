@@ -38,6 +38,9 @@ use function trim;
  */
 final class RequestRoutingViewFactory
 {
+    /**
+     * Provenance label shown above the route inventory.
+     */
     private const string INVENTORY_SOURCE = 'Current URL manager configuration';
 
     /**
@@ -48,6 +51,8 @@ final class RequestRoutingViewFactory
      * @param ExceptionSnapshot|null $error Captured Router collector or hydration failure, when available.
      * @param RouterRules|null $routerRules Injected live URL-manager view model; primarily useful to avoid rescanning
      * the manager when the caller already has it.
+     *
+     * @return RequestRoutingView Composed view of the current route and the application route inventory.
      */
     public static function fromRequestData(
         array $data,
@@ -84,8 +89,13 @@ final class RequestRoutingViewFactory
     }
 
     /**
-     * @param list<RouteTraceRow> $trace
-     * @param list<RouteDefinition> $routes
+     * Resolves the URL rule that produced the current route, preferring a matched trace entry over a target match.
+     *
+     * @param string $route Route resolved for the captured request.
+     * @param list<RouteTraceRow> $trace Rule-evaluation trace, debugger rules already removed.
+     * @param list<RouteDefinition> $routes Application routes declared by the URL manager.
+     *
+     * @return RouteDefinition|null Matching definition, or `null` when no rule accounts for the route.
      */
     private static function currentDefinition(string $route, array $trace, array $routes): RouteDefinition|null
     {
@@ -111,6 +121,10 @@ final class RequestRoutingViewFactory
     }
 
     /**
+     * Builds the route inventory from the live URL manager, separating the debugger's own rules from it.
+     *
+     * @param RouterRules|null $routerRules Live URL-manager view model; scanned on demand when omitted.
+     *
      * @return array{RouteInventoryView, list<string>} Application inventory and omitted debugger rule patterns.
      */
     private static function inventory(RouterRules|null $routerRules): array
@@ -176,6 +190,11 @@ final class RequestRoutingViewFactory
         ];
     }
 
+    /**
+     * @param string $route Route whose module chain is walked.
+     *
+     * @return bool `true` when any module along the route is the debugger module; `false` otherwise.
+     */
     private static function isDebuggerRoute(string $route): bool
     {
         $module = Yii::$app;
@@ -198,7 +217,9 @@ final class RequestRoutingViewFactory
     /**
      * Normalizes every Yii2 URL-rule verb representation to a stable list of non-empty strings.
      *
-     * @return list<string>
+     * @param mixed $value Rule verbs as a delimited string, a list of strings, or any unsupported value.
+     *
+     * @return list<string> Uppercase HTTP methods without duplicates; empty when the value carries none.
      */
     private static function methods(mixed $value): array
     {
@@ -227,15 +248,23 @@ final class RequestRoutingViewFactory
         return array_values(array_unique($methods));
     }
 
+    /**
+     * @param mixed $value Captured value of unknown type.
+     *
+     * @return string|null Value when it is a non-empty string; `null` otherwise.
+     */
     private static function nonEmptyString(mixed $value): string|null
     {
         return is_string($value) && $value !== '' ? $value : null;
     }
 
     /**
-     * @param list<string> $excludedPatterns
+     * Converts the captured rule-evaluation trace to view rows, dropping the debugger's own rules.
      *
-     * @return list<RouteTraceRow>
+     * @param RouterSnapshot|null $snapshot Captured Router panel trace, when available.
+     * @param list<string> $excludedPatterns Debugger rule patterns to omit from the trace.
+     *
+     * @return list<RouteTraceRow> Trace rows in evaluation order.
      */
     private static function trace(RouterSnapshot|null $snapshot, array $excludedPatterns): array
     {
@@ -258,6 +287,12 @@ final class RequestRoutingViewFactory
         return $trace;
     }
 
+    /**
+     * @param string $traceRule Trace entry rule, optionally prefixed by its verbs.
+     * @param string $pattern Rule pattern to compare against.
+     *
+     * @return bool `true` when the trace entry refers to the pattern; `false` otherwise.
+     */
     private static function traceMatchesPattern(string $traceRule, string $pattern): bool
     {
         return $pattern !== '' && ($traceRule === $pattern || str_ends_with($traceRule, " {$pattern}"));

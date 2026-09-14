@@ -10,7 +10,7 @@ use UIAwesome\Html\Root\Header;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 use yii\debug\models\search\LogSearch;
-use PHPForge\Debug\Panel\Log\{LogCellRenderer, LogCounts, LogRow};
+use PHPForge\Debug\Panel\Log\{LogCellRenderer, LogCounts, LogMessage, LogRow};
 use yii\debug\panels\LogPanel;
 use yii\debug\widgets\{FilterBanner, GridView};
 use yii\log\Logger;
@@ -42,7 +42,7 @@ $summaryItems = [
     Span::tag()
         ->html(
             Strong::tag()->content((string) $counts->total),
-            ' messages',
+            LogMessage::MESSAGES_SUFFIX->value,
         ),
 ];
 
@@ -53,11 +53,19 @@ if ($counts->hasErrors()) {
     $summaryItems[] = A::tag()
         ->class('yii-debug-grid-summary-stat-danger')
         ->href($levelUrl(Logger::LEVEL_ERROR))
-        ->addAriaAttribute('label', "{$counts->errors} errors; filter log messages by error level")
-        ->title('Show only error log messages')
+        ->addAriaAttribute(
+            'label',
+            sprintf(
+                LogMessage::CHIP_ARIA->value,
+                $counts->errors,
+                LogMessage::LEVEL_ERRORS->value,
+                LogMessage::LEVEL_ERROR->value,
+            ),
+        )
+        ->title(sprintf(LogMessage::CHIP_TITLE->value, LogMessage::LEVEL_ERROR->value))
         ->html(
             Strong::tag()->content((string) $counts->errors),
-            ' errors',
+            ' ' . LogMessage::LEVEL_ERRORS->value,
         );
 }
 
@@ -68,11 +76,19 @@ if ($counts->hasWarnings()) {
     $summaryItems[] = A::tag()
         ->class('yii-debug-grid-summary-stat-warn')
         ->href($levelUrl(Logger::LEVEL_WARNING))
-        ->addAriaAttribute('label', "{$counts->warnings} warnings; filter log messages by warning level")
-        ->title('Show only warning log messages')
+        ->addAriaAttribute(
+            'label',
+            sprintf(
+                LogMessage::CHIP_ARIA->value,
+                $counts->warnings,
+                LogMessage::LEVEL_WARNINGS->value,
+                LogMessage::LEVEL_WARNING->value,
+            ),
+        )
+        ->title(sprintf(LogMessage::CHIP_TITLE->value, LogMessage::LEVEL_WARNING->value))
         ->html(
             Strong::tag()->content((string) $counts->warnings),
-            ' warnings',
+            ' ' . LogMessage::LEVEL_WARNINGS->value,
         );
 }
 
@@ -83,11 +99,19 @@ if ($counts->hasInfo()) {
     $summaryItems[] = A::tag()
         ->class('yii-debug-grid-summary-stat-info')
         ->href($levelUrl(Logger::LEVEL_INFO))
-        ->addAriaAttribute('label', "{$counts->info} info; filter log messages by info level")
-        ->title('Show only info log messages')
+        ->addAriaAttribute(
+            'label',
+            sprintf(
+                LogMessage::CHIP_ARIA->value,
+                $counts->info,
+                LogMessage::LEVEL_INFO->value,
+                LogMessage::LEVEL_INFO->value,
+            ),
+        )
+        ->title(sprintf(LogMessage::CHIP_TITLE->value, LogMessage::LEVEL_INFO->value))
         ->html(
             Strong::tag()->content((string) $counts->info),
-            ' info',
+            ' ' . LogMessage::LEVEL_INFO->value,
         );
 }
 
@@ -98,11 +122,19 @@ if ($counts->hasTrace()) {
     $summaryItems[] = A::tag()
         ->class('yii-debug-grid-summary-stat-trace')
         ->href($levelUrl(Logger::LEVEL_TRACE))
-        ->addAriaAttribute('label', "{$counts->trace} trace; filter log messages by trace level")
-        ->title('Show only trace log messages')
+        ->addAriaAttribute(
+            'label',
+            sprintf(
+                LogMessage::CHIP_ARIA->value,
+                $counts->trace,
+                LogMessage::LEVEL_TRACE->value,
+                LogMessage::LEVEL_TRACE->value,
+            ),
+        )
+        ->title(sprintf(LogMessage::CHIP_TITLE->value, LogMessage::LEVEL_TRACE->value))
         ->html(
             Strong::tag()->content((string) $counts->trace),
-            ' trace',
+            ' ' . LogMessage::LEVEL_TRACE->value,
         );
 }
 
@@ -127,7 +159,7 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
         'columns' => [
             [
                 'attribute' => 'id',
-                'label' => '#',
+                'label' => LogMessage::NUMBER->value,
                 'contentOptions' => ['class' => 'yii-debug-nowrap'],
             ],
             [
@@ -147,10 +179,10 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
                 'value' => static fn(LogRow $data): string => LogCellRenderer::renderLevelCell($data),
                 'format' => 'raw',
                 'filter' => [
-                    Logger::LEVEL_TRACE => ' Trace ',
-                    Logger::LEVEL_INFO => ' Info ',
-                    Logger::LEVEL_WARNING => ' Warning ',
-                    Logger::LEVEL_ERROR => ' Error ',
+                    Logger::LEVEL_TRACE => ' ' . LogMessage::FILTER_TRACE->value . ' ',
+                    Logger::LEVEL_INFO => ' ' . LogMessage::FILTER_INFO->value . ' ',
+                    Logger::LEVEL_WARNING => ' ' . LogMessage::FILTER_WARNING->value . ' ',
+                    Logger::LEVEL_ERROR => ' ' . LogMessage::FILTER_ERROR->value . ' ',
                 ],
             ],
             [

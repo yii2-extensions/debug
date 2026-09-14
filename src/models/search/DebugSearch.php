@@ -8,6 +8,7 @@ use Override;
 use PHPForge\Debug\Data\FilterPrefix;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPForge\Debug\View\History\HistoryRow;
+use PHPForge\Debug\View\ViewMessage;
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 
@@ -56,6 +57,9 @@ class DebugSearch extends Base
      */
     public string $url = '';
 
+    /**
+     * @return array<string, string> Form labels keyed by attribute name.
+     */
     #[Override]
     public function attributeLabels(): array
     {
@@ -63,16 +67,19 @@ class DebugSearch extends Base
             'tag' => 'Tag',
             'processingTime' => 'Processing Time',
             'peakMemory' => 'Peak Memory',
-            'ip' => 'IP',
-            'method' => 'Method',
-            'ajax' => 'AJAX',
-            'url' => 'URL',
+            'ip' => ViewMessage::IP->value,
+            'method' => ViewMessage::METHOD->value,
+            'ajax' => ViewMessage::AJAX->value,
+            'url' => ViewMessage::URL->value,
             'statusCode' => 'Status',
             'sqlCount' => 'Query Count',
             'mailCount' => 'Mail Count',
         ];
     }
 
+    /**
+     * @return string Query-string prefix that scopes this form's filter parameters.
+     */
     #[Override]
     public function formName(): string
     {
@@ -81,12 +88,19 @@ class DebugSearch extends Base
 
     /**
      * Returns whether the given status code is flagged as critical in {@see $criticalCodes}.
+     *
+     * @param int $code HTTP status code taken from a captured request summary.
+     *
+     * @return bool `true` when the code is listed as critical; `false` otherwise.
      */
     public function isCodeCritical(int $code): bool
     {
         return in_array($code, $this->criticalCodes, true);
     }
 
+    /**
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
+     */
     #[Override]
     public function rules(): array
     {
@@ -100,6 +114,8 @@ class DebugSearch extends Base
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
      * @param list<RequestSummary> $models Manifest entries to wrap and filter.
+     *
+     * @return ArrayDataProvider Sortable, paginated provider with the filtered manifest entries.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

@@ -6,7 +6,7 @@ namespace yii\debug\models\search;
 
 use Override;
 use PHPForge\Debug\Data\FilterPrefix;
-use PHPForge\Debug\Panel\Db\QueryRow;
+use PHPForge\Debug\Panel\Db\{DbMessage, QueryRow};
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 
@@ -24,21 +24,30 @@ class DbSearch extends Base
      */
     public string $type = '';
 
+    /**
+     * @return array<string, string> Form labels keyed by attribute name.
+     */
     #[Override]
     public function attributeLabels(): array
     {
         return [
-            'type' => 'Type',
-            'query' => 'Query',
+            'type' => DbMessage::TYPE->value,
+            'query' => DbMessage::QUERY->value,
         ];
     }
 
+    /**
+     * @return string Query-string prefix that scopes this form's filter parameters.
+     */
     #[Override]
     public function formName(): string
     {
         return FilterPrefix::DB;
     }
 
+    /**
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
+     */
     #[Override]
     public function rules(): array
     {

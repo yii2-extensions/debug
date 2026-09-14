@@ -7,6 +7,7 @@ namespace yii\debug\collectors;
 use Closure;
 use PHPForge\Debug\Panel\Event\{EventCapture, EventInspection, EventRow, EventSnapshot};
 use Throwable;
+use Yii;
 use yii\base\{ActionEvent, ViewEvent};
 use yii\base\Event;
 
@@ -22,7 +23,6 @@ class EventCollector extends Collector
      * Opt-in capture of selected action/view metadata; event values and rendered output are never dumped.
      */
     public bool $captureContext = false;
-
     /**
      * Opt-in argument-free trace depth; zero disables capture, and sixteen is the hard maximum.
      */
@@ -101,6 +101,10 @@ class EventCollector extends Collector
 
     /**
      * Captures selected values at this listener's observation point, not final event state.
+     *
+     * @param Event $event Event reaching this listener.
+     *
+     * @return EventInspection Values read at the observation point.
      */
     private function inspect(Event $event): EventInspection
     {
@@ -138,8 +142,8 @@ class EventCollector extends Collector
                     $this->traceLimit,
                     [
                         __FILE__,
-                        \Yii::getAlias('@yii/base/Event.php'),
-                        \Yii::getAlias('@yii/base/Component.php'),
+                        Yii::getAlias('@yii/base/Event.php'),
+                        Yii::getAlias('@yii/base/Component.php'),
                     ],
                 );
             } catch (Throwable) {

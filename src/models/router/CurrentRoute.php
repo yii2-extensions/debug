@@ -44,6 +44,10 @@ class CurrentRoute extends Model
 
     /**
      * Builds the view model from a hydrated router snapshot, or an empty one when the panel captured nothing.
+     *
+     * @param RouterSnapshot|null $snapshot Captured router trace, or `null` when the panel captured nothing.
+     *
+     * @return self View model for the Router panel.
      */
     public static function fromSnapshot(RouterSnapshot|null $snapshot): self
     {

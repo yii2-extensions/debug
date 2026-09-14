@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\collectors;
 
-use PHPForge\Debug\Panel\Mail\MailMessage;
+use PHPForge\Debug\Panel\Mail\MailEntry;
 use PHPUnit\Framework\Attributes\Group;
 use Stringable;
 use Xepozz\InternalMocker\MockerState;
@@ -184,56 +184,56 @@ final class MailCollectorTest extends TestCase
 
         self::assertSame(
             'from@example.com',
-            $captured->from,
+            $captured->getFrom(),
             'FROM must round-trip.',
         );
         self::assertSame(
             ['to@example.com'],
-            $captured->to,
+            $captured->getTo(),
             'TO must round-trip.',
         );
         self::assertSame(
             'Hello',
-            $captured->subject,
+            $captured->getSubject(),
             'SUBJECT must round-trip.',
         );
         self::assertTrue(
-            $captured->isSuccessful,
+            $captured->isSuccessful(),
             'IS_SUCCESSFUL must round-trip.',
         );
         self::assertNotSame(
             '',
-            $captured->file,
+            $captured->getFile(),
             'FILE must be assigned.',
         );
         self::assertSame(
             ['cc@example.com'],
-            $captured->cc,
+            $captured->getCc(),
             'CC must round-trip.',
         );
         self::assertSame(
             ['bcc@example.com'],
-            $captured->bcc,
+            $captured->getBcc(),
             'BCC must round-trip.',
         );
         self::assertSame(
             ['reply@example.com'],
-            $captured->replyTo,
+            $captured->getReplyTo(),
             'REPLY-TO must round-trip.',
         );
         self::assertSame(
             'Body text',
-            $captured->body,
+            $captured->getBody(),
             'BODY must round-trip.',
         );
         self::assertNotSame(
             '',
-            $captured->headers,
+            $captured->getHeaders(),
             'HEADERS must be assigned.',
         );
 
         if (PHP_OS_FAMILY !== 'Windows') {
-            $permissions = fileperms("{$path}/{$captured->file}");
+            $permissions = fileperms("{$path}/{$captured->getFile()}");
 
             self::assertIsInt(
                 $permissions,
@@ -258,7 +258,7 @@ final class MailCollectorTest extends TestCase
             );
         }
 
-        unlink("{$path}/{$captured->file}");
+        unlink("{$path}/{$captured->getFile()}");
         rmdir($path);
 
         Event::offAll();
@@ -310,7 +310,7 @@ final class MailCollectorTest extends TestCase
 
         self::assertSame(
             '',
-            $captured->file,
+            $captured->getFile(),
             'A file-mode failure must omit the unavailable `.eml` reference.',
         );
         self::assertSame(
@@ -354,7 +354,7 @@ final class MailCollectorTest extends TestCase
 
         self::assertSame(
             '',
-            $captured->file,
+            $captured->getFile(),
             'A write failure must omit the unavailable `.eml` reference.',
         );
         self::assertSame(
@@ -412,7 +412,7 @@ final class MailCollectorTest extends TestCase
 
         self::assertSame(
             '',
-            $captured->file,
+            $captured->getFile(),
             'Unsafe mailer-generated paths must not reach persistence.',
         );
         self::assertDirectoryDoesNotExist(
@@ -567,7 +567,7 @@ final class MailCollectorTest extends TestCase
      *
      * @param MailCollector $collector Started collector.
      *
-     * @return list<MailMessage> Captured mail messages.
+     * @return list<MailEntry> Captured mail messages.
      */
     private function captureEntries(MailCollector $collector): array
     {
@@ -581,7 +581,7 @@ final class MailCollectorTest extends TestCase
         return $snapshot->entries();
     }
 
-    private function captureSentMessage(MailCollector $collector): MailMessage
+    private function captureSentMessage(MailCollector $collector): MailEntry
     {
         $this->triggerSentMessage();
 

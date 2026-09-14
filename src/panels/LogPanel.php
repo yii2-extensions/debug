@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\Log\{LogCounts, LogRow, LogSnapshot};
+use PHPForge\Debug\Panel\Log\{LogCounts, LogMessage, LogRow, LogSnapshot};
 use PHPForge\Debug\Panel\{MemorySample, PanelIcon, PanelTitle};
+use PHPForge\Debug\Storage\HydrationException;
 use Yii;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
@@ -22,10 +23,15 @@ use function array_map;
  */
 class LogPanel extends Panel implements ProvidesMemorySamples
 {
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private LogSnapshot|null $snapshot = null;
 
     /**
      * Renders the detail view with the logs grid.
+     *
+     * @return string Rendered detail view.
      */
     #[Override]
     public function getDetail(): string
@@ -66,6 +72,8 @@ class LogPanel extends Panel implements ProvidesMemorySamples
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -75,6 +83,8 @@ class LogPanel extends Panel implements ProvidesMemorySamples
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -83,7 +93,11 @@ class LogPanel extends Panel implements ProvidesMemorySamples
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed log snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void
@@ -125,7 +139,7 @@ class LogPanel extends Panel implements ProvidesMemorySamples
 
         if ($errorCount > 0) {
             $items[] = [
-                'label' => 'Errors',
+                'label' => LogMessage::TOOLBAR_ERRORS->value,
                 'status' => 'danger',
                 'url' => $this->getUrl(['Log[level]' => Logger::LEVEL_ERROR]),
                 'value' => $errorCount,
@@ -134,7 +148,7 @@ class LogPanel extends Panel implements ProvidesMemorySamples
 
         if ($warningCount > 0) {
             $items[] = [
-                'label' => 'Warnings',
+                'label' => LogMessage::TOOLBAR_WARNINGS->value,
                 'status' => 'warning',
                 'url' => $this->getUrl(['Log[level]' => Logger::LEVEL_WARNING]),
                 'value' => $warningCount,

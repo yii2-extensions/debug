@@ -7,6 +7,7 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
 use PHPForge\Debug\Panel\User\{UserPanel as UserPresenter, UserSnapshot};
+use PHPForge\Debug\Storage\HydrationException;
 use Yii;
 use yii\base\{Action as BaseAction, InvalidConfigException, Model};
 use yii\data\DataProviderInterface;
@@ -94,10 +95,15 @@ class UserPanel extends Panel
      */
     public UserSwitch|null $userSwitch = null;
 
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private UserSnapshot|null $snapshot = null;
 
     /**
      * Returns whether the user-switch search affordance is available (the filter model exposes a `search()` method).
+     *
+     * @return bool `true` when the filter model exposes a search; `false` otherwise.
      */
     public function canSearchUsers(): bool
     {
@@ -107,7 +113,9 @@ class UserPanel extends Panel
     /**
      * Returns whether the main (pre-switch) user is allowed to switch identities under {@see $ruleUserSwitch}.
      *
-     * @throws InvalidConfigException When the debug module or the user component cannot be resolved.
+     * @throws InvalidConfigException when the debug module or the user component cannot be resolved.
+     *
+     * @return bool `true` when the main user may switch identities; `false` otherwise.
      */
     public function canSwitchUser(): bool
     {
@@ -162,6 +170,8 @@ class UserPanel extends Panel
 
     /**
      * Returns the panel display name (configurable via {@see $displayName}).
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -171,6 +181,8 @@ class UserPanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -182,7 +194,9 @@ class UserPanel extends Panel
      * Returns the user component bound to this panel, or `null` when the configured component id does not resolve to
      * a {@see User} instance.
      *
-     * @throws InvalidConfigException When the configured component cannot be retrieved from the application.
+     * @throws InvalidConfigException when the configured component cannot be retrieved from the application.
+     *
+     * @return User|null Bound user component, or `null` when the configured id does not resolve to one.
      */
     public function getUser(): User|null
     {
@@ -198,7 +212,9 @@ class UserPanel extends Panel
     /**
      * Returns the data provider that backs the user-switch GridView.
      *
-     * @throws InvalidConfigException When the filter model does not implement {@see UserSearchInterface}.
+     * @throws InvalidConfigException when the filter model does not implement {@see UserSearchInterface}.
+     *
+     * @return DataProviderInterface Provider backing the user-switch grid.
      */
     public function getUserDataProvider(): DataProviderInterface
     {
@@ -216,6 +232,8 @@ class UserPanel extends Panel
     /**
      * Returns the filter model instance for the GridView, or `null` when the filter model is not configured as an
      * instance.
+     *
+     * @return Model|null Filter model instance, or `null` when it is not configured as one.
      */
     public function getUsersFilterModel(): Model|null
     {
@@ -223,7 +241,11 @@ class UserPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed identity snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void
@@ -242,7 +264,7 @@ class UserPanel extends Panel
      * `reset-identity` unless the configured {@see $ruleUserSwitch} explicitly allows it. For a panel instantiated
      * before the module reference exists, the attach is deferred to {@see moduleBound()}.
      *
-     * @throws InvalidConfigException When the user component cannot be resolved or the filter model cannot be created.
+     * @throws InvalidConfigException when the user component cannot be resolved or the filter model cannot be created.
      */
     public function init(): void
     {
@@ -267,6 +289,8 @@ class UserPanel extends Panel
 
     /**
      * Returns whether the user component is resolvable; the panel is harmless on apps with no user component.
+     *
+     * @return bool `true` when a user component resolves; `false` otherwise.
      */
     #[Override]
     public function isEnabled(): bool
@@ -303,7 +327,6 @@ class UserPanel extends Panel
     protected function getToolbarItems(): array
     {
         $user = $this->getUser();
-
         $data = $this->getSnapshotData();
 
         $id = $data['id'] ?? null;
@@ -337,7 +360,7 @@ class UserPanel extends Panel
      * The behavior evaluates the rule against the main user (the identity captured before any switch), so a switched
      * impersonator never accidentally grants itself further access.
      *
-     * @throws InvalidConfigException When the debug module or the user-switch model is not configured.
+     * @throws InvalidConfigException when the debug module or the user-switch model is not configured.
      */
     private function addAccessRules(): void
     {
@@ -365,6 +388,8 @@ class UserPanel extends Panel
 
     /**
      * Returns the configured filter model when it implements {@see UserSearchInterface}, `null` otherwise.
+     *
+     * @return UserSearchInterface|null Searchable filter model, or `null` when it does not implement the interface.
      */
     private function getSearchableFilterModel(): UserSearchInterface|null
     {
@@ -387,7 +412,7 @@ class UserPanel extends Panel
      *
      * @param User $user Resolved user component.
      *
-     * @throws InvalidConfigException When the configured filter-model class does not implement
+     * @throws InvalidConfigException when the configured filter-model class does not implement
      * {@see UserSearchInterface}.
      */
     private function initFilterModel(User $user): void

@@ -7,6 +7,7 @@ namespace yii\debug\tests\actions;
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\PanelSnapshot;
+use PHPForge\Debug\View\ViewMessage;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use Yii;
@@ -346,7 +347,7 @@ final class CompareActionTest extends ActionTestCase
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage(
-            Message::COMPARISON_CAPTURES_REQUIRED->getMessage(),
+            ViewMessage::COMPARISON_REQUIRES_TWO->value,
         );
 
         $this->runDebugAction(

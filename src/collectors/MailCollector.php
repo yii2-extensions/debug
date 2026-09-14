@@ -33,6 +33,10 @@ use const LOCK_EX;
  */
 class MailCollector extends Collector
 {
+    /**
+     * Age, in seconds, below which an unreferenced `.eml` file is kept, so a message persisted by a request
+     * still in flight is not deleted.
+     */
     private const int ORPHAN_GRACE_PERIOD = 86_400;
 
     /**
@@ -209,6 +213,8 @@ class MailCollector extends Collector
 
     /**
      * Captures metadata from a completed mailer event and records its optional persisted file.
+     *
+     * @param MailEvent $event Event emitted after the mailer sent the message.
      */
     private function collectMessage(MailEvent $event): void
     {
@@ -241,6 +247,10 @@ class MailCollector extends Collector
      *
      * Address arrays are joined by their keys (the address strings); scalar and {@see \Stringable} values pass
      * through unchanged; anything else collapses to `''`.
+     *
+     * @param mixed $attr Address attribute as an array, a scalar, a {@see \Stringable}, or any other value.
+     *
+     * @return string Comma-separated addresses, or `''` when the value carries none.
      */
     private function convertParams(mixed $attr): string
     {
@@ -251,6 +261,11 @@ class MailCollector extends Collector
         return Coerce::stringOrNull($attr) ?? '';
     }
 
+    /**
+     * @param string $file File name proposed by the mailer.
+     *
+     * @return bool `true` when the name is a bare file name with no path segment; `false` otherwise.
+     */
     private static function isSafeFile(string $file): bool
     {
         return $file !== ''
@@ -261,10 +276,18 @@ class MailCollector extends Collector
 
     /**
      * Persists one captured message and returns its safe file name, or an empty string when persistence fails.
+     *
+     * @param BaseMailer $mailer Mailer supplying the message file name and the target directory mode.
+     * @param MessageInterface $message Message to write as an `.eml` file.
+     *
+     * @throws RuntimeException when the message file cannot be safely persisted.
+     *
+     * @return string Safe file name of the written `.eml`, or `''` when persistence failed.
      */
     private function persistMessage(BaseMailer $mailer, MessageInterface $message): string
     {
         $mailPath = Yii::getAlias($this->mailPath);
+
         $filePath = '';
 
         try {

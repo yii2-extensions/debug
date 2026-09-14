@@ -7,6 +7,7 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Panel\Dump\{DumpRow, DumpSnapshot};
 use PHPForge\Debug\Panel\{PanelIcon, PanelTitle};
+use PHPForge\Debug\Storage\HydrationException;
 use Yii;
 use yii\debug\models\search\LogSearch;
 use yii\debug\Panel;
@@ -21,10 +22,15 @@ use function count;
  */
 class DumpPanel extends Panel
 {
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private DumpSnapshot|null $snapshot = null;
 
     /**
      * Renders the detail view with the dump grid powered by the Log search model.
+     *
+     * @return string Rendered detail view.
      */
     #[Override]
     public function getDetail(): string
@@ -54,6 +60,8 @@ class DumpPanel extends Panel
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -63,6 +71,8 @@ class DumpPanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -70,18 +80,28 @@ class DumpPanel extends Panel
         return PanelIcon::DUMP->value;
     }
 
+    /**
+     * @return bool `true` when the capture holds at least one dump; `false` otherwise.
+     */
     public function hasDumps(): bool
     {
         return $this->getDumps() !== [];
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed dump snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = DumpSnapshot::fromArray($payload, "$.panels.{$this->id}");
+        $this->snapshot = DumpSnapshot::fromArray(
+            $payload,
+            "$.panels.{$this->id}",
+        );
     }
 
     /**

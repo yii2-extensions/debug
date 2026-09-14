@@ -19,8 +19,8 @@ use function is_string;
  * Base class for the Yii2 debug collectors.
  *
  * Owns the idempotent startup/shutdown lifecycle, the debug-module context, and the single encoding step that turns
- * the typed snapshot returned by {@see snapshot()} into the persisted payload; subclasses hook event subscription
- * into {@see start()} / {@see stop()} and read accumulated log messages through {@see getLogMessages()}.
+ * the typed snapshot returned by {@see snapshot()} into the persisted payload; subclasses hook event subscription into
+ * {@see start()} / {@see stop()} and read accumulated log messages through {@see getLogMessages()}.
  *
  * @phpstan-import-type LogTuple from \PHPForge\Debug\Panel\Log\LogSnapshot
  */
@@ -101,7 +101,7 @@ abstract class Collector implements CollectorInterface
      * @param list<string> $except Category patterns to exclude.
      * @param Closure(mixed): string|null $formatter Custom payload formatter; defaults to a readable string export.
      *
-     * @throws InvalidConfigException When the debug module log target is not initialized.
+     * @throws InvalidConfigException when the debug module log target is not initialized.
      *
      * @return list<LogTuple> Canonical string-based log messages in capture order.
      */
@@ -113,8 +113,15 @@ abstract class Collector implements CollectorInterface
     ): array {
         $target = $this->getLogTarget();
 
-        $filteredMessages = LogTarget::filterMessages($target->messages, $levels, $categories, $except);
+        $filteredMessages = LogTarget::filterMessages(
+            $target->messages,
+            $levels,
+            $categories,
+            $except,
+        );
+
         $messages = [];
+
         $formatter ??= self::formatLogMessage(...);
 
         foreach ($filteredMessages as $message) {
@@ -134,7 +141,7 @@ abstract class Collector implements CollectorInterface
     /**
      * Returns the initialized log target of the owning debug module.
      *
-     * @throws InvalidConfigException When the debug module log target is not initialized.
+     * @throws InvalidConfigException when the debug module log target is not initialized.
      *
      * @return LogTarget Initialized log target.
      */
@@ -153,6 +160,8 @@ abstract class Collector implements CollectorInterface
 
     /**
      * Returns whether the collector is active for the current request.
+     *
+     * @return bool `true` while the collector is active for the request; `false` otherwise.
      */
     protected function isStarted(): bool
     {
@@ -171,6 +180,10 @@ abstract class Collector implements CollectorInterface
 
     /**
      * Converts a Yii log payload to the string consumed by shared snapshots and HTML renderers.
+     *
+     * @param mixed $message Raw log payload: a string, a {@see Stringable}, or any other value.
+     *
+     * @return string Message text, exported when the payload is not stringable.
      */
     private static function formatLogMessage(mixed $message): string
     {

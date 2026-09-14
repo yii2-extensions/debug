@@ -46,7 +46,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
     /**
      * Returns the owning debug module.
      *
-     * @throws InvalidConfigException When the action was dispatched without a debug module.
+     * @throws InvalidConfigException when the action was dispatched without a debug module.
      *
      * @return Module Owning debug module.
      */
@@ -101,8 +101,8 @@ class Action extends \yii\web\Action implements ViewContextInterface
      * @param string $tag Tag of the debug entry to load.
      * @param int $maxRetry Maximum number of retries before giving up.
      *
-     * @throws NotFoundHttpException When the tag cannot be located after every retry, or when the entry lacks a
-     * summary block.
+     * @throws NotFoundHttpException when the tag cannot be located after every retry, or when the entry lacks a summary
+     * block.
      */
     public function loadData(string $tag, int $maxRetry = 0): void
     {
@@ -140,7 +140,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
      * @param Panel $activePanel Panel focused by the rendered page.
      * @param string $tag Tag of the loaded debug entry.
      *
-     * @throws NotFoundHttpException When no summary was loaded for the tag.
+     * @throws NotFoundHttpException when no summary was loaded for the tag.
      */
     public function prepareShell(Panel $activePanel, string $tag): void
     {
@@ -204,7 +204,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
     protected function beforeRun()
     {
         Yii::$app->getResponse()->format = Response::FORMAT_HTML;
-
         Yii::$app->getView()->params['debugShell'] = $this->createBareShellContext();
 
         return parent::beforeRun();
@@ -212,6 +211,8 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
     /**
      * Builds the bare shell installed by {@see beforeRun()}.
+     *
+     * @return ShellContext Shell that echoes raw content without the brand bar or sidebar.
      */
     protected function createBareShellContext(): ShellContext
     {
@@ -235,6 +236,11 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
     /**
      * Builds the portable state available to shared panel renderers for the active snapshot.
+     *
+     * @param Panel $panel Panel being rendered.
+     * @param string $tag Capture under inspection.
+     *
+     * @return PanelRenderContext State shared with the portable renderers.
      */
     protected function createPanelRenderContext(Panel $panel, string $tag): PanelRenderContext
     {
@@ -255,6 +261,8 @@ class Action extends \yii\web\Action implements ViewContextInterface
      * @param string|null $activeTag Tag focused by the page, or `null` on the index.
      * @param RequestSummary|null $summary Summary of the focused entry, or `null` on the index.
      * @param SidebarView $sidebar Prepared sidebar payload.
+     *
+     * @return ShellContext Shell for the requested page.
      */
     protected function createShellContext(
         string $mode,
@@ -297,7 +305,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
     /**
      * Returns the initialized debug log target.
      *
-     * @throws InvalidConfigException When the module was not bootstrapped before the action is used.
+     * @throws InvalidConfigException when the module was not bootstrapped before the action is used.
      *
      * @return LogTarget Log target used to read the manifest and per-tag panel payloads.
      */
@@ -317,7 +325,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
     /**
      * Returns the registered mail collector.
      *
-     * @throws NotFoundHttpException When no mail collector is registered on the module.
+     * @throws NotFoundHttpException when no mail collector is registered on the module.
      *
      * @return MailCollector Mail collector used to resolve captured mail files.
      */
@@ -339,7 +347,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
      *
      * @param string $id Panel ID to resolve.
      *
-     * @throws NotFoundHttpException When the module has no panel registered under the given ID.
+     * @throws NotFoundHttpException when the module has no panel registered under the given ID.
      *
      * @return Panel Panel instance matching the given ID.
      */
@@ -364,7 +372,11 @@ class Action extends \yii\web\Action implements ViewContextInterface
      */
     protected function prepareIndexShell(array $manifest, string $cursor): void
     {
-        $sidebar = SidebarDataNormalizer::fromIndex($this->getDebugModule()->panels, $manifest, $cursor);
+        $sidebar = SidebarDataNormalizer::fromIndex(
+            $this->getDebugModule()->panels,
+            $manifest,
+            $cursor,
+        );
 
         Yii::$app->getView()->params['debugShell'] = $this->createShellContext(
             ShellContext::MODE_INDEX,
@@ -399,6 +411,8 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
     /**
      * Resolves the effective light or dark theme.
+     *
+     * @return string Effective theme: `'light'` or `'dark'`.
      */
     protected function resolveTheme(): string
     {
@@ -408,6 +422,9 @@ class Action extends \yii\web\Action implements ViewContextInterface
             ?? $_COOKIE[ThemeResolver::COOKIE]
             ?? null;
 
-        return ThemeResolver::resolve([ThemeResolver::COOKIE => $raw], $request->getQueryParams());
+        return ThemeResolver::resolve(
+            [ThemeResolver::COOKIE => $raw],
+            $request->getQueryParams(),
+        );
     }
 }

@@ -61,7 +61,10 @@ class AssetCollector extends Collector
                     continue;
                 }
 
-                $rows[] = AssetBundleRow::fromBundle($name, $this->serializeBundle($bundle));
+                $rows[] = AssetBundleRow::fromBundle(
+                    $name,
+                    $this->serializeBundle($bundle),
+                );
             }
         }
 
@@ -79,6 +82,8 @@ class AssetCollector extends Collector
      *   js: array<array-key, string|array<array-key, mixed>>,
      *   sourcePath: string|null,
      * } Bundle properties keyed by name.
+     *
+     * @param AssetBundle $bundle Bundle registered during the request.
      */
     private function serializeBundle(AssetBundle $bundle): array
     {

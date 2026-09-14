@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\Mail\{MailMessage, MailPanel as MailPresenter, MailSnapshot};
+use PHPForge\Debug\Panel\Mail\{MailEntry, MailPanel as MailPresenter, MailSnapshot};
 use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
+use PHPForge\Debug\Storage\HydrationException;
 use Throwable;
 use yii\debug\{LogTarget, Panel};
 use yii\helpers\Url;
@@ -22,6 +23,9 @@ use function is_string;
  */
 class MailPanel extends Panel
 {
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private MailSnapshot|null $snapshot = null;
 
     /**
@@ -41,7 +45,7 @@ class MailPanel extends Panel
     }
 
     /**
-     * @return list<MailMessage> Captured mail messages in send order.
+     * @return list<MailEntry> Captured mail messages in send order.
      */
     public function getMessages(): array
     {
@@ -50,6 +54,8 @@ class MailPanel extends Panel
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -59,6 +65,8 @@ class MailPanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -67,7 +75,11 @@ class MailPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed mail snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void

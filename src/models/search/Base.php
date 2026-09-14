@@ -12,10 +12,16 @@ use yii\base\Model;
  */
 class Base extends Model
 {
+    /**
+     * Filter engine accumulating the registered conditions, created on first use.
+     */
     private FilterEngine|null $filterEngine = null;
 
     /**
      * Registers an exact, partial, or leading numeric comparison condition.
+     *
+     * @param string $attribute Attribute supplying the filter value and naming the row key to compare.
+     * @param bool $partial Whether to match the value as a substring instead of requiring equality.
      */
     protected function addCondition(string $attribute, bool $partial = false): void
     {
@@ -26,6 +32,9 @@ class Base extends Model
 
     /**
      * Registers a numeric greater-than-or-equal condition.
+     *
+     * @param string $attribute Attribute naming the row key to compare.
+     * @param float $value Inclusive lower bound the row value must reach.
      */
     protected function addMinimumCondition(string $attribute, float $value): void
     {
@@ -46,6 +55,11 @@ class Base extends Model
         return $this->engine()->filter($rows);
     }
 
+    /**
+     * Returns the filter engine, creating it on first use.
+     *
+     * @return FilterEngine Engine holding the conditions registered for this model.
+     */
     private function engine(): FilterEngine
     {
         return $this->filterEngine ??= new FilterEngine();

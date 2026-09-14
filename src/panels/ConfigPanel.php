@@ -7,6 +7,7 @@ namespace yii\debug\panels;
 use Override;
 use PHPForge\Debug\Panel\Config\{ConfigPanel as ConfigPresenter, ConfigSnapshot};
 use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
+use PHPForge\Debug\Storage\HydrationException;
 use yii\debug\{Module, Panel};
 use yii\helpers\Url;
 
@@ -23,6 +24,9 @@ use function ksort;
  */
 class ConfigPanel extends Panel
 {
+    /**
+     * Captured payload hydrated by {@see hydrate()}, or `null` before hydration.
+     */
     private ConfigSnapshot|null $snapshot = null;
 
     /**
@@ -39,7 +43,10 @@ class ConfigPanel extends Panel
             ->phpInfoUrl(Url::to(Module::route('php-info')))
             ->present($snapshot->jsonSerialize());
 
-        return PanelRenderer::render($this->getName(), $view);
+        return PanelRenderer::render(
+            $this->getName(),
+            $view,
+        );
     }
 
     /**
@@ -75,6 +82,8 @@ class ConfigPanel extends Panel
 
     /**
      * Returns the panel display name from the shared title enum.
+     *
+     * @return string Panel display name.
      */
     #[Override]
     public function getName(): string
@@ -84,6 +93,8 @@ class ConfigPanel extends Panel
 
     /**
      * Returns the saved PHP version (`php.version`), or `null` when the snapshot is missing.
+     *
+     * @return string|null PHP version of the capture, or `null` when it was not recorded.
      */
     public function getPhpVersion(): string|null
     {
@@ -92,6 +103,8 @@ class ConfigPanel extends Panel
 
     /**
      * Returns the icon key from the shared panel icon enum.
+     *
+     * @return string Toolbar icon key.
      */
     #[Override]
     public function getToolbarIcon(): string
@@ -101,6 +114,8 @@ class ConfigPanel extends Panel
 
     /**
      * Returns the saved Yii framework version (`application.yii`), or `null` when the snapshot is missing.
+     *
+     * @return string|null Yii version of the capture, or `null` when it was not recorded.
      */
     public function getYiiVersion(): string|null
     {
@@ -108,7 +123,11 @@ class ConfigPanel extends Panel
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Decodes the captured payload into the typed configuration snapshot backing this panel.
+     *
+     * @param array<string, mixed> $payload Captured panel payload.
+     *
+     * @throws HydrationException when the payload does not match the snapshot schema.
      */
     #[Override]
     public function hydrate(array $payload): void
@@ -136,6 +155,10 @@ class ConfigPanel extends Panel
      * value is not scalar.
      *
      * @param array<array-key, mixed> $data Captured configuration payload.
+     * @param string $outerKey Key of the outer section to read.
+     * @param string $innerKey Key of the value to read inside that section.
+     *
+     * @return string|null Value as a string, or `null` when any segment is missing or not scalar.
      */
     private static function nestedScalar(array $data, string $outerKey, string $innerKey): string|null
     {

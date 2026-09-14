@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\panels\timeline;
 
 use PHPForge\Debug\Helper\{Format, Fqcn};
-use PHPForge\Debug\Panel\Timeline\TimelineRenderer as CoreTimelineRenderer;
-use PHPForge\Debug\Panel\Timeline\TimelineSpanRow;
+use PHPForge\Debug\Panel\Timeline\{TimelineRenderer as CoreTimelineRenderer, TimelineSpanRow};
 use UIAwesome\Html\Flow\Div;
 use UIAwesome\Html\Phrasing\Span;
 use UIAwesome\Html\Root\{Footer, Header};
@@ -46,6 +45,11 @@ final class TimelineRenderer
      * Renders the timeline chart: ruler axis, category legend, per-span rows, and the optional memory footer.
      *
      * Returns `''` when the data provider has no spans, so the empty hint can take over without duplicate markup.
+     *
+     * @param TimelinePanel $panel Panel supplying the request geometry and captured spans.
+     * @param DataProvider $dataProvider Filtered spans for the active request.
+     *
+     * @return string Rendered chart, or `''` when no span matched the active filter.
      */
     public static function renderChart(TimelinePanel $panel, DataProvider $dataProvider): string
     {
@@ -77,6 +81,11 @@ final class TimelineRenderer
      *
      * The hint points the developer at the Profiling panel, which presents the same data as a sortable list. Returns
      * `''` when the chart already has data, since the chart itself conveys the request shape.
+     *
+     * @param TimelinePanel $panel Panel supplying the request geometry and captured spans.
+     * @param DataProvider $dataProvider Filtered spans for the active request.
+     *
+     * @return string Rendered hint, or `''` when the chart already has data.
      */
     public static function renderEmptyHint(TimelinePanel $panel, DataProvider $dataProvider): string
     {
@@ -88,13 +97,21 @@ final class TimelineRenderer
             'tag' => $panel->tag,
         ];
 
-        return CoreTimelineRenderer::renderEmptyHint($dataProvider->models !== [], Url::to($profilingUrl));
+        return CoreTimelineRenderer::renderEmptyHint(
+            $dataProvider->models !== [],
+            Url::to($profilingUrl),
+        );
     }
 
     /**
      * Renders the filter form: min-duration number, category text, and the Apply button.
      *
      * Hidden inputs preserve `r` / `panel` / `tag`, so submitting the form lands back on the current snapshot.
+     *
+     * @param TimelinePanel $panel Panel supplying the request geometry and captured spans.
+     * @param TimelineSearch $searchModel Search model holding the submitted filter values.
+     *
+     * @return string Rendered filter form.
      */
     public static function renderFilterForm(TimelinePanel $panel, TimelineSearch $searchModel): string
     {
@@ -112,6 +129,11 @@ final class TimelineRenderer
 
     /**
      * Renders the top summary header: total milliseconds, peak memory, and span count.
+     *
+     * @param TimelinePanel $panel Panel supplying the request geometry and captured spans.
+     * @param DataProvider $dataProvider Filtered spans for the active request.
+     *
+     * @return string Rendered summary header.
      */
     public static function renderSummary(TimelinePanel $panel, DataProvider $dataProvider): string
     {
@@ -124,6 +146,8 @@ final class TimelineRenderer
 
     /**
      * Narrows every captured model into a typed span row, skipping malformed entries.
+     *
+     * @param DataProvider $dataProvider Filtered spans for the active request.
      *
      * @return list<TimelineSpanRow> Typed rows in capture order.
      */
@@ -142,6 +166,10 @@ final class TimelineRenderer
 
     /**
      * Formats a ruler tick label: milliseconds below one second, trimmed decimal seconds from there on.
+     *
+     * @param int $ms Tick position, in milliseconds from the request start.
+     *
+     * @return string Tick label with its unit suffix.
      */
     private static function formatTickLabel(int $ms): string
     {
@@ -158,6 +186,10 @@ final class TimelineRenderer
 
     /**
      * Formats a numeric value as a percentage string with up to three decimals, dropping trailing zeros.
+     *
+     * @param float|int|string $value Ratio already expressed on a `0`-to-`100` scale.
+     *
+     * @return string Percentage string usable in an inline CSS declaration.
      */
     private static function percent(float|int|string $value): string
     {
@@ -166,6 +198,10 @@ final class TimelineRenderer
 
     /**
      * Renders the ruler axis: the top tick strip with `N ms` / `N s` labels positioned via inline `left:<pct>%`.
+     *
+     * @param DataProvider $dataProvider Filtered spans for the active request.
+     *
+     * @return Header Tick strip for the chart header.
      */
     private static function renderAxis(DataProvider $dataProvider): Header
     {
@@ -228,6 +264,11 @@ final class TimelineRenderer
 
     /**
      * Renders the memory footer: track, inline SVG memory line, and the peak-memory chip.
+     *
+     * @param TimelinePanel $panel Panel supplying the request geometry and captured spans.
+     * @param Svg $svg Memory-usage graph rendered inline in the track.
+     *
+     * @return Footer Memory footer for the chart.
      */
     private static function renderMemoryFooter(TimelinePanel $panel, Svg $svg): Footer
     {
@@ -254,6 +295,10 @@ final class TimelineRenderer
      *
      * The label column shows the depth indent, dot, and name; the track column shows the positioned bar with its
      * inline duration chip.
+     *
+     * @param TimelineSpanRow $row Span to render, carrying its depth, category, offset, and width.
+     *
+     * @return Div Rendered span row.
      */
     private static function renderRow(TimelineSpanRow $row): Div
     {
@@ -291,6 +336,8 @@ final class TimelineRenderer
      * Renders the span-rows container with one row per typed span.
      *
      * @param list<TimelineSpanRow> $spanRows Typed rows in capture order.
+     *
+     * @return Div Container holding one row per span.
      */
     private static function renderRows(array $spanRows): Div
     {

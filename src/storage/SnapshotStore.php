@@ -19,6 +19,9 @@ use yii\debug\Module;
  */
 final class SnapshotStore
 {
+    /**
+     * Framework-neutral store this facade delegates to.
+     */
     private readonly CoreSnapshotStore $store;
 
     /**
@@ -57,6 +60,8 @@ final class SnapshotStore
 
     /**
      * Returns manifest entries together with an optional core storage diagnostic.
+     *
+     * @return ManifestReadResult Manifest entries plus the storage diagnostic, when one was raised.
      */
     public function loadManifestResult(): ManifestReadResult
     {
@@ -132,6 +137,10 @@ final class SnapshotStore
 
     /**
      * Returns whether the installed debug-core version exposes its additive result API.
+     *
+     * @param object $store Store instance to probe.
+     *
+     * @return bool `true` when the store accepts snapshot results; `false` otherwise.
      */
     private static function supportsResultWrites(object $store): bool
     {

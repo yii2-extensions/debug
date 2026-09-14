@@ -20,10 +20,7 @@ final readonly class IpAllowlist
      * @param list<string> $allowedIPs Exact, wildcard, or CIDR IP filters.
      * @param list<string> $allowedHosts Hostnames resolved to IPs at check time.
      */
-    public function __construct(
-        private array $allowedIPs,
-        private array $allowedHosts,
-    ) {}
+    public function __construct(private array $allowedIPs, private array $allowedHosts) {}
 
     /**
      * Returns whether the IP matches any allowed IP filter or resolves from any allowed host.
@@ -39,6 +36,10 @@ final readonly class IpAllowlist
 
     /**
      * Returns whether the IP matches any entry in the host allowlist after DNS resolution.
+     *
+     * @param string $ip Requesting IP address.
+     *
+     * @return bool `true` when the IP matches an allowed host.
      */
     private function matchesAllowedHost(string $ip): bool
     {
@@ -53,6 +54,10 @@ final readonly class IpAllowlist
 
     /**
      * Returns whether the IP matches any allowed filter (exact, wildcard, or CIDR).
+     *
+     * @param string $ip Requesting IP address.
+     *
+     * @return bool `true` when the IP matches an allowed filter.
      */
     private function matchesAllowedIp(string $ip): bool
     {

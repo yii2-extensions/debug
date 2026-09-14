@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\actions;
 
+use PHPForge\Debug\View\ViewMessage;
 use Throwable;
 use Yii;
 use yii\debug\{Module, ToolbarDataMapper};
@@ -94,26 +95,23 @@ class ToolbarDataAction extends Action
                 )
                 : null;
 
-        return (new ToolbarDataMapper())->map(
-            tag: $tag,
-            title: 'Yii Debugger',
-            indexUrl: $indexUrl,
-            configUrl: $configUrl,
-            panels: $module->panels,
-            position: $module->toolbarPosition,
-            defaultHeight: $module->defaultHeight,
-            iconBaseUrl: $iconBaseUrl,
-            logo: $iconBaseUrl !== ''
-                ? "{$iconBaseUrl}yii.svg"
-                : $module::getYiiLogo(),
-            logoFallback: $module::getYiiLogo(),
-            phpInfoUrl: Url::toRoute(
-                [
-                    "/{$moduleId}/php-info",
-                ],
-            ),
-            phpVersion: $phpVersion,
-            yiiVersion: $yiiVersion,
-        );
+        return ToolbarDataMapper::create($tag, ViewMessage::TITLE->value)
+            ->withNavigation(
+                $indexUrl,
+                $configUrl,
+                Url::toRoute(
+                    [
+                        "/{$moduleId}/php-info",
+                    ],
+                ),
+            )
+            ->withPresentation($module->toolbarPosition, $module->defaultHeight, $iconBaseUrl)
+            ->withBranding(
+                $iconBaseUrl !== '' ? "{$iconBaseUrl}yii.svg" : $module::getYiiLogo(),
+                $module::getYiiLogo(),
+                $phpVersion,
+                $yiiVersion,
+            )
+            ->map($module->panels);
     }
 }

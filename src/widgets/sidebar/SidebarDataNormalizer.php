@@ -7,6 +7,7 @@ namespace yii\debug\widgets\sidebar;
 use PHPForge\Debug\Helper\{Coerce, Icon, Text, Vocabulary};
 use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\View\ViewMessage;
 use yii\debug\ExtensionAvailability;
 use yii\debug\Module;
 use yii\debug\Panel;
@@ -33,8 +34,11 @@ final class SidebarDataNormalizer
      * Builds the typed sidebar view-model for `index.php` (history grid). Surfaces the newest captured request as the
      * snapshot, marks the History entry as active, and wires the navigator buttons as a GridView cursor.
      *
-     * @param array<string, Panel> $panels
-     * @param array<string, RequestSummary> $manifest
+     * @param array<string, Panel> $panels Registered panels keyed by ID.
+     * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
+     * @param string $cursorInit Tag the cursor should land on; empty to start at the newest capture.
+     *
+     * @return SidebarView Sidebar view-model for the history grid.
      */
     public static function fromIndex(array $panels, array $manifest, string $cursorInit = ''): SidebarView
     {
@@ -71,8 +75,13 @@ final class SidebarDataNormalizer
      * Builds the typed sidebar view-model for panel `view` requests. Surfaces the active request snapshot and
      * highlights the active panel in the nav.
      *
-     * @param array<string, Panel> $panels
-     * @param array<string, RequestSummary> $manifest
+     * @param array<string, Panel> $panels Registered panels keyed by ID.
+     * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
+     * @param Panel $activePanel Panel being inspected, highlighted in the navigation.
+     * @param string $tag Tag of the capture under inspection.
+     * @param RequestSummary $summary Summary of the capture under inspection.
+     *
+     * @return SidebarView Sidebar view-model for the panel view.
      */
     public static function fromView(
         array $panels,
@@ -110,10 +119,14 @@ final class SidebarDataNormalizer
      * Builds the panel-list nav entries. History always comes first; the `config` panel is intentionally skipped so the
      * brand bar keeps the only Config CTA.
      *
-     * @param array<string, Panel> $panels
-     * @param array<string, RequestSummary> $manifest
+     * @param array<string, Panel> $panels Registered panels keyed by ID.
+     * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
+     * @param Panel|null $activePanel Panel to mark as active, or `null` to activate the History entry.
+     * @param string|null $activeTag Tag carried over to the panel links, or `null` to link the newest capture.
+     * @param string $mode Shell mode driving the active entry: `'view'` or `'index'`.
      *
-     * @return array{items: list<SidebarNavItem>, groups: array<string, list<SidebarNavItem>>}
+     * @return array{items: list<SidebarNavItem>, groups: array<string, list<SidebarNavItem>>} Navigation structure for
+     * the sidebar.
      */
     private static function buildNavigation(
         array $panels,
@@ -186,7 +199,7 @@ final class SidebarDataNormalizer
 
         return [
             'items' => $items,
-            'groups' => $extensionItems === [] ? [] : ['Extensions' => $extensionItems],
+            'groups' => $extensionItems === [] ? [] : [ViewMessage::EXTENSIONS->value => $extensionItems],
         ];
     }
 
@@ -194,8 +207,15 @@ final class SidebarDataNormalizer
      * Builds the snapshot card view-model. Returns `null` when the manifest is empty (the card section is skipped
      * altogether by the renderer).
      *
-     * @param array<string, Panel> $panels
-     * @param array<string, RequestSummary> $manifest
+     * @param string $mode Shell mode driving the card heading: `'view'` or `'index'`.
+     * @param array<string, Panel> $panels Registered panels keyed by ID.
+     * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
+     * @param Panel|null $activePanel Panel the navigator buttons should keep open, or `null` for the default.
+     * @param string|null $snapshotTag Tag of the capture to surface, or `null` when the manifest is empty.
+     * @param RequestSummary|null $snapshotSummary Summary of that capture, or `null` when the manifest is empty.
+     * @param string $cursorInit Tag the cursor should land on; empty to start at the newest capture.
+     *
+     * @return SidebarSnapshot|null Snapshot card, or `null` when there is no capture to surface.
      */
     private static function buildSnapshot(
         string $mode,
@@ -236,8 +256,10 @@ final class SidebarDataNormalizer
             : null;
 
         return new SidebarSnapshot(
-            title: $mode === 'view' ? 'Current request' : 'Newest request',
-            ariaLabel: $mode === 'view' ? 'Current request' : 'Newest captured request',
+            title: $mode === 'view' ? ViewMessage::CURRENT_REQUEST->value : ViewMessage::NEWEST_REQUEST->value,
+            ariaLabel: $mode === 'view'
+                ? ViewMessage::CURRENT_REQUEST->value
+                : ViewMessage::NEWEST_CAPTURED_REQUEST->value,
             method: $method,
             path: Text::urlToPath($fullUrl),
             fullUrl: $fullUrl,
@@ -261,7 +283,10 @@ final class SidebarDataNormalizer
     /**
      * Composes the URL parameters consumed by `Url::to()` for the navigator endpoints.
      *
-     * @return array<int|string, string>
+     * @param string|null $tag Capture to open, or `null` to omit the parameter.
+     * @param string|null $panelId Panel to open, or `null` to omit the parameter.
+     *
+     * @return array<int|string, string> Route parameters for the target view.
      */
     private static function buildUrl(string|null $tag, string|null $panelId): array
     {
@@ -278,6 +303,11 @@ final class SidebarDataNormalizer
         return $url;
     }
 
+    /**
+     * @param float $time Capture timestamp as a Unix time.
+     *
+     * @return string Time of day as `HH:MM:SS`, or `''` when the timestamp was not captured.
+     */
     private static function formatTime(float $time): string
     {
         $unix = (int) $time;
@@ -287,12 +317,19 @@ final class SidebarDataNormalizer
 
     /**
      * @param array<string, RequestSummary> $manifest
+     *
+     * @return string|null Tag of the newest capture, or `null` when the manifest is empty.
      */
     private static function newestTag(array $manifest): string|null
     {
         return array_key_first($manifest);
     }
 
+    /**
+     * @param int $statusCode Response status code of the capture.
+     *
+     * @return string Status-pill CSS modifier for that code.
+     */
     private static function statusVariant(int $statusCode): string
     {
         return Vocabulary::statusClass($statusCode);

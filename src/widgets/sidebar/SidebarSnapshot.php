@@ -103,6 +103,8 @@ final readonly class SidebarSnapshot
 
     /**
      * Converts Yii route-array links to the framework-neutral snapshot contract.
+     *
+     * @return CoreSidebarSnapshot Portable snapshot card with every navigator URL resolved.
      */
     public function toCore(): CoreSidebarSnapshot
     {
@@ -123,6 +125,8 @@ final readonly class SidebarSnapshot
      * Resolves a route-array wrapper, retaining the historical empty-link sentinel.
      *
      * @param array<int|string, string> $route
+     *
+     * @return string Resolved URL, or `''` when the route is empty.
      */
     private static function url(array $route): string
     {

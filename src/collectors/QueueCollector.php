@@ -156,6 +156,8 @@ class QueueCollector extends Collector
 
     /**
      * Releases the per-job `$execStarts` slot on long-running workers so the map cannot grow indefinitely.
+     *
+     * @param Event $event Event emitted by the observed queue component.
      */
     private function clearExecStart(Event $event): void
     {
@@ -170,6 +172,10 @@ class QueueCollector extends Collector
      * Resolves the registered component id for the queue object that emitted `$event`, caching the lookup per object.
      *
      * Returns `''` when the sender is not an object or cannot be matched against any registered component.
+     *
+     * @param Event $event Event emitted by the observed queue component.
+     *
+     * @return string Registered component id, or `''` when the sender is unknown.
      */
     private function componentIdOf(Event $event): string
     {
@@ -196,6 +202,10 @@ class QueueCollector extends Collector
 
     /**
      * Returns the exception message when `$error` is a {@see Throwable}, or `''` otherwise.
+     *
+     * @param mixed $error Error carried by the event payload.
+     *
+     * @return string Exception message, or `''` when the value is not a {@see Throwable}.
      */
     private function errorMessageOf(mixed $error): string
     {
@@ -205,6 +215,10 @@ class QueueCollector extends Collector
     /**
      * Extracts the `job` public property from an event, returning `null` when the property is missing or not an
      * object.
+     *
+     * @param Event $event Event emitted by the observed queue component.
+     *
+     * @return object|null Job carried by the event, or `null` when absent.
      */
     private function jobOf(Event $event): object|null
     {
@@ -291,6 +305,8 @@ class QueueCollector extends Collector
 
     /**
      * Records an `error` event and releases the matching exec-start slot.
+     *
+     * @param Event $event Event emitted by the observed queue component.
      */
     private function onAfterError(Event $event): void
     {
@@ -301,6 +317,8 @@ class QueueCollector extends Collector
 
     /**
      * Records an `exec` event and releases the matching exec-start slot.
+     *
+     * @param Event $event Event emitted by the observed queue component.
      */
     private function onAfterExec(Event $event): void
     {
@@ -312,6 +330,8 @@ class QueueCollector extends Collector
     /**
      * Stamps the job's exec start timestamp in {@see $execStarts}, so `afterExec` / `afterError` can compute the
      * duration.
+     *
+     * @param Event $event Event emitted by the observed queue component.
      */
     private function onBeforeExec(Event $event): void
     {
@@ -324,6 +344,8 @@ class QueueCollector extends Collector
 
     /**
      * Records a `push` event.
+     *
+     * @param Event $event Event emitted by the observed queue component.
      */
     private function onPush(Event $event): void
     {
@@ -332,6 +354,10 @@ class QueueCollector extends Collector
 
     /**
      * Stringifies the value when it is scalar, falling back to `''` otherwise.
+     *
+     * @param mixed $value Value read from the event payload.
+     *
+     * @return string Stringified value, or `''` when it is not scalar.
      */
     private function scalarToString(mixed $value): string
     {
@@ -340,6 +366,10 @@ class QueueCollector extends Collector
 
     /**
      * Returns the value when it is already an int, falling back to `null` otherwise.
+     *
+     * @param mixed $value Value read from the event payload.
+     *
+     * @return int|null Value when it is an `int`; `null` otherwise.
      */
     private function valueToNullableInt(mixed $value): int|null
     {

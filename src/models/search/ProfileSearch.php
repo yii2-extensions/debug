@@ -6,7 +6,7 @@ namespace yii\debug\models\search;
 
 use Override;
 use PHPForge\Debug\Data\{FilterPrefix, QueryInput};
-use PHPForge\Debug\Panel\Profile\ProfileRow;
+use PHPForge\Debug\Panel\Profile\{ProfileMessage, ProfileRow};
 use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 
@@ -31,22 +31,31 @@ class ProfileSearch extends Base
      */
     public string $info = '';
 
+    /**
+     * @return array<string, string> Form labels keyed by attribute name.
+     */
     #[Override]
     public function attributeLabels(): array
     {
         return [
-            'category' => 'Category',
-            'duration' => 'Min duration (ms)',
-            'info' => 'Info',
+            'category' => ProfileMessage::CATEGORY->value,
+            'duration' => ProfileMessage::MIN_DURATION->value,
+            'info' => ProfileMessage::INFO->value,
         ];
     }
 
+    /**
+     * @return string Query-string prefix that scopes this form's filter parameters.
+     */
     #[Override]
     public function formName(): string
     {
         return FilterPrefix::PROFILE;
     }
 
+    /**
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
+     */
     #[Override]
     public function rules(): array
     {
@@ -60,6 +69,8 @@ class ProfileSearch extends Base
      *
      * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
      * @param list<ProfileRow> $models Captured profiling spans to wrap and filter.
+     *
+     * @return ArrayDataProvider Sortable provider with the filtered profiling spans.
      */
     public function search(array $params, array $models): ArrayDataProvider
     {

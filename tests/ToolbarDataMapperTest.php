@@ -20,14 +20,9 @@ final class ToolbarDataMapperTest extends TestCase
     {
         $this->mockWebApplication();
 
-        $result = (new ToolbarDataMapper())
-            ->map(
-                tag: 'capture-tag',
-                title: 'Yii Debugger',
-                indexUrl: '/debug/index',
-                configUrl: null,
-                panels: [],
-            );
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map([]);
 
         self::assertSame(
             'bottom',
@@ -74,14 +69,9 @@ final class ToolbarDataMapperTest extends TestCase
         $panel->module = $module;
         $panel->tag = 'capture-tag';
 
-        $result = (new ToolbarDataMapper())
-            ->map(
-                tag: 'capture-tag',
-                title: 'Yii Debugger',
-                indexUrl: '/debug/index',
-                configUrl: null,
-                panels: ['extended' => $panel],
-            );
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(['extended' => $panel]);
 
         self::assertSame(
             '/debug/index',
@@ -161,14 +151,9 @@ final class ToolbarDataMapperTest extends TestCase
         $panel->module = $module;
         $panel->tag = 'capture-tag';
 
-        $result = (new ToolbarDataMapper())
-            ->map(
-                tag: 'capture-tag',
-                title: 'Yii Debugger',
-                indexUrl: '/debug/index',
-                configUrl: null,
-                panels: ['own' => $panel],
-            );
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(['own' => $panel]);
 
         $mapped = $result['items'][0] ?? null;
 
@@ -222,14 +207,9 @@ final class ToolbarDataMapperTest extends TestCase
         $typed->module = $module;
         $typed->tag = 'capture-tag';
 
-        $result = (new ToolbarDataMapper())
-            ->map(
-                tag: 'capture-tag',
-                title: 'Yii Debugger',
-                indexUrl: '/debug/index',
-                configUrl: null,
-                panels: ['free-form' => $freeFormPanel, 'typed' => $typed],
-            );
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(['free-form' => $freeFormPanel, 'typed' => $typed]);
 
         self::assertCount(
             2,
@@ -254,14 +234,9 @@ final class ToolbarDataMapperTest extends TestCase
         $panel->module = $module;
         $panel->tag = 'capture-tag';
 
-        $result = (new ToolbarDataMapper())
-            ->map(
-                tag: 'capture-tag',
-                title: 'Yii Debugger',
-                indexUrl: '/debug/index',
-                configUrl: '/debug/view?panel=config',
-                panels: ['free-form' => $panel],
-            );
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index', '/debug/view?panel=config')
+            ->map(['free-form' => $panel]);
 
         $freeFormPanel = $result['items'][0] ?? null;
 
@@ -313,14 +288,9 @@ final class ToolbarDataMapperTest extends TestCase
             }
         };
 
-        $result = (new ToolbarDataMapper())
-            ->map(
-                tag: 'capture-tag',
-                title: 'Yii Debugger',
-                indexUrl: '/debug/index',
-                configUrl: null,
-                panels: ['hidden' => $panel],
-            );
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(['hidden' => $panel]);
 
         self::assertFalse(
             $panel->toolbarDataRead,
@@ -378,6 +348,97 @@ final class ToolbarDataMapperTest extends TestCase
                 [['id' => [], 'title' => 'Invalid ID', 'items' => []]],
             ),
             'A toolbar panel without a coercible ID cannot be normalized.',
+        );
+    }
+
+    public function testWithBrandingAndPresentationApplyOptionalChrome(): void
+    {
+        $this->mockWebApplication();
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index', '/debug/view?panel=config', '/debug/php-info')
+            ->withPresentation('top', 80, '/assets/svg/')
+            ->withBranding('/assets/svg/yii.svg', 'data:image/svg+xml,fallback', '8.3.0', '22.0.0')
+            ->map([]);
+
+        self::assertSame(
+            '/debug/view?panel=config',
+            $result['configUrl'],
+            'Explicit config URL must win.',
+        );
+        self::assertSame(
+            '/debug/php-info',
+            $result['phpInfoUrl'],
+            'PHP info URL must reach the payload.',
+        );
+        self::assertSame(
+            'top',
+            $result['position'],
+            'Position must be overridable.',
+        );
+        self::assertSame(
+            80,
+            $result['defaultHeight'],
+            'Drawer height must be overridable.',
+        );
+        self::assertSame(
+            '/assets/svg/',
+            $result['iconBaseUrl'],
+            'Icon base URL must reach the payload.',
+        );
+        self::assertSame(
+            '/assets/svg/yii.svg',
+            $result['logo'],
+            'Primary logo must reach the payload.',
+        );
+        self::assertSame(
+            'data:image/svg+xml,fallback',
+            $result['logoFallback'],
+            'Fallback logo must be retained.',
+        );
+        self::assertSame(
+            '8.3.0',
+            $result['phpVersion'],
+            'PHP version label must reach the payload.',
+        );
+        self::assertSame(
+            '22.0.0',
+            $result['yiiVersion'],
+            'Yii version label must reach the payload.',
+        );
+    }
+
+    public function testWithersLeaveTheSourceMapperUntouched(): void
+    {
+        $this->mockWebApplication();
+
+        $base = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')->withNavigation('/debug/index');
+
+        $derived = $base
+            ->withPresentation('top', 80)
+            ->withBranding('/assets/svg/yii.svg');
+
+        self::assertNotSame(
+            $base,
+            $derived,
+            'Each wither must return a copy.',
+        );
+
+        $result = $base->map([]);
+
+        self::assertSame(
+            'bottom',
+            $result['position'],
+            'Source must keep its default position.',
+        );
+        self::assertSame(
+            50,
+            $result['defaultHeight'],
+            'Source must keep its default height.',
+        );
+        self::assertNull(
+            $result['logo'],
+            'Source must keep its logo unset.',
         );
     }
 

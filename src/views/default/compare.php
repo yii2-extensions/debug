@@ -5,6 +5,7 @@ declare(strict_types=1);
 use PHPForge\Debug\Comparison\PanelComparison;
 use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\View\ViewMessage;
 use UIAwesome\Html\Heading\H1;
 use yii\debug\Module;
 use yii\debug\widgets\history\{HistoryComparison, HistoryPanelComparison};
@@ -51,7 +52,7 @@ $panelLink = static function (HistoryPanelComparison $panel, string $tag, string
     }
 
     return Html::a(
-        'Open panel',
+        ViewMessage::OPEN_PANEL->value,
         $captureUrl($tag, $panel->id),
         ['class' => 'yii-debug-btn yii-debug-btn-ghost yii-debug-btn-sm'],
     );
@@ -113,7 +114,7 @@ $panelLink = static function (HistoryPanelComparison $panel, string $tag, string
         <article class="yii-debug-readout-card">
             <span class="yii-debug-readout-label">Result</span>
             <span class="yii-debug-readout-value">
-                <?= $comparison->hasDifferences() ? 'Changed' : 'Identical' ?>
+                <?= $comparison->hasDifferences() ? ViewMessage::CHANGED->value : ViewMessage::IDENTICAL->value ?>
             </span>
             <span class="yii-debug-readout-meta">Summary and panel structure</span>
         </article>

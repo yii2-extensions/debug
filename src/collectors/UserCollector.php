@@ -29,6 +29,9 @@ class UserCollector extends Collector
      */
     public string|User $userComponent = 'user';
 
+    /**
+     * Capture policy applied to the persisted payload, created on first use.
+     */
     private CapturePolicy|null $capturePolicy = null;
 
     /**
@@ -43,6 +46,10 @@ class UserCollector extends Collector
 
     /**
      * Returns the value when it is already a string, otherwise renders it with {@see VarDumper::export()}.
+     *
+     * @param mixed $data Captured identity value.
+     *
+     * @return string Display string for the User panel.
      */
     protected function dataToString(mixed $data): string
     {
@@ -56,6 +63,8 @@ class UserCollector extends Collector
     /**
      * Returns the user component bound to this collector, or `null` when the configured component id does not resolve
      * to a {@see User} instance.
+     *
+     * @return User|null Bound user component, or `null` when the configured id does not resolve to one.
      */
     protected function getUser(): User|null
     {
@@ -162,17 +171,21 @@ class UserCollector extends Collector
             $attributes = null;
         }
 
-        return UserSnapshot::capture([
-            'id' => $identity->getId(),
-            'identity' => $identityData,
-            'attributes' => $attributes,
-            'roles' => $roles,
-            'permissions' => $permissions,
-        ]);
+        return UserSnapshot::capture(
+            [
+                'id' => $identity->getId(),
+                'identity' => $identityData,
+                'attributes' => $attributes,
+                'roles' => $roles,
+                'permissions' => $permissions,
+            ],
+        );
     }
 
     /**
      * Returns the shared default policy used for persisted identity attributes.
+     *
+     * @return CapturePolicy Policy deciding which values are persisted and which are redacted.
      */
     private function capturePolicy(): CapturePolicy
     {
