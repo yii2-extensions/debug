@@ -8,6 +8,7 @@ use PHPForge\Debug\Storage\RequestSummary;
 use PHPForge\Debug\View\ViewMessage;
 use UIAwesome\Html\Heading\H1;
 use yii\debug\Module;
+use yii\debug\view\ViewMessage as AdapterMessage;
 use yii\debug\widgets\history\{HistoryComparison, HistoryPanelComparison};
 use yii\helpers\{Html, Url};
 use yii\web\View;
@@ -116,7 +117,7 @@ $panelLink = static function (HistoryPanelComparison $panel, string $tag, string
             <span class="yii-debug-readout-value">
                 <?= $comparison->hasDifferences() ? ViewMessage::CHANGED->value : ViewMessage::IDENTICAL->value ?>
             </span>
-            <span class="yii-debug-readout-meta">Summary and panel structure</span>
+            <span class="yii-debug-readout-meta"><?= ViewMessage::COMPARISON_SCOPE->value ?></span>
         </article>
     </div>
 </section>
@@ -128,7 +129,7 @@ $panelLink = static function (HistoryPanelComparison $panel, string $tag, string
     </h2>
     <div class="yii-debug-table-wrap">
         <table class="yii-debug-table yii-debug-compare-grid">
-            <caption class="yii-debug-sr-only">Request summary comparison</caption>
+            <caption class="yii-debug-sr-only"><?= ViewMessage::COMPARISON_METRICS_CAPTION->value ?></caption>
             <thead>
             <tr>
                 <th scope="col">Metric</th>
@@ -171,11 +172,11 @@ $panelLink = static function (HistoryPanelComparison $panel, string $tag, string
         <span class="yii-debug-section-count"><?= count($comparison->panels) ?></span>
     </h2>
     <p class="yii-debug-muted">
-        Counts compare typed JSON leaf paths without rendering captured values. Open either panel for its redacted detail.
+        <?= AdapterMessage::COMPARISON_COUNTS_SCOPE->value ?>
     </p>
     <div class="yii-debug-table-wrap">
         <table class="yii-debug-table yii-debug-compare-grid">
-            <caption class="yii-debug-sr-only">Panel structure comparison</caption>
+            <caption class="yii-debug-sr-only"><?= ViewMessage::COMPARISON_PANELS_CAPTION->value ?></caption>
             <thead>
             <tr>
                 <th scope="col">Panel</th>

@@ -85,6 +85,8 @@ class Svg extends BaseObject implements Stringable
     }
 
     /**
+     * Renders the memory graph as inline SVG.
+     *
      * @return string Inline SVG markup, or `''` when no memory sample was plotted.
      */
     public function __toString(): string

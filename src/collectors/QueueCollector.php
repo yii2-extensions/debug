@@ -289,9 +289,7 @@ class QueueCollector extends Collector
             'jobClass' => $jobClass,
             'payloadFields' => $job === null
                 ? []
-                : Coerce::stringKeyedArray(
-                    $this->capturePolicy()->redact(JobPayloadInspector::extract($job)),
-                ),
+                : Coerce::stringKeyedArray($this->capturePolicy()->redact(JobPayloadInspector::extract($job))),
             'time' => microtime(true),
             'jobId' => $this->scalarToString($props['id'] ?? null),
             'ttr' => $this->valueToNullableInt($props['ttr'] ?? null),

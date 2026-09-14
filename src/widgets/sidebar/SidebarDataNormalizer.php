@@ -12,6 +12,7 @@ use yii\debug\ExtensionAvailability;
 use yii\debug\Module;
 use yii\debug\Panel;
 use yii\debug\panels\{JsonPanel, ProviderPanel};
+use yii\debug\view\ViewMessage as AdapterMessage;
 
 use function array_key_first;
 use function array_key_last;
@@ -148,7 +149,7 @@ final class SidebarDataNormalizer
                 label: PanelTitle::HISTORY->value,
                 iconSvg: Icon::render('history'),
                 url: $historyParams,
-                tooltip: 'Browse all captured requests',
+                tooltip: AdapterMessage::HISTORY_TOOLTIP->value,
                 isActive: $mode === 'index',
             ),
         ];
@@ -174,10 +175,10 @@ final class SidebarDataNormalizer
                 $tooltip = $panel->getName();
             } elseif ($newestTag !== null) {
                 $url = Module::route('view', ['tag' => $newestTag, 'panel' => $id]);
-                $tooltip = 'Open this panel on the newest request';
+                $tooltip = AdapterMessage::PANEL_TOOLTIP_NEWEST->value;
             } else {
                 $url = Module::route('index');
-                $tooltip = 'Pick a request first';
+                $tooltip = AdapterMessage::PANEL_TOOLTIP_NO_SELECTION->value;
             }
 
             $item = new SidebarNavItem(
@@ -304,6 +305,8 @@ final class SidebarDataNormalizer
     }
 
     /**
+     * Formats a capture timestamp as a time of day.
+     *
      * @param float $time Capture timestamp as a Unix time.
      *
      * @return string Time of day as `HH:MM:SS`, or `''` when the timestamp was not captured.
@@ -316,7 +319,9 @@ final class SidebarDataNormalizer
     }
 
     /**
-     * @param array<string, RequestSummary> $manifest
+     * Returns the tag of the newest captured request.
+     *
+     * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
      *
      * @return string|null Tag of the newest capture, or `null` when the manifest is empty.
      */
@@ -326,6 +331,8 @@ final class SidebarDataNormalizer
     }
 
     /**
+     * Maps a response status code to its status-pill modifier.
+     *
      * @param int $statusCode Response status code of the capture.
      *
      * @return string Status-pill CSS modifier for that code.

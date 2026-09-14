@@ -66,6 +66,8 @@ final readonly class HistoryComparison
     }
 
     /**
+     * Maps the shared metric comparisons to their presentation models.
+     *
      * @param list<SummaryMetricComparison> $metrics Summary metric comparisons to transform into presentation models.
      *
      * @return list<HistoryMetricComparison> Presentation models derived from the summary metric comparisons.
@@ -89,6 +91,8 @@ final readonly class HistoryComparison
     }
 
     /**
+     * Maps the shared panel comparisons to their presentation models.
+     *
      * @param list<PanelComparison> $panels Per-panel structural comparisons to transform into presentation models.
      *
      * @return list<HistoryPanelComparison> Presentation models derived from the per-panel structural comparisons.

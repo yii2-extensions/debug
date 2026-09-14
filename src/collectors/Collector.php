@@ -113,12 +113,7 @@ abstract class Collector implements CollectorInterface
     ): array {
         $target = $this->getLogTarget();
 
-        $filteredMessages = LogTarget::filterMessages(
-            $target->messages,
-            $levels,
-            $categories,
-            $except,
-        );
+        $filteredMessages = LogTarget::filterMessages($target->messages, $levels, $categories, $except);
 
         $messages = [];
 

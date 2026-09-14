@@ -21,6 +21,13 @@ enum Message: string
     case ACCESS_DENIED = 'You are not allowed to access this page.';
 
     /**
+     * Access to the debugger is denied by the configured callback.
+     *
+     * Format: "Access to debugger is denied due to checkAccessCallback."
+     */
+    case ACCESS_DENIED_BY_CALLBACK = 'Access to debugger is denied due to checkAccessCallback.';
+
+    /**
      * An active session is required.
      *
      * Format: "Need an active session"
@@ -126,6 +133,13 @@ enum Message: string
     case DEBUG_PANEL_NOT_FOUND = "Debug panel '%s' not found.";
 
     /**
+     * The requested capture tag cannot be resolved.
+     *
+     * Format: "Debug tag not found."
+     */
+    case DEBUG_TAG_NOT_FOUND = 'Debug tag not found.';
+
+    /**
      * The user component lacks an identity class.
      *
      * Format: "User component is not configured with an identity class."
@@ -210,6 +224,12 @@ enum Message: string
      * Format: "a payload supported by this panel"
      */
     case PANEL_PAYLOAD_EXPECTED = 'a payload supported by this panel';
+    /**
+     * A portable panel is rendered before any capture was hydrated into it.
+     *
+     * Format: "No portable panel capture has been hydrated."
+     */
+    case PORTABLE_PANEL_NOT_HYDRATED = 'No portable panel capture has been hydrated.';
 
     /**
      * The request must use the POST method.
@@ -224,6 +244,13 @@ enum Message: string
      * Format: "Unable to determine the profiling panel"
      */
     case PROFILING_PANEL_UNAVAILABLE = 'Unable to determine the profiling panel';
+
+    /**
+     * A configured registration ID does not match the provider it wraps.
+     *
+     * Format: "The debug %s registration ID must match its provider."
+     */
+    case PROVIDER_ID_MISMATCH = 'The debug %s registration ID must match its provider.';
 
     /**
      * A requested queue job record cannot be found.

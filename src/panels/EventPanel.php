@@ -51,6 +51,8 @@ class EventPanel extends Panel
     }
 
     /**
+     * Returns the events captured during the request.
+     *
      * @return list<EventRow> Captured event rows in fire order.
      */
     public function getEvents(): array
@@ -81,6 +83,8 @@ class EventPanel extends Panel
     }
 
     /**
+     * Returns whether the capture holds any event.
+     *
      * @return bool `true` when the capture holds at least one event; `false` otherwise.
      */
     public function hasEvents(): bool
@@ -98,10 +102,7 @@ class EventPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = EventSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = EventSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**

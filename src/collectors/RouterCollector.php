@@ -85,11 +85,7 @@ class RouterCollector extends Collector
 
         return RouterSnapshot::capture(
             $action,
-            LogTarget::filterMessages(
-                $this->getLogTarget()->messages,
-                Logger::LEVEL_TRACE,
-                $this->categories,
-            ),
+            LogTarget::filterMessages($this->getLogTarget()->messages, Logger::LEVEL_TRACE, $this->categories),
             $requestedAction !== null ? $requestedAction->getUniqueId() : Yii::$app->requestedRoute,
         );
     }

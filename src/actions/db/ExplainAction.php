@@ -51,10 +51,7 @@ class ExplainAction extends Action
             return $this->respondEmpty(404);
         }
 
-        $row = QueryRow::findBySequence(
-            $panel->getRows(),
-            $seq,
-        );
+        $row = QueryRow::findBySequence($panel->getRows(), $seq);
 
         if ($row === null) {
             return $this->respondEmpty(404);

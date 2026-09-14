@@ -157,6 +157,8 @@ class LogTarget extends Target
     }
 
     /**
+     * Reads the manifest of retained captures.
+     *
      * @return array<string, RequestSummary> Manifest entries keyed by tag, newest first.
      */
     public function loadManifest(): array
@@ -268,6 +270,8 @@ class LogTarget extends Target
     }
 
     /**
+     * Counts the call sites flagged as issuing too many statements.
+     *
      * @return int Number of call sites that issued at least the configured threshold of queries; `0` when the
      * Database collector is not registered.
      */
@@ -279,6 +283,8 @@ class LogTarget extends Target
     }
 
     /**
+     * Counts the statements executed during the request.
+     *
      * @return int Number of queries executed during the request; `0` when the Database collector is not
      * registered.
      */
@@ -290,6 +296,8 @@ class LogTarget extends Target
     }
 
     /**
+     * Deletes the captured `.eml` files no retained capture refers to.
+     *
      * @param array<string, RequestSummary>|null $entries Committed manifest entries, or `null` after a failed read.
      */
     private function reconcileMailFiles(array|null $entries): void

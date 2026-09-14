@@ -223,10 +223,7 @@ class ActionRoutes extends Model
 
             if (is_dir($controllerPath)) {
                 $iterator = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator(
-                        $controllerPath,
-                        FilesystemIterator::SKIP_DOTS,
-                    ),
+                    new RecursiveDirectoryIterator($controllerPath, FilesystemIterator::SKIP_DOTS),
                 );
 
                 /** @var SplFileInfo $fileInfo */

@@ -25,6 +25,8 @@ class DbSearch extends Base
     public string $type = '';
 
     /**
+     * Returns the labels shown above the filter inputs.
+     *
      * @return array<string, string> Form labels keyed by attribute name.
      */
     #[Override]
@@ -37,6 +39,8 @@ class DbSearch extends Base
     }
 
     /**
+     * Returns the query-string prefix scoping this form.
+     *
      * @return string Query-string prefix that scopes this form's filter parameters.
      */
     #[Override]
@@ -46,6 +50,8 @@ class DbSearch extends Base
     }
 
     /**
+     * Declares the validation rules applied to the submitted filters.
+     *
      * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */
     #[Override]

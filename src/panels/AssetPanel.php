@@ -11,6 +11,7 @@ use PHPForge\Debug\Storage\HydrationException;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\Panel;
+use yii\debug\view\ViewMessage as AdapterMessage;
 use yii\web\AssetManager;
 
 use function count;
@@ -87,10 +88,7 @@ class AssetPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = AssetSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = AssetSnapshot::fromArray($payload, "$.panels.{$this->id}");
     }
 
     /**
@@ -125,13 +123,15 @@ class AssetPanel extends Panel
         return [
             [
                 'status' => 'info',
-                'title' => 'Number of asset bundles loaded',
+                'title' => AdapterMessage::ASSET_BUNDLE_COUNT->value,
                 'value' => count($bundles),
             ],
         ];
     }
 
     /**
+     * Returns the asset bundles registered during the request.
+     *
      * @return list<AssetBundleRow> Registered bundles in registration order.
      */
     private function getBundles(): array

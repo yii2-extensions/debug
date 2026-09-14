@@ -262,6 +262,8 @@ class MailCollector extends Collector
     }
 
     /**
+     * Returns whether a mailer-supplied file name is a bare name with no path segment.
+     *
      * @param string $file File name proposed by the mailer.
      *
      * @return bool `true` when the name is a bare file name with no path segment; `false` otherwise.

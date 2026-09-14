@@ -36,7 +36,7 @@
         "symfony/mime": "^7.4",
         "ui-awesome/html": "^0.6",
         "ui-awesome/html-core": "^0.8",
-        "ui-awesome/html-core-component": "^0.4",
+        "ui-awesome/html-core-component": "^0.5@dev",
         "ui-awesome/html-helper": "^0.7",
         "ui-awesome/html-interop": "^0.4",
         "ui-awesome/html-svg": "^0.6",

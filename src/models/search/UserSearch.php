@@ -60,6 +60,8 @@ class UserSearch extends Model implements UserSearchInterface
     }
 
     /**
+     * Returns the attribute names forwarded from the identity model.
+     *
      * @return array<int|string, string> Attribute names forwarded from the identity model; empty when unavailable.
      */
     #[Override]
@@ -73,6 +75,8 @@ class UserSearch extends Model implements UserSearchInterface
     }
 
     /**
+     * Returns the query-string prefix scoping this form.
+     *
      * @return string Query-string prefix that scopes this form's filter parameters.
      */
     #[Override]
@@ -98,6 +102,8 @@ class UserSearch extends Model implements UserSearchInterface
     }
 
     /**
+     * Declares the safe attributes mirrored from the identity model.
+     *
      * @return array<int, array<int|string, mixed>> Safe-attribute rules mirroring the identity model; empty when no
      * identity model is available.
      */

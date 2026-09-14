@@ -176,10 +176,7 @@ class DbPanel extends Panel
     #[Override]
     public function hydrate(array $payload): void
     {
-        $this->snapshot = DbSnapshot::fromArray(
-            $payload,
-            "$.panels.{$this->id}",
-        );
+        $this->snapshot = DbSnapshot::fromArray($payload, "$.panels.{$this->id}");
 
         $this->summary = null;
     }

@@ -77,18 +77,10 @@ class RequestCollector extends Collector
             $key = ltrim($var, '_');
 
             if (ArrayHelper::getValue($data, $key) !== null) {
-                ArrayHelper::setValue(
-                    $data,
-                    $key,
-                    $this->censorString,
-                );
+                ArrayHelper::setValue($data, $key, $this->censorString);
 
                 if (str_starts_with($key, 'requestBody')) {
-                    ArrayHelper::setValue(
-                        $data,
-                        'requestBody.Raw',
-                        $this->censorString,
-                    );
+                    ArrayHelper::setValue($data, 'requestBody.Raw', $this->censorString);
                 }
             }
         }

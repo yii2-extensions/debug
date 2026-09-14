@@ -372,11 +372,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
      */
     protected function prepareIndexShell(array $manifest, string $cursor): void
     {
-        $sidebar = SidebarDataNormalizer::fromIndex(
-            $this->getDebugModule()->panels,
-            $manifest,
-            $cursor,
-        );
+        $sidebar = SidebarDataNormalizer::fromIndex($this->getDebugModule()->panels, $manifest, $cursor);
 
         Yii::$app->getView()->params['debugShell'] = $this->createShellContext(
             ShellContext::MODE_INDEX,
@@ -403,10 +399,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
 
         Yii::$app->getResponse()->setStatusCode(500);
 
-        return $errorHandler->renderFile(
-            '@yii/views/errorHandler/exception.php',
-            ['exception' => $error],
-        );
+        return $errorHandler->renderFile('@yii/views/errorHandler/exception.php', ['exception' => $error]);
     }
 
     /**
@@ -422,9 +415,6 @@ class Action extends \yii\web\Action implements ViewContextInterface
             ?? $_COOKIE[ThemeResolver::COOKIE]
             ?? null;
 
-        return ThemeResolver::resolve(
-            [ThemeResolver::COOKIE => $raw],
-            $request->getQueryParams(),
-        );
+        return ThemeResolver::resolve([ThemeResolver::COOKIE => $raw], $request->getQueryParams());
     }
 }

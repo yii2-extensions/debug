@@ -52,6 +52,8 @@ class LogPanel extends Panel implements ProvidesMemorySamples
     }
 
     /**
+     * Returns the memory readings recorded alongside the messages.
+     *
      * @return list<MemorySample> Memory readings recorded alongside each captured log message.
      */
     public function getMemorySamples(): array
@@ -63,6 +65,8 @@ class LogPanel extends Panel implements ProvidesMemorySamples
     }
 
     /**
+     * Returns the messages logged during the request.
+     *
      * @return list<LogRow> Captured log rows in capture order.
      */
     public function getMessages(): array

@@ -30,6 +30,8 @@ class LogSearch extends Base
     public string $message = '';
 
     /**
+     * Returns the labels shown above the filter inputs.
+     *
      * @return array<string, string> Form labels keyed by attribute name.
      */
     #[Override]
@@ -44,6 +46,8 @@ class LogSearch extends Base
     }
 
     /**
+     * Returns the query-string prefix scoping this form.
+     *
      * @return string Query-string prefix that scopes this form's filter parameters.
      */
     #[Override]
@@ -53,6 +57,8 @@ class LogSearch extends Base
     }
 
     /**
+     * Declares the validation rules applied to the submitted filters.
+     *
      * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
      */
     #[Override]

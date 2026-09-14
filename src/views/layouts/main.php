@@ -7,6 +7,7 @@ use yii\debug\Module;
 use PHPForge\Debug\Helper\Icon;
 use PHPForge\Debug\View\ViewMessage;
 use yii\debug\exception\Message;
+use yii\debug\view\ViewMessage as AdapterMessage;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarRenderer;
 use yii\helpers\{Html, Url};
@@ -47,8 +48,8 @@ if (!$shellContext instanceof ShellContext) {
         'actionIcon' => Icon::render('config'),
         'actionLabel' => ViewMessage::CONFIG->value,
         'actionTitle' => $shellContext->configUrl === null
-            ? 'No requests captured yet'
-            : 'Open the Configuration panel',
+            ? AdapterMessage::CONFIG_ACTION_EMPTY->value
+            : AdapterMessage::CONFIG_ACTION_TOOLTIP->value,
         'actionUrl' => $shellContext->configUrl,
         'content' => $content,
         'debugTheme' => $shellContext->resolvedTheme,
