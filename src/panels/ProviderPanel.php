@@ -114,7 +114,7 @@ class ProviderPanel extends Panel
         $items = [];
 
         foreach ($this->view?->toolbarMetrics() ?? [] as $metric) {
-            $items[] = ['title' => $metric['label'], 'value' => $metric['value']['value']];
+            $items[] = ['title' => $metric->label, 'value' => $metric->value];
         }
 
         return $items;

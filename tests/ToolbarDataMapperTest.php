@@ -7,8 +7,11 @@ namespace yii\debug\tests;
 use Override;
 use PHPUnit\Framework\Attributes\Group;
 use yii\debug\{Module, Panel, ToolbarDataMapper};
+use yii\debug\panels\ProviderPanel;
 use yii\debug\tests\support\stub\MinimalToolbarPanel;
 use yii\debug\tests\support\TestCase;
+
+use function array_column;
 
 /**
  * Unit tests for {@see ToolbarDataMapper} and its compatibility lane for custom Yii2 panel envelopes.
@@ -33,6 +36,117 @@ final class ToolbarDataMapperTest extends TestCase
             50,
             $result['defaultHeight'],
             "Drawer height must default to '50'.",
+        );
+    }
+
+    public function testMapFlagsExtensionChipsAndLeavesBuiltInChipsInline(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(
+                [
+                    'request' => $this->builtInPanel($module, 'request', 'Request'),
+                    'vite' => $this->extensionPanel($module, 'vite', 'Vite'),
+                ],
+            );
+
+        self::assertArrayNotHasKey(
+            'extension',
+            $result['items'][0] ?? [],
+            'Inline chips must omit the key.',
+        );
+        self::assertTrue(
+            $result['items'][1]['extension'] ?? null,
+            'Provider-backed chips must carry `true`.',
+        );
+    }
+
+    public function testMapFlagsFreeFormEnvelopesOfOptionalIntegrations(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        $optional = new MinimalToolbarPanel();
+
+        $optional->id = 'queue';
+        $optional->module = $module;
+        $optional->tag = 'capture-tag';
+
+        $builtIn = new MinimalToolbarPanel();
+
+        $builtIn->id = 'free-form';
+        $builtIn->module = $module;
+        $builtIn->tag = 'capture-tag';
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(['free-form' => $builtIn, 'queue' => $optional]);
+
+        self::assertArrayNotHasKey(
+            'extension',
+            $result['items'][0] ?? [],
+            'Inline envelopes must omit the key.',
+        );
+        self::assertTrue(
+            $result['items'][1]['extension'] ?? null,
+            'Optional-integration envelopes must carry `true`.',
+        );
+        self::assertSame(
+            'minimal',
+            $result['items'][1]['chip'] ?? null,
+            'The free-form envelope must survive the flag.',
+        );
+    }
+
+    public function testMapKeepsBuiltInChipsBeforeExtensionsRegisteredEarlier(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(
+                [
+                    'vite' => $this->extensionPanel($module, 'vite', 'Vite'),
+                    'request' => $this->builtInPanel($module, 'request', 'Request'),
+                ],
+            );
+
+        self::assertSame(
+            ['Request', 'Vite'],
+            array_column($result['items'], 'title'),
+            'Built-in chips must precede every extension.',
+        );
+    }
+
+    public function testMapListsExtensionChipsAlphabeticallyAfterBuiltInChips(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(
+                [
+                    'request' => $this->builtInPanel($module, 'request', 'Request'),
+                    'vite' => $this->extensionPanel($module, 'vite', 'Vite'),
+                    'mail' => $this->builtInPanel($module, 'mail', 'Mail'),
+                    'inertia' => $this->extensionPanel($module, 'inertia', 'Inertia'),
+                    'log' => $this->builtInPanel($module, 'log', 'Log'),
+                ],
+            );
+
+        self::assertSame(
+            ['Request', 'Log', 'Inertia', 'Mail', 'Vite'],
+            array_column($result['items'], 'title'),
+            'Order: built-ins first, extensions alphabetical.',
         );
     }
 
@@ -303,6 +417,28 @@ final class ToolbarDataMapperTest extends TestCase
         );
     }
 
+    public function testMapSortsExtensionChipsWithoutCaseSensitivity(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(
+                [
+                    'bravo' => $this->extensionPanel($module, 'bravo', 'Bravo'),
+                    'apollo' => $this->extensionPanel($module, 'apollo', 'apollo'),
+                ],
+            );
+
+        self::assertSame(
+            ['apollo', 'Bravo'],
+            array_column($result['items'], 'title'),
+            'Case must not affect the extension order.',
+        );
+    }
+
     public function testMergePanelExtensionsReturnsTypedEnvelopeWhenItemsAreNotArrays(): void
     {
         self::assertSame(
@@ -447,5 +583,63 @@ final class ToolbarDataMapperTest extends TestCase
         $this->destroyApplication();
 
         parent::tearDown();
+    }
+
+    /**
+     * Creates a built-in diagnostics panel emitting a single toolbar chip under the given name.
+     */
+    private function builtInPanel(Module $module, string $id, string $name): Panel
+    {
+        $panel = new class extends Panel {
+            public string $panelName = '';
+
+            #[Override]
+            public function getName(): string
+            {
+                return $this->panelName;
+            }
+
+            #[Override]
+            public function getToolbarData(): array
+            {
+                return ['items' => [['value' => $this->panelName]]];
+            }
+        };
+
+        $panel->panelName = $name;
+        $panel->id = $id;
+        $panel->module = $module;
+        $panel->tag = 'capture-tag';
+
+        return $panel;
+    }
+
+    /**
+     * Creates a provider-backed extension panel emitting a single toolbar chip under the given name.
+     */
+    private function extensionPanel(Module $module, string $id, string $name): Panel
+    {
+        $panel = new class extends ProviderPanel {
+            public string $panelName = '';
+
+            #[Override]
+            public function getName(): string
+            {
+                return $this->panelName;
+            }
+
+            #[Override]
+            public function getToolbarData(): array
+            {
+                return ['items' => [['value' => $this->panelName]]];
+            }
+        };
+
+        $panel->panelName = $name;
+        $panel->id = $id;
+        $panel->module = $module;
+        $panel->tag = 'capture-tag';
+
+        return $panel;
     }
 }

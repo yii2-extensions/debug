@@ -10,6 +10,8 @@ use PHPForge\Debug\Toolbar\{ToolbarData, ToolbarItem, ToolbarPanel};
 use function array_is_list;
 use function array_replace;
 use function is_array;
+use function strcasecmp;
+use function uasort;
 
 /**
  * Maps Yii2 panel envelopes to the shared typed toolbar contract while retaining custom-panel fields.
@@ -44,7 +46,11 @@ final readonly class ToolbarDataMapper
      * a free-form envelope remains untouched except for the `id`, `title`, and `url` defaults. Any extension fields
      * attached to an otherwise typed panel or item are merged back after DTO serialization.
      *
-     * @param array<string, Panel> $panels Registered Yii2 panels in toolbar order.
+     * Chips are emitted in the order built by {@see toolbarOrder()}, so the toolbar mirrors the sidebar grouping.
+     * Every panel classified by {@see ExtensionAvailability::isExtensionPanel()} carries `extension: true`, so the
+     * shared toolbar groups it under its Extensions menu; built-in panels omit the key and stay inline.
+     *
+     * @param array<string, Panel> $panels Registered Yii2 panels keyed by ID, in registration order.
      *
      * @return array{
      *   configUrl: string,
@@ -67,7 +73,7 @@ final readonly class ToolbarDataMapper
         $typedPanels = [];
         $compatiblePanels = [];
 
-        foreach ($panels as $id => $panel) {
+        foreach (self::toolbarOrder($panels) as $id => $panel) {
             if (!$panel->isVisible()) {
                 continue;
             }
@@ -82,13 +88,21 @@ final readonly class ToolbarDataMapper
             $original['title'] ??= $panel->getName();
             $original['url'] ??= $panel->getUrl();
 
+            $extension = ExtensionAvailability::isExtensionPanel($id, $panel);
+
             $typed = self::panel($original);
 
             if ($typed === null) {
+                if ($extension) {
+                    $original['extension'] = true;
+                }
+
                 $compatiblePanels[] = $original;
 
                 continue;
             }
+
+            $typed = $typed->withExtension($extension);
 
             $typedPanels[] = $typed;
             $compatiblePanels[] = self::mergePanelExtensions($original, $typed->jsonSerialize());
@@ -256,5 +270,36 @@ final readonly class ToolbarDataMapper
             ->withUrl(self::optionalString($data, 'url'))
             ->withIcon(self::optionalString($data, 'icon'))
             ->withItems($items);
+    }
+
+    /**
+     * Orders panels the way the sidebar groups them: built-in diagnostics keep their registration order and come
+     * first, extension panels follow sorted by name, case-insensitively.
+     *
+     * @param array<string, Panel> $panels Registered Yii2 panels keyed by ID, in registration order.
+     *
+     * @return array<string, Panel> Panels keyed by ID, in toolbar order.
+     */
+    private static function toolbarOrder(array $panels): array
+    {
+        $builtIn = [];
+        $extensions = [];
+
+        foreach ($panels as $id => $panel) {
+            if (ExtensionAvailability::isExtensionPanel($id, $panel)) {
+                $extensions[$id] = $panel;
+
+                continue;
+            }
+
+            $builtIn[$id] = $panel;
+        }
+
+        uasort(
+            $extensions,
+            static fn(Panel $left, Panel $right): int => strcasecmp($left->getName(), $right->getName()),
+        );
+
+        return $builtIn + $extensions;
     }
 }

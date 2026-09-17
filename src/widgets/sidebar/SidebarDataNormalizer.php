@@ -9,7 +9,6 @@ use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPForge\Debug\View\ViewMessage;
 use yii\debug\{ExtensionAvailability, Module, Panel};
-use yii\debug\panels\{JsonPanel, ProviderPanel};
 use yii\debug\view\ViewMessage as AdapterMessage;
 
 use function array_key_first;
@@ -210,7 +209,7 @@ final class SidebarDataNormalizer
 
             $item = new SidebarNavItem(label: $panel->getName(), iconSvg: $iconSvg, url: $url, tooltip: $tooltip, isActive: $isActive);
 
-            if ($panel instanceof ProviderPanel || $panel instanceof JsonPanel || ExtensionAvailability::isOptional($id)) {
+            if (ExtensionAvailability::isExtensionPanel($id, $panel)) {
                 $extensionItems[] = $item;
 
                 continue;

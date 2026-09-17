@@ -7,6 +7,7 @@ namespace yii\debug\tests;
 use PHPUnit\Framework\Attributes\Group;
 use Xepozz\InternalMocker\MockerState;
 use yii\debug\ExtensionAvailability;
+use yii\debug\panels\{JsonPanel, ProviderPanel, RequestPanel};
 use yii\debug\tests\support\TestCase;
 
 /**
@@ -64,6 +65,26 @@ final class ExtensionAvailabilityTest extends TestCase
                 "The '{$id}' integration must be unavailable without one of its provider classes.",
             );
         }
+    }
+
+    public function testIsExtensionPanelClassifiesProviderPayloadAndOptionalPanels(): void
+    {
+        self::assertTrue(
+            ExtensionAvailability::isExtensionPanel('vite', new ProviderPanel()),
+            'A provider-backed panel belongs to the extensions.',
+        );
+        self::assertTrue(
+            ExtensionAvailability::isExtensionPanel('dump', new JsonPanel()),
+            'A payload-only panel belongs to the extensions.',
+        );
+        self::assertTrue(
+            ExtensionAvailability::isExtensionPanel('mail', new RequestPanel()),
+            'An optional id belongs to the extensions.',
+        );
+        self::assertFalse(
+            ExtensionAvailability::isExtensionPanel('request', new RequestPanel()),
+            'Core diagnostics must stay built-in.',
+        );
     }
 
     public function testKnownIdsAreOptional(): void
