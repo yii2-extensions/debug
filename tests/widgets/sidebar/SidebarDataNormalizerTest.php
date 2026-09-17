@@ -467,6 +467,39 @@ final class SidebarDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromViewKeepsListingPanelsAfterSkippingAnIdleOne(): void
+    {
+        $this->mockWebApplication();
+
+        $active = new RequestPanel();
+
+        $active->id = 'request';
+
+        $idle = new ProviderPanel();
+        $idle->provider = new InertiaPanel();
+
+        $idle->id = 'inertia';
+
+        $view = SidebarDataNormalizer::fromView(
+            ['inertia' => $idle, 'request' => $active],
+            ['tag-1' => $this->requestSummary()],
+            $active,
+            'tag-1',
+            $this->requestSummary(),
+        );
+
+        self::assertSame(
+            ['History', 'Request'],
+            array_map(static fn(SidebarNavItem $item): string => $item->label, $view->navItems),
+            'Idle panel must not stop the nav build.',
+        );
+        self::assertSame(
+            [],
+            $view->navGroups,
+            'Idle extension must not be grouped.',
+        );
+    }
+
     public function testFromViewLeavesTimeEmptyForNonPositiveOrNonNumericTimestamp(): void
     {
         $this->mockWebApplication();

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: read panel, history, sidebar, comparison, and toolbar text from the shared Debug Core enums instead of local literals.
 - refactor(view): read presentation text from enums, adding `yii\debug\view\ViewMessage` for the wording that names Yii2 concepts.
 - fix(ui)!: list enabled provider panels alphabetically in Extensions, including panels with no recorded activity.
+- refactor(panels)!: require php-forge/debug ^0.2; sort extension chips alphabetically and flag extension panels in the toolbar.
 
 ## 0.1.1 May 18, 2026
 

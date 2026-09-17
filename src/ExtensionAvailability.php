@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use yii\debug\panels\{JsonPanel, ProviderPanel};
+
 /**
- * Detects optional debugger integrations through the runtime classes they provide.
+ * Detects optional debugger integrations through the runtime classes they provide, and classifies the panels that
+ * belong to an extension rather than to the built-in Yii diagnostics.
  */
 final class ExtensionAvailability
 {
@@ -39,6 +42,22 @@ final class ExtensionAvailability
         }
 
         return false;
+    }
+
+    /**
+     * Returns whether a registered panel belongs to an extension rather than to the built-in Yii diagnostics.
+     *
+     * Shared by the toolbar and the sidebar so both renderers classify, group, and sort the same entries.
+     *
+     * @param string $id Panel id under which the panel is registered.
+     * @param Panel $panel Registered panel instance.
+     *
+     * @return bool `true` when the panel is provider-backed, payload-only, or bound to an optional package; `false`
+     * otherwise.
+     */
+    public static function isExtensionPanel(string $id, Panel $panel): bool
+    {
+        return $panel instanceof ProviderPanel || $panel instanceof JsonPanel || self::isOptional($id);
     }
 
     /**

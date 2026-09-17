@@ -24,7 +24,7 @@ use function is_string;
 #[Group('panel')]
 final class AssetPanelTest extends TestCase
 {
-    public function testGetDetailRendersBundleSummary(): void
+    public function testGetDetailRendersBundleCard(): void
     {
         $panel = $this->makePanel(AssetPanel::class);
 
@@ -50,9 +50,24 @@ final class AssetPanelTest extends TestCase
         $html = $panel->getDetail();
 
         self::assertStringContainsString(
+            '<h2 class="yii-debug-entity-name">',
+            $html,
+            'Bundle must render as an entity card.',
+        );
+        self::assertStringContainsString(
             'DebugAsset',
             $html,
-            'Detail view must surface the bundle FQCN.',
+            'Card title must show the bundle short name.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-entity-subtitle">yii\debug\</span>',
+            $html,
+            'Subtitle must show the bundle namespace.',
+        );
+        self::assertStringContainsString(
+            '<span class="yii-debug-file-type yii-debug-file-type-warning">.js</span>',
+            $html,
+            'Declared script must render as a `.js` file pill.',
         );
     }
 
@@ -78,9 +93,9 @@ final class AssetPanelTest extends TestCase
             'Empty state must surface the headline.',
         );
         self::assertStringContainsString(
-            'yii-debug-grid-summary',
+            'yii-debug-stat-strip',
             $html,
-            'Summary strip must render alongside the card.',
+            'Stat strip must render alongside the empty state.',
         );
     }
 
