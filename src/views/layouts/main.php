@@ -5,11 +5,11 @@ declare(strict_types=1);
 use UIAwesome\Html\Helper\{Attributes, Encode};
 use yii\debug\Module;
 use PHPForge\Debug\Helper\Icon;
+use PHPForge\Debug\View\Sidebar\SidebarRenderer;
 use PHPForge\Debug\View\ViewMessage;
 use yii\debug\exception\Message;
 use yii\debug\view\ViewMessage as AdapterMessage;
 use yii\debug\widgets\shell\ShellContext;
-use yii\debug\widgets\sidebar\SidebarRenderer;
 use yii\helpers\{Html, Url};
 use yii\web\View;
 

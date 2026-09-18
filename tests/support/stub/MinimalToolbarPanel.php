@@ -8,13 +8,13 @@ use Override;
 use yii\debug\Panel;
 
 /**
- * Stub panel whose `getToolbarData()` returns a chip envelope without 'id', 'title', or 'url' keys.
+ * Stub panel whose `getToolbarData()` returns a valid chip envelope without 'id', 'title', or 'url' keys.
  */
 final class MinimalToolbarPanel extends Panel
 {
     #[Override]
     public function getToolbarData(): array
     {
-        return ['chip' => 'minimal'];
+        return ['items' => [['value' => 'minimal']]];
     }
 }

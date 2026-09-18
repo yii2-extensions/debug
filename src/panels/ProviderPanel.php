@@ -17,9 +17,17 @@ use yii\debug\Panel;
 class ProviderPanel extends Panel
 {
     /**
+     * Icon key resolved for this registration, or `null` to render the provider default.
+     */
+    public string|null $icon = null;
+    /**
      * Declarative panel supplying the identity, capture format, and presentation of this registration.
      */
     public PortablePanel|null $provider = null;
+    /**
+     * Display title resolved for this registration, or `null` to render the provider default.
+     */
+    public string|null $title = null;
 
     /**
      * Presentation built by the provider for the hydrated capture, or `null` before hydration.
@@ -42,27 +50,27 @@ class ProviderPanel extends Panel
     }
 
     /**
-     * Returns the human-readable panel name.
+     * Returns the human-readable panel name, preferring the title resolved by the registration policy.
      *
      * @throws InvalidConfigException when no provider is configured, or its ID does not match the registration.
      *
-     * @return string Panel display name declared by the provider.
+     * @return string Configured display title, or the one declared by the provider.
      */
     public function getName(): string
     {
-        return $this->provider()->name();
+        return $this->title ?? $this->provider()->name();
     }
 
     /**
-     * Returns the shared Debug Core icon key.
+     * Returns the shared Debug Core icon key, preferring the one resolved by the registration policy.
      *
      * @throws InvalidConfigException when no provider is configured, or its ID does not match the registration.
      *
-     * @return string Toolbar icon key declared by the provider.
+     * @return string Configured toolbar icon key, or the one declared by the provider.
      */
     public function getToolbarIcon(): string
     {
-        return $this->provider()->icon();
+        return $this->icon ?? $this->provider()->icon();
     }
 
     /**
@@ -131,7 +139,7 @@ class ProviderPanel extends Panel
     {
         if ($this->provider === null) {
             throw new InvalidConfigException(
-                'A declarative debug panel provider must be configured.',
+                Message::PROVIDER_PANEL_REQUIRED->getMessage(),
             );
         }
 

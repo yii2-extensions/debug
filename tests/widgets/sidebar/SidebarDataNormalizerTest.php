@@ -6,19 +6,20 @@ namespace yii\debug\tests\widgets\sidebar;
 
 use Exception;
 use PHPForge\Debug\Storage\ExceptionSnapshot;
+use PHPForge\Debug\View\Sidebar\SidebarNavItem;
 use PHPForge\Inertia\Debug\InertiaPanel;
 use PHPForge\Vite\Debug\VitePanel;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use yii\debug\panels\{ConfigPanel, MailPanel, ProviderPanel, QueuePanel, RequestPanel, RouterPanel};
 use yii\debug\tests\provider\UrlPathProvider;
 use yii\debug\tests\support\TestCase;
-use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarNavItem};
+use yii\debug\widgets\sidebar\SidebarDataNormalizer;
 
 use function array_map;
 
 /**
- * Unit tests for {@see SidebarDataNormalizer} covering panel, manifest, and summary narrowing into the typed
- * view-model through the `fromView()` and `fromIndex()` factories.
+ * Unit tests for {@see SidebarDataNormalizer} covering panel, manifest, and summary narrowing into the Debug Core
+ * sidebar view-model, with every route resolved, through the `fromView()` and `fromIndex()` factories.
  */
 #[Group('panel')]
 #[Group('sidebar')]
@@ -110,7 +111,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $panelItem = $view->navItems[1];
 
         self::assertSame(
-            ['/debug/view', 'tag' => 'tag-newest', 'panel' => 'request'],
+            '/index.php?r=debug%2Fview&tag=tag-newest&panel=request',
             $panelItem->url,
             'Index-mode panel link must carry its route, newest tag, and panel ID.',
         );
@@ -149,7 +150,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $panelItem = $view->navItems[1];
 
         self::assertSame(
-            ['/debug/index'],
+            '/index.php?r=debug%2Findex',
             $panelItem->url,
             "Empty manifest must drop panel entries back to the 'index' route.",
         );
@@ -224,12 +225,25 @@ final class SidebarDataNormalizerTest extends TestCase
             'Optional integrations need a labeled group.',
         );
         self::assertSame(
-            ['Inertia', 'Mail', 'Queue', 'Vite'],
+            ['Mail', 'Queue', 'Inertia', 'Vite'],
             array_map(
                 static fn(SidebarNavItem $item): string => $item->label,
                 $view->navGroups['Extensions'],
             ),
-            'Integration panels must be listed alphabetically at the end of the sidebar.',
+            'Order: exactly the one the module resolved.',
+        );
+        self::assertSame(
+            [
+                '/index.php?r=debug%2Fview&tag=tag-newest&panel=mail',
+                '/index.php?r=debug%2Fview&tag=tag-newest&panel=queue',
+                '/index.php?r=debug%2Fview&tag=tag-newest&panel=inertia',
+                '/index.php?r=debug%2Fview&tag=tag-newest&panel=vite',
+            ],
+            array_map(
+                static fn(SidebarNavItem $item): string => $item->url,
+                $view->navGroups['Extensions'],
+            ),
+            'Grouped entries must resolve their URL too.',
         );
     }
 
@@ -292,22 +306,22 @@ final class SidebarDataNormalizerTest extends TestCase
             'Index mode must expose the expanded snapshot aria-label.',
         );
         self::assertSame(
-            ['/debug/view', 'tag' => 'tag-1'],
+            '/index.php?r=debug%2Fview&tag=tag-1',
             $view->snapshot->newestUrl,
             'A navigator without panels must omit the panel parameter.',
         );
         self::assertSame(
-            ['/debug/view', 'tag' => 'tag-1'],
+            '/index.php?r=debug%2Fview&tag=tag-1',
             $view->snapshot->oldestUrl,
             'The single snapshot must be both the newest and oldest destination.',
         );
         self::assertSame(
-            [],
+            '',
             $view->snapshot->newerUrl,
             'The newest snapshot must not expose a newer destination.',
         );
         self::assertSame(
-            [],
+            '',
             $view->snapshot->olderUrl,
             'The oldest snapshot must not expose an older destination.',
         );
@@ -381,15 +395,15 @@ final class SidebarDataNormalizerTest extends TestCase
             'History must include at least one navigation item.',
         );
         self::assertSame(
-            ['/debug/index', 'cursor' => 'tag-1'],
+            '/index.php?r=debug%2Findex&cursor=tag-1',
             $view->navItems[0]->url,
-            "History entry must carry the active tag as the exact 'cursor' route.",
+            "History entry must carry the active tag as the 'cursor' query parameter.",
         );
 
         $panelItem = $view->navItems[1] ?? self::fail('Request panel navigation item must surface.');
 
         self::assertSame(
-            ['/debug/view', 'tag' => 'tag-1', 'panel' => 'request'],
+            '/index.php?r=debug%2Fview&tag=tag-1&panel=request',
             $panelItem->url,
             'View-mode panel link must preserve the active capture and panel.',
         );
@@ -609,12 +623,12 @@ final class SidebarDataNormalizerTest extends TestCase
         $snapshot = $view->snapshot ?? self::fail('View mode must carry the supplied snapshot.');
 
         self::assertSame(
-            ['/debug/view', 'panel' => 'request'],
+            '/index.php?r=debug%2Fview&panel=request',
             $snapshot->newestUrl,
             'An empty manifest must omit the missing newest tag.',
         );
         self::assertSame(
-            ['/debug/view', 'panel' => 'request'],
+            '/index.php?r=debug%2Fview&panel=request',
             $snapshot->oldestUrl,
             'An empty manifest must omit the missing oldest tag.',
         );
@@ -655,12 +669,12 @@ final class SidebarDataNormalizerTest extends TestCase
             'Middle-tag snapshot must expose a older navigator.',
         );
         self::assertSame(
-            ['/debug/view', 'tag' => 'tag-newest', 'panel' => 'request'],
+            '/index.php?r=debug%2Fview&tag=tag-newest&panel=request',
             $view->snapshot->newerUrl,
             'Middle-tag snapshot must link to the immediately newer capture.',
         );
         self::assertSame(
-            ['/debug/view', 'tag' => 'tag-oldest', 'panel' => 'request'],
+            '/index.php?r=debug%2Fview&tag=tag-oldest&panel=request',
             $view->snapshot->olderUrl,
             'Middle-tag snapshot must link to the immediately older capture.',
         );

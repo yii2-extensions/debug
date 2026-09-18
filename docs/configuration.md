@@ -57,6 +57,25 @@ Use the component IDs the application already configures, and assign each key ra
 `components` or `modules` array. Pass `$policy->redact(...)` and `$policy->redactUrl(...)` to `InertiaCollector` to
 apply the module's redaction rules; the default keeps the captured values unchanged.
 
+An instance registers with the provider defaults. Use the array form to rename a panel, re-icon it, place it among the
+other extensions, or leave it out altogether:
+
+```php
+$config['modules']['debug']['panels'] = [
+    'vite' => ['class' => VitePanel::class, 'title' => 'Vite assets', 'icon' => 'asset', 'position' => 1],
+    'inertia' => ['class' => InertiaPanel::class, 'enabled' => false],
+    'cache' => Acme\Debug\CachePanel::class,
+];
+```
+
+- `class` is required unless the entry is a class string or an instance; `title`, `icon`, `enabled`, and `position`
+  are the only other accepted keys, and any other key is rejected by name.
+- `enabled` set to `false` removes the entry before its class is resolved, so an uninstalled optional package is not
+  an error. `collectors` entries accept the same flag.
+- `position` orders an entry among the extensions, ascending; the entries without one follow, ordered by title. It is
+  rejected on a built-in panel, and `title` and `icon` are rejected on any panel that is not provider-owned.
+- The array key is the stable ID and must equal the provider's `id()`; a mismatch is rejected.
+
 Vite's **Production** label means it is inspecting built assets in a development application, not that the debugger
 can run in production.
 

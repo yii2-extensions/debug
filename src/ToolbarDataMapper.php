@@ -6,15 +6,13 @@ namespace yii\debug;
 
 use PHPForge\Debug\Helper\Coerce;
 use PHPForge\Debug\Toolbar\{ToolbarData, ToolbarItem, ToolbarPanel};
+use yii\debug\exception\Message;
 
 use function array_is_list;
-use function array_replace;
 use function is_array;
-use function strcasecmp;
-use function uasort;
 
 /**
- * Maps Yii2 panel envelopes to the shared typed toolbar contract while retaining custom-panel fields.
+ * Maps Yii2 panel envelopes to the shared typed toolbar contract.
  *
  * Start from {@see create()} with the values the toolbar cannot render without, then layer the optional chrome through
  * the immutable `with*()` methods, which mirror {@see ToolbarData}. {@see map()} closes the chain.
@@ -42,15 +40,16 @@ final readonly class ToolbarDataMapper
     /**
      * Creates the JSON-ready toolbar payload.
      *
-     * Panels following the documented `items` schema are normalized through the Debug Core DTOs. A custom panel using
-     * a free-form envelope remains untouched except for the `id`, `title`, and `url` defaults. Any extension fields
-     * attached to an otherwise typed panel or item are merged back after DTO serialization.
+     * Every panel is serialized through the Debug Core DTOs, so fields outside the `id`, `title`, `url`, `icon`, and
+     * `items` schema are dropped. A panel whose envelope breaks that schema renders a single error chip carrying
+     * {@see Message::TOOLBAR_ENVELOPE_INVALID} as its tooltip, keeping the failure contained to its own chip.
      *
-     * Chips are emitted in the order built by {@see toolbarOrder()}, so the toolbar mirrors the sidebar grouping.
-     * Every panel classified by {@see ExtensionAvailability::isExtensionPanel()} carries `extension: true`, so the
-     * shared toolbar groups it under its Extensions menu; built-in panels omit the key and stay inline.
+     * Chips are emitted in the order the module registered the panels, which the shared registration policy already
+     * resolved, so the toolbar mirrors the sidebar grouping. Every panel classified by
+     * {@see ExtensionAvailability::isExtensionPanel()} carries `extension: true`, so the shared toolbar groups it
+     * under its Extensions menu; built-in panels omit the key and stay inline.
      *
-     * @param array<string, Panel> $panels Registered Yii2 panels keyed by ID, in registration order.
+     * @param array<string, Panel> $panels Registered Yii2 panels keyed by ID, in display order.
      *
      * @return array{
      *   configUrl: string,
@@ -71,50 +70,27 @@ final readonly class ToolbarDataMapper
     public function map(array $panels): array
     {
         $typedPanels = [];
-        $compatiblePanels = [];
 
-        foreach (self::toolbarOrder($panels) as $id => $panel) {
+        foreach ($panels as $id => $panel) {
             if (!$panel->isVisible()) {
                 continue;
             }
 
-            $original = $panel->getToolbarData();
+            $envelope = $panel->getToolbarData();
 
-            if ($original === []) {
+            if ($envelope === []) {
                 continue;
             }
 
-            $original['id'] ??= $id;
-            $original['title'] ??= $panel->getName();
-            $original['url'] ??= $panel->getUrl();
+            $envelope['id'] ??= $id;
+            $envelope['title'] ??= $panel->getName();
+            $envelope['url'] ??= $panel->getUrl();
 
-            $extension = ExtensionAvailability::isExtensionPanel($id, $panel);
-
-            $typed = self::panel($original);
-
-            if ($typed === null) {
-                if ($extension) {
-                    $original['extension'] = true;
-                }
-
-                $compatiblePanels[] = $original;
-
-                continue;
-            }
-
-            $typed = $typed->withExtension($extension);
-
-            $typedPanels[] = $typed;
-            $compatiblePanels[] = self::mergePanelExtensions($original, $typed->jsonSerialize());
+            $typedPanels[] = self::panel($id, $panel, $envelope)
+                ->withExtension(ExtensionAvailability::isExtensionPanel($id, $panel));
         }
 
-        $data = $this->data->withPanels($typedPanels)->jsonSerialize();
-
-        // The outer metadata always comes from the portable DTO. Only the panel list needs a compatibility lane for
-        // custom extensions that use free-form envelopes.
-        $data['items'] = $compatiblePanels;
-
-        return $data;
+        return $this->data->withPanels($typedPanels)->jsonSerialize();
     }
 
     /**
@@ -176,37 +152,29 @@ final readonly class ToolbarDataMapper
     }
 
     /**
-     * Merges fields unknown to Debug Core back into a normalized panel and its individual item envelopes.
+     * Builds the diagnostic chip rendered in place of an envelope that breaks the typed toolbar contract.
      *
-     * @param array<string, mixed> $original Original panel envelope.
-     * @param array<string, mixed> $typed DTO-serialized panel envelope.
+     * Mirrors the error shape of {@see Panel::getToolbarData()}, so a third-party panel failure reads like a capture
+     * failure instead of breaking the toolbar.
      *
-     * @return array<string, mixed> Typed envelope with extension fields retained.
+     * @param string $id Panel ID under which the panel is registered.
+     * @param Panel $panel Panel whose envelope was rejected.
+     * @param string $field Envelope field that broke the contract.
+     *
+     * @return ToolbarPanel Panel carrying the single error chip.
      */
-    private static function mergePanelExtensions(array $original, array $typed): array
+    private static function errorPanel(string $id, Panel $panel, string $field): ToolbarPanel
     {
-        $merged = array_replace($original, $typed);
-
-        $originalItems = $original['items'] ?? null;
-        $typedItems = $typed['items'] ?? null;
-
-        if (!is_array($originalItems) || !is_array($typedItems)) {
-            return $merged;
-        }
-
-        $mergedItems = $typedItems;
-
-        foreach ($typedItems as $index => $typedItem) {
-            $originalItem = $originalItems[$index] ?? null;
-
-            if (is_array($originalItem) && is_array($typedItem)) {
-                $mergedItems[$index] = array_replace($originalItem, $typedItem);
-            }
-        }
-
-        $merged['items'] = $mergedItems;
-
-        return $merged;
+        return ToolbarPanel::create($id, $panel->getName())
+            ->withUrl($panel->getUrl())
+            ->withItems(
+                [
+                    ToolbarItem::create('error')
+                        ->withLabel($panel->getName())
+                        ->withStatus('danger')
+                        ->withTitle(Message::TOOLBAR_ENVELOPE_INVALID->getMessage($id, $field)),
+                ],
+            );
     }
 
     /**
@@ -223,31 +191,33 @@ final readonly class ToolbarDataMapper
     }
 
     /**
-     * Returns a typed panel when the original envelope follows the portable schema.
+     * Narrows a panel envelope to the typed toolbar contract, falling back to an error chip when it breaks.
      *
-     * @param array<string, mixed> $data Original panel envelope.
+     * @param string $id Panel ID under which the panel is registered.
+     * @param Panel $panel Panel that produced the envelope.
+     * @param array<string, mixed> $data Panel envelope, with the ID, title, and URL defaults already applied.
      *
-     * @return ToolbarPanel|null Typed panel, or `null` when the envelope does not follow the portable schema.
+     * @return ToolbarPanel Typed panel, or the diagnostic chip built by {@see errorPanel()}.
      */
-    private static function panel(array $data): ToolbarPanel|null
+    private static function panel(string $id, Panel $panel, array $data): ToolbarPanel
     {
         $rawItems = $data['items'] ?? null;
 
         if (!is_array($rawItems) || !array_is_list($rawItems)) {
-            return null;
+            return self::errorPanel($id, $panel, 'items');
         }
 
         $items = [];
 
-        foreach ($rawItems as $rawItem) {
+        foreach ($rawItems as $index => $rawItem) {
             if (!is_array($rawItem)) {
-                return null;
+                return self::errorPanel($id, $panel, "items[{$index}]");
             }
 
             $value = Coerce::stringOrNull($rawItem['value'] ?? null);
 
             if ($value === null) {
-                return null;
+                return self::errorPanel($id, $panel, "items[{$index}].value");
             }
 
             $items[] = ToolbarItem::create($value)
@@ -259,47 +229,21 @@ final readonly class ToolbarDataMapper
                 ->withId(self::optionalString($rawItem, 'id'));
         }
 
-        $id = Coerce::stringOrNull($data['id'] ?? null);
-        $title = Coerce::stringOrNull($data['title'] ?? null);
+        $panelId = Coerce::stringOrNull($data['id'] ?? null);
 
-        if ($id === null || $title === null) {
-            return null;
+        if ($panelId === null) {
+            return self::errorPanel($id, $panel, 'id');
         }
 
-        return ToolbarPanel::create($id, $title)
+        $title = Coerce::stringOrNull($data['title'] ?? null);
+
+        if ($title === null) {
+            return self::errorPanel($id, $panel, 'title');
+        }
+
+        return ToolbarPanel::create($panelId, $title)
             ->withUrl(self::optionalString($data, 'url'))
             ->withIcon(self::optionalString($data, 'icon'))
             ->withItems($items);
-    }
-
-    /**
-     * Orders panels the way the sidebar groups them: built-in diagnostics keep their registration order and come
-     * first, extension panels follow sorted by name, case-insensitively.
-     *
-     * @param array<string, Panel> $panels Registered Yii2 panels keyed by ID, in registration order.
-     *
-     * @return array<string, Panel> Panels keyed by ID, in toolbar order.
-     */
-    private static function toolbarOrder(array $panels): array
-    {
-        $builtIn = [];
-        $extensions = [];
-
-        foreach ($panels as $id => $panel) {
-            if (ExtensionAvailability::isExtensionPanel($id, $panel)) {
-                $extensions[$id] = $panel;
-
-                continue;
-            }
-
-            $builtIn[$id] = $panel;
-        }
-
-        uasort(
-            $extensions,
-            static fn(Panel $left, Panel $right): int => strcasecmp($left->getName(), $right->getName()),
-        );
-
-        return $builtIn + $extensions;
     }
 }

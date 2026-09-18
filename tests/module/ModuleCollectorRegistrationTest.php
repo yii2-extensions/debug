@@ -14,6 +14,7 @@ use yii\debug\exception\Message;
 use yii\debug\Module;
 use yii\debug\panels\QueuePanel;
 use yii\debug\tests\support\ModuleTestCase;
+use yii\debug\tests\support\stub\CustomCollector;
 
 /**
  * Unit tests for {@see Module} covering collector override ordering, invalid collector configuration and contracts,
@@ -22,6 +23,31 @@ use yii\debug\tests\support\ModuleTestCase;
 #[Group('module')]
 final class ModuleCollectorRegistrationTest extends ModuleTestCase
 {
+    public function testInitCollectorsKeepsRegisteringEntriesDeclaredAfterADisabledOne(): void
+    {
+        $module = new Module(
+            'debug',
+            null,
+            [
+                'collectors' => [
+                    'log' => ['class' => LogCollector::class, 'enabled' => false],
+                    'app.example' => new CustomCollector(),
+                ],
+            ],
+        );
+
+        $coordinator = $module->getCollectorCoordinator();
+
+        self::assertFalse(
+            $coordinator->hasCollector('log'),
+            'Disabled entry must stay out of the coordinator.',
+        );
+        self::assertTrue(
+            $coordinator->hasCollector('app.example'),
+            'A later entry must still be registered.',
+        );
+    }
+
     public function testInitCollectorsMoveOverriddenCoreCollectorToConfiguredPosition(): void
     {
         $this->mockWebApplication();
@@ -67,6 +93,20 @@ final class ModuleCollectorRegistrationTest extends ModuleTestCase
             'debug',
             null,
             ['collectors' => [['class' => 'No\Such\Collector']]],
+        );
+    }
+
+    public function testInitCollectorsRejectsNonBooleanEnabledOption(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            Message::COLLECTOR_ENABLED_INVALID->getMessage('log'),
+        );
+
+        new Module(
+            'debug',
+            null,
+            ['collectors' => ['log' => ['class' => LogCollector::class, 'enabled' => 'yes']]],
         );
     }
 

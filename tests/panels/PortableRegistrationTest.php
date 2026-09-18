@@ -61,7 +61,7 @@ final class PortableRegistrationTest extends ModuleTestCase
 
             public function present(array $data): PanelView
             {
-                return PanelView::create()->active($data !== []);
+                return PanelView::create()->toolbar('Portable', $data === [] ? 0 : 1);
             }
         };
     }
