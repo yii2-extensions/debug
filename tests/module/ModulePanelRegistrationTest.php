@@ -4,13 +4,25 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\module;
 
+use PHPForge\Debug\Panel as PortablePanel;
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionClass;
+use stdClass;
+use Yii;
 use yii\base\InvalidConfigException;
 use yii\db\Connection;
-use yii\debug\{Module, Panel};
+use yii\debug\exception\Message;
+use yii\debug\{ExtensionAvailability, Module, Panel};
 use yii\debug\panels\{DbPanel, LogPanel};
 use yii\debug\tests\support\ModuleTestCase;
-use yii\debug\tests\support\stub\{ConfigurableAction, CustomDbPanel, ModuleBoundRecordingPanel};
+use yii\debug\tests\support\stub\{
+    ConfigIdRecordingPanel,
+    ConfigurableAction,
+    CustomDbPanel,
+    CustomPanel,
+    ModuleBoundRecordingPanel,
+};
+use yii\debug\tests\support\stub\cache\CachePanel;
 
 /**
  * Unit tests for {@see Module} covering panel class/configuration/instance resolution, invalid and disabled panels,
@@ -19,6 +31,54 @@ use yii\debug\tests\support\stub\{ConfigurableAction, CustomDbPanel, ModuleBound
 #[Group('module')]
 final class ModulePanelRegistrationTest extends ModuleTestCase
 {
+    public function testGetPanelRegistryCarriesTheIconDeclaredByEachPanel(): void
+    {
+        $module = new Module(
+            'debug',
+            null,
+            ['panels' => ['custom' => new CustomPanel()]],
+        );
+
+        $registry = $module->getPanelRegistry();
+
+        self::assertSame(
+            'logs',
+            $registry->get('log')?->icon,
+            'Declared icon must reach the catalog.',
+        );
+        self::assertSame(
+            '',
+            $registry->get('custom')?->icon,
+            'A panel with no icon must register an empty key.',
+        );
+    }
+
+    public function testGetPanelRegistryReportsPanelsDisabledByConfiguration(): void
+    {
+        $module = new Module(
+            'debug',
+            null,
+            ['panels' => ['ghost' => ['class' => 'Acme\\Missing\\GhostPanel', 'enabled' => false]]],
+        );
+
+        $registry = $module->getPanelRegistry();
+
+        self::assertContains(
+            'ghost',
+            $registry->disabled(),
+            'Disabled entry must be reported.',
+        );
+        self::assertTrue(
+            $registry->isDisabled('ghost'),
+            'Disabled entry must answer `true`.',
+        );
+        self::assertNotSame(
+            [],
+            $registry->enabled(),
+            'Built-in panels must survive the disabled entry.',
+        );
+    }
+
     public function testInitDoesNotRegisterTheGenericPanelBaseClass(): void
     {
         $this->mockWebApplication();
@@ -97,19 +157,60 @@ final class ModulePanelRegistrationTest extends ModuleTestCase
         );
     }
 
-    public function testInitPanelsContinuesAfterAnInvalidCustomPanel(): void
+    public function testInitPanelsBindsIntegerRegistrationKeyAsStringPanelId(): void
     {
-        $valid = new LogPanel();
+        $panel = new class extends Panel {
+            public function isEnabled(): bool
+            {
+                return false;
+            }
+        };
+
         $module = new Module(
             'debug',
             null,
-            ['panels' => ['broken' => ['class' => 'No\\Such\\Class'], 'after-broken' => $valid]],
+            ['panels' => [$panel]],
         );
 
         self::assertSame(
-            $valid,
-            $module->panels['after-broken'] ?? null,
-            'An invalid panel must not prevent later configured panels from loading.',
+            '0',
+            $panel->id,
+            'Integer key must bind as a `string`.',
+        );
+        self::assertNotContains(
+            $panel,
+            $module->panels,
+            'A disabled panel must stay unregistered.',
+        );
+    }
+
+    public function testInitPanelsDoesNotAutoloadTheClassOfADisabledEntry(): void
+    {
+        $requested = [];
+        $spy = static function (string $class) use (&$requested): void {
+            $requested[] = $class;
+        };
+
+        spl_autoload_register($spy, true, true);
+
+        try {
+            $module = new Module(
+                'debug',
+                null,
+                ['panels' => ['ghost' => ['class' => 'Acme\\Missing\\GhostPanel', 'enabled' => false]]],
+            );
+        } finally {
+            spl_autoload_unregister($spy);
+        }
+
+        self::assertNotContains(
+            'Acme\\Missing\\GhostPanel',
+            $requested,
+            'Disabled entry must not reach the autoloader.',
+        );
+        self::assertTrue(
+            $module->getPanelRegistry()->isDisabled('ghost'),
+            'Disabled entry must be reported.',
         );
     }
 
@@ -132,21 +233,6 @@ final class ModulePanelRegistrationTest extends ModuleTestCase
             'ghost',
             $module->panels,
             'Disabled panels must be removed.',
-        );
-    }
-
-    public function testInitPanelsDropsResolvedObjectsThatAreNotPanels(): void
-    {
-        $module = new Module(
-            'debug',
-            null,
-            ['panels' => ['not-panel' => ['class' => ConfigurableAction::class]]],
-        );
-
-        self::assertArrayNotHasKey(
-            'not-panel',
-            $module->panels,
-            'Resolved objects that do not implement the panel contract must be dropped.',
         );
     }
 
@@ -209,9 +295,17 @@ final class ModulePanelRegistrationTest extends ModuleTestCase
             ['panels' => ['log' => LogPanel::class]],
         );
 
-        $lastId = array_key_last($module->panels);
+        $builtIns = array_filter(
+            $module->panels,
+            static fn(Panel $panel, string $id): bool => ExtensionAvailability::isExtensionPanel($id, $panel) === false,
+            ARRAY_FILTER_USE_BOTH,
+        );
 
-        self::assertSame('log', $lastId, 'Override must move the panel to its configured slot.');
+        self::assertSame(
+            'log',
+            array_key_last($builtIns),
+            'Override must move the panel to its configured slot.',
+        );
     }
 
     public function testInitPanelsOverridesCorePanelByMatchingId(): void
@@ -235,29 +329,25 @@ final class ModulePanelRegistrationTest extends ModuleTestCase
         );
     }
 
-    public function testInitPanelsRejectsUnknownStringPanelClass(): void
-    {
-        $this->expectException(InvalidConfigException::class);
-
-        new Module(
-            'debug',
-            null,
-            ['panels' => ['broken' => 'No\\Such\\Panel']],
-        );
-    }
-
-    public function testInitPanelsReturnsNullWhenConfigClassIsInvalid(): void
+    public function testInitPanelsPassesIntegerRegistrationKeyToTheContainerAsString(): void
     {
         $module = new Module(
             'debug',
             null,
-            ['panels' => ['broken' => ['class' => 'No\\Such\\Class']]],
+            ['panels' => [ConfigIdRecordingPanel::class]],
         );
 
-        self::assertArrayNotHasKey(
-            'broken',
-            $module->panels,
-            'Panel configs with an unloadable class must be dropped silently.',
+        $panel = $module->panels[ConfigIdRecordingPanel::ID] ?? null;
+
+        self::assertInstanceOf(
+            ConfigIdRecordingPanel::class,
+            $panel,
+            'Class-name entry must build through the container.',
+        );
+        self::assertSame(
+            '0',
+            $panel->configuredId,
+            'Integer key must reach the configuration as a `string`.',
         );
     }
 
@@ -328,5 +418,116 @@ final class ModulePanelRegistrationTest extends ModuleTestCase
             $module->has(DbPanel::class),
             'Disabled panel must not be locatable.',
         );
+    }
+
+    public function testThrowInvalidConfigExceptionForConfigurationThatIsNotAPanel(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'must resolve to a',
+        );
+
+        new Module(
+            'debug',
+            null,
+            ['panels' => ['not-panel' => ['class' => ConfigurableAction::class]]],
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionForMetadataOverrideOnBuiltInPanel(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'apply to portable panels only',
+        );
+
+        new Module(
+            'debug',
+            null,
+            ['panels' => ['log' => ['class' => LogPanel::class, 'title' => 'Journal']]],
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionForPanelOptionWithUnsupportedValue(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage(
+            "Debug panel option 'position' must be an integer.",
+        );
+
+        new Module(
+            'debug',
+            null,
+            ['panels' => ['log' => ['class' => LogPanel::class, 'position' => 'first']]],
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionForPanelPositionRejectedByTheCatalog(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage(
+            'Debug panel position must not be set on the built-in panel: log.',
+        );
+
+        new Module(
+            'debug',
+            null,
+            ['panels' => ['log' => ['class' => LogPanel::class, 'position' => 1]]],
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionForUnknownArrayPanelClass(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            'must declare a valid class name',
+        );
+
+        new Module(
+            'debug',
+            null,
+            ['panels' => ['broken' => ['class' => 'No\\Such\\Class']]],
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionForUnknownStringPanelClass(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+
+        new Module(
+            'debug',
+            null,
+            ['panels' => ['broken' => 'No\\Such\\Panel']],
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionWhenContainerReturnsNonPortablePanelForPortableClass(): void
+    {
+        Yii::$container->set(CachePanel::class, static fn(): stdClass => new stdClass());
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            Message::PANEL_INSTANCE_INVALID->getMessage('cache', PortablePanel::class, CachePanel::class),
+        );
+
+        new Module(
+            'debug',
+            null,
+            ['panels' => ['cache' => CachePanel::class]],
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionWhenPanelRegistryIsRequestedBeforeInitialization(): void
+    {
+        $module = (new ReflectionClass(Module::class))->newInstanceWithoutConstructor();
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            Message::PANELS_NOT_INITIALIZED->getMessage(),
+        );
+
+        $module->getPanelRegistry();
     }
 }

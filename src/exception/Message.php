@@ -63,6 +63,13 @@ enum Message: string
     case COLLECTOR_CLASS_INVALID = 'Debug collector configuration must declare a valid class name.';
 
     /**
+     * A collector entry declares a non-boolean `enabled` flag.
+     *
+     * Format: "Debug collector '%s' must declare 'enabled' as a boolean."
+     */
+    case COLLECTOR_ENABLED_INVALID = "Debug collector '%s' must declare 'enabled' as a boolean.";
+
+    /**
      * The configured collector does not implement the required interface.
      *
      * Format: "Debug collector class must implement %s: %s."
@@ -219,11 +226,48 @@ enum Message: string
     case MAIL_FILE_NOT_FOUND = 'Mail file not found';
 
     /**
+     * A panel configuration lacks a resolvable class name.
+     *
+     * Format: "Debug panel '%s' configuration must declare a valid class name."
+     */
+    case PANEL_CLASS_INVALID = "Debug panel '%s' configuration must declare a valid class name.";
+
+    /**
+     * A registration ID is declared twice.
+     *
+     * Format: "Duplicate debug panel ID: %s."
+     */
+    case PANEL_ID_DUPLICATE = 'Duplicate debug panel ID: %s.';
+
+    /**
+     * A panel configuration resolves to an object outside the panel contract.
+     *
+     * Format: "Debug panel '%s' must resolve to a %s instance: %s."
+     */
+    case PANEL_INSTANCE_INVALID = "Debug panel '%s' must resolve to a %s instance: %s.";
+
+    /**
+     * A title or icon override targets a panel that renders its own metadata.
+     *
+     * Format: "Debug panel '%s' registration options 'title' and 'icon' apply to portable panels only."
+     */
+    case PANEL_METADATA_OVERRIDE_UNSUPPORTED
+        = "Debug panel '%s' registration options 'title' and 'icon' apply to portable panels only.";
+
+    /**
      * A panel receives an unsupported hydration payload.
      *
      * Format: "a payload supported by this panel"
      */
     case PANEL_PAYLOAD_EXPECTED = 'a payload supported by this panel';
+
+    /**
+     * The debug panels have not been initialized.
+     *
+     * Format: "Debug panels have not been initialized."
+     */
+    case PANELS_NOT_INITIALIZED = 'Debug panels have not been initialized.';
+
     /**
      * A portable panel is rendered before any capture was hydrated into it.
      *
@@ -251,6 +295,13 @@ enum Message: string
      * Format: "The debug %s registration ID must match its provider."
      */
     case PROVIDER_ID_MISMATCH = 'The debug %s registration ID must match its provider.';
+
+    /**
+     * A provider-backed panel is used without its declarative provider.
+     *
+     * Format: "A declarative debug panel provider must be configured."
+     */
+    case PROVIDER_PANEL_REQUIRED = 'A declarative debug panel provider must be configured.';
 
     /**
      * A requested queue job record cannot be found.
@@ -321,6 +372,13 @@ enum Message: string
      * Format: "Timeline SVG factory must create %s."
      */
     case TIMELINE_SVG_FACTORY_INVALID = 'Timeline SVG factory must create %s.';
+
+    /**
+     * A panel toolbar envelope breaks the typed toolbar contract.
+     *
+     * Format: "Debug panel '%s' returned an invalid toolbar envelope: '%s'."
+     */
+    case TOOLBAR_ENVELOPE_INVALID = "Debug panel '%s' returned an invalid toolbar envelope: '%s'.";
 
     /**
      * An application component is not a Yii web user instance.

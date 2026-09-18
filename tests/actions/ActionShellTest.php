@@ -7,6 +7,7 @@ namespace yii\debug\tests\actions;
 use LogicException;
 use PHPForge\Debug\Panel\Config\ConfigSnapshot;
 use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\View\Sidebar\SidebarView;
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\actions\Action;
@@ -18,7 +19,6 @@ use yii\debug\panels\ConfigPanel;
 use yii\debug\tests\support\ActionTestCase;
 use yii\debug\tests\support\stub\BareShellAction;
 use yii\debug\widgets\shell\ShellContext;
-use yii\debug\widgets\sidebar\SidebarView;
 use yii\helpers\Url;
 use yii\web\Response;
 
@@ -177,7 +177,7 @@ final class ActionShellTest extends ActionTestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->runDebugAction(new PhpInfoAction('php-info'), $module);
+        $html = $this->runDebugAction(new PhpInfoAction('php-info'), $module);
 
         $shell = Yii::$app->view->params['debugShell'] ?? null;
 
@@ -194,6 +194,20 @@ final class ActionShellTest extends ActionTestCase
             SidebarView::class,
             $shell->sidebar,
             'The phpinfo page must keep the sidebar.',
+        );
+        self::assertIsString(
+            $html,
+            'The page must render to markup.',
+        );
+        self::assertStringContainsString(
+            'yii-debug-sidebar',
+            $html,
+            'Layout must emit the Debug Core sidebar.',
+        );
+        self::assertStringContainsString(
+            'href="/index.php?r=debug%2Findex"',
+            $html,
+            'Nav routes must reach the markup already resolved.',
         );
     }
 

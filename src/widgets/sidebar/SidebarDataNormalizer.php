@@ -7,9 +7,11 @@ namespace yii\debug\widgets\sidebar;
 use PHPForge\Debug\Helper\{Coerce, Icon, Text, Vocabulary};
 use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\View\Sidebar\{SidebarNavItem, SidebarSnapshot, SidebarView};
 use PHPForge\Debug\View\ViewMessage;
 use yii\debug\{ExtensionAvailability, Module, Panel};
 use yii\debug\view\ViewMessage as AdapterMessage;
+use yii\helpers\Url;
 
 use function array_key_first;
 use function array_key_last;
@@ -18,11 +20,10 @@ use function array_search;
 use function date;
 use function is_int;
 use function reset;
-use function strcasecmp;
-use function usort;
 
 /**
- * Builds the typed sidebar data used by history and request views.
+ * Builds the Debug Core sidebar view-model used by history and request views, with every route already resolved
+ * through {@see Url::to()}.
  *
  * - `fromView(...)` used by panel `view` requests; surfaces the active request snapshot and highlights the active panel
  *   in the nav.
@@ -32,7 +33,7 @@ use function usort;
 final class SidebarDataNormalizer
 {
     /**
-     * Builds the typed sidebar view-model for `index.php` (history grid). Surfaces the newest captured request as the
+     * Builds the sidebar view-model for `index.php` (history grid). Surfaces the newest captured request as the
      * snapshot, marks the History entry as active, and wires the navigator buttons as a GridView cursor.
      *
      * @param array<string, Panel> $panels Registered panels keyed by ID.
@@ -69,7 +70,7 @@ final class SidebarDataNormalizer
     }
 
     /**
-     * Builds the typed sidebar view-model for a standalone debugger page such as phpinfo.
+     * Builds the sidebar view-model for a standalone debugger page such as phpinfo.
      *
      * The page belongs to no capture and to no panel, so the navigation highlights nothing and the snapshot card
      * surfaces the newest capture, keeping the reader one click from the panels.
@@ -103,8 +104,8 @@ final class SidebarDataNormalizer
     }
 
     /**
-     * Builds the typed sidebar view-model for panel `view` requests. Surfaces the active request snapshot and
-     * highlights the active panel in the nav.
+     * Builds the sidebar view-model for panel `view` requests. Surfaces the active request snapshot and highlights the
+     * active panel in the nav.
      *
      * @param array<string, Panel> $panels Registered panels keyed by ID.
      * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
@@ -143,9 +144,10 @@ final class SidebarDataNormalizer
 
     /**
      * Builds the panel-list nav entries. History always comes first; the `config` panel is intentionally skipped so the
-     * brand bar keeps the only Config CTA.
+     * brand bar keeps the only Config CTA. Both the primary list and the Extensions group keep the display order the
+     * module resolved through the shared registration policy.
      *
-     * @param array<string, Panel> $panels Registered panels keyed by ID.
+     * @param array<string, Panel> $panels Registered panels keyed by ID, in display order.
      * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
      * @param Panel|null $activePanel Panel to mark as active, or `null` to activate the History entry.
      * @param string|null $activeTag Tag carried over to the panel links, or `null` to link the newest capture.
@@ -173,7 +175,7 @@ final class SidebarDataNormalizer
             new SidebarNavItem(
                 label: PanelTitle::HISTORY->value,
                 iconSvg: Icon::render('history'),
-                url: $historyParams,
+                url: Url::to($historyParams),
                 tooltip: AdapterMessage::HISTORY_TOOLTIP->value,
                 isActive: $mode === 'index',
             ),
@@ -207,7 +209,13 @@ final class SidebarDataNormalizer
                 $tooltip = AdapterMessage::PANEL_TOOLTIP_NO_SELECTION->value;
             }
 
-            $item = new SidebarNavItem(label: $panel->getName(), iconSvg: $iconSvg, url: $url, tooltip: $tooltip, isActive: $isActive);
+            $item = new SidebarNavItem(
+                label: $panel->getName(),
+                iconSvg: $iconSvg,
+                url: Url::to($url),
+                tooltip: $tooltip,
+                isActive: $isActive,
+            );
 
             if (ExtensionAvailability::isExtensionPanel($id, $panel)) {
                 $extensionItems[] = $item;
@@ -217,11 +225,6 @@ final class SidebarDataNormalizer
 
             $items[] = $item;
         }
-
-        usort(
-            $extensionItems,
-            static fn(SidebarNavItem $left, SidebarNavItem $right): int => strcasecmp($left->label, $right->label),
-        );
 
         return [
             'items' => $items,
@@ -263,12 +266,7 @@ final class SidebarDataNormalizer
         $snapshotPanelId = $navPanel !== null ? $navPanel->id : null;
 
         $statusCode = $snapshotSummary->statusCode;
-        $method = $snapshotSummary->method;
         $fullUrl = $snapshotSummary->url;
-
-        $time = self::formatTime($snapshotSummary->time);
-
-        $isAjax = $snapshotSummary->ajax;
 
         $topTag = self::newestTag($manifest);
 
@@ -283,40 +281,44 @@ final class SidebarDataNormalizer
             ? $manifestKeys[$cursorIndex + 1]
             : null;
 
-        return new SidebarSnapshot(
-            title: $mode === 'view' ? ViewMessage::CURRENT_REQUEST->value : ViewMessage::NEWEST_REQUEST->value,
-            ariaLabel: $mode === 'view'
-                ? ViewMessage::CURRENT_REQUEST->value
-                : ViewMessage::NEWEST_CAPTURED_REQUEST->value,
-            method: $method,
-            path: Text::urlToPath($fullUrl),
-            fullUrl: $fullUrl,
-            statusCode: $statusCode,
-            statusVariant: self::statusVariant($statusCode),
-            time: $time,
-            isAjax: $isAjax,
-            isCursor: $mode === 'index',
-            cursorInitTag: $cursorInit,
-            newestUrl: self::buildUrl($topTag, $snapshotPanelId),
-            oldestUrl: self::buildUrl($bottomTag, $snapshotPanelId),
-            newerUrl: $prevTag !== null ? self::buildUrl($prevTag, $snapshotPanelId) : [],
-            olderUrl: $nextTag !== null ? self::buildUrl($nextTag, $snapshotPanelId) : [],
-            isNewest: $snapshotTag === $topTag,
-            isOldest: $snapshotTag === $bottomTag,
-            hasNewer: $prevTag !== null,
-            hasOlder: $nextTag !== null,
-        );
+        $title = $mode === 'view' ? ViewMessage::CURRENT_REQUEST->value : ViewMessage::NEWEST_REQUEST->value;
+
+        return SidebarSnapshot::create(
+            $title,
+            $mode === 'view' ? $title : ViewMessage::NEWEST_CAPTURED_REQUEST->value,
+        )
+            ->withRequest(
+                $snapshotSummary->method,
+                Text::urlToPath($fullUrl),
+                $fullUrl,
+                self::formatTime($snapshotSummary->time),
+                $snapshotSummary->ajax,
+            )
+            ->withResponse($statusCode, self::statusVariant($statusCode))
+            ->withCursor($mode === 'index', $cursorInit)
+            ->withNavigationUrls(
+                self::buildUrl($topTag, $snapshotPanelId),
+                self::buildUrl($bottomTag, $snapshotPanelId),
+                $prevTag !== null ? self::buildUrl($prevTag, $snapshotPanelId) : '',
+                $nextTag !== null ? self::buildUrl($nextTag, $snapshotPanelId) : '',
+            )
+            ->withNavigationState(
+                $snapshotTag === $topTag,
+                $snapshotTag === $bottomTag,
+                $prevTag !== null,
+                $nextTag !== null,
+            );
     }
 
     /**
-     * Composes the URL parameters consumed by `Url::to()` for the navigator endpoints.
+     * Resolves the navigator endpoint for a capture.
      *
      * @param string|null $tag Capture to open, or `null` to omit the parameter.
      * @param string|null $panelId Panel to open, or `null` to omit the parameter.
      *
-     * @return array<int|string, string> Route parameters for the target view.
+     * @return string Resolved URL of the target view.
      */
-    private static function buildUrl(string|null $tag, string|null $panelId): array
+    private static function buildUrl(string|null $tag, string|null $panelId): string
     {
         $url = Module::route('view');
 
@@ -328,7 +330,7 @@ final class SidebarDataNormalizer
             $url['panel'] = $panelId;
         }
 
-        return $url;
+        return Url::to($url);
     }
 
     /**

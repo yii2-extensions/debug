@@ -10,6 +10,7 @@ use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Collector\CollectorCoordinator;
 use PHPForge\Debug\{CollectorInterface, Panel as PortablePanel};
 use PHPForge\Debug\Helper\{Coerce, Icon, SensitiveDataRedactor, Trace};
+use PHPForge\Debug\Registration\{PanelOverride, PanelRegistration, PanelRegistry};
 use PHPForge\Debug\Toolbar\DebugHeader;
 use PHPForge\Debug\View\ViewMessage;
 use RuntimeException;
@@ -63,11 +64,16 @@ use yii\rbac\BaseManager;
 use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
 
 use function array_diff_key;
+use function array_flip;
+use function array_intersect_key;
+use function array_key_exists;
 use function base64_encode;
 use function get_parent_class;
 use function is_array;
+use function is_bool;
 use function is_callable;
 use function is_string;
+use function is_subclass_of;
 use function number_format;
 use function str_contains;
 use function trim;
@@ -244,6 +250,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
     private CollectorCoordinator|null $collectorCoordinator = null;
 
     /**
+     * Effective panel catalog resolved from the provider defaults and the configured registration options.
+     */
+    private PanelRegistry|null $panelRegistry = null;
+
+    /**
      * Cached `data:image/svg+xml;base64` URI of the Yii logo, populated lazily by {@see getYiiLogo()}.
      */
     private static string|null $yiiLogo = null;
@@ -405,6 +416,20 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         return $this->collectorCoordinator ?? throw new InvalidConfigException(
             Message::COLLECTORS_NOT_INITIALIZED->getMessage(),
+        );
+    }
+
+    /**
+     * Returns the effective panel catalog, which carries the display order and the IDs disabled by configuration.
+     *
+     * @throws InvalidConfigException when module initialization has not completed.
+     *
+     * @return PanelRegistry Resolved panel catalog.
+     */
+    public function getPanelRegistry(): PanelRegistry
+    {
+        return $this->panelRegistry ?? throw new InvalidConfigException(
+            Message::PANELS_NOT_INITIALIZED->getMessage(),
         );
     }
 
@@ -830,7 +855,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Resolves configured collectors and validates their stable IDs before request capture.
      *
      * Built-in extension collectors are omitted when their provider package is unavailable. Explicit application
-     * configuration remains authoritative and may still register a custom collector under the same ID.
+     * configuration remains authoritative and may still register a custom collector under the same ID. An array entry
+     * declaring `enabled` as `false` is skipped before its class is resolved, so an uninstalled optional package is
+     * not an error.
      *
      * Each resolved collector is instrumented right away through {@see Collector::instrument()}: {@see initPanels()}
      * runs afterwards and a panel constructor may already hit the framework, so instrumentation installed only at
@@ -846,6 +873,22 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $collectors = [];
 
         foreach ($merged as $id => $config) {
+            if (is_array($config) && array_key_exists('enabled', $config)) {
+                $enabled = $config['enabled'];
+
+                unset($config['enabled']);
+
+                if (is_bool($enabled) === false) {
+                    throw new InvalidConfigException(
+                        Message::COLLECTOR_ENABLED_INVALID->getMessage((string) $id),
+                    );
+                }
+
+                if ($enabled === false) {
+                    continue;
+                }
+            }
+
             $collector = $this->buildCollector($config);
 
             if (is_string($id) && $id !== $collector->id()) {
@@ -881,7 +924,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * whose {@see Panel::isEnabled()} returns `false`. Explicit application configuration remains authoritative when
      * an optional provider package is unavailable.
      *
-     * @throws InvalidConfigException when a panel configuration cannot be resolved into a {@see Panel} instance.
+     * @throws InvalidConfigException when a panel configuration, a registration option, or the resolved catalog is
+     * invalid.
      */
     protected function initPanels(): void
     {
@@ -938,6 +982,44 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Wraps a provider-owned declarative panel in the host adapter under the provider's own ID.
+     *
+     * @param int|string $key Registration key of the panel; a string key must match the provider's own ID.
+     * @param PortablePanel $provider Declarative panel to adapt.
+     *
+     * @throws InvalidConfigException when the registration key contradicts the provider ID.
+     *
+     * @return ProviderPanel Adapter carrying the provider.
+     */
+    private function adaptProvider(int|string $key, PortablePanel $provider): ProviderPanel
+    {
+        if (is_string($key) && $key !== $provider->id()) {
+            throw new InvalidConfigException(
+                Message::PROVIDER_ID_MISMATCH->getMessage('panel'),
+            );
+        }
+
+        return new ProviderPanel(['id' => $provider->id(), 'provider' => $provider]);
+    }
+
+    /**
+     * Rejects a `title` or `icon` override on a panel that renders the metadata it declares itself.
+     *
+     * @param string $id Registration ID of the panel.
+     * @param PanelOverride $override Registration options declared for that panel.
+     *
+     * @throws InvalidConfigException when the override declares a title or an icon.
+     */
+    private static function assertNoMetadataOverride(string $id, PanelOverride $override): void
+    {
+        if ($override->title !== null || $override->icon !== null) {
+            throw new InvalidConfigException(
+                Message::PANEL_METADATA_OVERRIDE_UNSUPPORTED->getMessage($id),
+            );
+        }
+    }
+
+    /**
      * Removes unavailable optional integrations from a built-in definition map.
      *
      * @template TDefinition
@@ -955,6 +1037,24 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         return $definitions;
+    }
+
+    /**
+     * Binds a resolved panel to this module and fires {@see Panel::moduleBound()} once the references are in place.
+     *
+     * @param Panel $panel Panel to bind.
+     *
+     * @throws InvalidConfigException when the panel rejects the module binding.
+     *
+     * @return Panel Bound panel.
+     */
+    private function bindPanel(Panel $panel): Panel
+    {
+        $panel->module = $this;
+
+        $panel->moduleBound();
+
+        return $panel;
     }
 
     /**
@@ -992,50 +1092,65 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Resolves a panel configuration into a {@see Panel} instance, binding `id` and `module` references and firing
+     * Resolves a panel registration into a {@see Panel} instance, binding `id` and `module` references and firing
      * {@see Panel::moduleBound()} once both references are in place.
      *
-     * @param string $id Registration id of the panel.
-     * @param array<string, mixed>|Panel|string $config Panel instance, configuration array, or class-name string.
+     * A class string or a `class` entry naming a portable {@see PortablePanel} is built through the container and
+     * adapted by {@see ProviderPanel}, exactly as an already-instantiated provider is.
      *
-     * @throws InvalidConfigException when the container fails to build the panel.
+     * @param int|string $key Registration key of the panel; a string key must match the provider's own ID.
+     * @param array<string, mixed>|Panel|PortablePanel|string $config Panel or provider instance, configuration array,
+     * or class-name string.
      *
-     * @return Panel|null Resolved panel, or `null` when the class name is unknown.
+     * @throws InvalidConfigException when the class name is unresolvable, the registration key contradicts the
+     * provider ID, or the container returns an object outside the panel contract.
+     *
+     * @return Panel Resolved panel bound to this module.
      */
-    private function buildPanel(string $id, Panel|array|string $config): Panel|null
+    private function buildPanel(int|string $key, Panel|PortablePanel|array|string $config): Panel
     {
-        if ($config instanceof Panel) {
-            $config->id = $id;
-            $config->module = $this;
-
-            $config->moduleBound();
-
-            return $config;
+        if ($config instanceof PortablePanel) {
+            return $this->bindPanel($this->adaptProvider($key, $config));
         }
 
-        if (is_string($config)) {
-            $class = $config;
-            $properties = [];
-        } else {
-            [$class, $properties] = ComponentResolver::classAndProperties($config);
+        if ($config instanceof Panel) {
+            $config->id = (string) $key;
 
-            if ($class === null) {
-                return null;
+            return $this->bindPanel($config);
+        }
+
+        [$class, $properties] = ComponentResolver::classAndProperties($config);
+
+        if ($class === null) {
+            throw new InvalidConfigException(
+                Message::PANEL_CLASS_INVALID->getMessage((string) $key),
+            );
+        }
+
+        if (is_subclass_of($class, PortablePanel::class)) {
+            $provider = Yii::$container->get($class, [], $properties);
+
+            if (!$provider instanceof PortablePanel) {
+                throw new InvalidConfigException(
+                    Message::PANEL_INSTANCE_INVALID->getMessage((string) $key, PortablePanel::class, $class),
+                );
             }
+
+            return $this->bindPanel($this->adaptProvider($key, $provider));
         }
 
         $properties['module'] = $this;
-        $properties['id'] = $id;
+        $properties['id'] = (string) $key;
 
         $object = Yii::$container->get($class, [], $properties);
 
         if (!$object instanceof Panel) {
-            return null;
+            throw new InvalidConfigException(
+                Message::PANEL_INSTANCE_INVALID->getMessage((string) $key, Panel::class, $class),
+            );
         }
 
-        $object->moduleBound();
-
-        return $object;
+        return $this->bindPanel($object);
     }
 
     /**
@@ -1080,6 +1195,42 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Reads the registration options an array definition declares, without resolving its class.
+     *
+     * An entry disabling itself returns immediately, so a definition naming an uninstalled optional package never
+     * reaches the autoloader. A portable definition accepts nothing beyond `class` and the registration options, so
+     * any other key is rejected by name; a Yii panel definition keeps its remaining entries as component properties.
+     *
+     * @param array<array-key, mixed> $definition Panel definition declared by the application.
+     *
+     * @throws InvalidConfigException when an option is unknown, or carries an unsupported value.
+     *
+     * @return PanelOverride Registration options declared by the definition.
+     */
+    private static function panelOverride(array $definition): PanelOverride
+    {
+        if (($definition['enabled'] ?? null) === false) {
+            return new PanelOverride(enabled: false);
+        }
+
+        [$class, $properties] = ComponentResolver::classAndProperties($definition);
+
+        $options = $class !== null && is_subclass_of($class, PortablePanel::class)
+            ? $properties
+            : array_intersect_key($properties, array_flip(PanelOverride::KEYS));
+
+        try {
+            return PanelOverride::fromArray($options);
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidConfigException(
+                $exception->getMessage(),
+                0,
+                $exception,
+            );
+        }
+    }
+
+    /**
      * Resolves the {@see $logTarget} configuration into a {@see LogTarget} instance, accepting a class-name string,
      * a configuration array with a `class` key, or an already-instantiated target.
      *
@@ -1116,36 +1267,125 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Instantiates every configured panel and binds it to this module.
+     * Resolves the effective panel catalog and reorders {@see $panels} to match it.
+     *
+     * Defaults are read from the registered panels in registration order, so built-ins keep the order
+     * {@see corePanels()} declares and only the extensions are reordered by the shared policy. The resolved title and
+     * icon reach the panels the host renders metadata for, and a panel declaring no name registers under its ID, which
+     * the policy requires to be non-empty.
+     *
+     * @param array<string, PanelOverride> $overrides Registration options indexed by panel ID.
+     *
+     * @throws InvalidConfigException when the declared metadata or a registration option is rejected by the policy.
+     *
+     * @return PanelRegistry Resolved panel catalog.
+     */
+    private function resolvePanelRegistry(array $overrides): PanelRegistry
+    {
+        try {
+            $defaults = [];
+
+            foreach ($this->panels as $id => $panel) {
+                $name = $panel->getName();
+
+                $title = $name === '' ? $id : $name;
+                $icon = $panel->getToolbarIcon() ?? '';
+
+                $defaults[] = ExtensionAvailability::isExtensionPanel($id, $panel)
+                    ? PanelRegistration::extension($id, $title, $icon)
+                    : PanelRegistration::builtIn($id, $title, $icon);
+            }
+
+            $registry = PanelRegistry::resolve($defaults, $overrides);
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidConfigException(
+                $exception->getMessage(),
+                0,
+                $exception,
+            );
+        }
+
+        $ordered = [];
+
+        foreach ($registry->enabled() as $registration) {
+            // Every enabled registration carries a `$this->panels` key, so this guard is unreachable.
+            // @infection-ignore-all
+            $panel = $this->panels[$registration->id] ?? throw new InvalidConfigException(
+                Message::DEBUG_PANEL_NOT_FOUND->getMessage($registration->id),
+            );
+
+            if ($panel instanceof ProviderPanel) {
+                $panel->title = $registration->title;
+                $panel->icon = $registration->icon === '' ? null : $registration->icon;
+            }
+
+            $ordered[$registration->id] = $panel;
+        }
+
+        $this->panels = $ordered;
+
+        return $registry;
+    }
+
+    /**
+     * Instantiates every configured panel, binds it to this module, and stores the catalog in display order.
+     *
+     * An entry declaring `enabled` as `false` is skipped before its class is resolved and is reported by
+     * {@see PanelRegistry::disabled()}; `title` and `icon` overrides apply to portable panels only, because a Yii
+     * panel renders the metadata it declares itself.
      *
      * @param array<array-key, array<string, mixed>|Panel|PortablePanel|string> $definitions Panel definitions to
      * resolve.
+     *
+     * @throws InvalidConfigException when a definition, a registration option, or the resolved catalog is invalid.
      */
     private function resolvePanels(array $definitions): void
     {
         $this->panels = [];
 
-        foreach ($definitions as $id => $config) {
-            if ($config instanceof PortablePanel) {
-                if (is_string($id) && $id !== $config->id()) {
-                    throw new InvalidConfigException(Message::PROVIDER_ID_MISMATCH->getMessage('panel'));
+        $overrides = [];
+
+        foreach ($definitions as $key => $definition) {
+            $override = null;
+
+            if (is_array($definition)) {
+                $override = self::panelOverride($definition);
+
+                if ($override->enabled === false) {
+                    if (is_string($key)) {
+                        $overrides[$key] = $override;
+                    }
+
+                    continue;
                 }
 
-                $id = $config->id();
-
-                $config = new ProviderPanel(['provider' => $config]);
+                $definition = array_diff_key($definition, array_flip(PanelOverride::KEYS));
             }
 
-            if (isset($this->panels[$id])) {
-                throw new InvalidConfigException('Duplicate debug panel ID: ' . $id);
+            $panel = $this->buildPanel($key, $definition);
+
+            if ($override !== null && !$panel instanceof ProviderPanel) {
+                self::assertNoMetadataOverride($panel->id, $override);
             }
 
-            $panel = $this->buildPanel((string) $id, $config);
+            if (isset($this->panels[$panel->id])) {
+                throw new InvalidConfigException(
+                    Message::PANEL_ID_DUPLICATE->getMessage($panel->id),
+                );
+            }
 
-            if ($panel !== null && $panel->isEnabled()) {
-                $this->panels[$panel->id] = $panel;
+            if ($panel->isEnabled() === false) {
+                continue;
+            }
+
+            $this->panels[$panel->id] = $panel;
+
+            if ($override !== null) {
+                $overrides[$panel->id] = $override;
             }
         }
+
+        $this->panelRegistry = $this->resolvePanelRegistry($overrides);
     }
 
     /**

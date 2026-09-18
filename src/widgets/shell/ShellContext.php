@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\shell;
 
-use yii\debug\widgets\sidebar\SidebarView;
+use PHPForge\Debug\View\Sidebar\SidebarView;
 
 /**
  * Typed view-model for the debugger shell (brand bar + sidebar + main wrapper).

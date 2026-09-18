@@ -9,6 +9,7 @@ use PHPForge\Debug\Helper\{Format, Icon};
 use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, RequestSummary};
 use PHPForge\Debug\Theme\ThemeResolver;
+use PHPForge\Debug\View\Sidebar\SidebarView;
 use Yii;
 use yii\base\{InvalidConfigException, ViewContextInterface};
 use yii\debug\collectors\MailCollector;
@@ -17,7 +18,7 @@ use yii\debug\{LogTarget, Module, Panel};
 use yii\debug\panels\ConfigPanel;
 use yii\debug\routing\DebugUrlGenerator;
 use yii\debug\widgets\shell\ShellContext;
-use yii\debug\widgets\sidebar\{SidebarDataNormalizer, SidebarView};
+use yii\debug\widgets\sidebar\SidebarDataNormalizer;
 use yii\helpers\Url;
 use yii\web\{NotFoundHttpException, Response};
 

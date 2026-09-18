@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use Override;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use yii\debug\exception\Message;
 use yii\debug\{Module, Panel, ToolbarDataMapper};
 use yii\debug\panels\ProviderPanel;
-use yii\debug\tests\support\stub\MinimalToolbarPanel;
+use yii\debug\tests\provider\ToolbarEnvelopeProvider;
 use yii\debug\tests\support\TestCase;
 
 use function array_column;
+use function array_keys;
 
 /**
- * Unit tests for {@see ToolbarDataMapper} and its compatibility lane for custom Yii2 panel envelopes.
+ * Unit tests for {@see ToolbarDataMapper} serializing Yii2 panel envelopes through the typed toolbar contract.
+ *
+ * {@see ToolbarEnvelopeProvider} for test case data providers.
  */
 #[Group('toolbar')]
 final class ToolbarDataMapperTest extends TestCase
@@ -36,6 +40,49 @@ final class ToolbarDataMapperTest extends TestCase
             50,
             $result['defaultHeight'],
             "Drawer height must default to '50'.",
+        );
+    }
+
+    public function testMapDropsUnknownEnvelopeFields(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+
+        $panel = new class extends Panel {
+            #[Override]
+            public function getName(): string
+            {
+                return 'Extended';
+            }
+
+            #[Override]
+            public function getToolbarData(): array
+            {
+                return [
+                    'chip' => 'panel-value',
+                    'items' => [['chip' => 'item-value', 'label' => 'Count', 'value' => 42]],
+                ];
+            }
+        };
+
+        $panel->id = 'extended';
+        $panel->module = $module;
+        $panel->tag = 'capture-tag';
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(['extended' => $panel]);
+
+        self::assertSame(
+            ['id', 'title', 'url', 'items'],
+            array_keys($result['items'][0] ?? []),
+            'Panel envelope must keep the typed keys only.',
+        );
+        self::assertSame(
+            [['label' => 'Count', 'value' => '42', 'status' => 'default']],
+            $result['items'][0]['items'] ?? null,
+            'Item envelope must keep the typed keys only, with the value coerced and the default status applied.',
         );
     }
 
@@ -65,45 +112,39 @@ final class ToolbarDataMapperTest extends TestCase
         );
     }
 
-    public function testMapFlagsFreeFormEnvelopesOfOptionalIntegrations(): void
+    public function testMapFlagsTheErrorChipOfAnExtensionPanel(): void
     {
         $this->mockWebApplication();
 
-        $module = new Module('debug');
+        $panel = new class extends ProviderPanel {
+            #[Override]
+            public function getName(): string
+            {
+                return 'Vite';
+            }
 
-        $optional = new MinimalToolbarPanel();
+            #[Override]
+            public function getToolbarData(): array
+            {
+                return ['items' => 'free-form'];
+            }
+        };
 
-        $optional->id = 'queue';
-        $optional->module = $module;
-        $optional->tag = 'capture-tag';
-
-        $builtIn = new MinimalToolbarPanel();
-
-        $builtIn->id = 'free-form';
-        $builtIn->module = $module;
-        $builtIn->tag = 'capture-tag';
+        $panel->id = 'vite';
+        $panel->module = new Module('debug');
+        $panel->tag = 'capture-tag';
 
         $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
             ->withNavigation('/debug/index')
-            ->map(['free-form' => $builtIn, 'queue' => $optional]);
+            ->map(['vite' => $panel]);
 
-        self::assertArrayNotHasKey(
-            'extension',
-            $result['items'][0] ?? [],
-            'Inline envelopes must omit the key.',
-        );
         self::assertTrue(
-            $result['items'][1]['extension'] ?? null,
-            'Optional-integration envelopes must carry `true`.',
-        );
-        self::assertSame(
-            'minimal',
-            $result['items'][1]['chip'] ?? null,
-            'The free-form envelope must survive the flag.',
+            $result['items'][0]['extension'] ?? null,
+            'A rejected envelope must keep its Extensions grouping.',
         );
     }
 
-    public function testMapKeepsBuiltInChipsBeforeExtensionsRegisteredEarlier(): void
+    public function testMapKeepsSiblingChipsIntactAroundAMalformedEnvelope(): void
     {
         $this->mockWebApplication();
 
@@ -113,19 +154,30 @@ final class ToolbarDataMapperTest extends TestCase
             ->withNavigation('/debug/index')
             ->map(
                 [
-                    'vite' => $this->extensionPanel($module, 'vite', 'Vite'),
                     'request' => $this->builtInPanel($module, 'request', 'Request'),
+                    'broken' => $this->malformedPanel($module, 'broken', 'Broken'),
+                    'log' => $this->builtInPanel($module, 'log', 'Log'),
                 ],
             );
 
         self::assertSame(
-            ['Request', 'Vite'],
+            ['Request', 'Broken', 'Log'],
             array_column($result['items'], 'title'),
-            'Built-in chips must precede every extension.',
+            'Order and count must survive the rejected envelope.',
+        );
+        self::assertSame(
+            [['label' => 'Request', 'value' => 'Request', 'status' => 'default']],
+            $result['items'][0]['items'] ?? null,
+            'Chips before the rejected envelope must stay untouched.',
+        );
+        self::assertSame(
+            [['label' => 'Log', 'value' => 'Log', 'status' => 'default']],
+            $result['items'][2]['items'] ?? null,
+            'Chips after the rejected envelope must stay untouched.',
         );
     }
 
-    public function testMapListsExtensionChipsAlphabeticallyAfterBuiltInChips(): void
+    public function testMapKeepsTheRegisteredPanelOrder(): void
     {
         $this->mockWebApplication();
 
@@ -144,95 +196,9 @@ final class ToolbarDataMapperTest extends TestCase
             );
 
         self::assertSame(
-            ['Request', 'Log', 'Inertia', 'Mail', 'Vite'],
+            ['Request', 'Vite', 'Mail', 'Inertia', 'Log'],
             array_column($result['items'], 'title'),
-            'Order: built-ins first, extensions alphabetical.',
-        );
-    }
-
-    public function testMapNormalizesPortablePanelsWithoutDroppingExtensionFields(): void
-    {
-        $this->mockWebApplication();
-
-        $module = new Module('debug');
-
-        $panel = new class extends Panel {
-            #[Override]
-            public function getName(): string
-            {
-                return 'Extended';
-            }
-
-            #[Override]
-            public function getToolbarData(): array
-            {
-                return [
-                    'extension' => 'panel-value',
-                    'items' => [
-                        [
-                            'extension' => 'item-value',
-                            'label' => 'Count',
-                            'value' => 42,
-                        ],
-                    ],
-                ];
-            }
-        };
-
-        $panel->id = 'extended';
-        $panel->module = $module;
-        $panel->tag = 'capture-tag';
-
-        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
-            ->withNavigation('/debug/index')
-            ->map(['extended' => $panel]);
-
-        self::assertSame(
-            '/debug/index',
-            $result['configUrl'],
-            'Missing Config panel URL must fall back to the non-null history URL required by Debug Core.',
-        );
-
-        $items = $result['items'];
-        $extendedPanel = $items[0] ?? null;
-
-        self::assertIsArray(
-            $extendedPanel,
-            'Mapped toolbar payload must contain the normalized panel envelope.',
-        );
-        self::assertSame(
-            'panel-value',
-            $extendedPanel['extension'] ?? null,
-            'Unknown panel fields must survive DTO normalization for custom integrations.',
-        );
-
-        $toolbarItems = $extendedPanel['items'] ?? null;
-
-        self::assertIsArray(
-            $toolbarItems,
-            'Mapped toolbar panel must contain its normalized item list.',
-        );
-
-        $toolbarItem = $toolbarItems[0] ?? null;
-
-        self::assertIsArray(
-            $toolbarItem,
-            'Mapped toolbar item must remain an array for the JavaScript compatibility boundary.',
-        );
-        self::assertSame(
-            'item-value',
-            $toolbarItem['extension'] ?? null,
-            'Unknown toolbar-item fields must survive DTO normalization.',
-        );
-        self::assertSame(
-            '42',
-            $toolbarItem['value'] ?? null,
-            'Portable DTO normalization must coerce scalar metric values to strings.',
-        );
-        self::assertSame(
-            'default',
-            $toolbarItem['status'] ?? null,
-            'Portable DTO normalization must apply the shared default status.',
+            'Order: exactly the one the module resolved.',
         );
     }
 
@@ -292,91 +258,45 @@ final class ToolbarDataMapperTest extends TestCase
         );
     }
 
-    public function testMapProcessesTypedPanelAfterFreeFormEnvelope(): void
+    /**
+     * @param array<string, mixed> $envelope Envelope that breaks the typed toolbar contract.
+     * @param string $field Envelope field named in the diagnostic.
+     */
+    #[DataProviderExternal(ToolbarEnvelopeProvider::class, 'malformed')]
+    public function testMapRendersAnErrorChipForAMalformedEnvelope(array $envelope, string $field): void
     {
         $this->mockWebApplication();
-
-        $module = new Module('debug');
-        $freeFormPanel = new MinimalToolbarPanel();
-
-        $freeFormPanel->id = 'free-form';
-        $freeFormPanel->module = $module;
-        $freeFormPanel->tag = 'capture-tag';
-
-        $typed = new class extends Panel {
-            #[Override]
-            public function getName(): string
-            {
-                return 'Typed';
-            }
-
-            #[Override]
-            public function getToolbarData(): array
-            {
-                return ['items' => [['value' => 9]]];
-            }
-        };
-
-        $typed->id = 'typed';
-        $typed->module = $module;
-        $typed->tag = 'capture-tag';
 
         $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
             ->withNavigation('/debug/index')
-            ->map(['free-form' => $freeFormPanel, 'typed' => $typed]);
+            ->map(['broken' => $this->malformedPanel(new Module('debug'), 'broken', 'Broken', $envelope)]);
 
         self::assertCount(
-            2,
+            1,
             $result['items'],
-            'Panels after a free-form envelope must still be processed.',
+            'The rejected envelope must still occupy its chip slot.',
         );
         self::assertSame(
-            'typed',
-            $result['items'][1]['id'] ?? null,
-            'Typed panel must follow the free-form envelope.',
-        );
-    }
-
-    public function testMapRetainsFreeFormPanelEnvelope(): void
-    {
-        $this->mockWebApplication();
-
-        $module = new Module('debug');
-        $panel = new MinimalToolbarPanel();
-
-        $panel->id = 'free-form';
-        $panel->module = $module;
-        $panel->tag = 'capture-tag';
-
-        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
-            ->withNavigation('/debug/index', '/debug/view?panel=config')
-            ->map(['free-form' => $panel]);
-
-        $freeFormPanel = $result['items'][0] ?? null;
-
-        self::assertIsArray(
-            $freeFormPanel,
-            'Mapped toolbar payload must retain the free-form panel envelope.',
+            'broken',
+            $result['items'][0]['id'] ?? null,
+            'Chip must keep the registered panel ID.',
         );
         self::assertSame(
-            'minimal',
-            $freeFormPanel['chip'] ?? null,
-            'A free-form custom panel must remain available through the compatibility lane.',
+            'Broken',
+            $result['items'][0]['title'] ?? null,
+            'Chip title must fall back to the panel name.',
         );
         self::assertSame(
-            'free-form',
-            $freeFormPanel['id'] ?? null,
-            'Historical panel ID defaults must still be injected.',
-        );
-        self::assertArrayHasKey(
-            'title',
-            $freeFormPanel,
-            'Historical panel title defaults must still be injected.',
-        );
-        self::assertArrayHasKey(
-            'url',
-            $freeFormPanel,
-            'Historical panel URL defaults must still be injected.',
+            [
+                [
+                    'label' => 'Broken',
+                    'value' => 'error',
+                    'status' => 'danger',
+                    'title' => Message::TOOLBAR_ENVELOPE_INVALID->getMessage('broken', $field),
+                ],
+            ],
+            $result['items'][0]['items'] ?? null,
+            'Error chip must mirror the base-class shape and name the offending field.',
         );
     }
 
@@ -414,76 +334,6 @@ final class ToolbarDataMapperTest extends TestCase
             [],
             $result['items'],
             'Invisible panels must not create toolbar entries.',
-        );
-    }
-
-    public function testMapSortsExtensionChipsWithoutCaseSensitivity(): void
-    {
-        $this->mockWebApplication();
-
-        $module = new Module('debug');
-
-        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
-            ->withNavigation('/debug/index')
-            ->map(
-                [
-                    'bravo' => $this->extensionPanel($module, 'bravo', 'Bravo'),
-                    'apollo' => $this->extensionPanel($module, 'apollo', 'apollo'),
-                ],
-            );
-
-        self::assertSame(
-            ['apollo', 'Bravo'],
-            array_column($result['items'], 'title'),
-            'Case must not affect the extension order.',
-        );
-    }
-
-    public function testMergePanelExtensionsReturnsTypedEnvelopeWhenItemsAreNotArrays(): void
-    {
-        self::assertSame(
-            [
-                'extension' => 'preserved',
-                'items' => [],
-                'id' => 'typed',
-            ],
-            $this->invokeStatic(
-                ToolbarDataMapper::class,
-                'mergePanelExtensions',
-                [
-                    ['extension' => 'preserved', 'items' => 'free-form'],
-                    ['items' => [], 'id' => 'typed'],
-                ],
-            ),
-            'Non-array original items must leave the normalized item list unchanged.',
-        );
-    }
-
-    public function testPanelRejectsInvalidPanelEnvelopes(): void
-    {
-        self::assertNull(
-            $this->invokeStatic(
-                ToolbarDataMapper::class,
-                'panel',
-                [['id' => 'invalid-item', 'title' => 'Invalid item', 'items' => ['not-an-array']]],
-            ),
-            'A non-array toolbar item cannot be normalized.',
-        );
-        self::assertNull(
-            $this->invokeStatic(
-                ToolbarDataMapper::class,
-                'panel',
-                [['id' => 'missing-value', 'title' => 'Missing value', 'items' => [[]]]],
-            ),
-            'A toolbar item without a coercible value cannot be normalized.',
-        );
-        self::assertNull(
-            $this->invokeStatic(
-                ToolbarDataMapper::class,
-                'panel',
-                [['id' => [], 'title' => 'Invalid ID', 'items' => []]],
-            ),
-            'A toolbar panel without a coercible ID cannot be normalized.',
         );
     }
 
@@ -578,6 +428,21 @@ final class ToolbarDataMapperTest extends TestCase
         );
     }
 
+    public function testWithNavigationFallsBackToTheHistoryUrlForTheConfigUrl(): void
+    {
+        $this->mockWebApplication();
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map([]);
+
+        self::assertSame(
+            '/debug/index',
+            $result['configUrl'],
+            'Debug Core requires a non-`null` config URL.',
+        );
+    }
+
     protected function tearDown(): void
     {
         $this->destroyApplication();
@@ -602,7 +467,7 @@ final class ToolbarDataMapperTest extends TestCase
             #[Override]
             public function getToolbarData(): array
             {
-                return ['items' => [['value' => $this->panelName]]];
+                return ['items' => [['label' => $this->panelName, 'value' => $this->panelName]]];
             }
         };
 
@@ -636,6 +501,47 @@ final class ToolbarDataMapperTest extends TestCase
         };
 
         $panel->panelName = $name;
+        $panel->id = $id;
+        $panel->module = $module;
+        $panel->tag = 'capture-tag';
+
+        return $panel;
+    }
+
+    /**
+     * Creates a panel whose envelope breaks the typed toolbar contract.
+     *
+     * @param array<string, mixed> $envelope Envelope returned by `getToolbarData()`.
+     */
+    private function malformedPanel(
+        Module $module,
+        string $id,
+        string $name,
+        array $envelope = ['items' => 'free-form'],
+    ): Panel {
+        $panel = new class extends Panel {
+            public string $panelName = '';
+
+            /**
+             * @var array<string, mixed>
+             */
+            public array $envelope = [];
+
+            #[Override]
+            public function getName(): string
+            {
+                return $this->panelName;
+            }
+
+            #[Override]
+            public function getToolbarData(): array
+            {
+                return $this->envelope;
+            }
+        };
+
+        $panel->panelName = $name;
+        $panel->envelope = $envelope;
         $panel->id = $id;
         $panel->module = $module;
         $panel->tag = 'capture-tag';

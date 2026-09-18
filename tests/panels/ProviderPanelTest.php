@@ -56,8 +56,7 @@ final class ProviderPanelTest extends TestCase
                     ->summary('', 1)
                     ->overview(['Driver' => 'local'])
                     ->toolbar('Hits', 1)
-                    ->toolbar('Misses', 2)
-                    ->active($data !== []);
+                    ->toolbar('Misses', 2);
             }
         };
     }
