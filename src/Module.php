@@ -13,10 +13,21 @@ use PHPForge\Debug\Helper\{Coerce, Icon, SensitiveDataRedactor, Trace};
 use PHPForge\Debug\Registration\{PanelOverride, PanelRegistration, PanelRegistry};
 use PHPForge\Debug\Toolbar\DebugHeader;
 use PHPForge\Debug\View\ViewMessage;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use ReflectionClass;
 use RuntimeException;
 use Throwable;
 use Yii;
-use yii\base\{Action, ActionEvent, Application, BootstrapInterface, Event, InvalidConfigException, View as BaseView};
+use yii\base\{
+    Action,
+    ActionEvent,
+    Application,
+    BootstrapInterface,
+    Component,
+    Event,
+    InvalidConfigException,
+    View as BaseView,
+};
 use yii\debug\actions\{
     CompareAction,
     DownloadMailAction,
@@ -58,7 +69,7 @@ use yii\debug\panels\{
     RouterPanel,
     UserPanel,
 };
-use yii\helpers\Url;
+use yii\helpers\{ArrayHelper, Url};
 use yii\log\{Dispatcher, Target};
 use yii\rbac\BaseManager;
 use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
@@ -67,11 +78,15 @@ use function array_diff_key;
 use function array_flip;
 use function array_intersect_key;
 use function array_key_exists;
+use function array_key_first;
 use function base64_encode;
+use function class_exists;
 use function get_parent_class;
 use function is_array;
 use function is_bool;
 use function is_callable;
+use function is_int;
+use function is_object;
 use function is_string;
 use function is_subclass_of;
 use function number_format;
@@ -335,6 +350,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $app->on(
             Application::EVENT_BEFORE_REQUEST,
             $this->getCollectorCoordinator()->startup(...),
+        );
+        $app->on(
+            Application::EVENT_BEFORE_REQUEST,
+            function () use ($app): void {
+                $this->attachProviderCollectors($app);
+            },
         );
         $app->on(
             Application::EVENT_BEFORE_REQUEST,
@@ -736,16 +757,24 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Array keys are a configuration-merge convenience and must match each collector's {@see CollectorInterface::id()}
      * so a user entry under the same key replaces the built-in collector.
      *
-     * @return array<string, class-string<CollectorInterface>> Collector classes indexed by collector id.
+     * {@see ProviderCatalog} contributes the collector of every optional provider package the application installed,
+     * each one built with this module's capture policy when it takes one, so captured values follow the host
+     * redaction rules.
+     *
+     * @return array<string, array<string, mixed>|class-string<CollectorInterface>> Collector definitions indexed by
+     * collector id.
      */
     protected function coreCollectors(): array
     {
+        $policy = $this->createCapturePolicy();
+
         return [
             'asset' => AssetCollector::class,
             'config' => ConfigCollector::class,
             'db' => DbCollector::class,
             'dump' => DumpCollector::class,
             'event' => EventCollector::class,
+            ...ProviderCatalog::packaged()->collectors($policy),
             'log' => LogCollector::class,
             'mail' => MailCollector::class,
             'profiling' => ProfilingCollector::class,
@@ -760,10 +789,15 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Returns the built-in panel configurations, ordered as the request itself unfolds.
      *
      * The primary navigation starts with Request, Logs, Events, Profiling, and Database before the remaining Yii diagnostics.
-     * Optional integration panels finish the list in the order Inertia, Mail, Queue, and Vite. `config` opens the list
-     * but is surfaced through the brand bar rather than the panel nav.
+     * Optional integration panels finish the list. `config` opens the list but is surfaced through the brand bar
+     * rather than the panel nav.
      *
-     * @return array<string, array<string, mixed>|class-string<Panel>> Panel definitions indexed by panel id.
+     * {@see ProviderCatalog} contributes the panel of every optional provider package the application installed; a
+     * panel an application wires itself is named by plain `string` so the class stays out of this module's symbol
+     * table, and {@see availableCoreDefinitions()} drops the entry when that package is not installed.
+     *
+     * @return array<string, array<string, mixed>|class-string<Panel>|class-string<PortablePanel>|string> Panel
+     * definitions indexed by panel id.
      */
     protected function corePanels(): array
     {
@@ -778,6 +812,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'user' => UserPanel::class,
             'dump' => DumpPanel::class,
             'asset' => AssetPanel::class,
+            ...ProviderCatalog::packaged()->panels(),
             'mail' => MailPanel::class,
             'queue' => QueuePanel::class,
         ];
@@ -1020,6 +1055,83 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
+     * Hands the collector of every installed provider to the application component it observes, so the provider
+     * emits its results into it.
+     *
+     * A {@see ProviderAttachment::Property} component takes the collector on the `eventDispatcher` property, in a
+     * definition or on a live instance alike; a {@see ProviderAttachment::Constructor} component takes it as a
+     * constructor argument, so only a definition is amended and an already-instantiated component is left alone.
+     *
+     * Runs once every bootstrap class had its turn, so a component a provider bootstrap registers is seen. A
+     * definition is amended without instantiating the component. A component is left alone when it is not the class
+     * the provider declares, when it already carries a dispatcher, or when the collector is not registered.
+     *
+     * @param Application $app Application owning the provider components.
+     */
+    private function attachProviderCollectors(Application $app): void
+    {
+        foreach (ProviderCatalog::packaged()->installed() as $provider) {
+            $collector = $this->getCollectorCoordinator()->collector($provider->id);
+
+            if (!$collector instanceof EventDispatcherInterface) {
+                continue;
+            }
+
+            $id = $provider->component;
+            $definition = $app->has($id, true) ? $app->get($id) : ($app->getComponents()[$id] ?? null);
+
+            /** @var class-string $componentClass */
+            $componentClass = $provider->componentClass;
+
+            if (is_object($definition)) {
+                if (
+                    $provider->attachment === ProviderAttachment::Property
+                    && $definition instanceof Component
+                    && $definition instanceof $componentClass
+                    && $definition->canGetProperty('eventDispatcher')
+                    && $definition->canSetProperty('eventDispatcher')
+                    && ArrayHelper::getValue($definition, 'eventDispatcher') === null
+                ) {
+                    Yii::configure($definition, ['eventDispatcher' => $collector]);
+                }
+
+                continue;
+            }
+
+            if (is_string($definition) === false && is_array($definition) === false) {
+                continue;
+            }
+
+            [$class] = ComponentResolver::classAndProperties($definition);
+
+            if ($class !== $componentClass) {
+                continue;
+            }
+
+            $definition = is_string($definition) ? ['class' => $definition] : $definition;
+
+            if ($provider->attachment === ProviderAttachment::Property) {
+                $definition['eventDispatcher'] ??= $collector;
+            } else {
+                $arguments = $definition['__construct()'] ?? [];
+                $arguments = is_array($arguments) ? $arguments : [];
+
+                $key = $this->dispatcherArgumentKey($componentClass, $arguments);
+
+                if ($key === null) {
+                    continue;
+                }
+
+                $arguments[$key] ??= $collector;
+
+                $definition['__construct()'] = $arguments;
+            }
+
+            $app->set($id, $definition);
+        }
+    }
+
+    /**
      * Removes unavailable optional integrations from a built-in definition map.
      *
      * @template TDefinition
@@ -1151,6 +1263,39 @@ class Module extends \yii\base\Module implements BootstrapInterface
         }
 
         return $this->bindPanel($object);
+    }
+
+    /**
+     * Returns the `__construct()` key a component definition takes its dispatcher under.
+     *
+     * A definition indexing its arguments by position gets the dispatcher at the position its constructor declares,
+     * because Yii rejects a definition mixing named and positional arguments; every other definition gets it by name.
+     *
+     * @param string $componentClass Class the definition builds.
+     * @param array<array-key, mixed> $arguments Arguments the definition already declares.
+     *
+     * @return int|string|null Key to write the dispatcher under, or `null` when the class is unavailable or its
+     * constructor declares no `eventDispatcher` parameter.
+     */
+    private function dispatcherArgumentKey(string $componentClass, array $arguments): int|string|null
+    {
+        if ($arguments === [] || is_int(array_key_first($arguments)) === false) {
+            return 'eventDispatcher';
+        }
+
+        if (class_exists($componentClass) === false) {
+            return null;
+        }
+
+        $constructor = (new ReflectionClass($componentClass))->getConstructor();
+
+        foreach ($constructor?->getParameters() ?? [] as $position => $parameter) {
+            if ($parameter->getName() === 'eventDispatcher') {
+                return $position;
+            }
+        }
+
+        return null;
     }
 
     /**

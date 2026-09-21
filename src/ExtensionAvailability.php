@@ -9,6 +9,9 @@ use yii\debug\panels\{JsonPanel, ProviderPanel};
 /**
  * Detects optional debugger integrations through the runtime classes they provide, and classifies the panels that
  * belong to an extension rather than to the built-in Yii diagnostics.
+ *
+ * {@see ProviderCatalog} declares the integrations the debugger wires on its own; the ones an application wires
+ * itself are listed here.
  */
 final class ExtensionAvailability
 {
@@ -29,6 +32,12 @@ final class ExtensionAvailability
      */
     public static function isAvailable(string $id): bool
     {
+        $catalog = ProviderCatalog::packaged();
+
+        if ($catalog->has($id)) {
+            return $catalog->isInstalled($id);
+        }
+
         $providers = self::PROVIDERS[$id] ?? null;
 
         if ($providers === null) {
@@ -69,6 +78,6 @@ final class ExtensionAvailability
      */
     public static function isOptional(string $id): bool
     {
-        return isset(self::PROVIDERS[$id]);
+        return isset(self::PROVIDERS[$id]) || ProviderCatalog::packaged()->has($id);
     }
 }
