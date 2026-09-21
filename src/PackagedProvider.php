@@ -48,9 +48,7 @@ final readonly class PackagedProvider
     {
         if ($this->constructorArguments === null) {
             /** @var class-string<CollectorInterface> $collector */
-            $collector = $this->collector;
-
-            return $collector;
+            return $this->collector;
         }
 
         return ['class' => $this->collector, '__construct()' => ($this->constructorArguments)($capturePolicy)];
