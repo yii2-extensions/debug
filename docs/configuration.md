@@ -50,10 +50,12 @@ $config['modules']['debug']['panels'] = [
 
 ## Inertia and Vite
 
-Both providers register themselves. Installing `php-forge/inertia` or `php-forge/vite` is the whole configuration: the
-module registers the collector and the panel under the `inertia` or `vite` ID, builds the Inertia collector with its
-own redaction policy, and hands each collector to the `inertia` or `vite` application component before the request
-runs, so the application writes no dispatcher code. `php-forge/inertia` ships
+Both providers register themselves. Installing `php-forge/inertia` or `php-forge/vite` registers the collector and the
+panel under the `inertia` or `vite` ID and builds the Inertia collector with its own redaction policy. Attachment is a
+second, separate step: before the request runs the module hands the collector to the `inertia` component when
+`yii2-extensions/inertia` is installed and the application configures an `inertia` component that is a
+`yii\inertia\Manager` (or a subclass), and to the `vite` component when it is a `PHPForge\Vite\Vite` (or a subclass);
+any other component is left alone and the panel simply records nothing. `php-forge/inertia` ships
 `PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel}` and `php-forge/vite` ships
 `PHPForge\Vite\Debug\{ViteCollector, VitePanel}`; the debugger lists both under **Extensions**.
 

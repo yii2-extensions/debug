@@ -80,7 +80,6 @@ use function array_intersect_key;
 use function array_key_exists;
 use function array_key_first;
 use function base64_encode;
-use function class_exists;
 use function get_parent_class;
 use function is_array;
 use function is_bool;
@@ -1062,8 +1061,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * constructor argument, so only a definition is amended and an already-instantiated component is left alone.
      *
      * Runs once every bootstrap class had its turn, so a component a provider bootstrap registers is seen. A
-     * definition is amended without instantiating the component. A component is left alone when it is not the class
-     * the provider declares, when it already carries a dispatcher, or when the collector is not registered.
+     * definition is amended without instantiating the component. A component is left alone when
+     * {@see PackagedProvider::attachesTo()} rejects its class, when it already carries a dispatcher, when its
+     * constructor declares no `eventDispatcher` parameter, or when the collector is not registered.
      *
      * @param Application $app Application owning the provider components.
      */
@@ -1103,7 +1103,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
             [$class] = ComponentResolver::classAndProperties($definition);
 
-            if ($class !== $componentClass) {
+            if ($provider->attachesTo($class) === false) {
                 continue;
             }
 
@@ -1115,7 +1115,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 $arguments = $definition['__construct()'] ?? [];
                 $arguments = is_array($arguments) ? $arguments : [];
 
-                $key = $this->dispatcherArgumentKey($componentClass, $arguments);
+                $key = $this->dispatcherArgumentKey($class, $arguments);
 
                 if ($key === null) {
                     continue;
@@ -1270,23 +1270,19 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * A definition indexing its arguments by position gets the dispatcher at the position its constructor declares,
      * because Yii rejects a definition mixing named and positional arguments; every other definition gets it by name.
      *
-     * @param string $componentClass Class the definition builds.
+     * @param class-string $class Component class whose constructor is inspected.
      * @param array<array-key, mixed> $arguments Arguments the definition already declares.
      *
-     * @return int|string|null Key to write the dispatcher under, or `null` when the class is unavailable or its
-     * constructor declares no `eventDispatcher` parameter.
+     * @return int|string|null Key to write the dispatcher under, or `null` when the constructor declares no
+     * `eventDispatcher` parameter.
      */
-    private function dispatcherArgumentKey(string $componentClass, array $arguments): int|string|null
+    private function dispatcherArgumentKey(string $class, array $arguments): int|string|null
     {
         if ($arguments === [] || is_int(array_key_first($arguments)) === false) {
             return 'eventDispatcher';
         }
 
-        if (class_exists($componentClass) === false) {
-            return null;
-        }
-
-        $constructor = (new ReflectionClass($componentClass))->getConstructor();
+        $constructor = (new ReflectionClass($class))->getConstructor();
 
         foreach ($constructor?->getParameters() ?? [] as $position => $parameter) {
             if ($parameter->getName() === 'eventDispatcher') {

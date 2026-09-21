@@ -36,6 +36,23 @@ final readonly class PackagedProvider
     ) {}
 
     /**
+     * Returns whether a component built from `$class` takes this provider's collector.
+     *
+     * A subclass of the declared component class qualifies, so a definition naming one is amended exactly like a live
+     * instance of it is.
+     *
+     * @param string|null $class Class the component definition builds, or `null` when the definition names none.
+     *
+     * @phpstan-assert-if-true class-string $class
+     *
+     * @return bool `true` when `$class` is the declared component class or a subclass of it; `false` otherwise.
+     */
+    public function attachesTo(string|null $class): bool
+    {
+        return $class !== null && is_a($class, $this->componentClass, true);
+    }
+
+    /**
      * Returns the definition the module registers the collector under.
      *
      * @param CapturePolicy $capturePolicy Host redaction policy handed to a collector that takes one.

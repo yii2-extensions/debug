@@ -7,10 +7,12 @@ namespace yii\debug\tests\inertia;
 use PHPForge\Inertia\Debug\InertiaCollector;
 use PHPUnit\Framework\Attributes\Group;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\base\{Application, Component};
 use yii\debug\Module;
 use yii\debug\tests\support\ModuleTestCase;
+use yii\debug\tests\support\stub\inertia\CompatibleManager;
 use yii\inertia\Manager as InertiaManager;
 
 /**
@@ -30,6 +32,33 @@ final class InertiaAttachmentTest extends ModuleTestCase
             $this->collector($module),
             $this->manager()->eventDispatcher,
             'Class name must be expanded into a definition carrying the collector.',
+        );
+    }
+
+    public function testBootstrapAmendsACompatibleManagerDefinition(): void
+    {
+        MockerState::addCondition(
+            'yii\debug',
+            'is_a',
+            [CompatibleManager::class, InertiaManager::class, true],
+            true,
+        );
+
+        Yii::$app->set('inertia', ['class' => CompatibleManager::class]);
+
+        $module = $this->bootstrapModule();
+
+        $manager = Yii::$app->get('inertia');
+
+        self::assertInstanceOf(
+            CompatibleManager::class,
+            $manager,
+            'Component must keep its configured class.',
+        );
+        self::assertSame(
+            $this->collector($module),
+            $manager->eventDispatcher,
+            'Definition must carry the collector.',
         );
     }
 
