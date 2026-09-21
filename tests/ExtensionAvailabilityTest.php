@@ -19,6 +19,7 @@ final class ExtensionAvailabilityTest extends TestCase
     public function testIsAvailableAcceptsInstalledSingleClassProviders(): void
     {
         $providers = [
+            'inertia' => 'PHPForge\Inertia\Debug\InertiaCollector',
             'mail' => 'yii\symfonymailer\Mailer',
             'queue' => 'yii\queue\Queue',
         ];
@@ -41,6 +42,7 @@ final class ExtensionAvailabilityTest extends TestCase
     public function testIsAvailableRejectsMissingProviders(): void
     {
         $providers = [
+            'PHPForge\Inertia\Debug\InertiaCollector',
             'yii\symfonymailer\Mailer',
             'yii\queue\Queue',
         ];
@@ -55,6 +57,7 @@ final class ExtensionAvailabilityTest extends TestCase
         }
 
         $ids = [
+            'inertia',
             'mail',
             'queue',
         ];
@@ -90,6 +93,7 @@ final class ExtensionAvailabilityTest extends TestCase
     public function testKnownIdsAreOptional(): void
     {
         $ids = [
+            'inertia',
             'mail',
             'queue',
         ];

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use PHPForge\Inertia\Page as CorePage;
 use PHPForge\Vite\Configuration\{DevelopmentConfiguration, ProductionConfiguration};
 use PHPForge\Vite\Vite as CoreVite;
-use yii\inertia\{Manager, Page as AdapterPage, Vite};
+use yii\inertia\{Page as AdapterPage, Vite};
 
 // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
 // ensure we get report on all possible php errors
@@ -47,12 +47,8 @@ if (class_exists(CoreVite::class) === false) {
     require_once __DIR__ . '/stub/vite/Vite.php';
 }
 
-// Stand-ins for the optional `yii2-extensions/inertia` package (not a dev dependency); the InertiaPanel and
-// AssetPanel tests exercise the real class names without pulling the package in.
-if (class_exists(Manager::class) === false) {
-    require_once __DIR__ . '/stub/inertia/Manager.php';
-}
-
+// Stand-ins for page and Vite classes of earlier `yii2-extensions/inertia` releases; the InertiaPanel and AssetPanel
+// tests exercise those class names without depending on that line.
 if (class_exists(CorePage::class) === false) {
     require_once __DIR__ . '/stub/inertia/CorePage.php';
 }

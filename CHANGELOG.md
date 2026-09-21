@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(ui)!: list enabled provider panels alphabetically in Extensions, including panels with no recorded activity.
 - refactor(panels)!: require php-forge/debug ^0.2; sort extension chips alphabetically and flag extension panels in the toolbar.
 - feat!: update panel, collector, toolbar, sidebar, and provider configuration handling; require Debug Core `^0.3`.
+- feat!: register Inertia and Vite from a packaged ProviderCatalog and attach each collector to its application component.
 
 ## 0.1.1 May 18, 2026
 

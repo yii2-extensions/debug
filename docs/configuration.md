@@ -26,41 +26,13 @@ Collectors declare their own ID. Registering one under a string key requires tha
 `yii\debug\collectors\Collector`, which builds a typed `PHPForge\Debug\Storage\PanelSnapshot` in `snapshot()`
 and lets the base class encode it once.
 
-## Inertia and Vite
-
-Both integrations are owned by their provider packages: `php-forge/vite` ships
-`PHPForge\Vite\Debug\{ViteCollector, VitePanel}` and `php-forge/inertia` ships
-`PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel}`. The debugger contains no Vite or Inertia code; it adapts
-those portable objects like any other external panel and lists them under **Extensions**.
-
-Each provider service emits a single event type, so its collector is also its own PSR-14 dispatcher and the
-application writes no dispatcher code:
+An instance or a class string registers with the provider defaults. Use the array form to rename a panel, re-icon it,
+place it among the other extensions, or leave it out:
 
 ```php
-use PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel};
-use PHPForge\Inertia\Protocol;
-use PHPForge\Vite\Debug\{ViteCollector, VitePanel};
+use PHPForge\Inertia\Debug\InertiaPanel;
+use PHPForge\Vite\Debug\VitePanel;
 
-$viteCollector = new ViteCollector();
-$inertiaCollector = new InertiaCollector();
-
-$config['components']['vite']['__construct()']['eventDispatcher'] = $viteCollector;
-$config['components']['inertia']['protocol'] = Protocol::create(eventDispatcher: $inertiaCollector);
-$config['modules']['debug']['collectors'] = ['vite' => $viteCollector, 'inertia' => $inertiaCollector];
-$config['modules']['debug']['panels'] = [
-    'vite' => new VitePanel(),
-    'inertia' => new InertiaPanel(),
-];
-```
-
-Use the component IDs the application already configures, and assign each key rather than replacing the whole
-`components` or `modules` array. Pass `$policy->redact(...)` and `$policy->redactUrl(...)` to `InertiaCollector` to
-apply the module's redaction rules; the default keeps the captured values unchanged.
-
-An instance registers with the provider defaults. Use the array form to rename a panel, re-icon it, place it among the
-other extensions, or leave it out altogether:
-
-```php
 $config['modules']['debug']['panels'] = [
     'vite' => ['class' => VitePanel::class, 'title' => 'Vite assets', 'icon' => 'asset', 'position' => 1],
     'inertia' => ['class' => InertiaPanel::class, 'enabled' => false],
@@ -75,6 +47,30 @@ $config['modules']['debug']['panels'] = [
 - `position` orders an entry among the extensions, ascending; the entries without one follow, ordered by title. It is
   rejected on a built-in panel, and `title` and `icon` are rejected on any panel that is not provider-owned.
 - The array key is the stable ID and must equal the provider's `id()`; a mismatch is rejected.
+
+## Inertia and Vite
+
+Both providers register themselves. Installing `php-forge/inertia` or `php-forge/vite` registers the collector and the
+panel under the `inertia` or `vite` ID and builds the Inertia collector with its own redaction policy. Attachment is a
+second, separate step: before the request runs the module hands the collector to the `inertia` component when
+`yii2-extensions/inertia` is installed and the application configures an `inertia` component that is a
+`yii\inertia\Manager` (or a subclass), and to the `vite` component when it is a `PHPForge\Vite\Vite` (or a subclass);
+any other component is left alone and the panel simply records nothing. `php-forge/inertia` ships
+`PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel}` and `php-forge/vite` ships
+`PHPForge\Vite\Debug\{ViteCollector, VitePanel}`; the debugger lists both under **Extensions**.
+
+A component that already configures its dispatcher, a closure definition, or a component the application instantiated
+before the request keeps what it has. Disable either integration like any other entry:
+
+```php
+use PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel};
+use PHPForge\Vite\Debug\{ViteCollector, VitePanel};
+
+$config['modules']['debug']['collectors']['inertia'] = ['class' => InertiaCollector::class, 'enabled' => false];
+$config['modules']['debug']['panels']['inertia'] = ['class' => InertiaPanel::class, 'enabled' => false];
+$config['modules']['debug']['collectors']['vite'] = ['class' => ViteCollector::class, 'enabled' => false];
+$config['modules']['debug']['panels']['vite'] = ['class' => VitePanel::class, 'enabled' => false];
+```
 
 Vite's **Production** label means it is inspecting built assets in a development application, not that the debugger
 can run in production.

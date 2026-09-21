@@ -124,6 +124,28 @@ final class ModuleCollectorRegistrationTest extends ModuleTestCase
         );
     }
 
+    public function testInitOmitsTheInertiaProviderWhenItsPackageIsMissing(): void
+    {
+        MockerState::addCondition(
+            'yii\debug',
+            'class_exists',
+            ['PHPForge\Inertia\Debug\InertiaCollector'],
+            false,
+        );
+
+        $module = new Module('debug');
+
+        self::assertFalse(
+            $module->getCollectorCoordinator()->hasCollector('inertia'),
+            'A missing Inertia package must not start a collector.',
+        );
+        self::assertArrayNotHasKey(
+            'inertia',
+            $module->panels,
+            'A missing Inertia package must not register a panel.',
+        );
+    }
+
     public function testInitOmitsUnavailableCoreExtensionCollectorAndPanel(): void
     {
         MockerState::addCondition(
