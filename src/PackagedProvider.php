@@ -6,7 +6,6 @@ namespace yii\debug;
 
 use Closure;
 use PHPForge\Debug\Capture\CapturePolicy;
-use PHPForge\Debug\CollectorInterface;
 
 /**
  * Describes the collector, the panel, and the host component one optional provider package contributes.
@@ -41,16 +40,13 @@ final readonly class PackagedProvider
      *
      * @param CapturePolicy $capturePolicy Host redaction policy handed to a collector that takes one.
      *
-     * @return array<string, mixed>|class-string<CollectorInterface> Configuration array when the collector takes
-     * constructor arguments; the collector class otherwise.
+     * @return array<string, mixed>|string Configuration array when the collector takes constructor arguments; the
+     * collector class name otherwise.
      */
     public function collectorDefinition(CapturePolicy $capturePolicy): array|string
     {
         if ($this->constructorArguments === null) {
-            /** @var class-string<CollectorInterface> $collector */
-            $collector = $this->collector;
-
-            return $collector;
+            return $this->collector;
         }
 
         return ['class' => $this->collector, '__construct()' => ($this->constructorArguments)($capturePolicy)];

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace yii\debug;
 
 use PHPForge\Debug\Capture\CapturePolicy;
-use PHPForge\Debug\CollectorInterface;
 
 use function array_values;
 
@@ -35,8 +34,7 @@ final readonly class ProviderCatalog
      *
      * @param CapturePolicy $capturePolicy Host redaction policy handed to a collector that takes one.
      *
-     * @return array<string, array<string, mixed>|class-string<CollectorInterface>> Collector definitions indexed by
-     * provider ID.
+     * @return array<string, array<string, mixed>|string> Collector definitions indexed by provider ID.
      */
     public function collectors(CapturePolicy $capturePolicy): array
     {

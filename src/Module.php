@@ -757,12 +757,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Array keys are a configuration-merge convenience and must match each collector's {@see CollectorInterface::id()}
      * so a user entry under the same key replaces the built-in collector.
      *
-     * {@see ProviderCatalog} contributes the collector of every optional provider package the application installed,
-     * each one built with this module's capture policy when it takes one, so captured values follow the host
-     * redaction rules.
+     * A built-in entry names its collector class. {@see ProviderCatalog} contributes the collector of every optional
+     * provider package the application installed, as a class name or as a configuration array carrying the arguments
+     * this module's capture policy builds, so captured values follow the host redaction rules.
      *
-     * @return array<string, array<string, mixed>|class-string<CollectorInterface>> Collector definitions indexed by
-     * collector id.
+     * @return array<string, array<string, mixed>|string> Collector definitions indexed by collector id.
      */
     protected function coreCollectors(): array
     {
