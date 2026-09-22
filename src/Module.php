@@ -4,100 +4,60 @@ declare(strict_types=1);
 
 namespace yii\debug;
 
+use Closure;
 use InvalidArgumentException;
 use Override;
 use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Collector\CollectorCoordinator;
 use PHPForge\Debug\{CollectorInterface, Panel as PortablePanel};
-use PHPForge\Debug\Helper\{Coerce, Icon, SensitiveDataRedactor, Trace};
-use PHPForge\Debug\Registration\{PanelOverride, PanelRegistration, PanelRegistry};
-use PHPForge\Debug\Toolbar\DebugHeader;
+use PHPForge\Debug\Helper\{SensitiveDataRedactor, Trace};
+use PHPForge\Debug\Registration\PanelRegistry;
 use PHPForge\Debug\View\ViewMessage;
-use Psr\EventDispatcher\EventDispatcherInterface;
-use ReflectionClass;
-use RuntimeException;
 use Throwable;
 use Yii;
-use yii\base\{
-    Action,
-    ActionEvent,
-    Application,
-    BootstrapInterface,
-    Component,
-    Event,
-    InvalidConfigException,
-    View as BaseView,
-};
-use yii\debug\actions\{
-    CompareAction,
-    DownloadMailAction,
-    IndexAction,
-    PhpInfoAction,
-    ResetIdentityAction,
-    SetIdentityAction,
-    ToolbarDataAction,
-    ViewAction,
-};
-use yii\debug\collectors\{
-    AssetCollector,
-    Collector,
-    ConfigCollector,
-    DbCollector,
-    DumpCollector,
-    EventCollector,
-    LogCollector,
-    MailCollector,
-    ProfilingCollector,
-    QueueCollector,
-    RequestCollector,
-    RouterCollector,
-    UserCollector,
-};
+use yii\base\{Action, ActionEvent, Application, BootstrapInterface, Event, InvalidConfigException};
 use yii\debug\exception\Message;
-use yii\debug\panels\{
-    AssetPanel,
-    ConfigPanel,
-    DbPanel,
-    DumpPanel,
-    EventPanel,
-    LogPanel,
-    MailPanel,
-    ProfilingPanel,
-    ProviderPanel,
-    QueuePanel,
-    RequestPanel,
-    RouterPanel,
-    UserPanel,
+use yii\debug\service\{
+    AccessGuard,
+    CapturePolicyFactory,
+    CollectorRegistrar,
+    CoreDefinitions,
+    LogTargetFactory,
+    PanelRegistrar,
+    ProviderCollectorAttacher,
+    StandaloneActionResolver,
+    ToolbarPresenter,
+    YiiLogo,
 };
-use yii\helpers\{ArrayHelper, Url};
+use yii\helpers\Url;
 use yii\log\{Dispatcher, Target};
 use yii\rbac\BaseManager;
 use yii\web\{ErrorHandler, ErrorHandlerRenderEvent, ForbiddenHttpException, Response, View};
 
-use function array_diff_key;
-use function array_flip;
-use function array_intersect_key;
-use function array_key_exists;
-use function array_key_first;
-use function base64_encode;
+use function array_values;
 use function get_parent_class;
-use function is_array;
-use function is_bool;
 use function is_callable;
-use function is_int;
 use function is_object;
 use function is_string;
-use function is_subclass_of;
-use function number_format;
-use function str_contains;
-use function trim;
 
 /**
  * Bootstraps the debug toolbar and the full-page debugger over the active application.
  *
  * Attaches a {@see LogTarget} to capture per-request data, registers URL rules for the debugger routes, wires the
- * toolbar/exception-page injection listeners, and instantiates the panels declared in {@see $panels} (merged on top of
- * the built-in core panels).
+ * toolbar/exception-page injection listeners, and registers the collectors and panels declared in {@see $collectors}
+ * and {@see $panels} (merged on top of the built-in core definitions).
+ *
+ * Registration itself is delegated to the services under `yii\debug\service`, which the module resolves through its
+ * own service locator. An application replaces one by registering a definition under the service class name: a class
+ * name, a configuration array carrying `class`, a callable, or a ready-made instance. Every definition but an
+ * instance is built with this module bound to the `module` argument, so a replacement declaring `Module $module`
+ * receives it.
+ *
+ * The definition must be in place before the module resolves the service. {@see CapturePolicyFactory},
+ * {@see CollectorRegistrar}, {@see PanelRegistrar}, and {@see StandaloneActionResolver} are resolved during
+ * {@see init()} and {@see LogTargetFactory} during {@see bootstrap()}, so replacing those requires the module
+ * `components` configuration; the remaining services may also be replaced later through
+ * {@see \yii\di\ServiceLocator::set()}.
  */
 class Module extends \yii\base\Module implements BootstrapInterface
 {
@@ -269,11 +229,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
     private PanelRegistry|null $panelRegistry = null;
 
     /**
-     * Cached `data:image/svg+xml;base64` URI of the Yii logo, populated lazily by {@see getYiiLogo()}.
-     */
-    private static string|null $yiiLogo = null;
-
-    /**
      * Disables the application log targets when {@see $enableDebugLogs} is `false`, applies the access check, and
      * detaches the toolbar/header listeners so the debugger response is not polluted with self-debug data.
      *
@@ -335,10 +290,14 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Called by Yii during the application bootstrap phase (when this module is listed in `bootstrap`).
      *
      * @param Application $app Application being bootstrapped.
+     *
+     * @throws InvalidConfigException when the log-target configuration does not resolve to a {@see LogTarget}.
      */
     public function bootstrap($app): void
     {
-        $this->logTarget = $this->resolveLogTarget();
+        $this->logTarget = $this
+            ->service(LogTargetFactory::class, fn(): LogTargetFactory => new LogTargetFactory($this))
+            ->create();
 
         $app->getLog()->targets['debug'] = $this->logTarget;
 
@@ -353,7 +312,15 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $app->on(
             Application::EVENT_BEFORE_REQUEST,
             function () use ($app): void {
-                $this->attachProviderCollectors($app);
+                $this
+                    ->service(
+                        ProviderCollectorAttacher::class,
+                        fn(): ProviderCollectorAttacher => new ProviderCollectorAttacher(
+                            ProviderCatalog::packaged(),
+                            $this->getCollectorCoordinator(),
+                        ),
+                    )
+                    ->attach($app);
             },
         );
         $app->on(
@@ -411,18 +378,16 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * @param list<string> $additionalSensitiveKeys Collector-specific exact keys added without weakening global rules.
      *
+     * @throws InvalidArgumentException when the configured keys, prefixes, patterns, or body limit are rejected.
+     * @throws InvalidConfigException when the registered {@see CapturePolicyFactory} definition is invalid.
+     *
      * @return CapturePolicy Shared policy covering the global rules and the collector-specific keys.
      */
     public function createCapturePolicy(array $additionalSensitiveKeys = []): CapturePolicy
     {
-        $capturePolicy = new CapturePolicy(
-            sensitiveKeys: $this->sensitiveKeys,
-            maxBodyBytes: $this->maxBodyBytes,
-            sensitiveKeyPrefixes: $this->sensitiveKeyPrefixes,
-            sensitiveKeyPatterns: $this->sensitiveKeyPatterns,
-        );
-
-        return $capturePolicy->withAdditionalSensitiveKeys($additionalSensitiveKeys);
+        return $this
+            ->service(CapturePolicyFactory::class, fn(): CapturePolicyFactory => new CapturePolicyFactory($this))
+            ->create($additionalSensitiveKeys);
     }
 
     /**
@@ -437,6 +402,25 @@ class Module extends \yii\base\Module implements BootstrapInterface
         return $this->collectorCoordinator ?? throw new InvalidConfigException(
             Message::COLLECTORS_NOT_INITIALIZED->getMessage(),
         );
+    }
+
+    /**
+     * Returns the initialized {@see LogTarget}, raising when the module has not been bootstrapped.
+     *
+     * @throws InvalidConfigException when {@see bootstrap()} has not run yet, so {@see $logTarget} is still a
+     * configuration array or a class name.
+     *
+     * @return LogTarget Initialized log target of this module.
+     */
+    public function getLogTarget(): LogTarget
+    {
+        if (!$this->logTarget instanceof LogTarget) {
+            throw new InvalidConfigException(
+                Message::LOG_TARGET_NOT_BOOTSTRAPPED->getMessage(),
+            );
+        }
+
+        return $this->logTarget;
     }
 
     /**
@@ -457,33 +441,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Returns the toolbar HTML: a `<yii-debug-toolbar>` custom element wired with data attributes the bundled JS
      * reads.
      *
+     * @throws InvalidConfigException when {@see bootstrap()} has not run yet.
+     *
      * @return string Rendered `<yii-debug-toolbar>` element.
      */
     public function getToolbarHtml(): string
     {
-        $logTarget = $this->logTargetOrFail();
-
-        $url = Url::toRoute(
-            [
-                '/' . $this->getUniqueId() . '/toolbar-data',
-                'tag' => $logTarget->tag,
-            ],
-        );
-
-        $skipAjaxRequestUrl = [];
-
-        foreach ($this->skipAjaxRequestUrl as $route) {
-            if (is_string($route) || is_array($route)) {
-                $skipAjaxRequestUrl[] = Url::to($route);
-            }
-        }
-
-        return $this->toolbarRenderer()->renderElement(
-            dataUrl: $url,
-            skipUrls: $skipAjaxRequestUrl,
-            position: $this->toolbarPosition,
-            height: $this->defaultHeight,
-        );
+        return $this->toolbarPresenter()->html();
     }
 
     /**
@@ -495,19 +459,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public static function getYiiLogo(): string
     {
-        if (self::$yiiLogo === null) {
-            $svg = Icon::render('yii');
-
-            if ($svg === '') {
-                throw new RuntimeException(
-                    Message::YII_LOGO_UNREADABLE->getMessage(),
-                );
-            }
-
-            self::$yiiLogo = 'data:image/svg+xml;base64,' . base64_encode($svg);
-        }
-
-        return self::$yiiLogo;
+        return YiiLogo::dataUri();
     }
 
     /**
@@ -566,6 +518,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * `renderException()` produces the HTML body but before the response is sent, so handlers may rewrite the output.
      *
      * @param ErrorHandlerRenderEvent $event Render event carrying the error-page HTML.
+     *
+     * @throws InvalidConfigException when {@see bootstrap()} has not run yet.
      */
     public function injectToolbarOnErrorPage(ErrorHandlerRenderEvent $event): void
     {
@@ -577,10 +531,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return;
         }
 
-        $renderer = $this->toolbarRenderer();
-        $injection = $this->getToolbarHtml() . $renderer->scriptTag();
-
-        $event->output = $renderer->inject($event->output, $injection);
+        $this->toolbarPresenter()->injectIntoErrorPage($event);
     }
 
     /**
@@ -591,6 +542,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * @param Event $event End-of-body event raised by the view.
      *
+     * @throws InvalidConfigException when {@see bootstrap()} has not run yet.
      * @throws Throwable when the view dynamic render fails for the current request.
      */
     public function renderToolbar(Event $event): void
@@ -609,9 +561,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return;
         }
 
-        echo $view->renderDynamic('return Yii::$app->getModule("' . $this->getUniqueId() . '")->getToolbarHtml();');
-
-        echo $this->toolbarRenderer($view)->scriptTag();
+        $this->toolbarPresenter()->render($view);
     }
 
     /**
@@ -644,6 +594,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * the full view.
      *
      * @param Event $event Response event raised after the action ran.
+     *
+     * @throws InvalidConfigException when {@see bootstrap()} has not run yet.
      */
     public function setDebugHeaders(Event $event): void
     {
@@ -651,33 +603,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
             return;
         }
 
-        $logTarget = $this->logTargetOrFail();
-
-        $route = $this->getUniqueId();
-
-        $url = Url::toRoute(
-            [
-                "/{$route}/view",
-                'tag' => $logTarget->tag,
-            ],
-        );
-
         $sender = $event->sender;
 
         if (!$sender instanceof Response) {
             return;
         }
 
-        $rawStart = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
-        $requestStart = Coerce::floatOrNull($rawStart) ?? microtime(true);
-
-        $sender->getHeaders()
-            ->set(DebugHeader::TAG->value, $logTarget->tag)
-            ->set(
-                DebugHeader::DURATION->value,
-                number_format((microtime(true) - $requestStart) * 1000, 3, '.', ''),
-            )
-            ->set(DebugHeader::LINK->value, $url);
+        $this->toolbarPresenter()->writeDebugHeaders($sender);
     }
 
     /**
@@ -687,48 +619,26 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public static function setYiiLogo(string $logo): void
     {
-        self::$yiiLogo = $logo;
+        YiiLogo::set($logo);
     }
 
     /**
      * Returns whether the current request is allowed to access the debugger.
      *
-     * Checks {@see $allowedIPs}, {@see $allowedHosts}, and the optional {@see $checkAccessCallback} in that order. Warns
-     * via {@see Yii::warning()} on a denial unless the matching `disable*RestrictionWarning` flag is set.
+     * Decided by {@see AccessGuard} from {@see $allowedIPs}, {@see $allowedHosts}, and the optional
+     * {@see $checkAccessCallback}, for the IP the current request carries.
      *
      * @param Action|null $action Action being dispatched, or `null` outside an action context.
+     *
+     * @throws InvalidConfigException when the registered {@see AccessGuard} definition is invalid.
      *
      * @return bool `true` when the request may reach the debugger; `false` otherwise.
      */
     protected function checkAccess(Action|null $action = null): bool
     {
-        $ip = Yii::$app->getRequest()->getUserIP() ?? '';
-
-        $allowed = (new IpAllowlist($this->allowedIPs, $this->allowedHosts))->matches($ip);
-
-        if ($allowed === false) {
-            if (!$this->disableIpRestrictionWarning) {
-                Yii::warning(
-                    "Access to debugger is denied due to IP address restriction. The requesting IP address is {$ip}",
-                    __METHOD__,
-                );
-            }
-
-            return false;
-        }
-
-        if ($this->checkAccessCallback !== null && ($this->checkAccessCallback)($action) !== true) {
-            if (!$this->disableCallbackRestrictionWarning) {
-                Yii::warning(
-                    Message::ACCESS_DENIED_BY_CALLBACK->value,
-                    __METHOD__,
-                );
-            }
-
-            return false;
-        }
-
-        return true;
+        return $this
+            ->service(AccessGuard::class, fn(): AccessGuard => new AccessGuard($this))
+            ->allows(Yii::$app->getRequest()->getUserIP() ?? '', $action);
     }
 
     /**
@@ -739,14 +649,14 @@ class Module extends \yii\base\Module implements BootstrapInterface
     protected function coreActionMap(): array
     {
         return [
-            'compare' => CompareAction::class,
-            'download-mail' => DownloadMailAction::class,
-            'index' => IndexAction::class,
-            'php-info' => PhpInfoAction::class,
-            'reset-identity' => ResetIdentityAction::class,
-            'set-identity' => SetIdentityAction::class,
-            'toolbar-data' => ToolbarDataAction::class,
-            'view' => ViewAction::class,
+            'compare' => \yii\debug\actions\CompareAction::class,
+            'download-mail' => \yii\debug\actions\DownloadMailAction::class,
+            'index' => \yii\debug\actions\IndexAction::class,
+            'php-info' => \yii\debug\actions\PhpInfoAction::class,
+            'reset-identity' => \yii\debug\actions\ResetIdentityAction::class,
+            'set-identity' => \yii\debug\actions\SetIdentityAction::class,
+            'toolbar-data' => \yii\debug\actions\ToolbarDataAction::class,
+            'view' => \yii\debug\actions\ViewAction::class,
         ];
     }
 
@@ -767,19 +677,19 @@ class Module extends \yii\base\Module implements BootstrapInterface
         $policy = $this->createCapturePolicy();
 
         return [
-            'asset' => AssetCollector::class,
-            'config' => ConfigCollector::class,
-            'db' => DbCollector::class,
-            'dump' => DumpCollector::class,
-            'event' => EventCollector::class,
+            'asset' => \yii\debug\collectors\AssetCollector::class,
+            'config' => \yii\debug\collectors\ConfigCollector::class,
+            'db' => \yii\debug\collectors\DbCollector::class,
+            'dump' => \yii\debug\collectors\DumpCollector::class,
+            'event' => \yii\debug\collectors\EventCollector::class,
             ...ProviderCatalog::packaged()->collectors($policy),
-            'log' => LogCollector::class,
-            'mail' => MailCollector::class,
-            'profiling' => ProfilingCollector::class,
-            'queue' => QueueCollector::class,
-            'request' => RequestCollector::class,
-            'router' => RouterCollector::class,
-            'user' => UserCollector::class,
+            'log' => \yii\debug\collectors\LogCollector::class,
+            'mail' => \yii\debug\collectors\MailCollector::class,
+            'profiling' => \yii\debug\collectors\ProfilingCollector::class,
+            'queue' => \yii\debug\collectors\QueueCollector::class,
+            'request' => \yii\debug\collectors\RequestCollector::class,
+            'router' => \yii\debug\collectors\RouterCollector::class,
+            'user' => \yii\debug\collectors\UserCollector::class,
         ];
     }
 
@@ -792,7 +702,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * {@see ProviderCatalog} contributes the panel of every optional provider package the application installed; a
      * panel an application wires itself is named by plain `string` so the class stays out of this module's symbol
-     * table, and {@see availableCoreDefinitions()} drops the entry when that package is not installed.
+     * table, and {@see CoreDefinitions::merge()} drops the entry when that package is not installed.
      *
      * @return array<string, array<string, mixed>|class-string<Panel>|class-string<PortablePanel>|string> Panel
      * definitions indexed by panel id.
@@ -800,19 +710,19 @@ class Module extends \yii\base\Module implements BootstrapInterface
     protected function corePanels(): array
     {
         return [
-            'config' => ConfigPanel::class,
-            'request' => RequestPanel::class,
-            'log' => LogPanel::class,
-            'event' => EventPanel::class,
-            'profiling' => ProfilingPanel::class,
-            'db' => DbPanel::class,
-            'router' => ['class' => RouterPanel::class, 'standalone' => false],
-            'user' => UserPanel::class,
-            'dump' => DumpPanel::class,
-            'asset' => AssetPanel::class,
+            'config' => \yii\debug\panels\ConfigPanel::class,
+            'request' => yii\debug\panels\RequestPanel::class,
+            'log' => \yii\debug\panels\LogPanel::class,
+            'event' => \yii\debug\panels\EventPanel::class,
+            'profiling' => \yii\debug\panels\ProfilingPanel::class,
+            'db' => \yii\debug\panels\DbPanel::class,
+            'router' => ['class' => \yii\debug\panels\RouterPanel::class, 'standalone' => false],
+            'user' => \yii\debug\panels\UserPanel::class,
+            'dump' => \yii\debug\panels\DumpPanel::class,
+            'asset' => \yii\debug\panels\AssetPanel::class,
             ...ProviderCatalog::packaged()->panels(),
-            'mail' => MailPanel::class,
-            'queue' => QueuePanel::class,
+            'mail' => \yii\debug\panels\MailPanel::class,
+            'queue' => \yii\debug\panels\QueuePanel::class,
         ];
     }
 
@@ -828,30 +738,21 @@ class Module extends \yii\base\Module implements BootstrapInterface
      *
      * @param string $route Action route relative to this module.
      *
+     * @throws InvalidConfigException when object creation fails for a resolvable action-map entry.
+     *
      * @return Action|null Resolved action, or `null` when the route matches none.
      */
     #[Override]
     protected function createStandaloneAction(string $route): Action|null
     {
-        if ($route === '') {
-            $route = $this->defaultRoute;
-        }
+        $action = $this
+            ->service(
+                StandaloneActionResolver::class,
+                fn(): StandaloneActionResolver => new StandaloneActionResolver($this),
+            )
+            ->resolve($route);
 
-        $id = trim($route, '/');
-
-        if ($id !== '' && !str_contains($id, '/') && isset($this->actionMap[$id])) {
-            $action = ComponentResolver::createMapped($this->actionMap[$id]);
-
-            if ($action instanceof Action) {
-                $action->id = $id;
-
-                $action->setModule($this);
-
-                return $action;
-            }
-        }
-
-        return parent::createStandaloneAction($route);
+        return $action ?? parent::createStandaloneAction($route);
     }
 
     /**
@@ -866,107 +767,56 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Merges the built-in and panel-declared standalone actions into {@see \yii\base\Module::$actionMap}.
+     * Hands the built-in, panel-declared, and configured standalone actions to {@see StandaloneActionResolver} and
+     * stores the merged map on {@see \yii\base\Module::$actionMap}.
      *
-     * Precedence, lowest to highest: built-in actions from {@see coreActionMap()}, actions declared by registered
-     * panels through {@see Panel::$actions}, and entries configured directly on `actionMap`.
+     * @throws InvalidConfigException when the registered resolver definition is invalid.
      */
     protected function initActionMap(): void
     {
-        $panelActions = [];
-
-        foreach ($this->panels as $panel) {
-            foreach ($panel->actions as $id => $action) {
-                $panelActions[$id] = $action;
-            }
-        }
-
-        $this->actionMap = [...$this->coreActionMap(), ...$panelActions, ...$this->actionMap];
+        $this->actionMap = $this
+            ->service(
+                StandaloneActionResolver::class,
+                fn(): StandaloneActionResolver => new StandaloneActionResolver($this),
+            )
+            ->map($this->coreActionMap(), $this->panels, $this->actionMap);
     }
 
     /**
-     * Resolves configured collectors and validates their stable IDs before request capture.
+     * Hands the built-in and configured collector definitions to {@see CollectorRegistrar} and stores the resolved
+     * collectors with the coordinator driving them.
      *
-     * Built-in extension collectors are omitted when their provider package is unavailable. Explicit application
-     * configuration remains authoritative and may still register a custom collector under the same ID. An array entry
-     * declaring `enabled` as `false` is skipped before its class is resolved, so an uninstalled optional package is
-     * not an error.
-     *
-     * Each resolved collector is instrumented right away through {@see Collector::instrument()}: {@see initPanels()}
-     * runs afterwards and a panel constructor may already hit the framework, so instrumentation installed only at
-     * {@see Application::EVENT_BEFORE_REQUEST} would miss the debugger's own bootstrap work.
+     * Each resolved collector is instrumented right away: {@see initPanels()} runs afterwards and a panel constructor
+     * may already hit the framework, so instrumentation installed only at {@see Application::EVENT_BEFORE_REQUEST}
+     * would miss the debugger's own bootstrap work.
      *
      * @throws InvalidConfigException When a collector configuration or ID is invalid.
      */
     protected function initCollectors(): void
     {
-        $coreCollectors = $this->availableCoreDefinitions($this->coreCollectors());
+        $coordinator = $this
+            ->service(CollectorRegistrar::class, fn(): CollectorRegistrar => new CollectorRegistrar($this))
+            ->register($this->coreCollectors(), $this->collectors);
 
-        $merged = [...array_diff_key($coreCollectors, $this->collectors), ...$this->collectors];
-        $collectors = [];
-
-        foreach ($merged as $id => $config) {
-            if (is_array($config) && array_key_exists('enabled', $config)) {
-                $enabled = $config['enabled'];
-
-                unset($config['enabled']);
-
-                if (is_bool($enabled) === false) {
-                    throw new InvalidConfigException(
-                        Message::COLLECTOR_ENABLED_INVALID->getMessage((string) $id),
-                    );
-                }
-
-                if ($enabled === false) {
-                    continue;
-                }
-            }
-
-            $collector = $this->buildCollector($config);
-
-            if (is_string($id) && $id !== $collector->id()) {
-                throw new InvalidConfigException(
-                    Message::PROVIDER_ID_MISMATCH->getMessage('collector'),
-                );
-            }
-
-            if ($collector instanceof Collector) {
-                $collector->module = $this;
-
-                $collector->instrument();
-            }
-
-            $collectors[] = $collector;
-        }
-
-        $this->collectors = $collectors;
-
-        try {
-            $this->collectorCoordinator = new CollectorCoordinator($collectors);
-        } catch (InvalidArgumentException $exception) {
-            throw new InvalidConfigException(
-                $exception->getMessage(),
-                0,
-                $exception,
-            );
-        }
+        $this->collectors = array_values($coordinator->collectors());
+        $this->collectorCoordinator = $coordinator;
     }
 
     /**
-     * Merges custom panels on top of the available built-in panels and instantiates each entry, dropping any panel
-     * whose {@see Panel::isEnabled()} returns `false`. Explicit application configuration remains authoritative when
-     * an optional provider package is unavailable.
+     * Hands the built-in and configured panel definitions to {@see PanelRegistrar} and stores the resolved panels
+     * with the catalog describing their display order.
      *
      * @throws InvalidConfigException when a panel configuration, a registration option, or the resolved catalog is
      * invalid.
      */
     protected function initPanels(): void
     {
-        $corePanels = $this->availableCoreDefinitions($this->corePanels());
+        $catalog = $this
+            ->service(PanelRegistrar::class, fn(): PanelRegistrar => new PanelRegistrar($this))
+            ->register($this->corePanels(), $this->panels);
 
-        $merged = [...array_diff_key($corePanels, $this->panels), ...$this->panels];
-
-        $this->resolvePanels($merged);
+        $this->panels = $catalog->panels;
+        $this->panelRegistry = $catalog->registry;
     }
 
     /**
@@ -1015,285 +865,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Wraps a provider-owned declarative panel in the host adapter under the provider's own ID.
-     *
-     * @param int|string $key Registration key of the panel; a string key must match the provider's own ID.
-     * @param PortablePanel $provider Declarative panel to adapt.
-     *
-     * @throws InvalidConfigException when the registration key contradicts the provider ID.
-     *
-     * @return ProviderPanel Adapter carrying the provider.
-     */
-    private function adaptProvider(int|string $key, PortablePanel $provider): ProviderPanel
-    {
-        if (is_string($key) && $key !== $provider->id()) {
-            throw new InvalidConfigException(
-                Message::PROVIDER_ID_MISMATCH->getMessage('panel'),
-            );
-        }
-
-        return new ProviderPanel(['id' => $provider->id(), 'provider' => $provider]);
-    }
-
-    /**
-     * Rejects a `title` or `icon` override on a panel that renders the metadata it declares itself.
-     *
-     * @param string $id Registration ID of the panel.
-     * @param PanelOverride $override Registration options declared for that panel.
-     *
-     * @throws InvalidConfigException when the override declares a title or an icon.
-     */
-    private static function assertNoMetadataOverride(string $id, PanelOverride $override): void
-    {
-        if ($override->title !== null || $override->icon !== null) {
-            throw new InvalidConfigException(
-                Message::PANEL_METADATA_OVERRIDE_UNSUPPORTED->getMessage($id),
-            );
-        }
-    }
-
-    /**
-     * Hands the collector of every installed provider to the application component it observes, so the provider
-     * emits its results into it.
-     *
-     * A {@see ProviderAttachment::Property} component takes the collector on the `eventDispatcher` property, in a
-     * definition or on a live instance alike; a {@see ProviderAttachment::Constructor} component takes it as a
-     * constructor argument, so only a definition is amended and an already-instantiated component is left alone.
-     *
-     * Runs once every bootstrap class had its turn, so a component a provider bootstrap registers is seen. A
-     * definition is amended without instantiating the component. A component is left alone when
-     * {@see PackagedProvider::attachesTo()} rejects its class, when it already carries a dispatcher, when its
-     * constructor declares no `eventDispatcher` parameter, or when the collector is not registered.
-     *
-     * @param Application $app Application owning the provider components.
-     */
-    private function attachProviderCollectors(Application $app): void
-    {
-        foreach (ProviderCatalog::packaged()->installed() as $provider) {
-            $collector = $this->getCollectorCoordinator()->collector($provider->id);
-
-            if (!$collector instanceof EventDispatcherInterface) {
-                continue;
-            }
-
-            $id = $provider->component;
-            $definition = $app->has($id, true) ? $app->get($id) : ($app->getComponents()[$id] ?? null);
-
-            /** @var class-string $componentClass */
-            $componentClass = $provider->componentClass;
-
-            if (is_object($definition)) {
-                if (
-                    $provider->attachment === ProviderAttachment::Property
-                    && $definition instanceof Component
-                    && $definition instanceof $componentClass
-                    && $definition->canGetProperty('eventDispatcher')
-                    && $definition->canSetProperty('eventDispatcher')
-                    && ArrayHelper::getValue($definition, 'eventDispatcher') === null
-                ) {
-                    Yii::configure($definition, ['eventDispatcher' => $collector]);
-                }
-
-                continue;
-            }
-
-            if (is_string($definition) === false && is_array($definition) === false) {
-                continue;
-            }
-
-            [$class] = ComponentResolver::classAndProperties($definition);
-
-            if ($provider->attachesTo($class) === false) {
-                continue;
-            }
-
-            $definition = is_string($definition) ? ['class' => $definition] : $definition;
-
-            if ($provider->attachment === ProviderAttachment::Property) {
-                $definition['eventDispatcher'] ??= $collector;
-            } else {
-                $arguments = $definition['__construct()'] ?? [];
-                $arguments = is_array($arguments) ? $arguments : [];
-
-                $key = $this->dispatcherArgumentKey($class, $arguments);
-
-                if ($key === null) {
-                    continue;
-                }
-
-                $arguments[$key] ??= $collector;
-
-                $definition['__construct()'] = $arguments;
-            }
-
-            $app->set($id, $definition);
-        }
-    }
-
-    /**
-     * Removes unavailable optional integrations from a built-in definition map.
-     *
-     * @template TDefinition
-     *
-     * @param array<string, TDefinition> $definitions Built-in collectors or panels indexed by stable ID.
-     *
-     * @return array<string, TDefinition> Definitions whose runtime providers are installed.
-     */
-    private function availableCoreDefinitions(array $definitions): array
-    {
-        foreach ($definitions as $id => $_definition) {
-            if (ExtensionAvailability::isAvailable($id) === false) {
-                unset($definitions[$id]);
-            }
-        }
-
-        return $definitions;
-    }
-
-    /**
-     * Binds a resolved panel to this module and fires {@see Panel::moduleBound()} once the references are in place.
-     *
-     * @param Panel $panel Panel to bind.
-     *
-     * @throws InvalidConfigException when the panel rejects the module binding.
-     *
-     * @return Panel Bound panel.
-     */
-    private function bindPanel(Panel $panel): Panel
-    {
-        $panel->module = $this;
-
-        $panel->moduleBound();
-
-        return $panel;
-    }
-
-    /**
-     * Resolves a collector instance, class name, or Yii configuration array.
-     *
-     * @param array<string, mixed>|CollectorInterface|string $config Collector configuration.
-     *
-     * @throws InvalidConfigException when the configuration does not resolve to a collector.
-     *
-     * @return CollectorInterface Resolved collector.
-     */
-    private function buildCollector(CollectorInterface|array|string $config): CollectorInterface
-    {
-        if ($config instanceof CollectorInterface) {
-            return $config;
-        }
-
-        [$class, $properties] = ComponentResolver::classAndProperties($config);
-
-        if ($class === null) {
-            throw new InvalidConfigException(
-                Message::COLLECTOR_CLASS_INVALID->getMessage(),
-            );
-        }
-
-        $collector = Yii::$container->get($class, [], $properties);
-
-        if (!$collector instanceof CollectorInterface) {
-            throw new InvalidConfigException(
-                Message::COLLECTOR_INTERFACE_INVALID->getMessage(CollectorInterface::class, $class),
-            );
-        }
-
-        return $collector;
-    }
-
-    /**
-     * Resolves a panel registration into a {@see Panel} instance, binding `id` and `module` references and firing
-     * {@see Panel::moduleBound()} once both references are in place.
-     *
-     * A class string or a `class` entry naming a portable {@see PortablePanel} is built through the container and
-     * adapted by {@see ProviderPanel}, exactly as an already-instantiated provider is.
-     *
-     * @param int|string $key Registration key of the panel; a string key must match the provider's own ID.
-     * @param array<string, mixed>|Panel|PortablePanel|string $config Panel or provider instance, configuration array,
-     * or class-name string.
-     *
-     * @throws InvalidConfigException when the class name is unresolvable, the registration key contradicts the
-     * provider ID, or the container returns an object outside the panel contract.
-     *
-     * @return Panel Resolved panel bound to this module.
-     */
-    private function buildPanel(int|string $key, Panel|PortablePanel|array|string $config): Panel
-    {
-        if ($config instanceof PortablePanel) {
-            return $this->bindPanel($this->adaptProvider($key, $config));
-        }
-
-        if ($config instanceof Panel) {
-            $config->id = (string) $key;
-
-            return $this->bindPanel($config);
-        }
-
-        [$class, $properties] = ComponentResolver::classAndProperties($config);
-
-        if ($class === null) {
-            throw new InvalidConfigException(
-                Message::PANEL_CLASS_INVALID->getMessage((string) $key),
-            );
-        }
-
-        if (is_subclass_of($class, PortablePanel::class)) {
-            $provider = Yii::$container->get($class, [], $properties);
-
-            if (!$provider instanceof PortablePanel) {
-                throw new InvalidConfigException(
-                    Message::PANEL_INSTANCE_INVALID->getMessage((string) $key, PortablePanel::class, $class),
-                );
-            }
-
-            return $this->bindPanel($this->adaptProvider($key, $provider));
-        }
-
-        $properties['module'] = $this;
-        $properties['id'] = (string) $key;
-
-        $object = Yii::$container->get($class, [], $properties);
-
-        if (!$object instanceof Panel) {
-            throw new InvalidConfigException(
-                Message::PANEL_INSTANCE_INVALID->getMessage((string) $key, Panel::class, $class),
-            );
-        }
-
-        return $this->bindPanel($object);
-    }
-
-    /**
-     * Returns the `__construct()` key a component definition takes its dispatcher under.
-     *
-     * A definition indexing its arguments by position gets the dispatcher at the position its constructor declares,
-     * because Yii rejects a definition mixing named and positional arguments; every other definition gets it by name.
-     *
-     * @param class-string $class Component class whose constructor is inspected.
-     * @param array<array-key, mixed> $arguments Arguments the definition already declares.
-     *
-     * @return int|string|null Key to write the dispatcher under, or `null` when the constructor declares no
-     * `eventDispatcher` parameter.
-     */
-    private function dispatcherArgumentKey(string $class, array $arguments): int|string|null
-    {
-        if ($arguments === [] || is_int(array_key_first($arguments)) === false) {
-            return 'eventDispatcher';
-        }
-
-        $constructor = (new ReflectionClass($class))->getConstructor();
-
-        foreach ($constructor?->getParameters() ?? [] as $position => $parameter) {
-            if ($parameter->getName() === 'eventDispatcher') {
-                return $position;
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * Returns whether the requested action belongs to this debugger module.
      *
      * @param Action|null $action Action to classify, or `null` when none is running.
@@ -1316,229 +887,56 @@ class Module extends \yii\base\Module implements BootstrapInterface
     }
 
     /**
-     * Returns the initialized {@see LogTarget}, raising when the module has not been bootstrapped.
+     * Resolves a module-scoped service from the service locator, building the definition registered on this module or
+     * falling back to the default factory.
      *
-     * @throws InvalidConfigException when {@see bootstrap()} has not run yet (so {@see $logTarget} is still a config
-     * array or class name).
+     * A class name, a configuration array carrying `class`, and a callable are all built with this module bound to
+     * the `module` argument, so a definition declaring `Module $module` receives it and one declaring nothing is left
+     * untouched; a ready-made instance is registered as is. Only definitions registered on this module are consulted,
+     * never those a parent module carries under the same ID.
      *
-     * @return LogTarget Initialized log target of this module.
+     * @template T of object
+     *
+     * @param class-string<T> $class Service class, also used as the locator ID.
+     * @param Closure(): T $factory Factory building the default instance when no definition is registered.
+     *
+     * @throws InvalidConfigException when the registered definition does not resolve to `$class`.
+     *
+     * @return T Resolved service.
      */
-    private function logTargetOrFail(): LogTarget
+    private function service(string $class, Closure $factory): object
     {
-        if (!$this->logTarget instanceof LogTarget) {
+        if (!isset($this->getComponents(false)[$class])) {
+            /** @var array{class?: class-string, __class?: class-string, ...}|Closure|class-string|object $definition */
+            $definition = $this->getComponents()[$class] ?? $factory;
+
+            if (!is_object($definition) || $definition instanceof Closure) {
+                $definition = Yii::createObject($definition, ['module' => $this]);
+            }
+
+            $this->set($class, $definition);
+        }
+
+        $service = $this->get($class);
+
+        if (!$service instanceof $class) {
             throw new InvalidConfigException(
-                Message::LOG_TARGET_NOT_BOOTSTRAPPED->getMessage(),
+                Message::SERVICE_INSTANCE_INVALID->getMessage($class),
             );
         }
 
-        return $this->logTarget;
+        return $service;
     }
 
     /**
-     * Reads the registration options an array definition declares, without resolving its class.
+     * Resolves the presenter that renders the toolbar and writes the debug response headers.
      *
-     * An entry disabling itself returns immediately, so a definition naming an uninstalled optional package never
-     * reaches the autoloader. A portable definition accepts nothing beyond `class` and the registration options, so
-     * any other key is rejected by name; a Yii panel definition keeps its remaining entries as component properties.
+     * @throws InvalidConfigException when the registered {@see ToolbarPresenter} definition is invalid.
      *
-     * @param array<array-key, mixed> $definition Panel definition declared by the application.
-     *
-     * @throws InvalidConfigException when an option is unknown, or carries an unsupported value.
-     *
-     * @return PanelOverride Registration options declared by the definition.
+     * @return ToolbarPresenter Resolved toolbar presenter.
      */
-    private static function panelOverride(array $definition): PanelOverride
+    private function toolbarPresenter(): ToolbarPresenter
     {
-        if (($definition['enabled'] ?? null) === false) {
-            return new PanelOverride(enabled: false);
-        }
-
-        [$class, $properties] = ComponentResolver::classAndProperties($definition);
-
-        $options = $class !== null && is_subclass_of($class, PortablePanel::class)
-            ? $properties
-            : array_intersect_key($properties, array_flip(PanelOverride::KEYS));
-
-        try {
-            return PanelOverride::fromArray($options);
-        } catch (InvalidArgumentException $exception) {
-            throw new InvalidConfigException(
-                $exception->getMessage(),
-                0,
-                $exception,
-            );
-        }
-    }
-
-    /**
-     * Resolves the {@see $logTarget} configuration into a {@see LogTarget} instance, accepting a class-name string,
-     * a configuration array with a `class` key, or an already-instantiated target.
-     *
-     * @throws InvalidConfigException when the configured class is missing or does not produce a {@see LogTarget}.
-     *
-     * @return LogTarget Target built from the configured class name, array, or instance.
-     */
-    private function resolveLogTarget(): LogTarget
-    {
-        if ($this->logTarget instanceof LogTarget) {
-            return $this->logTarget;
-        }
-
-        [$class, $properties] = ComponentResolver::classAndProperties(
-            $this->logTarget,
-            LogTarget::class,
-        );
-
-        if ($class === null) {
-            throw new InvalidConfigException(
-                Message::LOG_TARGET_CLASS_INVALID->getMessage(),
-            );
-        }
-
-        $target = Yii::$container->get($class, [$this], $properties);
-
-        if (!$target instanceof LogTarget) {
-            throw new InvalidConfigException(
-                Message::LOG_TARGET_INSTANCE_INVALID->getMessage(),
-            );
-        }
-
-        return $target;
-    }
-
-    /**
-     * Resolves the effective panel catalog and reorders {@see $panels} to match it.
-     *
-     * Defaults are read from the registered panels in registration order, so built-ins keep the order
-     * {@see corePanels()} declares and only the extensions are reordered by the shared policy. The resolved title and
-     * icon reach the panels the host renders metadata for, and a panel declaring no name registers under its ID, which
-     * the policy requires to be non-empty.
-     *
-     * @param array<string, PanelOverride> $overrides Registration options indexed by panel ID.
-     *
-     * @throws InvalidConfigException when the declared metadata or a registration option is rejected by the policy.
-     *
-     * @return PanelRegistry Resolved panel catalog.
-     */
-    private function resolvePanelRegistry(array $overrides): PanelRegistry
-    {
-        try {
-            $defaults = [];
-
-            foreach ($this->panels as $id => $panel) {
-                $name = $panel->getName();
-
-                $title = $name === '' ? $id : $name;
-                $icon = $panel->getToolbarIcon() ?? '';
-
-                $defaults[] = ExtensionAvailability::isExtensionPanel($id, $panel)
-                    ? PanelRegistration::extension($id, $title, $icon)
-                    : PanelRegistration::builtIn($id, $title, $icon);
-            }
-
-            $registry = PanelRegistry::resolve($defaults, $overrides);
-        } catch (InvalidArgumentException $exception) {
-            throw new InvalidConfigException(
-                $exception->getMessage(),
-                0,
-                $exception,
-            );
-        }
-
-        $ordered = [];
-
-        foreach ($registry->enabled() as $registration) {
-            // Every enabled registration carries a `$this->panels` key, so this guard is unreachable.
-            // @infection-ignore-all
-            $panel = $this->panels[$registration->id] ?? throw new InvalidConfigException(
-                Message::DEBUG_PANEL_NOT_FOUND->getMessage($registration->id),
-            );
-
-            if ($panel instanceof ProviderPanel) {
-                $panel->title = $registration->title;
-                $panel->icon = $registration->icon === '' ? null : $registration->icon;
-            }
-
-            $ordered[$registration->id] = $panel;
-        }
-
-        $this->panels = $ordered;
-
-        return $registry;
-    }
-
-    /**
-     * Instantiates every configured panel, binds it to this module, and stores the catalog in display order.
-     *
-     * An entry declaring `enabled` as `false` is skipped before its class is resolved and is reported by
-     * {@see PanelRegistry::disabled()}; `title` and `icon` overrides apply to portable panels only, because a Yii
-     * panel renders the metadata it declares itself.
-     *
-     * @param array<array-key, array<string, mixed>|Panel|PortablePanel|string> $definitions Panel definitions to
-     * resolve.
-     *
-     * @throws InvalidConfigException when a definition, a registration option, or the resolved catalog is invalid.
-     */
-    private function resolvePanels(array $definitions): void
-    {
-        $this->panels = [];
-
-        $overrides = [];
-
-        foreach ($definitions as $key => $definition) {
-            $override = null;
-
-            if (is_array($definition)) {
-                $override = self::panelOverride($definition);
-
-                if ($override->enabled === false) {
-                    if (is_string($key)) {
-                        $overrides[$key] = $override;
-                    }
-
-                    continue;
-                }
-
-                $definition = array_diff_key($definition, array_flip(PanelOverride::KEYS));
-            }
-
-            $panel = $this->buildPanel($key, $definition);
-
-            if ($override !== null && !$panel instanceof ProviderPanel) {
-                self::assertNoMetadataOverride($panel->id, $override);
-            }
-
-            if (isset($this->panels[$panel->id])) {
-                throw new InvalidConfigException(
-                    Message::PANEL_ID_DUPLICATE->getMessage($panel->id),
-                );
-            }
-
-            if ($panel->isEnabled() === false) {
-                continue;
-            }
-
-            $this->panels[$panel->id] = $panel;
-
-            if ($override !== null) {
-                $overrides[$panel->id] = $override;
-            }
-        }
-
-        $this->panelRegistry = $this->resolvePanelRegistry($overrides);
-    }
-
-    /**
-     * Creates the Yii2-specific toolbar renderer.
-     *
-     * @param BaseView|null $view View handling the current response or `null` to use the application view.
-     *
-     * @return ToolbarRenderer Configured toolbar renderer.
-     */
-    private function toolbarRenderer(BaseView|null $view = null): ToolbarRenderer
-    {
-        $view ??= Yii::$app->getView();
-
-        return new ToolbarRenderer($view, Yii::$app->getAssetManager(), self::VIEW_PATH_ALIAS);
+        return $this->service(ToolbarPresenter::class, fn(): ToolbarPresenter => new ToolbarPresenter($this));
     }
 }

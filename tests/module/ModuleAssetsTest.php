@@ -10,6 +10,7 @@ use RuntimeException;
 use Yii;
 use yii\debug\{DebugAsset, Module, ToolbarAsset};
 use yii\debug\exception\Message;
+use yii\debug\service\YiiLogo;
 use yii\debug\tests\support\ModuleTestCase;
 
 use function base64_encode;
@@ -64,7 +65,7 @@ final class ModuleAssetsTest extends ModuleTestCase
     public function testGetYiiLogoUsesSharedFrontendAsset(): void
     {
         // Reset the static cache so this test always exercises the lazy data-URI composition.
-        $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+        YiiLogo::reset();
 
         self::assertSame(
             'data:image/svg+xml;base64,' . base64_encode(Icon::render('yii')),
@@ -84,13 +85,13 @@ final class ModuleAssetsTest extends ModuleTestCase
         );
 
         // Reset cache so other tests see the bundled logo path again.
-        $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+        YiiLogo::reset();
     }
 
     public function testThrowRuntimeExceptionWhenSharedYiiLogoIsUnavailable(): void
     {
         $this->setInaccessibleStaticProperty(Icon::class, 'cache', ['yii' => '']);
-        $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+        YiiLogo::reset();
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
@@ -113,7 +114,7 @@ final class ModuleAssetsTest extends ModuleTestCase
             throw $exception;
         } finally {
             $this->setInaccessibleStaticProperty(Icon::class, 'cache', []);
-            $this->setInaccessibleStaticProperty(Module::class, 'yiiLogo', null);
+            YiiLogo::reset();
         }
     }
 
