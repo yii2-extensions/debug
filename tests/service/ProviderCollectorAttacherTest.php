@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\service;
 
-use PHPForge\Debug\Collector\CollectorCoordinator;
 use PHPForge\Debug\CollectorInterface;
+use PHPForge\Inertia\Debug\InertiaCollector;
 use PHPForge\Vite\Configuration\DevelopmentConfiguration;
 use PHPUnit\Framework\Attributes\Group;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Yii;
 use yii\base\Component;
-use yii\debug\{PackagedProvider, ProviderAttachment, ProviderCatalog};
+use yii\debug\{Module, PackagedProvider, ProviderAttachment, ProviderCatalog};
 use yii\debug\service\ProviderCollectorAttacher;
 use yii\debug\tests\support\ModuleTestCase;
 use yii\debug\tests\support\stub\CustomCollector;
 use yii\debug\tests\support\stub\inertia\CompatibleManager;
 use yii\debug\tests\support\stub\vite\{CompatibleVite, ViteWithoutConstructor, ViteWithoutDispatcher};
+use yii\inertia\Manager as InertiaManager;
 
 /**
  * Unit tests for {@see ProviderCollectorAttacher} handing a provider collector to the component it observes.
@@ -95,9 +96,19 @@ final class ProviderCollectorAttacherTest extends ModuleTestCase
         );
 
         $catalog = new ProviderCatalog($this->provider(ProviderAttachment::Constructor, CompatibleVite::class));
-        $coordinator = new CollectorCoordinator([$collector]);
+        $module = new Module('debug', null, ['collectors' => [$collector]]);
 
-        $attacher = new class ($catalog, $coordinator) extends ProviderCollectorAttacher {
+        $attacher = new class ($module, $catalog) extends ProviderCollectorAttacher {
+            public function __construct(Module $module, private readonly ProviderCatalog $testCatalog)
+            {
+                parent::__construct($module);
+            }
+
+            protected function catalog(): ProviderCatalog
+            {
+                return $this->testCatalog;
+            }
+
             /**
              * @param class-string $class Component class whose constructor is inspected.
              * @param array<array-key, mixed> $arguments Arguments the definition already declares.
@@ -587,6 +598,29 @@ final class ProviderCollectorAttacherTest extends ModuleTestCase
         );
     }
 
+    public function testAttachReadsThePackagedCatalogByDefault(): void
+    {
+        Yii::$app->set('inertia', InertiaManager::class);
+
+        $module = new Module('debug');
+
+        $collector = $module->getCollectorCoordinator()->collector('inertia');
+
+        self::assertInstanceOf(
+            InertiaCollector::class,
+            $collector,
+            'Module must register the packaged Inertia collector.',
+        );
+
+        (new ProviderCollectorAttacher($module))->attach(Yii::$app);
+
+        self::assertSame(
+            ['class' => InertiaManager::class, 'eventDispatcher' => $collector],
+            $this->definition('inertia'),
+            'Default catalog must attach the packaged Inertia collector.',
+        );
+    }
+
     public function testAttachSkipsACollectorOutsideTheDispatcherContract(): void
     {
         Yii::$app->set(
@@ -651,7 +685,7 @@ final class ProviderCollectorAttacherTest extends ModuleTestCase
      *
      * @param ProviderAttachment $attachment Way the component takes the collector.
      * @param class-string $componentClass Class the component must be for the attachment to apply.
-     * @param list<CollectorInterface> $collectors Collectors the coordinator holds.
+     * @param list<CollectorInterface> $collectors Collectors the module coordinator holds.
      * @param string $collectorClass Collector class deciding whether the provider package counts as installed.
      */
     private function attacher(
@@ -660,23 +694,46 @@ final class ProviderCollectorAttacherTest extends ModuleTestCase
         array $collectors,
         string $collectorClass = CustomCollector::class,
     ): ProviderCollectorAttacher {
-        return new ProviderCollectorAttacher(
+        return $this->attacherFor(
             new ProviderCatalog(
                 $this->provider($attachment, $componentClass, collectorClass: $collectorClass),
             ),
-            new CollectorCoordinator($collectors),
+            $collectors,
         );
+    }
+
+    /**
+     * Builds an attacher whose module coordinator holds `$collectors` and whose catalog is `$catalog`.
+     *
+     * @param ProviderCatalog $catalog Providers the attacher resolves collectors against.
+     * @param list<CollectorInterface> $collectors Collectors the module coordinator holds.
+     */
+    private function attacherFor(ProviderCatalog $catalog, array $collectors): ProviderCollectorAttacher
+    {
+        $module = new Module('debug', null, ['collectors' => $collectors]);
+
+        return new class ($module, $catalog) extends ProviderCollectorAttacher {
+            public function __construct(Module $module, private readonly ProviderCatalog $testCatalog)
+            {
+                parent::__construct($module);
+            }
+
+            protected function catalog(): ProviderCatalog
+            {
+                return $this->testCatalog;
+            }
+        };
     }
 
     /**
      * Builds the attacher for `$first` followed by a provider observing {@see NEXT_COMPONENT}.
      *
      * @param PackagedProvider $first Provider the scenario makes the attachment skip.
-     * @param list<CollectorInterface> $collectors Collectors the coordinator holds.
+     * @param list<CollectorInterface> $collectors Collectors the module coordinator holds.
      */
     private function chainedAttacher(PackagedProvider $first, array $collectors): ProviderCollectorAttacher
     {
-        return new ProviderCollectorAttacher(
+        return $this->attacherFor(
             new ProviderCatalog(
                 $first,
                 $this->provider(
@@ -686,7 +743,7 @@ final class ProviderCollectorAttacherTest extends ModuleTestCase
                     self::NEXT_COMPONENT,
                 ),
             ),
-            new CollectorCoordinator($collectors),
+            $collectors,
         );
     }
 

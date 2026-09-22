@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\service;
 
-use PHPForge\Debug\Collector\CollectorCoordinator;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use ReflectionClass;
 use Yii;
 use yii\base\{Application, Component};
-use yii\debug\{ComponentResolver, PackagedProvider, ProviderAttachment, ProviderCatalog};
+use yii\debug\{ComponentResolver, Module, PackagedProvider, ProviderAttachment, ProviderCatalog};
 use yii\helpers\ArrayHelper;
 
 use function array_key_first;
@@ -29,13 +28,9 @@ use function is_string;
 class ProviderCollectorAttacher
 {
     /**
-     * @param ProviderCatalog $catalog Providers the debugger wires on its own.
-     * @param CollectorCoordinator $coordinator Coordinator holding the registered collectors.
+     * @param Module $module Debug module owning the collector coordinator, read for configuration at call time.
      */
-    public function __construct(
-        protected readonly ProviderCatalog $catalog,
-        protected readonly CollectorCoordinator $coordinator,
-    ) {}
+    public function __construct(protected readonly Module $module) {}
 
     /**
      * Attaches the collector of every installed provider to its application component.
@@ -49,8 +44,10 @@ class ProviderCollectorAttacher
      */
     public function attach(Application $app): void
     {
-        foreach ($this->catalog->installed() as $provider) {
-            $collector = $this->coordinator->collector($provider->id);
+        $coordinator = $this->module->getCollectorCoordinator();
+
+        foreach ($this->catalog()->installed() as $provider) {
+            $collector = $coordinator->collector($provider->id);
 
             if (!$collector instanceof EventDispatcherInterface) {
                 continue;
@@ -108,6 +105,19 @@ class ProviderCollectorAttacher
 
             $app->set($id, $definition);
         }
+    }
+
+    /**
+     * Returns the catalog of providers this attacher wires.
+     *
+     * Override point: a subclass returning its own catalog attaches a different set of providers, or restricts the
+     * built-in packaged providers to a subset.
+     *
+     * @return ProviderCatalog Providers the debugger wires on its own.
+     */
+    protected function catalog(): ProviderCatalog
+    {
+        return ProviderCatalog::packaged();
     }
 
     /**

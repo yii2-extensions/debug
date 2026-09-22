@@ -10,7 +10,7 @@ use stdClass;
 use Yii;
 use yii\base\{Application, InvalidConfigException, Module as BaseModule};
 use yii\debug\exception\Message;
-use yii\debug\{Module, ProviderCatalog};
+use yii\debug\Module;
 use yii\debug\service\{AccessGuard, CollectorRegistrar, ProviderCollectorAttacher};
 use yii\debug\tests\support\ModuleTestCase;
 use yii\debug\tests\support\stub\service\ConfiguredAccessGuard;
@@ -251,10 +251,7 @@ final class ModuleServiceTest extends ModuleTestCase
 
         $module->bootstrap(Yii::$app);
 
-        $catalog = ProviderCatalog::packaged();
-        $coordinator = $module->getCollectorCoordinator();
-
-        $attacher = new class ($catalog, $coordinator) extends ProviderCollectorAttacher {
+        $attacher = new class ($module) extends ProviderCollectorAttacher {
             public int $attachCalls = 0;
 
             public function attach(Application $app): void

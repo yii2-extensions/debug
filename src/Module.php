@@ -315,10 +315,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 $this
                     ->service(
                         ProviderCollectorAttacher::class,
-                        fn(): ProviderCollectorAttacher => new ProviderCollectorAttacher(
-                            ProviderCatalog::packaged(),
-                            $this->getCollectorCoordinator(),
-                        ),
+                        fn(): ProviderCollectorAttacher => new ProviderCollectorAttacher($this),
                     )
                     ->attach($app);
             },
