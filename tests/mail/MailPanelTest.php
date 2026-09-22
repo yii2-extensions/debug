@@ -344,6 +344,72 @@ final class MailPanelTest extends TestCase
         );
     }
 
+    public function testGetToolbarDataPointsTheLabelAtThePreviousRequestAfterPostRedirectGet(): void
+    {
+        $panel = $this->makePanel(MailPanel::class);
+
+        $module = $panel->module ?? self::fail('Module must be wired.');
+
+        $dataPath = sys_get_temp_dir() . '/debug-mail-prg-' . uniqid();
+
+        mkdir($dataPath, 0o777, true);
+
+        $module->dataPath = $dataPath;
+
+        $this->writeDebugSnapshot(
+            $module,
+            'post-tag',
+            [],
+            ['method' => 'POST', 'url' => 'https://example.com/site/contact', 'mailCount' => 1],
+        );
+        $this->writeDebugSnapshot(
+            $module,
+            'get-tag',
+            [],
+            ['method' => 'GET', 'url' => 'https://example.com/site/contact', 'mailCount' => 0],
+        );
+
+        $panel->tag = 'get-tag';
+
+        $this->hydratePanel(
+            $panel,
+            MailSnapshot::capture([]),
+        );
+
+        $data = $panel->getToolbarData();
+
+        $url = $data['url'] ?? null;
+
+        self::assertIsString(
+            $url,
+            'Envelope must carry a URL.',
+        );
+        self::assertStringContainsString(
+            'tag=post-tag',
+            $url,
+            'Label must open the POST capture.',
+        );
+        self::assertStringNotContainsString(
+            'get-tag',
+            $url,
+            'Label must not open the GET capture.',
+        );
+        self::assertSame(
+            [
+                [
+                    'value' => 1,
+                    'status' => 'cross-request',
+                    'title' => 'Sent in the previous request (POST /site/contact) — open it.',
+                    'url' => $url,
+                ],
+            ],
+            $data['items'] ?? null,
+            'Badge must link to the same capture as the label.',
+        );
+
+        $this->cleanupDataPath($dataPath);
+    }
+
     public function testGetToolbarItemsEmitsCountChipWhenMessagesPresent(): void
     {
         $panel = $this->makePanel(MailPanel::class);

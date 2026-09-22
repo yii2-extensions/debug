@@ -11,6 +11,8 @@ use yii\base\{Component, ViewContextInterface};
 use yii\debug\exception\Message;
 use yii\debug\routing\DebugUrlGenerator;
 
+use function array_key_first;
+use function count;
 use function is_callable;
 use function is_string;
 
@@ -110,7 +112,8 @@ class Panel extends Component implements ViewContextInterface
      * Returns the toolbar envelope wrapping the panel's icon, items, and URL.
      *
      * Renders the error envelope when {@see getError()} is non-`null`; otherwise wraps the structured items from
-     * {@see getToolbarItems()}. Panels that yield no items are skipped.
+     * {@see getToolbarItems()}. Panels that yield no items are skipped. A panel whose only item links elsewhere points
+     * the envelope `url` at that item, so the chip label and its badge open the same capture.
      *
      * @return array<string, mixed> Toolbar envelope; `[]` to skip the panel.
      */
@@ -141,7 +144,7 @@ class Panel extends Component implements ViewContextInterface
 
         $envelope = [
             'title' => $this->getName(),
-            'url' => $this->getUrl(),
+            'url' => self::envelopeUrl($items) ?? $this->getUrl(),
         ];
 
         $icon = $this->getToolbarIcon();
@@ -349,5 +352,27 @@ class Panel extends Component implements ViewContextInterface
     protected function getToolbarItems(): array
     {
         return [];
+    }
+
+    /**
+     * Returns the target of a chip whose only item links elsewhere, so its label and badge open the same capture.
+     *
+     * The toolbar renders the label and a linked badge as two separate links; a single item pointing at another
+     * capture (Mail's cross-request count) would otherwise leave the label on the current one. Items that sit beside
+     * other metrics (Logs' severity filters) keep the panel target.
+     *
+     * @param array<int, array<string, mixed>> $items Toolbar items produced by {@see getToolbarItems()}.
+     *
+     * @return string|null URL of the only item, or `null` when there are several items or the only one has no URL.
+     */
+    private static function envelopeUrl(array $items): string|null
+    {
+        if (count($items) !== 1) {
+            return null;
+        }
+
+        $url = $items[array_key_first($items)]['url'] ?? null;
+
+        return is_string($url) && $url !== '' ? $url : null;
     }
 }
