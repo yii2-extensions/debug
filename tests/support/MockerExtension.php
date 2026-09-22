@@ -52,7 +52,6 @@ final class MockerExtension implements Extension
             ['namespace' => 'yii\debug\collectors', 'name' => 'file_put_contents'],
             ['namespace' => 'yii\debug\collectors', 'name' => 'glob'],
             ['namespace' => 'yii\debug\collectors', 'name' => 'time'],
-            ['namespace' => 'yii\debug\storage', 'name' => 'method_exists'],
             ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'file_put_contents'],
             ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'fopen'],
             ['namespace' => 'PHPForge\Debug\Storage', 'name' => 'rename'],

@@ -6,16 +6,15 @@ namespace yii\debug\tests\module;
 
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
-use yii\debug\collectors\TimelineCollector;
 use yii\debug\{Module, VersionResolver};
-use yii\debug\panels\{RouterPanel, TimelinePanel};
+use yii\debug\panels\RouterPanel;
 use yii\debug\tests\support\ModuleTestCase;
 
 use function array_keys;
 
 /**
- * Unit tests for {@see Module} covering built-in action/collector IDs and panel order, Router visibility, explicit
- * Timeline registration, view aliases, namespace defaults, package version resolution, and literal/callable page titles.
+ * Unit tests for {@see Module} covering built-in action/collector IDs and panel order, Router visibility, view aliases,
+ * namespace defaults, package version resolution, and literal/callable page titles.
  */
 #[Group('module')]
 final class ModuleDefaultsTest extends ModuleTestCase
@@ -235,28 +234,6 @@ final class ModuleDefaultsTest extends ModuleTestCase
             'yii\\debug\\controllers',
             $module->actionNamespace,
             'Module::actionNamespace must default to the Yii debug controllers namespace.'
-        );
-    }
-
-    public function testTimelineCanBeConfiguredExplicitly(): void
-    {
-        $module = new Module(
-            'debug',
-            null,
-            [
-                'collectors' => ['timeline' => TimelineCollector::class],
-                'panels' => ['timeline' => TimelinePanel::class],
-            ],
-        );
-
-        self::assertTrue(
-            $module->getCollectorCoordinator()->hasCollector('timeline'),
-            'Explicit configuration must continue to register the standalone Timeline collector.',
-        );
-        self::assertInstanceOf(
-            TimelinePanel::class,
-            $module->panels['timeline'] ?? null,
-            'Explicit configuration must continue to register the standalone Timeline panel.',
         );
     }
 }

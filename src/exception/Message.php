@@ -283,13 +283,6 @@ enum Message: string
     case POST_ONLY = 'Only POST requests are allowed.';
 
     /**
-     * The profiling panel cannot be resolved.
-     *
-     * Format: "Unable to determine the profiling panel"
-     */
-    case PROFILING_PANEL_UNAVAILABLE = 'Unable to determine the profiling panel';
-
-    /**
      * A configured registration ID does not match the provider it wraps.
      *
      * Format: "The debug %s registration ID must match its provider."
@@ -309,27 +302,6 @@ enum Message: string
      * Format: "Queue job record not found."
      */
     case QUEUE_JOB_RECORD_NOT_FOUND = 'Queue job record not found.';
-
-    /**
-     * The request end time cannot be determined.
-     *
-     * Format: "Unable to determine request end time"
-     */
-    case REQUEST_END_TIME_UNAVAILABLE = 'Unable to determine request end time';
-
-    /**
-     * The request memory usage cannot be determined.
-     *
-     * Format: "Unable to determine used memory in request"
-     */
-    case REQUEST_MEMORY_UNAVAILABLE = 'Unable to determine used memory in request';
-
-    /**
-     * The request start time cannot be determined.
-     *
-     * Format: "Unable to determine request start time"
-     */
-    case REQUEST_START_TIME_UNAVAILABLE = 'Unable to determine request start time';
 
     /**
      * Yii cannot resolve a required action service.
@@ -358,27 +330,6 @@ enum Message: string
      * Format: "The debug layout requires a ShellContext."
      */
     case SHELL_CONTEXT_REQUIRED = 'The debug layout requires a ShellContext.';
-
-    /**
-     * A timeline duration is zero.
-     *
-     * Format: "Duration cannot be zero"
-     */
-    case TIMELINE_DURATION_ZERO = 'Duration cannot be zero';
-
-    /**
-     * A timeline SVG class does not extend the required base class.
-     *
-     * Format: "Timeline SVG class must extend %s."
-     */
-    case TIMELINE_SVG_CLASS_INVALID = 'Timeline SVG class must extend %s.';
-
-    /**
-     * A timeline SVG factory creates an incompatible instance.
-     *
-     * Format: "Timeline SVG factory must create %s."
-     */
-    case TIMELINE_SVG_FACTORY_INVALID = 'Timeline SVG factory must create %s.';
 
     /**
      * A panel toolbar envelope breaks the typed toolbar contract.

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat!: update panel, collector, toolbar, sidebar, and provider configuration handling; require Debug Core `^0.3`.
 - feat!: register Inertia and Vite from a packaged ProviderCatalog and attach each collector to its application component.
 - refactor(module): resolve debugger services through the module service locator and allow replacing them via `components` configuration.
+- refactor!: remove standalone `Timeline` panel/collector, dead storage compatibility branch, and orphan classes.
 
 ## 0.1.1 May 18, 2026
 

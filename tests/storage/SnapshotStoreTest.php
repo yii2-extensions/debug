@@ -172,36 +172,7 @@ final class SnapshotStoreTest extends TestCase
         );
     }
 
-    public function testSnapshotWriteResultUsesCompatibilityFallbackWhenCoreResultApiIsUnavailable(): void
-    {
-        MockerState::addCondition(
-            'yii\debug\storage',
-            'method_exists',
-            [],
-            false,
-            true,
-        );
-
-        $summary = $this->summary('fallback', 1_700_000_000.0);
-
-        $result = $this->store()->writeSnapshotResult(
-            new DebugSnapshot($summary, [], []),
-            10,
-        );
-
-        self::assertSame(
-            ['fallback'],
-            array_keys($result->entries ?? []),
-            'The compatibility path must return the manifest read after the write.',
-        );
-        self::assertSame(
-            [],
-            $result->removed,
-            'The compatibility path must preserve the evicted entries returned by the write.',
-        );
-    }
-
-    public function testSnapshotWriteResultUsesSingleCoreTransactionWhenResultApiIsAvailable(): void
+    public function testSnapshotWriteResultUsesSingleCoreTransaction(): void
     {
         $summary = $this->summary('single-transaction', 1_700_000_000.0);
 

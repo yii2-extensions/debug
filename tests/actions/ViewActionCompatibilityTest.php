@@ -10,12 +10,13 @@ use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\debug\actions\ViewAction;
 use yii\debug\Panel;
-use yii\debug\panels\TimelinePanel;
 use yii\debug\tests\support\ActionTestCase;
+use yii\debug\tests\support\stub\CustomPanel;
 
 /**
- * Unit tests for {@see ViewAction} covering Timeline-to-Profiling aliases, explicit Timeline panel preservation,
- * Timeline filter normalization and precedence, and removal of obsolete view state and empty filter groups.
+ * Unit tests for {@see ViewAction} covering Timeline-to-Profiling aliases, preservation of a panel registered under the
+ * `timeline` id, Timeline filter normalization and precedence, and removal of obsolete view state and empty filter
+ * groups.
  */
 #[Group('actions')]
 final class ViewActionCompatibilityTest extends ActionTestCase
@@ -127,11 +128,11 @@ final class ViewActionCompatibilityTest extends ActionTestCase
         );
     }
 
-    public function testActionViewKeepsExplicitTimelinePanelActive(): void
+    public function testActionViewKeepsPanelRegisteredUnderTimelineIdActive(): void
     {
         $module = $this->bootDebugModule();
 
-        $timelinePanel = new TimelinePanel(['id' => 'timeline', 'module' => $module]);
+        $timelinePanel = new CustomPanel(['id' => 'timeline', 'module' => $module]);
 
         $module->panels['timeline'] = $timelinePanel;
 
@@ -157,7 +158,7 @@ final class ViewActionCompatibilityTest extends ActionTestCase
         self::assertSame(
             'timeline',
             $timelinePanel->getRenderContext()?->panel,
-            'An explicitly configured Timeline panel must continue to handle its own links.',
+            'Registered panel must keep its own link.',
         );
     }
 
