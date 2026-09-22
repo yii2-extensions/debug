@@ -37,6 +37,7 @@ final class LogTargetFactoryTest extends ModuleTestCase
             'Remaining entries must be applied as properties.',
         );
     }
+
     public function testCreateAcceptsAStringClassName(): void
     {
         $module = new Module('debug');
