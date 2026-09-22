@@ -711,7 +711,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         return [
             'config' => \yii\debug\panels\ConfigPanel::class,
-            'request' => yii\debug\panels\RequestPanel::class,
+            'request' => \yii\debug\panels\RequestPanel::class,
             'log' => \yii\debug\panels\LogPanel::class,
             'event' => \yii\debug\panels\EventPanel::class,
             'profiling' => \yii\debug\panels\ProfilingPanel::class,
