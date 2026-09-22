@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat!: register Inertia and Vite from a packaged ProviderCatalog and attach each collector to its application component.
 - refactor(module): resolve debugger services through the module service locator and allow replacing them via `components` configuration.
 - refactor!: remove standalone `Timeline` panel/collector, dead storage compatibility branch, and orphan classes.
+- refactor!: link Mail's chip label to its capture; make Mail and Queue built-ins after Database, reject their `position`, and remove `isOptional()`.
 
 ## 0.1.1 May 18, 2026
 

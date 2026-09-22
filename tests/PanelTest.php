@@ -70,6 +70,64 @@ final class PanelTest extends TestCase
         );
     }
 
+    public function testGetToolbarDataKeepsPanelUrlWhenItemsLinkAlongsideUnlinkedMetrics(): void
+    {
+        $panel = $this->makeCustomPanel('logs');
+
+        $panel->stubName = 'Logs';
+        $panel->stubItems = [
+            ['value' => 3],
+            ['value' => 1, 'status' => 'danger', 'url' => '/debug/view?tag=test-tag&panel=logs&level=1'],
+        ];
+
+        self::assertSame(
+            $panel->getUrl(),
+            $panel->getToolbarData()['url'] ?? null,
+            'A filter link beside an unlinked metric must not replace the panel target.',
+        );
+
+        $panel->stubItems = [
+            ['value' => 1, 'url' => '/debug/view?tag=first&panel=logs'],
+            ['value' => 2, 'url' => '/debug/view?tag=second&panel=logs'],
+        ];
+
+        self::assertSame(
+            $panel->getUrl(),
+            $panel->getToolbarData()['url'] ?? null,
+            'Two linked metrics must keep the panel target.',
+        );
+    }
+
+    public function testGetToolbarDataKeepsPanelUrlWhenNoItemLinks(): void
+    {
+        $panel = $this->makeCustomPanel('custom');
+
+        $panel->stubName = 'Custom';
+        $panel->stubItems = [['value' => 1]];
+
+        self::assertSame(
+            $panel->getUrl(),
+            $panel->getToolbarData()['url'] ?? null,
+            'An unlinked metric must keep the panel target.',
+        );
+
+        $panel->stubItems = [['value' => 1, 'url' => '']];
+
+        self::assertSame(
+            $panel->getUrl(),
+            $panel->getToolbarData()['url'] ?? null,
+            'An empty item URL must keep the panel target.',
+        );
+
+        $panel->stubItems = [['value' => 1, 'url' => ['not', 'a', 'string']]];
+
+        self::assertSame(
+            $panel->getUrl(),
+            $panel->getToolbarData()['url'] ?? null,
+            'A non-string item URL must keep the panel target.',
+        );
+    }
+
     public function testGetToolbarDataOmitsIconKeyByDefault(): void
     {
         $panel = $this->makeCustomPanel('plain');
@@ -121,6 +179,29 @@ final class PanelTest extends TestCase
             [],
             $panel->getToolbarData(),
             'An empty items list must hide the chip entirely.',
+        );
+    }
+
+    public function testGetToolbarDataUsesTheItemUrlWhenTheOnlyItemLinks(): void
+    {
+        $panel = $this->makeCustomPanel('mail');
+
+        $item = ['value' => 1, 'status' => 'cross-request', 'url' => '/debug/view?tag=previous-tag&panel=mail'];
+
+        $panel->stubName = 'Mail';
+        $panel->stubItems = [7 => $item];
+
+        $data = $panel->getToolbarData();
+
+        self::assertSame(
+            '/debug/view?tag=previous-tag&panel=mail',
+            $data['url'] ?? null,
+            'Label and badge must open the same capture.',
+        );
+        self::assertSame(
+            [7 => $item],
+            $data['items'] ?? null,
+            'Items must stay unchanged.',
         );
     }
 

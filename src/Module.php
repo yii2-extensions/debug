@@ -693,13 +693,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
     /**
      * Returns the built-in panel configurations, ordered as the request itself unfolds.
      *
-     * The primary navigation starts with Request, Logs, Events, Profiling, and Database before the remaining Yii diagnostics.
-     * Optional integration panels finish the list. `config` opens the list but is surfaced through the brand bar
-     * rather than the panel nav.
+     * The primary navigation lists Request, Logs, Events, Profiling, Database, Mail, Queue, User, Dump, and Asset
+     * Bundles. `config` opens the list but is surfaced through the brand bar rather than the panel nav; `router` only
+     * feeds Request.
      *
-     * {@see ProviderCatalog} contributes the panel of every optional provider package the application installed; a
-     * panel an application wires itself is named by plain `string` so the class stays out of this module's symbol
-     * table, and {@see CoreDefinitions::merge()} drops the entry when that package is not installed.
+     * {@see CoreDefinitions::merge()} drops a built-in whose optional package is not installed (`queue` without
+     * `yii\queue\Queue`). {@see ProviderCatalog} contributes the panel of every optional provider package the
+     * application installed; those panels finish the list and are grouped under Extensions.
      *
      * @return array<string, array<string, mixed>|class-string<Panel>|class-string<PortablePanel>|string> Panel
      * definitions indexed by panel id.
@@ -713,13 +713,13 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'event' => \yii\debug\panels\EventPanel::class,
             'profiling' => \yii\debug\panels\ProfilingPanel::class,
             'db' => \yii\debug\panels\DbPanel::class,
+            'mail' => \yii\debug\panels\MailPanel::class,
+            'queue' => \yii\debug\panels\QueuePanel::class,
             'router' => ['class' => \yii\debug\panels\RouterPanel::class, 'standalone' => false],
             'user' => \yii\debug\panels\UserPanel::class,
             'dump' => \yii\debug\panels\DumpPanel::class,
             'asset' => \yii\debug\panels\AssetPanel::class,
             ...ProviderCatalog::packaged()->panels(),
-            'mail' => \yii\debug\panels\MailPanel::class,
-            'queue' => \yii\debug\panels\QueuePanel::class,
         ];
     }
 

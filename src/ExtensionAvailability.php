@@ -10,8 +10,9 @@ use yii\debug\panels\{JsonPanel, ProviderPanel};
  * Detects optional debugger integrations through the runtime classes they provide, and classifies the panels that
  * belong to an extension rather than to the built-in Yii diagnostics.
  *
- * {@see ProviderCatalog} declares the integrations the debugger wires on its own; the ones an application wires
- * itself are listed here.
+ * {@see ProviderCatalog} declares the integrations the debugger wires on its own; the built-in panels gated on an
+ * optional package are listed here. Availability decides whether such a panel is registered, never how it is
+ * grouped: Mail and Queue are built-in diagnostics, and only provider-owned or payload-only panels are extensions.
  */
 final class ExtensionAvailability
 {
@@ -19,7 +20,6 @@ final class ExtensionAvailability
      * @var array<string, non-empty-list<non-empty-string>> Runtime provider class names indexed by debugger panel ID.
      */
     private const array PROVIDERS = [
-        'mail' => ['yii\symfonymailer\Mailer'],
         'queue' => ['yii\queue\Queue'],
     ];
 
@@ -61,23 +61,11 @@ final class ExtensionAvailability
      * @param string $id Panel id under which the panel is registered.
      * @param Panel $panel Registered panel instance.
      *
-     * @return bool `true` when the panel is provider-backed, payload-only, or bound to an optional package; `false`
-     * otherwise.
+     * @return bool `true` when the panel is provider-backed, payload-only, or declared by {@see ProviderCatalog};
+     * `false` for every built-in Yii diagnostic, including the ones gated on an optional package.
      */
     public static function isExtensionPanel(string $id, Panel $panel): bool
     {
-        return $panel instanceof ProviderPanel || $panel instanceof JsonPanel || self::isOptional($id);
-    }
-
-    /**
-     * Returns whether `$id` belongs to an optional integration rather than the built-in Yii diagnostics.
-     *
-     * @param string $id Panel id to classify.
-     *
-     * @return bool `true` when the panel depends on an optional package; `false` otherwise.
-     */
-    public static function isOptional(string $id): bool
-    {
-        return isset(self::PROVIDERS[$id]) || ProviderCatalog::packaged()->has($id);
+        return $panel instanceof ProviderPanel || $panel instanceof JsonPanel || ProviderCatalog::packaged()->has($id);
     }
 }

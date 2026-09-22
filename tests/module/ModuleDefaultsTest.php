@@ -133,17 +133,17 @@ final class ModuleDefaultsTest extends ModuleTestCase
                 'event',
                 'profiling',
                 'db',
+                'mail',
+                'queue',
                 'router',
                 'user',
                 'dump',
                 'asset',
                 'inertia',
                 'vite',
-                'mail',
-                'queue',
             ],
             array_keys($corePanels),
-            'Navigation and toolbar order: Request, Logs, Events, Profiling, and Database first, then diagnostics and integrations.',
+            'Order: request flow, Mail and Queue after Database, provider panels last.',
         );
     }
 

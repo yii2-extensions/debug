@@ -215,9 +215,9 @@ final class SidebarDataNormalizerTest extends TestCase
         );
 
         self::assertSame(
-            ['History', 'Request'],
+            ['History', 'Request', 'Mail', 'Queue'],
             array_map(static fn(SidebarNavItem $item): string => $item->label, $view->navItems),
-            'Primary Yii diagnostics must remain in the main navigation.',
+            'Built-in Yii diagnostics, Mail and Queue included, must stay in the main navigation.',
         );
         self::assertArrayHasKey(
             'Extensions',
@@ -225,7 +225,7 @@ final class SidebarDataNormalizerTest extends TestCase
             'Optional integrations need a labeled group.',
         );
         self::assertSame(
-            ['Mail', 'Queue', 'Inertia', 'Vite'],
+            ['Inertia', 'Vite'],
             array_map(
                 static fn(SidebarNavItem $item): string => $item->label,
                 $view->navGroups['Extensions'],
@@ -234,8 +234,6 @@ final class SidebarDataNormalizerTest extends TestCase
         );
         self::assertSame(
             [
-                '/index.php?r=debug%2Fview&tag=tag-newest&panel=mail',
-                '/index.php?r=debug%2Fview&tag=tag-newest&panel=queue',
                 '/index.php?r=debug%2Fview&tag=tag-newest&panel=inertia',
                 '/index.php?r=debug%2Fview&tag=tag-newest&panel=vite',
             ],

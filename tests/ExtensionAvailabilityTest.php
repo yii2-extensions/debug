@@ -7,20 +7,36 @@ namespace yii\debug\tests;
 use PHPUnit\Framework\Attributes\Group;
 use Xepozz\InternalMocker\MockerState;
 use yii\debug\ExtensionAvailability;
-use yii\debug\panels\{JsonPanel, ProviderPanel, RequestPanel};
+use yii\debug\panels\{JsonPanel, MailPanel, ProviderPanel, QueuePanel, RequestPanel};
 use yii\debug\tests\support\TestCase;
 
 /**
- * Unit tests for {@see ExtensionAvailability} covering optional-ID classification and runtime provider detection.
+ * Unit tests for {@see ExtensionAvailability} covering extension-panel classification and runtime provider detection.
  */
 #[Group('module')]
 final class ExtensionAvailabilityTest extends TestCase
 {
+    public function testIdsWithoutProviderAreAvailable(): void
+    {
+        MockerState::addCondition(
+            'yii\debug',
+            'class_exists',
+            ['yii\symfonymailer\Mailer'],
+            false,
+        );
+
+        foreach (['mail', 'request'] as $id) {
+            self::assertTrue(
+                ExtensionAvailability::isAvailable($id),
+                "The '{$id}' panel must not depend on a runtime provider class.",
+            );
+        }
+    }
+
     public function testIsAvailableAcceptsInstalledSingleClassProviders(): void
     {
         $providers = [
             'inertia' => 'PHPForge\Inertia\Debug\InertiaCollector',
-            'mail' => 'yii\symfonymailer\Mailer',
             'queue' => 'yii\queue\Queue',
         ];
 
@@ -43,7 +59,6 @@ final class ExtensionAvailabilityTest extends TestCase
     {
         $providers = [
             'PHPForge\Inertia\Debug\InertiaCollector',
-            'yii\symfonymailer\Mailer',
             'yii\queue\Queue',
         ];
 
@@ -58,7 +73,6 @@ final class ExtensionAvailabilityTest extends TestCase
 
         $ids = [
             'inertia',
-            'mail',
             'queue',
         ];
 
@@ -70,7 +84,7 @@ final class ExtensionAvailabilityTest extends TestCase
         }
     }
 
-    public function testIsExtensionPanelClassifiesProviderPayloadAndOptionalPanels(): void
+    public function testIsExtensionPanelClassifiesOnlyProviderAndPayloadPanels(): void
     {
         self::assertTrue(
             ExtensionAvailability::isExtensionPanel('vite', new ProviderPanel()),
@@ -81,40 +95,20 @@ final class ExtensionAvailabilityTest extends TestCase
             'A payload-only panel belongs to the extensions.',
         );
         self::assertTrue(
-            ExtensionAvailability::isExtensionPanel('mail', new RequestPanel()),
-            'An optional id belongs to the extensions.',
+            ExtensionAvailability::isExtensionPanel('inertia', new RequestPanel()),
+            'A packaged provider id belongs to the extensions.',
+        );
+        self::assertFalse(
+            ExtensionAvailability::isExtensionPanel('mail', new MailPanel()),
+            'Mail must stay built-in.',
+        );
+        self::assertFalse(
+            ExtensionAvailability::isExtensionPanel('queue', new QueuePanel()),
+            'Queue must stay built-in although its package is optional.',
         );
         self::assertFalse(
             ExtensionAvailability::isExtensionPanel('request', new RequestPanel()),
             'Core diagnostics must stay built-in.',
-        );
-    }
-
-    public function testKnownIdsAreOptional(): void
-    {
-        $ids = [
-            'inertia',
-            'mail',
-            'queue',
-        ];
-
-        foreach ($ids as $id) {
-            self::assertTrue(
-                ExtensionAvailability::isOptional($id),
-                "The '{$id}' integration must be classified as optional.",
-            );
-        }
-    }
-
-    public function testUnknownIdIsAvailableButNotOptional(): void
-    {
-        self::assertTrue(
-            ExtensionAvailability::isAvailable('request'),
-            'Core Yii diagnostics must not require an optional provider.',
-        );
-        self::assertFalse(
-            ExtensionAvailability::isOptional('request'),
-            'Core Yii diagnostics must not be classified as optional integrations.',
         );
     }
 }
