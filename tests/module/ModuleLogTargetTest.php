@@ -14,11 +14,25 @@ use yii\debug\tests\support\stub\NotALogTarget;
 
 /**
  * Unit tests for {@see Module} covering log-target instance, class-name, and array-configuration resolution during
- * `bootstrap`, configured properties, and rejection of missing or incompatible target classes.
+ * `bootstrap`, configured properties, rejection of missing or incompatible target classes, and log-target reads
+ * before and after the bootstrap.
  */
 #[Group('module')]
 final class ModuleLogTargetTest extends ModuleTestCase
 {
+    public function testGetLogTargetReturnsTheTargetResolvedByBootstrap(): void
+    {
+        $module = new Module('debug');
+
+        $module->bootstrap(Yii::$app);
+
+        self::assertSame(
+            $module->logTarget,
+            $module->getLogTarget(),
+            'Resolved target must be handed back verbatim.',
+        );
+    }
+
     public function testLogTargetObjectIsAcceptedAsConfig(): void
     {
         $module = new Module('debug');
@@ -95,5 +109,17 @@ final class ModuleLogTargetTest extends ModuleTestCase
         );
 
         $module->bootstrap(Yii::$app);
+    }
+
+    public function testThrowInvalidConfigExceptionWhenLogTargetIsReadBeforeBootstrap(): void
+    {
+        $module = new Module('debug');
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            Message::LOG_TARGET_NOT_BOOTSTRAPPED->getMessage(),
+        );
+
+        $module->getLogTarget();
     }
 }

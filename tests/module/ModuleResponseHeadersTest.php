@@ -166,7 +166,7 @@ final class ModuleResponseHeadersTest extends ModuleTestCase
         $_SERVER['REQUEST_TIME_FLOAT'] = 1000.0;
 
         MockerState::addCondition(
-            'yii\\debug',
+            'yii\\debug\\service',
             'microtime',
             [true],
             1000.5,

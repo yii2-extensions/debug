@@ -100,6 +100,44 @@ $config['modules']['debug']['tracePathMappings'] = [
 ];
 ```
 
+## Module services
+
+The module delegates its work to services under `yii\debug\service` and resolves each one through its own service
+locator under the service class name. Replace a service by registering a definition under that name in the module
+`components` configuration; the module passes itself as the `module` constructor argument, so a subclass keeps the
+default constructor:
+
+```php
+use yii\debug\service\AccessGuard;
+
+final class TeamAccessGuard extends AccessGuard
+{
+    public function allows(string $ip, \yii\base\Action|null $action = null): bool
+    {
+        return parent::allows($ip, $action) && \Yii::$app->user->can('debugger');
+    }
+}
+
+$config['modules']['debug']['components'][AccessGuard::class] = TeamAccessGuard::class;
+```
+
+A definition may be a class name, a configuration array with `class`, a callable receiving `Module $module`, or an
+instance. Register it before the module resolves the service: `CapturePolicyFactory`, `CollectorRegistrar`,
+`PanelRegistrar`, and `StandaloneActionResolver` run during module initialization and `LogTargetFactory` during the
+application bootstrap, so they must come from the configuration; `AccessGuard`, `ProviderCollectorAttacher`, and
+`ToolbarPresenter` are resolved on the first request and may also be registered through `$module->set()` before it.
+
+| Service                     | Responsibility                                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| `AccessGuard`               | Decides whether a request may reach the debugger from the IP, host, and callback rules. |
+| `CapturePolicyFactory`      | Builds the redaction and body-size policy applied to every capture.                     |
+| `CollectorRegistrar`        | Resolves the configured collectors into the coordinator driving the capture.            |
+| `LogTargetFactory`          | Resolves the configured log target during the bootstrap.                                |
+| `PanelRegistrar`            | Resolves the configured panels and their display order.                                 |
+| `ProviderCollectorAttacher` | Hands each provider collector to the application component it observes.                 |
+| `StandaloneActionResolver`  | Merges the debugger action map and resolves routes against it.                          |
+| `ToolbarPresenter`          | Renders the toolbar and writes the debug response headers.                              |
+
 ## Standalone Router
 
 Routing details appear in Request by default. To show a separate Router panel for an existing integration, opt in

@@ -346,6 +346,13 @@ enum Message: string
     case SEARCH_MODEL_REQUIRED = '%s::$searchModel must be set.';
 
     /**
+     * A module service definition resolves to an object outside the service contract.
+     *
+     * Format: "Debug module service must resolve to a %s instance."
+     */
+    case SERVICE_INSTANCE_INVALID = 'Debug module service must resolve to a %s instance.';
+
+    /**
      * The debug layout lacks its required shell context.
      *
      * Format: "The debug layout requires a ShellContext."

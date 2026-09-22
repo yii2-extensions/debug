@@ -11,13 +11,13 @@ use yii\base\{Event, InvalidConfigException};
 use yii\caching\FileCache;
 use yii\debug\actions\ToolbarDataAction;
 use yii\debug\exception\Message;
-use yii\debug\{LogTarget, Module, ToolbarRenderer};
+use yii\debug\{LogTarget, Module};
 use yii\debug\tests\support\ModuleTestCase;
-use yii\web\{Response, View};
+use yii\web\Response;
 
 /**
  * Unit tests for {@see Module} covering toolbar HTML defaults and skip URLs, custom module IDs, request-cache behavior,
- * access/sender guards, pre-bootstrap rejection, toolbar-data payloads, and explicit renderer views.
+ * access/sender guards, pre-bootstrap rejection, and toolbar-data payloads.
  */
 #[Group('module')]
 final class ModuleToolbarTest extends ModuleTestCase
@@ -323,29 +323,6 @@ final class ModuleToolbarTest extends ModuleTestCase
             'url',
             $data['items'][0],
             'Each panel item must carry a navigable url.',
-        );
-    }
-
-    public function testToolbarRendererKeepsExplicitView(): void
-    {
-        $module = new Module('debug');
-        $view = new View();
-
-        $renderer = $this->invoke(
-            $module,
-            'toolbarRenderer',
-            [$view],
-        );
-
-        self::assertInstanceOf(
-            ToolbarRenderer::class,
-            $renderer,
-            'ToolbarRenderer must be returned from the module.',
-        );
-        self::assertSame(
-            $view,
-            $this->getInaccessibleProperty($renderer, 'view'),
-            'Explicit render views must not be replaced by the application view.',
         );
     }
 
