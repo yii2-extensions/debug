@@ -7,10 +7,10 @@ namespace yii\debug\panels;
 use PHPForge\Debug\Panel\MemorySample;
 
 /**
- * Contract for panels that feed the timeline memory chart.
+ * Contract for panels that feed the Profiling timeline memory graph.
  *
- * {@see \yii\debug\models\timeline\Svg::$listenMessages} lists the panel ids to read, so any panel implementing this
- * interface can contribute samples — the chart is not limited to the core Log and Profiling panels.
+ * {@see ProfilingPanel} plots its own samples and appends those of the panel registered under the `log` id when that
+ * panel implements this interface, so a replacement Log panel keeps contributing readings to the graph.
  */
 interface ProvidesMemorySamples
 {

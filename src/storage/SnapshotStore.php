@@ -101,10 +101,7 @@ final class SnapshotStore
     }
 
     /**
-     * Writes a snapshot and returns the committed manifest without a second read when supported by debug-core.
-     *
-     * The compatibility fallback keeps this adapter usable with the previous additive core API. It performs the
-     * former follow-up read until the dependency is updated.
+     * Writes a snapshot and returns the committed manifest from the same storage transaction, without a second read.
      *
      * @param DebugSnapshot $snapshot Snapshot to persist.
      * @param int $historySize Maximum number of retained entries.
@@ -114,36 +111,14 @@ final class SnapshotStore
     public function writeSnapshotResult(DebugSnapshot $snapshot, int $historySize): SnapshotWriteResult
     {
         try {
-            if (self::supportsResultWrites($this->store)) {
-                $result = $this->store->writeSnapshotResult($snapshot, $historySize);
+            $result = $this->store->writeSnapshotResult($snapshot, $historySize);
 
-                return new SnapshotWriteResult($result->entries, $result->removed);
-            }
-
-            $removed = $this->store->writeSnapshot($snapshot, $historySize);
-            $manifest = $this->store->loadManifestResult();
-
-            return new SnapshotWriteResult(
-                $manifest->error === null ? $manifest->entries : null,
-                $removed,
-            );
+            return new SnapshotWriteResult($result->entries, $result->removed);
         } catch (StorageException $exception) {
             throw new InvalidConfigException(
                 $exception->getMessage(),
                 previous: $exception,
             );
         }
-    }
-
-    /**
-     * Returns whether the installed debug-core version exposes its additive result API.
-     *
-     * @param object $store Store instance to probe.
-     *
-     * @return bool `true` when the store accepts snapshot results; `false` otherwise.
-     */
-    private static function supportsResultWrites(object $store): bool
-    {
-        return method_exists($store, 'writeSnapshotResult');
     }
 }

@@ -15,7 +15,6 @@ use PHPForge\Debug\Panel\Profile\ProfilingSnapshot;
 use PHPForge\Debug\Panel\Queue\QueueSnapshot;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Panel\Router\RouterSnapshot;
-use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPForge\Debug\Panel\User\UserSnapshot;
 use yii\debug\collectors\{
     AssetCollector,
@@ -29,7 +28,6 @@ use yii\debug\collectors\{
     QueueCollector,
     RequestCollector,
     RouterCollector,
-    TimelineCollector,
     UserCollector,
 };
 
@@ -116,13 +114,6 @@ final class Captured
         $payload = $collector->capture();
 
         return $payload === null ? null : RouterSnapshot::fromArray($payload, '$.panels.router');
-    }
-
-    public static function timeline(TimelineCollector $collector): TimelineSnapshot|null
-    {
-        $payload = $collector->capture();
-
-        return $payload === null ? null : TimelineSnapshot::fromArray($payload, '$.panels.timeline');
     }
 
     public static function user(UserCollector $collector): UserSnapshot|null
