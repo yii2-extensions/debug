@@ -907,7 +907,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     private function service(string $class, Closure $factory): object
     {
         if (!isset($this->getComponents(false)[$class])) {
-            /** @var array{class?: class-string, __class?: class-string, ...}|Closure|class-string|object $definition */
+            /** @var array{class?: class-string, __class?: class-string, ...}|class-string|Closure|object $definition */
             $definition = $this->getComponents()[$class] ?? $factory;
 
             if (!is_object($definition) || $definition instanceof Closure) {
