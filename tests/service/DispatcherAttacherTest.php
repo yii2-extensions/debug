@@ -8,6 +8,7 @@ use PHPForge\Debug\CollectorInterface;
 use PHPForge\Vite\Configuration\DevelopmentConfiguration;
 use PHPUnit\Framework\Attributes\{Group, TestWith};
 use Psr\EventDispatcher\EventDispatcherInterface;
+use ReflectionClass;
 use Yii;
 use yii\base\{Component, InvalidConfigException};
 use yii\debug\exception\Message;
@@ -16,10 +17,13 @@ use yii\debug\service\DispatcherAttacher;
 use yii\debug\tests\support\ModuleTestCase;
 use yii\debug\tests\support\stub\CustomCollector;
 use yii\debug\tests\support\stub\dispatcher\{
+    PrivateBackedAccessorComponent,
     ProtectedDispatcherComponent,
+    ReadonlyAccessorComponent,
     SetterComponent,
     SetterOnlyComponent,
     StaticDispatcherComponent,
+    UninitializedDispatcherComponent,
 };
 use yii\debug\tests\support\stub\inertia\CompatibleManager;
 use yii\debug\tests\support\stub\vite\{CompatibleVite, ViteWithoutConstructor, ViteWithoutDispatcher};
@@ -122,9 +126,44 @@ final class DispatcherAttacherTest extends ModuleTestCase
         );
     }
 
+    public function testAttachAmendsAnInstanceWhosePublicDispatcherIsUninitialized(): void
+    {
+        $collector = $this->collector();
+
+        $component = (new ReflectionClass(UninitializedDispatcherComponent::class))->newInstanceWithoutConstructor();
+
+        Yii::$app->set(self::COMPONENT, $component);
+
+        $this->attacher([$collector])->attach(Yii::$app);
+
+        self::assertSame(
+            $collector,
+            $component->eventDispatcher,
+            'An uninitialized property must count as `null`.',
+        );
+    }
+
+    public function testAttachAmendsAnInstantiatedPrivateBackedAccessorComponent(): void
+    {
+        $collector = $this->collector();
+
+        $component = new PrivateBackedAccessorComponent();
+
+        Yii::$app->set(self::COMPONENT, $component);
+
+        $this->attacher([$collector])->attach(Yii::$app);
+
+        self::assertSame(
+            $collector,
+            $component->getEventDispatcher(),
+            'A private backing property must defer to the Yii setter.',
+        );
+    }
+
     public function testAttachAmendsAnInstantiatedYiiSetterComponent(): void
     {
         $collector = $this->collector();
+
         $component = new SetterComponent();
 
         Yii::$app->set(self::COMPONENT, $component);
@@ -159,9 +198,25 @@ final class DispatcherAttacherTest extends ModuleTestCase
         );
     }
 
+    public function testAttachAmendsAPrivateBackedAccessorDefinition(): void
+    {
+        $collector = $this->collector();
+
+        Yii::$app->set(self::COMPONENT, PrivateBackedAccessorComponent::class);
+
+        $this->attacher([$collector])->attach(Yii::$app);
+
+        self::assertSame(
+            ['class' => PrivateBackedAccessorComponent::class, 'eventDispatcher' => $collector],
+            $this->definition(),
+            'A private backing property must defer to the Yii accessors.',
+        );
+    }
+
     public function testAttachAmendsARegisteredInstanceForAPropertyComponent(): void
     {
         $collector = $this->collector();
+
         $component = new CompatibleManager();
 
         Yii::$app->set(self::COMPONENT, $component);
@@ -239,6 +294,7 @@ final class DispatcherAttacherTest extends ModuleTestCase
     public function testAttachKeepsADispatcherTheInstanceCarries(): void
     {
         $own = $this->dispatcher();
+
         $component = new CompatibleManager(['eventDispatcher' => $own]);
 
         Yii::$app->set(self::COMPONENT, $component);
@@ -325,6 +381,7 @@ final class DispatcherAttacherTest extends ModuleTestCase
      */
     #[TestWith([Component::class])]
     #[TestWith([ProtectedDispatcherComponent::class])]
+    #[TestWith([ReadonlyAccessorComponent::class])]
     #[TestWith([SetterOnlyComponent::class])]
     #[TestWith([StaticDispatcherComponent::class])]
     #[TestWith([ViteWithoutConstructor::class])]

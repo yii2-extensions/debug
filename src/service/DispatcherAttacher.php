@@ -7,6 +7,7 @@ namespace yii\debug\service;
 use Closure;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use ReflectionClass;
+use ReflectionProperty;
 use Yii;
 use yii\base\{Application, BaseObject, InvalidConfigException};
 use yii\debug\{ComponentResolver, Module};
@@ -129,6 +130,9 @@ class DispatcherAttacher
     /**
      * Returns whether `$class` takes its dispatcher through a writable `eventDispatcher` property.
      *
+     * A public property is assigned directly, so it must be writable itself; a non-public backing property defers to
+     * the Yii getter/setter pair, because only an inaccessible property reaches the magic accessors.
+     *
      * @param class-string $class Component class to inspect.
      *
      * @return bool `true` for a public, non-static, non-readonly property or a Yii getter/setter pair; `false`
@@ -136,12 +140,10 @@ class DispatcherAttacher
      */
     private static function acceptsProperty(string $class): bool
     {
-        $reflection = new ReflectionClass($class);
+        $property = self::publicProperty($class);
 
-        if ($reflection->hasProperty('eventDispatcher')) {
-            $property = $reflection->getProperty('eventDispatcher');
-
-            return $property->isPublic() && $property->isStatic() === false && $property->isReadOnly() === false;
+        if ($property !== null) {
+            return $property->isStatic() === false && $property->isReadOnly() === false;
         }
 
         return is_subclass_of($class, BaseObject::class)
@@ -217,8 +219,49 @@ class DispatcherAttacher
             );
         }
 
-        if (ArrayHelper::getValue($component, 'eventDispatcher') === null) {
+        if (self::currentDispatcher($component) === null) {
             Yii::configure($component, ['eventDispatcher' => $collector]);
         }
+    }
+
+    /**
+     * Returns the dispatcher an instantiated component already carries.
+     *
+     * A public typed property without a default is read as `null` until it is initialized, because reading it earlier
+     * throws; a Yii accessor property is read through its getter.
+     *
+     * @param object $component Instantiated component taking the property form.
+     *
+     * @return mixed Current dispatcher, or `null` when the component carries none.
+     */
+    private static function currentDispatcher(object $component): mixed
+    {
+        $property = self::publicProperty($component::class);
+
+        if ($property === null) {
+            return ArrayHelper::getValue($component, 'eventDispatcher');
+        }
+
+        return $property->isInitialized($component) ? $property->getValue($component) : null;
+    }
+
+    /**
+     * Returns the public `eventDispatcher` property `$class` declares.
+     *
+     * @param class-string $class Component class to inspect.
+     *
+     * @return ReflectionProperty|null Public property, or `null` when the class declares none or keeps it non-public.
+     */
+    private static function publicProperty(string $class): ReflectionProperty|null
+    {
+        $reflection = new ReflectionClass($class);
+
+        if ($reflection->hasProperty('eventDispatcher') === false) {
+            return null;
+        }
+
+        $property = $reflection->getProperty('eventDispatcher');
+
+        return $property->isPublic() ? $property : null;
     }
 }
