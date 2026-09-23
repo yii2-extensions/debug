@@ -12,6 +12,7 @@ use Yii;
 use yii\base\Exception;
 use yii\debug\collectors\{DbCollector, MailCollector};
 use yii\debug\panels\JsonPanel;
+use yii\debug\service\CoreDefinitions;
 use yii\debug\storage\SnapshotStore;
 use yii\log\Target;
 
@@ -340,7 +341,7 @@ class LogTarget extends Target
         }
 
         if (
-            ExtensionAvailability::isAvailable($id) === false
+            CoreDefinitions::isAvailable($id) === false
             && $this->module->getCollectorCoordinator()->hasCollector($id) === false
         ) {
             return;

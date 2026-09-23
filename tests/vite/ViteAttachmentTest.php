@@ -5,28 +5,24 @@ declare(strict_types=1);
 namespace yii\debug\tests\vite;
 
 use PHPForge\Vite\Configuration\DevelopmentConfiguration;
-use PHPForge\Vite\Debug\ViteCollector;
+use PHPForge\Vite\Debug\{ViteCollector, VitePanel};
 use PHPForge\Vite\Vite;
 use PHPUnit\Framework\Attributes\Group;
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Xepozz\InternalMocker\MockerState;
 use Yii;
-use yii\base\{Application, Component};
+use yii\base\{Application, InvalidConfigException};
+use yii\debug\exception\Message;
 use yii\debug\Module;
 use yii\debug\tests\support\ModuleTestCase;
-use yii\debug\tests\support\stub\vite\{CompatibleVite, ViteWithoutDispatcher};
 
 /**
- * Unit tests for {@see Module} handing the Vite collector to the `vite` application component.
+ * End-to-end tests for {@see Module} wiring the real Vite provider through the explicit `collectors`, `panels`, and
+ * `dispatchers` recipe the application templates use.
  */
 #[Group('module')]
 #[Group('vite')]
 final class ViteAttachmentTest extends ModuleTestCase
 {
-    /**
-     * Position the {@see CompatibleVite} constructor declares its `eventDispatcher` parameter at.
-     */
-    private const int COMPATIBLE_DISPATCHER_POSITION = 1;
     /**
      * Position the Vite constructor declares its `eventDispatcher` parameter at.
      */
@@ -42,50 +38,6 @@ final class ViteAttachmentTest extends ModuleTestCase
             ['class' => Vite::class, '__construct()' => ['eventDispatcher' => $this->collector($module)]],
             $this->definition(),
             'Class name must be expanded into a definition carrying the collector.',
-        );
-    }
-
-    public function testBootstrapAmendsACompatibleClassNameDefinition(): void
-    {
-        $this->acceptAsVite(CompatibleVite::class);
-
-        Yii::$app->set('vite', CompatibleVite::class);
-
-        $module = $this->bootstrapModule();
-
-        self::assertSame(
-            ['class' => CompatibleVite::class, '__construct()' => ['eventDispatcher' => $this->collector($module)]],
-            $this->definition(),
-            'Class name must be expanded into a definition carrying the collector.',
-        );
-    }
-
-    public function testBootstrapAmendsACompatiblePositionalDefinitionAtItsOwnPosition(): void
-    {
-        $this->acceptAsVite(CompatibleVite::class);
-
-        $configuration = $this->configuration();
-
-        Yii::$app->set('vite', ['class' => CompatibleVite::class, '__construct()' => [$configuration]]);
-
-        $module = $this->bootstrapModule();
-
-        $arguments = $this->constructorArguments();
-
-        self::assertSame(
-            $configuration,
-            $arguments[0] ?? null,
-            'Positional arguments must survive.',
-        );
-        self::assertSame(
-            $this->collector($module),
-            $arguments[self::COMPATIBLE_DISPATCHER_POSITION] ?? null,
-            'Position must come from the configured class.',
-        );
-        self::assertArrayNotHasKey(
-            self::DISPATCHER_POSITION,
-            $arguments,
-            'Declared component class must not decide the position.',
         );
     }
 
@@ -138,16 +90,6 @@ final class ViteAttachmentTest extends ModuleTestCase
         );
     }
 
-    public function testBootstrapIgnoresAMissingComponent(): void
-    {
-        $this->bootstrapModule();
-
-        self::assertFalse(
-            Yii::$app->has('vite'),
-            'No component may be registered on behalf of the application.',
-        );
-    }
-
     public function testBootstrapKeepsADispatcherTheDefinitionConfigures(): void
     {
         $own = $this->dispatcher();
@@ -186,76 +128,6 @@ final class ViteAttachmentTest extends ModuleTestCase
         );
     }
 
-    public function testBootstrapLeavesAClosureDefinitionAlone(): void
-    {
-        $factory = fn(): Vite => new Vite($this->configuration());
-
-        Yii::$app->set('vite', $factory);
-
-        $this->bootstrapModule();
-
-        self::assertSame(
-            $factory,
-            $this->definition(),
-            'Closure definition must stay untouched.',
-        );
-    }
-
-    public function testBootstrapLeavesAComponentInstantiatedBeforeTheRequestAlone(): void
-    {
-        Yii::$app->set('vite', ['class' => Vite::class, '__construct()' => [$this->configuration()]]);
-
-        $vite = Yii::$app->get('vite');
-
-        $this->bootstrapModule();
-
-        self::assertSame(
-            $vite,
-            Yii::$app->get('vite'),
-            'Live component must survive the attachment.',
-        );
-        self::assertArrayNotHasKey(
-            self::DISPATCHER_POSITION,
-            $this->constructorArguments(),
-            'A constructor argument cannot reach an instantiated component.',
-        );
-    }
-
-    public function testBootstrapLeavesAForeignComponentAlone(): void
-    {
-        Yii::$app->set('vite', ['class' => Component::class]);
-
-        $this->bootstrapModule();
-
-        self::assertSame(
-            ['class' => Component::class],
-            $this->definition(),
-            'Foreign definition must stay untouched.',
-        );
-    }
-
-    public function testBootstrapLeavesAPositionalDefinitionWithoutADispatcherParameterAlone(): void
-    {
-        $this->acceptAsVite(ViteWithoutDispatcher::class);
-
-        $configuration = $this->configuration();
-
-        Yii::$app->set('vite', ['class' => ViteWithoutDispatcher::class, '__construct()' => [$configuration]]);
-
-        $this->bootstrapModule();
-
-        self::assertSame(
-            ['class' => ViteWithoutDispatcher::class, '__construct()' => [$configuration]],
-            $this->definition(),
-            'Definition must stay untouched.',
-        );
-        self::assertInstanceOf(
-            ViteWithoutDispatcher::class,
-            Yii::$app->get('vite'),
-            'Component must stay buildable.',
-        );
-    }
-
     public function testBootstrapSkipsAttachmentWhenTheCollectorIsDisabled(): void
     {
         Yii::$app->set('vite', ['class' => Vite::class, '__construct()' => [$this->configuration()]]);
@@ -271,27 +143,46 @@ final class ViteAttachmentTest extends ModuleTestCase
         );
     }
 
-    /**
-     * Registers `$class` as a class the Vite provider attaches to.
-     *
-     * The packaged Vite facade is `final`, so the relationship a subclass would carry is registered on the internal
-     * mocker instead.
-     *
-     * @param class-string $class Class a `vite` component definition builds.
-     */
-    private function acceptAsVite(string $class): void
+    public function testRecipeListsTheViteProviderUnderExtensions(): void
     {
-        MockerState::addCondition('yii\debug', 'is_a', [$class, Vite::class, true], true);
+        Yii::$app->set('vite', Vite::class);
+
+        $module = $this->bootstrapModule();
+
+        self::assertTrue(
+            $module->getPanelRegistry()->get('vite')?->extension,
+            'A provider panel must be grouped under Extensions.',
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionWhenTheViteComponentIsInstantiatedBeforeTheRequest(): void
+    {
+        Yii::$app->set('vite', ['class' => Vite::class, '__construct()' => [$this->configuration()]]);
+        Yii::$app->get('vite');
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(Message::DISPATCHER_COMPONENT_INSTANTIATED->getMessage('vite'));
+
+        $this->bootstrapModule();
     }
 
     /**
-     * Bootstraps a module on the current application and runs the request start hooks.
+     * Bootstraps a module configured with the Vite recipe and runs the request start hooks.
      *
-     * @param array<string, mixed> $config Module configuration.
+     * @param array<string, mixed> $config Module configuration merged over the recipe.
      */
     private function bootstrapModule(array $config = []): Module
     {
-        $module = new Module('debug', null, $config);
+        $module = new Module(
+            'debug',
+            null,
+            [
+                'collectors' => ['vite' => ViteCollector::class],
+                'panels' => ['vite' => VitePanel::class],
+                'dispatchers' => ['vite' => 'vite'],
+                ...$config,
+            ],
+        );
 
         Yii::$app->setModule('debug', $module);
 

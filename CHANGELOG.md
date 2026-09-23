@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(ui)!: list enabled provider panels alphabetically in Extensions, including panels with no recorded activity.
 - refactor(panels)!: require php-forge/debug ^0.2; sort extension chips alphabetically and flag extension panels in the toolbar.
 - feat!: update panel, collector, toolbar, sidebar, and provider configuration handling; require Debug Core `^0.3`.
-- feat!: register Inertia and Vite from a packaged ProviderCatalog and attach each collector to its application component.
+- feat!: register provider packages through collectors/panels and hand collectors to components with the dispatchers option; the module names no provider.
 - refactor(module): resolve debugger services through the module service locator and allow replacing them via `components` configuration.
 - refactor!: remove standalone `Timeline` panel/collector, dead storage compatibility branch, and orphan classes.
 - refactor!: link Mail's chip label to its capture; make Mail and Queue built-ins after Database, reject their `position`, and remove `isOptional()`.

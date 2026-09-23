@@ -147,6 +147,46 @@ enum Message: string
     case DEBUG_TAG_NOT_FOUND = 'Debug tag not found.';
 
     /**
+     * A `dispatchers` entry names a collector that cannot act as a PSR-14 dispatcher.
+     *
+     * Format: "Debug collector '%s' must implement %s to be handed to a component as its dispatcher."
+     */
+    case DISPATCHER_COLLECTOR_NOT_DISPATCHER
+        = "Debug collector '%s' must implement %s to be handed to a component as its dispatcher.";
+
+    /**
+     * A `dispatchers` entry names a collector that is neither registered nor disabled.
+     *
+     * Format: "Debug dispatcher '%s' names no configured collector."
+     */
+    case DISPATCHER_COLLECTOR_UNKNOWN = "Debug dispatcher '%s' names no configured collector.";
+
+    /**
+     * A `dispatchers` entry targets a component that is already built and has no writable dispatcher property.
+     *
+     * Format: "Application component '%s' is already instantiated and exposes no writable 'eventDispatcher' property."
+     */
+    case DISPATCHER_COMPONENT_INSTANTIATED
+        = "Application component '%s' is already instantiated and exposes no writable 'eventDispatcher' property.";
+
+    /**
+     * A `dispatchers` entry targets a component the application does not declare.
+     *
+     * Format: "Debug dispatcher '%s' targets the unknown application component '%s'."
+     */
+    case DISPATCHER_COMPONENT_UNKNOWN = "Debug dispatcher '%s' targets the unknown application component '%s'.";
+
+    /**
+     * A `dispatchers` entry targets a component definition that cannot take the collector.
+     *
+     * Format: "Application component '%s' must be a class name or configuration array declaring an 'eventDispatcher'
+     * property or constructor parameter."
+     */
+    case DISPATCHER_TARGET_UNSUPPORTED
+        = "Application component '%s' must be a class name or configuration array declaring an 'eventDispatcher' "
+        . 'property or constructor parameter.';
+
+    /**
      * The user component lacks an identity class.
      *
      * Format: "User component is not configured with an identity class."

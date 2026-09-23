@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\inertia;
 
-use PHPForge\Inertia\Debug\InertiaCollector;
+use PHPForge\Debug\Capture\CapturePolicy;
+use PHPForge\Debug\Helper\SensitiveDataRedactor;
+use PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel};
 use PHPUnit\Framework\Attributes\Group;
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Xepozz\InternalMocker\MockerState;
 use Yii;
-use yii\base\{Application, Component};
+use yii\base\Application;
 use yii\debug\Module;
 use yii\debug\tests\support\ModuleTestCase;
-use yii\debug\tests\support\stub\inertia\CompatibleManager;
 use yii\inertia\Manager as InertiaManager;
 
 /**
- * Unit tests for {@see Module} handing the Inertia collector to the `inertia` application component.
+ * End-to-end tests for {@see Module} wiring the real Inertia provider through the explicit `collectors`, `panels`, and
+ * `dispatchers` recipe the application templates use, including the host redaction policy.
  */
 #[Group('module')]
 #[Group('inertia')]
@@ -32,33 +33,6 @@ final class InertiaAttachmentTest extends ModuleTestCase
             $this->collector($module),
             $this->manager()->eventDispatcher,
             'Class name must be expanded into a definition carrying the collector.',
-        );
-    }
-
-    public function testBootstrapAmendsACompatibleManagerDefinition(): void
-    {
-        MockerState::addCondition(
-            'yii\debug',
-            'is_a',
-            [CompatibleManager::class, InertiaManager::class, true],
-            true,
-        );
-
-        Yii::$app->set('inertia', ['class' => CompatibleManager::class]);
-
-        $module = $this->bootstrapModule();
-
-        $manager = Yii::$app->get('inertia');
-
-        self::assertInstanceOf(
-            CompatibleManager::class,
-            $manager,
-            'Component must keep its configured class.',
-        );
-        self::assertSame(
-            $this->collector($module),
-            $manager->eventDispatcher,
-            'Definition must carry the collector.',
         );
     }
 
@@ -108,16 +82,6 @@ final class InertiaAttachmentTest extends ModuleTestCase
         );
     }
 
-    public function testBootstrapIgnoresAMissingComponent(): void
-    {
-        $this->bootstrapModule();
-
-        self::assertFalse(
-            Yii::$app->has('inertia'),
-            'No component may be registered on behalf of the application.',
-        );
-    }
-
     public function testBootstrapKeepsADispatcherTheDefinitionConfigures(): void
     {
         $own = $this->dispatcher();
@@ -149,31 +113,6 @@ final class InertiaAttachmentTest extends ModuleTestCase
         );
     }
 
-    public function testBootstrapLeavesAClosureDefinitionAlone(): void
-    {
-        Yii::$app->set('inertia', static fn(): InertiaManager => new InertiaManager());
-
-        $this->bootstrapModule();
-
-        self::assertNull(
-            $this->manager()->eventDispatcher,
-            'Closure definition must stay untouched.',
-        );
-    }
-
-    public function testBootstrapLeavesAForeignComponentAlone(): void
-    {
-        Yii::$app->set('inertia', ['class' => Component::class]);
-
-        $this->bootstrapModule();
-
-        self::assertSame(
-            ['class' => Component::class],
-            Yii::$app->getComponents()['inertia'] ?? null,
-            'Foreign definition must stay untouched.',
-        );
-    }
-
     public function testBootstrapSkipsAttachmentWhenTheCollectorIsDisabled(): void
     {
         Yii::$app->set('inertia', ['class' => InertiaManager::class]);
@@ -195,65 +134,71 @@ final class InertiaAttachmentTest extends ModuleTestCase
         );
     }
 
+    public function testProtocolResultsKeepSensitivePropsWithoutThePolicyClosure(): void
+    {
+        Yii::$app->set('inertia', ['class' => InertiaManager::class]);
+
+        $props = $this->renderAndCapture(
+            $this->bootstrapModule(['collectors' => ['inertia' => InertiaCollector::class]]),
+        );
+
+        self::assertSame(
+            'secret',
+            $props['password'] ?? null,
+            'A bare class name carries no redaction callbacks.',
+        );
+    }
+
     public function testProtocolResultsReachTheCollectorWithHostRedaction(): void
     {
         Yii::$app->set('inertia', ['class' => InertiaManager::class]);
 
-        $module = $this->bootstrapModule();
+        $props = $this->renderAndCapture($this->bootstrapModule());
 
-        $request = Yii::$app->getRequest();
-
-        $request->setHostInfo('https://example.test');
-        $request->setUrl('/home');
-        $request->getHeaders()->set('X-Inertia', 'true');
-
-        $this->manager()->render('Home', ['answer' => 42, 'password' => 'secret']);
-
-        $capture = $this->collector($module)->capture();
-
-        self::assertIsArray(
-            $capture,
-            'A rendered page must be captured.',
-        );
-
-        $page = $capture['page'] ?? null;
-
-        self::assertIsArray(
-            $page,
-            'Capture must carry the page.',
-        );
-        self::assertSame(
-            'Home',
-            $page['component'] ?? null,
-            'Capture must name the rendered component.',
-        );
-
-        $props = $page['props'] ?? null;
-
-        self::assertIsArray(
-            $props,
-            'Capture must carry the page props.',
-        );
         self::assertSame(
             42,
             $props['answer'] ?? null,
             'Plain props must survive.',
         );
-        self::assertNotSame(
-            'secret',
+        self::assertSame(
+            SensitiveDataRedactor::PLACEHOLDER,
             $props['password'] ?? null,
             'Sensitive props must follow the module policy.',
         );
     }
 
+    public function testRecipeListsTheInertiaProviderUnderExtensions(): void
+    {
+        Yii::$app->set('inertia', InertiaManager::class);
+
+        $module = $this->bootstrapModule();
+
+        self::assertTrue(
+            $module->getPanelRegistry()->get('inertia')?->extension,
+            'A provider panel must be grouped under Extensions.',
+        );
+    }
+
     /**
-     * Bootstraps a module on the current application and runs the request start hooks.
+     * Bootstraps a module configured with the Inertia recipe and runs the request start hooks.
      *
-     * @param array<string, mixed> $config Module configuration.
+     * @param array<string, mixed> $config Module configuration merged over the recipe.
      */
     private function bootstrapModule(array $config = []): Module
     {
-        $module = new Module('debug', null, $config);
+        $module = new Module(
+            'debug',
+            null,
+            [
+                'collectors' => [
+                    'inertia' => static fn(CapturePolicy $policy): InertiaCollector
+                        => new InertiaCollector($policy->redact(...), $policy->redactUrl(...)),
+                ],
+                'panels' => ['inertia' => InertiaPanel::class],
+                'dispatchers' => ['inertia' => 'inertia'],
+                ...$config,
+            ],
+        );
 
         Yii::$app->setModule('debug', $module);
 
@@ -294,5 +239,49 @@ final class InertiaAttachmentTest extends ModuleTestCase
         );
 
         return $manager;
+    }
+
+    /**
+     * Renders a page carrying one plain and one sensitive prop, and returns the props the collector captured.
+     *
+     * @return array<array-key, mixed> Captured page props.
+     */
+    private function renderAndCapture(Module $module): array
+    {
+        $request = Yii::$app->getRequest();
+
+        $request->setHostInfo('https://example.test');
+        $request->setUrl('/home');
+        $request->getHeaders()->set('X-Inertia', 'true');
+
+        $this->manager()->render('Home', ['answer' => 42, 'password' => 'secret']);
+
+        $capture = $this->collector($module)->capture();
+
+        self::assertIsArray(
+            $capture,
+            'A rendered page must be captured.',
+        );
+
+        $page = $capture['page'] ?? null;
+
+        self::assertIsArray(
+            $page,
+            'Capture must carry the page.',
+        );
+        self::assertSame(
+            'Home',
+            $page['component'] ?? null,
+            'Capture must name the rendered component.',
+        );
+
+        $props = $page['props'] ?? null;
+
+        self::assertIsArray(
+            $props,
+            'Capture must carry the page props.',
+        );
+
+        return $props;
     }
 }

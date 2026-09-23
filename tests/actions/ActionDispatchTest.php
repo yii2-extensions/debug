@@ -25,7 +25,7 @@ final class ActionDispatchTest extends ActionTestCase
     public function testActionMapAdoptsOnlyAvailablePanelActions(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,

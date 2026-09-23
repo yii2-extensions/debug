@@ -13,7 +13,7 @@ use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\exception\Message;
 use yii\debug\{Module, Panel};
-use yii\debug\panels\{LogPanel, ProviderPanel, QueuePanel};
+use yii\debug\panels\{JsonPanel, LogPanel, ProviderPanel, QueuePanel};
 use yii\debug\service\PanelRegistrar;
 use yii\debug\tests\support\ModuleTestCase;
 use yii\debug\tests\support\stub\cache\CachePanel;
@@ -117,10 +117,31 @@ final class PanelRegistrarTest extends ModuleTestCase
         );
     }
 
+    public function testRegisterClassifiesBuiltInIdsAndExtensionsFromTheCoreDefinitions(): void
+    {
+        $module = new Module('debug');
+        $catalog = (new PanelRegistrar($module))->register(
+            ['log' => LogPanel::class, 'json' => JsonPanel::class],
+            ['custom' => CustomPanel::class, 'cache' => CachePanel::class],
+        );
+
+        $extension = [];
+
+        foreach ($catalog->registry->enabled() as $registration) {
+            $extension[$registration->id] = $registration->extension;
+        }
+
+        self::assertSame(
+            ['log' => false, 'cache' => true, 'custom' => true, 'json' => true],
+            $extension,
+            'Only a non-JSON panel under a built-in ID is a built-in.',
+        );
+    }
+
     public function testRegisterDropsABuiltInWhoseOptionalPackageIsMissing(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,
@@ -283,7 +304,7 @@ final class PanelRegistrarTest extends ModuleTestCase
     public function testThrowInvalidConfigExceptionWhenAPositionRejectedByTheCatalogIsDeclared(): void
     {
         try {
-            $this->registrar()->register([], ['log' => ['class' => LogPanel::class, 'position' => 1]]);
+            $this->registrar()->register(['log' => LogPanel::class], ['log' => ['class' => LogPanel::class, 'position' => 1]]);
 
             self::fail(
                 'A position on a built-in panel must be rejected.',

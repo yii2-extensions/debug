@@ -124,32 +124,10 @@ final class ModuleCollectorRegistrationTest extends ModuleTestCase
         );
     }
 
-    public function testInitOmitsTheInertiaProviderWhenItsPackageIsMissing(): void
-    {
-        MockerState::addCondition(
-            'yii\debug',
-            'class_exists',
-            ['PHPForge\Inertia\Debug\InertiaCollector'],
-            false,
-        );
-
-        $module = new Module('debug');
-
-        self::assertFalse(
-            $module->getCollectorCoordinator()->hasCollector('inertia'),
-            'A missing Inertia package must not start a collector.',
-        );
-        self::assertArrayNotHasKey(
-            'inertia',
-            $module->panels,
-            'A missing Inertia package must not register a panel.',
-        );
-    }
-
     public function testInitOmitsUnavailableCoreExtensionCollectorAndPanel(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,
@@ -171,7 +149,7 @@ final class ModuleCollectorRegistrationTest extends ModuleTestCase
     public function testInitPreservesExplicitExtensionConfigurationWhenProviderIsUnavailable(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,
@@ -200,5 +178,22 @@ final class ModuleCollectorRegistrationTest extends ModuleTestCase
             $module->actionMap,
             'An explicitly configured extension panel must still contribute its standalone actions.',
         );
+    }
+
+    public function testInitRegistersNoInstalledProviderWithoutConfiguration(): void
+    {
+        $module = new Module('debug');
+
+        foreach (['inertia', 'vite'] as $id) {
+            self::assertFalse(
+                $module->getCollectorCoordinator()->hasCollector($id),
+                "Installing a provider package must not start its collector: {$id}.",
+            );
+            self::assertArrayNotHasKey(
+                $id,
+                $module->panels,
+                "Installing a provider package must not register its panel: {$id}.",
+            );
+        }
     }
 }
