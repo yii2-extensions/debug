@@ -151,16 +151,16 @@ instance. Register it before the module resolves the service: `CapturePolicyFact
 application bootstrap, so they must come from the configuration; `AccessGuard`, `DispatcherAttacher`, and
 `ToolbarPresenter` are resolved on the first request and may also be registered through `$module->set()` before it.
 
-| Service                     | Responsibility                                                                          |
-| --------------------------- | --------------------------------------------------------------------------------------- |
-| `AccessGuard`               | Decides whether a request may reach the debugger from the IP, host, and callback rules. |
-| `CapturePolicyFactory`      | Builds the redaction and body-size policy applied to every capture.                     |
-| `CollectorRegistrar`        | Resolves the configured collectors into the coordinator driving the capture.            |
-| `DispatcherAttacher`        | Hands each collector named in `dispatchers` to the application component it observes.   |
-| `LogTargetFactory`          | Resolves the configured log target during the bootstrap.                                |
-| `PanelRegistrar`            | Resolves the configured panels and their display order.                                 |
-| `StandaloneActionResolver`  | Merges the debugger action map and resolves routes against it.                          |
-| `ToolbarPresenter`          | Renders the toolbar and writes the debug response headers.                              |
+| Service                    | Responsibility                                                                          |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| `AccessGuard`              | Decides whether a request may reach the debugger from the IP, host, and callback rules. |
+| `CapturePolicyFactory`     | Builds the redaction and body-size policy applied to every capture.                     |
+| `CollectorRegistrar`       | Resolves the configured collectors into the coordinator driving the capture.            |
+| `DispatcherAttacher`       | Hands each collector named in `dispatchers` to the application component it observes.   |
+| `LogTargetFactory`         | Resolves the configured log target during the bootstrap.                                |
+| `PanelRegistrar`           | Resolves the configured panels and their display order.                                 |
+| `StandaloneActionResolver` | Merges the debugger action map and resolves routes against it.                          |
+| `ToolbarPresenter`         | Renders the toolbar and writes the debug response headers.                              |
 
 ## Standalone Router
 
