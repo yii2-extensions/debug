@@ -22,9 +22,9 @@ use yii\debug\service\{
     CapturePolicyFactory,
     CollectorRegistrar,
     CoreDefinitions,
+    DispatcherAttacher,
     LogTargetFactory,
     PanelRegistrar,
-    ProviderCollectorAttacher,
     StandaloneActionResolver,
     ToolbarPresenter,
     YiiLogo,
@@ -101,12 +101,14 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public mixed $checkAccessCallback = null;
     /**
-     * Debug collectors resolved from instances, class names, or Yii configuration arrays during {@see init()}.
+     * Debug collectors resolved from instances, class names, Yii configuration arrays, or `Closure` factories during
+     * {@see init()}.
      *
      * Collectors derive their own IDs; register them as a list or under a key that matches {@see
-     * CollectorInterface::id()}.
+     * CollectorInterface::id()}. A `Closure` receives the module {@see CapturePolicy}, so a collector capturing user
+     * data redacts it with the rules the Request panel applies.
      *
-     * @var array<array-key, array<string, mixed>|CollectorInterface|string>
+     * @var array<array-key, array<string, mixed>|(Closure(CapturePolicy): CollectorInterface)|CollectorInterface|string>
      */
     public array $collectors = [];
     /**
@@ -137,6 +139,16 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Whether to disable the IP restriction warning emitted by {@see checkAccess()}.
      */
     public bool $disableIpRestrictionWarning = false;
+    /**
+     * Collector IDs to hand to application components as their PSR-14 dispatcher, `collectorId => componentId`.
+     *
+     * The component takes the collector on a public `eventDispatcher` property or on a constructor parameter named
+     * `eventDispatcher`; an already instantiated component only accepts the property form. A dispatcher the component
+     * already configures is kept, and a collector disabled through `enabled => false` is skipped.
+     *
+     * @var array<string, string>
+     */
+    public array $dispatchers = [];
     /**
      * Whether to keep log messages emitted by debug-module requests. Enable only when debugging the module itself.
      */
@@ -313,10 +325,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
             Application::EVENT_BEFORE_REQUEST,
             function () use ($app): void {
                 $this
-                    ->service(
-                        ProviderCollectorAttacher::class,
-                        fn(): ProviderCollectorAttacher => new ProviderCollectorAttacher($this),
-                    )
+                    ->service(DispatcherAttacher::class, fn(): DispatcherAttacher => new DispatcherAttacher($this))
                     ->attach($app);
             },
         );
@@ -663,23 +672,16 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Array keys are a configuration-merge convenience and must match each collector's {@see CollectorInterface::id()}
      * so a user entry under the same key replaces the built-in collector.
      *
-     * A built-in entry names its collector class. {@see ProviderCatalog} contributes the collector of every optional
-     * provider package the application installed, as a class name or as a configuration array carrying the arguments
-     * this module's capture policy builds, so captured values follow the host redaction rules.
-     *
      * @return array<string, array<string, mixed>|string> Collector definitions indexed by collector id.
      */
     protected function coreCollectors(): array
     {
-        $policy = $this->createCapturePolicy();
-
         return [
             'asset' => \yii\debug\collectors\AssetCollector::class,
             'config' => \yii\debug\collectors\ConfigCollector::class,
             'db' => \yii\debug\collectors\DbCollector::class,
             'dump' => \yii\debug\collectors\DumpCollector::class,
             'event' => \yii\debug\collectors\EventCollector::class,
-            ...ProviderCatalog::packaged()->collectors($policy),
             'log' => \yii\debug\collectors\LogCollector::class,
             'mail' => \yii\debug\collectors\MailCollector::class,
             'profiling' => \yii\debug\collectors\ProfilingCollector::class,
@@ -698,8 +700,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * feeds Request.
      *
      * {@see CoreDefinitions::merge()} drops a built-in whose optional package is not installed (`queue` without
-     * `yii\queue\Queue`). {@see ProviderCatalog} contributes the panel of every optional provider package the
-     * application installed; those panels finish the list and are grouped under Extensions.
+     * `yii\queue\Queue`).
      *
      * @return array<string, array<string, mixed>|class-string<Panel>|class-string<PortablePanel>|string> Panel
      * definitions indexed by panel id.
@@ -719,7 +720,6 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'user' => \yii\debug\panels\UserPanel::class,
             'dump' => \yii\debug\panels\DumpPanel::class,
             'asset' => \yii\debug\panels\AssetPanel::class,
-            ...ProviderCatalog::packaged()->panels(),
         ];
     }
 

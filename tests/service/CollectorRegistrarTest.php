@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\service;
 
+use Closure;
 use InvalidArgumentException;
+use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\CollectorInterface;
+use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
@@ -24,6 +27,23 @@ use yii\debug\tests\support\stub\CustomCollector;
 #[Group('service')]
 final class CollectorRegistrarTest extends ModuleTestCase
 {
+    public function testRegisterAcceptsADispatcherEntryNamingADisabledCollector(): void
+    {
+        $module = new Module('debug');
+
+        $module->dispatchers = ['app.example' => 'example'];
+
+        $coordinator = (new CollectorRegistrar($module))->register(
+            [],
+            ['app.example' => ['class' => CustomCollector::class, 'enabled' => false]],
+        );
+
+        self::assertFalse(
+            $coordinator->hasCollector('app.example'),
+            'A disabled collector must stay unregistered.',
+        );
+    }
+
     public function testRegisterAppendsConfiguredCollectorsAfterTheBuiltIns(): void
     {
         $coordinator = $this->registrar()->register(
@@ -74,10 +94,55 @@ final class CollectorRegistrarTest extends ModuleTestCase
         );
     }
 
+    public function testRegisterBuildsClosureEntriesWithOneModuleCapturePolicy(): void
+    {
+        $module = new Module('debug', null, ['sensitiveKeys' => ['token']]);
+
+        $policies = [];
+
+        $factory = static function (string $id) use (&$policies): Closure {
+            return static function (CapturePolicy $policy) use ($id, &$policies): CustomCollector {
+                $policies[] = $policy;
+
+                $collector = new CustomCollector();
+
+                $collector->collectorId = $id;
+
+                return $collector;
+            };
+        };
+
+        $coordinator = (new CollectorRegistrar($module))->register(
+            [],
+            ['app.first' => $factory('app.first'), 'app.second' => $factory('app.second')],
+        );
+
+        self::assertSame(
+            ['app.first', 'app.second'],
+            array_keys($coordinator->collectors()),
+            'Every closure entry must register its collector.',
+        );
+        self::assertCount(
+            2,
+            $policies,
+            'Each closure must be called once.',
+        );
+        self::assertSame(
+            $policies[0],
+            $policies[1],
+            'One policy must serve every closure of a call.',
+        );
+        self::assertSame(
+            ['token' => SensitiveDataRedactor::PLACEHOLDER],
+            $policies[0]->redact(['token' => 'secret']),
+            'Policy must carry the module sensitive keys.',
+        );
+    }
+
     public function testRegisterDropsABuiltInWhoseOptionalPackageIsMissing(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,
@@ -200,6 +265,16 @@ final class CollectorRegistrarTest extends ModuleTestCase
         $this->registrar()->register([], [stdClass::class]);
     }
 
+    public function testThrowInvalidConfigExceptionWhenAClosureEntryReturnsNoCollector(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(
+            Message::COLLECTOR_INTERFACE_INVALID->getMessage(CollectorInterface::class, stdClass::class),
+        );
+
+        $this->registrar()->register([], ['app.example' => static fn(CapturePolicy $policy): stdClass => new stdClass()]);
+    }
+
     public function testThrowInvalidConfigExceptionWhenACollectorIdContradictsItsRegistrationKey(): void
     {
         $this->expectException(InvalidConfigException::class);
@@ -208,6 +283,18 @@ final class CollectorRegistrarTest extends ModuleTestCase
         );
 
         $this->registrar()->register([], ['wrong' => new CustomCollector()]);
+    }
+
+    public function testThrowInvalidConfigExceptionWhenADispatcherEntryNamesNoConfiguredCollector(): void
+    {
+        $module = new Module('debug');
+
+        $module->dispatchers = ['app.missing' => 'example'];
+
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage(Message::DISPATCHER_COLLECTOR_UNKNOWN->getMessage('app.missing'));
+
+        (new CollectorRegistrar($module))->register([], ['app.example' => new CustomCollector()]);
     }
 
     public function testThrowInvalidConfigExceptionWhenTwoCollectorsShareAnId(): void

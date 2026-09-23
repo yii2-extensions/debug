@@ -97,8 +97,6 @@ final class ModuleDefaultsTest extends ModuleTestCase
                 'db',
                 'dump',
                 'event',
-                'inertia',
-                'vite',
                 'log',
                 'mail',
                 'profiling',
@@ -139,11 +137,9 @@ final class ModuleDefaultsTest extends ModuleTestCase
                 'user',
                 'dump',
                 'asset',
-                'inertia',
-                'vite',
             ],
             array_keys($corePanels),
-            'Order: request flow, Mail and Queue after Database, provider panels last.',
+            'Order: request flow, Mail and Queue after Database.',
         );
     }
 

@@ -15,6 +15,44 @@ use yii\debug\tests\support\TestCase;
 #[Group('service')]
 final class CoreDefinitionsTest extends TestCase
 {
+    public function testIsAvailableAcceptsAnIdWithoutOptionalPackage(): void
+    {
+        self::assertTrue(
+            CoreDefinitions::isAvailable('inertia'),
+            'An ID gated on no package must stay available.',
+        );
+    }
+
+    public function testIsAvailableAcceptsAnInstalledOptionalPackage(): void
+    {
+        MockerState::addCondition(
+            'yii\debug\service',
+            'class_exists',
+            ['yii\queue\Queue'],
+            true,
+        );
+
+        self::assertTrue(
+            CoreDefinitions::isAvailable('queue'),
+            'A loadable runtime class must enable the built-in.',
+        );
+    }
+
+    public function testIsAvailableRejectsAMissingOptionalPackage(): void
+    {
+        MockerState::addCondition(
+            'yii\debug\service',
+            'class_exists',
+            ['yii\queue\Queue'],
+            false,
+        );
+
+        self::assertFalse(
+            CoreDefinitions::isAvailable('queue'),
+            'A missing runtime class must disable the built-in.',
+        );
+    }
+
     public function testMergeAppendsConfiguredEntriesAfterTheBuiltIns(): void
     {
         self::assertSame(
@@ -30,7 +68,7 @@ final class CoreDefinitionsTest extends TestCase
     public function testMergeDropsABuiltInWhoseOptionalPackageIsMissing(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,
@@ -46,7 +84,7 @@ final class CoreDefinitionsTest extends TestCase
     public function testMergeKeepsAConfiguredEntryForAnUnavailableBuiltIn(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,

@@ -45,8 +45,8 @@ final readonly class ToolbarDataMapper
      * {@see Message::TOOLBAR_ENVELOPE_INVALID} as its tooltip, keeping the failure contained to its own chip.
      *
      * Chips are emitted in the order the module registered the panels, which the shared registration policy already
-     * resolved, so the toolbar mirrors the sidebar grouping. Every panel classified by
-     * {@see ExtensionAvailability::isExtensionPanel()} carries `extension: true`, so the shared toolbar groups it
+     * resolved, so the toolbar mirrors the sidebar grouping. Every panel the module registry classifies as an extension,
+     * and every panel it does not list (a raw JSON fallback), carries `extension: true`, so the shared toolbar groups it
      * under its Extensions menu; built-in panels omit the key and stay inline.
      *
      * @param array<string, Panel> $panels Registered Yii2 panels keyed by ID, in display order.
@@ -87,7 +87,7 @@ final readonly class ToolbarDataMapper
             $envelope['url'] ??= $panel->getUrl();
 
             $typedPanels[] = self::panel($id, $panel, $envelope)
-                ->withExtension(ExtensionAvailability::isExtensionPanel($id, $panel));
+                ->withExtension($panel->module?->getPanelRegistry()->get($id)->extension ?? true);
         }
 
         return $this->data->withPanels($typedPanels)->jsonSerialize();

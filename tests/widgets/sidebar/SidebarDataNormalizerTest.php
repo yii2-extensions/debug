@@ -10,6 +10,8 @@ use PHPForge\Debug\View\Sidebar\SidebarNavItem;
 use PHPForge\Inertia\Debug\InertiaPanel;
 use PHPForge\Vite\Debug\VitePanel;
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use Xepozz\InternalMocker\MockerState;
+use yii\debug\Module;
 use yii\debug\panels\{ConfigPanel, MailPanel, ProviderPanel, QueuePanel, RequestPanel, RouterPanel};
 use yii\debug\tests\provider\UrlPathProvider;
 use yii\debug\tests\support\TestCase;
@@ -25,6 +27,11 @@ use function array_map;
 #[Group('sidebar')]
 final class SidebarDataNormalizerTest extends TestCase
 {
+    /**
+     * Debug module whose panel registry classifies the panels a test builds, created on first use.
+     */
+    private Module|null $module = null;
+
     #[DataProviderExternal(UrlPathProvider::class, 'paths')]
     public function testCapturedUrlDisplayPreservesDiagnostics(string $url, string $expected): void
     {
@@ -95,6 +102,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $panel = new RequestPanel();
 
         $panel->id = 'request';
+        $panel->module = $this->debugModule();
 
         $view = SidebarDataNormalizer::fromIndex(
             ['request' => $panel],
@@ -134,6 +142,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $panel = new RequestPanel();
 
         $panel->id = 'request';
+        $panel->module = $this->debugModule();
 
         $view = SidebarDataNormalizer::fromIndex(
             ['request' => $panel],
@@ -177,31 +186,72 @@ final class SidebarDataNormalizerTest extends TestCase
         );
     }
 
+    public function testFromIndexGroupsAPanelWithoutModuleUnderExtensions(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = new RequestPanel();
+
+        $panel->id = 'request';
+
+        $view = SidebarDataNormalizer::fromIndex(
+            ['request' => $panel],
+            ['tag-newest' => $this->requestSummary('tag-newest')],
+        );
+
+        self::assertSame(
+            ['Request'],
+            array_map(
+                static fn(SidebarNavItem $item): string => $item->label,
+                $view->navGroups['Extensions'] ?? [],
+            ),
+            'A panel no registry lists must group under Extensions.',
+        );
+    }
+
     public function testFromIndexGroupsExtensionPanelsAfterPrimaryNavigation(): void
     {
+        // The Queue built-in is registered only when `yii\queue\Queue` is loadable.
+        MockerState::addCondition(
+            'yii\debug\service',
+            'class_exists',
+            ['yii\queue\Queue'],
+            true,
+        );
+
         $this->mockWebApplication();
 
         $request = new RequestPanel();
 
         $request->id = 'request';
 
+        $request->module = $this->debugModule();
+
         $inertia = new ProviderPanel();
         $inertia->provider = new InertiaPanel();
 
         $inertia->id = 'inertia';
 
+        $inertia->module = $this->debugModule();
+
         $mail = new MailPanel();
 
         $mail->id = 'mail';
+
+        $mail->module = $this->debugModule();
 
         $queue = new QueuePanel();
 
         $queue->id = 'queue';
 
+        $queue->module = $this->debugModule();
+
         $vite = new ProviderPanel();
         $vite->provider = new VitePanel();
 
         $vite->id = 'vite';
+
+        $vite->module = $this->debugModule();
 
         $view = SidebarDataNormalizer::fromIndex(
             [
@@ -374,13 +424,15 @@ final class SidebarDataNormalizerTest extends TestCase
         $panel = new RequestPanel();
 
         $panel->id = 'request';
+        $panel->module = $this->debugModule();
 
         $inactivePanel = new RequestPanel();
 
-        $inactivePanel->id = 'other';
+        $inactivePanel->id = 'log';
+        $inactivePanel->module = $this->debugModule();
 
         $view = SidebarDataNormalizer::fromView(
-            ['request' => $panel, 'other' => $inactivePanel],
+            ['request' => $panel, 'log' => $inactivePanel],
             ['tag-1' => $this->requestSummary()],
             $panel,
             'tag-1',
@@ -430,11 +482,13 @@ final class SidebarDataNormalizerTest extends TestCase
         $active = new RequestPanel();
 
         $active->id = 'request';
+        $active->module = $this->debugModule();
 
         $inertia = new ProviderPanel();
         $inertia->provider = new InertiaPanel();
 
         $inertia->id = 'inertia';
+        $inertia->module = $this->debugModule();
 
         $inertia->hydrate(
             [
@@ -487,10 +541,14 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $active->id = 'request';
 
+        $active->module = $this->debugModule();
+
         $idle = new ProviderPanel();
         $idle->provider = new InertiaPanel();
 
         $idle->id = 'inertia';
+
+        $idle->module = $this->debugModule();
 
         $view = SidebarDataNormalizer::fromView(
             ['inertia' => $idle, 'request' => $active],
@@ -520,6 +578,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $panel->id = 'request';
 
+        $panel->module = $this->debugModule();
+
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
             ['tag-1' => $this->requestSummary('tag-1', ['time' => 0.0])],
@@ -547,6 +607,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $panel->id = 'request';
 
+        $panel->module = $this->debugModule();
+
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
             ['tag-1' => $this->requestSummary()],
@@ -573,6 +635,8 @@ final class SidebarDataNormalizerTest extends TestCase
         $panel = new RequestPanel();
 
         $panel->id = 'request';
+
+        $panel->module = $this->debugModule();
 
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
@@ -610,6 +674,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $panel->id = 'request';
 
+        $panel->module = $this->debugModule();
+
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
             [],
@@ -639,6 +705,7 @@ final class SidebarDataNormalizerTest extends TestCase
         $panel = new RequestPanel();
 
         $panel->id = 'request';
+        $panel->module = $this->debugModule();
 
         $manifest = [
             'tag-newest' => $this->requestSummary('tag-newest'),
@@ -694,6 +761,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $panel->id = 'request';
 
+        $panel->module = $this->debugModule();
+
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
             ['tag-1' => $this->requestSummary()],
@@ -718,11 +787,18 @@ final class SidebarDataNormalizerTest extends TestCase
         $this->mockWebApplication();
 
         $active = new RequestPanel();
+
         $active->id = 'request';
+
+        $active->module = $this->debugModule();
 
         $inertia = new ProviderPanel();
         $inertia->provider = new InertiaPanel();
+
         $inertia->id = 'inertia';
+
+        $inertia->module = $this->debugModule();
+
         $inertia->setError(ExceptionSnapshot::fromThrowable(new Exception('capture failed')));
 
         $view = SidebarDataNormalizer::fromView(
@@ -752,6 +828,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $panel->id = 'request';
 
+        $panel->module = $this->debugModule();
+
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
             ['tag-1' => $this->requestSummary('tag-1', ['url' => 'http://:80/'])],
@@ -779,9 +857,13 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $request->id = 'request';
 
+        $request->module = $this->debugModule();
+
         $config = new ConfigPanel();
 
         $config->id = 'config';
+
+        $config->module = $this->debugModule();
 
         $view = SidebarDataNormalizer::fromView(
             ['config' => $config, 'request' => $request],
@@ -817,9 +899,14 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $request->id = 'request';
 
+        $request->module = $this->debugModule();
+
         $router = new RouterPanel();
 
         $router->id = 'router';
+
+        $router->module = $this->debugModule();
+
         $router->standalone = false;
 
         $summary = $this->requestSummary('tag-1');
@@ -833,8 +920,16 @@ final class SidebarDataNormalizerTest extends TestCase
         foreach ([$index, $view] as $sidebar) {
             $labels = array_map(static fn(SidebarNavItem $item): string => $item->label, $sidebar->navItems);
 
-            self::assertContains('Request', $labels, 'Visible panels must remain in sidebar navigation.');
-            self::assertNotContains('Router', $labels, 'Invisible panels must be omitted from sidebar navigation.');
+            self::assertContains(
+                'Request',
+                $labels,
+                'Visible panels must remain in sidebar navigation.',
+            );
+            self::assertNotContains(
+                'Router',
+                $labels,
+                'Invisible panels must be omitted from sidebar navigation.',
+            );
         }
     }
 
@@ -845,6 +940,8 @@ final class SidebarDataNormalizerTest extends TestCase
         $panel = new RequestPanel();
 
         $panel->id = 'request';
+
+        $panel->module = $this->debugModule();
 
         $codes = [
             100 => 'none',
@@ -883,6 +980,8 @@ final class SidebarDataNormalizerTest extends TestCase
 
         $panel->id = 'request';
 
+        $panel->module = $this->debugModule();
+
         $view = SidebarDataNormalizer::fromView(
             ['request' => $panel],
             [
@@ -905,5 +1004,13 @@ final class SidebarDataNormalizerTest extends TestCase
             $view->snapshot->path,
             "Snapshot path must drop 'scheme/host/port'.",
         );
+    }
+
+    /**
+     * Returns the debug module the test panels belong to, so its registry tells built-ins from extensions.
+     */
+    private function debugModule(): Module
+    {
+        return $this->module ??= new Module('debug');
     }
 }

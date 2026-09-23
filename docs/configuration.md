@@ -48,29 +48,53 @@ $config['modules']['debug']['panels'] = [
   rejected on a built-in panel, and `title` and `icon` are rejected on any panel that is not provider-owned.
 - The array key is the stable ID and must equal the provider's `id()`; a mismatch is rejected.
 
-## Inertia and Vite
+## Provider packages
 
-Both providers register themselves. Installing `php-forge/inertia` or `php-forge/vite` registers the collector and the
-panel under the `inertia` or `vite` ID and builds the Inertia collector with its own redaction policy. Attachment is a
-second, separate step: before the request runs the module hands the collector to the `inertia` component when
-`yii2-extensions/inertia` is installed and the application configures an `inertia` component that is a
-`yii\inertia\Manager` (or a subclass), and to the `vite` component when it is a `PHPForge\Vite\Vite` (or a subclass);
-any other component is left alone and the panel simply records nothing. `php-forge/inertia` ships
-`PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel}` and `php-forge/vite` ships
-`PHPForge\Vite\Debug\{ViteCollector, VitePanel}`; the debugger lists both under **Extensions**.
+Provider packages register exactly like the `cache` example above: a collector and a panel under the same stable ID.
+The module names no provider and detects none; nothing is registered until the application declares it. When the
+package emits its results through a PSR-14 dispatcher, `dispatchers` hands the collector to the application component
+that emits them, `collectorId => componentId`.
 
-A component that already configures its dispatcher, a closure definition, or a component the application instantiated
-before the request keeps what it has. Disable either integration like any other entry:
+Inside the `YII_DEBUG` guard of the development configuration:
 
 ```php
+use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Inertia\Debug\{InertiaCollector, InertiaPanel};
 use PHPForge\Vite\Debug\{ViteCollector, VitePanel};
 
-$config['modules']['debug']['collectors']['inertia'] = ['class' => InertiaCollector::class, 'enabled' => false];
-$config['modules']['debug']['panels']['inertia'] = ['class' => InertiaPanel::class, 'enabled' => false];
-$config['modules']['debug']['collectors']['vite'] = ['class' => ViteCollector::class, 'enabled' => false];
-$config['modules']['debug']['panels']['vite'] = ['class' => VitePanel::class, 'enabled' => false];
+$config['modules']['debug'] = [
+    'class' => \yii\debug\Module::class,
+    'collectors' => [
+        'inertia' => static fn(CapturePolicy $policy): InertiaCollector
+            => new InertiaCollector($policy->redact(...), $policy->redactUrl(...)),
+        'vite' => ViteCollector::class,
+    ],
+    'panels' => [
+        'inertia' => InertiaPanel::class,
+        'vite' => VitePanel::class,
+    ],
+    // collector ID => application component that emits the events
+    'dispatchers' => ['inertia' => 'inertia', 'vite' => 'vite'],
+];
 ```
+
+- A `Closure` collector entry receives the module `CapturePolicy`, so the Inertia collector redacts page props and
+  URLs with the rules the Request panel applies (`sensitiveKeys`, `sensitiveKeyPrefixes`, `sensitiveKeyPatterns`). A
+  bare `InertiaCollector::class` entry records the values unchanged.
+- The component takes the collector on a public `eventDispatcher` property (`yii\inertia\Manager`) or on a
+  constructor parameter named `eventDispatcher` (`PHPForge\Vite\Vite`). A definition is amended without
+  instantiating the component; a component instantiated before the request only accepts the property form.
+- A dispatcher the component already configures is kept. If the application owns a real PSR-14 dispatcher, register
+  the collector as a listener on it and leave the component out of `dispatchers`.
+- Use the component ID the application already has; the Vite component is often named after the entry point (for
+  example `'vite' => 'inertiaVue'`).
+- A `dispatchers` key naming no configured collector, an unknown component, a component that takes no dispatcher, or
+  a closure definition is rejected with `InvalidConfigException`.
+- Disable a provider with `'enabled' => false` on its `collectors` and `panels` entries; `dispatchers` skips a disabled
+  collector. Removing the provider package while the configuration still lists its class fails with an
+  `InvalidConfigException` naming the class: disable or drop the entries.
+
+Both providers are listed under **Extensions**, like every panel registered under an ID the module does not ship.
 
 Vite's **Production** label means it is inspecting built assets in a development application, not that the debugger
 can run in production.
@@ -124,7 +148,7 @@ $config['modules']['debug']['components'][AccessGuard::class] = TeamAccessGuard:
 A definition may be a class name, a configuration array with `class`, a callable receiving `Module $module`, or an
 instance. Register it before the module resolves the service: `CapturePolicyFactory`, `CollectorRegistrar`,
 `PanelRegistrar`, and `StandaloneActionResolver` run during module initialization and `LogTargetFactory` during the
-application bootstrap, so they must come from the configuration; `AccessGuard`, `ProviderCollectorAttacher`, and
+application bootstrap, so they must come from the configuration; `AccessGuard`, `DispatcherAttacher`, and
 `ToolbarPresenter` are resolved on the first request and may also be registered through `$module->set()` before it.
 
 | Service                     | Responsibility                                                                          |
@@ -132,9 +156,9 @@ application bootstrap, so they must come from the configuration; `AccessGuard`, 
 | `AccessGuard`               | Decides whether a request may reach the debugger from the IP, host, and callback rules. |
 | `CapturePolicyFactory`      | Builds the redaction and body-size policy applied to every capture.                     |
 | `CollectorRegistrar`        | Resolves the configured collectors into the coordinator driving the capture.            |
+| `DispatcherAttacher`        | Hands each collector named in `dispatchers` to the application component it observes.   |
 | `LogTargetFactory`          | Resolves the configured log target during the bootstrap.                                |
 | `PanelRegistrar`            | Resolves the configured panels and their display order.                                 |
-| `ProviderCollectorAttacher` | Hands each provider collector to the application component it observes.                 |
 | `StandaloneActionResolver`  | Merges the debugger action map and resolves routes against it.                          |
 | `ToolbarPresenter`          | Renders the toolbar and writes the debug response headers.                              |
 

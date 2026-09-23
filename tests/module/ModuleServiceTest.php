@@ -11,7 +11,7 @@ use Yii;
 use yii\base\{Application, InvalidConfigException, Module as BaseModule};
 use yii\debug\exception\Message;
 use yii\debug\Module;
-use yii\debug\service\{AccessGuard, CollectorRegistrar, ProviderCollectorAttacher};
+use yii\debug\service\{AccessGuard, CollectorRegistrar, DispatcherAttacher};
 use yii\debug\tests\support\ModuleTestCase;
 use yii\debug\tests\support\stub\service\ConfiguredAccessGuard;
 
@@ -251,7 +251,7 @@ final class ModuleServiceTest extends ModuleTestCase
 
         $module->bootstrap(Yii::$app);
 
-        $attacher = new class ($module) extends ProviderCollectorAttacher {
+        $attacher = new class ($module) extends DispatcherAttacher {
             public int $attachCalls = 0;
 
             public function attach(Application $app): void
@@ -260,7 +260,7 @@ final class ModuleServiceTest extends ModuleTestCase
             }
         };
 
-        $module->set(ProviderCollectorAttacher::class, static fn(): ProviderCollectorAttacher => $attacher);
+        $module->set(DispatcherAttacher::class, static fn(): DispatcherAttacher => $attacher);
 
         Yii::$app->trigger(Application::EVENT_BEFORE_REQUEST);
 

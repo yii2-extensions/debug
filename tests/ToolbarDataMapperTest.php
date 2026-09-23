@@ -66,13 +66,14 @@ final class ToolbarDataMapperTest extends TestCase
             }
         };
 
-        $panel->id = 'extended';
+        // Registered under a built-in ID, so the classification adds no `extension` key to the typed envelope.
+        $panel->id = 'log';
         $panel->module = $module;
         $panel->tag = 'capture-tag';
 
         $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
             ->withNavigation('/debug/index')
-            ->map(['extended' => $panel]);
+            ->map(['log' => $panel]);
 
         self::assertSame(
             ['id', 'title', 'url', 'items'],
@@ -83,6 +84,24 @@ final class ToolbarDataMapperTest extends TestCase
             [['label' => 'Count', 'value' => '42', 'status' => 'default']],
             $result['items'][0]['items'] ?? null,
             'Item envelope must keep the typed keys only, with the value coerced and the default status applied.',
+        );
+    }
+
+    public function testMapFlagsAPanelWithoutModuleAsAnExtension(): void
+    {
+        $this->mockWebApplication();
+
+        $panel = $this->extensionPanel(new Module('debug'), 'log', 'Detached');
+
+        $panel->module = null;
+
+        $result = ToolbarDataMapper::create('capture-tag', 'Yii Debugger')
+            ->withNavigation('/debug/index')
+            ->map(['log' => $panel]);
+
+        self::assertTrue(
+            $result['items'][0]['extension'] ?? null,
+            'A panel no registry lists must group under Extensions.',
         );
     }
 

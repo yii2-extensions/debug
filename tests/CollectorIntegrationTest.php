@@ -332,7 +332,7 @@ final class CollectorIntegrationTest extends TestCase
     public function testUnavailableExtensionStoredPayloadDoesNotCreateFallbackPanel(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,
@@ -362,7 +362,7 @@ final class CollectorIntegrationTest extends TestCase
     public function testUnavailableExtensionStoredPayloadKeepsExplicitCollectorFallback(): void
     {
         MockerState::addCondition(
-            'yii\debug',
+            'yii\debug\service',
             'class_exists',
             ['yii\queue\Queue'],
             false,

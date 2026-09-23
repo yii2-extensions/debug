@@ -9,7 +9,7 @@ use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPForge\Debug\View\Sidebar\{SidebarNavItem, SidebarSnapshot, SidebarView};
 use PHPForge\Debug\View\ViewMessage;
-use yii\debug\{ExtensionAvailability, Module, Panel};
+use yii\debug\{Module, Panel};
 use yii\debug\view\ViewMessage as AdapterMessage;
 use yii\helpers\Url;
 
@@ -217,7 +217,7 @@ final class SidebarDataNormalizer
                 isActive: $isActive,
             );
 
-            if (ExtensionAvailability::isExtensionPanel($id, $panel)) {
+            if ($panel->module?->getPanelRegistry()->get($id)->extension ?? true) {
                 $extensionItems[] = $item;
 
                 continue;

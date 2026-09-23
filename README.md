@@ -98,9 +98,10 @@ providers, database thresholds, IDE links, and the standalone router.
 The toolbar and debugger routes allow `127.0.0.1` and `::1` by default. Add only trusted development addresses to
 `allowedIPs`; never expose the debugger publicly. A `checkAccessCallback` can further restrict allowed requests.
 
-Request, identity, queue, and Inertia captures redact common sensitive fields. Logs preserve original diagnostic
-values and are not redacted by the capture policy; SQL diagnostics can include substituted query values. Treat
-stored captures as sensitive and review them before sharing.
+Request, identity, and queue captures redact common sensitive fields, and so do Inertia captures registered with the
+capture-policy closure shown in the configuration reference. Logs preserve original diagnostic values and are not
+redacted by the capture policy; SQL diagnostics can include substituted query values. Treat stored captures as
+sensitive and review them before sharing.
 
 In the Events panel, context capture and source traces are disabled by default. This does not disable source
 traces in Logs or Database.

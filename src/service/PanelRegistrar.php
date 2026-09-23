@@ -9,9 +9,9 @@ use PHPForge\Debug\Panel as PortablePanel;
 use PHPForge\Debug\Registration\{PanelOverride, PanelRegistration, PanelRegistry};
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\debug\{ComponentResolver, ExtensionAvailability, Module, Panel};
+use yii\debug\{ComponentResolver, Module, Panel};
 use yii\debug\exception\Message;
-use yii\debug\panels\ProviderPanel;
+use yii\debug\panels\{JsonPanel, ProviderPanel};
 
 use function array_diff_key;
 use function array_flip;
@@ -23,8 +23,8 @@ use function is_subclass_of;
 /**
  * Instantiates the configured debug panels and resolves the catalog describing their display order.
  *
- * Built-in extension panels are omitted when their provider package is unavailable. Explicit application
- * configuration remains authoritative and may still register a custom panel under the same ID.
+ * Built-in panels are omitted when their optional package is unavailable. Explicit application configuration remains
+ * authoritative and may still register a custom panel under the same ID.
  *
  * Panels are published on {@see Module::$panels} as they are built, so a panel reading a sibling while it binds
  * itself sees every entry registered before it.
@@ -99,7 +99,7 @@ class PanelRegistrar
             }
         }
 
-        return $this->resolveCatalog($overrides);
+        return $this->resolveCatalog($overrides, $core);
     }
 
     /**
@@ -260,17 +260,20 @@ class PanelRegistrar
      * Resolves the effective panel catalog and orders the registered panels to match it.
      *
      * Defaults are read from the registered panels in registration order, so built-ins keep the order the module
-     * declares and only the extensions are reordered by the shared policy. The resolved title and icon reach the
+     * declares and only the extensions are reordered by the shared policy. A panel registered under a built-in ID is a
+     * built-in, whatever class the application configures for it; every other panel, and any {@see JsonPanel}, is an
+     * extension. The resolved title and icon reach the
      * panels the host renders metadata for, and a panel declaring no name registers under its ID, which the policy
      * requires to be non-empty.
      *
      * @param array<string, PanelOverride> $overrides Registration options indexed by panel ID.
+     * @param array<string, mixed> $core Built-in panel definitions indexed by panel ID.
      *
      * @throws InvalidConfigException when the declared metadata or a registration option is rejected by the policy.
      *
      * @return PanelCatalog Registered panels in display order and the catalog describing them.
      */
-    private function resolveCatalog(array $overrides): PanelCatalog
+    private function resolveCatalog(array $overrides, array $core): PanelCatalog
     {
         try {
             $defaults = [];
@@ -281,9 +284,9 @@ class PanelRegistrar
                 $title = $name === '' ? $id : $name;
                 $icon = $panel->getToolbarIcon() ?? '';
 
-                $defaults[] = ExtensionAvailability::isExtensionPanel($id, $panel)
-                    ? PanelRegistration::extension($id, $title, $icon)
-                    : PanelRegistration::builtIn($id, $title, $icon);
+                $defaults[] = isset($core[$id]) && !$panel instanceof JsonPanel
+                    ? PanelRegistration::builtIn($id, $title, $icon)
+                    : PanelRegistration::extension($id, $title, $icon);
             }
 
             $registry = PanelRegistry::resolve($defaults, $overrides);

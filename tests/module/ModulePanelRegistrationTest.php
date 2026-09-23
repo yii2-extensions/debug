@@ -12,7 +12,7 @@ use Yii;
 use yii\base\InvalidConfigException;
 use yii\db\Connection;
 use yii\debug\exception\Message;
-use yii\debug\{ExtensionAvailability, Module, Panel};
+use yii\debug\{Module, Panel};
 use yii\debug\panels\{DbPanel, LogPanel};
 use yii\debug\tests\support\ModuleTestCase;
 use yii\debug\tests\support\stub\{
@@ -297,7 +297,7 @@ final class ModulePanelRegistrationTest extends ModuleTestCase
 
         $builtIns = array_filter(
             $module->panels,
-            static fn(Panel $panel, string $id): bool => ExtensionAvailability::isExtensionPanel($id, $panel) === false,
+            static fn(Panel $panel, string $id): bool => $module->getPanelRegistry()->get($id)?->extension === false,
             ARRAY_FILTER_USE_BOTH,
         );
 
