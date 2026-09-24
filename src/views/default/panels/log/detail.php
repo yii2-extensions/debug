@@ -148,58 +148,60 @@ $summaryItems[] = GridViewConfig::pageSizeSelectorHtml();
     ->html(...$summaryItems) ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
-    [
-        ...GridViewConfig::defaults(),
-        'dataProvider' => $dataProvider,
-        'id' => 'log-panel-detailed-grid',
-        'options' => ['class' => 'yii-debug-grid yii-debug-grid-log'],
-        'filterModel' => $searchModel,
-        'filterUrl' => $panel->getUrl(),
-        'rowOptions' => static fn(LogRow $model): array => LogCellRenderer::buildRowOptions($model),
-        'columns' => [
-            [
-                'attribute' => 'id',
-                'label' => LogMessage::NUMBER->value,
-                'contentOptions' => ['class' => 'yii-debug-nowrap'],
-            ],
-            [
-                'attribute' => 'time',
-                'value' => static fn(LogRow $data): string => LogCellRenderer::renderTimeCell($data),
-                'headerOptions' => ['class' => 'sort-numerical'],
-                'contentOptions' => ['class' => 'yii-debug-nowrap'],
-            ],
-            [
-                'attribute' => 'timeSincePrevious',
-                'value' => static fn(LogRow $data): string => LogCellRenderer::renderTimeSincePreviousCell($data),
-                'format' => 'raw',
-                'headerOptions' => ['class' => 'sort-numerical'],
-            ],
-            [
-                'attribute' => 'level',
-                'value' => static fn(LogRow $data): string => LogCellRenderer::renderLevelCell($data),
-                'format' => 'raw',
-                'filter' => [
-                    Logger::LEVEL_TRACE => ' ' . LogMessage::FILTER_TRACE->value . ' ',
-                    Logger::LEVEL_INFO => ' ' . LogMessage::FILTER_INFO->value . ' ',
-                    Logger::LEVEL_WARNING => ' ' . LogMessage::FILTER_WARNING->value . ' ',
-                    Logger::LEVEL_ERROR => ' ' . LogMessage::FILTER_ERROR->value . ' ',
+    array_replace(
+        GridViewConfig::defaults(),
+        [
+            'dataProvider' => $dataProvider,
+            'id' => 'log-panel-detailed-grid',
+            'options' => ['class' => 'yii-debug-grid yii-debug-grid-log'],
+            'filterModel' => $searchModel,
+            'filterUrl' => $panel->getUrl(),
+            'rowOptions' => static fn(LogRow $model): array => LogCellRenderer::buildRowOptions($model),
+            'columns' => [
+                [
+                    'attribute' => 'id',
+                    'label' => LogMessage::NUMBER->value,
+                    'contentOptions' => ['class' => 'yii-debug-nowrap'],
+                ],
+                [
+                    'attribute' => 'time',
+                    'value' => static fn(LogRow $data): string => LogCellRenderer::renderTimeCell($data),
+                    'headerOptions' => ['class' => 'sort-numerical'],
+                    'contentOptions' => ['class' => 'yii-debug-nowrap'],
+                ],
+                [
+                    'attribute' => 'timeSincePrevious',
+                    'value' => static fn(LogRow $data): string => LogCellRenderer::renderTimeSincePreviousCell($data),
+                    'format' => 'raw',
+                    'headerOptions' => ['class' => 'sort-numerical'],
+                ],
+                [
+                    'attribute' => 'level',
+                    'value' => static fn(LogRow $data): string => LogCellRenderer::renderLevelCell($data),
+                    'format' => 'raw',
+                    'filter' => [
+                        Logger::LEVEL_TRACE => ' ' . LogMessage::FILTER_TRACE->value . ' ',
+                        Logger::LEVEL_INFO => ' ' . LogMessage::FILTER_INFO->value . ' ',
+                        Logger::LEVEL_WARNING => ' ' . LogMessage::FILTER_WARNING->value . ' ',
+                        Logger::LEVEL_ERROR => ' ' . LogMessage::FILTER_ERROR->value . ' ',
+                    ],
+                ],
+                [
+                    'attribute' => 'category',
+                    'value' => static fn(LogRow $data): string => LogCellRenderer::renderCategoryCell($data),
+                    'format' => 'raw',
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
+                ],
+                [
+                    'attribute' => 'message',
+                    'value' => static fn(LogRow $data): string => LogCellRenderer::renderMessageCell(
+                        $data,
+                        $panel->getTraceLine(...),
+                    ),
+                    'format' => 'raw',
+                    'options' => ['width' => '50%'],
                 ],
             ],
-            [
-                'attribute' => 'category',
-                'value' => static fn(LogRow $data): string => LogCellRenderer::renderCategoryCell($data),
-                'format' => 'raw',
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
-            ],
-            [
-                'attribute' => 'message',
-                'value' => static fn(LogRow $data): string => LogCellRenderer::renderMessageCell(
-                    $data,
-                    $panel->getTraceLine(...),
-                ),
-                'format' => 'raw',
-                'options' => ['width' => '50%'],
-            ],
         ],
-    ],
+    ),
 );

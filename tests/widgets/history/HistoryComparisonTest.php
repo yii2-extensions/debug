@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\widgets\history;
 
+use PHPForge\Debug\Comparison\{PanelComparison, SummaryMetricComparison};
 use PHPForge\Debug\Storage\{DebugSnapshot, PanelFailure, RequestSummary};
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
 use RuntimeException;
 use yii\debug\tests\provider\{HistoryComparisonProvider, SummaryMetricComparisonProvider};
 use yii\debug\tests\support\TestCase;
-use yii\debug\widgets\history\{HistoryComparison, HistoryMetricComparison, HistoryPanelComparison};
+use yii\debug\widgets\history\HistoryComparison;
 
 /**
  * Unit tests for {@see HistoryComparison} metric deltas, panel ordering, and privacy-preserving fingerprints.
@@ -19,36 +20,6 @@ use yii\debug\widgets\history\{HistoryComparison, HistoryMetricComparison, Histo
 #[Group('history')]
 final class HistoryComparisonTest extends TestCase
 {
-    public function testDifferenceCountSumsAddedRemovedAndChangedCounters(): void
-    {
-        $panel = new HistoryPanelComparison(
-            id: 'request',
-            label: 'Request',
-            baselineState: 'Captured',
-            targetState: 'Captured',
-            added: 2,
-            removed: 1,
-            changed: 0,
-            unchanged: 5,
-        );
-
-        self::assertSame(
-            3,
-            $panel->differenceCount(),
-            'Sum must be `added + removed + changed`.',
-        );
-        self::assertSame(
-            'request',
-            $panel->id,
-            'Panel identity must round-trip.',
-        );
-        self::assertSame(
-            5,
-            $panel->unchanged,
-            'Unchanged counter must be carried.',
-        );
-    }
-
     public function testFromSnapshotsComputesDownwardTrendWithSignedPercentage(): void
     {
         $baseline = new DebugSnapshot($this->summary('baseline', processingTime: 0.015), [], []);
@@ -618,7 +589,7 @@ final class HistoryComparisonTest extends TestCase
             ['request' => 'Request', 'db' => 'Database', 'log' => 'Logs'],
         );
 
-        $ids = array_map(static fn(HistoryPanelComparison $panel): string => $panel->id, $comparison->panels);
+        $ids = array_map(static fn(PanelComparison $panel): string => $panel->id, $comparison->panels);
 
         self::assertSame(
             ['request', 'db', 'alpha', 'zeta'],
@@ -749,7 +720,7 @@ final class HistoryComparisonTest extends TestCase
         );
     }
 
-    private static function firstPanel(HistoryComparison $comparison): HistoryPanelComparison
+    private static function firstPanel(HistoryComparison $comparison): PanelComparison
     {
         self::assertNotEmpty(
             $comparison->panels,
@@ -759,7 +730,7 @@ final class HistoryComparisonTest extends TestCase
         return $comparison->panels[0];
     }
 
-    private static function metric(HistoryComparison $comparison, string $label): HistoryMetricComparison
+    private static function metric(HistoryComparison $comparison, string $label): SummaryMetricComparison
     {
         foreach ($comparison->metrics as $metric) {
             if ($metric->label === $label) {

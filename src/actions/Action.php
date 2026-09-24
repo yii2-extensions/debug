@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace yii\debug\actions;
 
 use Override;
-use PHPForge\Debug\Helper\{Format, Icon};
 use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Storage\{ExceptionSnapshot, RequestSummary};
 use PHPForge\Debug\Theme\ThemeResolver;
@@ -15,14 +14,11 @@ use yii\base\{InvalidConfigException, ViewContextInterface};
 use yii\debug\collectors\MailCollector;
 use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module, Panel};
-use yii\debug\panels\ConfigPanel;
 use yii\debug\routing\DebugUrlGenerator;
 use yii\debug\widgets\shell\ShellContext;
 use yii\debug\widgets\sidebar\SidebarDataNormalizer;
-use yii\helpers\Url;
 use yii\web\{NotFoundHttpException, Response};
 
-use function array_key_first;
 use function dirname;
 
 /**
@@ -211,28 +207,13 @@ class Action extends \yii\web\Action implements ViewContextInterface
     }
 
     /**
-     * Builds the bare shell installed by {@see beforeRun()}.
+     * Builds the bare shell installed by {@see beforeRun()} through {@see Module::getShellContextFactory()}.
      *
      * @return ShellContext Shell that echoes raw content without the brand bar or sidebar.
      */
     protected function createBareShellContext(): ShellContext
     {
-        $theme = $this->resolveTheme();
-
-        return new ShellContext(
-            mode: ShellContext::MODE_BARE,
-            useShell: false,
-            title: $this->getDebugModule()->htmlTitle(),
-            debugThemeAttributes: ['lang' => 'en', 'data-yii-debug-theme' => $theme],
-            resolvedTheme: $theme,
-            themeIconSun: '',
-            themeIconMoon: '',
-            yiiVersion: '',
-            phpVersion: '',
-            peakMemory: null,
-            configUrl: null,
-            sidebar: null,
-        );
+        return $this->getDebugModule()->getShellContextFactory()->bare($this->resolveTheme());
     }
 
     /**
@@ -255,7 +236,7 @@ class Action extends \yii\web\Action implements ViewContextInterface
     }
 
     /**
-     * Builds the shared shell for an index or view page.
+     * Builds the shared shell for an index or view page through {@see Module::getShellContextFactory()}.
      *
      * @param string $mode One of the {@see ShellContext} mode constants.
      * @param array<string, RequestSummary> $manifest Manifest entries indexed by tag.
@@ -272,35 +253,9 @@ class Action extends \yii\web\Action implements ViewContextInterface
         RequestSummary|null $summary,
         SidebarView $sidebar,
     ): ShellContext {
-        $theme = $this->resolveTheme();
-        $module = $this->getDebugModule();
-
-        $configPanel = $module->panels['config'] ?? null;
-
-        $yiiVersion = $configPanel instanceof ConfigPanel ? $configPanel->getYiiVersion() : null;
-        $phpVersion = $configPanel instanceof ConfigPanel ? $configPanel->getPhpVersion() : null;
-
-        $configTag = $activeTag ?? array_key_first($manifest);
-        $configUrl = $configTag === null
-            ? null
-            : Url::to(Module::route('view', ['panel' => 'config', 'tag' => $configTag]));
-
-        $peakMemory = $summary?->peakMemory;
-
-        return new ShellContext(
-            mode: $mode,
-            useShell: true,
-            title: $module->htmlTitle(),
-            debugThemeAttributes: ['lang' => 'en', 'data-yii-debug-theme' => $theme],
-            resolvedTheme: $theme,
-            themeIconSun: Icon::render('sun'),
-            themeIconMoon: Icon::render('moon'),
-            yiiVersion: $yiiVersion ?? Yii::getVersion(),
-            phpVersion: $phpVersion ?? PHP_VERSION,
-            peakMemory: $peakMemory !== null ? Format::bytesToMb($peakMemory) : null,
-            configUrl: $configUrl,
-            sidebar: $sidebar,
-        );
+        return $this->getDebugModule()
+            ->getShellContextFactory()
+            ->forSnapshot($mode, $this->resolveTheme(), $manifest, $activeTag, $summary, $sidebar);
     }
 
     /**

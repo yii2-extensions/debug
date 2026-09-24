@@ -20,18 +20,30 @@ final readonly class HistoryComparison
      */
     public DebugSnapshot $baseline;
     /**
+     * Request-summary metric comparisons in canonical history order.
+     *
+     * @var list<SummaryMetricComparison>
+     */
+    public array $metrics;
+    /**
+     * Per-panel structural comparisons in configured display order.
+     *
+     * @var list<PanelComparison>
+     */
+    public array $panels;
+    /**
      * Target snapshot.
      */
     public DebugSnapshot $target;
 
     /**
-     * @param SnapshotComparison $comparison Shared comparison the presentation models are derived from.
-     * @param list<HistoryMetricComparison> $metrics Request-summary metric comparisons.
-     * @param list<HistoryPanelComparison> $panels Per-panel structural comparisons.
+     * @param SnapshotComparison $comparison Shared comparison the view reads.
      */
-    private function __construct(private SnapshotComparison $comparison, public array $metrics, public array $panels)
+    private function __construct(private SnapshotComparison $comparison)
     {
         $this->baseline = $comparison->baseline;
+        $this->metrics = $comparison->metrics;
+        $this->panels = $comparison->panels;
         $this->target = $comparison->target;
     }
 
@@ -46,13 +58,7 @@ final readonly class HistoryComparison
      */
     public static function fromSnapshots(DebugSnapshot $baseline, DebugSnapshot $target, array $panelLabels = []): self
     {
-        $comparison = SnapshotComparison::between($baseline, $target, $panelLabels);
-
-        return new self(
-            comparison: $comparison,
-            metrics: self::buildMetrics($comparison->metrics),
-            panels: self::buildPanels($comparison->panels),
-        );
+        return new self(SnapshotComparison::between($baseline, $target, $panelLabels));
     }
 
     /**
@@ -63,57 +69,5 @@ final readonly class HistoryComparison
     public function hasDifferences(): bool
     {
         return $this->comparison->hasDifferences();
-    }
-
-    /**
-     * Maps the shared metric comparisons to their presentation models.
-     *
-     * @param list<SummaryMetricComparison> $metrics Summary metric comparisons to transform into presentation models.
-     *
-     * @return list<HistoryMetricComparison> Presentation models derived from the summary metric comparisons.
-     */
-    private static function buildMetrics(array $metrics): array
-    {
-        $presentation = [];
-
-        foreach ($metrics as $metric) {
-            $presentation[] = new HistoryMetricComparison(
-                label: $metric->label,
-                baseline: $metric->baseline,
-                target: $metric->target,
-                delta: $metric->delta,
-                trend: $metric->trend,
-                panelId: $metric->panelId,
-            );
-        }
-
-        return $presentation;
-    }
-
-    /**
-     * Maps the shared panel comparisons to their presentation models.
-     *
-     * @param list<PanelComparison> $panels Per-panel structural comparisons to transform into presentation models.
-     *
-     * @return list<HistoryPanelComparison> Presentation models derived from the per-panel structural comparisons.
-     */
-    private static function buildPanels(array $panels): array
-    {
-        $presentation = [];
-
-        foreach ($panels as $panel) {
-            $presentation[] = new HistoryPanelComparison(
-                id: $panel->id,
-                label: $panel->label,
-                baselineState: $panel->baselineState,
-                targetState: $panel->targetState,
-                added: $panel->added,
-                removed: $panel->removed,
-                changed: $panel->changed,
-                unchanged: $panel->unchanged,
-            );
-        }
-
-        return $presentation;
     }
 }

@@ -61,8 +61,8 @@
         "yii2-extensions/scaffold": "^0.2"
     },
     "suggest": {
-        "php-forge/inertia": "Captures the Inertia protocol result of every request in its own panel.",
-        "yii2-extensions/inertia": "Lets the module hand the Inertia collector to the `inertia` component automatically."
+        "php-forge/inertia": "Captures the Inertia protocol result of every request in its own panel. Register its collector and panel under `collectors`/`panels` and hand the collector to the component with `dispatchers`; see docs/configuration.md.",
+        "yii2-extensions/inertia": "Provides the `inertia` component that takes the Inertia collector through `dispatchers`; see docs/configuration.md."
     },
     "autoload": {
         "psr-4": {

@@ -173,43 +173,45 @@ $filterFields[] = Button::tag()
         GridViewConfig::pageSizeSelectorHtml(),
     ) ?>
 <?= GridView::widget(
-    [
-        ...GridViewConfig::defaults(),
-        'dataProvider' => $dataProvider,
-        'id' => 'profile-panel-detailed-grid',
-        'filterModel' => null,
-        'options' => ['class' => 'yii-debug-grid yii-debug-grid-profile'],
-        'columns' => [
-            [
-                'attribute' => 'seq',
-                'label' => 'Time',
-                'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderTimeCell($data),
-                'format' => 'raw',
-                'headerOptions' => ['class' => 'sort-numerical'],
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
-            ],
-            [
-                'attribute' => 'duration',
-                'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderDurationCell(
-                    $data,
-                    $maxDuration,
-                ),
-                'format' => 'raw',
-                'options' => ['width' => '10%'],
-                'headerOptions' => ['class' => 'sort-numerical'],
-            ],
-            [
-                'attribute' => 'category',
-                'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderCategoryCell($data),
-                'format' => 'raw',
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
-            ],
-            [
-                'attribute' => 'info',
-                'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderInfoCell($data),
-                'format' => 'raw',
-                'options' => ['width' => '60%'],
+    array_replace(
+        GridViewConfig::defaults(),
+        [
+            'dataProvider' => $dataProvider,
+            'id' => 'profile-panel-detailed-grid',
+            'filterModel' => null,
+            'options' => ['class' => 'yii-debug-grid yii-debug-grid-profile'],
+            'columns' => [
+                [
+                    'attribute' => 'seq',
+                    'label' => 'Time',
+                    'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderTimeCell($data),
+                    'format' => 'raw',
+                    'headerOptions' => ['class' => 'sort-numerical'],
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+                ],
+                [
+                    'attribute' => 'duration',
+                    'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderDurationCell(
+                        $data,
+                        $maxDuration,
+                    ),
+                    'format' => 'raw',
+                    'options' => ['width' => '10%'],
+                    'headerOptions' => ['class' => 'sort-numerical'],
+                ],
+                [
+                    'attribute' => 'category',
+                    'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderCategoryCell($data),
+                    'format' => 'raw',
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-cell-fqcn'],
+                ],
+                [
+                    'attribute' => 'info',
+                    'value' => static fn(ProfileRow $data): string => ProfileCellRenderer::renderInfoCell($data),
+                    'format' => 'raw',
+                    'options' => ['width' => '60%'],
+                ],
             ],
         ],
-    ],
+    ),
 );

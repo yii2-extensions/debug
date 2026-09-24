@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(module): resolve debugger services through the module service locator and allow replacing them via `components` configuration.
 - refactor!: remove standalone `Timeline` panel/collector, dead storage compatibility branch, and orphan classes.
 - refactor!: link Mail's chip label to its capture; make Mail and Queue built-ins after Database, reject their `position`, and remove `isOptional()`.
+- refactor: read collector and panel entries and build the sidebar snapshot card through Debug Core, drop the History comparison DTOs that mirrored Debug Core, and build page shells through the replaceable `ShellContextFactory` service.
 
 ## 0.1.1 May 18, 2026
 

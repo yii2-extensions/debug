@@ -69,64 +69,66 @@ $explainUrlBuilder = static fn(int $seq): string => Url::to(
     <?php return; ?>
 <?php endif; ?>
 <?= GridView::widget(
-    [
-        ...GridViewConfig::defaults(),
-        'dataProvider' => $queryDataProvider,
-        'id' => 'db-panel-detailed-queries-grid',
-        'options' => ['class' => 'yii-debug-grid yii-debug-grid-db'],
-        'filterModel' => $searchModel,
-        'filterUrl' => $panel->getUrl(),
-        'columns' => [
-            [
-                'attribute' => 'type',
-                'label' => DbMessage::TYPE->value,
-                'format' => 'raw',
-                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderTypeCell($data),
-                'filter' => $panel->getTypes(),
-                'filterInputOptions' => ['class' => 'yii-debug-select'],
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
-            ],
-            [
-                'attribute' => 'seq',
-                'label' => DbMessage::TIME->value,
-                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderTimeCell($data),
-                'headerOptions' => ['class' => 'sort-numerical'],
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
-            ],
-            [
-                'attribute' => 'duration',
-                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderDurationCell($data),
-                'headerOptions' => ['class' => 'sort-numerical'],
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
-            ],
-            [
-                'attribute' => 'rows',
-                'label' => DbMessage::ROWS->value,
-                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderRowsCell($data),
-                'headerOptions' => ['class' => 'sort-numerical'],
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
-            ],
-            [
-                'attribute' => 'duplicate',
-                'label' => DbMessage::DUPLICATE->value,
-                'value' => static fn(QueryRow $data): int => $data->getDuplicate(),
-                'headerOptions' => ['class' => 'sort-numerical'],
-                'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
-            ],
-            [
-                'attribute' => 'query',
-                'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderQueryCell(
-                    $data,
-                    $panel->getTraceLine(...),
-                    $hasExplain,
-                    $explainUrlBuilder,
-                    $nPlusOneBySequence[$data->getSequence()] ?? null,
-                ),
-                'format' => 'raw',
-                'filterInputOptions' => ['class' => 'yii-debug-input'],
+    array_replace(
+        GridViewConfig::defaults(),
+        [
+            'dataProvider' => $queryDataProvider,
+            'id' => 'db-panel-detailed-queries-grid',
+            'options' => ['class' => 'yii-debug-grid yii-debug-grid-db'],
+            'filterModel' => $searchModel,
+            'filterUrl' => $panel->getUrl(),
+            'columns' => [
+                [
+                    'attribute' => 'type',
+                    'label' => DbMessage::TYPE->value,
+                    'format' => 'raw',
+                    'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderTypeCell($data),
+                    'filter' => $panel->getTypes(),
+                    'filterInputOptions' => ['class' => 'yii-debug-select'],
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+                ],
+                [
+                    'attribute' => 'seq',
+                    'label' => DbMessage::TIME->value,
+                    'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderTimeCell($data),
+                    'headerOptions' => ['class' => 'sort-numerical'],
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+                ],
+                [
+                    'attribute' => 'duration',
+                    'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderDurationCell($data),
+                    'headerOptions' => ['class' => 'sort-numerical'],
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+                ],
+                [
+                    'attribute' => 'rows',
+                    'label' => DbMessage::ROWS->value,
+                    'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderRowsCell($data),
+                    'headerOptions' => ['class' => 'sort-numerical'],
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+                ],
+                [
+                    'attribute' => 'duplicate',
+                    'label' => DbMessage::DUPLICATE->value,
+                    'value' => static fn(QueryRow $data): int => $data->getDuplicate(),
+                    'headerOptions' => ['class' => 'sort-numerical'],
+                    'contentOptions' => ['class' => 'yii-debug-cell-mono yii-debug-nowrap'],
+                ],
+                [
+                    'attribute' => 'query',
+                    'value' => static fn(QueryRow $data): string => DbQueryRenderer::renderQueryCell(
+                        $data,
+                        $panel->getTraceLine(...),
+                        $hasExplain,
+                        $explainUrlBuilder,
+                        $nPlusOneBySequence[$data->getSequence()] ?? null,
+                    ),
+                    'format' => 'raw',
+                    'filterInputOptions' => ['class' => 'yii-debug-input'],
+                ],
             ],
         ],
-    ],
+    ),
 ) ?>
 <?php if ($hasExplain): ?>
     <?= Div::tag()

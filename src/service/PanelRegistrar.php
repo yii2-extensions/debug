@@ -6,7 +6,7 @@ namespace yii\debug\service;
 
 use InvalidArgumentException;
 use PHPForge\Debug\Panel as PortablePanel;
-use PHPForge\Debug\Registration\{PanelOverride, PanelRegistration, PanelRegistry};
+use PHPForge\Debug\Registration\{EntryParser, PanelOverride, PanelRegistration, PanelRegistry};
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\{ComponentResolver, Module, Panel};
@@ -114,9 +114,13 @@ class PanelRegistrar
      */
     private function adaptProvider(int|string $key, PortablePanel $provider): ProviderPanel
     {
-        if (is_string($key) && $key !== $provider->id()) {
+        try {
+            EntryParser::assertKeyMatchesId($key, $provider->id(), 'panel');
+        } catch (InvalidArgumentException $exception) {
             throw new InvalidConfigException(
                 Message::PROVIDER_ID_MISMATCH->getMessage('panel'),
+                0,
+                $exception,
             );
         }
 

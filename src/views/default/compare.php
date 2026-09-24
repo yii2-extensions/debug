@@ -9,7 +9,7 @@ use PHPForge\Debug\View\ViewMessage;
 use UIAwesome\Html\Heading\H1;
 use yii\debug\Module;
 use yii\debug\view\ViewMessage as AdapterMessage;
-use yii\debug\widgets\history\{HistoryComparison, HistoryPanelComparison};
+use yii\debug\widgets\history\HistoryComparison;
 use yii\helpers\{Html, Url};
 use yii\web\View;
 
@@ -43,7 +43,7 @@ $stateBadge = static function (string $state): string {
     );
 };
 
-$panelLink = static function (HistoryPanelComparison $panel, string $tag, string $state) use ($captureUrl): string {
+$panelLink = static function (PanelComparison $panel, string $tag, string $state) use ($captureUrl): string {
     if ($state === PanelComparison::STATE_NOT_CAPTURED) {
         return Html::tag(
             'span',

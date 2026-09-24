@@ -8,6 +8,7 @@ use Closure;
 use InvalidArgumentException;
 use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\CollectorInterface;
+use PHPForge\Debug\Exception\Message as CoreMessage;
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPUnit\Framework\Attributes\Group;
@@ -189,6 +190,20 @@ final class CollectorRegistrarTest extends ModuleTestCase
         );
     }
 
+    public function testRegisterRegistersAnEntryWhoseEnabledFlagIsNull(): void
+    {
+        $coordinator = $this->registrar()->register(
+            [],
+            ['log' => ['class' => LogCollector::class, 'enabled' => null]],
+        );
+
+        self::assertInstanceOf(
+            LogCollector::class,
+            $coordinator->collector('log'),
+            '`null` must count as an absent flag.',
+        );
+    }
+
     public function testRegisterSkipsADisabledEntryBeforeReachingTheAutoloader(): void
     {
         $registrar = $this->registrar();
@@ -233,6 +248,50 @@ final class CollectorRegistrarTest extends ModuleTestCase
             $coordinator->collector('log'),
             'An enabled entry must resolve through the container.',
         );
+    }
+
+    public function testThrowInvalidConfigExceptionChainingTheSharedFailureForAMismatchedKey(): void
+    {
+        try {
+            $this->registrar()->register([], ['wrong' => new CustomCollector()]);
+
+            self::fail(
+                'A key contradicting the collector ID must be rejected.',
+            );
+        } catch (InvalidConfigException $exception) {
+            self::assertSame(
+                0,
+                $exception->getCode(),
+                'Code must stay at `0`.',
+            );
+            self::assertSame(
+                CoreMessage::REGISTRATION_ID_MISMATCH->getMessage('collector', 'wrong', 'app.example'),
+                $exception->getPrevious()?->getMessage(),
+                'Shared failure must be chained.',
+            );
+        }
+    }
+
+    public function testThrowInvalidConfigExceptionChainingTheSharedFailureForANonBooleanEnabledFlag(): void
+    {
+        try {
+            $this->registrar()->register([], ['log' => ['class' => LogCollector::class, 'enabled' => 'yes']]);
+
+            self::fail(
+                'A non-boolean flag must be rejected.',
+            );
+        } catch (InvalidConfigException $exception) {
+            self::assertSame(
+                0,
+                $exception->getCode(),
+                'Code must stay at `0`.',
+            );
+            self::assertSame(
+                CoreMessage::REGISTRATION_ENABLED_INVALID->getMessage('log'),
+                $exception->getPrevious()?->getMessage(),
+                'Shared failure must be chained.',
+            );
+        }
     }
 
     public function testThrowInvalidConfigExceptionForConfigurationWithoutResolvableClass(): void
@@ -292,7 +351,9 @@ final class CollectorRegistrarTest extends ModuleTestCase
         $module->dispatchers = ['app.missing' => 'example'];
 
         $this->expectException(InvalidConfigException::class);
-        $this->expectExceptionMessage(Message::DISPATCHER_COLLECTOR_UNKNOWN->getMessage('app.missing'));
+        $this->expectExceptionMessage(
+            Message::DISPATCHER_COLLECTOR_UNKNOWN->getMessage('app.missing'),
+        );
 
         (new CollectorRegistrar($module))->register([], ['app.example' => new CustomCollector()]);
     }
@@ -302,7 +363,9 @@ final class CollectorRegistrarTest extends ModuleTestCase
         try {
             $this->registrar()->register([], [new CustomCollector(), new CustomCollector()]);
 
-            self::fail('A duplicate collector ID must be rejected.');
+            self::fail(
+                'A duplicate collector ID must be rejected.',
+            );
         } catch (InvalidConfigException $exception) {
             self::assertSame(
                 0,

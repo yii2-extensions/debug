@@ -11,7 +11,7 @@ use Yii;
 use yii\base\{Application, InvalidConfigException, Module as BaseModule};
 use yii\debug\exception\Message;
 use yii\debug\Module;
-use yii\debug\service\{AccessGuard, CollectorRegistrar, DispatcherAttacher};
+use yii\debug\service\{AccessGuard, CollectorRegistrar, DispatcherAttacher, ShellContextFactory};
 use yii\debug\tests\support\ModuleTestCase;
 use yii\debug\tests\support\stub\service\ConfiguredAccessGuard;
 
@@ -59,6 +59,29 @@ final class ModuleServiceTest extends ModuleTestCase
             $module,
             $guard->boundModule(),
             'Module must reach the constructor.',
+        );
+    }
+
+    public function testGetShellContextFactoryReturnsTheFactoryRegisteredOnTheLocator(): void
+    {
+        $module = new Module('debug');
+
+        $default = $module->getShellContextFactory();
+
+        self::assertSame(
+            $default,
+            $module->getShellContextFactory(),
+            'Default factory must be built once.',
+        );
+
+        $replacement = new ShellContextFactory($module);
+
+        $module->set(ShellContextFactory::class, $replacement);
+
+        self::assertSame(
+            $replacement,
+            $module->getShellContextFactory(),
+            'Registered factory must replace the default.',
         );
     }
 
