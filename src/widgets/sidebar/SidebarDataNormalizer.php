@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace yii\debug\widgets\sidebar;
 
-use PHPForge\Debug\Helper\{Coerce, Icon, Text, Vocabulary};
+use PHPForge\Debug\Helper\{Coerce, Icon};
 use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
-use PHPForge\Debug\View\Sidebar\{SidebarNavItem, SidebarSnapshot, SidebarView};
+use PHPForge\Debug\View\Sidebar\{SidebarNavItem, SidebarNavigation, SidebarSnapshot, SidebarView};
 use PHPForge\Debug\View\ViewMessage;
 use yii\debug\{Module, Panel};
 use yii\debug\view\ViewMessage as AdapterMessage;
@@ -17,7 +17,6 @@ use function array_key_first;
 use function array_key_last;
 use function array_keys;
 use function array_search;
-use function date;
 use function is_int;
 use function reset;
 
@@ -265,9 +264,6 @@ final class SidebarDataNormalizer
 
         $snapshotPanelId = $navPanel !== null ? $navPanel->id : null;
 
-        $statusCode = $snapshotSummary->statusCode;
-        $fullUrl = $snapshotSummary->url;
-
         $topTag = self::newestTag($manifest);
 
         $bottomTag = array_key_last($manifest);
@@ -283,31 +279,23 @@ final class SidebarDataNormalizer
 
         $title = $mode === 'view' ? ViewMessage::CURRENT_REQUEST->value : ViewMessage::NEWEST_REQUEST->value;
 
-        return SidebarSnapshot::create(
+        return SidebarSnapshot::fromSummary(
+            $snapshotSummary,
+            new SidebarNavigation(
+                isCursor: $mode === 'index',
+                cursorInitTag: $cursorInit,
+                newestUrl: self::buildUrl($topTag, $snapshotPanelId),
+                oldestUrl: self::buildUrl($bottomTag, $snapshotPanelId),
+                newerUrl: $prevTag !== null ? self::buildUrl($prevTag, $snapshotPanelId) : '',
+                olderUrl: $nextTag !== null ? self::buildUrl($nextTag, $snapshotPanelId) : '',
+                isNewest: $snapshotTag === $topTag,
+                isOldest: $snapshotTag === $bottomTag,
+                hasNewer: $prevTag !== null,
+                hasOlder: $nextTag !== null,
+            ),
             $title,
             $mode === 'view' ? $title : ViewMessage::NEWEST_CAPTURED_REQUEST->value,
-        )
-            ->withRequest(
-                $snapshotSummary->method,
-                Text::urlToPath($fullUrl),
-                $fullUrl,
-                self::formatTime($snapshotSummary->time),
-                $snapshotSummary->ajax,
-            )
-            ->withResponse($statusCode, self::statusVariant($statusCode))
-            ->withCursor($mode === 'index', $cursorInit)
-            ->withNavigationUrls(
-                self::buildUrl($topTag, $snapshotPanelId),
-                self::buildUrl($bottomTag, $snapshotPanelId),
-                $prevTag !== null ? self::buildUrl($prevTag, $snapshotPanelId) : '',
-                $nextTag !== null ? self::buildUrl($nextTag, $snapshotPanelId) : '',
-            )
-            ->withNavigationState(
-                $snapshotTag === $topTag,
-                $snapshotTag === $bottomTag,
-                $prevTag !== null,
-                $nextTag !== null,
-            );
+        );
     }
 
     /**
@@ -334,20 +322,6 @@ final class SidebarDataNormalizer
     }
 
     /**
-     * Formats a capture timestamp as a time of day.
-     *
-     * @param float $time Capture timestamp as a Unix time.
-     *
-     * @return string Time of day as `HH:MM:SS`, or `''` when the timestamp was not captured.
-     */
-    private static function formatTime(float $time): string
-    {
-        $unix = (int) $time;
-
-        return $unix > 0 ? date('H:i:s', $unix) : '';
-    }
-
-    /**
      * Returns the tag of the newest captured request.
      *
      * @param array<string, RequestSummary> $manifest Captured request summaries, newest first.
@@ -357,17 +331,5 @@ final class SidebarDataNormalizer
     private static function newestTag(array $manifest): string|null
     {
         return array_key_first($manifest);
-    }
-
-    /**
-     * Maps a response status code to its status-pill modifier.
-     *
-     * @param int $statusCode Response status code of the capture.
-     *
-     * @return string Status-pill CSS modifier for that code.
-     */
-    private static function statusVariant(int $statusCode): string
-    {
-        return Vocabulary::statusClass($statusCode);
     }
 }

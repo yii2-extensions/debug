@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\service;
 
 use InvalidArgumentException;
+use PHPForge\Debug\Exception\Message as CoreMessage;
 use PHPForge\Debug\Panel as PortablePanel;
 use PHPUnit\Framework\Attributes\Group;
 use stdClass;
@@ -232,6 +233,28 @@ final class PanelRegistrarTest extends ModuleTestCase
             $catalog->registry->isDisabled('ghost'),
             'Disabled entry must be reported.',
         );
+    }
+
+    public function testThrowInvalidConfigExceptionChainingTheSharedFailureForAMismatchedPortableKey(): void
+    {
+        try {
+            $this->registrar()->register([], ['wrong' => ['class' => CachePanel::class]]);
+
+            self::fail(
+                'A key contradicting the provider ID must be rejected.',
+            );
+        } catch (InvalidConfigException $exception) {
+            self::assertSame(
+                0,
+                $exception->getCode(),
+                'Code must stay at `0`.',
+            );
+            self::assertSame(
+                CoreMessage::REGISTRATION_ID_MISMATCH->getMessage('panel', 'wrong', 'cache'),
+                $exception->getPrevious()?->getMessage(),
+                'Shared failure must be chained.',
+            );
+        }
     }
 
     public function testThrowInvalidConfigExceptionForConfigurationWithoutResolvableClass(): void

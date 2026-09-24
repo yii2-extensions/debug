@@ -335,12 +335,12 @@ final class SidebarDataNormalizerTest extends TestCase
             'Snapshot must surface when manifest has entries.',
         );
         self::assertTrue(
-            $view->snapshot->isCursor,
+            $view->snapshot->navigation->isCursor,
             'Index mode must mark the snapshot as cursor.',
         );
         self::assertSame(
             'init-tag',
-            $view->snapshot->cursorInitTag,
+            $view->snapshot->navigation->cursorInitTag,
             "'cursorInit' must surface on the DTO.",
         );
         self::assertSame(
@@ -355,30 +355,30 @@ final class SidebarDataNormalizerTest extends TestCase
         );
         self::assertSame(
             '/index.php?r=debug%2Fview&tag=tag-1',
-            $view->snapshot->newestUrl,
+            $view->snapshot->navigation->newestUrl,
             'A navigator without panels must omit the panel parameter.',
         );
         self::assertSame(
             '/index.php?r=debug%2Fview&tag=tag-1',
-            $view->snapshot->oldestUrl,
+            $view->snapshot->navigation->oldestUrl,
             'The single snapshot must be both the newest and oldest destination.',
         );
         self::assertSame(
             '',
-            $view->snapshot->newerUrl,
+            $view->snapshot->navigation->newerUrl,
             'The newest snapshot must not expose a newer destination.',
         );
         self::assertSame(
             '',
-            $view->snapshot->olderUrl,
+            $view->snapshot->navigation->olderUrl,
             'The oldest snapshot must not expose an older destination.',
         );
         self::assertTrue(
-            $view->snapshot->isNewest,
+            $view->snapshot->navigation->isNewest,
             'A single snapshot must be marked as newest.',
         );
         self::assertTrue(
-            $view->snapshot->isOldest,
+            $view->snapshot->navigation->isOldest,
             'A single snapshot must be marked as oldest.',
         );
     }
@@ -651,7 +651,7 @@ final class SidebarDataNormalizerTest extends TestCase
             'Snapshot must surface.',
         );
         self::assertFalse(
-            $view->snapshot->isCursor,
+            $view->snapshot->navigation->isCursor,
             'View mode must NOT mark the snapshot as cursor.',
         );
         self::assertSame(
@@ -688,12 +688,12 @@ final class SidebarDataNormalizerTest extends TestCase
 
         self::assertSame(
             '/index.php?r=debug%2Fview&panel=request',
-            $snapshot->newestUrl,
+            $snapshot->navigation->newestUrl,
             'An empty manifest must omit the missing newest tag.',
         );
         self::assertSame(
             '/index.php?r=debug%2Fview&panel=request',
-            $snapshot->oldestUrl,
+            $snapshot->navigation->oldestUrl,
             'An empty manifest must omit the missing oldest tag.',
         );
     }
@@ -726,29 +726,29 @@ final class SidebarDataNormalizerTest extends TestCase
             'Snapshot must surface.',
         );
         self::assertTrue(
-            $view->snapshot->hasNewer,
+            $view->snapshot->navigation->hasNewer,
             'Middle-tag snapshot must expose a newer navigator.',
         );
         self::assertTrue(
-            $view->snapshot->hasOlder,
+            $view->snapshot->navigation->hasOlder,
             'Middle-tag snapshot must expose a older navigator.',
         );
         self::assertSame(
             '/index.php?r=debug%2Fview&tag=tag-newest&panel=request',
-            $view->snapshot->newerUrl,
+            $view->snapshot->navigation->newerUrl,
             'Middle-tag snapshot must link to the immediately newer capture.',
         );
         self::assertSame(
             '/index.php?r=debug%2Fview&tag=tag-oldest&panel=request',
-            $view->snapshot->olderUrl,
+            $view->snapshot->navigation->olderUrl,
             'Middle-tag snapshot must link to the immediately older capture.',
         );
         self::assertFalse(
-            $view->snapshot->isNewest,
+            $view->snapshot->navigation->isNewest,
             'Middle-tag snapshot must not be marked as newest.',
         );
         self::assertFalse(
-            $view->snapshot->isOldest,
+            $view->snapshot->navigation->isOldest,
             'Middle-tag snapshot must not be marked as oldest.',
         );
     }

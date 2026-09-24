@@ -25,6 +25,7 @@ use yii\debug\service\{
     DispatcherAttacher,
     LogTargetFactory,
     PanelRegistrar,
+    ShellContextFactory,
     StandaloneActionResolver,
     ToolbarPresenter,
     YiiLogo,
@@ -441,6 +442,20 @@ class Module extends \yii\base\Module implements BootstrapInterface
         return $this->panelRegistry ?? throw new InvalidConfigException(
             Message::PANELS_NOT_INITIALIZED->getMessage(),
         );
+    }
+
+    /**
+     * Returns the factory building the page shell of every debugger action.
+     *
+     * Registering {@see ShellContextFactory} under `components` replaces it, like any other module service.
+     *
+     * @throws InvalidConfigException when the registered {@see ShellContextFactory} definition is invalid.
+     *
+     * @return ShellContextFactory Resolved shell factory.
+     */
+    public function getShellContextFactory(): ShellContextFactory
+    {
+        return $this->service(ShellContextFactory::class, fn(): ShellContextFactory => new ShellContextFactory($this));
     }
 
     /**

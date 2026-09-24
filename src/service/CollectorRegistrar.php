@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Collector\CollectorCoordinator;
 use PHPForge\Debug\CollectorInterface;
+use PHPForge\Debug\Registration\EntryParser;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\debug\collectors\Collector;
@@ -16,11 +17,8 @@ use yii\debug\{ComponentResolver, Module};
 use yii\debug\exception\Message;
 
 use function array_flip;
-use function array_key_exists;
 use function get_debug_type;
 use function is_array;
-use function is_bool;
-use function is_string;
 
 /**
  * Resolves the configured debug collectors and validates their stable IDs before request capture.
@@ -65,16 +63,10 @@ class CollectorRegistrar
         $policy = null;
 
         foreach (CoreDefinitions::merge($core, $configured) as $id => $config) {
-            if (is_array($config) && array_key_exists('enabled', $config)) {
-                $enabled = $config['enabled'];
+            if (is_array($config)) {
+                $enabled = self::enabled($config, (string) $id);
 
                 unset($config['enabled']);
-
-                if (is_bool($enabled) === false) {
-                    throw new InvalidConfigException(
-                        Message::COLLECTOR_ENABLED_INVALID->getMessage((string) $id),
-                    );
-                }
 
                 if ($enabled === false) {
                     $disabled[] = $id;
@@ -90,9 +82,13 @@ class CollectorRegistrar
                 $collector = $this->buildCollector($config);
             }
 
-            if (is_string($id) && $id !== $collector->id()) {
+            try {
+                EntryParser::assertKeyMatchesId($id, $collector->id(), 'collector');
+            } catch (InvalidArgumentException $exception) {
                 throw new InvalidConfigException(
                     Message::PROVIDER_ID_MISMATCH->getMessage('collector'),
+                    0,
+                    $exception,
                 );
             }
 
@@ -200,5 +196,28 @@ class CollectorRegistrar
         }
 
         return $collector;
+    }
+
+    /**
+     * Resolves the effective `enabled` flag of an array entry, `true` when the entry omits it.
+     *
+     * @param array<array-key, mixed> $config Collector configuration array.
+     * @param string $id Configuration ID naming the entry in a failure.
+     *
+     * @throws InvalidConfigException when the entry declares `enabled` as neither a `bool` nor `null`.
+     *
+     * @return bool Effective flag.
+     */
+    private static function enabled(array $config, string $id): bool
+    {
+        try {
+            return EntryParser::enabled($config, $id);
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidConfigException(
+                Message::COLLECTOR_ENABLED_INVALID->getMessage($id),
+                0,
+                $exception,
+            );
+        }
     }
 }

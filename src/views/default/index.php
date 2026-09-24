@@ -10,13 +10,13 @@ use yii\debug\Panel;
 use yii\debug\panels\DbPanel;
 use PHPForge\Debug\Storage\RequestSummary;
 use yii\debug\widgets\FilterBanner;
+use PHPForge\Debug\View\Grid\PanelHeading;
 use PHPForge\Debug\View\History\{HistoryRow, HistoryScale, HistorySummary};
 use PHPForge\Debug\View\ViewMessage;
 use yii\debug\widgets\history\HistoryRowRenderer;
 use yii\debug\widgets\GridView;
 use yii\grid\SerialColumn;
 use yii\web\View;
-use UIAwesome\Html\Heading\H1;
 
 /**
  * @var ArrayDataProvider $dataProvider Data provider for the GridView widget.
@@ -40,9 +40,7 @@ $comparisonTags = array_keys($manifest);
 $comparisonTarget = $comparisonTags[0] ?? null;
 $comparisonBaseline = $comparisonTags[1] ?? null;
 ?>
-<?= H1::tag()
-    ->class('yii-debug-sr-only')
-    ->content(PanelTitle::REQUEST_HISTORY) ?>
+<?= PanelHeading::render(PanelTitle::REQUEST_HISTORY) ?>
 <?= HistoryRowRenderer::renderSummary($summary) ?>
 <?php if ($comparisonBaseline !== null && $comparisonTarget !== null): ?>
     <section class="yii-debug-section" aria-labelledby="yii-debug-history-compare-title">
@@ -62,105 +60,107 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
 <?php endif ?>
 <?= FilterBanner::widget(['searchModel' => $searchModel]) ?>
 <?= GridView::widget(
-    [
-        ...GridViewConfig::defaults(),
-        'options' => ['class' => 'yii-debug-grid yii-debug-grid-history'],
-        'dataProvider' => $dataProvider,
-        'filterModel' => $searchModel,
-        'rowOptions' => static fn(HistoryRow $model): array => HistoryRowRenderer::buildRowOptions(
-            $model,
-            $searchModel,
-        ),
-        'columns' => array_filter(
-            [
+    array_replace(
+        GridViewConfig::defaults(),
+        [
+            'options' => ['class' => 'yii-debug-grid yii-debug-grid-history'],
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'rowOptions' => static fn(HistoryRow $model): array => HistoryRowRenderer::buildRowOptions(
+                $model,
+                $searchModel,
+            ),
+            'columns' => array_filter(
                 [
-                    'class' => SerialColumn::class,
-                    'headerOptions' => ['class' => 'yii-debug-col-num', 'scope' => 'col'],
-                    'contentOptions' => ['class' => 'yii-debug-col-num'],
-                    'filterOptions' => ['class' => 'yii-debug-col-num'],
-                ],
-                [
-                    'attribute' => 'tag',
-                    'label' => ViewMessage::ID->value,
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderTagCell($data),
-                    'format' => 'raw',
-                    'headerOptions' => ['class' => 'yii-debug-col-id'],
-                    'contentOptions' => ['class' => 'yii-debug-col-id'],
-                    'filterInputOptions' => ['class' => 'yii-debug-input yii-debug-col-id-input'],
-                ],
-                [
-                    'attribute' => 'time',
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderTimeCell($data),
-                    'format' => 'raw',
-                ],
-                [
-                    'attribute' => 'processingTime',
-                    'label' => ViewMessage::DURATION->value,
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderDurationCell(
-                        $data,
-                        $scale->maxProcessingTime,
-                    ),
-                    'format' => 'raw',
-                ],
-                [
-                    'attribute' => 'peakMemory',
-                    'label' => ViewMessage::MEMORY->value,
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderMemoryCell(
-                        $data,
-                        $scale->maxPeakMemory,
-                    ),
-                    'format' => 'raw',
-                ],
-                [
-                    'attribute' => 'ip',
-                    'headerOptions' => ['class' => 'yii-debug-col-ip'],
-                    'contentOptions' => ['class' => 'yii-debug-col-ip'],
-                    'filterOptions' => ['class' => 'yii-debug-col-ip'],
-                ],
-                $dbPanel instanceof DbPanel ? [
-                    'attribute' => 'sqlCount',
-                    'label' => ViewMessage::QUERY->value,
-                    'headerOptions' => ['class' => 'yii-debug-col-num'],
-                    'contentOptions' => ['class' => 'yii-debug-col-num'],
-                    'filterOptions' => ['class' => 'yii-debug-col-num'],
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderSqlCountCell(
-                        $data,
-                        $dbPanel,
-                    ),
-                    'format' => 'raw',
-                ] : null,
-                $mailPanel !== null ? [
-                    'attribute' => 'mailCount',
-                    'label' => 'Mail',
-                    'headerOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
-                    'contentOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
-                    'filterOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
-                ] : null,
-                [
-                    'attribute' => 'method',
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderMethodCell($data),
-                    'format' => 'raw',
-                    'filter' => [
-                        'get' => 'GET',
-                        'post' => 'POST',
-                        'delete' => 'DELETE',
-                        'put' => 'PUT',
-                        'head' => 'HEAD',
-                        'command' => ViewMessage::COMMAND->value,
+                    [
+                        'class' => SerialColumn::class,
+                        'headerOptions' => ['class' => 'yii-debug-col-num', 'scope' => 'col'],
+                        'contentOptions' => ['class' => 'yii-debug-col-num'],
+                        'filterOptions' => ['class' => 'yii-debug-col-num'],
+                    ],
+                    [
+                        'attribute' => 'tag',
+                        'label' => ViewMessage::ID->value,
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderTagCell($data),
+                        'format' => 'raw',
+                        'headerOptions' => ['class' => 'yii-debug-col-id'],
+                        'contentOptions' => ['class' => 'yii-debug-col-id'],
+                        'filterInputOptions' => ['class' => 'yii-debug-input yii-debug-col-id-input'],
+                    ],
+                    [
+                        'attribute' => 'time',
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderTimeCell($data),
+                        'format' => 'raw',
+                    ],
+                    [
+                        'attribute' => 'processingTime',
+                        'label' => ViewMessage::DURATION->value,
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderDurationCell(
+                            $data,
+                            $scale->maxProcessingTime,
+                        ),
+                        'format' => 'raw',
+                    ],
+                    [
+                        'attribute' => 'peakMemory',
+                        'label' => ViewMessage::MEMORY->value,
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderMemoryCell(
+                            $data,
+                            $scale->maxPeakMemory,
+                        ),
+                        'format' => 'raw',
+                    ],
+                    [
+                        'attribute' => 'ip',
+                        'headerOptions' => ['class' => 'yii-debug-col-ip'],
+                        'contentOptions' => ['class' => 'yii-debug-col-ip'],
+                        'filterOptions' => ['class' => 'yii-debug-col-ip'],
+                    ],
+                    $dbPanel instanceof DbPanel ? [
+                        'attribute' => 'sqlCount',
+                        'label' => ViewMessage::QUERY->value,
+                        'headerOptions' => ['class' => 'yii-debug-col-num'],
+                        'contentOptions' => ['class' => 'yii-debug-col-num'],
+                        'filterOptions' => ['class' => 'yii-debug-col-num'],
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderSqlCountCell(
+                            $data,
+                            $dbPanel,
+                        ),
+                        'format' => 'raw',
+                    ] : null,
+                    $mailPanel !== null ? [
+                        'attribute' => 'mailCount',
+                        'label' => 'Mail',
+                        'headerOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
+                        'contentOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
+                        'filterOptions' => ['class' => 'yii-debug-col-num yii-debug-col-mail'],
+                    ] : null,
+                    [
+                        'attribute' => 'method',
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderMethodCell($data),
+                        'format' => 'raw',
+                        'filter' => [
+                            'get' => 'GET',
+                            'post' => 'POST',
+                            'delete' => 'DELETE',
+                            'put' => 'PUT',
+                            'head' => 'HEAD',
+                            'command' => ViewMessage::COMMAND->value,
+                        ],
+                    ],
+                    [
+                        'attribute' => 'ajax',
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderAjaxCell($data),
+                        'filter' => ['No', 'Yes'],
+                    ],
+                    [
+                        'attribute' => 'url',
+                        'label' => ViewMessage::URL->value,
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderUrlCell($data),
+                        'format' => 'raw',
                     ],
                 ],
-                [
-                    'attribute' => 'ajax',
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderAjaxCell($data),
-                    'filter' => ['No', 'Yes'],
-                ],
-                [
-                    'attribute' => 'url',
-                    'label' => ViewMessage::URL->value,
-                    'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderUrlCell($data),
-                    'format' => 'raw',
-                ],
-            ],
-        ),
-    ],
+            ),
+        ],
+    ),
 );

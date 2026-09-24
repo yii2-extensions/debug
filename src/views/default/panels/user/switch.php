@@ -94,21 +94,25 @@ $userSwitch = $panel->userSwitch;
                 ->content(AdapterMessage::USER_SWITCH_INSTRUCTIONS)
                 ->id('debug-userswitch__row-instructions'),
             GridView::widget(
-                [
-                    ...GridViewConfig::defaults(),
-                    'dataProvider' => $panel->getUserDataProvider(),
-                    'filterModel' => $usersFilterModel,
-                    'tableOptions' => ['class' => 'yii-debug-table yii-debug-table-pointer yii-debug-table-userswitch'],
-                    'rowOptions' => static fn(mixed $model, mixed $key): array => [
-                        'aria-describedby' => 'debug-userswitch__row-instructions',
-                        'aria-label' => is_int($key) || is_string($key)
-                            ? "Switch to user {$key}"
-                            : AdapterMessage::USER_SWITCH_ROW_FALLBACK->value,
-                        'role' => 'button',
-                        'tabindex' => 0,
+                array_replace(
+                    GridViewConfig::defaults(),
+                    [
+                        'dataProvider' => $panel->getUserDataProvider(),
+                        'filterModel' => $usersFilterModel,
+                        'tableOptions' => [
+                            'class' => 'yii-debug-table yii-debug-table-pointer yii-debug-table-userswitch',
+                        ],
+                        'rowOptions' => static fn(mixed $model, mixed $key): array => [
+                            'aria-describedby' => 'debug-userswitch__row-instructions',
+                            'aria-label' => is_int($key) || is_string($key)
+                                ? "Switch to user {$key}"
+                                : AdapterMessage::USER_SWITCH_ROW_FALLBACK->value,
+                            'role' => 'button',
+                            'tabindex' => 0,
+                        ],
+                        'columns' => $panel->filterColumns,
                     ],
-                    'columns' => $panel->filterColumns,
-                ],
+                ),
             ),
         )
         ->id('debug-userswitch__filter') ?>
