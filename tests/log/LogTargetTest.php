@@ -7,7 +7,7 @@ namespace yii\debug\tests\log;
 use PHPForge\Debug\Panel\Config\ConfigSnapshot;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPForge\Debug\Storage\{DebugSnapshot, ExceptionSnapshot, PanelSnapshot, RequestSummary};
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, RequiresOperatingSystemFamily};
 use RuntimeException;
 use Yii;
 use yii\base\{Exception, InvalidConfigException};
@@ -347,12 +347,9 @@ final class LogTargetTest extends TestCase
         );
     }
 
+    #[RequiresOperatingSystemFamily('Linux')]
     public function testExportAppliesConfiguredFileModeToJsonSnapshot(): void
     {
-        if (PHP_OS_FAMILY === 'Windows') {
-            self::markTestSkipped('POSIX permission bits are not portable to Windows.');
-        }
-
         Yii::$app->getRequest()->setUrl('dummy');
 
         $module = $this->newModuleWithIsolatedDataPath();
