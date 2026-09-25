@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use PHPForge\Debug\Comparison\PanelComparison;
+use PHPForge\Debug\Helper\Badge;
 use PHPForge\Debug\Panel\PanelTitle;
 use PHPForge\Debug\Storage\RequestSummary;
+use PHPForge\Debug\Tone;
 use PHPForge\Debug\View\ViewMessage;
 use UIAwesome\Html\Heading\H1;
 use yii\debug\Module;
@@ -29,19 +31,14 @@ $captureUrl = static fn(string $tag, string $panel = 'request'): string => Url::
     Module::route('view', ['panel' => $panel, 'tag' => $tag]),
 );
 
-$stateBadge = static function (string $state): string {
-    $variant = match ($state) {
-        PanelComparison::STATE_CAPTURED => 'success',
-        PanelComparison::STATE_FAILED => 'danger',
-        default => 'muted',
-    };
-
-    return Html::tag(
-        'span',
-        Html::encode($state),
-        ['class' => "yii-debug-badge yii-debug-badge-{$variant}"],
-    );
-};
+$stateBadge = static fn(string $state): string => Badge::render(
+    $state,
+    match ($state) {
+        PanelComparison::STATE_CAPTURED => Tone::SUCCESS,
+        PanelComparison::STATE_FAILED => Tone::DANGER,
+        default => Tone::MUTED,
+    },
+)->render();
 
 $panelLink = static function (PanelComparison $panel, string $tag, string $state) use ($captureUrl): string {
     if ($state === PanelComparison::STATE_NOT_CAPTURED) {
