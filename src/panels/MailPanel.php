@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\panels;
 
 use Override;
-use PHPForge\Debug\Panel\Mail\{MailEntry, MailPanel as MailPresenter, MailSnapshot};
+use PHPForge\Debug\Panel\Mail\{MailEntry, MailMessage, MailPanel as MailPresenter, MailSnapshot};
 use PHPForge\Debug\Panel\{PanelIcon, PanelRenderer, PanelTitle};
 use PHPForge\Debug\Storage\HydrationException;
 use Throwable;
+use Yii;
 use yii\debug\{LogTarget, Panel};
 use yii\helpers\Url;
 
@@ -125,7 +126,7 @@ class MailPanel extends Panel
                 'value' => $previous['count'],
                 'status' => 'cross-request',
                 'title' => sprintf(
-                    'Sent in the previous request (%s %s) — open it.',
+                    MailMessage::PREVIOUS_REQUEST->value,
                     $previous['method'],
                     $previous['shortUrl'],
                 ),
@@ -198,10 +199,10 @@ class MailPanel extends Panel
         }
 
         $method = $summary->method;
-        $url = $summary->url;
 
-        $shortUrlPath = $url === '' ? null : parse_url($url, PHP_URL_PATH);
-        $shortUrl = is_string($shortUrlPath) && $shortUrlPath !== '' ? $shortUrlPath : $url;
+        $urlManager = Yii::$app->getUrlManager();
+
+        $shortUrl = self::shortUrl($summary->url, $urlManager->enablePrettyUrl ? null : $urlManager->routeParam);
 
         $moduleId = $module->getUniqueId();
 
@@ -219,5 +220,34 @@ class MailPanel extends Panel
             'shortUrl' => $shortUrl,
             'url' => $panelUrl,
         ];
+    }
+
+    /**
+     * Returns the part of a captured URL the cross-request tooltip names.
+     *
+     * Without pretty URLs the route travels in the query string (`/index.php?r=site%2Fcontact`), so the decoded route
+     * is named instead of the entry script; otherwise the path is named, or the URL itself when it has no path.
+     *
+     * @param string $url Captured request URL.
+     * @param string|null $routeParam Query parameter that carries the route, or `null` when the URL manager routes from
+     * the path (pretty URLs) and a query parameter with that name is plain request data.
+     *
+     * @return string Route, path, or the unchanged URL.
+     */
+    private static function shortUrl(string $url, string|null $routeParam): string
+    {
+        if ($routeParam !== null) {
+            parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+            $route = $query[$routeParam] ?? null;
+
+            if (is_string($route) && $route !== '') {
+                return $route;
+            }
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+
+        return is_string($path) && $path !== '' ? $path : $url;
     }
 }

@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(view): render the comparison state badges through Debug Core `Badge`.
 - refactor(tests): add `RequiresOperatingSystemFamily` attribute to `LogTargetTest` and remove Windows-specific skip logic.
 - build(deps): require `php-forge/debug` `^0.4`.
+- fix: show Mail routes in cross-request tooltips and make comparison tables keyboard-accessible in labelled regions.
 
 ## 0.1.1 May 18, 2026
 
