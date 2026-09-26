@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: read collector and panel entries and build the sidebar snapshot card through Debug Core, drop the History comparison DTOs that mirrored Debug Core, and build page shells through the replaceable `ShellContextFactory` service.
 - refactor(view): render the comparison state badges through Debug Core `Badge`.
 - refactor(tests): add `RequiresOperatingSystemFamily` attribute to `LogTargetTest` and remove Windows-specific skip logic.
+- build(deps): require `php-forge/debug` `^0.4`.
 
 ## 0.1.1 May 18, 2026
 
