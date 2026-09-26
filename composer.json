@@ -31,7 +31,7 @@
         "ext-mbstring": "*",
         "ext-pdo": "*",
         "composer-runtime-api": "^2.0",
-        "php-forge/debug": "^0.3",
+        "php-forge/debug": "^0.4",
         "php-forge/debug-core": "^0.1@dev",
         "symfony/mime": "^7.4",
         "ui-awesome/html": "^0.6",
