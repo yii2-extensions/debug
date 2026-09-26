@@ -199,7 +199,10 @@ class MailPanel extends Panel
         }
 
         $method = $summary->method;
-        $shortUrl = self::shortUrl($summary->url, Yii::$app->getUrlManager()->routeParam);
+
+        $urlManager = Yii::$app->getUrlManager();
+
+        $shortUrl = self::shortUrl($summary->url, $urlManager->enablePrettyUrl ? null : $urlManager->routeParam);
 
         $moduleId = $module->getUniqueId();
 
@@ -226,18 +229,21 @@ class MailPanel extends Panel
      * is named instead of the entry script; otherwise the path is named, or the URL itself when it has no path.
      *
      * @param string $url Captured request URL.
-     * @param string $routeParam Query parameter that carries the route, `r` unless the URL manager overrides it.
+     * @param string|null $routeParam Query parameter that carries the route, or `null` when the URL manager routes from
+     * the path (pretty URLs) and a query parameter with that name is plain request data.
      *
      * @return string Route, path, or the unchanged URL.
      */
-    private static function shortUrl(string $url, string $routeParam): string
+    private static function shortUrl(string $url, string|null $routeParam): string
     {
-        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+        if ($routeParam !== null) {
+            parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
 
-        $route = $query[$routeParam] ?? null;
+            $route = $query[$routeParam] ?? null;
 
-        if (is_string($route) && $route !== '') {
-            return $route;
+            if (is_string($route) && $route !== '') {
+                return $route;
+            }
         }
 
         $path = parse_url($url, PHP_URL_PATH);
