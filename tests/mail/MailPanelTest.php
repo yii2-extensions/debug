@@ -28,6 +28,41 @@ use function unlink;
 #[Group('mail')]
 final class MailPanelTest extends TestCase
 {
+    public function testFindPreviousRequestNamesTheRouteWhenTheUrlCarriesIt(): void
+    {
+        $panel = $this->makePanel(MailPanel::class);
+
+        $module = $panel->module ?? self::fail('Module must be wired.');
+
+        $dataPath = sys_get_temp_dir() . '/debug-mail-route-' . uniqid();
+
+        mkdir($dataPath, 0o777, true);
+
+        $module->dataPath = $dataPath;
+
+        $this->writeDebugSnapshot(
+            $module,
+            'previous',
+            [],
+            ['method' => 'POST', 'url' => 'https://example.com/index.php?r=site%2Fcontact', 'mailCount' => 1],
+        );
+
+        $panel->tag = 'missing';
+
+        self::assertSame(
+            [
+                'count' => 1,
+                'method' => 'POST',
+                'shortUrl' => 'site/contact',
+                'url' => Url::toRoute(['/debug/view', 'panel' => $panel->id, 'tag' => 'previous']),
+            ],
+            $this->invoke($panel, 'findPreviousRequestWithMail'),
+            'Route must replace the entry script path.',
+        );
+
+        $this->cleanupDataPath($dataPath);
+    }
+
     public function testFindPreviousRequestUsesImmediateEntryAfterCurrentTag(): void
     {
         $panel = $this->makePanel(MailPanel::class);

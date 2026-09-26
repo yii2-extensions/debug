@@ -22,6 +22,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function json_decode;
 use function json_encode;
+use function preg_match_all;
 use function unlink;
 
 use const JSON_THROW_ON_ERROR;
@@ -311,6 +312,15 @@ final class CompareActionTest extends ActionTestCase
             '+5.00 ms (+50.0%)',
             $html,
             'Duration delta must be computed relative to the baseline.',
+        );
+        self::assertSame(
+            2,
+            preg_match_all(
+                '~<div\b(?=[^>]*\bclass="yii-debug-table-wrap")(?=[^>]*\brole="region")(?=[^>]*\btabindex="0")'
+                . '(?=[^>]*\baria-label="[^"]+")[^>]*>~',
+                $html,
+            ),
+            'Both tables must scroll inside a labelled, focusable region.',
         );
     }
 

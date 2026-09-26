@@ -124,7 +124,12 @@ $panelLink = static function (PanelComparison $panel, string $tag, string $state
         <span class="yii-debug-section-mark">03</span>
         Request metrics
     </h2>
-    <div class="yii-debug-table-wrap">
+    <div
+        class="yii-debug-table-wrap"
+        role="region"
+        aria-label="<?= Html::encode(ViewMessage::COMPARISON_METRICS_CAPTION->value) ?>"
+        tabindex="0"
+    >
         <table class="yii-debug-table yii-debug-compare-grid">
             <caption class="yii-debug-sr-only"><?= ViewMessage::COMPARISON_METRICS_CAPTION->value ?></caption>
             <thead>
@@ -171,7 +176,12 @@ $panelLink = static function (PanelComparison $panel, string $tag, string $state
     <p class="yii-debug-muted">
         <?= AdapterMessage::COMPARISON_COUNTS_SCOPE->value ?>
     </p>
-    <div class="yii-debug-table-wrap">
+    <div
+        class="yii-debug-table-wrap"
+        role="region"
+        aria-label="<?= Html::encode(ViewMessage::COMPARISON_PANELS_CAPTION->value) ?>"
+        tabindex="0"
+    >
         <table class="yii-debug-table yii-debug-compare-grid">
             <caption class="yii-debug-sr-only"><?= ViewMessage::COMPARISON_PANELS_CAPTION->value ?></caption>
             <thead>
