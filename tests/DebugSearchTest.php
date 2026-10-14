@@ -131,7 +131,7 @@ final class DebugSearchTest extends TestCase
         );
     }
 
-    public function testIsCodeCriticalFlagsConfiguredHttpStatusCodes(): void
+    public function testIsCodeCriticalFlagsClientAndServerErrors(): void
     {
         $search = new DebugSearch();
 

@@ -112,6 +112,19 @@ final class HistoryRowRenderer
     }
 
     /**
+     * Renders the status column cell as a tone badge of the HTTP status code, or a muted dash pill when the code was
+     * not captured (`0`).
+     *
+     * @param HistoryRow $row Typed history row.
+     *
+     * @return string Rendered cell.
+     */
+    public static function renderStatusCell(HistoryRow $row): string
+    {
+        return HistoryCellRenderer::renderStatusCell($row);
+    }
+
+    /**
      * Renders the summary header (`<header class="yii-debug-grid-summary">`) with the request total and the
      * status-bucket pills.
      *
@@ -184,6 +197,8 @@ final class HistoryRowRenderer
         }
 
         $formatter = Yii::$app->formatter;
+        // The formatter truncates numeric timestamps to `int` itself, so removing this cast is unobservable.
+        // @infection-ignore-all
         $timestamp = (int) $row->time;
 
         $full = $formatter->asDatetime($timestamp, 'yyyy-MM-dd HH:mm:ss');

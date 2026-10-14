@@ -210,11 +210,13 @@ final class RouterPanelTest extends TestCase
             $panel->getSnapshot()?->route,
             'A hidden Router panel must keep its captured snapshot available for Request composition.',
         );
-        self::assertNotEmpty(
+        self::assertNotSame(
+            '',
             $panel->getDetail(),
             'Visibility must not remove the standalone detail renderer.',
         );
-        self::assertNotEmpty(
+        self::assertNotSame(
+            [],
             $panel->getToolbarData(),
             'Visibility must not change direct toolbar generation.',
         );

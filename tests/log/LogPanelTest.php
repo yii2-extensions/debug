@@ -108,9 +108,10 @@ final class LogPanelTest extends TestCase
             ),
         );
 
-        self::assertNotEmpty(
+        self::assertStringContainsString(
+            'hello',
             $panel->getDetail(),
-            'Detail view must produce markup.',
+            'Detail view must render the captured message.',
         );
     }
 

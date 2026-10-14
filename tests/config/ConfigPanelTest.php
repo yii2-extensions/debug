@@ -53,9 +53,10 @@ final class ConfigPanelTest extends TestCase
 
         $html = $panel->getDetail();
 
-        self::assertNotEmpty(
+        self::assertStringContainsString(
+            '<span class="yii-debug-readout-value">Demo</span>',
             $html,
-            'Detail view must produce non-empty markup.',
+            'Detail view must render the captured application name.',
         );
     }
 

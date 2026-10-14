@@ -315,7 +315,8 @@ final class DbPanelTest extends TestCase
 
         $html = $panel->getDetail();
 
-        self::assertNotEmpty(
+        self::assertNotSame(
+            '',
             $html,
             'Detail view must produce non-empty markup.',
         );

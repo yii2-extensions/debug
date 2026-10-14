@@ -13,6 +13,7 @@ use yii\base\Event;
 use yii\debug\collectors\MailCollector;
 use yii\debug\tests\support\Captured;
 use yii\debug\tests\support\TestCase;
+use yii\log\Logger;
 use yii\mail\{BaseMailer, MailEvent, MessageInterface};
 use yii\symfonymailer\Mailer;
 
@@ -27,6 +28,8 @@ use const DIRECTORY_SEPARATOR;
 /**
  * Unit tests for {@see MailCollector} covering the mailer listener capture, the recipient-list flattening, the `.eml`
  * file bookkeeping, and the startup/shutdown lifecycle.
+ *
+ * @phpstan-import-type LogMessage from Logger
  */
 #[Group('collector')]
 #[Group('mail')]
@@ -363,7 +366,7 @@ final class MailCollectorTest extends TestCase
             'Failed mail persistence must not reach the manifest.',
         );
 
-        $warning = Yii::getLogger()->messages[0] ?? self::fail('Persistence failure must be logged.');
+        $warning = self::loggedMessages()[0] ?? self::fail('Persistence failure must be logged.');
 
         self::assertSame(
             MailCollector::class . '::start',
@@ -588,6 +591,17 @@ final class MailCollectorTest extends TestCase
         $saved = $this->captureEntries($collector);
 
         return $saved[0] ?? self::fail('Expected one captured message.');
+    }
+
+    /**
+     * Returns the messages buffered in the application logger, read outside the caller's scope so an earlier
+     * `messages = []` reset does not narrow them to an empty array.
+     *
+     * @return array<int|string, LogMessage>
+     */
+    private static function loggedMessages(): array
+    {
+        return Yii::getLogger()->messages;
     }
 
     /**

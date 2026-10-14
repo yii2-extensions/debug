@@ -176,7 +176,8 @@ final class QueuePanelTest extends TestCase
 
         $detail = $panel->getDetail();
 
-        self::assertNotEmpty(
+        self::assertNotSame(
+            '',
             $detail,
             'Detail view must produce markup.',
         );
