@@ -80,6 +80,42 @@ final class CollectorTest extends TestCase
         );
     }
 
+    public function testGetLogMessagesPreservesLoggerMemory(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+        $logTarget = new LogTarget($module);
+
+        $logTarget->messages = [['hello', Logger::LEVEL_INFO, 'app', 0.0, [], 1024]];
+
+        $collector = new LifecycleCollector();
+
+        $collector->module = $module;
+
+        $messages = $this->invoke(
+            $collector,
+            'getLogMessages',
+        );
+
+        self::assertIsArray(
+            $messages,
+            'Must return an array.',
+        );
+
+        $first = $messages[0] ?? self::fail('Expected the filtered tuple.');
+
+        self::assertIsArray(
+            $first,
+            'Filtered entry must be a log tuple.',
+        );
+        self::assertSame(
+            1024,
+            $first[5] ?? null,
+            'Logger memory must be read from index five.',
+        );
+    }
+
     public function testGetLogMessagesStringifiesThrowableFirstElement(): void
     {
         $this->mockWebApplication();

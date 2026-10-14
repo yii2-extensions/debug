@@ -18,6 +18,7 @@ use function parse_str;
 use function parse_url;
 use function preg_match;
 use function preg_quote;
+use function substr_count;
 
 /**
  * Unit tests for {@see LogPanel} covering payload narrowing, toolbar items per level, the rendered detail and summary
@@ -63,6 +64,39 @@ final class LogPanelTest extends TestCase
             1.5,
             $second->timeSincePrevious,
             'The elapsed time must compare adjacent rows.',
+        );
+    }
+
+    public function testGetDetailRendersContextDisclosureForRowWithContext(): void
+    {
+        $panel = $this->makePanel(LogPanel::class);
+
+        $this->hydratePanel(
+            $panel,
+            LogSnapshot::capture(
+                [
+                    ['with context', Logger::LEVEL_INFO, 'application', 0.0, [], 0, ['userId' => 42]],
+                    ['without context', Logger::LEVEL_INFO, 'application', 1.0, [], 0, []],
+                ],
+            ),
+        );
+
+        $html = $panel->getDetail();
+
+        self::assertSame(
+            1,
+            substr_count($html, '<dl class="yii-debug-log-context">'),
+            'Only the row with context must render the disclosure.',
+        );
+        self::assertStringContainsString(
+            'Context · 1',
+            $html,
+            'Disclosure summary must count the context keys.',
+        );
+        self::assertStringContainsString(
+            'userId',
+            $html,
+            'Disclosure must list the context key.',
         );
     }
 

@@ -27,11 +27,15 @@ final class LifecycleCollector extends Collector
 
     protected function start(): void
     {
+        parent::start();
+
         $this->startCalls++;
     }
 
     protected function stop(): void
     {
+        parent::stop();
+
         $this->stopCalls++;
     }
 }

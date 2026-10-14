@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - build(deps): require `php-forge/debug` `^0.4`.
 - fix: show Mail routes in cross-request tooltips and make comparison tables keyboard-accessible in labelled regions.
 - feat(history)!: add a filterable/sortable Status badge, mark all `4xx`/`5xx` captures critical, and remove `DebugSearch::$criticalCodes`.
+- feat(log): capture the PSR-3 context of `yii\log\PsrMessage` log entries (Yii 22 `yii\log\PsrLogger`) without the `category` key, redact it through the capture policy, and show it under the message in a collapsed "Context" disclosure.
 
 ## 0.1.1 May 18, 2026
 
