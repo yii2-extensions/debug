@@ -6,12 +6,14 @@ namespace yii\debug\collectors;
 
 use Closure;
 use PHPForge\Debug\CollectorInterface;
+use PHPForge\Debug\Panel\Log\LogContext;
 use PHPForge\Debug\Storage\PanelSnapshot;
 use Stringable;
 use yii\base\InvalidConfigException;
 use yii\debug\exception\Message;
 use yii\debug\{LogTarget, Module};
 use yii\helpers\VarDumper;
+use yii\log\PsrMessage;
 
 use function is_string;
 
@@ -96,6 +98,11 @@ abstract class Collector implements CollectorInterface
     /**
      * Returns the accumulated log messages, optionally filtered by level, category, and exclusion lists.
      *
+     * A {@see PsrMessage} payload also yields its PSR-3 context at tuple index `6`, normalized and redacted through the
+     * module capture policy. A `category` value identical to the tuple category is dropped because it already names the
+     * row, as {@see \yii\log\PsrLogger} copies it there; any other `category` value stays in the context. Every other
+     * payload yields `[]`.
+     *
      * @param int $levels Bitmask of `yii\log\Logger::LEVEL_*` values; `0` keeps every level.
      * @param list<string> $categories Category patterns to include; empty keeps every category.
      * @param list<string> $except Category patterns to exclude.
@@ -119,14 +126,31 @@ abstract class Collector implements CollectorInterface
 
         $formatter ??= self::formatLogMessage(...);
 
+        $policy = $target->module->createCapturePolicy();
+
         foreach ($filteredMessages as $message) {
+            $payload = $message[0];
+
+            $context = [];
+
+            if ($payload instanceof PsrMessage) {
+                $context = $payload->getContext();
+
+                $context = LogContext::normalize(
+                    $context,
+                    $policy,
+                    ($context['category'] ?? null) === $message[2] ? ['category'] : [],
+                );
+            }
+
             $messages[] = [
-                $formatter($message[0]),
+                $formatter($payload),
                 $message[1],
                 $message[2],
                 $message[3],
                 $message[4],
                 $message[5] ?? 0,
+                $context,
             ];
         }
 

@@ -83,6 +83,10 @@ Open an application page, expand the toolbar at the bottom, and select a panel c
 Use the Yii chip for Configuration and the PHP chip for PHP info. Switch between light and dark themes from the
 toolbar, and press `Escape` to close the drawer.
 
+In Logs, messages written through the Yii 22 PSR-3 adapter `yii\log\PsrLogger` show their PSR-3 context under the
+message in a collapsed "Context" disclosure; the `category` key is omitted only when it matches the row's category
+shown in the Category column, while any other `category` value stays in the context.
+
 Open the `debug/index` route to browse retained requests. Select two captures in History to compare request metrics
 and panel changes, then open either capture for its details. Comparison shows structural counts without exposing
 panel values.
@@ -99,9 +103,9 @@ The toolbar and debugger routes allow `127.0.0.1` and `::1` by default. Add only
 `allowedIPs`; never expose the debugger publicly. A `checkAccessCallback` can further restrict allowed requests.
 
 Request, identity, and queue captures redact common sensitive fields, and so do Inertia captures registered with the
-capture-policy closure shown in the configuration reference. Logs preserve original diagnostic values and are not
-redacted by the capture policy; SQL diagnostics can include substituted query values. Treat stored captures as
-sensitive and review them before sharing.
+capture-policy closure shown in the configuration reference. In Logs, the log message is not redacted; the PSR-3
+context is redacted by the capture policy. SQL diagnostics can include substituted query values. Treat stored captures
+as sensitive and review them before sharing.
 
 In the Events panel, context capture and source traces are disabled by default. This does not disable source
 traces in Logs or Database.
