@@ -146,7 +146,6 @@ class RouterRules extends Model
                         $mode = 'creation only';
                         break;
                     case null:
-                        $mode = null;
                         break;
                     default:
                         $mode = 'unknown';

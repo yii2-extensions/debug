@@ -259,14 +259,35 @@ final class HistoryRowRendererTest extends TestCase
             'Counts above the threshold must surface the warning glyph.',
         );
         self::assertStringContainsString(
-            'Too many queries',
+            'title="Too many queries. Allowed count is 100"',
             $html,
-            'Warning tooltip must explain the threshold breach.',
+            'Warning tooltip must name the configured threshold.',
         );
         self::assertStringContainsString(
             'panel=db&amp;tag=flood',
             $html,
             'SQL count must link to the request database panel.',
+        );
+    }
+
+    public function testRenderSqlCountCellFallsBackToZeroThresholdWhenPanelDefinesNone(): void
+    {
+        $dbPanel = new class extends DbPanel {
+            public function isQueryCountCritical(int $count): bool
+            {
+                return true;
+            }
+        };
+
+        $html = HistoryRowRenderer::renderSqlCountCell(
+            self::row(['sqlCount' => 7]),
+            $dbPanel,
+        );
+
+        self::assertStringContainsString(
+            'title="Too many queries. Allowed count is 0"',
+            $html,
+            'Missing threshold must be reported as `0`.',
         );
     }
 
@@ -361,7 +382,6 @@ final class HistoryRowRendererTest extends TestCase
                 new HistoryStatusBucket(label: '2xx', count: 4, sampleCode: 200, variant: '2xx'),
                 new HistoryStatusBucket(label: '4xx', count: 1, sampleCode: 404, variant: '4xx'),
             ],
-            statusCodeFilter: null,
         );
 
         $html = HistoryRowRenderer::renderSummary(
@@ -410,7 +430,6 @@ final class HistoryRowRendererTest extends TestCase
         $summary = new HistorySummary(
             totalRequests: 0,
             statusBuckets: [],
-            statusCodeFilter: null,
         );
 
         self::assertSame(
@@ -425,7 +444,6 @@ final class HistoryRowRendererTest extends TestCase
         $summary = new HistorySummary(
             totalRequests: 1,
             statusBuckets: [],
-            statusCodeFilter: null,
         );
 
         $html = HistoryRowRenderer::renderSummary(

@@ -18,13 +18,11 @@ use yii\debug\widgets\history\HistoryRowRenderer;
 final class HistoryPresentationCompatibilityTest extends TestCase
 {
     /**
-     * @param list<int> $criticalCodes
      * @param array<string, mixed> $expectedClass
      */
     #[DataProviderExternal(HistoryPresentationProvider::class, 'rowAttributes')]
-    public function testRowAttributesPreserveDiagnosticsAndConfiguredCriticalCodes(
+    public function testRowAttributesPreserveDiagnosticsAndFlagErrorStatusesAsCritical(
         int $statusCode,
-        array $criticalCodes,
         bool $ajax,
         string $expectedStatus,
         string $expectedAjax,
@@ -33,8 +31,6 @@ final class HistoryPresentationCompatibilityTest extends TestCase
         $row = self::row('<method>', '/search?q=<tag>&x="quote"', $statusCode, $ajax);
 
         $search = new DebugSearch();
-
-        $search->criticalCodes = $criticalCodes;
 
         $expected = [
             ...$expectedClass,
@@ -50,7 +46,7 @@ final class HistoryPresentationCompatibilityTest extends TestCase
         self::assertSame(
             $expected,
             HistoryRowRenderer::buildRowOptions($row, $search),
-            'Yii2 must retain raw cursor values, attribute order, and its configured critical statuses.',
+            'Yii2 must retain raw cursor values, attribute order, and the `4xx`/`5xx` danger class.',
         );
         self::assertSame(
             $expected,
@@ -79,6 +75,11 @@ final class HistoryPresentationCompatibilityTest extends TestCase
             $expectedMethod,
             HistoryCellRenderer::renderMethodCell($row),
             'Core method markup must match.',
+        );
+        self::assertSame(
+            '<span class="yii-debug-badge yii-debug-status-2xx">200</span>',
+            HistoryRowRenderer::renderStatusCell($row),
+            'Yii2 status badge must delegate to the core markup.',
         );
         self::assertSame(
             $expectedUrl,

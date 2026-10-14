@@ -310,7 +310,8 @@ final class ModuleToolbarTest extends ModuleTestCase
             $data['position'],
             'Default position must be bottom.',
         );
-        self::assertNotEmpty(
+        self::assertNotSame(
+            [],
             $data['items'],
             'Toolbar payload must include at least one panel item.',
         );

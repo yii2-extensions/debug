@@ -317,9 +317,10 @@ final class RequestPanelTest extends TestCase
             ),
         );
 
-        self::assertNotEmpty(
+        self::assertStringContainsString(
+            'site/index',
             $panel->getDetail(),
-            'Detail view must produce markup.',
+            'Detail view must render the captured route.',
         );
     }
 
@@ -342,7 +343,8 @@ final class RequestPanelTest extends TestCase
             ),
         );
 
-        self::assertNotEmpty(
+        self::assertNotSame(
+            '',
             $panel->getDetail(),
             'Non-debug dispatch must fall back to an empty summary.',
         );
@@ -352,7 +354,8 @@ final class RequestPanelTest extends TestCase
     {
         $this->mockWebApplication();
 
-        self::assertNotEmpty(
+        self::assertNotSame(
+            '',
             (new RequestPanel())->getDetail(),
             'Request must degrade to an empty composed view before module wiring or snapshot hydration.',
         );

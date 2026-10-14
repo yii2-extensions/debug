@@ -13,7 +13,6 @@ use yii\data\ArrayDataProvider;
 use yii\debug\GridViewConfig;
 
 use function array_map;
-use function in_array;
 
 /**
  * Backs the filter form on the debug index page that lists every captured request manifest entry.
@@ -24,10 +23,6 @@ class DebugSearch extends Base
      * Submitted value for the `ajax` filter (exact match).
      */
     public string $ajax = '';
-    /**
-     * @var list<int> HTTP status codes flagged as severe in the request grid.
-     */
-    public array $criticalCodes = [400, 404, 500];
     /**
      * Submitted value for the `ip` filter (substring match).
      */
@@ -73,7 +68,7 @@ class DebugSearch extends Base
             'method' => ViewMessage::METHOD->value,
             'ajax' => ViewMessage::AJAX->value,
             'url' => ViewMessage::URL->value,
-            'statusCode' => 'Status',
+            'statusCode' => ViewMessage::STATUS->value,
             'sqlCount' => 'Query Count',
             'mailCount' => 'Mail Count',
         ];
@@ -91,15 +86,15 @@ class DebugSearch extends Base
     }
 
     /**
-     * Returns whether the given status code is flagged as critical in {@see $criticalCodes}.
+     * Returns whether the given status code marks its request row as critical in the history grid.
      *
      * @param int $code HTTP status code taken from a captured request summary.
      *
-     * @return bool `true` when the code is listed as critical; `false` otherwise.
+     * @return bool `true` for any client or server error (`400` and above); `false` otherwise.
      */
     public function isCodeCritical(int $code): bool
     {
-        return in_array($code, $this->criticalCodes, true);
+        return $code >= 400;
     }
 
     /**

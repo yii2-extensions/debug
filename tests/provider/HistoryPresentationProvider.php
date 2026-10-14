@@ -12,49 +12,51 @@ use yii\debug\tests\history\HistoryPresentationCompatibilityTest;
 final class HistoryPresentationProvider
 {
     /**
-     * @return iterable<string, array{int, list<int>, bool, string, string, array<string, mixed>}>
+     * @return iterable<string, array{int, bool, string, string, array<string, mixed>}>
      */
     public static function rowAttributes(): iterable
     {
-        yield 'custom critical success' => [
-            200,
-            [200],
-            false,
-            '200',
-            '',
-            ['class' => 'yii-debug-row-danger'],
-        ];
-        yield 'default critical status' => [
-            400,
-            [400, 404, 500],
-            true,
-            '400',
-            '1',
-            ['class' => 'yii-debug-row-danger'],
-        ];
-        yield 'disabled critical statuses' => [
-            500,
-            [],
-            true,
-            '500',
-            '1',
-            [],
-        ];
         yield 'unknown status' => [
             0,
-            [400, 404, 500],
             false,
             '0',
             '',
             [],
         ];
-        yield 'unlisted error status' => [
+        yield 'success status' => [
+            200,
+            true,
+            '200',
+            '1',
+            [],
+        ];
+        yield 'last non-error status' => [
+            399,
+            false,
+            '399',
+            '',
+            [],
+        ];
+        yield 'first client error status' => [
+            400,
+            true,
+            '400',
+            '1',
+            ['class' => 'yii-debug-row-danger'],
+        ];
+        yield 'teapot client error status' => [
             418,
-            [400, 404, 500],
             false,
             '418',
             '',
-            [],
+            ['class' => 'yii-debug-row-danger'],
+        ];
+        yield 'server error status' => [
+            503,
+            true,
+            '503',
+            '1',
+            ['class' => 'yii-debug-row-danger'],
         ];
     }
 

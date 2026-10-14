@@ -149,6 +149,14 @@ $comparisonBaseline = $comparisonTags[1] ?? null;
                         ],
                     ],
                     [
+                        'attribute' => 'statusCode',
+                        'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderStatusCell($data),
+                        'format' => 'raw',
+                        'headerOptions' => ['class' => 'yii-debug-col-status'],
+                        'contentOptions' => ['class' => 'yii-debug-col-status'],
+                        'filterOptions' => ['class' => 'yii-debug-col-status'],
+                    ],
+                    [
                         'attribute' => 'ajax',
                         'value' => static fn(HistoryRow $data): string => HistoryRowRenderer::renderAjaxCell($data),
                         'filter' => ['No', 'Yes'],

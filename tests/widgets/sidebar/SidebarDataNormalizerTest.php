@@ -305,7 +305,8 @@ final class SidebarDataNormalizerTest extends TestCase
             '',
         );
 
-        self::assertNotEmpty(
+        self::assertNotSame(
+            [],
             $view->navItems,
             'History entry must always be present.',
         );

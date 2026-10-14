@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - fix: improve capture reliability, sensitive-data handling, identity actions, persistence, and worker cleanup; prevent recursive debugger captures.
 - feat: add Inertia and Vite panels, capture comparisons, Events inspection, unified Profiling and Timeline, and Database N+1 and EXPLAIN diagnostics.
-- feat(ui): redesign navigation, toolbar, and panels with responsive layouts, accessible controls, and consistent filtering, sorting, and pagination; remove the redundant History status column.
+- feat(ui): redesign navigation, toolbar, and panels with responsive layouts, accessible controls, and consistent filtering, sorting, and pagination.
 - refactor!: move shared contracts, helpers, assets, and views to Debug Core; replace serialized storage with versioned JSON snapshots and remove superseded local APIs.
 - refactor!: require Yii2 `^22.0` and ui-awesome `0.8`; adopt standalone actions and immutable factories, including `QueryRow` getters instead of public properties.
 - refactor(tests): split debugger action and module tests by responsibility and centralize shared action fixtures.
@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(tests): add `RequiresOperatingSystemFamily` attribute to `LogTargetTest` and remove Windows-specific skip logic.
 - build(deps): require `php-forge/debug` `^0.4`.
 - fix: show Mail routes in cross-request tooltips and make comparison tables keyboard-accessible in labelled regions.
+- feat(history)!: add a filterable/sortable Status badge, mark all `4xx`/`5xx` captures critical, and remove `DebugSearch::$criticalCodes`.
 
 ## 0.1.1 May 18, 2026
 

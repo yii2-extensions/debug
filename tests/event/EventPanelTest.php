@@ -101,7 +101,8 @@ final class EventPanelTest extends TestCase
 
         $detail = $panel->getDetail();
 
-        self::assertNotEmpty(
+        self::assertNotSame(
+            '',
             $detail,
             'Detail view must produce markup.',
         );

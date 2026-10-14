@@ -234,7 +234,8 @@ final class EventCollectorTest extends TestCase
             $inspection->getContextStatus(),
             'Context availability must be explicit.',
         );
-        self::assertNotEmpty(
+        self::assertNotSame(
+            [],
             $inspection->getTrace(),
             'Opt-in source traces must record file locations.',
         );

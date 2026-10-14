@@ -326,9 +326,10 @@ final class UserPanelTest extends TestCase
             ),
         );
 
-        self::assertNotEmpty(
+        self::assertStringContainsString(
+            'wilmer',
             $panel->getDetail(),
-            'Detail view must produce markup.',
+            'Detail view must render the captured identity.',
         );
     }
 

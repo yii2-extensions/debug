@@ -199,13 +199,7 @@ class PanelRegistrar
         }
 
         if (is_subclass_of($class, PortablePanel::class)) {
-            $provider = Yii::$container->get($class, [], $properties);
-
-            if (!$provider instanceof PortablePanel) {
-                throw new InvalidConfigException(
-                    Message::PANEL_INSTANCE_INVALID->getMessage((string) $key, PortablePanel::class, $class),
-                );
-            }
+            $provider = self::instantiate($key, $class, $properties, PortablePanel::class);
 
             return $this->bindPanel($this->adaptProvider($key, $provider));
         }
@@ -213,15 +207,37 @@ class PanelRegistrar
         $properties['module'] = $this->module;
         $properties['id'] = (string) $key;
 
+        return $this->bindPanel(self::instantiate($key, $class, $properties, Panel::class));
+    }
+
+    /**
+     * Builds a panel class through the DI container and verifies the result against the expected panel contract.
+     *
+     * The check guards the container output, not the requested class: a container definition registered for `$class`
+     * may return an object of any type.
+     *
+     * @template T of object
+     *
+     * @param int|string $key Registration key of the panel, used in the error message.
+     * @param string $class Class name requested from the container.
+     * @param array<array-key, mixed> $properties Properties applied to the built object.
+     * @param class-string<T> $contract Class or interface the built object must implement.
+     *
+     * @throws InvalidConfigException when the container returns an object outside `$contract`.
+     *
+     * @return T Built object.
+     */
+    private static function instantiate(int|string $key, string $class, array $properties, string $contract): object
+    {
         $object = Yii::$container->get($class, [], $properties);
 
-        if (!$object instanceof Panel) {
+        if (!$object instanceof $contract) {
             throw new InvalidConfigException(
-                Message::PANEL_INSTANCE_INVALID->getMessage((string) $key, Panel::class, $class),
+                Message::PANEL_INSTANCE_INVALID->getMessage((string) $key, $contract, $class),
             );
         }
 
-        return $this->bindPanel($object);
+        return $object;
     }
 
     /**

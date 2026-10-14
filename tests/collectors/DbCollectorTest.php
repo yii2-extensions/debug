@@ -344,9 +344,10 @@ final class DbCollectorTest extends TestCase
 
         $counts = $collector->countCallerCals();
 
-        self::assertNotEmpty(
+        self::assertCount(
+            1,
             $counts,
-            'Caller counts must reflect captured timings.',
+            'Identical traces must collapse into one caller group.',
         );
         self::assertSame(
             3,
