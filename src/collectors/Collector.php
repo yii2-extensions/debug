@@ -99,8 +99,9 @@ abstract class Collector implements CollectorInterface
      * Returns the accumulated log messages, optionally filtered by level, category, and exclusion lists.
      *
      * A {@see PsrMessage} payload also yields its PSR-3 context at tuple index `6`, normalized and redacted through the
-     * module capture policy. A `string` `category` value is dropped because {@see \yii\log\PsrLogger} consumes it as
-     * the Yii category; any other `category` value stays in the context. Every other payload yields `[]`.
+     * module capture policy. A `category` value identical to the tuple category is dropped because it already names the
+     * row, as {@see \yii\log\PsrLogger} copies it there; any other `category` value stays in the context. Every other
+     * payload yields `[]`.
      *
      * @param int $levels Bitmask of `yii\log\Logger::LEVEL_*` values; `0` keeps every level.
      * @param list<string> $categories Category patterns to include; empty keeps every category.
@@ -138,7 +139,7 @@ abstract class Collector implements CollectorInterface
                 $context = LogContext::normalize(
                     $context,
                     $policy,
-                    is_string($context['category'] ?? null) ? ['category'] : [],
+                    ($context['category'] ?? null) === $message[2] ? ['category'] : [],
                 );
             }
 

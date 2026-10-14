@@ -84,8 +84,8 @@ Use the Yii chip for Configuration and the PHP chip for PHP info. Switch between
 toolbar, and press `Escape` to close the drawer.
 
 In Logs, messages written through the Yii 22 PSR-3 adapter `yii\log\PsrLogger` show their PSR-3 context under the
-message in a collapsed "Context" disclosure; a `string` `category` key is omitted because it already fills the
-Category column, while any other `category` value stays in the context.
+message in a collapsed "Context" disclosure; the `category` key is omitted only when it matches the row's category
+shown in the Category column, while any other `category` value stays in the context.
 
 Open the `debug/index` route to browse retained requests. Select two captures in History to compare request metrics
 and panel changes, then open either capture for its details. Comparison shows structural counts without exposing
