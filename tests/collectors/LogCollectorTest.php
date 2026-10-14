@@ -94,6 +94,54 @@ final class LogCollectorTest extends TestCase
         );
     }
 
+    public function testCaptureKeepsNonStringCategoryInPsrMessageContext(): void
+    {
+        $collector = $this->makeCollector();
+
+        $logTarget = $collector->module?->logTarget;
+
+        self::assertInstanceOf(
+            LogTarget::class,
+            $logTarget,
+            'Log target must be wired.',
+        );
+
+        $logTarget->messages = [
+            [
+                new PsrMessage('Null category', ['category' => null], 'info'),
+                Logger::LEVEL_INFO,
+                'application',
+                0.0,
+                [],
+                0,
+            ],
+            [
+                new PsrMessage('Array category', ['category' => ['audit']], 'info'),
+                Logger::LEVEL_INFO,
+                'application',
+                0.0,
+                [],
+                0,
+            ],
+        ];
+
+        $rows = Captured::log($collector)?->entries() ?? self::fail('Expected the captured rows.');
+
+        $nullRow = $rows[0] ?? self::fail('Expected the `null` category row.');
+        $arrayRow = $rows[1] ?? self::fail('Expected the array category row.');
+
+        self::assertSame(
+            ['category' => null],
+            $nullRow->context,
+            'Unconsumed `null` category must stay in the context.',
+        );
+        self::assertSame(
+            ['category' => ['audit']],
+            $arrayRow->context,
+            'Unconsumed array category must stay in the context.',
+        );
+    }
+
     public function testCaptureKeepsPsrMessageContextWithoutCategory(): void
     {
         $collector = $this->makeCollector();
