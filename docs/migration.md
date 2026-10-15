@@ -5,9 +5,10 @@ For applications upgrading from 0.1, start with the [upgrade checklist](../UPGRA
 
 ## Stored requests and assets
 
-Old serialized captures are incompatible with the versioned JSON store. Stop development traffic and remove
-only old debugger data at the configured `dataPath`; do not clear unrelated runtime state or rely on historical
-captures remaining readable. Treat stored captures as sensitive.
+Old serialized 0.1 captures cannot be read by the versioned JSON store in 0.2. Stop development traffic before
+cleaning the configured `dataPath`. To preserve history for rollback, first back up the 0.1 `.data` captures and
+their `index.data` manifest. Remove only old debugger data; do not clear unrelated runtime state. Treat stored
+captures as sensitive.
 
 Shared contracts live in `php-forge/debug`; shared storage, presentation, views and the compiled frontend live in
 `php-forge/debug-core`. Yii's `DebugAsset` and `ToolbarAsset` publish those packaged assets. Remove direct
@@ -44,5 +45,6 @@ normalizers and former shell DTOs are not supported extension points. Check PHPD
 when migrating code that used them.
 
 Verify application requests, stored capture loading, denied access, custom actions, provider events and asset
-loading after the upgrade. Keep the original application lockfile available for rollback; old captures do not
-become compatible by downgrading the code.
+loading after the upgrade. Keep the original application lockfile available for rollback. Returning to 0.1 can
+read retained or restored 0.1 `.data` captures with their matching manifest; it cannot read new JSON captures
+written by 0.2.
