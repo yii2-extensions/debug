@@ -54,10 +54,13 @@
 Requires PHP 8.3 or newer and Yii2 22.x. The 0.2 line does not support Yii2 2.0.x.
 
 ```bash
-composer require yii2-extensions/debug:^0.2 --dev
+composer require yii2-extensions/debug:^0.2@dev --dev
 ```
 
-When upgrading from 0.1, review the [changelog](CHANGELOG.md) for breaking changes. Keep the debugger and
+The explicit development flag is needed until a stable 0.2 release is available. See [installation](docs/installation.md)
+for entry-script setup, asset publication and verification.
+
+When upgrading from 0.1, review the [upgrade checklist](UPGRADE.md) and [migration guide](docs/migration.md). Keep the debugger and
 `php-forge/debug-core` up to date together in the application's lock file.
 
 ### Enable the debugger
@@ -95,7 +98,10 @@ panel values.
 
 The module runs with no options: up to 50 retained requests, captures under `@runtime/debug`, and a bottom toolbar.
 See the [configuration reference](docs/configuration.md) for custom collectors and panels, the Inertia and Vite
-providers, database thresholds, IDE links, and the standalone router.
+providers, database capture, IDE links, and the standalone router.
+
+Debug Core ships compiled assets through Composer. Consumers do not need Node.js, Foxy or an npm asset alias
+for the debugger; frontend source development remains in `php-forge/debug-core`.
 
 ## Security
 
@@ -128,10 +134,20 @@ is not supported.
 
 ## Documentation
 
+- [Installation](docs/installation.md)
 - [Configuration reference](docs/configuration.md)
+- [Usage examples](docs/examples.md)
+- [Migration guide](docs/migration.md)
+- [Upgrade checklist](UPGRADE.md)
 - [Panel screenshots](docs/screenshots.md)
 - [Testing guide](docs/testing.md)
 - [Changelog](CHANGELOG.md)
+
+## AI assistance
+
+Use the package-owned [Debug inspection skill](skills/yii2-debug-inspection/SKILL.md) to configure and verify the
+debugger in an application. See [agent setup](docs/agents.md) for installation, client activation and practical
+checks. Installing the Composer package alone does not activate a skill from `vendor/`.
 
 ## Package information
 

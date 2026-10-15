@@ -11,6 +11,16 @@ $config['modules']['debug']['toolbarPosition'] = 'bottom';
 These are the defaults: up to 50 retained requests, captures stored under `@runtime/debug`, and a bottom toolbar.
 The storage path accepts a registered Yii alias.
 
+## Access and capture policy
+
+`allowedIPs` defaults to loopback and accepts exact IPs, wildcards and CIDR ranges. `allowedHosts` resolves
+configured hosts to addresses. `checkAccessCallback` receives the current action or `null`; it runs only after
+the IP/host check allows access and must return `true`. Keep access limited to trusted development requests.
+
+`sensitiveKeys`, `sensitiveKeyPrefixes` and `sensitiveKeyPatterns` control the capture policy. Extend the default
+exact keys rather than replacing them. `maxBodyBytes` bounds raw request/response body capture. These policies do
+not remove arbitrary secrets from log messages or SQL diagnostics. See the [redaction example](examples.md#inspect-an-application-event).
+
 ## Custom collectors and panels
 
 A collector implements `PHPForge\Debug\CollectorInterface` — the single contract shared by the built-in collectors,
@@ -55,7 +65,7 @@ The module names no provider and detects none; nothing is registered until the a
 package emits its results through a PSR-14 dispatcher, `dispatchers` hands the collector to the application component
 that emits them, `collectorId => componentId`.
 
-Inside the `YII_DEBUG` guard of the development configuration:
+Inside the `YII_ENV_DEV` guard of the development configuration:
 
 ```php
 use PHPForge\Debug\Capture\CapturePolicy;
@@ -173,4 +183,4 @@ $config['modules']['debug']['panels']['router'] = \yii\debug\panels\RouterPanel:
 
 ---
 
-[← Back to documentation](../README.md#documentation)
+[Back to documentation](../README.md#documentation)
