@@ -17,6 +17,8 @@ use yii\debug\Module;
 class CapturePolicyFactory
 {
     /**
+     * Binds capture-policy creation to the debug module.
+     *
      * @param Module $module Debug module read for the redaction configuration at call time.
      */
     public function __construct(protected readonly Module $module) {}

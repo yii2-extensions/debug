@@ -17,6 +17,8 @@ use function strpos;
 final readonly class IpAllowlist
 {
     /**
+     * Retains the IP filters and hostnames used when checking access.
+     *
      * @param list<string> $allowedIPs Exact, wildcard, or CIDR IP filters.
      * @param list<string> $allowedHosts Hostnames resolved to IPs at check time.
      */

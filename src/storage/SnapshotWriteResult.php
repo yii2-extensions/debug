@@ -12,6 +12,8 @@ use PHPForge\Debug\Storage\RequestSummary;
 final readonly class SnapshotWriteResult
 {
     /**
+     * Records the committed manifest and evicted request summaries.
+     *
      * @param array<string, RequestSummary>|null $entries Committed entries, or `null` when a follow-up manifest read
      * failed.
      * @param list<RequestSummary> $removed Entries evicted from the manifest.

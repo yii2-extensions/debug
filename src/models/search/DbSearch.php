@@ -52,7 +52,7 @@ class DbSearch extends Base
     /**
      * Declares the validation rules applied to the submitted filters.
      *
-     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see \yii\base\Model::validate()}.
      */
     #[Override]
     public function rules(): array

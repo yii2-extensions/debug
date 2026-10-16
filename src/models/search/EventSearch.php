@@ -62,7 +62,7 @@ class EventSearch extends Base
     /**
      * Declares the validation rules applied to the submitted filters.
      *
-     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see Model::validate()}.
+     * @return array<int, array<int|string, mixed>> Validation rules consumed by {@see \yii\base\Model::validate()}.
      */
     #[Override]
     public function rules(): array
@@ -77,7 +77,7 @@ class EventSearch extends Base
     /**
      * Returns an {@see ArrayDataProvider} over the captured events, applying the loaded filter values.
      *
-     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see \yii\base\Model::load()}.
      * @param list<EventRow> $models Captured event rows to wrap and filter.
      *
      * @return ArrayDataProvider Sortable provider with the filtered event rows.

@@ -32,7 +32,7 @@
         "ext-pdo": "*",
         "composer-runtime-api": "^2.0",
         "php-forge/debug": "^0.4",
-        "php-forge/debug-core": "^0.1@dev",
+        "php-forge/debug-core": "^0.1",
         "symfony/mime": "^7.4",
         "ui-awesome/html": "^0.6",
         "ui-awesome/html-core": "^0.8",
@@ -57,7 +57,7 @@
         "phpunit/phpunit": "^12.5",
         "xepozz/internal-mocker": "^1.4",
         "yii2-extensions/inertia": "^0.6@dev",
-        "yii2-extensions/phpstan": "^0.5@dev",
+        "yii2-extensions/phpstan": "^0.5",
         "yii2-extensions/scaffold": "^0.2"
     },
     "suggest": {

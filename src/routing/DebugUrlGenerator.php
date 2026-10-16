@@ -20,6 +20,8 @@ final readonly class DebugUrlGenerator implements DebugUrlGeneratorInterface
     private string $moduleId;
 
     /**
+     * Binds debugger URLs to the normalized module ID.
+     *
      * @param string $moduleId Unique id of the debugger module; falls back to `'debug'` when empty.
      */
     public function __construct(string $moduleId = 'debug')

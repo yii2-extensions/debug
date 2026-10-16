@@ -17,6 +17,8 @@ use yii\debug\{IpAllowlist, Module};
 class AccessGuard
 {
     /**
+     * Binds access checks to the debug module.
+     *
      * @param Module $module Debug module read for the access configuration at call time.
      */
     public function __construct(protected readonly Module $module) {}

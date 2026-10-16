@@ -16,6 +16,8 @@ use function trim;
 class StandaloneActionResolver
 {
     /**
+     * Binds standalone action mapping and resolution to the debug module.
+     *
      * @param Module $module Debug module read for the action map and the default route at call time.
      */
     public function __construct(protected readonly Module $module) {}

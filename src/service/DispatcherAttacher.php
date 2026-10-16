@@ -35,6 +35,8 @@ use function method_exists;
 class DispatcherAttacher
 {
     /**
+     * Binds dispatcher attachment to the module's collectors and component map.
+     *
      * @param Module $module Debug module owning the dispatcher map and the collector coordinator, read at call time.
      */
     public function __construct(protected readonly Module $module) {}

@@ -26,6 +26,8 @@ use function number_format;
 class ToolbarPresenter
 {
     /**
+     * Binds toolbar presentation to the debug module.
+     *
      * @param Module $module Debug module read for the toolbar configuration at call time.
      */
     public function __construct(protected readonly Module $module) {}
