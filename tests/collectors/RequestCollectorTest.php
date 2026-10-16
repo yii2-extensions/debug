@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
 use Yii;
 use yii\base\{Action, InlineAction};
 use yii\debug\collectors\RequestCollector;
-use yii\debug\tests\support\Captured;
-use yii\debug\tests\support\TestCase;
+use yii\debug\tests\support\{Captured, TestCase};
 use yii\web\{Controller, Session};
 
 /**
@@ -517,6 +516,22 @@ final class RequestCollectorTest extends TestCase
             ['route' => 'site/index'],
             $masked,
             'Empty censor list must short-circuit to the original payload.',
+        );
+    }
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([RequestCollector::class, 'censorArray', 'protected'])]
+    #[TestWith([RequestCollector::class, 'getFlashes', 'protected'])]
+    #[TestWith([RequestCollector::class, 'normalizeResponseHeaders', 'protected'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new \ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
         );
     }
 

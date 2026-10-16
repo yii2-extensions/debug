@@ -23,6 +23,35 @@ use function array_keys;
 #[Group('toolbar')]
 final class ToolbarDataMapperTest extends TestCase
 {
+    public function testInvisiblePanelDoesNotHideFollowingVisiblePanels(): void
+    {
+        $this->mockWebApplication();
+
+        $module = new Module('debug');
+        $hidden = new class extends Panel {
+            public function isVisible(): bool
+            {
+                return false;
+            }
+        };
+        $visible = new class extends Panel {
+            public function getToolbarData(): array
+            {
+                return ['title' => 'Visible', 'url' => '/debug/view', 'items' => [['value' => 'Present']]];
+            }
+        };
+        $visible->id = 'visible';
+        $visible->module = $module;
+
+        $result = ToolbarDataMapper::create('capture', 'Debugger')->map(['hidden' => $hidden, 'visible' => $visible]);
+
+        self::assertSame(
+            ['visible'],
+            array_column($result['items'], 'id'),
+            'Hidden panels must not suppress subsequent visible chips.',
+        );
+    }
+
     public function testMapAppliesDefaultPositionAndHeight(): void
     {
         $this->mockWebApplication();

@@ -6,13 +6,18 @@ that dependency; do not lower the stability of every package just to install the
 
 ## Install the package
 
+If the Yii 22 mailer is not already a root requirement, add both packages with scoped development flags:
+
 ```bash
-composer require yii2-extensions/debug:^0.2@dev --dev
+composer require yii2-extensions/debug:^0.2@dev yiisoft/yii2-symfonymailer:^22.0@dev --dev
 composer audit
 ```
 
-The explicit development flag is needed while 0.2 has no stable release. Use the version that matches the
-application's framework and review [migration](migration.md) when moving from 0.1. Update the debugger and its
+If the application already requires `yiisoft/yii2-symfonymailer`, keep it in its existing dependency section and
+ensure its constraint allows `^22.0@dev`; require only `yii2-extensions/debug:^0.2@dev` with `--dev`. The stability
+flags must be declared in the application's root requirements; keep the global minimum stability unchanged.
+Use the version that matches the application's framework and review [migration](migration.md) when moving from
+0.1. Update the debugger and its
 `php-forge/debug` and `php-forge/debug-core` dependencies together in the application's lockfile.
 
 ## Enable development mode
@@ -28,8 +33,9 @@ require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../vendor/yiisoft/yii2/Yii.php';
 ```
 
-Merge the [development configuration example](../examples/development.php) into the application's existing
-configuration. Register both `bootstrap` and `modules`; a module definition alone does not collect requests.
+Merge the [development configuration example](../examples/development.php) into the Web application's existing
+configuration. Keep this registration out of shared and console configuration. Register both `bootstrap` and
+`modules`; a module definition alone does not collect requests.
 The example returns an empty array outside `YII_ENV_DEV`.
 
 ```php

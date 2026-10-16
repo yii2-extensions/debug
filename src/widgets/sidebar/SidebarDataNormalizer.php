@@ -166,7 +166,7 @@ final class SidebarDataNormalizer
 
         $historyParams = Module::route('index');
 
-        if ($mode === 'view' && $activeTag !== null && $activeTag !== '') {
+        if ($activeTag !== null && $activeTag !== '') {
             $historyParams['cursor'] = $activeTag;
         }
 

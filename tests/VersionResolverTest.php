@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests;
 
 use Composer\InstalledVersions;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, PreserveGlobalState, RunInSeparateProcess, TestWith};
 use yii\debug\tests\support\TestCase;
 use yii\debug\VersionResolver;
 
@@ -149,6 +149,52 @@ final class VersionResolverTest extends TestCase
             VersionResolver::forPackage('vendor/this-package-does-not-exist'),
             "Unknown packages must resolve to 'null' so callers can fall back gracefully.",
         );
+    }
+
+    /**
+     * @param 'provided'|'replaced' $kind Composer's virtual-package relationship.
+     */
+    #[TestWith(['provided'])]
+    #[TestWith(['replaced'])]
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testForPackageReturnsNullForVirtualPackages(string $kind): void
+    {
+        $datasets = InstalledVersions::getAllRawData();
+
+        self::assertArrayHasKey(
+            0,
+            $datasets,
+            'The isolated fixture must retain the installed package metadata.'
+        );
+
+        $original = $datasets[0];
+        $fixture = $original;
+        $package = 'synthetic/virtual-package';
+        $fixture['versions'][$package] = [$kind => ['1.0.0'], 'dev_requirement' => false];
+
+        InstalledVersions::reload($fixture);
+
+        try {
+            self::assertTrue(
+                InstalledVersions::isInstalled($package),
+                'Composer must recognize the provided or replaced package.'
+            );
+            self::assertNull(
+                VersionResolver::forPackage($package),
+                'Virtual packages must allow callers to use their own version label.'
+            );
+
+            $extensions = [$package => ['name' => $package, 'version' => 'Application alias']];
+
+            self::assertSame(
+                $extensions,
+                VersionResolver::forExtensions($extensions),
+                'Unavailable concrete versions must preserve the application label.'
+            );
+        } finally {
+            InstalledVersions::reload($original);
+        }
     }
 
     public function testForPackageReturnsPrettyVersionForInstalledFrameworkPackage(): void

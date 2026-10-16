@@ -6,7 +6,7 @@ namespace yii\debug\tests\log;
 
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Storage\HydrationException;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
 use Yii;
 use yii\debug\panels\LogPanel;
 use yii\debug\tests\support\TestCase;
@@ -64,6 +64,20 @@ final class LogPanelTest extends TestCase
             1.5,
             $second->timeSincePrevious,
             'The elapsed time must compare adjacent rows.',
+        );
+    }
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([LogPanel::class, 'getModels', 'protected'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new \ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
         );
     }
 

@@ -24,6 +24,25 @@ use yii\helpers\{Html, Url};
 #[Group('filter-banner')]
 final class FilterBannerTest extends TestCase
 {
+    public function testClearAllRemovesEveryInvalidRawFilter(): void
+    {
+        $this->bootApp();
+
+        $_GET['Log'] = [
+            'category' => 'app',
+            'message' => ['invalid'],
+            'level' => ['invalid'],
+        ];
+        $html = FilterBanner::widget(['searchModel' => new LogSearch(), 'activeFilters' => ['category' => 'app']]);
+        $expected = Url::to(['/debug/index']);
+
+        self::assertStringContainsString(
+            'class="yii-debug-active-filters-clear" href="' . Html::encode($expected) . '"',
+            $html,
+            'Clear all must remove hidden invalid fields as well as visible filters.',
+        );
+    }
+
     public function testNormalizedFiltersHideInvalidValuesAndClearTheirRawKeys(): void
     {
         $this->bootApp();

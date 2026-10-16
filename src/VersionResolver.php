@@ -77,13 +77,10 @@ final class VersionResolver
 
         $pretty = InstalledVersions::getPrettyVersion($package);
 
-        // Defensive guard: Composer `InstalledVersions::getPrettyVersion()` can only return `null` when the package
-        // metadata is malformed in `installed.json`. Unreachable under normal test conditions.
-        // @codeCoverageIgnoreStart
+        // Composer packages satisfied through provide/replace entries have no concrete pretty version.
         if ($pretty === null) {
             return null;
         }
-        // @codeCoverageIgnoreEnd
 
         if (str_contains($pretty, 'dev')) {
             $reference = InstalledVersions::getReference($package);

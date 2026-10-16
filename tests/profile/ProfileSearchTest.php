@@ -39,6 +39,41 @@ final class ProfileSearchTest extends TestCase
         );
     }
 
+    public function testDurationNormalizationKeepsTheDisplayedFilterTrimmed(): void
+    {
+        $this->mockWebApplication();
+
+        $search = new ProfileSearch();
+
+        $search->search(['Profile' => ['duration' => ' 1.5 ']], []);
+
+        self::assertSame(
+            '1.5',
+            $search->duration,
+            'The normalized filter shown to the user must omit surrounding whitespace.',
+        );
+    }
+
+    public function testReusedSearchIgnoresOldFiltersWhenThePrefixIsAbsent(): void
+    {
+        $this->mockWebApplication();
+
+        $records = [
+            self::block('db', 'query', 1.0, 0),
+            self::block('app', 'render', 2.0, 1),
+        ];
+
+        $search = new ProfileSearch();
+
+        $search->search(['Profile' => ['category' => 'db']], $records);
+
+        self::assertSame(
+            $records,
+            $search->search([], $records)->allModels,
+            'A request without profiling filters must not reuse stale criteria.',
+        );
+    }
+
     public function testRulesMarkEveryFilterAsSafe(): void
     {
         $firstRule = (new ProfileSearch())->rules()[0] ?? null;

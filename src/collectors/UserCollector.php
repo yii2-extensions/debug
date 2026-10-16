@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\collectors;
 
+use DateTimeImmutable;
+use DateTimeInterface;
 use PHPForge\Debug\Capture\CapturePolicy;
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPForge\Debug\Panel\User\UserSnapshot;
@@ -15,15 +17,28 @@ use yii\helpers\VarDumper;
 use yii\rbac\{BaseManager, Item};
 use yii\web\{IdentityInterface, User};
 
+use function array_filter;
 use function array_keys;
-use function get_object_vars;
+use function get_mangled_object_vars;
+use function is_array;
+use function is_object;
 use function is_string;
+use function str_starts_with;
 
 /**
  * Captures the authenticated identity for the User panel.
  */
 class UserCollector extends Collector
 {
+    /**
+     * Maximum nesting depth inspected while normalizing and redacting identity values.
+     */
+    private const int MAX_IDENTITY_DEPTH = 10;
+    /**
+     * Maximum entries inspected during one identity normalization pass.
+     */
+    private const int MAX_IDENTITY_NODES = 10000;
+
     /**
      * Component id of the user component, or a {@see User} instance to operate on directly.
      */
@@ -80,8 +95,8 @@ class UserCollector extends Collector
     /**
      * Returns the identity attributes as a string-keyed map suitable for {@see \yii\widgets\DetailView::$model}.
      *
-     * Reads {@see Model::getAttributes()} when the identity is a {@see Model}; otherwise falls back to
-     * {@see get_object_vars()} on the identity object.
+     * Reads {@see Model::getAttributes()} when the identity is a {@see Model}; otherwise keeps only
+     * public object properties.
      *
      * @param IdentityInterface $identity Active identity object.
      *
@@ -93,7 +108,7 @@ class UserCollector extends Collector
             return self::normalizeStringKeyArray($identity->getAttributes());
         }
 
-        return self::normalizeStringKeyArray(get_object_vars($identity));
+        return self::normalizeStringKeyArray(self::publicProperties($identity));
     }
 
     /**
@@ -146,7 +161,7 @@ class UserCollector extends Collector
             }
         }
 
-        $rawIdentityData = $this->identityData($identity);
+        $rawIdentityData = $this->normalizeIdentityData($this->identityData($identity));
 
         $identityData = [];
 
@@ -190,6 +205,57 @@ class UserCollector extends Collector
     private function capturePolicy(): CapturePolicy
     {
         return $this->capturePolicy ??= $this->module?->createCapturePolicy() ?? new CapturePolicy();
+    }
+
+    /**
+     * Redacts identity values through the shared key policy while preserving native date precision and timezone.
+     *
+     * Only public properties of other objects are inspected. Depth and entry limits bound cycles and large trees;
+     * sensitive branches are replaced without inspecting or formatting their values.
+     *
+     * @template TKey of array-key
+     *
+     * @param array<TKey, mixed> $values Identity attributes or nested public values.
+     * @param int $depth Current array nesting depth.
+     * @param int $nodes Entries inspected across the whole identity.
+     *
+     * @return array<TKey, mixed> Redacted, bounded values with dates normalized and live application objects untouched.
+     */
+    private function normalizeIdentityData(array $values, int $depth = 0, int &$nodes = 0): array
+    {
+        $normalized = [];
+
+        foreach ($values as $key => $value) {
+            if (++$nodes > self::MAX_IDENTITY_NODES) {
+                $normalized[$key] = SensitiveDataRedactor::TRUNCATED;
+
+                break;
+            }
+
+            if (is_string($key) && $this->capturePolicy()->isSensitiveKey($key)) {
+                $normalized[$key] = SensitiveDataRedactor::PLACEHOLDER;
+
+                continue;
+            }
+
+            if ($value instanceof DateTimeInterface) {
+                $normalized[$key] = DateTimeImmutable::createFromInterface($value)->format('Y-m-d\TH:i:s.uP e');
+
+                continue;
+            }
+
+            if (is_object($value)) {
+                $value = self::publicProperties($value);
+            }
+
+            $normalized[$key] = is_array($value)
+                ? ($depth >= self::MAX_IDENTITY_DEPTH
+                    ? SensitiveDataRedactor::TRUNCATED
+                    : $this->normalizeIdentityData($value, $depth + 1, $nodes))
+                : $value;
+        }
+
+        return $normalized;
     }
 
     /**
@@ -240,5 +306,21 @@ class UserCollector extends Collector
         }
 
         return $normalized;
+    }
+
+    /**
+     * Reads public properties independently of the collector's access to related classes.
+     *
+     * @param object $value Object whose private and protected state must remain hidden.
+     *
+     * @return array<array-key, mixed> Public properties without invoking serialization or debug hooks.
+     */
+    private static function publicProperties(object $value): array
+    {
+        return array_filter(
+            get_mangled_object_vars($value),
+            static fn(string|int $key): bool => !str_starts_with((string) $key, "\0"),
+            ARRAY_FILTER_USE_KEY,
+        );
     }
 }

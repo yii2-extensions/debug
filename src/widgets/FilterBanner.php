@@ -13,9 +13,7 @@ use yii\helpers\Url;
 use function array_fill_keys;
 use function array_keys;
 use function array_replace_recursive;
-use function array_unique;
 use function array_unshift;
-use function array_values;
 use function is_scalar;
 use function is_string;
 
@@ -69,19 +67,10 @@ class FilterBanner extends Widget
 
         $activeFilters = self::normalizeFilters($this->activeFilters ?? $rawFilters);
 
-        $clearAttributes = array_values(
-            array_unique(
-                [
-                    ...self::attributeNames($rawFilters),
-                    ...array_keys($activeFilters),
-                ],
-            ),
-        );
-
         return ActiveFilterBanner::render(
             $activeFilters,
             fn(array $attributes): string => $this->buildUrl($formName, $attributes),
-            $clearAttributes,
+            self::attributeNames($rawFilters),
         );
     }
 

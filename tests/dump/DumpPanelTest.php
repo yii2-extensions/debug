@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\dump;
 
 use PHPForge\Debug\Panel\Dump\DumpSnapshot;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
 use yii\debug\panels\DumpPanel;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -18,6 +18,21 @@ use yii\log\Logger;
 #[Group('dump')]
 final class DumpPanelTest extends TestCase
 {
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([DumpPanel::class, 'getModels', 'protected'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new \ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
+        );
+    }
+
     public function testGetDetailRendersEmptyStateWhenNoDumpsCaptured(): void
     {
         $panel = $this->makePanel(DumpPanel::class);

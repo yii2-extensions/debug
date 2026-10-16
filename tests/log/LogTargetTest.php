@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace yii\debug\tests\log;
 
 use PHPForge\Debug\Panel\Config\ConfigSnapshot;
+use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPForge\Debug\Storage\{DebugSnapshot, ExceptionSnapshot, PanelSnapshot, RequestSummary};
-use PHPUnit\Framework\Attributes\{Group, RequiresOperatingSystemFamily};
+use PHPUnit\Framework\Attributes\{Group, RequiresOperatingSystemFamily, TestWith};
 use RuntimeException;
 use Yii;
 use yii\base\{Exception, InvalidConfigException};
 use yii\debug\collectors\MailCollector;
 use yii\debug\{LogTarget, Module, Panel};
-use yii\debug\panels\{ConfigPanel, LogPanel};
+use yii\debug\panels\{ConfigPanel, JsonPanel, LogPanel};
 use yii\debug\storage\SnapshotStore;
 use yii\debug\tests\support\TestCase;
 use yii\log\Logger;
@@ -596,6 +597,21 @@ final class LogTargetTest extends TestCase
 
         $this->cleanupDataPath($module);
     }
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([LogTarget::class, 'collectSummary', 'protected'])]
+    #[TestWith([LogTarget::class, 'getExcessiveDbCallersCount', 'protected'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new \ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
+        );
+    }
 
     public function testLoadManifestReturnsEmptyArrayForCorruptJson(): void
     {
@@ -692,6 +708,38 @@ final class LogTargetTest extends TestCase
         $this->cleanupDataPath($module);
     }
 
+    #[TestWith([false])]
+    #[TestWith([true])]
+    public function testLoadTagKeepsExplicitlyDisabledPanelsAbsent(bool $failureOnly): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath(['panels' => ['log' => ['enabled' => false]]]);
+
+        try {
+            $this->writeDebugSnapshot(
+                $module,
+                'disabled-log',
+                $failureOnly \
+                    ? []
+                    : [
+                        'log' => LogSnapshot::capture([['Synthetic entry', Logger::LEVEL_INFO, 'application', 0.0, []]]),
+                    ],
+                failures: $failureOnly
+                    ? ['log' => new RuntimeException('Synthetic capture failure.')]
+                    : [],
+            );
+
+            (new LogTarget($module))->loadTagToPanels('disabled-log');
+
+            self::assertArrayNotHasKey(
+                'log',
+                $module->panels,
+                'Loading must honor explicitly disabled panels.',
+            );
+        } finally {
+            $this->cleanupDataPath($module);
+        }
+    }
+
     public function testLoadTagRejectsCorruptJson(): void
     {
         $module = $this->newModuleWithIsolatedDataPath();
@@ -724,6 +772,27 @@ final class LogTargetTest extends TestCase
         );
 
         $this->cleanupDataPath($module);
+    }
+
+    public function testLoadTagRetainsFallbackForUnconfiguredSupportedPayload(): void
+    {
+        $module = $this->newModuleWithIsolatedDataPath();
+
+        unset($module->panels['log']);
+
+        try {
+            $this->writeDebugSnapshot($module, 'fallback-log', ['log' => LogSnapshot::capture([])]);
+
+            (new LogTarget($module))->loadTagToPanels('fallback-log');
+
+            self::assertInstanceOf(
+                JsonPanel::class,
+                $module->panels['log'] ?? null,
+                'Available payloads must retain raw fallbacks.',
+            );
+        } finally {
+            $this->cleanupDataPath($module);
+        }
     }
 
     public function testLoadTagSkipsOrphanTimelinePayloadAndFailure(): void
@@ -1128,9 +1197,12 @@ final class LogTargetTest extends TestCase
         return [$message, Logger::LEVEL_INFO, 'application', 0.0, [], 0];
     }
 
-    private function newModuleWithIsolatedDataPath(): Module
+    /**
+     * @param array<string, mixed> $config Module configuration.
+     */
+    private function newModuleWithIsolatedDataPath(array $config = []): Module
     {
-        $module = new Module('debug');
+        $module = new Module('debug', null, $config);
 
         $module->dataPath = sys_get_temp_dir() . '/debug-logtarget-' . uniqid();
 
