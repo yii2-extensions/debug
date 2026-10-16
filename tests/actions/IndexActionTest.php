@@ -199,9 +199,10 @@ final class IndexActionTest extends ActionTestCase
             'Index must load the latest entry before building its shell.',
         );
     }
+
     /**
      * @param class-string $class Library class exposing the stable entry point.
-     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
      */
     #[TestWith([IndexAction::class, 'run', 'public'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void

@@ -308,6 +308,7 @@ final class EventCollectorTest extends TestCase
             'Global observation must not claim to capture stopped instance events.',
         );
     }
+
     #[TestWith([1])]
     #[TestWith([16])]
     public function testTraceFiltersInstrumentationWithinItsBoundedSourceWindow(int $depth): void

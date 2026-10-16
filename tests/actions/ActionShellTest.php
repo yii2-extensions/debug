@@ -313,6 +313,7 @@ final class ActionShellTest extends ActionTestCase
             "Null 'actionUrl' must render the disabled config chip.",
         );
     }
+
     public function testSubclassBareShellFactoryControlsTheDispatchedDocument(): void
     {
         $module = $this->bootDebugModule();

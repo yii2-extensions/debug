@@ -177,9 +177,10 @@ final class ModuleAccessTest extends ModuleTestCase
             'A later public allowlist update must take effect on the next access check.',
         );
     }
+
     /**
      * @param class-string $class Library class exposing the stable entry point.
-     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
      */
     #[TestWith([Module::class, 'checkAccess', 'protected'])]
     #[TestWith([Module::class, 'coreActionMap', 'protected'])]

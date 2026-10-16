@@ -344,9 +344,10 @@ final class CompareActionTest extends ActionTestCase
             'Delta must run from the older baseline to the newest target.',
         );
     }
+
     /**
      * @param class-string $class Library class exposing the stable entry point.
-     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
      */
     #[TestWith([CompareAction::class, 'run', 'public'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void

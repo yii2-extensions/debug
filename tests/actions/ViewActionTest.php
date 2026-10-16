@@ -198,9 +198,10 @@ final class ViewActionTest extends ActionTestCase
             'Exception view must render markup.',
         );
     }
+
     /**
      * @param class-string $class Library class exposing the stable entry point.
-     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
      */
     #[TestWith([Action::class, 'prepareShell', 'public'])]
     #[TestWith([Action::class, 'render', 'public'])]

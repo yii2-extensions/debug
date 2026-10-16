@@ -34,7 +34,7 @@ final class DbPanelTest extends TestCase
 {
     /**
      * @param class-string $class Library class exposing the stable entry point.
-     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
      */
     #[TestWith([DbPanel::class, 'getModels', 'protected'])]
     #[TestWith([DbPanel::class, 'hasExplain', 'protected'])]

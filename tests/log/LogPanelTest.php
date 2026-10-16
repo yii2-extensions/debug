@@ -66,9 +66,10 @@ final class LogPanelTest extends TestCase
             'The elapsed time must compare adjacent rows.',
         );
     }
+
     /**
      * @param class-string $class Library class exposing the stable entry point.
-     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
      */
     #[TestWith([LogPanel::class, 'getModels', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void

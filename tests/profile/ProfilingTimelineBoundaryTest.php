@@ -115,6 +115,7 @@ final class ProfilingTimelineBoundaryTest extends TestCase
             'Unavailable geometry must not render misleading positioned spans.',
         );
     }
+
     public function testPublicProcessingTimeReflectsHydratedRequestSeconds(): void
     {
         $panel = $this->makePanel(ProfilingPanel::class);
