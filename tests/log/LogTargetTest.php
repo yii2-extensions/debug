@@ -597,9 +597,10 @@ final class LogTargetTest extends TestCase
 
         $this->cleanupDataPath($module);
     }
+
     /**
      * @param class-string $class Library class exposing the stable entry point.
-     * @param 'public'|'protected' $visibility Access required by consumers or subclasses.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
      */
     #[TestWith([LogTarget::class, 'collectSummary', 'protected'])]
     #[TestWith([LogTarget::class, 'getExcessiveDbCallersCount', 'protected'])]
