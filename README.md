@@ -51,7 +51,7 @@
 
 ### Installation
 
-Requires PHP 8.3 or newer and Yii2 22.x. The 0.2 line does not support Yii2 2.0.x.
+The 0.2 line does not support Yii2 2.0.x.
 
 ```bash
 composer require yii2-extensions/debug:^0.2@dev --dev

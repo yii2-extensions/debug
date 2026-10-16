@@ -123,7 +123,7 @@ class UserSearch extends Model implements UserSearchInterface
      * Yields an {@see ActiveDataProvider} when the identity is an {@see ActiveRecord}; falls back to an empty
      * {@see ArrayDataProvider} otherwise (so non-AR identities surface an empty user-switch grid instead of failing).
      *
-     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see \yii\base\Model::load()}.
      *
      * @throws InvalidConfigException when the table schema cannot be resolved during AR filtering.
      *
@@ -143,7 +143,7 @@ class UserSearch extends Model implements UserSearchInterface
      *
      * String columns are matched with `LIKE`; all other columns use exact matching.
      *
-     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see Model::load()}.
+     * @param array<int|string, mixed> $params Raw request parameters consumed by {@see \yii\base\Model::load()}.
      * @param ActiveRecord $model Identity model whose table schema drives the per-column filters.
      *
      * @throws InvalidConfigException when the table schema cannot be resolved.

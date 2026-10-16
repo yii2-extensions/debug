@@ -13,6 +13,8 @@ use yii\debug\Panel;
 final readonly class PanelCatalog
 {
     /**
+     * Pairs the registered panels with their effective registry.
+     *
      * @param array<string, Panel> $panels Enabled panels indexed by ID in display order.
      * @param PanelRegistry $registry Effective catalog carrying the display order and the IDs disabled by
      * configuration.

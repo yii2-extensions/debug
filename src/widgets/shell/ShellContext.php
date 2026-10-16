@@ -27,6 +27,9 @@ final readonly class ShellContext
      */
     public const string MODE_VIEW = 'view';
 
+    /**
+     * Collects the prepared content and presentation state for a debugger page.
+     */
     public function __construct(
         /**
          * Shell mode ('view' / 'index' / 'bare').

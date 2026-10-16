@@ -15,6 +15,8 @@ use yii\debug\exception\Message;
 class LogTargetFactory
 {
     /**
+     * Binds log-target resolution to the debug module.
+     *
      * @param Module $module Debug module read for the log-target configuration at call time.
      */
     public function __construct(protected readonly Module $module) {}

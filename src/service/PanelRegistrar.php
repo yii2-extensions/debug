@@ -32,6 +32,8 @@ use function is_subclass_of;
 class PanelRegistrar
 {
     /**
+     * Binds panel registration to the debug module.
+     *
      * @param Module $module Debug module owning the panels and read for configuration at call time.
      */
     public function __construct(protected readonly Module $module) {}

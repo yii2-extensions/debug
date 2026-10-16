@@ -22,6 +22,8 @@ use function array_key_first;
 class ShellContextFactory
 {
     /**
+     * Binds debugger page-shell creation to the debug module.
+     *
      * @param Module $module Debug module read for the page title and the Configuration panel at call time.
      */
     public function __construct(protected readonly Module $module) {}

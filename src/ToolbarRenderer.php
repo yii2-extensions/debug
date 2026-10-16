@@ -17,6 +17,8 @@ use function trim;
 final readonly class ToolbarRenderer
 {
     /**
+     * Binds toolbar rendering to the Yii view, asset publisher and template path.
+     *
      * @param View $view Yii2 PHP view renderer.
      * @param AssetManager $assetManager Yii2 asset publisher.
      * @param string $viewPath Shared toolbar template path or alias.
