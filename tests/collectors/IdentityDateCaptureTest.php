@@ -113,6 +113,38 @@ final class IdentityDateCaptureTest extends TestCase
         );
     }
 
+    #[TestWith([9996, 9996, 0])]
+    #[TestWith([9997, 9997, 0])]
+    #[TestWith([9998, 9997, 1])]
+    public function testPersistedIdentityKeepsEveryEntryWithinTheBudget(
+        int $entryCount,
+        int $retainedCount,
+        int $truncationCount,
+    ): void {
+        $identity = new StructuredIdentity();
+
+        // The id, password and profile attributes consume three of the 10,000 inspected entries.
+        $identity->profile = array_fill(0, $entryCount, 'Synthetic budget entry');
+
+        [$rendered] = $this->persist($identity);
+
+        self::assertSame(
+            $retainedCount,
+            substr_count($rendered, 'Synthetic budget entry'),
+            'Persisted identity values must fill the entry budget exactly.',
+        );
+        self::assertSame(
+            $truncationCount,
+            substr_count($rendered, '[truncated]'),
+            'Only entries beyond the budget must produce a truncation marker.',
+        );
+        self::assertCount(
+            $entryCount,
+            $identity->profile,
+            'Capture must preserve the live collection at every budget boundary.',
+        );
+    }
+
     /**
      * @param class-string<DateTimeInterface> $class Native date implementation to capture.
      */
