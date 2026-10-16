@@ -124,7 +124,13 @@ final class IdentityDateCaptureTest extends TestCase
         $identity = new StructuredIdentity();
 
         // The id, password and profile attributes consume three of the 10,000 inspected entries.
-        $identity->profile = array_fill(0, $entryCount, 'Synthetic budget entry');
+        $profile = [];
+
+        for ($entry = 0; $entry < $entryCount; $entry++) {
+            $profile['entry_' . $entry] = 'Synthetic budget entry';
+        }
+
+        $identity->profile = $profile;
 
         [$rendered] = $this->persist($identity);
 
