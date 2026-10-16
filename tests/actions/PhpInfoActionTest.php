@@ -50,7 +50,8 @@ final class PhpInfoActionTest extends ActionTestCase
     {
         $module = $this->bootDebugModule();
 
-        $this->writeDebugSnapshot($module, 'synthetic-newest', []);
+        $this->writeDebugSnapshot($module, 'synthetic-older', [], ['time' => 1_700_000_000.0]);
+        $this->writeDebugSnapshot($module, 'synthetic-newest', [], ['time' => 1_700_000_010.0]);
 
         $action = new PhpInfoAction('php-info');
 
