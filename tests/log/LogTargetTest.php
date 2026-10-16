@@ -718,7 +718,7 @@ final class LogTargetTest extends TestCase
             $this->writeDebugSnapshot(
                 $module,
                 'disabled-log',
-                $failureOnly \
+                $failureOnly
                     ? []
                     : [
                         'log' => LogSnapshot::capture([['Synthetic entry', Logger::LEVEL_INFO, 'application', 0.0, []]]),
