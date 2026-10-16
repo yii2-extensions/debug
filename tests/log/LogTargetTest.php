@@ -9,6 +9,7 @@ use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\Timeline\TimelineSnapshot;
 use PHPForge\Debug\Storage\{DebugSnapshot, ExceptionSnapshot, PanelSnapshot, RequestSummary};
 use PHPUnit\Framework\Attributes\{Group, RequiresOperatingSystemFamily, TestWith};
+use ReflectionMethod;
 use RuntimeException;
 use Yii;
 use yii\base\{Exception, InvalidConfigException};
@@ -606,7 +607,7 @@ final class LogTargetTest extends TestCase
     #[TestWith([LogTarget::class, 'getExcessiveDbCallersCount', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

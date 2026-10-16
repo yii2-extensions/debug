@@ -7,6 +7,7 @@ namespace yii\debug\tests\db;
 use PDO;
 use PDOException;
 use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\tests\support\TestCase;
 
@@ -109,7 +110,7 @@ final class DebugPdoStatementTest extends TestCase
     #[TestWith([DebugPdoStatement::class, '__construct', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

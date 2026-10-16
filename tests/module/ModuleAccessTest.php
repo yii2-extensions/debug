@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\module;
 
 use PHPUnit\Framework\Attributes\{DataProviderExternal, Group, TestWith};
+use ReflectionMethod;
 use Yii;
 use yii\base\{Action, Controller};
 use yii\debug\exception\Message;
@@ -189,7 +190,7 @@ final class ModuleAccessTest extends ModuleTestCase
     #[TestWith([Module::class, 'initPanels', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

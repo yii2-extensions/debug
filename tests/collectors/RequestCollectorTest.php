@@ -6,6 +6,7 @@ namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use Yii;
 use yii\base\{Action, InlineAction};
 use yii\debug\collectors\RequestCollector;
@@ -528,7 +529,7 @@ final class RequestCollectorTest extends TestCase
     #[TestWith([RequestCollector::class, 'normalizeResponseHeaders', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

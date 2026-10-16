@@ -7,6 +7,7 @@ namespace yii\debug\tests\panels;
 use PHPForge\Debug\{Panel as PortablePanel, PanelView};
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use yii\base\InvalidConfigException;
 use yii\debug\panels\ProviderPanel;
 
@@ -49,7 +50,7 @@ final class ProviderPanelTest extends TestCase
             'External panels must use the shared frontend.'
         );
 
-        $method = new \ReflectionMethod($panel, 'getToolbarItems');
+        $method = new ReflectionMethod($panel, 'getToolbarItems');
 
         self::assertSame(
             [['title' => 'Hits', 'value' => '1'], ['title' => 'Misses', 'value' => '2']],

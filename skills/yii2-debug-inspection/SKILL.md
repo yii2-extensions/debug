@@ -32,9 +32,10 @@ their revision:
 - Application recipes: <https://yii2-framework.github.io/docs/extensions/debug/examples/index.md>.
 - Existing integrations: <https://yii2-framework.github.io/docs/extensions/debug/migration/index.md>.
 
-If a page does not match, use `docs/` at the resolved reference in <https://github.com/yii2-extensions/debug>.
-If unavailable or offline, inspect local source/PHPDoc and the changelog, and report the gap. For an exact API,
-inspect PHPDoc or the matching type in <https://yii2-framework.github.io/docs/reference/debug.json>. Read
+If a page does not match, use `docs/` at the resolved reference in
+<https://github.com/yii2-extensions/debug>. If unavailable or offline, inspect local
+source/PHPDoc and the changelog, and report the gap. For an exact API, inspect the
+relevant type and its PHPDoc in the resolved package files. Read
 <https://yii2-framework.github.io/docs/llms.txt> only when the needed page is unknown.
 
 ## Configure the existing application

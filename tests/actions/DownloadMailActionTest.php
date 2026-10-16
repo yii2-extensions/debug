@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\actions;
 
 use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use Yii;
 use yii\debug\actions\DownloadMailAction;
 use yii\debug\actions\ViewAction;
@@ -66,7 +67,7 @@ final class DownloadMailActionTest extends ActionTestCase
     #[TestWith([DownloadMailAction::class, 'run', 'public'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

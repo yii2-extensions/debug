@@ -6,6 +6,7 @@ namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
 use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use Yii;
 use yii\debug\collectors\UserCollector;
 use yii\debug\{LogTarget, Module};
@@ -356,7 +357,7 @@ final class UserCollectorTest extends TestCase
     #[TestWith([UserCollector::class, 'identityData', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

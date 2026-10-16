@@ -7,6 +7,7 @@ namespace yii\debug\tests\log;
 use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Storage\HydrationException;
 use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use Yii;
 use yii\debug\panels\LogPanel;
 use yii\debug\tests\support\TestCase;
@@ -74,7 +75,7 @@ final class LogPanelTest extends TestCase
     #[TestWith([LogPanel::class, 'getModels', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

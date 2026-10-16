@@ -11,6 +11,7 @@ use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\RequestSummary;
 use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use RuntimeException;
 use Yii;
 use yii\debug\actions\{Action, ViewAction};
@@ -208,7 +209,7 @@ final class ViewActionTest extends ActionTestCase
     #[TestWith([ViewAction::class, 'run', 'public'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

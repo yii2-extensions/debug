@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use Yii;
 use yii\debug\collectors\ConfigCollector;
 use yii\debug\tests\support\{Captured, TestCase};
@@ -136,7 +137,7 @@ final class ConfigCollectorTest extends TestCase
     #[TestWith([ConfigCollector::class, 'getApplication', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),

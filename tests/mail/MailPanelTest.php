@@ -7,6 +7,7 @@ namespace yii\debug\tests\mail;
 use DateTimeImmutable;
 use PHPForge\Debug\Panel\Mail\MailSnapshot;
 use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use RuntimeException;
 use yii\debug\LogTarget;
 use yii\debug\panels\MailPanel;
@@ -35,7 +36,7 @@ final class MailPanelTest extends TestCase
     #[TestWith([MailPanel::class, 'getMessages', 'public'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
@@ -429,6 +430,49 @@ final class MailPanelTest extends TestCase
         );
     }
 
+    #[TestWith([false])]
+    #[TestWith([true])]
+    public function testGetToolbarDataOmitsPreviousRequestsWithoutMail(bool $currentTagListed): void
+    {
+        $panel = $this->makePanel(MailPanel::class);
+        $module = $panel->module ?? self::fail('Module must be wired.');
+        $dataPath = sys_get_temp_dir() . '/debug-mail-zero-' . uniqid();
+
+        mkdir($dataPath, 0o777, true);
+
+        $module->dataPath = $dataPath;
+
+        try {
+            $this->writeDebugSnapshot(
+                $module,
+                'previous',
+                [],
+                ['method' => 'GET', 'url' => '/previous-without-mail', 'mailCount' => 0],
+            );
+
+            if ($currentTagListed) {
+                $this->writeDebugSnapshot(
+                    $module,
+                    'current',
+                    [],
+                    ['method' => 'GET', 'url' => '/current-without-mail', 'mailCount' => 0],
+                );
+            }
+
+            $panel->tag = 'current';
+
+            $this->hydratePanel($panel, MailSnapshot::capture([]));
+
+            self::assertSame(
+                [],
+                $panel->getToolbarData(),
+                'A previous request without mail must not create a cross-request toolbar chip.',
+            );
+        } finally {
+            $this->cleanupDataPath($dataPath);
+        }
+    }
+
     public function testGetToolbarDataPointsTheLabelAtThePreviousRequestAfterPostRedirectGet(): void
     {
         $panel = $this->makePanel(MailPanel::class);
@@ -709,20 +753,30 @@ final class MailPanelTest extends TestCase
         $panel = $this->makePanel(
             MailPanel::class,
         );
+        $module = $panel->module ?? self::fail('Module must be wired.');
+        $dataPath = sys_get_temp_dir() . '/debug-mail-no-history-' . uniqid();
 
-        $this->hydratePanel(
-            $panel,
-            MailSnapshot::capture([]),
-        );
+        mkdir($dataPath, 0o777, true);
 
-        self::assertSame(
-            [],
-            $this->invoke(
+        $module->dataPath = $dataPath;
+
+        try {
+            $this->hydratePanel(
                 $panel,
-                'getToolbarItems',
-            ),
-            'No data and no previous request means no chip.',
-        );
+                MailSnapshot::capture([]),
+            );
+
+            self::assertSame(
+                [],
+                $this->invoke(
+                    $panel,
+                    'getToolbarItems',
+                ),
+                'No data and no previous request means no chip.',
+            );
+        } finally {
+            $this->cleanupDataPath($dataPath);
+        }
     }
 
     private function cleanupDataPath(string $dataPath): void

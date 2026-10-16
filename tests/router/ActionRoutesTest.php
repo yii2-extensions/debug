@@ -6,6 +6,7 @@ namespace yii\debug\tests\router;
 
 use PHPUnit\Framework\Attributes\{Group, TestWith};
 use ReflectionClass;
+use ReflectionMethod;
 use stdClass;
 use Xepozz\InternalMocker\MockerState;
 use yii\debug\models\router\ActionRoutes;
@@ -34,7 +35,7 @@ final class ActionRoutesTest extends TestCase
     #[TestWith([ActionRoutes::class, 'validateControllerClass', 'protected'])]
     public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
     {
-        $entry = new \ReflectionMethod($class, $method);
+        $entry = new ReflectionMethod($class, $method);
 
         self::assertTrue(
             $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
