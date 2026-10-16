@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\router;
 
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group, TestWith};
+use ReflectionMethod;
 use Xepozz\InternalMocker\MockerState;
 use Yii;
 use yii\debug\models\router\RouterRules;
@@ -140,6 +141,23 @@ final class RouterRulesTest extends TestCase
         self::assertNull(
             $router->suffix,
             "'suffix' must remain null when only 'strictParsing' is configured.",
+        );
+    }
+
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([RouterRules::class, 'scanGroupRule', 'protected'])]
+    #[TestWith([RouterRules::class, 'scanRestRule', 'protected'])]
+    #[TestWith([RouterRules::class, 'scanRule', 'protected'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
         );
     }
 

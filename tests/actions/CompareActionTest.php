@@ -8,7 +8,8 @@ use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\PanelSnapshot;
 use PHPForge\Debug\View\ViewMessage;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use RuntimeException;
 use Yii;
 use yii\debug\actions\CompareAction;
@@ -342,6 +343,21 @@ final class CompareActionTest extends ActionTestCase
             '+4 (',
             $html,
             'Delta must run from the older baseline to the newest target.',
+        );
+    }
+
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([CompareAction::class, 'run', 'public'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
         );
     }
 

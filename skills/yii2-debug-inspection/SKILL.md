@@ -14,16 +14,28 @@ dependencies or enable the module.
 
 ## Consult the relevant source
 
-Prefer supplied local Markdown and the package's `docs/` at the requested revision. Otherwise consult the
-published Markdown, after checking it is available:
+In a root package checkout, use `composer show --self --format=json` for metadata. For installed dependencies,
+resolve the real path and read the configured vendor directory's `composer/installed.php` (`versions[<package>]`):
+`install_path`, `pretty_version` and Composer's selected `reference`. Do not blindly prefer `source.reference`
+over `dist.reference`. For any live package checkout, including a symlinked path install, inspect its current
+`HEAD` and files even when clean; report metadata mismatches and let the actual files govern. Uncommitted changes
+have no matching SHA. Otherwise use the selected reference or a verified matching tag only after establishing
+its source provenance. Compare `composer.lock`; it may differ from the inspected installation. Identify a
+lock-only state when no package files are installed, and resolve dependencies separately. Use hosted pages,
+catalogs or snapshots only when their source revision matches.
+
+Prefer matching supplied Markdown and package `docs/`. Otherwise consult these published pages after checking
+their revision:
 
 - Setup and assets: <https://yii2-framework.github.io/docs/extensions/debug/installation/index.md>.
 - Policies, providers and services: <https://yii2-framework.github.io/docs/extensions/debug/configuration/index.md>.
 - Application recipes: <https://yii2-framework.github.io/docs/extensions/debug/examples/index.md>.
 - Existing integrations: <https://yii2-framework.github.io/docs/extensions/debug/migration/index.md>.
 
-If a page is not published yet, use the package's GitHub `docs/` at that revision. For an exact API, inspect its
-PHPDoc or the relevant type in <https://yii2-framework.github.io/docs/reference/debug.json>. Read
+If a page does not match, use `docs/` at the resolved reference in
+<https://github.com/yii2-extensions/debug>. If unavailable or offline, inspect local
+source/PHPDoc and the changelog, and report the gap. For an exact API, inspect the
+relevant type and its PHPDoc in the resolved package files. Read
 <https://yii2-framework.github.io/docs/llms.txt> only when the needed page is unknown.
 
 ## Configure the existing application

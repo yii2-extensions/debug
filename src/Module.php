@@ -16,6 +16,7 @@ use PHPForge\Debug\View\ViewMessage;
 use Throwable;
 use Yii;
 use yii\base\{Action, ActionEvent, Application, BootstrapInterface, Event, InvalidConfigException};
+use yii\debug\actions\IdentityAction;
 use yii\debug\exception\Message;
 use yii\debug\service\{
     AccessGuard,
@@ -108,6 +109,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * Collectors derive their own IDs; register them as a list or under a key that matches {@see
      * CollectorInterface::id()}. A `Closure` receives the module {@see CapturePolicy}, so a collector capturing user
      * data redacts it with the rules the Request panel applies.
+     * After initialization, this property holds a list of resolved instances in registration order.
      *
      * @var array<array-key, array<string, mixed>|(Closure(CapturePolicy): CollectorInterface)|CollectorInterface|string>
      */
@@ -248,7 +250,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
      * @param Action $action Action about to run.
      *
      * @throws InvalidConfigException when the log component cannot be resolved.
-     * @throws ForbiddenHttpException when the caller fails the access check on a non-toolbar route.
+     * @throws ForbiddenHttpException when an identity action has no user-switch authorization behavior or the caller
+     * fails the access check on a non-toolbar route.
      * @throws Throwable when an active collector cannot shut down cleanly.
      *
      * @return bool `true` when the action may run; `false` to stop the dispatch.
@@ -269,6 +272,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
             }
 
             $this->getCollectorCoordinator()->shutdown();
+        }
+
+        if ($action instanceof IdentityAction && $this->getBehavior('access_debug') === null) {
+            throw new ForbiddenHttpException(
+                Message::ACCESS_DENIED->getMessage(),
+            );
         }
 
         if (!parent::beforeAction($action)) {

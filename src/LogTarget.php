@@ -326,12 +326,16 @@ class LogTarget extends Target
 
     /**
      * Registers a raw JSON panel for a captured payload whose panel is no longer configured, so the data stays
-     * readable instead of disappearing from the UI.
+     * readable instead of disappearing from the UI. Explicitly disabled panels stay hidden.
      *
      * @param string $id Panel id found in the capture.
      */
     private function registerFallbackPanel(string $id): void
     {
+        if ($this->module->getPanelRegistry()->isDisabled($id)) {
+            return;
+        }
+
         if (isset($this->module->panels[$id])) {
             return;
         }

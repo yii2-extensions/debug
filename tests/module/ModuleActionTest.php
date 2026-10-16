@@ -9,7 +9,7 @@ use Yii;
 use yii\debug\actions\{PhpInfoAction, ViewAction};
 use yii\debug\Module;
 use yii\debug\tests\support\ModuleTestCase;
-use yii\debug\tests\support\stub\ConfigurableAction;
+use yii\debug\tests\support\stub\{ConfigurableAction, CustomPanel};
 use yii\web\AssetManager;
 
 /**
@@ -157,6 +157,90 @@ final class ModuleActionTest extends ModuleTestCase
             'view',
             $action->id,
             'Resolved ID must drop the surrounding slashes.'
+        );
+    }
+
+    public function testRootDispatchPrefersItsConfiguredMapOverAConventionalActionClass(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+        $module = new Module(
+            'debug',
+            Yii::$app,
+            [
+                'actionNamespace' => 'yii\\debug\\actions',
+                'actionMap' => [
+                    'index' => [
+                        'class' => ConfigurableAction::class,
+                        'label' => 'mapped-root',
+                    ],
+                ],
+            ],
+        );
+
+        $module->bootstrap(Yii::$app);
+        $module->getLogTarget()->enabled = false;
+
+        self::assertInstanceOf(
+            ConfigurableAction::class,
+            $this->invoke($module, 'createStandaloneAction', ['']),
+            'Root resolution must prefer the configured action over the conventional IndexAction.',
+        );
+        self::assertSame(
+            'mapped-root',
+            $module->runAction(''),
+            'Root dispatch must honor the configured action over namespace conventions.'
+        );
+    }
+
+    public function testSubclassHooksRunDuringInitializationAndAuthorizedDispatch(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+        $module = new class ('debug', Yii::$app, ['actionMap' => ['index' => ['class' => ConfigurableAction::class, 'label' => 'hook-dispatch']]]) extends Module {
+            public int $panelServiceInitializations = 0;
+            public int $globalSettingsResets = 0;
+
+            protected function corePanels(): array
+            {
+                return [...parent::corePanels(), 'custom' => CustomPanel::class];
+            }
+
+            protected function initPanelServices(): void
+            {
+                parent::initPanelServices();
+                ++$this->panelServiceInitializations;
+            }
+
+            protected function resetGlobalSettings(): void
+            {
+                parent::resetGlobalSettings();
+                ++$this->globalSettingsResets;
+            }
+        };
+
+        $module->bootstrap(Yii::$app);
+        $module->getLogTarget()->enabled = false;
+
+        self::assertSame(
+            1,
+            $module->panelServiceInitializations,
+            'Module initialization must invoke the subclass panel-service hook.',
+        );
+        self::assertInstanceOf(
+            CustomPanel::class,
+            $module->panels['custom'] ?? null,
+            'Subclass panel defaults must be registered during module initialization.',
+        );
+        self::assertSame(
+            'hook-dispatch',
+            $module->runAction(''),
+            'The authorized action must run through the module lifecycle.',
+        );
+        self::assertGreaterThan(
+            0,
+            $module->globalSettingsResets,
+            'Authorized dispatch must invoke the subclass reset hook.',
         );
     }
 }

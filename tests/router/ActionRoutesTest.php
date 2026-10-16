@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\router;
 
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
 use ReflectionClass;
+use ReflectionMethod;
 use stdClass;
 use Xepozz\InternalMocker\MockerState;
 use yii\debug\models\router\ActionRoutes;
@@ -23,6 +24,25 @@ use yii\web\GroupUrlRule;
 #[Group('router')]
 final class ActionRoutesTest extends TestCase
 {
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([ActionRoutes::class, 'getActions', 'protected'])]
+    #[TestWith([ActionRoutes::class, 'getAppRoutes', 'protected'])]
+    #[TestWith([ActionRoutes::class, 'getMatchedCreationRule', 'protected'])]
+    #[TestWith([ActionRoutes::class, 'getModuleControllers', 'protected'])]
+    #[TestWith([ActionRoutes::class, 'validateControllerClass', 'protected'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
+        );
+    }
+
     public function testGetActionsReturnsOnlyPublicInstanceActionsAndExternalSentinel(): void
     {
         $this->mockWebApplication();

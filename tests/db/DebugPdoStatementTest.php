@@ -6,7 +6,8 @@ namespace yii\debug\tests\db;
 
 use PDO;
 use PDOException;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use yii\debug\db\DebugPdoStatement;
 use yii\debug\tests\support\TestCase;
 
@@ -99,6 +100,21 @@ final class DebugPdoStatementTest extends TestCase
             [null, 1],
             $rowCounts,
             'A failed statement must hold its slot so later counts stay aligned.',
+        );
+    }
+
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([DebugPdoStatement::class, '__construct', 'protected'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
         );
     }
 

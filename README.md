@@ -53,12 +53,15 @@
 
 The 0.2 line does not support Yii2 2.0.x.
 
+If the Yii 22 mailer is not already a root requirement, add both packages with scoped development flags:
+
 ```bash
-composer require yii2-extensions/debug:^0.2@dev --dev
+composer require yii2-extensions/debug:^0.2@dev yiisoft/yii2-symfonymailer:^22.0@dev --dev
 ```
 
-The explicit development flag is needed until a stable 0.2 release is available. See [installation](docs/installation.md)
-for entry-script setup, asset publication and verification.
+For an existing root mailer requirement, keep its dependency section and ensure its constraint includes `@dev`;
+require only `yii2-extensions/debug:^0.2@dev` with `--dev`. See [installation](docs/installation.md) for entry-script
+setup, asset publication and verification.
 
 When upgrading from 0.1, review the [upgrade checklist](UPGRADE.md) and [migration guide](docs/migration.md). Keep the debugger and
 `php-forge/debug-core` up to date together in the application's lock file.
@@ -134,20 +137,35 @@ is not supported.
 
 ## Documentation
 
-- [Installation](docs/installation.md)
-- [Configuration reference](docs/configuration.md)
-- [Usage examples](docs/examples.md)
-- [Migration guide](docs/migration.md)
-- [Upgrade checklist](UPGRADE.md)
-- [Panel screenshots](docs/screenshots.md)
-- [Testing guide](docs/testing.md)
+Practical guides and complete examples for configuring the debugger and
+inspecting requests.
+
+- 📚 [Installation Guide](docs/installation.md)
+- ⚙️ [Configuration Guide](docs/configuration.md)
+- 💡 [Usage Examples](docs/examples.md)
+- 🔄 [Migration Guide](docs/migration.md) and [Upgrade Checklist](UPGRADE.md)
+- 🧪 [Testing Guide](docs/testing.md)
+- [Panel Screenshots](docs/screenshots.md)
 - [Changelog](CHANGELOG.md)
 
 ## AI assistance
 
-Use the package-owned [Debug inspection skill](skills/yii2-debug-inspection/SKILL.md) to configure and verify the
-debugger in an application. See [agent setup](docs/agents.md) for installation, client activation and practical
-checks. Installing the Composer package alone does not activate a skill from `vendor/`.
+AI agents: use the repository guides and source for the installed revision.
+For a [documentation deployment](https://yii2-framework.github.io/docs/) with
+`llms.txt`, read that index first. When Markdown export is enabled, append
+`index.md` to a page URL. For Yii conventions, use the `yii2-framework` skill
+from a local framework documentation checkout.
+
+- 🤖 [yii2-debug-inspection skill](docs/agents.md): installation for Claude
+  Code, Codex, and OpenCode.
+
+Use the package-owned [skill source](skills/yii2-debug-inspection/SKILL.md) to
+configure and verify the debugger.
+Installing the Composer package alone does not activate a skill from
+`vendor/`.
+
+If the hosted sources are unavailable, use the repository guides and locally
+available skills.
 
 ## Package information
 

@@ -95,6 +95,22 @@ final class SidebarDataNormalizerTest extends TestCase
         );
     }
 
+    public function testEmptyCaptureTagDoesNotAddAHistoryCursor(): void
+    {
+        $panel = $this->makePanel(RequestPanel::class);
+        $summary = $this->requestSummary('tag-1');
+
+        $view = SidebarDataNormalizer::fromView(['request' => $panel], ['tag-1' => $summary], $panel, '', $summary);
+
+        $history = $view->navItems[0] ?? self::fail('The History link must be present.');
+
+        self::assertSame(
+            '/index.php?r=debug%2Findex',
+            $history->url,
+            'An empty capture tag must not add an empty history cursor.',
+        );
+    }
+
     public function testFromIndexBuildsNavItemsForNewestTagWhenManifestNonEmpty(): void
     {
         $this->mockWebApplication();

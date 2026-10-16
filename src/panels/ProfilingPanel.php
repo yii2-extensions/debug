@@ -17,9 +17,6 @@ use yii\debug\models\search\ProfileSearch;
 use yii\debug\Panel;
 use yii\debug\view\ViewMessage as AdapterMessage;
 
-use function array_values;
-use function str_replace;
-
 /**
  * Renders the profiling spans captured by the Profiling collector.
  *
@@ -201,7 +198,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     {
         $rows = [];
 
-        foreach (array_values($models) as $model) {
+        foreach ($models as $model) {
             if ($model instanceof ProfileRow) {
                 $rows[] = $model;
             }
@@ -278,15 +275,11 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
             $snapshot->memory,
         );
 
-        return str_replace(
-            '<wbr>',
-            '',
-            TimelineRenderer::renderChart(
-                $spans,
-                TimelineGeometry::rulers($duration, 4),
-                $memorySvg,
-                $snapshot->memory,
-            ),
+        return TimelineRenderer::renderChart(
+            $spans,
+            TimelineGeometry::rulers($duration, 4),
+            $memorySvg,
+            $snapshot->memory,
         );
     }
 
@@ -312,7 +305,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
     private function timelineMemorySamples(): array
     {
         $samples = $this->getMemorySamples();
-        $logPanel = $this->module?->panels['log'] ?? null;
+        $logPanel = $this->module->panels['log'] ?? null;
 
         if ($logPanel instanceof ProvidesMemorySamples) {
             $samples = [

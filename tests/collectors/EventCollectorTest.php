@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace yii\debug\tests\collectors;
 
 use PHPForge\Debug\Panel\Event\EventRow;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
 use stdClass;
-use yii\base\{Component, Event};
+use Xepozz\InternalMocker\MockerState;
+use Yii;
+use yii\base\{Action, ActionEvent, Component, Controller, Event, ViewEvent};
 use yii\debug\collectors\EventCollector;
-use yii\debug\tests\support\Captured;
-use yii\debug\tests\support\TestCase;
+use yii\debug\tests\support\{Captured, TestCase};
 
 /**
  * Unit tests for {@see EventCollector} covering the wildcard event capture, the listener detachment on shutdown, and
@@ -106,7 +107,7 @@ final class EventCollectorTest extends TestCase
 
         $collector->captureContext = true;
 
-        $event = new \yii\base\ViewEvent();
+        $event = new ViewEvent();
 
         (new Component())->trigger('beforeRender', $event);
 
@@ -115,78 +116,6 @@ final class EventCollectorTest extends TestCase
             ($this->captureEntries($collector)[0]
                 ?? self::fail('Expected one captured row.'))->inspection()?->getContextStatus(),
             'Invalid view metadata must be reported as a diagnostic failure.',
-        );
-    }
-
-    public function testFailedTracePreservesContextAndEventPropagation(): void
-    {
-        $collector = $this->makeCollector();
-
-        $collector->captureContext = true;
-        $collector->traceLimit = 8;
-
-        $component = new Component();
-        $event = new \yii\base\ViewEvent(['viewFile' => '/views/site/index.php']);
-        $executed = false;
-
-        Event::on(
-            Component::class,
-            'beforeRender',
-            static function () use (&$executed): void {
-                $executed = true;
-            },
-        );
-
-        $aliases = \Yii::$aliases;
-
-        try {
-            \Yii::setAlias('@yii', null);
-
-            $component->trigger('beforeRender', $event);
-        } finally {
-            \Yii::$aliases = $aliases;
-        }
-
-        $entries = $this->captureEntries($collector);
-
-        self::assertCount(
-            1,
-            $entries,
-            'A trace failure must not discard the observed event.',
-        );
-
-        $inspection = $entries[0]->inspection();
-
-        self::assertNotNull(
-            $inspection,
-            'A trace failure must retain the event inspection.',
-        );
-        self::assertSame(
-            'failed',
-            $inspection->getTraceStatus(),
-            'An unresolved framework path must be reported as a trace capture failure.',
-        );
-        self::assertSame(
-            [],
-            $inspection->getTrace(),
-            'Failed trace capture must not expose partial trace data.',
-        );
-        self::assertSame(
-            'captured',
-            $inspection->getContextStatus(),
-            'A trace failure must not change the successful context status.',
-        );
-        self::assertSame(
-            [
-                'View file' => '/views/site/index.php',
-                'Continue allowed (observed)' => 'Yes',
-            ],
-            $inspection->getContext(),
-            'A trace failure must preserve the independently captured context.',
-        );
-        self::assertTrue(
-            $executed,
-            'A trace failure must not prevent later event handlers from running.',
         );
     }
 
@@ -206,7 +135,7 @@ final class EventCollectorTest extends TestCase
         $collector->captureContext = true;
         $collector->traceLimit = 8;
 
-        $event = new \yii\base\ViewEvent(
+        $event = new ViewEvent(
             [
                 'viewFile' => '/views/site/index.php',
                 'params' => ['password' => 'SENSITIVE_EVENT_VALUE'],
@@ -265,9 +194,9 @@ final class EventCollectorTest extends TestCase
 
         $collector->captureContext = true;
 
-        $controller = new \yii\base\Controller('site', \Yii::$app);
-        $action = new \yii\base\Action('index', $controller);
-        $event = new \yii\base\ActionEvent($action);
+        $controller = new Controller('site', Yii::$app);
+        $action = new Action('index', $controller);
+        $event = new ActionEvent($action);
 
         $controller->trigger('beforeAction', $event);
 
@@ -284,6 +213,54 @@ final class EventCollectorTest extends TestCase
             $context,
             'Action context must identify the actual action without dumping its result.',
         );
+    }
+
+    #[TestWith([false, 0])]
+    #[TestWith([true, 0])]
+    #[TestWith([false, 3])]
+    public function testOptionalDiagnosticsReportDisabledAndUnsupportedStates(bool $context, int $depth): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->captureContext = $context;
+        $collector->traceLimit = $depth;
+
+        (new Component())->trigger('synthetic.plain-event');
+
+        $row = $this->captureEntries($collector)[0] ?? self::fail('Expected the emitted event.');
+        $inspection = $row->inspection();
+
+        if (!$context && $depth === 0) {
+            self::assertNull(
+                $inspection,
+                'Default capture must not allocate opt-in diagnostics.',
+            );
+
+            return;
+        }
+
+        self::assertNotNull(
+            $inspection,
+            'Requested diagnostics must carry explicit status.',
+        );
+        self::assertSame(
+            $context ? 'unsupported' : 'disabled',
+            $inspection->getContextStatus(),
+            'Plain events must distinguish unsupported context from disabled capture.',
+        );
+        self::assertSame(
+            $depth > 0 ? 'captured' : 'disabled',
+            $inspection->getTraceStatus(),
+            'Trace status must respect the configured opt-in depth.',
+        );
+
+        foreach ($inspection->getTrace() as $frame) {
+            self::assertStringNotContainsString(
+                '/src/collectors/EventCollector.php',
+                $frame,
+                'Source traces must omit the collector implementation.',
+            );
+        }
     }
 
     public function testShutdownDetachesTheWildcardListenerAndClearsState(): void
@@ -329,6 +306,127 @@ final class EventCollectorTest extends TestCase
             [],
             $this->captureEntries($collector),
             'Global observation must not claim to capture stopped instance events.',
+        );
+    }
+
+    #[TestWith([1])]
+    #[TestWith([16])]
+    public function testTraceFiltersInstrumentationWithinItsBoundedSourceWindow(int $depth): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->traceLimit = $depth;
+
+        $frames = array_fill(0, 31, ['file' => Yii::getAlias('@yii/base/Event.php'), 'line' => 1]);
+        $frames[] = ['file' => '/app/Boundary.php', 'line' => 32];
+        $frames[] = ['file' => '/app/OutsideWindow.php', 'line' => 33];
+
+        // Model the native limit, including zero's unbounded behavior, without fixing the mock to one call signature.
+        foreach (range(0, count($frames) + 1) as $limit) {
+            MockerState::addCondition(
+                'yii\\debug\\collectors',
+                'debug_backtrace',
+                [DEBUG_BACKTRACE_IGNORE_ARGS, $limit],
+                $limit === 0 ? $frames : array_slice($frames, 0, $limit),
+            );
+        }
+
+        try {
+            (new Component())->trigger('bounded.trace');
+
+            $inspection = ($this->captureEntries($collector)[0] ?? self::fail('Expected one captured event.'))
+                ->inspection();
+
+            self::assertNotNull(
+                $inspection,
+                'An enabled trace must preserve its diagnostic state.',
+            );
+            self::assertSame(
+                'captured',
+                $inspection->getTraceStatus(),
+                'A valid bounded trace must be captured.',
+            );
+            self::assertSame(
+                ['/app/Boundary.php:32'],
+                $inspection->getTrace(),
+                'Instrumentation must be omitted while retaining the last application frame inside the source window.',
+            );
+        } finally {
+            MockerState::resetState();
+        }
+    }
+
+    #[TestWith([0, 'disabled'])]
+    #[TestWith([8, 'failed'])]
+    public function testTraceStatusPreservesContextAndPropagationWhenFrameworkPathIsUnavailable(int $depth, string $status): void
+    {
+        $collector = $this->makeCollector();
+
+        $collector->captureContext = true;
+        $collector->traceLimit = $depth;
+
+        $component = new Component();
+        $event = new ViewEvent(['viewFile' => '/views/site/index.php']);
+        $executed = false;
+
+        Event::on(
+            Component::class,
+            'beforeRender',
+            static function () use (&$executed): void {
+                $executed = true;
+            },
+        );
+
+        $aliases = Yii::$aliases;
+
+        try {
+            Yii::setAlias('@yii', null);
+
+            $component->trigger('beforeRender', $event);
+        } finally {
+            Yii::$aliases = $aliases;
+        }
+
+        $entries = $this->captureEntries($collector);
+
+        self::assertCount(
+            1,
+            $entries,
+            'A trace failure must not discard the observed event.',
+        );
+
+        $inspection = $entries[0]->inspection();
+
+        self::assertNotNull(
+            $inspection,
+            'A trace failure must retain the event inspection.',
+        );
+        self::assertSame(
+            $status,
+            $inspection->getTraceStatus(),
+            'Unavailable trace prerequisites must not turn a disabled feature into a failed capture.',
+        );
+        self::assertSame(
+            [],
+            $inspection->getTrace(),
+            'Failed trace capture must not expose partial trace data.',
+        );
+        self::assertSame(
+            'captured',
+            $inspection->getContextStatus(),
+            'A trace failure must not change the successful context status.',
+        );
+        self::assertSame(
+            [
+                'View file' => '/views/site/index.php',
+                'Continue allowed (observed)' => 'Yes',
+            ],
+            $inspection->getContext(),
+            'A trace failure must preserve the independently captured context.',
+        );
+        self::assertTrue(
+            $executed,
+            'A trace failure must not prevent later event handlers from running.',
         );
     }
 

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace yii\debug\tests\module;
 
-use PHPUnit\Framework\Attributes\{DataProviderExternal, Group};
+use PHPUnit\Framework\Attributes\{DataProviderExternal, Group, TestWith};
+use ReflectionMethod;
 use Yii;
 use yii\base\{Action, Controller};
 use yii\debug\exception\Message;
@@ -175,6 +176,25 @@ final class ModuleAccessTest extends ModuleTestCase
         self::assertFalse(
             $this->invoke($module, 'checkAccess'),
             'A later public allowlist update must take effect on the next access check.',
+        );
+    }
+
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([Module::class, 'checkAccess', 'protected'])]
+    #[TestWith([Module::class, 'coreActionMap', 'protected'])]
+    #[TestWith([Module::class, 'initActionMap', 'protected'])]
+    #[TestWith([Module::class, 'initCollectors', 'protected'])]
+    #[TestWith([Module::class, 'initPanels', 'protected'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
         );
     }
 

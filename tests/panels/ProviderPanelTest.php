@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace yii\debug\tests\panels;
 
 use PHPForge\Debug\{Panel as PortablePanel, PanelView};
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use yii\base\InvalidConfigException;
 use yii\debug\panels\ProviderPanel;
 
@@ -17,29 +19,75 @@ final class ProviderPanelTest extends TestCase
     public function testExternalPanelNeedsNoFrameworkSpecificPresentation(): void
     {
         $panel = new ProviderPanel();
+
         $panel->id = 'custom';
         $panel->provider = $this->provider();
-        self::assertSame('Custom', $panel->getName(), 'Provider title must be preserved.');
-        self::assertSame('inertia', $panel->getToolbarIcon(), 'Provider icon must be preserved.');
-        self::assertFalse($panel->hasContent(), 'Empty navigation state must be preserved.');
+
+        self::assertSame(
+            'Custom',
+            $panel->getName(),
+            'Provider title must be preserved.'
+        );
+        self::assertSame(
+            'inertia',
+            $panel->getToolbarIcon(),
+            'Provider icon must be preserved.'
+        );
+        self::assertFalse(
+            $panel->hasContent(),
+            'Empty navigation state must be preserved.'
+        );
+
         $panel->hydrate(['hits' => 1]);
-        self::assertTrue($panel->hasContent(), 'Hydration must expose captured activity.');
-        self::assertStringContainsString('yii-debug-table', $panel->getDetail(), 'External panels must use the shared frontend.');
-        $method = new \ReflectionMethod($panel, 'getToolbarItems');
-        self::assertSame([['title' => 'Hits', 'value' => '1'], ['title' => 'Misses', 'value' => '2']], $method->invoke($panel), 'Provider metrics must reach the toolbar.');
+
+        self::assertTrue(
+            $panel->hasContent(),
+            'Hydration must expose captured activity.'
+        );
+        self::assertStringContainsString(
+            'yii-debug-table',
+            $panel->getDetail(),
+            'External panels must use the shared frontend.'
+        );
+
+        $method = new ReflectionMethod($panel, 'getToolbarItems');
+
+        self::assertSame(
+            [['title' => 'Hits', 'value' => '1'], ['title' => 'Misses', 'value' => '2']],
+            $method->invoke($panel),
+            'Provider metrics must reach the toolbar.',
+        );
+    }
+
+    #[TestWith([false])]
+    #[TestWith([true])]
+    public function testThrowInvalidConfigExceptionAtBindingBeforeRendering(bool $provided): void
+    {
+        $panel = new ProviderPanel();
+
+        $panel->id = 'mismatched';
+        $panel->provider = $provided ? $this->provider() : null;
+
+        $this->expectException(InvalidConfigException::class);
+
+        $panel->moduleBound();
     }
 
     public function testThrowInvalidConfigExceptionForMismatchedId(): void
     {
         $panel = new ProviderPanel();
+
         $panel->provider = $this->provider();
+
         $this->expectException(InvalidConfigException::class);
+
         $panel->getName();
     }
 
     public function testThrowInvalidConfigExceptionForMissingProvider(): void
     {
         $this->expectException(InvalidConfigException::class);
+
         (new ProviderPanel())->getName();
     }
 

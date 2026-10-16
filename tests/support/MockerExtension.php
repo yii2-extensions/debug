@@ -48,6 +48,7 @@ final class MockerExtension implements Extension
             ['namespace' => 'yii\debug\service', 'name' => 'microtime'],
             ['namespace' => 'yii\debug\service', 'name' => 'class_exists'],
             ['namespace' => 'yii\debug\actions', 'name' => 'sleep'],
+            ['namespace' => 'yii\debug\collectors', 'name' => 'debug_backtrace'],
             ['namespace' => 'yii\debug\collectors', 'name' => 'chmod'],
             ['namespace' => 'yii\debug\collectors', 'name' => 'file_put_contents'],
             ['namespace' => 'yii\debug\collectors', 'name' => 'glob'],

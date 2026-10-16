@@ -314,6 +314,79 @@ final class ActionShellTest extends ActionTestCase
         );
     }
 
+    public function testSubclassBareShellFactoryControlsTheDispatchedDocument(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $_GET['yii_debug_theme'] = 'light';
+        $action = new class ('custom-document') extends Action {
+            public function run(): string
+            {
+                return 'custom-document-body';
+            }
+
+            protected function createBareShellContext(): ShellContext
+            {
+                return $this->getDebugModule()->getShellContextFactory()->bare('dark');
+            }
+        };
+
+        self::assertSame(
+            'custom-document-body',
+            $this->runDebugAction($action, $module),
+            'The custom document must dispatch normally.',
+        );
+
+        $shell = Yii::$app->view->params['debugShell'] ?? null;
+
+        self::assertInstanceOf(
+            ShellContext::class,
+            $shell,
+            'Dispatch must install the custom bare shell.',
+        );
+        self::assertSame(
+            'dark',
+            $shell->debugThemeAttributes['data-yii-debug-theme'] ?? null,
+            'The subclass shell factory must control the document independently of the request theme.',
+        );
+    }
+
+    public function testSubclassThemeResolverControlsTheDispatchedShell(): void
+    {
+        $module = $this->bootDebugModule();
+
+        $action = new class ('custom-theme') extends Action {
+            public function run(): string
+            {
+                return 'custom-theme-body';
+            }
+
+            protected function resolveTheme(): string
+            {
+                return 'dark';
+            }
+        };
+
+        self::assertSame(
+            'custom-theme-body',
+            $this->runDebugAction($action, $module),
+            'A custom action must dispatch normally.',
+        );
+
+        $shell = Yii::$app->view->params['debugShell'] ?? null;
+
+        self::assertInstanceOf(
+            ShellContext::class,
+            $shell,
+            'Dispatch must install the action shell.',
+        );
+        self::assertSame(
+            'dark',
+            $shell->debugThemeAttributes['data-yii-debug-theme'] ?? null,
+            'The shell must honor the subclass theme resolver.',
+        );
+    }
+
     public function testThrowLogicExceptionWhenMainLayoutHasNoShellContext(): void
     {
         $module = $this->bootDebugModule();

@@ -6,7 +6,8 @@ namespace yii\debug\tests\actions;
 
 use Exception;
 use PHPForge\Debug\Panel\Config\ConfigSnapshot;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use Yii;
 use yii\debug\actions\{IndexAction, ViewAction};
 use yii\debug\exception\Message;
@@ -197,6 +198,21 @@ final class IndexActionTest extends ActionTestCase
             'captured-index-php',
             $shell->phpVersion,
             'Index must load the latest entry before building its shell.',
+        );
+    }
+
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([IndexAction::class, 'run', 'public'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
         );
     }
 

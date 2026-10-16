@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(log): capture the PSR-3 context of `yii\log\PsrMessage` log entries (Yii 22 `yii\log\PsrLogger`) without the `category` key, redact it through the capture policy, and show it under the message in a collapsed "Context" disclosure.
 - docs: cover Yii `22.0` setup, configuration, upgrades, testing and packaged assets; add `yii2-debug-inspection` and client discovery aliases.
 - docs: remove `README.md` requirements repeated by badges and trim upgrade notes to migration actions.
+- fix: harden identity capture, preserve dates, guard user changes, hide disabled panels, resolve skill docs, scope mailer config, and enforce MSI thresholds.
 
 ## 0.1.1 May 18, 2026
 

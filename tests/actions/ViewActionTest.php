@@ -10,10 +10,11 @@ use PHPForge\Debug\Panel\Log\LogSnapshot;
 use PHPForge\Debug\Panel\PanelRenderContext;
 use PHPForge\Debug\Panel\Request\RequestSnapshot;
 use PHPForge\Debug\Storage\RequestSummary;
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\{Group, TestWith};
+use ReflectionMethod;
 use RuntimeException;
 use Yii;
-use yii\debug\actions\ViewAction;
+use yii\debug\actions\{Action, ViewAction};
 use yii\debug\exception\Message;
 use yii\debug\Panel;
 use yii\debug\panels\RequestSummaryAwarePanelInterface;
@@ -196,6 +197,23 @@ final class ViewActionTest extends ActionTestCase
             '',
             $html,
             'Exception view must render markup.',
+        );
+    }
+
+    /**
+     * @param class-string $class Library class exposing the stable entry point.
+     * @param 'protected'|'public' $visibility Access required by consumers or subclasses.
+     */
+    #[TestWith([Action::class, 'prepareShell', 'public'])]
+    #[TestWith([Action::class, 'render', 'public'])]
+    #[TestWith([ViewAction::class, 'run', 'public'])]
+    public function testExtensionEntryPointsRetainVisibility(string $class, string $method, string $visibility): void
+    {
+        $entry = new ReflectionMethod($class, $method);
+
+        self::assertTrue(
+            $visibility === 'public' ? $entry->isPublic() : $entry->isProtected(),
+            "{$class}::{$method} must retain {$visibility} access for consuming applications.",
         );
     }
 

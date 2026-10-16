@@ -16,6 +16,8 @@ use yii\debug\panels\QueuePanel;
 use yii\debug\tests\support\ModuleTestCase;
 use yii\debug\tests\support\stub\CustomCollector;
 
+use function array_is_list;
+
 /**
  * Unit tests for {@see Module} covering collector override ordering, invalid collector configuration and contracts,
  * optional extension detection, and explicit collector/panel configuration when a provider is unavailable.
@@ -56,6 +58,11 @@ final class ModuleCollectorRegistrationTest extends ModuleTestCase
             'debug',
             null,
             ['collectors' => ['log' => LogCollector::class]],
+        );
+
+        self::assertTrue(
+            array_is_list($module->collectors),
+            'Resolved collector instances must remain available as an ordered list after keyed configuration.',
         );
 
         $ids = [];
