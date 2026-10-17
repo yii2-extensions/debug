@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.2.0 Under development
+## 0.2.0 October 16, 2026
 
 - fix: improve capture reliability, sensitive-data handling, identity actions, persistence, and worker cleanup; prevent recursive debugger captures.
 - feat: add Inertia and Vite panels, capture comparisons, Events inspection, unified Profiling and Timeline, and Database N+1 and EXPLAIN diagnostics.
