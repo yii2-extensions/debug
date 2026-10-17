@@ -55,10 +55,13 @@ run or a failed initial suite is not a passing score.
 
 ## Documentation and configuration examples
 
-Lint every `examples/*.php` file with `php -l`. Load each configuration in a development Yii 22 Web application,
-merge it with the application's existing configuration, bootstrap it and verify module access. In a separate
-production process, the example must return an empty array. The Vite example additionally needs the actual
-provider package and an existing compatible component; inspect an emitted event rather than panel presence only.
+Copy the complete `config/debug.php` and `config/debug-vite.php` snippets from the
+[usage examples](examples.md) into temporary PHP files and lint each with
+`php -l`. Load each configuration in a development Yii 22 Web application, merge
+it with the application's existing configuration, bootstrap it and verify module
+access. In a separate production process, the example must return an empty array.
+The Vite example additionally needs the actual provider package and an existing
+compatible component; inspect an emitted event rather than panel presence only.
 
 For browser validation, make an HTML request, inspect its toolbar/History and log capture, and verify rejected
 access from an unlisted IP. Static example checks do not prove browser rendering or native agent activation.

@@ -35,5 +35,6 @@ and a log entry, then verify access is denied to an unlisted address. For Vite, 
 the component and confirm a captured event. Do not infer provider capture from panel registration alone.
 Keep production disabled and do not share raw captures without reviewing their contents.
 
-The executable [configuration examples](examples.md) can be checked without a running browser; an application
-request and native client activation are separate checks. See [testing](testing.md).
+The [configuration recipes](examples.md) can be copied into temporary PHP files
+and checked without a running browser; an application request and native client
+activation are separate checks. See [testing](testing.md).

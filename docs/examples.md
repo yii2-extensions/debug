@@ -5,8 +5,33 @@ or authentication. Install the debugger as described in [installation](installat
 
 ## Development configuration
 
-Copy [`examples/development.php`](../examples/development.php) to `config/debug.php` and merge it before returning
-the application's configuration:
+Create `config/debug.php` in the application with this configuration:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use yii\debug\Module;
+
+if (!YII_ENV_DEV) {
+    return [];
+}
+
+return [
+    'bootstrap' => ['debug'],
+    'modules' => [
+        'debug' => [
+            'class' => Module::class,
+            'allowedIPs' => ['127.0.0.1', '::1'],
+            'historySize' => 50,
+            'dataPath' => '@runtime/debug',
+        ],
+    ],
+];
+```
+
+Merge it before returning the application's configuration:
 
 ```php
 $config = \yii\helpers\ArrayHelper::merge($config, require __DIR__ . '/debug.php');
@@ -52,8 +77,32 @@ $config['modules']['debug']['sensitiveKeys'] = [
 ## Inspect an existing Vite component
 
 The Vite integration is optional. The application must install `php-forge/vite:^0.5` and already configure a Vite
-component. Copy [`examples/vite.php`](../examples/vite.php) to `config/debug-vite.php` and merge it after the basic
-debug configuration. Change the `dispatchers` value if the application's component has another ID:
+component. Create `config/debug-vite.php` with this configuration, changing the
+`dispatchers` value if the application's component has another ID:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use PHPForge\Vite\Debug\{ViteCollector, VitePanel};
+
+if (!YII_ENV_DEV) {
+    return [];
+}
+
+return [
+    'modules' => [
+        'debug' => [
+            'collectors' => ['vite' => ViteCollector::class],
+            'panels' => ['vite' => VitePanel::class],
+            'dispatchers' => ['vite' => 'vite'],
+        ],
+    ],
+];
+```
+
+Merge it after the basic debug configuration:
 
 ```php
 $config = \yii\helpers\ArrayHelper::merge($config, require __DIR__ . '/debug-vite.php');

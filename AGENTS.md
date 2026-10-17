@@ -5,8 +5,9 @@ This is the Yii 22 adapter `yii2-extensions/debug`. Read `composer.json`, the cu
 without implementing and verifying compatibility.
 
 Application integration guidance lives in `skills/yii2-debug-inspection/SKILL.md`. Keep that the canonical skill;
-client directories contain links. Public documentation is English. Put practical recipes in `docs/examples.md`
-and executable configurations in `examples/`, rather than embedding duplicate usage blocks in PHPDoc.
+client directories contain links. Public documentation is English. Put practical
+recipes, including complete configuration snippets, in `docs/examples.md`, rather
+than embedding duplicate usage blocks in PHPDoc.
 
 The compiled frontend and its Vite/Vitest/Stryker toolchain are owned by `php-forge/debug-core`. This repository
 has no npm build. Do not add a frontend manager to consuming applications for these packaged assets.

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.2.1 Under development
 
+- docs: move configuration examples into the guides and remove `examples/`.
+
 ## 0.2.0 October 16, 2026
 
 - fix: improve capture reliability, sensitive-data handling, identity actions, persistence, and worker cleanup; prevent recursive debugger captures.
