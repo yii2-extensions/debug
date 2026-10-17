@@ -33,17 +33,15 @@ require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../vendor/yiisoft/yii2/Yii.php';
 ```
 
-Merge the [development configuration example](../examples/development.php) into the Web application's existing
-configuration. Keep this registration out of shared and console configuration. Register both `bootstrap` and
-`modules`; a module definition alone does not collect requests.
-The example returns an empty array outside `YII_ENV_DEV`.
+Create `config/debug.php` using the
+[development configuration recipe](examples.md#development-configuration), then
+merge it into the Web application's existing configuration as shown there. Keep
+this registration out of shared and console configuration. Register both
+`bootstrap` and `modules`; a module definition alone does not collect requests.
+The recipe returns an empty array outside `YII_ENV_DEV`.
 
-```php
-$config = \yii\helpers\ArrayHelper::merge($config, require __DIR__ . '/debug.php');
-```
-
-Here `config/debug.php` is the example copied into the application. Keep the existing application components,
-routes, database and authentication configuration. If another debugger already uses module ID `debug` or the
+Keep the existing application components, routes, database and authentication
+configuration. If another debugger already uses module ID `debug` or the
 `yii\debug` namespace, remove that registration/package before enabling this one.
 
 ## Assets and storage
