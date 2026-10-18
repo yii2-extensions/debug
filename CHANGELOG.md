@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.2.1 Under development
 
 - docs: move configuration examples into the guides and remove `examples/`.
+- fix: update inertia dependency version and improve infection command memory handling.
 
 ## 0.2.0 October 16, 2026
 
