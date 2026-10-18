@@ -53,14 +53,14 @@
 
 The 0.2 line does not support Yii2 2.0.x.
 
-If the Yii 22 mailer is not already a root requirement, add both packages with scoped development flags:
+If the Yii 22 mailer is not already a root requirement, add both packages with a scoped development flag for the mailer:
 
 ```bash
-composer require yii2-extensions/debug:^0.2@dev yiisoft/yii2-symfonymailer:^22.0@dev --dev
+composer require yii2-extensions/debug:^0.2 yiisoft/yii2-symfonymailer:^22.0@dev --dev
 ```
 
 For an existing root mailer requirement, keep its dependency section and ensure its constraint includes `@dev`;
-require only `yii2-extensions/debug:^0.2@dev` with `--dev`. See [installation](docs/installation.md) for entry-script
+require only `yii2-extensions/debug:^0.2` with `--dev`. See [installation](docs/installation.md) for entry-script
 setup, asset publication and verification.
 
 When upgrading from 0.1, review the [upgrade checklist](UPGRADE.md) and [migration guide](docs/migration.md). Keep the debugger and

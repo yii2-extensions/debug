@@ -1,20 +1,20 @@
 # Installation
 
-The 0.2 development line requires PHP 8.3 or later, the `ctype`, `intl`, `mbstring` and `pdo` extensions, and
+The 0.2 line requires PHP 8.3 or later, the `ctype`, `intl`, `mbstring` and `pdo` extensions, and
 Yii 22.0. It does not support Yii 2.0.x. Keep the application's Yii 22 development stability setting scoped to
 that dependency; do not lower the stability of every package just to install the debugger.
 
 ## Install the package
 
-If the Yii 22 mailer is not already a root requirement, add both packages with scoped development flags:
+If the Yii 22 mailer is not already a root requirement, add both packages with a scoped development flag for the mailer:
 
 ```bash
-composer require yii2-extensions/debug:^0.2@dev yiisoft/yii2-symfonymailer:^22.0@dev --dev
+composer require yii2-extensions/debug:^0.2 yiisoft/yii2-symfonymailer:^22.0@dev --dev
 composer audit
 ```
 
 If the application already requires `yiisoft/yii2-symfonymailer`, keep it in its existing dependency section and
-ensure its constraint allows `^22.0@dev`; require only `yii2-extensions/debug:^0.2@dev` with `--dev`. The stability
+ensure its constraint allows `^22.0@dev`; require only `yii2-extensions/debug:^0.2` with `--dev`. The stability
 flags must be declared in the application's root requirements; keep the global minimum stability unchanged.
 Use the version that matches the application's framework and review [migration](migration.md) when moving from
 0.1. Update the debugger and its
