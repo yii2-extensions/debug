@@ -1,13 +1,20 @@
 {
     $schema: "./vendor/infection/infection/resources/schema.json",
-    timeout: 30,
+    ignoreMsiWithNoMutations: true,
+    initialTestsPhpOptions: "-d memory_limit=-1",
     logs: {
         text: "php://stderr",
         stryker: {
             report: "main",
         },
     },
+    minCoveredMsi: 100,
+    minMsi: 100,
     source: {
         directories: ["src"],
     },
+    staticAnalysisToolOptions: "--memory-limit=-1",
+    testFrameworkExtraArgs: "-d memory_limit=-1",
+    threads: "max",
+    timeout: 30,
 }
