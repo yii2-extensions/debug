@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.2.2 Under development
 
+- ci: update workflows to `yii2-framework/actions` `v2.0.1` pinned to its release commit.
+
 ## 0.2.1 October 20, 2026
 
 - docs: move configuration examples into the guides and remove `examples/`.
