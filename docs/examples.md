@@ -124,3 +124,5 @@ To show Router as a separate panel instead of only within Request, add this in t
 ```php
 $config['modules']['debug']['panels']['router'] = \yii\debug\panels\RouterPanel::class;
 ```
+
+[Back to documentation](../README.md#documentation)

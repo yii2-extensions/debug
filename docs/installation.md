@@ -71,3 +71,5 @@ History instead. See [configuration](configuration.md) and [examples](examples.m
 
 Production entry scripts must not enable this module. Deploy production dependencies with
 `composer install --no-dev`; `YII_ENV_DEV` must also be false so configuration never refers to an absent class.
+
+[Back to documentation](../README.md#documentation)

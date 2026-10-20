@@ -6,6 +6,23 @@ It does not install the debugger or change application permissions.
 
 ## Install in an application
 
+### Automatic Composer installation
+
+Complete the [one-time application setup](https://yii2-framework.github.io/docs/project/ai-agents/#composer-installation) to enable `llm/skills`
+and set `auto-sync` to `true` in `skills.json`. Approve `yii2-extensions/debug` explicitly in
+`dependencies.composer.trusted`.
+The installed package must include its skill bundle; its `extra.skills.source` declares the directory.
+
+```bash
+composer install
+composer skills:show
+```
+
+With `auto-sync` enabled, later dependency installs and updates synchronize the skill automatically; no per-skill
+installer is required. If `auto-sync` is `false`, run `composer skills:update` after dependency installation or updates.
+
+### Optional npx installation
+
 Run the pinned installer from the application's root. For a local checkout:
 
 ```bash
@@ -38,3 +55,5 @@ Keep production disabled and do not share raw captures without reviewing their c
 The [configuration recipes](examples.md) can be copied into temporary PHP files
 and checked without a running browser; an application request and native client
 activation are separate checks. See [testing](testing.md).
+
+[Back to documentation](../README.md#documentation)

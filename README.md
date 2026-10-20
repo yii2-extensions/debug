@@ -145,16 +145,17 @@ inspecting requests.
 - 💡 [Usage Examples](docs/examples.md)
 - 🔄 [Migration Guide](docs/migration.md) and [Upgrade Checklist](UPGRADE.md)
 - 🧪 [Testing Guide](docs/testing.md)
-- [Panel Screenshots](docs/screenshots.md)
-- [Changelog](CHANGELOG.md)
+- 📸 [Panel Screenshots](docs/screenshots.md)
+- 📝 [Changelog](CHANGELOG.md)
 
 ## AI assistance
 
 AI agents: use the repository guides and source for the installed revision.
 For a [documentation deployment](https://yii2-framework.github.io/docs/) with
 `llms.txt`, read that index first. When Markdown export is enabled, append
-`index.md` to a page URL. For Yii conventions, use the `yii2-framework` skill
-from a local framework documentation checkout.
+`index.md` to a page URL. For Yii conventions, install the `yii2-framework`
+skill from [`yii2-extensions/skill`](https://github.com/yii2-extensions/skill)
+through the [shared Composer setup](https://yii2-framework.github.io/docs/project/ai-agents/#composer-installation).
 
 - 🤖 [yii2-debug-inspection skill](docs/agents.md): installation for Claude
   Code, Codex, and OpenCode.
