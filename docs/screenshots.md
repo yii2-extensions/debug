@@ -171,4 +171,4 @@ configured explicitly for compatibility.</p>
 
 ---
 
-[← Back to documentation](../README.md#documentation)
+[Back to documentation](../README.md#documentation)

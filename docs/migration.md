@@ -48,3 +48,5 @@ Verify application requests, stored capture loading, denied access, custom actio
 loading after the upgrade. Keep the original application lockfile available for rollback. Returning to 0.1 can
 read retained or restored 0.1 `.data` captures with their matching manifest; it cannot read new JSON captures
 written by 0.2.
+
+[Back to documentation](../README.md#documentation)
