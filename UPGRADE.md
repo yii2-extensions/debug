@@ -1,11 +1,16 @@
-# Upgrade
+# Upgrade Guide
 
-## From 0.1 to the 0.2 development line
+## 0.2.0
 
-Upgrade PHP to 8.3 or later. Migrate Yii 2.0 applications to Yii 22 before upgrading this extension.
+- Upgrade PHP to 8.3 or later and migrate the application to Yii 22.0; Yii 2.0.x is not supported.
+- Update this package together with `php-forge/debug` and `php-forge/debug-core`.
+- Remove the old serialized captures from the debugger `dataPath`; the JSON store cannot read them. Keep unrelated
+  runtime data.
+- Adapt custom collectors and panels to `PHPForge\Debug\CollectorInterface` and `PHPForge\Debug\Panel`, and register
+  Vite or Inertia providers explicitly; the module no longer detects them.
+- Replace the removed Timeline panel with Profiling, `Module::VERSION` with `Module::getVersion()` and `QueryRow`
+  properties with its getters. Remove references to `DebugSearch::$criticalCodes` and the `DbAsset`, `PhpInfoAsset`,
+  `TimelineAsset` and `UserswitchAsset` classes.
+- Use `data-yii-debug-toggle` instead of `data-toggle` in custom markup, and republish the debugger assets.
 
-1. Review the [changelog](CHANGELOG.md) and the [migration guide](docs/migration.md) against the installed revision.
-2. Update the debugger and the shared `php-forge/debug` and `php-forge/debug-core` dependencies together. Keep Composer's security blocking enabled, retain the application lockfile and run `composer audit`.
-3. Stop development traffic and remove only the obsolete captures in the configured debugger `dataPath`. The current store uses versioned JSON snapshots and cannot read the old serialized format. New requests recreate the debugger's data. Do not delete the application's entire runtime directory.
-4. Review custom collectors, panels, action routes and provider registrations as described in migration.
-5. Refresh Yii's published debugger assets using the application's normal asset cleanup/deployment process, then make a request and verify the toolbar, History, Logs and any optional providers.
+See the [migration guide](docs/migration.md) for details.

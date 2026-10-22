@@ -2,6 +2,7 @@
     "name": "yii2-extensions/debug",
     "type": "yii2-extension",
     "description": "Debug toolbar and debugger panels for Yii2: requests, logs, queries, profiling, timeline, queue, mail, events, asset bundles, and user switching with a Vite-built dependency-free UI.",
+    "homepage": "https://yii2-framework.github.io/docs/extensions/debug/",
     "keywords": [
         "database-profiling",
         "debug",
@@ -16,6 +17,11 @@
         "yii2-extension"
     ],
     "license": "BSD-3-Clause",
+    "support": {
+        "docs": "https://yii2-framework.github.io/docs/extensions/debug/",
+        "issues": "https://github.com/yii2-extensions/debug/issues",
+        "source": "https://github.com/yii2-extensions/debug"
+    },
     "authors": [
         {
             "name": "Wilmer Arambula",

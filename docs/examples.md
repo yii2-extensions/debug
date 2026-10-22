@@ -1,7 +1,7 @@
 # Usage examples
 
-These examples extend an existing Yii 22 application. They do not create application routes, database credentials
-or authentication. Install the debugger as described in [installation](installation.md).
+These examples extend an existing Yii 22 application. They do not create application routes, database credentials or
+authentication. Install the debugger as described in [installation](installation.md).
 
 ## Development configuration
 
@@ -37,9 +37,9 @@ Merge it before returning the application's configuration:
 $config = \yii\helpers\ArrayHelper::merge($config, require __DIR__ . '/debug.php');
 ```
 
-The entry script must define `YII_ENV` before loading Yii. This configuration registers the module and bootstrap
-only in development, retains 50 requests and restricts access to loopback addresses. Adjust the allowlist to the
-actual trusted development client. Keep the application configuration in place when merging.
+The entry script must define `YII_ENV` before loading Yii. This configuration registers the module and bootstrap only in
+development, retains 50 requests and restricts access to loopback addresses. Adjust the allowlist to the actual trusted
+development client. Keep the application configuration in place when merging.
 
 ## Add an access condition
 
@@ -51,8 +51,8 @@ $config['modules']['debug']['checkAccessCallback'] = static function (\yii\base\
 };
 ```
 
-This assumes a Web application with its existing `user` component. The callback receives the current action or
-`null` and must return `true` to allow access. Preserve the application's own authorization rules.
+This assumes a Web application with its existing `user` component. The callback receives the current action or `null`
+and must return `true` to allow access. Preserve the application's own authorization rules.
 
 ## Inspect an application event
 
@@ -62,8 +62,8 @@ Write a development log entry from application code, request that page, then ins
 \Yii::info(['operation' => 'catalog.preview', 'itemCount' => 3], 'app.catalog');
 ```
 
-Logs can contain the original message and query diagnostics can contain values. Do not log credentials or
-personal data just to test redaction. To extend exact-key redaction, preserve the default keys:
+Logs can contain the original message and query diagnostics can contain values. Do not log credentials or personal data
+just to test redaction. To extend exact-key redaction, preserve the default keys:
 
 ```php
 use PHPForge\Debug\Helper\SensitiveDataRedactor;
@@ -77,8 +77,8 @@ $config['modules']['debug']['sensitiveKeys'] = [
 ## Inspect an existing Vite component
 
 The Vite integration is optional. The application must install `php-forge/vite:^0.5` and already configure a Vite
-component. Create `config/debug-vite.php` with this configuration, changing the
-`dispatchers` value if the application's component has another ID:
+component. Create `config/debug-vite.php` with this configuration, changing the `dispatchers` value if the application's
+component has another ID:
 
 ```php
 <?php
@@ -108,16 +108,16 @@ Merge it after the basic debug configuration:
 $config = \yii\helpers\ArrayHelper::merge($config, require __DIR__ . '/debug-vite.php');
 ```
 
-Request an application page that uses that component. The Vite collector observes its events and the Vite panel
-appears under Extensions. Registration alone does not build frontend assets or configure a Vite development
-server. A preconfigured dispatcher is preserved; register the collector as its listener when the application
-owns that dispatcher. For Inertia and policy-aware redaction, use the [provider configuration](configuration.md#provider-packages).
+Request an application page that uses that component. The Vite collector observes its events and the Vite panel appears
+under Extensions. Registration alone does not build frontend assets or configure a Vite development server. A
+preconfigured dispatcher is preserved; register the collector as its listener when the application owns that dispatcher.
+For Inertia and policy-aware redaction, use the [provider configuration](configuration.md#provider-packages).
 
 ## Compare two requests
 
-Make two application requests, open `debug/index`, select their History rows and compare them. The comparison
-shows structural metrics and counts rather than exposing captured panel values. Open each capture for its
-individual details. Requests with any `4xx` or `5xx` status are marked critical.
+Make two application requests, open `debug/index`, select their History rows and compare them. The comparison shows
+structural metrics and counts rather than exposing captured panel values. Open each capture for its individual details.
+Requests with any `4xx` or `5xx` status are marked critical.
 
 To show Router as a separate panel instead of only within Request, add this in the development guard:
 

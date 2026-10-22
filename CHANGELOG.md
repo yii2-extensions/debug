@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ci: update workflows to `yii2-framework/actions` `v2.0.1` pinned to its release commit.
 - chore: standardize Composer scripts, linter configurations and testing guide with the template, and remove the scaffold setup.
+- chore: align repository metadata, tooling configuration, and documentation with the Yii2 framework template.
 
 ## 0.2.1 October 20, 2026
 
