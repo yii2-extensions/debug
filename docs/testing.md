@@ -69,15 +69,14 @@ Run mutation testing with PHPStan static analysis enabled.
 composer mutation-static
 ```
 
-Thresholds, thread count and memory options live in `infection.json5`. CI enforces the same thresholds: MSI and
-covered MSI stay at 100. Use local reports for local runs; dashboard uploads require their configured credentials.
-A skipped mutation run or a failed initial suite is not a passing score.
+Thresholds, thread count and memory options live in `infection.json5`. CI enforces the same thresholds: MSI and covered
+MSI stay at 100. Use local reports for local runs; dashboard uploads require their configured credentials. A skipped
+mutation run or a failed initial suite is not a passing score.
 
 ## Repository quality checks
 
-Make the CLI tools used by the shared quality workflow available on `PATH`:
-actionlint with its ShellCheck helper, codespell, EditorConfig Checker, markdownlint-cli2, Prettier and
-yamllint. Run all checks:
+Make the CLI tools used by the shared quality workflow available on `PATH`: actionlint with its ShellCheck helper,
+codespell, EditorConfig Checker, markdownlint-cli2, Prettier and yamllint. Run all checks:
 
 ```bash
 composer quality
@@ -115,8 +114,8 @@ composer tests
 
 ## Workflow security checks
 
-Make zizmor and Gitleaks available on `PATH`. Audit the current workflow files
-with the same pedantic persona used by the shared security workflow:
+Make zizmor and Gitleaks available on `PATH`. Audit the current workflow files with the same pedantic persona used by
+the shared security workflow:
 
 ```bash
 composer zizmor
@@ -128,22 +127,21 @@ Scan Git history for secrets with the repository's Gitleaks configuration:
 composer gitleaks
 ```
 
-Run both checks. Findings make the command fail; inspect them rather than
-disabling the checks.
+Run both checks. Findings make the command fail; inspect them rather than disabling the checks.
 
 ```bash
 composer security
 ```
 
-Zizmor needs GitHub API access for its online audits. If the tool runs offline,
-report that limit separately. To request an offline audit explicitly:
+Zizmor needs GitHub API access for its online audits. If the tool runs offline, report that limit separately. To request
+an offline audit explicitly:
 
 ```bash
 composer zizmor -- --offline
 ```
 
-Report hosted CI execution and its PHP/OS matrix separately from these local
-commands. Keep generated reports in ignored `internal/`.
+Report hosted CI execution and its PHP/OS matrix separately from these local commands. Keep generated reports in ignored
+`internal/`.
 
 ## Passing extra arguments
 
@@ -163,8 +161,8 @@ composer static -- --memory-limit=512M
 
 ## Install and audit
 
-Use a source checkout with PHP 8.3 or later and the extensions listed in `composer.json` (tests also use `gd`
-and `pdo_sqlite`). Composer installs the development tools and the supported Yii 22 dependency:
+Use a source checkout with PHP 8.3 or later and the extensions listed in `composer.json` (tests also use `gd` and
+`pdo_sqlite`). Composer installs the development tools and the supported Yii 22 dependency:
 
 ```bash
 composer install
@@ -172,29 +170,26 @@ composer validate --strict
 composer audit
 ```
 
-Keep security blocking and auditing enabled; do not bypass advisories to obtain a successful test run. The
-library's local `composer.lock` is ignored, while a consuming application should retain its own lockfile.
-A fresh resolution may differ from an old local lock; report the versions used. Yii 2.0.x is outside this line's
-supported matrix.
+Keep security blocking and auditing enabled; do not bypass advisories to obtain a successful test run. The library's
+local `composer.lock` is ignored, while a consuming application should retain its own lockfile. A fresh resolution may
+differ from an old local lock; report the versions used. Yii 2.0.x is outside this line's supported matrix.
 
 ## Documentation and configuration examples
 
-Copy the complete `config/debug.php` and `config/debug-vite.php` snippets from the
-[usage examples](examples.md) into temporary PHP files and lint each with
-`php -l`. Load each configuration in a development Yii 22 Web application, merge
-it with the application's existing configuration, bootstrap it and verify module
-access. In a separate production process, the example must return an empty array.
-The Vite example additionally needs the actual provider package and an existing
-compatible component; inspect an emitted event rather than panel presence only.
+Copy the complete `config/debug.php` and `config/debug-vite.php` snippets from the [usage examples](examples.md) into
+temporary PHP files and lint each with `php -l`. Load each configuration in a development Yii 22 Web application, merge
+it with the application's existing configuration, bootstrap it and verify module access. In a separate production
+process, the example must return an empty array. The Vite example additionally needs the actual provider package and an
+existing compatible component; inspect an emitted event rather than panel presence only.
 
-For browser validation, make an HTML request, inspect its toolbar/History and log capture, and verify rejected
-access from an unlisted IP. Static example checks do not prove browser rendering or native agent activation.
-Check changed Markdown links and the repository's EditorConfig/Markdown lint rules.
+For browser validation, make an HTML request, inspect its toolbar/History and log capture, and verify rejected access
+from an unlisted IP. Static example checks do not prove browser rendering or native agent activation. Check changed
+Markdown links and the repository's EditorConfig/Markdown lint rules.
 
 ## Frontend ownership
 
-This Yii adapter has no `package.json` or local JavaScript tests. Its assets come prebuilt from
-`php-forge/debug-core`. In a Core source checkout, keep Node.js and run its locked pipeline:
+This Yii adapter has no `package.json` or local JavaScript tests. Its assets come prebuilt from `php-forge/debug-core`.
+In a Core source checkout, keep Node.js and run its locked pipeline:
 
 ```bash
 npm ci
@@ -205,10 +200,10 @@ npm run check:size
 npm run check:contrast:strict
 ```
 
-Core's CI also checks formatting, linting, browser discovery and the large-data browser harness. A Vite update
-can change generated output: inspect and commit the regenerated Core `resources/assets/dist/` files together
-with its dependency lock update. Keep the CI drift check enabled. Diagnose the failing job before applying
-another package's compatibility patch; passing tests/mutation do not imply an unchanged build output.
+Core's CI also checks formatting, linting, browser discovery and the large-data browser harness. A Vite update can
+change generated output: inspect and commit the regenerated Core `resources/assets/dist/` files together with its
+dependency lock update. Keep the CI drift check enabled. Diagnose the failing job before applying another package's
+compatibility patch; passing tests/mutation do not imply an unchanged build output.
 
 ---
 

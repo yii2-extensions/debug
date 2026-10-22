@@ -37,8 +37,9 @@
 </picture>
 
 > [!WARNING]
-> **Development only.** Never enable the debugger in production. Keep access restricted to trusted development IPs
-> and install production dependencies with `composer install --no-dev`.
+>
+> **Development only.** Never enable the debugger in production. Keep access restricted to trusted development IPs and
+> install production dependencies with `composer install --no-dev`.
 
 ## Features
 
@@ -59,12 +60,12 @@ If the Yii 22 mailer is not already a root requirement, add both packages with a
 composer require yii2-extensions/debug:^0.2 yiisoft/yii2-symfonymailer:^22.0@dev --dev
 ```
 
-For an existing root mailer requirement, keep its dependency section and ensure its constraint includes `@dev`;
-require only `yii2-extensions/debug:^0.2` with `--dev`. See [installation](docs/installation.md) for entry-script
-setup, asset publication and verification.
+For an existing root mailer requirement, keep its dependency section and ensure its constraint includes `@dev`; require
+only `yii2-extensions/debug:^0.2` with `--dev`. See [installation](docs/installation.md) for entry-script setup, asset
+publication and verification.
 
-When upgrading from 0.1, review the [upgrade checklist](UPGRADE.md) and [migration guide](docs/migration.md). Keep the debugger and
-`php-forge/debug-core` up to date together in the application's lock file.
+When upgrading from 0.1, review the [upgrade guide](UPGRADE.md) and [migration guide](docs/migration.md). Keep the
+debugger and `php-forge/debug-core` up to date together in the application's lock file.
 
 ### Enable the debugger
 
@@ -85,26 +86,26 @@ Keep the registration inside the development guard. Do not bootstrap the module 
 
 ### Basic usage
 
-Open an application page, expand the toolbar at the bottom, and select a panel chip to inspect the request.
-Use the Yii chip for Configuration and the PHP chip for PHP info. Switch between light and dark themes from the
-toolbar, and press `Escape` to close the drawer.
+Open an application page, expand the toolbar at the bottom, and select a panel chip to inspect the request. Use the Yii
+chip for Configuration and the PHP chip for PHP info. Switch between light and dark themes from the toolbar, and press
+`Escape` to close the drawer.
 
 In Logs, messages written through the Yii 22 PSR-3 adapter `yii\log\PsrLogger` show their PSR-3 context under the
-message in a collapsed "Context" disclosure; the `category` key is omitted only when it matches the row's category
-shown in the Category column, while any other `category` value stays in the context.
+message in a collapsed "Context" disclosure; the `category` key is omitted only when it matches the row's category shown
+in the Category column, while any other `category` value stays in the context.
 
-Open the `debug/index` route to browse retained requests. Select two captures in History to compare request metrics
-and panel changes, then open either capture for its details. Comparison shows structural counts without exposing
-panel values.
+Open the `debug/index` route to browse retained requests. Select two captures in History to compare request metrics and
+panel changes, then open either capture for its details. Comparison shows structural counts without exposing panel
+values.
 
 ## Configuration
 
-The module runs with no options: up to 50 retained requests, captures under `@runtime/debug`, and a bottom toolbar.
-See the [configuration reference](docs/configuration.md) for custom collectors and panels, the Inertia and Vite
-providers, database capture, IDE links, and the standalone router.
+The module runs with no options: up to 50 retained requests, captures under `@runtime/debug`, and a bottom toolbar. See
+the [configuration reference](docs/configuration.md) for custom collectors and panels, the Inertia and Vite providers,
+database capture, IDE links, and the standalone router.
 
-Debug Core ships compiled assets through Composer. Consumers do not need Node.js, Foxy or an npm asset alias
-for the debugger; frontend source development remains in `php-forge/debug-core`.
+Debug Core ships compiled assets through Composer. Consumers do not need Node.js, Foxy or an npm asset alias for the
+debugger; frontend source development remains in `php-forge/debug-core`.
 
 ## Security
 
@@ -112,12 +113,12 @@ The toolbar and debugger routes allow `127.0.0.1` and `::1` by default. Add only
 `allowedIPs`; never expose the debugger publicly. A `checkAccessCallback` can further restrict allowed requests.
 
 Request, identity, and queue captures redact common sensitive fields, and so do Inertia captures registered with the
-capture-policy closure shown in the configuration reference. In Logs, the log message is not redacted; the PSR-3
-context is redacted by the capture policy. SQL diagnostics can include substituted query values. Treat stored captures
-as sensitive and review them before sharing.
+capture-policy closure shown in the configuration reference. In Logs, the log message is not redacted; the PSR-3 context
+is redacted by the capture policy. SQL diagnostics can include substituted query values. Treat stored captures as
+sensitive and review them before sharing.
 
-In the Events panel, context capture and source traces are disabled by default. This does not disable source
-traces in Logs or Database.
+In the Events panel, context capture and source traces are disabled by default. This does not disable source traces in
+Logs or Database.
 
 To redact additional exact keys, extend the defaults instead of replacing them:
 
@@ -132,41 +133,38 @@ $config['modules']['debug']['sensitiveKeys'] = [
 
 ## Browser support
 
-Use a current browser with Web Components, native JavaScript modules, and CSS custom properties. Internet Explorer
-is not supported.
+Use a current browser with Web Components, native JavaScript modules, and CSS custom properties. Internet Explorer is
+not supported.
 
 ## Documentation
 
-Practical guides and complete examples for configuring the debugger and
-inspecting requests.
+Practical guides and complete examples for configuring the debugger and inspecting requests.
 
 - 📚 [Installation Guide](docs/installation.md)
 - ⚙️ [Configuration Guide](docs/configuration.md)
 - 💡 [Usage Examples](docs/examples.md)
-- 🔄 [Migration Guide](docs/migration.md) and [Upgrade Checklist](UPGRADE.md)
+- 🔄 [Upgrade Guide](UPGRADE.md) and [Migration Guide](docs/migration.md)
 - 🧪 [Testing Guide](docs/testing.md)
 - 📸 [Panel Screenshots](docs/screenshots.md)
 - 📝 [Changelog](CHANGELOG.md)
 
+The guides and the [API reference](https://yii2-framework.github.io/docs/extensions/debug/reference/) generated from the
+PHPDoc in `src/` are published at <https://yii2-framework.github.io/docs/extensions/debug/>.
+
 ## AI assistance
 
-AI agents: use the repository guides and source for the installed revision.
-For a [documentation deployment](https://yii2-framework.github.io/docs/) with
-`llms.txt`, read that index first. When Markdown export is enabled, append
-`index.md` to a page URL. For Yii conventions, install the `yii2-framework`
-skill from [`yii2-extensions/skill`](https://github.com/yii2-extensions/skill)
-through the [shared Composer setup](https://yii2-framework.github.io/docs/project/ai-agents/#composer-installation).
+AI agents: read the [documentation index](https://yii2-framework.github.io/docs/llms.txt) and fetch the Markdown version
+of a page by appending `index.md` to its URL. The
+[AI agents guide](https://yii2-framework.github.io/docs/project/ai-agents/) covers skill installation, client setup and
+verification.
 
-- 🤖 [yii2-debug-inspection skill](docs/agents.md): installation for Claude
-  Code, Codex, and OpenCode.
+- 🤖 [`yii2-debug-inspection` skill](docs/agents.md): Debug inspection.
+- 🧭 [`yii2-framework` skill](https://yii2-framework.github.io/docs/guide/skills/yii2-framework/): Yii 22.0 application
+  conventions.
 
-Use the package-owned [skill source](skills/yii2-debug-inspection/SKILL.md) to
-configure and verify the debugger.
-Installing the Composer package alone does not activate a skill from
-`vendor/`.
-
-If the hosted sources are unavailable, use the repository guides and locally
-available skills.
+The hosted documentation covers Yii 22.0. If it does not match the installed revision or is unavailable, use the
+[repository guides](#documentation), the [skill source](skills/yii2-debug-inspection/SKILL.md), the source PHPDoc and
+the [changelog](CHANGELOG.md).
 
 ## Package information
 
