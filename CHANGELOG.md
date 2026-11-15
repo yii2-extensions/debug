@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.2.4 Under development
+
 ## 0.2.3 November 15, 2026
 
 - docs: align `README.md` badges and Security status with the standard, add skill prompts and contracts, and add Scorecard.
