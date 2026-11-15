@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.2.3 Under development
 
+- docs: align `README.md` badges and Security status with the standard, add skill prompts and contracts, and add Scorecard.
+
 ## 0.2.2 October 22, 2026
 
 - ci: update workflows to `yii2-framework/actions` `v2.0.1` pinned to its release commit.

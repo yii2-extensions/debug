@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use PhpCsFixer\Fixer\Whitespace\HeredocIndentationFixer;
+use PhpCsFixer\Fixer\Whitespace\{HeredocIndentationFixer, NoExtraBlankLinesFixer};
 use Symplify\CodingStandard\Fixer\Commenting\RemoveDeadVarThisFixer;
 
 /** @var \Symplify\EasyCodingStandard\Configuration\ECSConfigBuilder $builder */
@@ -19,6 +19,7 @@ return $builder
         [
             __DIR__ . '/src/views',
             HeredocIndentationFixer::class,
+            NoExtraBlankLinesFixer::class,
             RemoveDeadVarThisFixer::class => [__DIR__ . '/src/views'],
         ],
     );

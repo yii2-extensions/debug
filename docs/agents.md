@@ -56,4 +56,34 @@ disabled and do not share raw captures without reviewing their contents.
 The [configuration recipes](examples.md) can be copied into temporary PHP files and checked without a running browser;
 an application request and native client activation are separate checks. See [testing](testing.md).
 
+## Example prompts
+
+Start a fresh client session at the application root. The explicit example uses Codex's `$skill-name` notation; use
+`/yii2-debug-inspection` in Claude Code or the installed client's native skill mechanism. Do not paste the skill body
+and count that as native activation. These are tasks to execute and verify, not claims that an evaluation has passed.
+
+### Explicit invocation
+
+```text
+$yii2-debug-inspection
+Show development-only Yii 22 debugger configuration with a narrow IP allowlist. Demonstrate how to verify an allowed
+request and a denied request without logging secrets or exposing captured data publicly.
+Inspect the installed revision first. Do not install dependencies or change files without authorization.
+```
+
+### Natural selection
+
+```text
+My JSON request has no debugger toolbar. How can I inspect its capture and verify that the debugger remains disabled
+in production?
+```
+
+### Verify the outcome
+
+Check configuration guards, access denial, response headers and the captured request; a JSON response is not expected to
+contain injected HTML. Record native loading evidence separately from configuration review, executable checks and
+browser/runtime results. For a negative selection control, ask an unrelated question in a fresh session and confirm this
+package skill is not loaded. Keep evaluation traces private; report unavailable checks rather than treating discovery as
+execution.
+
 [Back to documentation](../README.md#documentation)

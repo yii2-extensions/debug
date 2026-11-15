@@ -13,9 +13,11 @@ storage path accepts a registered Yii alias.
 
 ## Access and capture policy
 
-`allowedIPs` defaults to loopback and accepts exact IPs, wildcards and CIDR ranges. `allowedHosts` resolves configured
-hosts to addresses. `checkAccessCallback` receives the current action or `null`; it runs only after the IP/host check
-allows access and must return `true`. Keep access limited to trusted development requests.
+`allowedIPs` defaults to loopback and accepts exact IPs, wildcards and CIDR ranges. A wildcard compares only the text
+before its first `*`: `192.168.*.10` also allows `192.168.1.20`. Use exact addresses or CIDR ranges for narrow rules.
+`allowedHosts` resolves configured hosts to addresses. `checkAccessCallback` receives the current action or `null`; it
+runs only after the IP/host check allows access and must return `true`. Keep access limited to trusted development
+requests.
 
 `sensitiveKeys`, `sensitiveKeyPrefixes` and `sensitiveKeyPatterns` control the capture policy. Extend the default exact
 keys rather than replacing them. `maxBodyBytes` bounds raw request/response body capture. These policies do not remove
