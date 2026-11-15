@@ -71,11 +71,14 @@ invokes the provider component.
 
 Do not "fix" these; they are contracts of the installed package:
 
-- No toolbar is injected into AJAX requests, debugger routes or responses without a rendered `endBody()`. Captured
-  application requests from an allowed address, including AJAX and JSON, still carry `X-Debug-Tag`, `X-Debug-Duration`
-  and `X-Debug-Link` headers.
-- `allowedIPs` accepts exact, wildcard and CIDR entries; `allowedHosts` entries are resolved to an IP per request. An
-  address outside both is denied before `checkAccessCallback` runs, and any callback result other than `true` denies.
+- No toolbar is injected into AJAX requests, debugger routes or pages without a rendered `endBody()`, except Yii error
+  pages: for an allowed non-AJAX request the toolbar is injected into the error handler output. Captured application
+  requests from an allowed address, including AJAX and JSON, still carry `X-Debug-Tag`, `X-Debug-Duration` and
+  `X-Debug-Link` headers.
+- `allowedIPs` accepts exact, wildcard and CIDR entries. A wildcard compares only the text before its first `*`, so
+  `192.168.*.10` also allows `192.168.1.20`; use exact addresses or CIDR ranges for narrow rules. `allowedHosts` entries
+  are resolved to an IP per request. An address outside both is denied before `checkAccessCallback` runs, and any
+  callback result other than `true` denies.
 - Debugger pages send `noindex` and `SAMEORIGIN` headers. Captures beyond `historySize` (50 by default) are pruned.
 - The Events collector captures neither context (`captureContext`) nor source traces (`traceLimit`) unless enabled.
 
