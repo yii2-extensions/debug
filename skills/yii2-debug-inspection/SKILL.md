@@ -67,6 +67,18 @@ non-sensitive log entry. JSON responses have no injected HTML toolbar. Inspect d
 those requests. Verify denied access as well as allowed access. Confirm provider events using a request that actually
 invokes the provider component.
 
+## Intended behavior
+
+Do not "fix" these; they are contracts of the installed package:
+
+- No toolbar is injected into AJAX requests, debugger routes or responses without a rendered `endBody()`. Captured
+  application requests from an allowed address, including AJAX and JSON, still carry `X-Debug-Tag`, `X-Debug-Duration`
+  and `X-Debug-Link` headers.
+- `allowedIPs` accepts exact, wildcard and CIDR entries; `allowedHosts` entries are resolved to an IP per request. An
+  address outside both is denied before `checkAccessCallback` runs, and any callback result other than `true` denies.
+- Debugger pages send `noindex` and `SAMEORIGIN` headers. Captures beyond `historySize` (50 by default) are pruned.
+- The Events collector captures neither context (`captureContext`) nor source traces (`traceLimit`) unless enabled.
+
 For upgrades from 0.1, use the migration guide: Yii 22 is required, old captures are incompatible, Timeline is part of
 Profiling, provider registrations changed and controller-coupled actions use the current module APIs. Remove only
 obsolete debugger data with authorization; do not clear unrelated runtime files.

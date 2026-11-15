@@ -1,0 +1,4 @@
+interface:
+  display_name: "Yii2 Debug Inspection"
+  short_description: "Configure and inspect the Yii 22 debugger safely"
+  default_prompt: "Use $yii2-debug-inspection to configure the debugger for development and inspect a captured request."
