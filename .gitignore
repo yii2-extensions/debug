@@ -1,7 +1,8 @@
-# AI agents (if present)
-.codex
-.claude/*
-!.claude/skills/
+# agents (if present)
+.agents
+
+# artifacts (if present)
+artifacts
 
 # codecoverage (if present)
 code_coverage
@@ -12,13 +13,23 @@ c3.php
 # composer
 composer.lock
 
-# gitHub copilot config (if present)
+# GitHub Copilot config (if present)
 .github/agents/**
 .github/copilot-instructions.md
 .github/copilot/**
 .github/instructions/**
 .github/prompts/**
 .github/skills/**
+
+# Local AI agent, editor, and GitHub CLI config (if present)
+.claude
+.codex
+.config/gh
+
+# Local environment files
+.env
+.env.*
+!.env.example
 
 # mac ds_store (if present)
 .DS_Store
@@ -28,22 +39,25 @@ nbproject
 
 # node_modules (if present)
 node_modules
-package-lock.json
-!src/assets/package-lock.json
-
-# phpactor (if present)
-.phpactor.*
 
 # phpstorm project (if present)
 .idea
 
+# phpactor (if present)
+.phpactor.*
+
 # phpunit (if present)
 .phpunit.cache
 .phpunit.result.cache
-phpunit.xml*
 
 # private maintainer files (if present)
 /internal/
+
+# report (if present)
+reports
+
+# stryker (if present)
+.stryker-tmp
 
 # vagrant (if present)
 .vagrant
