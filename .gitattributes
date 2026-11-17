@@ -1,9 +1,9 @@
-# Autodetect text files
+# autodetect text files
 * text=auto eol=lf
 
-# ...Unless the name matches the following overriding patterns
+# ...unless the name matches the following overriding patterns
 
-# Definitively text files
+# definitively text files
 *.bat   text
 *.css   text
 *.js    text
@@ -19,13 +19,13 @@
 *.yaml  text
 *.svg   text
 
-# Ensure those won't be messed up with
+# ensure those won't be messed up with
 *.png  binary
 *.jpg  binary
 *.gif  binary
 *.ttf  binary
 
-# Exclude files from the archive
+# exclude files from the archive
 .agents                         export-ignore
 .claude                         export-ignore
 .env                            export-ignore
@@ -58,6 +58,6 @@
 /tests                          export-ignore
 /vendor                         export-ignore
 
-# Avoid merge conflicts in CHANGELOG
+# avoid merge conflicts in CHANGELOG
 # https://about.gitlab.com/2015/02/10/gitlab-reduced-merge-conflicts-by-90-percent-with-changelog-placeholders/
 /CHANGELOG.md merge=union
