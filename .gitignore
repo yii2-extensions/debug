@@ -13,7 +13,7 @@ c3.php
 # composer
 composer.lock
 
-# GitHub Copilot config (if present)
+# gitHub copilot config (if present)
 .github/agents/**
 .github/copilot-instructions.md
 .github/copilot/**
@@ -21,12 +21,12 @@ composer.lock
 .github/prompts/**
 .github/skills/**
 
-# Local AI agent, editor, and GitHub CLI config (if present)
+# local ai agent, editor, and github cli config (if present)
 .claude
 .codex
-.config/gh
+.config
 
-# Local environment files
+# local environment files
 .env
 .env.*
 !.env.example
