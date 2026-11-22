@@ -470,7 +470,15 @@ final class DbCollectorTest extends TestCase
 
     public function testInstrumentInstallsTheStatementHookOnlyOnce(): void
     {
+        $pdo = $this->createMock(PDO::class);
+        $pdo->expects(self::once())
+            ->method('setAttribute')
+            ->with(PDO::ATTR_STATEMENT_CLASS, [DebugPdoStatement::class, []])
+            ->willReturn(true);
+
         $db = $this->makeSqliteConnection();
+        $db->enableProfiling = true;
+        $db->pdo = $pdo;
 
         $this->mockWebApplication(['components' => ['db' => $db]]);
 

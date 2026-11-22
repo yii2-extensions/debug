@@ -15,7 +15,7 @@ use yii\debug\actions\ToolbarDataAction;
 use yii\debug\tests\support\ActionTestCase;
 use yii\debug\tests\support\stub\{MinimalToolbarPanel, StubSnapshot};
 use yii\helpers\Url;
-use yii\web\AssetManager;
+use yii\web\{AssetManager, Response};
 
 use function is_array;
 
@@ -93,7 +93,7 @@ final class ToolbarDataActionTest extends ActionTestCase
 
     public function testActionToolbarDataReturnsJsonErrorWhenTagIsUnknown(): void
     {
-        $module = $this->bootDebugModule();
+        $this->mockWebApplication();
 
         MockerState::addCondition(
             'yii\debug\actions',
@@ -103,26 +103,22 @@ final class ToolbarDataActionTest extends ActionTestCase
             true,
         );
 
-        $this->writeDebugSnapshot(
-            $module,
-            'tag-toolbar',
-            [],
-        );
+        $action = $this->getMockBuilder(ToolbarDataAction::class)
+            ->setConstructorArgs(['toolbar-data'])
+            ->onlyMethods(['getDebugModule', 'getManifest'])
+            ->getMock();
+        $action->expects(self::never())->method('getDebugModule');
+        $action->method('getManifest')->willReturn([]);
 
-        $result = $this->runDebugAction(
-            new ToolbarDataAction('toolbar-data'),
-            $module,
-            ['tag' => 'does-not-exist'],
-        );
-
-        self::assertIsArray(
-            $result,
-            'Payload must decode to an array.',
+        self::assertSame(
+            ['error' => 'Debug tag not found.', 'tag' => 'does-not-exist'],
+            $action->run('does-not-exist'),
+            'The error envelope must include the requested tag.',
         );
         self::assertSame(
-            'Debug tag not found.',
-            $result['error'] ?? null,
-            'Rotated tag must surface as a JSON error envelope.',
+            Response::FORMAT_JSON,
+            Yii::$app->response->format,
+            'The response must use JSON.',
         );
         self::assertSame(
             404,
