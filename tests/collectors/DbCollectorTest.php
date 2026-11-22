@@ -470,7 +470,15 @@ final class DbCollectorTest extends TestCase
 
     public function testInstrumentInstallsTheStatementHookOnlyOnce(): void
     {
+        $pdo = $this->createMock(PDO::class);
+        $pdo->expects(self::once())
+            ->method('setAttribute')
+            ->with(PDO::ATTR_STATEMENT_CLASS, [DebugPdoStatement::class, []])
+            ->willReturn(true);
+
         $db = $this->makeSqliteConnection();
+        $db->enableProfiling = true;
+        $db->pdo = $pdo;
 
         $this->mockWebApplication(['components' => ['db' => $db]]);
 
@@ -767,18 +775,10 @@ final class DbCollectorTest extends TestCase
 
     public function testTraceHashAlgoIsCachedAcrossCalls(): void
     {
-        $collector = $this->makeCollector();
-
         $this->setInaccessibleStaticProperty(DbCollector::class, 'traceHashAlgo', null);
 
-        $first = $this->invoke(
-            $collector,
-            'traceHashAlgo',
-        );
-        $second = $this->invoke(
-            $collector,
-            'traceHashAlgo',
-        );
+        $first = $this->invokeStatic(DbCollector::class, 'traceHashAlgo');
+        $second = $this->invokeStatic(DbCollector::class, 'traceHashAlgo');
 
         self::assertSame(
             $first,

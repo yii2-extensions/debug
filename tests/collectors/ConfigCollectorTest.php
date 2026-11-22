@@ -381,8 +381,8 @@ final class ConfigCollectorTest extends TestCase
      */
     private function normalize(array $input): array
     {
-        $result = $this->invoke(
-            new ConfigCollector(),
+        $result = $this->invokeStatic(
+            ConfigCollector::class,
             'normalizeExtensions',
             [$input],
         );

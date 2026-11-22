@@ -149,6 +149,22 @@ final class ModuleActionLifecycleTest extends ModuleTestCase
         );
     }
 
+    public function testDebuggerActionDetectionMatchesAnAncestorModule(): void
+    {
+        $module = new Module('debug');
+        $child = new \yii\base\Module('child', $module);
+        $action = new Action('index', new Controller('default', $child));
+
+        self::assertTrue(
+            $this->invoke($module, 'isDebuggerAction', [$action]),
+            'An action in a child module must be classified as a debugger action.',
+        );
+        self::assertFalse(
+            $this->invoke($module, 'isDebuggerAction', [null]),
+            'A request without an action must not be classified as a debugger action.',
+        );
+    }
+
     public function testDebuggerActionDetectionRejectsUnrelatedModules(): void
     {
         $module = new Module('debug');

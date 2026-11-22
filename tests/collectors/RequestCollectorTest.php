@@ -637,13 +637,11 @@ final class RequestCollectorTest extends TestCase
 
     public function testNormalizeGlobalValueCollapsesEmptyValuesToEmptyArray(): void
     {
-        $collector = $this->makeCollector();
-
         foreach ([null, false, '', [], 0, '0'] as $empty) {
             self::assertSame(
                 [],
-                $this->invoke(
-                    $collector,
+                $this->invokeStatic(
+                    RequestCollector::class,
                     'normalizeGlobalValue',
                     [$empty],
                 ),
@@ -654,12 +652,10 @@ final class RequestCollectorTest extends TestCase
 
     public function testNormalizeGlobalValuePassesThroughNonEmptyValues(): void
     {
-        $collector = $this->makeCollector();
-
         self::assertSame(
             ['a' => 1],
-            $this->invoke(
-                $collector,
+            $this->invokeStatic(
+                RequestCollector::class,
                 'normalizeGlobalValue',
                 [['a' => 1]],
             ),
@@ -667,8 +663,8 @@ final class RequestCollectorTest extends TestCase
         );
         self::assertSame(
             'value',
-            $this->invoke(
-                $collector,
+            $this->invokeStatic(
+                RequestCollector::class,
                 'normalizeGlobalValue',
                 ['value'],
             ),
@@ -676,8 +672,8 @@ final class RequestCollectorTest extends TestCase
         );
         self::assertSame(
             42,
-            $this->invoke(
-                $collector,
+            $this->invokeStatic(
+                RequestCollector::class,
                 'normalizeGlobalValue',
                 [42],
             ),
@@ -797,12 +793,10 @@ final class RequestCollectorTest extends TestCase
 
     public function testNormalizeTopLevelDataDropsIntKeyedEntries(): void
     {
-        $collector = $this->makeCollector();
-
         self::assertSame(
             ['route' => 'site/index', 'statusCode' => 200],
-            $this->invoke(
-                $collector,
+            $this->invokeStatic(
+                RequestCollector::class,
                 'normalizeTopLevelData',
                 [['route' => 'site/index', 0 => 'drop-me', 'statusCode' => 200]],
             ),

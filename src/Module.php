@@ -896,7 +896,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         $module = $action?->getModule();
 
-        while ($module !== null) {
+        while (isset($module)) {
             if ($module === $this) {
                 return true;
             }
