@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore: standardize comments in configuration files and update dependency ignore rules.
 - fix: restore BSD-3-Clause detection without changing license terms.
 - ci: update shared workflows to `v2.0.6` and test PHP `8.6`.
+- ci: use shared quality and security defaults and remove redundant local linter configuration and Composer scripts.
 
 ## 0.2.3 November 15, 2026
 
