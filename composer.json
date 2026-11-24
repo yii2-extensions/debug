@@ -39,7 +39,7 @@
         "composer-runtime-api": "^2.0",
         "php-forge/debug": "^0.4",
         "php-forge/debug-core": "^0.1",
-        "symfony/mime": "^7.4",
+        "symfony/mime": "^7.4 || ^8.1",
         "ui-awesome/html": "^0.6",
         "ui-awesome/html-core": "^0.8",
         "ui-awesome/html-core-component": "^0.4",
