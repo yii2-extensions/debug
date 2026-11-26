@@ -46,7 +46,7 @@ class ProfilingPanel extends Panel implements ProvidesMemorySamples, RequestSumm
 
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $this->getModels());
 
-        $filteredRows = $this->filteredRows($dataProvider->allModels);
+        $filteredRows = $this->filteredRows($dataProvider->allModels ?? []);
 
         return Yii::$app->view->render(
             'panels/profile/detail',

@@ -74,6 +74,10 @@ final class DbSearchTest extends TestCase
             ],
         )->allModels;
 
+        self::assertIsArray(
+            $rows,
+            'A partial type filter must return an array of models.',
+        );
         self::assertCount(
             1,
             $rows,
@@ -121,6 +125,10 @@ final class DbSearchTest extends TestCase
 
         $rows = $provider->allModels;
 
+        self::assertIsArray(
+            $rows,
+            "Filtering on 'users' must return an array of models.",
+        );
         self::assertCount(
             1,
             $rows,

@@ -76,7 +76,15 @@
     "autoload-dev": {
         "psr-4": {
             "yii\\debug\\tests\\": "tests"
-        }
+        },
+        "exclude-from-classmap": [
+            "tests/support/stub/inertia/CorePage.php",
+            "tests/support/stub/inertia/Page.php",
+            "tests/support/stub/inertia/Vite.php",
+            "tests/support/stub/vite/DevelopmentConfiguration.php",
+            "tests/support/stub/vite/ProductionConfiguration.php",
+            "tests/support/stub/vite/Vite.php"
+        ]
     },
     "extra": {
         "branch-alias": {
